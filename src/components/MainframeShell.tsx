@@ -5,17 +5,33 @@ import { Card } from '@/components/ui/card';
 import { Search, Terminal, Users, Settings, FileText } from 'lucide-react';
 
 type Tab = 'terminal' | 'logs' | 'crew' | 'settings';
+type AccessMode = 'init' | 'terminal' | 'log';
 
 interface Log {
-  id: string;
+  id?: string;
   title: string;
   location: string;
   date: string;
   author: string;
   content: string;
-  security: string;
+  security?: string;
+  security_level?: string;
   roll?: number;
-  tags: string[];
+  tags?: string[];
+  requires_roll?: boolean;
+  roll_check?: {
+    difficulty: number;
+    skill: string;
+    on_success: string;
+    on_failure: string;
+  };
+}
+
+interface Terminal {
+  code: string;
+  requiresRoll?: number;
+  logs: string;
+  name: string;
 }
 
 const VANAGANDR_BANNER = `
@@ -28,6 +44,27 @@ const VANAGANDR_BANNER = `
                     [ MAINFRAME SYSTEM ACCESS TERMINAL ]
                          [ ECLIPSE SHARD SAGA v5.0 ]
 `;
+
+const availableTerminals: Terminal[] = [
+  {
+    code: "fuw01",
+    name: "Free Union Workers Terminal",
+    logs: "/logs/fuw01.json",
+    requiresRoll: 8
+  },
+  {
+    code: "lysani01", 
+    name: "Lysani Labs System",
+    logs: "/logs/lysani01.json",
+    requiresRoll: 10
+  },
+  {
+    code: "vanagandr001",
+    name: "Ship Vanagandr AI Core",
+    logs: "/logs/vanagandr001.json",
+    requiresRoll: 8
+  }
+];
 
 const sampleLogs: Log[] = [
   {
@@ -68,6 +105,97 @@ export default function MainframeShell() {
   const [searchQuery, setSearchQuery] = useState('');
   const [currentLog, setCurrentLog] = useState<Log | null>(sampleLogs[0]);
   const [logs, setLogs] = useState<Log[]>(sampleLogs);
+  
+  // Access code system state
+  const [accessMode, setAccessMode] = useState<AccessMode>('init');
+  const [accessCode, setAccessCode] = useState('');
+  const [activeTerminal, setActiveTerminal] = useState<Terminal | null>(null);
+  const [terminalLogs, setTerminalLogs] = useState<Log[]>([]);
+  const [selectedLog, setSelectedLog] = useState<Log | null>(null);
+  const [rollCheck, setRollCheck] = useState<{ difficulty: number; skill: string } | null>(null);
+  const [terminalMessage, setTerminalMessage] = useState('');
+
+  // Access code handler
+  const handleAccessCode = async () => {
+    const terminal = availableTerminals.find(t => t.code.toLowerCase() === accessCode.toLowerCase());
+    
+    if (terminal) {
+      setActiveTerminal(terminal);
+      setTerminalMessage(`Connecting to ${terminal.name}...`);
+      
+      if (terminal.requiresRoll) {
+        setRollCheck({ difficulty: terminal.requiresRoll, skill: "Electronics (Computers)" });
+      } else {
+        await fetchTerminalLogs(terminal);
+      }
+    } else {
+      setTerminalMessage("ACCESS DENIED. INVALID TERMINAL CODE.");
+    }
+    setAccessCode('');
+  };
+
+  // Fetch logs from terminal
+  const fetchTerminalLogs = async (terminal: Terminal) => {
+    try {
+      const response = await fetch(terminal.logs);
+      const data = await response.json();
+      setTerminalLogs(data);
+      setAccessMode('terminal');
+      setTerminalMessage(`Connected to ${terminal.name}. Select a log entry to view.`);
+    } catch (error) {
+      setTerminalMessage("ERROR: Failed to load terminal data.");
+    }
+  };
+
+  // Handle roll check result
+  const handleRollResult = (passed: boolean) => {
+    if (passed && activeTerminal) {
+      fetchTerminalLogs(activeTerminal);
+    } else {
+      setTerminalMessage("ACCESS DENIED. INSUFFICIENT CLEARANCE.");
+    }
+    setRollCheck(null);
+  };
+
+  // Handle log access
+  const handleLogAccess = (log: Log) => {
+    if (log.requires_roll && log.roll_check) {
+      setSelectedLog(log);
+      setRollCheck({ difficulty: log.roll_check.difficulty, skill: log.roll_check.skill });
+    } else {
+      setSelectedLog(log);
+      setAccessMode('log');
+    }
+  };
+
+  // Handle log roll result
+  const handleLogRollResult = (passed: boolean) => {
+    if (passed && selectedLog) {
+      setAccessMode('log');
+      setTerminalMessage(selectedLog.roll_check?.on_success || "Access granted.");
+    } else {
+      setTerminalMessage(selectedLog?.roll_check?.on_failure || "Access denied.");
+      setSelectedLog(null);
+    }
+    setRollCheck(null);
+  };
+
+  // Back to init
+  const backToInit = () => {
+    setAccessMode('init');
+    setActiveTerminal(null);
+    setTerminalLogs([]);
+    setSelectedLog(null);
+    setTerminalMessage('');
+    setRollCheck(null);
+  };
+
+  // Back to terminal
+  const backToTerminal = () => {
+    setAccessMode('terminal');
+    setSelectedLog(null);
+    setRollCheck(null);
+  };
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -80,11 +208,21 @@ export default function MainframeShell() {
         e.preventDefault();
         setActiveTab('logs');
       }
+      if (e.key === 'Escape') {
+        if (accessMode === 'log') {
+          backToTerminal();
+        } else if (accessMode === 'terminal') {
+          backToInit();
+        }
+      }
+      if (e.key === 'Enter' && accessMode === 'init' && accessCode.trim()) {
+        handleAccessCode();
+      }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [accessMode, accessCode]);
 
   const filteredLogs = logs.filter(log => 
     log.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -93,54 +231,162 @@ export default function MainframeShell() {
     log.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
-  const renderTerminal = () => (
-    <div className="terminal-text p-6 space-y-4">
-      <pre className="text-xs terminal-glow text-primary whitespace-pre-wrap">
-        {VANAGANDR_BANNER}
-      </pre>
-      
-      <div className="space-y-2 text-sm">
-        <div className="text-accent">SYSTEM STATUS: OPERATIONAL</div>
-        <div className="text-accent">USER: {currentLog?.author || 'ANONYMOUS'}</div>
-        <div className="text-accent">CLEARANCE: {currentLog?.security || 'STANDARD'}</div>
-        <div className="border-t border-primary/30 pt-4 mt-4">
-          <div className="text-accent mb-2">ACTIVE LOG ENTRY:</div>
-        </div>
-      </div>
-
-      {currentLog && (
-        <Card className="bg-card/50 border-primary/30 p-4">
-          <div className="space-y-3">
-            <div className="flex justify-between items-start">
-              <h2 className="text-primary font-bold terminal-glow">{currentLog.title}</h2>
-              <span className="text-accent text-xs">{currentLog.security}</span>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4 text-xs text-muted-foreground">
-              <div>LOCATION: {currentLog.location}</div>
-              <div>DATE: {currentLog.date}</div>
-              <div>AUTHOR: {currentLog.author}</div>
-              {currentLog.roll && <div>ROLL: {currentLog.roll}</div>}
-            </div>
-            
-            <div className="border-t border-primary/20 pt-3">
-              <pre className="whitespace-pre-wrap text-sm text-foreground leading-relaxed">
-                {currentLog.content}
-              </pre>
-            </div>
-            
-            <div className="flex gap-2 mt-3">
-              {currentLog.tags.map(tag => (
-                <span key={tag} className="text-xs px-2 py-1 bg-accent/20 text-accent rounded">
-                  #{tag}
-                </span>
-              ))}
+  const renderTerminal = () => {
+    if (rollCheck) {
+      return (
+        <div className="terminal-text p-6 space-y-4">
+          <div className="bg-card/50 border-primary/30 p-4 rounded">
+            <h3 className="text-primary font-bold mb-4">SECURITY CHECK REQUIRED</h3>
+            <p className="text-foreground mb-4">
+              Roll {rollCheck.difficulty}+ on {rollCheck.skill} to proceed.
+            </p>
+            <div className="flex gap-2">
+              <Button 
+                variant="default" 
+                size="sm" 
+                onClick={() => selectedLog ? handleLogRollResult(true) : handleRollResult(true)}
+                className="bg-primary text-primary-foreground"
+              >
+                PASSED
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => selectedLog ? handleLogRollResult(false) : handleRollResult(false)}
+              >
+                FAILED
+              </Button>
             </div>
           </div>
-        </Card>
-      )}
-    </div>
-  );
+        </div>
+      );
+    }
+
+    if (accessMode === 'log' && selectedLog) {
+      return (
+        <div className="terminal-text p-6 space-y-4">
+          <Card className="bg-card/50 border-primary/30 p-4">
+            <div className="space-y-3">
+              <div className="flex justify-between items-start">
+                <h2 className="text-primary font-bold terminal-glow">{selectedLog.title}</h2>
+                <span className="text-accent text-xs">{selectedLog.security_level?.toUpperCase() || selectedLog.security || 'STANDARD'}</span>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4 text-xs text-muted-foreground">
+                <div>LOCATION: {selectedLog.location}</div>
+                <div>DATE: {selectedLog.date}</div>
+                <div>AUTHOR: {selectedLog.author}</div>
+              </div>
+              
+              <div className="border-t border-primary/20 pt-3">
+                <pre className="whitespace-pre-wrap text-sm text-foreground leading-relaxed">
+                  {selectedLog.content}
+                </pre>
+              </div>
+              
+              <div className="flex justify-between items-center mt-4">
+                <Button variant="outline" size="sm" onClick={backToTerminal}>
+                  BACK TO TERMINAL
+                </Button>
+              </div>
+            </div>
+          </Card>
+        </div>
+      );
+    }
+
+    if (accessMode === 'terminal' && activeTerminal) {
+      return (
+        <div className="terminal-text p-6 space-y-4">
+          <div className="space-y-2 text-sm">
+            <div className="text-accent">CONNECTED TO: {activeTerminal.name}</div>
+            <div className="text-accent">STATUS: OPERATIONAL</div>
+            <div className="text-accent">CLEARANCE LEVEL: RESTRICTED</div>
+            {terminalMessage && (
+              <div className="text-primary terminal-glow">{terminalMessage}</div>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <h3 className="text-primary font-bold terminal-glow">AVAILABLE LOG ENTRIES:</h3>
+            {terminalLogs.map((log, index) => (
+              <Card 
+                key={index}
+                className="bg-card/30 border-primary/20 p-3 cursor-pointer hover:border-primary/50 transition-colors"
+                onClick={() => handleLogAccess(log)}
+              >
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h4 className="text-primary font-semibold text-sm">{log.title}</h4>
+                    <p className="text-muted-foreground text-xs mt-1">{log.date} - {log.author}</p>
+                  </div>
+                  <div className="flex flex-col items-end">
+                    <span className="text-accent text-xs">{log.security_level?.toUpperCase() || 'STANDARD'}</span>
+                    {log.requires_roll && (
+                      <span className="text-yellow-400 text-xs mt-1">RESTRICTED</span>
+                    )}
+                  </div>
+                </div>
+              </Card>
+            ))}
+            
+            <div className="pt-4">
+              <Button variant="outline" size="sm" onClick={backToInit}>
+                DISCONNECT
+              </Button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="terminal-text p-6 space-y-4">
+        <pre className="text-xs terminal-glow text-primary whitespace-pre-wrap">
+          {VANAGANDR_BANNER}
+        </pre>
+        
+        <div className="space-y-2 text-sm">
+          <div className="text-accent">SYSTEM STATUS: OPERATIONAL</div>
+          <div className="text-accent">ACCESS LEVEL: GUEST</div>
+          <div className="text-accent">AWAITING TERMINAL CODE...</div>
+          {terminalMessage && (
+            <div className="text-primary terminal-glow mt-4">{terminalMessage}</div>
+          )}
+        </div>
+
+        <div className="space-y-4">
+          <div className="text-accent text-sm">ENTER TERMINAL ACCESS CODE:</div>
+          <div className="flex gap-2">
+            <Input
+              value={accessCode}
+              onChange={(e) => setAccessCode(e.target.value)}
+              placeholder="ACCESS CODE"
+              className="bg-card/50 border-primary/30 text-primary placeholder:text-muted-foreground font-mono"
+              onKeyDown={(e) => e.key === 'Enter' && handleAccessCode()}
+            />
+            <Button 
+              variant="default" 
+              onClick={handleAccessCode}
+              disabled={!accessCode.trim()}
+              className="bg-primary text-primary-foreground"
+            >
+              CONNECT
+            </Button>
+          </div>
+          
+          <div className="text-muted-foreground text-xs mt-4">
+            <div>AVAILABLE TERMINALS:</div>
+            {availableTerminals.map(terminal => (
+              <div key={terminal.code} className="mt-1">
+                <span className="text-accent">{terminal.code}</span> - {terminal.name}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   const renderLogs = () => (
     <div className="p-6 space-y-4">
