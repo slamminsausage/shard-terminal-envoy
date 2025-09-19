@@ -8,34 +8,7 @@ import SignalInterference from '../SignalInterference';
 import audioManager from '@/lib/audioManager';
 import { typeTextWithSound } from '@/lib/typing';
 import { applyGlitch } from '@/lib/glitchText';
-
-// Terminal definitions
-interface Terminal {
-  requiresRoll: number | boolean;
-  logs: string;
-  requiresPassword?: boolean;
-  password?: string;
-}
-
-const terminals: Record<string, Terminal> = {
-  "lysani01": { requiresRoll: 8, logs: "/logs/lysani01.json" },
-  "s.elara01": { requiresRoll: false, logs: "/logs/s.elara01.json" },
-  "slocombe875": { requiresRoll: 8, logs: "/logs/slocombe875.json" },
-  "waferterm01": { requiresRoll: false, logs: "/logs/waferterm01.json" },
-  "labpc81": { requiresRoll: 6, logs: "/logs/labpc81.json" },
-  "vanagandr001": { requiresRoll: 8, logs: "/logs/vanagandr001.json" },
-  "blackcircuit01": { requiresRoll: 8, logs: "/logs/blackcircuit01.json" },
-  "fuw01": { requiresRoll: 8, logs: "/logs/fuw01.json" },
-  "azura01": { requiresRoll: 10, logs: "/logs/azura01.json" },
-  "vennik01": { requiresRoll: 12, logs: "/logs/vennik01.json", requiresPassword: true, password: "vennik4ever" },
-  "caldonis_public": { requiresRoll: false, logs: "/logs/caldonis_public.json" },
-  "blacksite-es1": { requiresRoll: 10, logs: "/logs/blacksite-es1.json" },
-  "blacktalon": { requiresRoll: 12, logs: "/logs/blacktalon.json" },
-  "vennik-personal": { requiresRoll: 10, logs: "/logs/vennik-personal.json" },
-  "sayelle-logs": { requiresRoll: 8, logs: "/logs/sayelle-logs.json" },
-  "fuwnet": { requiresRoll: 8, logs: "/logs/fuw-network.json" },
-  "01-1485-10-4-89-40": { requiresRoll: false, logs: "/logs/01-1485-10-4-89-40.json" }
-};
+import { TERMINALS, getTerminalDefinition, type TerminalDefinition } from '@/lib/terminals';
 
 // Terminal visual effects
 const getTerminalEffectClasses = (terminalId: string) => {
@@ -74,7 +47,7 @@ export default function TerminalInterface() {
   const [terminalData, setTerminalData] = useState("");
   
   // Terminal state
-  const [activeTerminal, setActiveTerminal] = useState<Terminal | null>(null);
+  const [activeTerminal, setActiveTerminal] = useState<TerminalDefinition | null>(null);
   const [logData, setLogData] = useState<any>(null);
   const [selectedLogData, setSelectedLogData] = useState<any>(null);
   const [displayedText, setDisplayedText] = useState("");
@@ -171,7 +144,7 @@ export default function TerminalInterface() {
             // Set the complete message immediately
             let message = `Date: ${selectedLogData.date}\nAuthor: ${selectedLogData.author}\n\n${selectedLogData.content || "No data available."}`;
             if (activeTerminal) {
-              const glitchResult = applyGlitch(message, activeTerminal.logs);
+              const glitchResult = applyGlitch(message, activeTerminal.logPath);
               message = glitchResult.text;
             }
             setDisplayedText(message);
@@ -224,7 +197,7 @@ export default function TerminalInterface() {
     
     const normalizedCode = trimmedCode.toLowerCase();
     
-    const terminal = terminals[normalizedCode as keyof typeof terminals];
+    const terminal = getTerminalDefinition(normalizedCode);
     if (terminal) {
       setActiveTerminal(terminal);
       setCurrentView("terminal");
@@ -235,7 +208,7 @@ export default function TerminalInterface() {
       } else if (terminal.requiresRoll) {
         setRollCheck({ difficulty: terminal.requiresRoll });
       } else {
-        fetchLogs(terminal.logs);
+        fetchLogs(terminal.logPath);
       }
     } else {
       audioManager.playEffect('access_denied', 0.4);
@@ -263,7 +236,7 @@ export default function TerminalInterface() {
         let message = `Date: ${data.date}\nAuthor: ${data.author}\n\n${data.content || "No data available."}`;
         
         if (activeTerminal) {
-          const glitchResult = applyGlitch(message, activeTerminal.logs);
+          const glitchResult = applyGlitch(message, activeTerminal.logPath);
           message = glitchResult.text;
         }
         
@@ -304,7 +277,7 @@ export default function TerminalInterface() {
         let message = `Date: ${log.date}\nAuthor: ${log.author}\n\n${log.content}`;
         
         if (activeTerminal) {
-          const glitchResult = applyGlitch(message, activeTerminal.logs);
+          const glitchResult = applyGlitch(message, activeTerminal.logPath);
           message = glitchResult.text;
         }
 
@@ -322,7 +295,7 @@ export default function TerminalInterface() {
       setTerminalPasswordRequired(false);
       setTerminalPasswordInput("");
       setTerminalPasswordAttempts(0);
-      fetchLogs(activeTerminal.logs);
+      fetchLogs(activeTerminal.logPath);
       audioManager.playEffect('access_granted', 0.3);
     } else {
       const attempts = terminalPasswordAttempts + 1;
@@ -366,7 +339,7 @@ export default function TerminalInterface() {
         let message = `Date: ${selectedLogData.date}\nAuthor: ${selectedLogData.author}\n\n${selectedLogData.content}`;
         
         if (activeTerminal) {
-          const glitchResult = applyGlitch(message, activeTerminal.logs);
+          const glitchResult = applyGlitch(message, activeTerminal.logPath);
           message = glitchResult.text;
         }
 
@@ -399,7 +372,7 @@ export default function TerminalInterface() {
     if (passed) {
       audioManager.playEffect('access_granted', 0.3);
       if (activeTerminal) {
-        fetchLogs(activeTerminal.logs);
+        fetchLogs(activeTerminal.logPath);
       } else {
         const cancelTyping = typeTextWithSound("ERROR: Terminal not found.", setTerminalData);
         typingCancelRef.current = cancelTyping;
@@ -434,7 +407,7 @@ export default function TerminalInterface() {
         }
         
         if (activeTerminal) {
-          const glitchResult = applyGlitch(message, activeTerminal.logs);
+          const glitchResult = applyGlitch(message, activeTerminal.logPath);
           message = glitchResult.text;
         }
         
@@ -598,30 +571,18 @@ export default function TerminalInterface() {
           <Card className="bg-card border-primary/30 terminal-window">
             <CardContent className="p-6">
               <div className="text-primary/80 font-mono text-sm mb-4">AVAILABLE TERMINALS:</div>
-              <div className="grid grid-cols-3 gap-4 text-primary font-mono text-xs">
-                <div className="space-y-1">
-                  <div className="cursor-pointer hover:text-accent" onClick={() => setInputCode("lysani01")}>lysani01</div>
-                  <div className="cursor-pointer hover:text-accent" onClick={() => setInputCode("s.elara01")}>s.elara01</div>
-                  <div className="cursor-pointer hover:text-accent" onClick={() => setInputCode("waferterm01")}>waferterm01</div>
-                  <div className="cursor-pointer hover:text-accent" onClick={() => setInputCode("blackcircuit01")}>blackcircuit01</div>
-                  <div className="cursor-pointer hover:text-accent" onClick={() => setInputCode("vennik01")}>vennik01</div>
-                  <div className="cursor-pointer hover:text-accent" onClick={() => setInputCode("blacktalon")}>blacktalon</div>
-                </div>
-                <div className="space-y-1">
-                  <div className="cursor-pointer hover:text-accent" onClick={() => setInputCode("labpc81")}>labpc81</div>
-                  <div className="cursor-pointer hover:text-accent" onClick={() => setInputCode("fuw01")}>fuw01</div>
-                  <div className="cursor-pointer hover:text-accent" onClick={() => setInputCode("caldonis_public")}>caldonis_public</div>
-                  <div className="cursor-pointer hover:text-accent" onClick={() => setInputCode("vennik-personal")}>vennik-personal</div>
-                  <div className="cursor-pointer hover:text-accent" onClick={() => setInputCode("fuwnet")}>fuwnet</div>
-                </div>
-                <div className="space-y-1">
-                  <div className="cursor-pointer hover:text-accent" onClick={() => setInputCode("slocombe875")}>slocombe875</div>
-                  <div className="cursor-pointer hover:text-accent" onClick={() => setInputCode("vanagandr001")}>vanagandr001</div>
-                  <div className="cursor-pointer hover:text-accent" onClick={() => setInputCode("azura01")}>azura01</div>
-                  <div className="cursor-pointer hover:text-accent" onClick={() => setInputCode("blacksite-es1")}>blacksite-es1</div>
-                  <div className="cursor-pointer hover:text-accent" onClick={() => setInputCode("sayelle-logs")}>sayelle-logs</div>
-                  <div className="cursor-pointer hover:text-accent" onClick={() => setInputCode("01-1485-10-4-89-40")}>01-1485-10-4-89-40</div>
-                </div>
+              <div className="grid grid-cols-6 gap-4 text-primary font-mono text-xs">
+                {TERMINALS.map((terminal, index) => (
+                  <div 
+                    key={terminal.code}
+                    className="border border-primary/30 p-2 cursor-pointer hover:text-accent hover:border-accent/50 transition-colors"
+                    onClick={() => setInputCode(terminal.code)}
+                    title={terminal.name}
+                  >
+                    <div className="truncate">{terminal.code}</div>
+                    <div className="text-primary/60 text-xs truncate">{terminal.name}</div>
+                  </div>
+                ))}
               </div>
             </CardContent>
           </Card>
@@ -631,7 +592,7 @@ export default function TerminalInterface() {
       {(currentView === "terminal" || currentView === "log") && (
         <div className="h-full p-8">
           <div 
-            className={`${activeTerminal ? getTerminalEffectClasses(activeTerminal.logs) : "terminal terminal-flicker"} h-full overflow-auto relative bg-background/20 border border-primary/30 p-6`}
+            className={`${activeTerminal ? getTerminalEffectClasses(activeTerminal.logPath) : "terminal terminal-flicker"} h-full overflow-auto relative bg-background/20 border border-primary/30 p-6`}
             ref={terminalRef}
           >
               {/* Severe malfunction overlay */}
