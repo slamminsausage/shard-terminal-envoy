@@ -106,10 +106,13 @@ export default function TerminalInterface() {
   // Signal interference
   const [signalInterferenceLevel, setSignalInterferenceLevel] = useState(0);
 
-  // Initialize terminal
+  // Initialize terminal and audio
   useEffect(() => {
     if (hasInitialized.current) return;
     hasInitialized.current = true;
+    
+    // Initialize audio manager
+    audioManager.preloadSounds();
     
     const loadingMessages = [
       ">> INITIALIZING TRAVELLER TERMINAL MAINFRAME SUBSYSTEMS...",
@@ -145,6 +148,7 @@ export default function TerminalInterface() {
     const trimmedCode = rawCode.trim();
     
     if (!trimmedCode) {
+      audioManager.playEffect('access_denied', 0.4);
       const cancelTyping = typeTextWithSound("ACCESS DENIED. INVALID CODE.", setTerminalData);
       typingRef.current = cancelTyping as any;
       setInputCode("");
@@ -157,6 +161,7 @@ export default function TerminalInterface() {
     if (terminal) {
       setActiveTerminal(terminal);
       setCurrentView("terminal");
+      audioManager.playEffect('access_granted', 0.3);
       
       if (terminal.requiresPassword) {
         setTerminalPasswordRequired(true);
@@ -166,6 +171,7 @@ export default function TerminalInterface() {
         fetchLogs(terminal.logs);
       }
     } else {
+      audioManager.playEffect('access_denied', 0.4);
       const cancelTyping = typeTextWithSound("ACCESS DENIED. INVALID CODE.", setTerminalData);
       typingRef.current = cancelTyping as any;
     }
@@ -212,29 +218,119 @@ export default function TerminalInterface() {
     setPasswordAttempts(0);
     setPasswordInput("");
     
-    if (log.requires_roll && log.roll_check && log.roll_check.difficulty >= 10) {
-      setSpecialRollCheck({ difficulty: log.roll_check.difficulty });
-    } else {
-      setDisplayedText("");
-      setLogTypingComplete(false);
-      
-      let message = `Date: ${log.date}\nAuthor: ${log.author}\n\n${log.content}`;
-      
-      if (activeTerminal) {
-        const glitchResult = applyGlitch(message, activeTerminal.logs);
-        message = glitchResult.text;
+    if (log.logs) {
+      if (log.requires_password) {
+        setRequiresPassword(true);
+      } else {
+        setAudioLogsData(log.logs);
+        setShowAudioLogsPage(true);
       }
+    } else if (log.requires_password) {
+      setRequiresPassword(true);
+    } else {
+      if (log.requires_roll && log.roll_check && log.roll_check.difficulty >= 10) {
+        setSpecialRollCheck({ difficulty: log.roll_check.difficulty });
+      } else {
+        setDisplayedText("");
+        setLogTypingComplete(false);
+        
+        let message = `Date: ${log.date}\nAuthor: ${log.author}\n\n${log.content}`;
+        
+        if (activeTerminal) {
+          const glitchResult = applyGlitch(message, activeTerminal.logs);
+          message = glitchResult.text;
+        }
 
-      const cancelTyping = typeTextWithSound(message, setDisplayedText, () => {
-        setLogTypingComplete(true);
-      }, { delay: 30 });
-      typingRef.current = cancelTyping as any;
+        const cancelTyping = typeTextWithSound(message, setDisplayedText, () => {
+          setLogTypingComplete(true);
+        }, { delay: 30 });
+        typingRef.current = cancelTyping as any;
+      }
+    }
+  };
+
+  // Terminal password handler
+  const handleTerminalPasswordSubmit = () => {
+    if (activeTerminal && activeTerminal.password && terminalPasswordInput === activeTerminal.password) {
+      setTerminalPasswordRequired(false);
+      setTerminalPasswordInput("");
+      setTerminalPasswordAttempts(0);
+      fetchLogs(activeTerminal.logs);
+      audioManager.playEffect('access_granted', 0.3);
+    } else {
+      const attempts = terminalPasswordAttempts + 1;
+      setTerminalPasswordAttempts(attempts);
+      setTerminalPasswordInput("");
+      
+      if (attempts >= 3) {
+        setTerminalPasswordRequired(false);
+        
+        if (activeTerminal && activeTerminal.requiresRoll) {
+          setRollCheck({ difficulty: activeTerminal.requiresRoll });
+          const cancelTyping = typeTextWithSound("Maximum password attempts reached. Attempting alternate access method...", setTerminalData);
+          typingRef.current = cancelTyping as any;
+        } else {
+          const cancelTyping = typeTextWithSound("ACCESS DENIED. MAXIMUM ATTEMPTS REACHED.", setTerminalData);
+          typingRef.current = cancelTyping as any;
+          setTimeout(() => handleBackToInit(), 2000);
+        }
+      } else {
+        audioManager.playEffect('access_denied', 0.4);
+        const cancelTyping = typeTextWithSound(`ACCESS DENIED. INVALID PASSWORD. ${3 - attempts} attempts remaining.`, setTerminalData);
+        typingRef.current = cancelTyping as any;
+      }
+    }
+  };
+
+  // Password submit handler for log passwords
+  const handlePasswordSubmit = () => {
+    if (selectedLogData && passwordInput === selectedLogData.password) {
+      setRequiresPassword(false);
+      setPasswordInput("");
+      setPasswordAttempts(0);
+      
+      if (selectedLogData.logs) {
+        setAudioLogsData(selectedLogData.logs);
+        setShowAudioLogsPage(true);
+      } else {
+        setDisplayedText("");
+        setLogTypingComplete(false);
+        
+        let message = `Date: ${selectedLogData.date}\nAuthor: ${selectedLogData.author}\n\n${selectedLogData.content}`;
+        
+        if (activeTerminal) {
+          const glitchResult = applyGlitch(message, activeTerminal.logs);
+          message = glitchResult.text;
+        }
+
+        const cancelTyping = typeTextWithSound(message, setDisplayedText, () => {
+          setLogTypingComplete(true);
+        }, { delay: 30 });
+        typingRef.current = cancelTyping as any;
+      }
+      audioManager.playEffect('access_granted', 0.3);
+    } else {
+      const attempts = passwordAttempts + 1;
+      setPasswordAttempts(attempts);
+      setPasswordInput("");
+      
+      if (attempts >= (selectedLogData?.attemptsAllowed || 3)) {
+        setRequiresPassword(false);
+        if (selectedLogData?.roll_check) {
+          setSpecialRollCheck({ difficulty: selectedLogData.roll_check.difficulty });
+        }
+      } else {
+        audioManager.playEffect('access_denied', 0.4);
+        const cancelTyping = typeTextWithSound("Incorrect password. Please try again.", setTerminalData);
+        typingRef.current = cancelTyping as any;
+      }
     }
   };
 
   // Roll check handler
   const handleRollCheck = (passed: boolean) => {
     if (passed) {
+      audioManager.playEffect('access_granted', 0.3);
       if (activeTerminal) {
         fetchLogs(activeTerminal.logs);
       } else {
@@ -242,6 +338,7 @@ export default function TerminalInterface() {
         typingRef.current = cancelTyping as any;
       }
     } else {
+      audioManager.playEffect('access_denied', 0.4);
       const cancelTyping = typeTextWithSound("ACCESS DENIED. INSUFFICIENT CLEARANCE.", setTerminalData);
       typingRef.current = cancelTyping as any;
     }
@@ -251,28 +348,36 @@ export default function TerminalInterface() {
   // Special roll check handler
   const handleSpecialRollCheck = (passed: boolean) => {
     if (passed && selectedLogData) {
-      setDisplayedText("");
-      setLogTypingComplete(false);
-      setCurrentView("log");
+      audioManager.playEffect('access_granted', 0.3);
       
-      let message = "";
-      if (selectedLogData.roll_check && selectedLogData.roll_check.on_success) {
-        message = selectedLogData.roll_check.on_success + "\n\n";
-        message += `Date: ${selectedLogData.date}\nAuthor: ${selectedLogData.author}\n\n${selectedLogData.content}`;
+      if (selectedLogData.logs) {
+        setAudioLogsData(selectedLogData.logs);
+        setShowAudioLogsPage(true);
       } else {
-        message = `Date: ${selectedLogData.date}\nAuthor: ${selectedLogData.author}\n\n${selectedLogData.content}`;
+        setDisplayedText("");
+        setLogTypingComplete(false);
+        setCurrentView("log");
+        
+        let message = "";
+        if (selectedLogData.roll_check && selectedLogData.roll_check.on_success) {
+          message = selectedLogData.roll_check.on_success + "\n\n";
+          message += `Date: ${selectedLogData.date}\nAuthor: ${selectedLogData.author}\n\n${selectedLogData.content}`;
+        } else {
+          message = `Date: ${selectedLogData.date}\nAuthor: ${selectedLogData.author}\n\n${selectedLogData.content}`;
+        }
+        
+        if (activeTerminal) {
+          const glitchResult = applyGlitch(message, activeTerminal.logs);
+          message = glitchResult.text;
+        }
+        
+        const cancelTyping = typeTextWithSound(message, setDisplayedText, () => {
+          setLogTypingComplete(true);
+        }, { delay: 30 });
+        typingRef.current = cancelTyping as any;
       }
-      
-      if (activeTerminal) {
-        const glitchResult = applyGlitch(message, activeTerminal.logs);
-        message = glitchResult.text;
-      }
-      
-      const cancelTyping = typeTextWithSound(message, setDisplayedText, () => {
-        setLogTypingComplete(true);
-      }, { delay: 30 });
-      typingRef.current = cancelTyping as any;
     } else {
+      audioManager.playEffect('access_denied', 0.4);
       if (selectedLogData && selectedLogData.roll_check && selectedLogData.roll_check.on_failure) {
         const cancelTyping = typeTextWithSound(selectedLogData.roll_check.on_failure, setTerminalData);
         typingRef.current = cancelTyping as any;
@@ -320,11 +425,78 @@ export default function TerminalInterface() {
     }
   }, [displayedText, terminalData, logTypingComplete, currentView, commandOutput]);
 
+  // Audio logs page
+  if (showAudioLogsPage) {
+    return (
+      <div className="min-h-screen bg-background p-4">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-6">
+            <h1 className="text-accent font-mono text-xl terminal-glow">Encrypted Audio Logs</h1>
+          </div>
+          <Card className="bg-card border-primary/30">
+            <CardContent className="p-6">
+              <div className="space-y-6">
+                {audioLogsData.map((log: any, index: number) => (
+                  <div key={index} className="border-b border-primary/20 pb-4 last:border-b-0">
+                    <h2 className="text-primary font-mono text-lg mb-2">{log.title}</h2>
+                    <p className="text-primary/80 font-mono text-sm whitespace-pre-wrap mb-3">{log.content}</p>
+                    {log.audio_file && (
+                      <audio
+                        controls
+                        className="w-full"
+                        style={{
+                          backgroundColor: "hsl(var(--background))",
+                          border: "1px solid hsl(var(--primary))",
+                          borderRadius: "5px"
+                        }}
+                      >
+                        <source src={log.audio_file} type="audio/mp3" />
+                        Your browser does not support the audio element.
+                      </audio>
+                    )}
+                  </div>
+                ))}
+                <Button
+                  variant="terminal"
+                  onClick={() => {
+                    setShowAudioLogsPage(false);
+                    setAudioLogsData([]);
+                    setSelectedLogData(null);
+                    setCurrentView("terminal");
+                  }}
+                  className="w-full"
+                >
+                  Back to Terminal
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background crt-container p-4">
+      {/* Sound Toggle Button */}
+      <div className="fixed top-4 left-4 z-50">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            const isMuted = audioManager.toggleMute();
+            // Visual feedback could be added here
+          }}
+          className="font-mono"
+        >
+          {audioManager.isMuted() ? '🔇' : '🔊'}
+        </Button>
+      </div>
+
       <SignalInterference 
         level={signalInterferenceLevel} 
         terminalType={activeTerminal ? 'corrupted' : 'normal'} 
+        soundEnabled={!audioManager.isMuted()}
       />
 
       {currentView === "loading" && (
@@ -418,30 +590,30 @@ export default function TerminalInterface() {
                 </div>
               )}
 
-            {/* Terminal password prompt */}
-            {terminalPasswordRequired ? (
-              <div className="p-4">
-                <p className="mb-2">Terminal requires password authentication.</p>
-                <p className="mb-4">Attempts remaining: {3 - terminalPasswordAttempts}</p>
-                <div className="mt-4">
-                  <Input
-                    className="bg-background/20 border-primary/30 font-mono"
-                    placeholder="Enter Password"
-                    value={terminalPasswordInput}
-                    onChange={(e) => setTerminalPasswordInput(e.target.value)}
-                    type="password"
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        // Handle password submission
-                      }
-                    }}
-                  />
-                  <div className="flex gap-2 mt-2">
-                    <Button variant="outline" size="sm">Submit</Button>
-                    <Button variant="outline" size="sm" onClick={handleBackToInit}>Back</Button>
+              {/* Terminal password prompt */}
+              {terminalPasswordRequired ? (
+                <div className="p-4">
+                  <p className="mb-2">Terminal requires password authentication.</p>
+                  <p className="mb-4">Attempts remaining: {3 - terminalPasswordAttempts}</p>
+                  <div className="mt-4">
+                    <Input
+                      className="bg-background/20 border-primary/30 font-mono"
+                      placeholder="Enter Password"
+                      value={terminalPasswordInput}
+                      onChange={(e) => setTerminalPasswordInput(e.target.value)}
+                      type="password"
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          handleTerminalPasswordSubmit();
+                        }
+                      }}
+                    />
+                    <div className="flex gap-2 mt-2">
+                      <Button variant="outline" size="sm" onClick={handleTerminalPasswordSubmit}>Submit</Button>
+                      <Button variant="outline" size="sm" onClick={handleBackToInit}>Back</Button>
+                    </div>
                   </div>
                 </div>
-              </div>
             ) : specialRollCheck ? (
               <div className="p-4">
                 <p className="mb-4">
@@ -471,9 +643,48 @@ export default function TerminalInterface() {
                   </Button>
                 </div>
               </div>
+            ) : selectedLogData && requiresPassword ? (
+              <div className="p-4">
+                <div className="whitespace-pre-wrap text-sm mb-4">{displayedText}</div>
+                <p className="mb-2 text-sm">
+                  Password required. Attempts remaining:{" "}
+                  {(selectedLogData.attemptsAllowed || 3) - passwordAttempts}
+                </p>
+                <Input
+                  className="bg-background/20 border-primary/30 font-mono mb-2"
+                  placeholder="Enter Password"
+                  value={passwordInput}
+                  onChange={(e) => setPasswordInput(e.target.value)}
+                  type="password"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      handlePasswordSubmit();
+                    }
+                  }}
+                />
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" onClick={handlePasswordSubmit}>Submit</Button>
+                  <Button variant="outline" size="sm" onClick={handleBackToTerminal}>Back</Button>
+                </div>
+              </div>
             ) : selectedLogData ? (
               <div className="p-4">
                 <div className="whitespace-pre-wrap text-sm">{displayedText}</div>
+                {selectedLogData.audio_file && (
+                  <audio
+                    controls
+                    className="w-full mt-2"
+                    style={{
+                      backgroundColor: "hsl(var(--background))",
+                      border: "1px solid hsl(var(--primary))",
+                      borderRadius: "5px",
+                      color: "hsl(var(--primary))"
+                    }}
+                  >
+                    <source src={selectedLogData.audio_file} type="audio/mp3" />
+                    Your browser does not support the audio element.
+                  </audio>
+                )}
                 {logTypingComplete && (
                   <Button variant="outline" size="sm" className="mt-4" onClick={handleBackToTerminal}>
                     Back

@@ -36,7 +36,7 @@ const SignalInterference = ({
       setStaticOpacity(Math.random() * 0.3 + 0.1);
 
       if (soundEnabled) {
-        audioManager.playEffect();
+        audioManager.playEffect('interference', 0.2);
       }
 
       const effects: Array<() => void> = [
@@ -83,15 +83,15 @@ const SignalInterference = ({
     }
 
     if (level > 0.7) {
-      audioManager.playEffect();
+      audioManager.playEffect('static', 0.3);
     } else if (level > 0.5) {
-      audioManager.playEffect();
+      audioManager.playEffect('interference', 0.2);
     } else if (level > 0.3) {
-      audioManager.playEffect();
+      audioManager.playEffect('terminal', 0.1);
     } else if (terminalType === 'secure') {
-      audioManager.playEffect();
+      audioManager.playEffect('terminal', 0.15);
     } else {
-      audioManager.playEffect();
+      audioManager.playEffect('terminal', 0.1);
     }
 
     return () => {

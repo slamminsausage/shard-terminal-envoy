@@ -87,7 +87,7 @@ export const typeTextWithSound = (
     if (soundEvery <= 0) return;
     if (!includeWhitespace && whitespacePattern.test(char)) return;
     if (index % soundEvery !== 0) return;
-    audioManager.playEffect();
+    audioManager.playEffect('keypress', 0.1);
   };
 
   return beginTyping(text, setState, onComplete, {
