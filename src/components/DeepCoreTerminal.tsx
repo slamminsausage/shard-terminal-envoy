@@ -147,7 +147,11 @@ But it did not stay to guide us.
 [End of Archive]
 `;
 
-export default function RiftjawTerminal() {
+interface RiftjawTerminalProps {
+  onBack?: () => void;
+}
+
+export default function RiftjawTerminal({ onBack }: RiftjawTerminalProps) {
   const navigate = useNavigate();
   const [currentLevel, setCurrentLevel] = useState(0);
   const [passwordInput, setPasswordInput] = useState("");
@@ -427,18 +431,6 @@ export default function RiftjawTerminal() {
   if (showFinalArchive) {
     return (
       <div className="flex flex-col items-center min-h-screen bg-black p-4">
-        {/* Sound Toggle */}
-        <div className="fixed top-4 left-4 z-50">
-          <Button
-            className="bg-green-400 text-black font-mono px-2 py-1 rounded text-xs hover:bg-green-500"
-            onClick={() => {
-              const isMuted = audioManager.toggleMute();
-              setSoundEnabled(!isMuted);
-            }}
-          >
-            {soundEnabled ? '🔊' : '🔇'}
-          </Button>
-        </div>
         
         <Card className="w-full max-w-md lg:max-w-lg border-green-400 border-2">
           <CardContent className="p-4 sm:p-6">
@@ -462,7 +454,7 @@ export default function RiftjawTerminal() {
                   className="bg-green-400 text-black font-mono px-4 py-2 rounded hover:bg-green-500 mt-2 w-full sm:w-auto"
                   onClick={() => {
                     audioManager.playEffect('typing-sound', 0.2);
-                    navigate("/");
+                    onBack ? onBack() : navigate("/");
                   }}
                 >
                   Back to Terminal
@@ -507,18 +499,6 @@ export default function RiftjawTerminal() {
   
   return (
     <div className="flex flex-col items-center min-h-screen bg-black p-4">
-      {/* Sound Toggle */}
-      <div className="fixed top-4 left-4 z-50">
-        <Button
-          className="bg-green-400 text-black font-mono px-2 py-1 rounded text-xs hover:bg-green-500"
-            onClick={() => {
-              const isMuted = audioManager.toggleMute();
-              setSoundEnabled(!isMuted);
-            }}
-        >
-          {soundEnabled ? '🔊' : '🔇'}
-        </Button>
-      </div>
       
       <Card className="w-full max-w-md lg:max-w-lg border-green-400 border-2">
         <CardContent className="p-4 sm:p-6">
@@ -582,7 +562,7 @@ export default function RiftjawTerminal() {
                     className="bg-green-400 text-black font-mono px-4 py-2 rounded hover:bg-green-500 w-full sm:w-auto"
               onClick={() => {
                 audioManager.playEffect('typing-sound', 0.2);
-                navigate("/");
+                onBack ? onBack() : navigate("/");
               }}
                   >
                     Back

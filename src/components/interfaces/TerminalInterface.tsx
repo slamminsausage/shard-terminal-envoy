@@ -476,7 +476,7 @@ export default function TerminalInterface() {
 
   // Show Deep Core Terminal if requested
   if (showDeepCoreTerminal) {
-    return <DeepCoreTerminal />;
+    return <DeepCoreTerminal onBack={() => setShowDeepCoreTerminal(false)} />;
   }
 
   // Audio logs page
