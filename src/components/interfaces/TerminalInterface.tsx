@@ -489,54 +489,54 @@ export default function TerminalInterface() {
   // Audio logs page
   if (showAudioLogsPage) {
     return (
-      <div className="h-screen bg-background p-4 flex flex-col">
-        <div className="max-w-4xl mx-auto flex flex-col h-full">
+      <div className="h-screen bg-background p-6 flex flex-col crt-container">
+        <div className="w-full flex flex-col h-full">
           <div className="text-center mb-6 flex-shrink-0">
-            <h1 className="text-accent font-mono text-xl terminal-glow">Encrypted Audio Logs</h1>
-            <p className="text-primary/60 font-mono text-sm mt-2">Press ESC to return to terminal</p>
+            <h1 className="text-accent font-mono text-2xl terminal-glow mb-2">ENCRYPTED AUDIO LOGS</h1>
+            <p className="text-primary/60 font-mono text-sm">Press ESC to return to terminal</p>
           </div>
-          <Card className="bg-card border-primary/30 flex-1 min-h-0">
-            <CardContent className="p-4 h-full flex flex-col">
-              <ScrollArea className="flex-1 mb-4">
-                <div className="space-y-6 pr-4">
-                  {audioLogsData.map((log: any, index: number) => (
-                    <div key={index} className="border-b border-primary/20 pb-4 last:border-b-0">
-                      <h2 className="text-primary font-mono text-lg mb-2">{log.title}</h2>
-                      <p className="text-primary/80 font-mono text-sm whitespace-pre-wrap mb-3">{log.content}</p>
-                      {log.audio_file && (
-                        <audio
-                          controls
-                          className="w-full"
-                          style={{
-                            backgroundColor: "hsl(var(--background))",
-                            border: "1px solid hsl(var(--primary))",
-                            borderRadius: "5px"
-                          }}
-                        >
-                          <source src={log.audio_file} type="audio/mp3" />
-                          Your browser does not support the audio element.
-                        </audio>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </ScrollArea>
-              <div className="flex-shrink-0">
-                <Button
-                  variant="terminal"
-                  onClick={() => {
-                    setShowAudioLogsPage(false);
-                    setAudioLogsData([]);
-                    setSelectedLogData(null);
-                    setCurrentView("terminal");
-                  }}
-                  className="w-full"
-                >
-                  Back to Terminal
-                </Button>
+          
+          <div className="flex-1 min-h-0 bg-background/50 border border-primary/30 p-6">
+            <ScrollArea className="h-full">
+              <div className="space-y-8 pr-4">
+                {audioLogsData.map((log: any, index: number) => (
+                  <div key={index} className="border-b border-primary/20 pb-6 last:border-b-0">
+                    <h2 className="text-accent font-mono text-lg mb-3 terminal-glow">{log.title}</h2>
+                    <p className="text-primary/90 font-mono text-sm whitespace-pre-wrap mb-4 leading-relaxed">{log.content}</p>
+                    {log.audio_file && (
+                      <audio
+                        controls
+                        className="w-full"
+                        style={{
+                          backgroundColor: "hsl(var(--background))",
+                          border: "1px solid hsl(var(--primary))",
+                          borderRadius: "5px"
+                        }}
+                      >
+                        <source src={log.audio_file} type="audio/mp3" />
+                        Your browser does not support the audio element.
+                      </audio>
+                    )}
+                  </div>
+                ))}
               </div>
-            </CardContent>
-          </Card>
+            </ScrollArea>
+          </div>
+          
+          <div className="flex-shrink-0 mt-6">
+            <Button
+              variant="terminal"
+              onClick={() => {
+                setShowAudioLogsPage(false);
+                setAudioLogsData([]);
+                setSelectedLogData(null);
+                setCurrentView("terminal");
+              }}
+              className="w-full bg-primary/20 border-2 border-primary text-primary hover:bg-primary hover:text-background font-mono text-lg py-3 terminal-glow"
+            >
+              &gt; BACK TO TERMINAL
+            </Button>
+          </div>
         </div>
       </div>
     );
