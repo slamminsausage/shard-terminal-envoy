@@ -134,6 +134,12 @@ export default function TerminalInterface() {
             typingCancelRef.current();
             typingCancelRef.current = null;
           }
+        } else if (showAudioLogsPage) {
+          // Handle ESC for audio logs page
+          setShowAudioLogsPage(false);
+          setAudioLogsData([]);
+          setSelectedLogData(null);
+          setCurrentView("terminal");
         } else if (currentView === "log" && selectedLogData) {
           // Two-step process for log view
           if (!logTypingComplete) {
@@ -183,7 +189,7 @@ export default function TerminalInterface() {
 
     window.addEventListener("keydown", handleEscKey);
     return () => window.removeEventListener("keydown", handleEscKey);
-  }, [currentView, selectedLogData, logData, activeTerminal, requiresPassword, terminalPasswordRequired, rollCheck, specialRollCheck, logTypingComplete]);
+  }, [currentView, selectedLogData, logData, activeTerminal, requiresPassword, terminalPasswordRequired, rollCheck, specialRollCheck, logTypingComplete, showAudioLogsPage]);
 
   // Handle access code
   const handleAccessCode = (codeOverride: string | null = null) => {
@@ -487,10 +493,11 @@ export default function TerminalInterface() {
         <div className="max-w-4xl mx-auto flex flex-col h-full">
           <div className="text-center mb-6 flex-shrink-0">
             <h1 className="text-accent font-mono text-xl terminal-glow">Encrypted Audio Logs</h1>
+            <p className="text-primary/60 font-mono text-sm mt-2">Press ESC to return to terminal</p>
           </div>
           <Card className="bg-card border-primary/30 flex-1 min-h-0">
-            <CardContent className="p-6 h-full flex flex-col">
-              <ScrollArea className="flex-1">
+            <CardContent className="p-4 h-full flex flex-col">
+              <ScrollArea className="flex-1 mb-4">
                 <div className="space-y-6 pr-4">
                   {audioLogsData.map((log: any, index: number) => (
                     <div key={index} className="border-b border-primary/20 pb-4 last:border-b-0">
@@ -514,18 +521,20 @@ export default function TerminalInterface() {
                   ))}
                 </div>
               </ScrollArea>
-              <Button
-                variant="terminal"
-                onClick={() => {
-                  setShowAudioLogsPage(false);
-                  setAudioLogsData([]);
-                  setSelectedLogData(null);
-                  setCurrentView("terminal");
-                }}
-                className="w-full mt-4 flex-shrink-0"
-              >
-                Back to Terminal
-              </Button>
+              <div className="flex-shrink-0">
+                <Button
+                  variant="terminal"
+                  onClick={() => {
+                    setShowAudioLogsPage(false);
+                    setAudioLogsData([]);
+                    setSelectedLogData(null);
+                    setCurrentView("terminal");
+                  }}
+                  className="w-full"
+                >
+                  Back to Terminal
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </div>
