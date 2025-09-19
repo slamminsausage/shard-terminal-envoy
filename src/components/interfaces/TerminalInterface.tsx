@@ -476,9 +476,9 @@ export default function TerminalInterface() {
             <p className="text-primary/60 font-mono text-sm">Press ESC to return to terminal</p>
           </div>
           
-          <div className="flex-1 min-h-0 bg-background/50 border border-primary/30 p-6 mb-6">
+          <div className="flex-1 min-h-0 bg-background/50 border border-primary/30 p-6">
             <ScrollArea className="h-full">
-              <div className="space-y-8 pr-4 pb-4">
+              <div className="space-y-8 pr-4 pb-24">
                 {audioLogsData.map((log: any, index: number) => (
                   <div key={index} className="border-b border-primary/20 pb-6 last:border-b-0">
                     <h2 className="text-accent font-mono text-lg mb-3 terminal-glow">{log.title}</h2>
@@ -503,7 +503,7 @@ export default function TerminalInterface() {
             </ScrollArea>
           </div>
           
-          <div className="flex-shrink-0">
+          <div className="flex-shrink-0 mt-6 p-4 border-t border-primary/30">
             <Button
               variant="terminal"
               onClick={() => {

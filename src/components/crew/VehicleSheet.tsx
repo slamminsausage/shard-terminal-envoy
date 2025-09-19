@@ -138,7 +138,7 @@ const VehicleSheet = () => {
   };
 
   return (
-    <div className="space-y-8 text-sm max-h-[80vh] overflow-y-auto">
+    <div className="space-y-8 text-sm max-h-[80vh] overflow-y-auto pb-20">
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <TextField label="Ship's Name" value={shipInfo.name} onChange={value => updateShipInfo("name", value)} />
         <TextField label="Class" value={shipInfo.className} onChange={value => updateShipInfo("className", value)} />
@@ -286,6 +286,16 @@ const VehicleSheet = () => {
           ))}
         </div>
       </section>
+      
+      <div className="flex justify-center pt-8">
+        <Button 
+          variant="outline" 
+          size="lg"
+          className="bg-primary/20 border-2 border-primary text-primary hover:bg-primary hover:text-background font-mono text-lg px-8 py-3 terminal-glow"
+        >
+          💾 SAVE VEHICLE DATA
+        </Button>
+      </div>
     </div>
   );
 };
