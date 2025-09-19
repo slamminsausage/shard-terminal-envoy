@@ -152,10 +152,6 @@ export default function TerminalInterface() {
             
             // Set the complete message immediately
             let message = `Date: ${selectedLogData.date}\nAuthor: ${selectedLogData.author}\n\n${selectedLogData.content || "No data available."}`;
-            if (activeTerminal) {
-              const glitchResult = applyGlitch(message, activeTerminal.logPath);
-              message = glitchResult.text;
-            }
             setDisplayedText(message);
           } else {
             // Second ESC: Go back to terminal view
@@ -250,11 +246,6 @@ export default function TerminalInterface() {
         
         let message = `Date: ${data.date}\nAuthor: ${data.author}\n\n${data.content || "No data available."}`;
         
-        if (activeTerminal) {
-          const glitchResult = applyGlitch(message, activeTerminal.logPath);
-          message = glitchResult.text;
-        }
-        
         const cancelTyping = typeTextWithSound(message, setDisplayedText, () => {
           setLogTypingComplete(true);
         }, { delay: 30 });
@@ -291,10 +282,6 @@ export default function TerminalInterface() {
         
         let message = `Date: ${log.date}\nAuthor: ${log.author}\n\n${log.content}`;
         
-        if (activeTerminal) {
-          const glitchResult = applyGlitch(message, activeTerminal.logPath);
-          message = glitchResult.text;
-        }
 
         const cancelTyping = typeTextWithSound(message, setDisplayedText, () => {
           setLogTypingComplete(true);
@@ -353,10 +340,6 @@ export default function TerminalInterface() {
         
         let message = `Date: ${selectedLogData.date}\nAuthor: ${selectedLogData.author}\n\n${selectedLogData.content}`;
         
-        if (activeTerminal) {
-          const glitchResult = applyGlitch(message, activeTerminal.logPath);
-          message = glitchResult.text;
-        }
 
         const cancelTyping = typeTextWithSound(message, setDisplayedText, () => {
           setLogTypingComplete(true);
@@ -421,10 +404,7 @@ export default function TerminalInterface() {
           message = `Date: ${selectedLogData.date}\nAuthor: ${selectedLogData.author}\n\n${selectedLogData.content}`;
         }
         
-        if (activeTerminal) {
-          const glitchResult = applyGlitch(message, activeTerminal.logPath);
-          message = glitchResult.text;
-        }
+        
         
         const cancelTyping = typeTextWithSound(message, setDisplayedText, () => {
           setLogTypingComplete(true);
@@ -496,9 +476,9 @@ export default function TerminalInterface() {
             <p className="text-primary/60 font-mono text-sm">Press ESC to return to terminal</p>
           </div>
           
-          <div className="flex-1 min-h-0 bg-background/50 border border-primary/30 p-6">
+          <div className="flex-1 min-h-0 bg-background/50 border border-primary/30 p-6 mb-6">
             <ScrollArea className="h-full">
-              <div className="space-y-8 pr-4">
+              <div className="space-y-8 pr-4 pb-4">
                 {audioLogsData.map((log: any, index: number) => (
                   <div key={index} className="border-b border-primary/20 pb-6 last:border-b-0">
                     <h2 className="text-accent font-mono text-lg mb-3 terminal-glow">{log.title}</h2>
@@ -523,7 +503,7 @@ export default function TerminalInterface() {
             </ScrollArea>
           </div>
           
-          <div className="flex-shrink-0 mt-6">
+          <div className="flex-shrink-0">
             <Button
               variant="terminal"
               onClick={() => {
@@ -532,7 +512,7 @@ export default function TerminalInterface() {
                 setSelectedLogData(null);
                 setCurrentView("terminal");
               }}
-              className="w-full bg-primary/20 border-2 border-primary text-primary hover:bg-primary hover:text-background font-mono text-lg py-3 terminal-glow"
+              className="w-full bg-primary/20 border-2 border-primary text-primary hover:bg-primary hover:text-background font-mono text-lg py-4 terminal-glow"
             >
               &gt; BACK TO TERMINAL
             </Button>
