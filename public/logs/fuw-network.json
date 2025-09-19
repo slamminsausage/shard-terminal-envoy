@@ -1,0 +1,75 @@
+
+[
+  {
+    "title": "Strike Core - Operation Brief",
+    "location": "FUW Network Terminal",
+    "date": "082-1105",
+    "author": "Jarvek 'Ironclad' Voss",
+    "content": "FREE UNION OF WORKERS\nSTRIKE CORE DIVISION\nOPERATION: BREAKING CHAINS\n\nComrades,\n\nOur intelligence has confirmed a high-security auction to be held at Vennik's warehouse complex in three days. This presents a unique opportunity to strike at multiple oppressors simultaneously.\n\nTargets of Interest:\n- Rax Vennik (Syndicate leader, exploiter of workers)\n- House Azura representatives (Primary oppressors)\n- Lysani Labs security delegation (Corporate enforcers)\n- Various wealthy elites attending the auction\n\nOperational Plan:\n1. Team Alpha (Workers' Vengeance): Infiltrate as maintenance staff\n   - Plant explosive devices at key structural points\n   - Secure access to secondary entrances for Team Gamma\n\n2. Team Beta (Shadow Unit): Deploy as external overwatch\n   - Monitor security response\n   - Provide distraction if necessary\n   - Secure extraction routes\n\n3. Team Gamma (Data Hunters): Primary infiltration team\n   - Target objective: Vennik's financial servers\n   - Secondary objective: Lysani Labs financial records\n   - Exfiltrate with evidence of corporate corruption\n\nThis operation serves multiple purposes: disrupting the criminal power structure that enables corporate oppression, gathering evidence of House Azura's illegal dealings, and sending a message that the workers will no longer tolerate exploitation.\n\nThe timing aligns with our broader strategy. Multiple actions will occur simultaneously across Caldonis, stretching security forces thin.\n\nRemember: The scale will break.\n\n- Ironclad",
+    "security_level": "high",
+    "requires_roll": false
+  },
+  {
+    "title": "Riftjaw Prophecy - Latest Interpretations",
+    "location": "FUW Network Terminal",
+    "date": "074-1105",
+    "author": "Mira Torren",
+    "content": "FREE UNION OF WORKERS\nCULTURAL PRESERVATION COMMITTEE\nSUBJECT: RIFTJAW PROPHECY\n\nComrades,\n\nThe signs continue to manifest. The ancient prophecy of Riftjaw's awakening grows closer to fulfillment with each passing day.\n\nRecent Manifestations:\n- Blue light phenomena reported in lower maintenance tunnels (17 separate incidents)\n- Temporal distortions near the Riftjaw Rim (machinery operating at impossible efficiency)\n- Workers reporting dreams of \"vast, scaled entities moving beneath the city\"\n- Unexplained structural vibrations detected in Old Caldonis foundations\n\nThe prophecy states: \"When injustice reaches its height, when the powerful gorge themselves on the suffering of the many, Riftjaw will awaken from the depths to devour the corrupt and restore balance to the weave of existence.\"\n\nWe have used this mythology effectively as a galvanizing symbol for our cause. The workers find strength in the belief that cosmic justice awaits those who exploit them. However, recent events suggest there may be more truth to the legends than previously believed.\n\nRecommendation:\nContinue monitoring unusual phenomena and documenting worker experiences. Increase mythology-based propaganda in Old Caldonis, particularly imagery of Riftjaw destroying corporate towers.\n\nPersonal Note:\nI have experienced the dreams myself now. Something is stirring in the depths below our city. Whether literal or metaphorical, change is coming. The balance will be restored. My father's sacrifice will not be in vain.\n\n\"The scale will break.\"\n\n- Mira",
+    "security_level": "medium",
+    "requires_roll": false
+  },
+  {
+    "title": "Warehouse Infiltration Plans",
+    "location": "FUW Network Terminal",
+    "date": "081-1105",
+    "author": "Infiltration Specialist Thorne",
+    "content": "FREE UNION OF WORKERS\nTACTICAL OPERATIONS DIVISION\nSUBJECT: VENNIK WAREHOUSE SCHEMATICS\n\nAttached is the comprehensive infiltration plan for Operation Breaking Chains. These schematics were obtained from a sympathetic worker in Vennik's maintenance division.\n\nKey Entry Points:\n1. Northeast maintenance access (lowest security presence)\n2. Ventilation system intake (tight squeeze, but workable)\n3. Underground utility tunnel (connects to sub-level 2)\n4. Roof access (requires climbing equipment)\n\nSecurity Assessment:\n- Guard rotation creates a 40-second window at point NE-7\n- Camera blind spot identified at junction B12\n- Security control room located on second floor, west side\n- Response time estimated at 90 seconds from alarm to full deployment\n\nRecommended Approach:\nTeam Alpha enters through maintenance access, creating diversion at opposite end of facility. Team Gamma uses utility tunnel while security is distracted. Explosives placed at marked structural points will create maximum disruption with minimal risk to our operatives.\n\nContingency Planning:\nIf primary entrances are compromised, falling back to the rooftop extraction plan is advised. Emergency rally point established at abandoned factory in Old Caldonis, coordinates encrypted in standard protocol.\n\nNote: Recent intelligence suggests increased security measures due to high-value items being auctioned. Adjust timing accordingly. The presence of a heavily modified starship (Type-S Scout/Courier) provides excellent cover for our activities - all eyes will be on the vessel.\n\n\"The scale will break.\"\n\n- Thorne",
+    "security_level": "high",
+    "requires_roll": true,
+    "roll_check": {
+      "difficulty": 10,
+      "skill": "Electronics (Computers)",
+      "on_success": "Access granted. Infiltration plans decrypted.",
+      "on_failure": "Access denied. Security alert triggered."
+    }
+  },
+  {
+    "title": "Memorial - Daro Torren",
+    "location": "FUW Network Terminal",
+    "date": "070-1105",
+    "author": "Mira Torren",
+    "content": "REMEMBRANCE: DARO TORREN\nFOUNDER OF STRIKE CORE\nMARTYR OF THE REVOLUTION\n\nTen years ago today, my father gave his life to save mine.\n\nWhen House Azura discovered our plans to sabotage the Kalex Neural Systems facility, they didn't arrest him. They came for me and my mother instead. Their message was clear: Undo the sabotage, or lose your family.\n\nMy father and Jarvek came for us. In the chaos that followed, my mother was killed. My father, knowing the facility security systems would soon lock down completely, made the hardest choice possible.\n\nHe put me in Jarvek's arms, looked at me one last time, and said: \"Remember this moment. Remember why we fight. The scale will break.\"\n\nThen he triggered the explosives, destroying the facility and himself with it, but creating enough chaos for Jarvek to get me to safety.\n\nThe official corporate news reported it as a terrorist attack. They never mentioned the illegal neural extraction experiments being conducted there. They never mentioned how many workers had their skills and memories forcibly stripped from their minds to fuel corporate profits.\n\nMy father saw the injustice clearly. He understood that in a system where the powerful can simply take what they want from the vulnerable, there can be no peace, only temporary submission.\n\nToday, I renew my vow: We will break the system that murdered my parents. We will create a world where workers control their own destiny. We will awaken Riftjaw from the depths and watch as corporate towers crumble.\n\nThe scale will break.\n\n- Mira Torren",
+    "security_level": "medium",
+    "requires_roll": false
+  },
+  {
+    "title": "Recruitment Status - Special Assets",
+    "location": "FUW Network Terminal",
+    "date": "082-1105",
+    "author": "Recruitment Division",
+    "content": "FREE UNION OF WORKERS\nRECRUITMENT DIVISION\nSUBJECT: SPECIAL ASSET ACQUISITION\n\nCurrently Tracking Potential Assets:\n\n1. CODE NAME: STARFARERS\n   DESCRIPTION: Crew of former vessel \"Vanagandr\"\n   STATUS: Recently arrived at Eternium Starport\n   POTENTIAL VALUE: High\n   NOTES: This group has demonstrated resilience and resourcefulness. Intelligence suggests they have personal grievances against both Rax Vennik and Lysani Laboratories, making them potential allies of convenience. Initial observation indicates combat experience and technical skills that would benefit our cause.\n\n2. CODE NAME: MIDNIGHT\n   DESCRIPTION: Ex-House Azura security officer\n   STATUS: Successfully recruited, currently in probationary period\n   POTENTIAL VALUE: Critical\n   NOTES: Subject has provided valuable security protocols and access codes. Motivation appears genuine (family member killed by corporate negligence). Continue monitoring for inconsistencies.\n\n3. CODE NAME: WHISPER\n   DESCRIPTION: Eternium Starport communications technician\n   STATUS: Sympathetic but uncommitted\n   POTENTIAL VALUE: Moderate\n   NOTES: Subject has provided occasional intelligence but fears retribution. Continue gentle pressure and ideological education.\n\nRecommendation:\nPrioritize contact with STARFARERS group. Their timing coincides perfectly with Operation Breaking Chains, and their objectives may align with ours temporarily. Approach with caution through intermediary at The Black Circuit. Gauge reaction to Revolution literature before revealing FUW connection.\n\nReminder: All special asset recruitment requires approval from either Mira Torren or Jarvek Voss before operational integration.\n\n\"The scale will break.\"\n\n- Recruitment Division",
+    "security_level": "high",
+    "requires_roll": true,
+    "roll_check": {
+      "difficulty": 8,
+      "skill": "Electronics (Computers)",
+      "on_success": "Access granted. Recruitment data decrypted.",
+      "on_failure": "Access denied. Security alert triggered."
+    }
+  },
+  {
+    "title": "Daro's Cipher - Riftjaw Connection",
+    "location": "FUW Network Terminal",
+    "date": "065-1105",
+    "author": "Mira Torren",
+    "content": "FREE UNION OF WORKERS\nCULTURAL PRESERVATION COMMITTEE\nSUBJECT: ANCIENT CIPHER DISCOVERY\n\nComrades,\n\nWhile searching through my father's personal effects that Jarvek had preserved all these years, I discovered something remarkable - a partial cipher my father was working on before his death. The documents show he became increasingly obsessed with it in his final days.\n\nThe cipher appears to use runic symbols corresponding to our alphabet. I've only managed to identify four letters with certainty:\n\nᚳ = F\nᚷ = G\nᚻ = I\nᛁ = K\n\nIn the margins of his notes, my father wrote: \"The ancient language speaks of Her awakening. The cipher is the key to understanding Riftjaw's true nature. She waits beneath, not as a simple creature of vengeance, but as something far more profound - a force that existed before the corporations, before our civilization.\"\n\nThese scribblings match the increase in Riftjaw phenomena we've been documenting. Father believed this cipher was left behind by those who encountered Riftjaw in ages past. He was convinced that decoding the full message would give us the means to truly awaken Her and direct Her power against our oppressors.\n\nI'm dedicating resources to complete my father's work. If the recent manifestations are any indication, we may not have much time before Riftjaw stirs completely. Whether this is literal or metaphorical, I believe my father was onto something profound.\n\nIn his final notes, he wrote: \"The scale doesn't just break - it transforms. The balance isn't restored through simple destruction, but through a fundamental remaking of what exists.\"\n\nI'll continue the search for more fragments of the cipher and report any progress.\n\nThe scale will break.\n\n- Mira",
+    "security_level": "high",
+    "requires_roll": true,
+    "roll_check": {
+      "difficulty": 8,
+      "skill": "Electronics (Computers)",
+      "on_success": "Access granted. Cipher notes decrypted.",
+      "on_failure": "Access denied. Linguistic translation error."
+    }
+  }
+]

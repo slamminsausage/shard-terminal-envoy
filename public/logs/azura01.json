@@ -1,0 +1,77 @@
+[
+  {
+    "title": "Security Directive: Increased Protest Activity",
+    "location": "House Azura Terminal - Spires District",
+    "date": "073-1105",
+    "author": "Chief Security Officer Darius Gren",
+    "content": "All corporate security personnel are placed on high alert status effective immediately. Intelligence indicates coordinated FUW disruptions planned across multiple Azura holdings, with focus on processing facilities in Old Caldonis.\n\nSecurity measures increased to Level 3:\n- Double patrols in all facilities\n- Aerial drone surveillance activated 24/7\n- All staff to carry identification at all times\n- Challenge protocols in effect for all restricted areas\n\nAny suspected FUW activity is to be reported immediately. Authorized use of force against trespassers approved by Director Saren.",
+    "security_level": "medium",
+    "requires_roll": true,
+    "roll_check": {
+      "difficulty": 8,
+      "skill": "Electronics (Computers)",
+      "on_success": "Access granted. Security directive displayed.",
+      "on_failure": "Access denied. User credentials logged."
+    }
+  },
+  {
+    "title": "Profit Analysis: Lysani Partnership",
+    "location": "House Azura Terminal - Spires District",
+    "date": "067-1105",
+    "author": "Financial Division",
+    "content": "Q3 report on Lysani Laboratories partnership ventures:\n\nProfit margins increased 37% over projections due to accelerated research timeline. Primary revenue streams remain classified biomedical products and military contract fulfillment.\n\nExpenses increased 22% due to heightened security requirements and specialized containment facilities at Blacksite ES1. Recommendation to continue investment in infrastructure given projected returns.\n\nNOTE: Recent incident aboard research vessel 'Calendula' resulted in loss of assets valued at approximately 4.3 million credits. Investigation ongoing. Director Saren requests detailed explanation from Lysani representatives at next quarterly meeting.",
+    "security_level": "high",
+    "requires_roll": true,
+    "roll_check": {
+      "difficulty": 10,
+      "skill": "Electronics (Computers)",
+      "on_success": "Access granted. Financial analysis displayed.",
+      "on_failure": "Access denied. Security alerted to attempted breach."
+    }
+  },
+  {
+    "title": "Minutes: Executive Board Meeting",
+    "location": "House Azura Terminal - Spires District",
+    "date": "079-1105",
+    "author": "Director's Office",
+    "content": "Matters discussed at emergency board meeting:\n\n1. FUW activity increased 43% in last quarter - authorization for additional security contractors approved.\n\n2. Lysani partnership review - concerns raised about experimental protocols and potential legal exposure. Director Saren authorized continued observation but no direct intervention at this time.\n\n3. Vennik Syndicate operations - tacit approval to continue limited tolerance policy in exchange for usual considerations. Director emphasized stricter boundaries regarding Vennik's recent expansion into skill-jacking operations.\n\n4. Eternium Starport management contract renewed for five years with increased security provisions and customs oversight.",
+    "security_level": "high",
+    "requires_roll": true,
+    "roll_check": {
+      "difficulty": 10,
+      "skill": "Electronics (Computers)",
+      "on_success": "Access granted. Board minutes displayed.",
+      "on_failure": "Access denied. User credentials suspended."
+    }
+  },
+  {
+    "title": "Starport Security Analysis",
+    "location": "House Azura Terminal - Spires District",
+    "date": "076-1105",
+    "author": "Eternium Oversight Committee",
+    "content": "Quarterly security assessment of Eternium Starport:\n\nPrimary concerns remain smuggling operations (estimated 22% increase) and unauthorized access to restricted areas (17 incidents documented).\n\nStarport Security Officer Varik identified in three separate bribery investigations. Recommended action: Retention with monitoring for intelligence gathering on Vennik operations.\n\nCustoms screening effectiveness rated at 68% - below acceptable threshold. Additional scanning equipment and personnel authorized.\n\nNOTE: Recent incidents involving off-world visitors seeking information about the Vanagandr have been flagged for special attention. Any inquiries about this vessel should be reported to Azura security immediately.",
+    "security_level": "medium",
+    "requires_roll": true,
+    "roll_check": {
+      "difficulty": 8,
+      "skill": "Electronics (Computers)",
+      "on_success": "Access granted. Security analysis displayed.",
+      "on_failure": "Access denied. Terminal locked."
+    }
+  },
+  {
+    "title": "Project Riftclaw - Geological Survey",
+    "location": "House Azura Terminal - Spires District",
+    "date": "071-1105",
+    "author": "Resource Development Division",
+    "content": "Preliminary survey of Riftjaw Rim completed. Results indicate significant mineral deposits at previously inaccessible depths. Mining operations feasibility study underway.\n\nUnexplained seismic anomalies recorded at three separate monitoring stations. Engineering team reports unusual equipment failures when operating below the 400m mark. Request for specialized detection equipment approved.\n\nLocal superstitions about the 'Riftjaw' creature continue to hamper recruitment of local labor. Recommendation to import off-world workforce for full-scale operations.\n\nDIRECTOR NOTE: Proceed with caution. We cannot afford another public relations disaster if these FUW myths gain further traction. Maintain media blackout on all operations in the Rim area.",
+    "security_level": "medium",
+    "requires_roll": true,
+    "roll_check": {
+      "difficulty": 8,
+      "skill": "Electronics (Computers)",
+      "on_success": "Access granted. Project report displayed.",
+      "on_failure": "Access denied. Terminal locked."
+    }
+  }
+]

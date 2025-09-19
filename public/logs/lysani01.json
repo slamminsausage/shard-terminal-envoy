@@ -1,0 +1,63 @@
+[
+    {
+      "title": "Ship Status Report",
+      "location": "Main Terminal",
+      "date": "044-1105",
+      "author": "Automated System",
+      "content": "Core ship functions operational. Minor damage sustained in auxiliary lab. Environmental control systems working at reduced efficiency. Life support at 87%. Chemical contamination detected—full scrub cycle initiated. All personnel advised to remain in secure areas.",
+      "security_level": "low",
+      "requires_roll": false
+    },
+    {
+      "title": "Routine Research Transmission",
+      "location": "Main Terminal",
+      "date": "065-1105",
+      "author": "Dr. Hollo Ezrahm",
+      "content": "Monthly research report submitted to Lysani Laboratories via Vennik Minerals relay. Testing on Compounds 1067, 1077, 1079, 1101, and 1103 continues. Preliminary results are promising. Further updates will be provided.",
+      "security_level": "low",
+      "requires_roll": false
+    },
+    {
+      "title": "Erased Transmission",
+      "location": "Main Terminal",
+      "date": "082-1105",
+      "author": "Automated System",
+      "content": "Multiple deleted transmissions detected. Signal records indicate messages sent to an unknown recipient. Encrypted backups exist but require decryption.",
+      "security_level": "high",
+      "requires_roll": true,
+      "roll_check": {
+        "difficulty": 10,
+        "skill": "Electronics (Computers)",
+        "on_success": "Recovered from the computer of Astrogator Haris Solcombe's personal computer: Partial message recovered: '...if they find out... no one off this ship... contact Butler Chemical...'",
+        "on_failure": "Decryption failed. Data permanently corrupted."
+      }
+    },
+    {
+      "title": "Visitor Roster",
+      "location": "Main Terminal",
+      "date": "75-1105",
+      "author": "Automated System",
+      "content": "Visitor log for the last four months:\n- Captain Dorian Krast (Black Talon Cartel - Mercenary Division)\n- Major Alira Venn (Freelance Mercenary Consultant)\n- Lieutenant Jarik Vale (Corporate Security - Butler Chemical Company)\n- Colonel Reah Harlan (Independent Security Consultant)\n- Torak Ifyhil'ik (Red Claw Mercenaries)\n\nAll visits classified under 'Operational Assessment'.",
+      "security_level": "low",
+      "requires_roll": false
+    },
+    {
+      "title": "Ship Alert: Vanagandr",
+      "location": "Main Terminal",
+      "date": "059-1105",
+      "author": "System Request: Unknown User",
+      "content": "Alert: Ship *Vanagandr* reported missing three days ago. Last known coordinates intercepted near Tobia before transponder signal was lost. Classified as a potential retrieval target under Lysani Laboratories directive.",
+      "security_level": "medium",
+      "requires_roll": false
+    },
+    {
+      "title": "Life Support Records - Incident 081-1105",
+      "location": "Main Terminal",
+      "date": "081-1105",
+      "author": "Automated System",
+      "content": "01:30 - Moderate explosion detected in auxiliary lab. Emergency response initiated.\n01:32 - Fire suppression engaged.\n01:45 - Chemical contamination detected in auxiliary lab. Containment failure.\n01:50 - Atmospheric scrubbers at 37% efficiency.\n02:15 - Chemical saturation levels critical. Immediate evacuation recommended.\nScrubbing completed at 22:10. Residual effects unknown.",
+      "security_level": "high",
+      "requires_roll": false
+    }
+  ]
+  

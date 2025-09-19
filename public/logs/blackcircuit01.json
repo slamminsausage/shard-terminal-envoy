@@ -1,0 +1,71 @@
+[
+  {
+    "title": "Information Broker Registry",
+    "location": "Black Circuit Terminal",
+    "date": "067-1105",
+    "author": "Market Administrator",
+    "content": "Updated registry of authorized information brokers operating within The Black Circuit:\n\n- Zanis Kell (License #K-5567) - Specializations: Corporate surveillance, Starship manifests\n- Kira Veld (License #V-2239) - Specializations: Political intel, Faction movements\n- Vaelus Korr (License #K-8814) - Specializations: Blackmarket auctions, Weapons shipments\n\nREMINDER: All transactions must include the standard 15% market fee. Unlicensed brokers will be reported to Syndicate security immediately.",
+    "security_level": "low",
+    "requires_roll": false
+  },
+  {
+    "title": "Client Blacklist - CONFIDENTIAL",
+    "location": "Black Circuit Terminal",
+    "date": "073-1105",
+    "author": "Market Security",
+    "content": "The following individuals are banned from all Black Circuit services due to payment disputes, information theft, or violence against brokers:\n\n- Captain Harrick Thorne - Attempted to steal data wafers from Broker Kell\n- Selene Maddox - Failed to pay for critical intel leading to Broker Norris's death\n- Jaxon Vil (Red Claw operative) - Threatened brokers for free information\n\nNOTE: If spotted, alert security immediately. Rax Vennik has personally authorized lethal force against repeat offenders.",
+    "security_level": "medium",
+    "requires_roll": true,
+    "roll_check": {
+      "difficulty": 6,
+      "skill": "Electronics (Computers)",
+      "on_success": "Access granted. Client blacklist displayed.",
+      "on_failure": "Access denied. Terminal locked."
+    }
+  },
+  {
+    "title": "Upcoming Auction Alert",
+    "location": "Black Circuit Terminal",
+    "date": "077-1105",
+    "author": "Vaelus Korr",
+    "content": "NOTICE TO ALL PREMIUM CLIENTS:\n\nRax Vennik's Syndicate will be hosting a specialized auction in 12 days at the Warehouse Complex. Items include recovered starships, experimental tech, and other high-value acquisitions. The centerpiece is a modified Type-S Scout/Courier with unspecified modifications of interest to several research corporations.\n\nKnown interested parties include representatives from House Azura, Lysani Labs, and possibly Black Talon operatives.\n\nBidding credentials available through usual channels. 25,000 credit minimum verification required.",
+    "security_level": "medium",
+    "requires_roll": true,
+    "roll_check": {
+      "difficulty": 8,
+      "skill": "Electronics (Computers)",
+      "on_success": "Access granted. Auction details displayed.",
+      "on_failure": "Access denied. User credentials logged."
+    }
+  },
+  {
+    "title": "Intercepted FUW Communications",
+    "location": "Black Circuit Terminal",
+    "date": "079-1105",
+    "author": "Unknown",
+    "content": "Encrypted communications between suspected FUW cells indicate planned disruption of shipments to Lysani Laboratories within the next week. Specific targets unknown, but chatter mentions the 'Vennik Auction' as a secondary objective. Strike Core elements appear to be mobilizing in Old Caldonis.\n\nUnknown FUW operative designated 'Torren' mentioned repeatedly. Possible high-value target.\n\nThis information is available for 15,000 credits to interested parties.",
+    "security_level": "high",
+    "requires_roll": true,
+    "roll_check": {
+      "difficulty": 10,
+      "skill": "Electronics (Computers)",
+      "on_success": "Decryption successful. Intercepted communications displayed.",
+      "on_failure": "Decryption failed. Security alert triggered."
+    }
+  },
+  {
+    "title": "Vennik Syndicate - Internal Rivalries",
+    "location": "Black Circuit Terminal",
+    "date": "080-1105",
+    "author": "Kira Veld",
+    "content": "PREMIUM INTELLIGENCE BRIEF - NOT FOR CIRCULATION\n\nTension within Vennik's inner circle has escalated. Gareth Vane (Finance) is suspected of skimming from auction proceeds, while Rax's enforcer Sayelle has reportedly threatened Vane directly.\n\nRECOMMENDATION: Approach either faction with extreme caution. Leverage available if needed, but substantial risk exists regardless of alignment choice.\n\nFull dossiers available for 12,000 credits each.",
+    "security_level": "high",
+    "requires_roll": true,
+    "roll_check": {
+      "difficulty": 10,
+      "skill": "Electronics (Computers)",
+      "on_success": "Access granted. Intelligence brief displayed.",
+      "on_failure": "Access denied. Data purged from terminal."
+    }
+  }
+]

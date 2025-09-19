@@ -1,0 +1,93 @@
+[
+    {
+      "title": "Research Log 1103 – Neurotoxin Exposure Study",
+      "location": "Main Laboratory Terminal",
+      "date": "Year 1105-03-12",
+      "author": "Dr. Lina Gevar",
+      "content": "Trial Batch 1103, derived from the Pederson’s Creeper neurotoxin, continues to show remarkable effects on memory suppression and cognitive manipulation. Controlled subjects displayed a complete loss of short-term recollection within 30 minutes of exposure, though the long-term neural impact remains uncertain.\n\nExcessive exposure has led to disorientation, paranoia, and in one case, irreversible catatonia. We are refining the delivery method to maintain combat effectiveness while minimizing unintended degradation.",
+      "security_level": "medium",
+      "requires_roll": true,
+      "roll_check": {
+        "difficulty": 6,
+        "skill": "Electronics (Computers)",
+        "on_success": "Access granted. Research log displayed.",
+        "on_failure": "Access denied. File remains encrypted."
+      }
+    },
+    {
+      "title": "Research Log 1067 – Combat Drug Stability Analysis",
+      "location": "Main Laboratory Terminal",
+      "date": "Year 1105-02-27",
+      "author": "Dr. Eran Teylor",
+      "content": "Compound 1067 improves muscular endurance and reflexive response under combat conditions. Subjects exposed to the formula exhibited a 22% increase in reaction times during live simulations. However, long-term use presents cellular breakdown at an alarming rate. \n\nOur recommendation: reduce dosages, increase metabolic stabilizers, and consider extending recovery periods between applications.",
+      "security_level": "medium",
+      "requires_roll": true,
+      "roll_check": {
+        "difficulty": 6,
+        "skill": "Electronics (Computers)",
+        "on_success": "Access granted. Research log displayed.",
+        "on_failure": "Access denied. File remains encrypted."
+      }
+    },
+    {
+      "title": "Research Log 1077 – Neural Enhancements and Aggression Control",
+      "location": "Main Laboratory Terminal",
+      "date": "Year 1105-03-02",
+      "author": "Dr. Arlen Voss",
+      "content": "1077 remains one of our most volatile compounds. While it successfully heightens aggression and removes pain response, subjects remain highly unpredictable. Attempts at controlled neural suppression have failed, leading to spontaneous acts of violence and self-destruction. \n\nMercenary consultants have reported concerns regarding field stability. Further testing required before mass production.",
+      "security_level": "medium",
+      "requires_roll": true,
+      "roll_check": {
+        "difficulty": 6,
+        "skill": "Electronics (Computers)",
+        "on_success": "Access granted. Research log displayed.",
+        "on_failure": "Access denied. File remains encrypted."
+      }
+    },
+    {
+      "title": "Research Log 1079 – Physical Augmentation",
+      "location": "Main Laboratory Terminal",
+      "date": "Year 1105-03-18",
+      "author": "Dr. Lina Gevar",
+      "content": "Initial trials of 1079 have shown great promise in muscle fiber density and endurance reinforcement. Subjects exhibit increased resistance to blunt trauma and sustained kinetic impacts. However, neural overstimulation has led to frequent seizure activity, requiring further stabilization efforts. \n\nIncorporation of compound 1101 into the formulation may help reduce adverse side effects.",
+      "security_level": "medium",
+      "requires_roll": true,
+      "roll_check": {
+        "difficulty": 6,
+        "skill": "Electronics (Computers)",
+        "on_success": "Access granted. Research log displayed.",
+        "on_failure": "Access denied. File remains encrypted."
+      }
+    },
+    {
+      "title": "Research Log 1101 – Hybrid Formula Testing",
+      "location": "Main Laboratory Terminal",
+      "date": "Year 1105-04-04",
+      "author": "Dr. Eran Teylor",
+      "content": "Early-stage testing of 1101 suggests this formula serves as a stabilizer across multiple other compounds. When combined with 1067 and 1079, preliminary results indicate a marked improvement in metabolic adaptation, reducing harmful physiological side effects. \n\nFurther long-term studies required to determine safe application in combat settings.",
+      "security_level": "medium",
+      "requires_roll": true,
+      "roll_check": {
+        "difficulty": 6,
+        "skill": "Electronics (Computers)",
+        "on_success": "Access granted. Research log displayed.",
+        "on_failure": "Access denied. File remains encrypted."
+      }
+    },
+    {
+      "title": "Internal Memo - Urgent Subject Transfer",
+      "location": "Calendula Main Laboratory Terminal",
+      "date": "Year 1105-06-14",
+      "author": "Hollo Ezrahm, Calendula Research Lead",
+      "content": "To all personnel aboard the Calendula,\n\nEffective immediately, subject E. Trevar is scheduled for transfer to Blacksite ES1 at 14:00 standard ship time. Dr. Mordova, alongside a specialized containment crew, will oversee the relocation process to ensure maximum security and stability during transit. \n\nWhile Subject Trevar continues to demonstrate the most promising compatibility with the administered compounds, recent observations suggest an alarming rate of cognitive and physiological degradation when separated from ES1. His vital signs fluctuate erratically, and his behavior has grown increasingly unpredictable in prolonged isolation. Further analysis will be conducted at Blacksite ES1 to determine the full extent of these effects.\n\nUntil the transfer is complete, all non-essential personnel are to avoid any direct interaction with the subject. Unauthorized access to containment protocols or the transfer logs will result in immediate disciplinary action. \n\nProceed with caution.\n\n—H. Ezrahm",
+      "security_level": "high",
+      "requires_roll": true,
+      "roll_check": {
+        "difficulty": 10,
+        "skill": "Electronics (Computers)",
+        "on_success": "Access granted. Memo fully decrypted.",
+        "on_failure": "Access denied. Security notification triggered."
+      }
+    }
+  ]
+  

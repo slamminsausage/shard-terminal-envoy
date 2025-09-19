@@ -1,0 +1,77 @@
+[
+  {
+    "title": "Caldonis Daily News",
+    "location": "Caldonis Public Terminal",
+    "date": "082-1105",
+    "author": "Automated News System",
+    "content": "TODAY'S HEADLINES:\n\n• HOUSE AZURA ANNOUNCES NEW MINING INITIATIVE ON RIFTJAW RIM - Representatives promise 'minimal ecological impact' despite FUW concerns\n\n• ETERNIUM STARPORT SECURITY INCREASED - Customs delays expected due to 'routine upgrades' to scanning systems\n\n• VICE SECTOR ENTERTAINMENT EXPANSIONS - Rax Vennik Syndicate opens three new establishments in former industrial district\n\n• NEON ROW MARKET REPORT - Weapons prices surge amid rumors of increased FUW activity\n\n• WEATHER ALERT: Acid rain predicted for Old Caldonis sectors tonight. Citizens advised to remain indoors until atmospheric scrubbers complete full cycle.",
+    "security_level": "low",
+    "requires_roll": false
+  },
+  {
+    "title": "Transportation Schedule",
+    "location": "Caldonis Public Terminal",
+    "date": "082-1105",
+    "author": "Caldonis Transit Authority",
+    "content": "TRANSIT UPDATES:\n\n• AERIAL TRAM: Lines operating on standard schedule between Spires and Main Strip. Restricted access to Old Caldonis (House Azura permit required)\n\n• GROUND RAIL: Delays reported on Line 7 due to maintenance. Lines 2, 3, and 5 operating normally\n\n• FREIGHT TRANSPORT: Temporary closure of shipping lanes 12-16 for security inspection. Detour through lanes 8-11\n\n• OFF-WORLD SHUTTLE: Next departure to Haven Station in 14 hours. Limited seating available\n\n• SECURITY ALERT: Random passenger screening in effect at all major transit hubs",
+    "security_level": "low",
+    "requires_roll": false
+  },
+  {
+    "title": "Employment Opportunities",
+    "location": "Caldonis Public Terminal",
+    "date": "082-1105",
+    "author": "House Azura Labor Division",
+    "content": "APPROVED JOB LISTINGS:\n\n• SECURITY PERSONNEL - House Azura (multiple positions)\nRequirements: Combat experience, loyalty screening, cybernetic enhancements preferred\nContact: Recruitment Office, Spires District\n\n• LAB ASSISTANTS - Lysani Laboratories\nRequirements: Medical knowledge, discretion, flexible ethics\nNote: Enhanced security clearance required\n\n• WAREHOUSE WORKERS - Vennik Minerals\nRequirements: Physical strength, no criminal record\nWarning: FUW membership disqualifies applicants\n\n• STARPORT CUSTOMS - Eternium Management\nRequirements: Security background, scanning tech proficiency\nNote: House Azura affiliates given priority",
+    "security_level": "low",
+    "requires_roll": false
+  },
+  {
+    "title": "Public Safety Announcements",
+    "location": "Caldonis Public Terminal",
+    "date": "082-1105",
+    "author": "Caldonis Security Force",
+    "content": "CURRENT ADVISORIES:\n\n• CURFEW IN EFFECT: Old Caldonis sectors remain under 22:00 to 05:00 curfew until further notice\n\n• INDUSTRIAL DISTRICT WARNING: Unauthorized entry to abandoned factories strictly prohibited due to structural instability\n\n• REWARD NOTICE: 5,000 credits for information leading to identification of FUW operatives\n\n• IDENTIFICATION REQUIREMENT: All citizens must carry valid ID when traveling between districts\n\n• SURVEILLANCE REMINDER: For your safety, all public areas are monitored continuously\n\nREPORT SUSPICIOUS ACTIVITY: Call 555-AZURA",
+    "security_level": "low",
+    "requires_roll": false
+  },
+  {
+    "title": "Entertainment & Social Events",
+    "location": "Caldonis Public Terminal",
+    "date": "082-1105",
+    "author": "Caldonis Cultural Division",
+    "content": "APPROVED RECREATION LISTINGS:\n\n• COMBAT SIMULATIONS - 'Red Claw Challenge' now accepting contestants at The Pit\nEntry fee: 1,000 credits, Winner takes 60% of prize pool\n\n• VR EXPERIENCES - New 'Exotic Worlds' program at Vennik's Pleasure Dome\nMust be 18+ for unrestricted access\n\n• SOCIALITE GATHERING - Annual House Azura Charity Gala (invitation only)\nLocation: Spires Grand Ballroom\n\n• HIGH STAKES GAMBLING - 'Fortune's Favor' casino hosting special tournament\nMinimum buy-in: 10,000 credits\n\n• UNDERGROUND RUMOR: Whispers of unregistered fighting matches in Old Caldonis warehouse district. Citizens reminded that unsanctioned gatherings exceed 5 persons are illegal.",
+    "security_level": "low",
+    "requires_roll": false
+  },
+  {
+    "title": "Hunt for the Ghost Crew",
+    "location": "Caldonis Public Terminal - Restricted Data",
+    "date": "081-1105",
+    "author": "REDACTED",
+    "content": "Primary target's vessel expected to appear at upcoming auction. Sources confirm members of the crew have survived - contrary to initial reports. \n\nTell our client that contingency plans are in place regardless of auction outcome. My modifications allow for multiple approaches, but I prefer a more... personal touch. They deserve to see who's coming for them before the end.\n\nInitial surveillance established in Eternium Starport, The Black Circuit, and likely approach routes to the Warehouse Complex. I've left breadcrumbs that only they would recognize.\n\nNo one escapes what they did to me. No one.",
+    "security_level": "high",
+    "requires_roll": true,
+    "roll_check": {
+      "difficulty": 10,
+      "skill": "Electronics (Computers)",
+      "on_success": "Decryption successful. Restricted data revealed.",
+      "on_failure": "Decryption failed. User activity logged."
+    }
+  },
+  {
+    "title": "Operation: Auction Infiltration",
+    "location": "Caldonis Public Terminal - Encrypted Channel",
+    "date": "081-1105",
+    "author": "ENCRYPTED",
+    "content": "STRIKE CORE DIRECTIVE - EYES ONLY\n\nCell leaders to convene tomorrow at 02:00, Neon Row at the The Scale Room. Bring your tactical assessments for Vennik's upcoming auction. Intelligence suggests multiple high-value items will be presented.\n\nJarvek has secured warehouse blueprints through our contact in Vennik's maintenance division. Entry points identified, but security measures recently enhanced. Our operative reports increased guard rotations and new electronic countermeasures.\n\nMira believes this auction represents our best opportunity to strike at both Vennik and Lysani simultaneously.\n\nCONTINGENCY PLANS: If primary infiltration fails, secondary disruption operations are authorized at Vennik's Vice Sector establishments. The scale will break.\n\nDESTROY AFTER READING.",
+    "security_level": "high",
+    "requires_roll": true,
+    "roll_check": {
+      "difficulty": 10,
+      "skill": "Electronics (Computers)",
+      "on_success": "Decryption successful. FUW plans revealed.",
+      "on_failure": "Decryption failed. Terminal security protocol activated."
+    }
+  }
+]
