@@ -323,27 +323,59 @@ export default function TerminalInterface() {
   }, [displayedText, terminalData, logTypingComplete, currentView, commandOutput]);
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-mono mb-2">
-            ██╗   ██╗ █████╗ ███╗   ██╗ █████╗  ██████╗  █████╗ ███╗   ██╗██████╗ ██████╗ 
-          </h1>
-          <h1 className="text-2xl font-mono mb-4">
-            ██║   ██║██╔══██╗████╗  ██║██╔══██╗██╔════╝ ██╔══██╗████╗  ██║██╔══██╗██╔══██╗
-          </h1>
-          <h1 className="text-2xl font-mono mb-4">
-            ██║   ██║███████║██╔██╗ ██║███████║██║  ███╗███████║██╔██╗ ██║██║  ██║██████╔╝
-          </h1>
-          <h1 className="text-2xl font-mono mb-4">
-            ╚██╗ ██╔╝██╔══██║██║╚██╗██║██╔══██║██║   ██║██╔══██║██║╚██╗██║██║  ██║██╔══██╗
-          </h1>
-          <h1 className="text-2xl font-mono mb-4">
-             ╚████╔╝ ██║  ██║██║ ╚████║██║  ██║╚██████╔╝██║  ██║██║ ╚████║██████╔╝██║  ██║
-          </h1>
-          <h1 className="text-2xl font-mono mb-4">
-              ╚═══╝  ╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═══╝╚═════╝ ╚═╝  ╚═╝
-          </h1>
+    <div className="p-4 space-y-4">
+      <div className="flex justify-between items-start">
+        <div className="space-y-1">
+          <div className="text-primary font-mono text-xs">
+            &gt;&gt; INITIALIZING TRAVELLER TERMINAL MAINFRAME SUBSYSTEMS...
+          </div>
+          <div className="text-primary font-mono text-xs">
+            &gt;&gt; ESTABLISHING SECURE UPLINK TO ARCHIVAL NETWORKS...
+          </div>
+          <div className="text-primary font-mono text-xs">
+            &gt;&gt; CALIBRATING REALITY ANCHORS AND SCIENTIFIC FILTERS...
+          </div>
+          <div className="text-primary font-mono text-xs">
+            &gt;&gt; AUTHENTICATING ACCESS PROTOCOLS...
+          </div>
+          <div className="text-primary font-mono text-xs">
+            &gt;&gt; THE TRAVELLER TERMINAL ACCESS CODE TO PROCEED.
+          </div>
+          <div className="text-primary font-mono text-xs mt-2">
+            ENTER TERMINAL ACCESS CODE TO PROCEED.
+          </div>
+        </div>
+        <div className="text-primary font-mono text-xs">
+          AWAITING TERMINAL ACCESS CODE
+        </div>
+      </div>
+
+      <div className="border-l-2 border-primary/30 pl-4">
+        <div className="text-primary/70 font-mono text-xs mb-2">AVAILABLE TERMINALS:</div>
+        <div className="grid grid-cols-4 gap-4 text-primary font-mono text-xs">
+          <div>
+            <div>lysani01</div>
+            <div>s.elara01</div>
+            <div>waferterm01</div>
+            <div>blackcircuit01</div>
+            <div>vennik01</div>
+            <div>blacktalon</div>
+            <div>fuwnet</div>
+          </div>
+          <div>
+            <div>labpc81</div>
+            <div>fuw01</div>
+            <div>caldonis_public</div>
+            <div>vennik-personal</div>
+            <div>01-1485-10-4-89-40</div>
+          </div>
+          <div>
+            <div>slocombe875</div>
+            <div>vanagandr001</div>
+            <div>azura01</div>
+            <div>blacksite-es1</div>
+            <div>sayelle-logs</div>
+          </div>
         </div>
       </div>
 
@@ -352,10 +384,10 @@ export default function TerminalInterface() {
         terminalType={activeTerminal ? 'corrupted' : 'normal'} 
       />
 
-      <Card className="bg-card/60 border-primary/30">
-        <CardContent className="p-6">
+      <Card className="bg-background border-primary/30">
+        <CardContent className="p-4">
           <div 
-            className={`${activeTerminal ? getTerminalEffectClasses(activeTerminal.logs) : "terminal terminal-flicker"} h-[400px] overflow-auto relative`}
+            className={`${activeTerminal ? getTerminalEffectClasses(activeTerminal.logs) : "terminal terminal-flicker"} h-[300px] overflow-auto relative`}
             ref={terminalRef}
           >
             {/* Severe malfunction overlay */}
@@ -471,9 +503,9 @@ export default function TerminalInterface() {
                   }
                 }}
               />
-              <Button variant="outline" onClick={() => handleAccessCode()}>
-                Enter
-              </Button>
+               <Button variant="terminal" size="sm" onClick={() => handleAccessCode()}>
+                 CONNECT
+               </Button>
             </div>
           )}
         </CardContent>

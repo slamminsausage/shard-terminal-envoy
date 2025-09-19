@@ -138,7 +138,7 @@ const VehicleSheet = () => {
   };
 
   return (
-    <div className="space-y-8 text-sm">
+    <div className="space-y-8 text-sm max-h-[80vh] overflow-y-auto">
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <TextField label="Ship's Name" value={shipInfo.name} onChange={value => updateShipInfo("name", value)} />
         <TextField label="Class" value={shipInfo.className} onChange={value => updateShipInfo("className", value)} />

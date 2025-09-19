@@ -19,34 +19,32 @@ export default function MainframeShell() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="border-b border-primary/20 bg-card/40">
-        <div className="flex items-center justify-between p-4">
-          <div className="flex items-center gap-2">
-            <Terminal className="w-6 h-6 text-primary" />
-            <h1 className="text-xl font-mono">TRAVELLER TERMINAL v5</h1>
-          </div>
-          <div className="text-sm font-mono opacity-70">
-            VÁNAGANDR MAINFRAME
+      <header className="border-b border-primary/30 bg-background p-2">
+        <div className="flex items-start justify-between">
+          <div className="flex flex-col">
+            <h1 className="text-primary font-mono text-sm mb-1">TRAVELLER TERMINAL SYSTEM</h1>
+            <div className="text-primary/60 font-mono text-xs">
+              2025-09-19 08:01:14
+            </div>
           </div>
         </div>
       </header>
 
       {/* Navigation */}
-      <nav className="border-b border-primary/20 bg-card/20">
+      <nav className="border-b border-primary/30 bg-background">
         <div className="flex">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             return (
               <Button
                 key={tab.id}
-                variant="ghost"
+                variant="terminal"
                 onClick={() => setActiveTab(tab.id)}
                 className={cn(
-                  "rounded-none border-b-2 border-transparent px-6 py-3 font-mono text-sm",
-                  activeTab === tab.id && "border-primary bg-card/60 text-primary"
+                  "rounded-none border-r border-primary/30 px-4 py-2 font-mono text-xs h-8",
+                  activeTab === tab.id && "bg-primary text-background"
                 )}
               >
-                <Icon className="w-4 h-4 mr-2" />
                 {tab.label}
               </Button>
             );

@@ -424,7 +424,7 @@ const CharacterSheet = () => {
   };
 
   return (
-    <div className="space-y-10 text-sm">
+    <div className="space-y-10 text-sm max-h-[80vh] overflow-y-auto">
       <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <TextField label="Name" value={header.name} onChange={value => handleHeaderChange("name", value)} />
         <TextField label="Rads" value={header.rads} onChange={value => handleHeaderChange("rads", value)} />
