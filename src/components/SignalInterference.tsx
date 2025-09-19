@@ -36,7 +36,7 @@ const SignalInterference = ({
       setStaticOpacity(Math.random() * 0.3 + 0.1);
 
       if (soundEnabled) {
-        audioManager.playEffect('glitch', 0.3);
+        audioManager.playEffect();
       }
 
       const effects: Array<() => void> = [
@@ -79,24 +79,23 @@ const SignalInterference = ({
 
   useEffect(() => {
     if (!soundEnabled) {
-      audioManager.stopAmbient();
       return;
     }
 
     if (level > 0.7) {
-      audioManager.playAmbient('interference', 0.4);
+      audioManager.playEffect();
     } else if (level > 0.5) {
-      audioManager.playAmbient('corrupted', 0.3);
+      audioManager.playEffect();
     } else if (level > 0.3) {
-      audioManager.playAmbient('damaged', 0.25);
+      audioManager.playEffect();
     } else if (terminalType === 'secure') {
-      audioManager.playAmbient('secure', 0.2);
+      audioManager.playEffect();
     } else {
-      audioManager.playAmbient('normal', 0.15);
+      audioManager.playEffect();
     }
 
     return () => {
-      audioManager.stopAmbient();
+      // No ambient stop needed since we're using effects
     };
   }, [level, terminalType, soundEnabled]);
 
