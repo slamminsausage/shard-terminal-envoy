@@ -8,14 +8,14 @@
 
 @layer base {
   :root {
-    /* Terminal Colors - Green Phosphor CRT */
+    /* Terminal Colors - Amber/Yellow CRT */
     --terminal-black: 0 0% 0%;
-    --terminal-dark: 120 10% 5%;
+    --terminal-dark: 45 20% 8%;
+    --terminal-amber: 45 100% 70%;
+    --terminal-amber-bright: 45 100% 80%;
+    --terminal-amber-dim: 45 80% 50%;
+    --terminal-amber-glow: 45 100% 60%;
     --terminal-green: 120 100% 60%;
-    --terminal-green-bright: 120 100% 70%;
-    --terminal-green-dim: 120 80% 40%;
-    --terminal-green-glow: 120 100% 50%;
-    --terminal-amber: 45 100% 60%;
     --terminal-red: 0 100% 60%;
     
     /* CRT Effects */
@@ -26,24 +26,24 @@
     
     /* Semantic Design Tokens */
     --background: var(--terminal-black);
-    --foreground: var(--terminal-green);
+    --foreground: var(--terminal-amber);
     --card: var(--terminal-dark);
-    --card-foreground: var(--terminal-green);
+    --card-foreground: var(--terminal-amber);
     --popover: var(--terminal-dark);
-    --popover-foreground: var(--terminal-green);
-    --primary: var(--terminal-green);
+    --popover-foreground: var(--terminal-amber);
+    --primary: var(--terminal-amber);
     --primary-foreground: var(--terminal-black);
     --secondary: var(--terminal-dark);
-    --secondary-foreground: var(--terminal-green-dim);
+    --secondary-foreground: var(--terminal-amber-dim);
     --muted: var(--terminal-dark);
-    --muted-foreground: var(--terminal-green-dim);
-    --accent: var(--terminal-amber);
+    --muted-foreground: var(--terminal-amber-dim);
+    --accent: var(--terminal-amber-bright);
     --accent-foreground: var(--terminal-black);
     --destructive: var(--terminal-red);
-    --destructive-foreground: var(--terminal-green);
-    --border: var(--terminal-green-dim);
+    --destructive-foreground: var(--terminal-amber);
+    --border: var(--terminal-amber-dim);
     --input: var(--terminal-dark);
-    --ring: var(--terminal-green-glow);
+    --ring: var(--terminal-amber-glow);
     --radius: 0rem;
 
     --sidebar-background: 0 0% 98%;

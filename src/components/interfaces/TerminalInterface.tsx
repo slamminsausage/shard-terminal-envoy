@@ -68,7 +68,7 @@ export default function TerminalInterface() {
   // Core state
   const [initText, setInitText] = useState("");
   const [initComplete, setInitComplete] = useState(false);
-  const [currentView, setCurrentView] = useState("init");
+  const [currentView, setCurrentView] = useState("loading");
   const [inputCode, setInputCode] = useState("");
   const [terminalData, setTerminalData] = useState("");
   
@@ -112,29 +112,27 @@ export default function TerminalInterface() {
     hasInitialized.current = true;
     
     const loadingMessages = [
-      "Initializing system...",
-      "Connecting to network...",
-      "Loading secure protocols...",
-      "The Traveller Terminal is now online."
+      ">> INITIALIZING TRAVELLER TERMINAL MAINFRAME SUBSYSTEMS...",
+      ">> ESTABLISHING SECURE UPLINK TO ARCHIVAL NETWORKS...",
+      ">> CALIBRATING REALITY ANCHORS AND SCIENTIFIC FILTERS...",
+      ">> AUTHENTICATING ACCESS PROTOCOLS...",
+      ">> THE TRAVELLER TERMINAL IS NOW ONLINE."
     ];
     
     let i = 0;
     const displayNextMessage = () => {
       if (i < loadingMessages.length) {
         const cancelTyping = typeTextWithSound(loadingMessages[i] + "\n", setInitText, () => {
-          setInitText(prev => prev + "\n");
           i++;
-          displayNextMessage();
-        }, { delay: 50 });
-        typingRef.current = cancelTyping as any;
-      } else {
-        const welcomeMessage =
-          "\nWelcome to The Traveller Terminal.\n" +
-          "Type the name of a terminal to access its contents.\n" +
-          "Press ESC at any time to go back.\n\n";
-        const cancelTyping = typeTextWithSound(welcomeMessage, setInitText, () => {
-          setInitComplete(true);
-        }, { delay: 50 });
+          if (i < loadingMessages.length) {
+            setTimeout(displayNextMessage, 800);
+          } else {
+            setTimeout(() => {
+              setCurrentView("init");
+              setInitComplete(true);
+            }, 1000);
+          }
+        }, { delay: 30 });
         typingRef.current = cancelTyping as any;
       }
     };
@@ -323,87 +321,102 @@ export default function TerminalInterface() {
   }, [displayedText, terminalData, logTypingComplete, currentView, commandOutput]);
 
   return (
-    <div className="p-4 space-y-4">
-      <div className="flex justify-between items-start">
-        <div className="space-y-1">
-          <div className="text-primary font-mono text-xs">
-            &gt;&gt; INITIALIZING TRAVELLER TERMINAL MAINFRAME SUBSYSTEMS...
-          </div>
-          <div className="text-primary font-mono text-xs">
-            &gt;&gt; ESTABLISHING SECURE UPLINK TO ARCHIVAL NETWORKS...
-          </div>
-          <div className="text-primary font-mono text-xs">
-            &gt;&gt; CALIBRATING REALITY ANCHORS AND SCIENTIFIC FILTERS...
-          </div>
-          <div className="text-primary font-mono text-xs">
-            &gt;&gt; AUTHENTICATING ACCESS PROTOCOLS...
-          </div>
-          <div className="text-primary font-mono text-xs">
-            &gt;&gt; THE TRAVELLER TERMINAL ACCESS CODE TO PROCEED.
-          </div>
-          <div className="text-primary font-mono text-xs mt-2">
-            ENTER TERMINAL ACCESS CODE TO PROCEED.
-          </div>
-        </div>
-        <div className="text-primary font-mono text-xs">
-          AWAITING TERMINAL ACCESS CODE
-        </div>
-      </div>
-
-      <div className="border-l-2 border-primary/30 pl-4">
-        <div className="text-primary/70 font-mono text-xs mb-2">AVAILABLE TERMINALS:</div>
-        <div className="grid grid-cols-4 gap-4 text-primary font-mono text-xs">
-          <div>
-            <div>lysani01</div>
-            <div>s.elara01</div>
-            <div>waferterm01</div>
-            <div>blackcircuit01</div>
-            <div>vennik01</div>
-            <div>blacktalon</div>
-            <div>fuwnet</div>
-          </div>
-          <div>
-            <div>labpc81</div>
-            <div>fuw01</div>
-            <div>caldonis_public</div>
-            <div>vennik-personal</div>
-            <div>01-1485-10-4-89-40</div>
-          </div>
-          <div>
-            <div>slocombe875</div>
-            <div>vanagandr001</div>
-            <div>azura01</div>
-            <div>blacksite-es1</div>
-            <div>sayelle-logs</div>
-          </div>
-        </div>
-      </div>
-
+    <div className="min-h-screen bg-background crt-container p-4">
       <SignalInterference 
         level={signalInterferenceLevel} 
         terminalType={activeTerminal ? 'corrupted' : 'normal'} 
       />
 
-      <Card className="bg-background border-primary/30">
-        <CardContent className="p-4">
-          <div 
-            className={`${activeTerminal ? getTerminalEffectClasses(activeTerminal.logs) : "terminal terminal-flicker"} h-[300px] overflow-auto relative`}
-            ref={terminalRef}
-          >
-            {/* Severe malfunction overlay */}
-            {severeMalfunction && (
-              <div className="absolute inset-0 bg-black bg-opacity-70 flex items-center justify-center z-20">
-                <div className="text-red-500 font-mono text-lg border border-red-500 p-4">
-                  {glitchText}
+      {currentView === "loading" && (
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="terminal-text terminal-glow text-accent font-mono text-sm whitespace-pre-wrap text-center">
+            {initText}
+          </div>
+        </div>
+      )}
+
+      {currentView === "init" && (
+        <div className="max-w-4xl mx-auto space-y-6">
+          {/* Main Terminal Input */}
+          <Card className="bg-card border-primary/30 terminal-window">
+            <CardContent className="p-6">
+              <div className="text-center mb-6">
+                <div className="text-accent font-mono text-lg mb-2 terminal-glow">
+                  &gt;_ TRAVELLER TERMINAL
+                </div>
+                <div className="text-primary font-mono text-sm">
+                  ENTER ACCESS CODE
                 </div>
               </div>
-            )}
-
-            {currentView === "init" && (
-              <div className="font-mono text-sm whitespace-pre-wrap mb-4">
-                {initText}
+              
+              <div className="flex gap-2 mb-4">
+                <Input
+                  className="bg-background border-primary/50 text-primary font-mono flex-grow"
+                  placeholder="Terminal Access Code..."
+                  value={inputCode}
+                  onChange={(e) => setInputCode(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      handleAccessCode();
+                    }
+                  }}
+                />
+                <Button variant="terminal" onClick={() => handleAccessCode()}>
+                  CONNECT
+                </Button>
               </div>
-            )}
+            </CardContent>
+          </Card>
+
+          {/* Available Terminals */}
+          <Card className="bg-card border-primary/30 terminal-window">
+            <CardContent className="p-6">
+              <div className="text-primary/80 font-mono text-sm mb-4">AVAILABLE TERMINALS:</div>
+              <div className="grid grid-cols-3 gap-4 text-primary font-mono text-xs">
+                <div className="space-y-1">
+                  <div className="cursor-pointer hover:text-accent" onClick={() => setInputCode("lysani01")}>lysani01</div>
+                  <div className="cursor-pointer hover:text-accent" onClick={() => setInputCode("s.elara01")}>s.elara01</div>
+                  <div className="cursor-pointer hover:text-accent" onClick={() => setInputCode("waferterm01")}>waferterm01</div>
+                  <div className="cursor-pointer hover:text-accent" onClick={() => setInputCode("blackcircuit01")}>blackcircuit01</div>
+                  <div className="cursor-pointer hover:text-accent" onClick={() => setInputCode("vennik01")}>vennik01</div>
+                  <div className="cursor-pointer hover:text-accent" onClick={() => setInputCode("blacktalon")}>blacktalon</div>
+                </div>
+                <div className="space-y-1">
+                  <div className="cursor-pointer hover:text-accent" onClick={() => setInputCode("labpc81")}>labpc81</div>
+                  <div className="cursor-pointer hover:text-accent" onClick={() => setInputCode("fuw01")}>fuw01</div>
+                  <div className="cursor-pointer hover:text-accent" onClick={() => setInputCode("caldonis_public")}>caldonis_public</div>
+                  <div className="cursor-pointer hover:text-accent" onClick={() => setInputCode("vennik-personal")}>vennik-personal</div>
+                  <div className="cursor-pointer hover:text-accent" onClick={() => setInputCode("fuwnet")}>fuwnet</div>
+                </div>
+                <div className="space-y-1">
+                  <div className="cursor-pointer hover:text-accent" onClick={() => setInputCode("slocombe875")}>slocombe875</div>
+                  <div className="cursor-pointer hover:text-accent" onClick={() => setInputCode("vanagandr001")}>vanagandr001</div>
+                  <div className="cursor-pointer hover:text-accent" onClick={() => setInputCode("azura01")}>azura01</div>
+                  <div className="cursor-pointer hover:text-accent" onClick={() => setInputCode("blacksite-es1")}>blacksite-es1</div>
+                  <div className="cursor-pointer hover:text-accent" onClick={() => setInputCode("sayelle-logs")}>sayelle-logs</div>
+                  <div className="cursor-pointer hover:text-accent" onClick={() => setInputCode("01-1485-10-4-89-40")}>01-1485-10-4-89-40</div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {(currentView === "terminal" || currentView === "log") && (
+        <Card className="bg-card border-primary/30 terminal-window max-w-4xl mx-auto">
+          <CardContent className="p-6">
+            <div 
+              className={`${activeTerminal ? getTerminalEffectClasses(activeTerminal.logs) : "terminal terminal-flicker"} h-[400px] overflow-auto relative`}
+              ref={terminalRef}
+            >
+              {/* Severe malfunction overlay */}
+              {severeMalfunction && (
+                <div className="absolute inset-0 bg-black bg-opacity-70 flex items-center justify-center z-20">
+                  <div className="text-destructive font-mono text-lg border border-destructive p-4">
+                    {glitchText}
+                  </div>
+                </div>
+              )}
 
             {/* Terminal password prompt */}
             {terminalPasswordRequired ? (
@@ -487,29 +500,10 @@ export default function TerminalInterface() {
                 {terminalData || "ENTER ACCESS CODE TO PROCEED"}
               </p>
             )}
-          </div>
-
-          {/* Input section */}
-          {currentView === "init" && (
-            <div className="mt-4 flex gap-2">
-              <Input
-                className="bg-background/20 border-primary/30 font-mono flex-grow"
-                placeholder="Enter Access Code..."
-                value={inputCode}
-                onChange={(e) => setInputCode(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    handleAccessCode();
-                  }
-                }}
-              />
-               <Button variant="terminal" size="sm" onClick={() => handleAccessCode()}>
-                 CONNECT
-               </Button>
             </div>
-          )}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
