@@ -629,13 +629,11 @@ export default function TerminalInterface() {
       )}
 
       {(currentView === "terminal" || currentView === "log") && (
-        <div className="h-full flex items-center justify-center px-4">
-          <Card className="bg-card/80 border-primary/30 terminal-window w-full max-w-6xl h-[80vh]">
-            <CardContent className="p-6 h-full">
-              <div 
-                className={`${activeTerminal ? getTerminalEffectClasses(activeTerminal.logs) : "terminal terminal-flicker"} h-full overflow-auto relative`}
-                ref={terminalRef}
-              >
+        <div className="h-full p-8">
+          <div 
+            className={`${activeTerminal ? getTerminalEffectClasses(activeTerminal.logs) : "terminal terminal-flicker"} h-full overflow-auto relative bg-background/20 border border-primary/30 p-6`}
+            ref={terminalRef}
+          >
               {/* Severe malfunction overlay */}
               {severeMalfunction && (
                 <div className="absolute inset-0 bg-black bg-opacity-70 flex items-center justify-center z-20">
@@ -768,9 +766,7 @@ export default function TerminalInterface() {
                 {terminalData || "ENTER ACCESS CODE TO PROCEED"}
               </p>
              )}
-            </div>
-          </CardContent>
-        </Card>
+          </div>
         </div>
       )}
 
