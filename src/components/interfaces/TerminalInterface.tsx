@@ -9,6 +9,7 @@ import audioManager from '@/lib/audioManager';
 import { typeTextWithSound } from '@/lib/typing';
 import { applyGlitch } from '@/lib/glitchText';
 import { TERMINALS, getTerminalDefinition, type TerminalDefinition } from '@/lib/terminals';
+import DeepCoreTerminal from '@/components/DeepCoreTerminal';
 
 // Terminal visual effects
 const getTerminalEffectClasses = (terminalId: string) => {
@@ -66,6 +67,7 @@ export default function TerminalInterface() {
   // Visual effects state
   const [severeMalfunction, setSevereMalfunction] = useState(false);
   const [glitchText, setGlitchText] = useState("");
+  const [showDeepCoreTerminal, setShowDeepCoreTerminal] = useState(false);
   
   // Command mode state
   const [commandMode, setCommandMode] = useState(false);
@@ -199,6 +201,12 @@ export default function TerminalInterface() {
     
     const terminal = getTerminalDefinition(normalizedCode);
     if (terminal) {
+      // Handle special Deep Core terminal
+      if (terminal.requiresSpecialHandler && terminal.code === '01-1485-10-4-89-40') {
+        setShowDeepCoreTerminal(true);
+        return;
+      }
+      
       setActiveTerminal(terminal);
       setCurrentView("terminal");
       audioManager.playEffect('access_granted', 0.3);
@@ -456,6 +464,7 @@ export default function TerminalInterface() {
     setPasswordInput("");
     setPasswordAttempts(0);
     setSignalInterferenceLevel(0);
+    setShowDeepCoreTerminal(false);
   };
 
   // Auto-scroll terminal
@@ -464,6 +473,11 @@ export default function TerminalInterface() {
       terminalRef.current.scrollTop = terminalRef.current.scrollHeight;
     }
   }, [displayedText, terminalData, logTypingComplete, currentView, commandOutput]);
+
+  // Show Deep Core Terminal if requested
+  if (showDeepCoreTerminal) {
+    return <DeepCoreTerminal />;
+  }
 
   // Audio logs page
   if (showAudioLogsPage) {

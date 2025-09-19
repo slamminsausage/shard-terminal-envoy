@@ -5,6 +5,7 @@ export interface TerminalDefinition {
   requiresRoll?: number;
   requiresPassword?: boolean;
   password?: string;
+  requiresSpecialHandler?: boolean;
 }
 
 export const TERMINALS: TerminalDefinition[] = [
@@ -31,7 +32,7 @@ export const TERMINALS: TerminalDefinition[] = [
   { code: 'vennik-personal', name: 'R. Vennik Personal Node', logPath: '/logs/vennik-personal.json', requiresRoll: 10 },
   { code: 'sayelle-logs', name: 'Sayelle Archive', logPath: '/logs/sayelle-logs.json', requiresRoll: 8 },
   { code: 'fuwnet', name: 'FUW Network Uplink', logPath: '/logs/fuw-network.json', requiresRoll: 8 },
-  { code: '01-1485-10-4-89-40', name: 'Deep Core Security', logPath: '/logs/01-1485-10-4-89-40.json' }
+  { code: '01-1485-10-4-89-40', name: 'Deep Core Security', logPath: '/logs/01-1485-10-4-89-40.json', requiresSpecialHandler: true }
 ];
 
 export const TERMINAL_MAP = new Map(TERMINALS.map(terminal => [terminal.code.toLowerCase(), terminal]));
