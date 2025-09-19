@@ -544,15 +544,15 @@ export default function TerminalInterface() {
   }
 
   return (
-    <div className="min-h-screen bg-background crt-container p-4">
+    <div className="h-screen bg-background crt-container">
       <SignalInterference 
         level={signalInterferenceLevel} 
         terminalType={activeTerminal ? 'corrupted' : 'normal'} 
         soundEnabled={!audioManager.isMuted()}
       />
-
+      
       {currentView === "loading" && (
-        <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="flex items-center justify-center h-full px-4">
           <div className="terminal-text terminal-glow text-accent font-mono text-sm whitespace-pre-wrap text-center">
             {initText}
             <div className="text-xs text-primary/60 mt-4">Press ESC to skip</div>
@@ -629,12 +629,13 @@ export default function TerminalInterface() {
       )}
 
       {(currentView === "terminal" || currentView === "log") && (
-        <Card className="bg-card border-primary/30 terminal-window max-w-4xl mx-auto">
-          <CardContent className="p-6">
-            <div 
-              className={`${activeTerminal ? getTerminalEffectClasses(activeTerminal.logs) : "terminal terminal-flicker"} h-[400px] overflow-auto relative`}
-              ref={terminalRef}
-            >
+        <div className="h-full flex items-center justify-center px-4">
+          <Card className="bg-card/80 border-primary/30 terminal-window w-full max-w-6xl h-[80vh]">
+            <CardContent className="p-6 h-full">
+              <div 
+                className={`${activeTerminal ? getTerminalEffectClasses(activeTerminal.logs) : "terminal terminal-flicker"} h-full overflow-auto relative`}
+                ref={terminalRef}
+              >
               {/* Severe malfunction overlay */}
               {severeMalfunction && (
                 <div className="absolute inset-0 bg-black bg-opacity-70 flex items-center justify-center z-20">
@@ -747,15 +748,17 @@ export default function TerminalInterface() {
               </div>
             ) : logData ? (
               <div className="p-4">
-                {logData.map((log: any, index: number) => (
-                  <p
-                    key={index}
-                    onClick={() => handleLogClick(log)}
-                    className="cursor-pointer underline py-1 hover:text-primary/80"
-                  >
-                    {log.title}
-                  </p>
-                ))}
+                <div className="space-y-2">
+                  {logData.map((log: any, index: number) => (
+                    <div
+                      key={index}
+                      onClick={() => handleLogClick(log)}
+                      className="border border-primary/50 bg-primary/10 p-3 cursor-pointer hover:bg-primary/20 hover:border-accent transition-colors font-mono text-sm"
+                    >
+                      {log.title}
+                    </div>
+                  ))}
+                </div>
                 <Button variant="outline" size="sm" className="mt-4" onClick={handleBackToInit}>
                   Back
                 </Button>
@@ -764,10 +767,11 @@ export default function TerminalInterface() {
               <p className="p-4 text-sm">
                 {terminalData || "ENTER ACCESS CODE TO PROCEED"}
               </p>
-            )}
+             )}
             </div>
           </CardContent>
         </Card>
+        </div>
       )}
 
       {/* Sound Toggle Button - Bottom Right */}
