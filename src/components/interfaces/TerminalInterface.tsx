@@ -63,6 +63,7 @@ export default function TerminalInterface() {
   const navigate = useNavigate();
   const hasInitialized = useRef(false);
   const typingRef = useRef<number | null>(null);
+  const typingCancelRef = useRef<(() => void) | null>(null);
   const terminalRef = useRef<HTMLDivElement>(null);
   
   // Core state
@@ -136,35 +137,56 @@ export default function TerminalInterface() {
             }, 1000);
           }
         }, { delay: 30 });
-        typingRef.current = cancelTyping as any;
+        typingCancelRef.current = cancelTyping;
       }
     };
     displayNextMessage();
   }, []);
 
-  // ESC key handler
+  // ESC key handler with two-step process
   useEffect(() => {
     const handleEscKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        // Finish any current typing
-        if (typingRef.current) {
-          clearTimeout(typingRef.current);
-          typingRef.current = null;
-        }
-
         // Handle navigation based on current view
         if (currentView === "loading") {
           // Skip to init screen
           setCurrentView("init");
           setInitComplete(true);
           setInitText(">> THE TRAVELLER TERMINAL IS NOW ONLINE.\n");
+          // Clean up any typing
+          if (typingCancelRef.current) {
+            typingCancelRef.current();
+            typingCancelRef.current = null;
+          }
         } else if (currentView === "log" && selectedLogData) {
-          // Go back to terminal view
-          setLogTypingComplete(true);
-          handleBackToTerminal();
+          // Two-step process for log view
+          if (!logTypingComplete) {
+            // First ESC: Complete typing immediately
+            if (typingCancelRef.current) {
+              typingCancelRef.current();
+              typingCancelRef.current = null;
+            }
+            setLogTypingComplete(true);
+            
+            // Set the complete message immediately
+            let message = `Date: ${selectedLogData.date}\nAuthor: ${selectedLogData.author}\n\n${selectedLogData.content || "No data available."}`;
+            if (activeTerminal) {
+              const glitchResult = applyGlitch(message, activeTerminal.logs);
+              message = glitchResult.text;
+            }
+            setDisplayedText(message);
+          } else {
+            // Second ESC: Go back to terminal view
+            handleBackToTerminal();
+          }
         } else if (currentView === "terminal" && (logData || activeTerminal)) {
           // Go back to init screen
           handleBackToInit();
+          // Clean up any typing
+          if (typingCancelRef.current) {
+            typingCancelRef.current();
+            typingCancelRef.current = null;
+          }
         } else if (requiresPassword || terminalPasswordRequired || rollCheck || specialRollCheck) {
           // Clear any prompts and go back
           setRequiresPassword(false);
@@ -173,6 +195,11 @@ export default function TerminalInterface() {
           setSpecialRollCheck(null);
           setPasswordInput("");
           setTerminalPasswordInput("");
+          // Clean up typing
+          if (typingCancelRef.current) {
+            typingCancelRef.current();
+            typingCancelRef.current = null;
+          }
           handleBackToTerminal();
         }
       }
@@ -180,7 +207,7 @@ export default function TerminalInterface() {
 
     window.addEventListener("keydown", handleEscKey);
     return () => window.removeEventListener("keydown", handleEscKey);
-  }, [currentView, selectedLogData, logData, activeTerminal, requiresPassword, terminalPasswordRequired, rollCheck, specialRollCheck]);
+  }, [currentView, selectedLogData, logData, activeTerminal, requiresPassword, terminalPasswordRequired, rollCheck, specialRollCheck, logTypingComplete]);
 
   // Handle access code
   const handleAccessCode = (codeOverride: string | null = null) => {
@@ -190,7 +217,7 @@ export default function TerminalInterface() {
     if (!trimmedCode) {
       audioManager.playEffect('access_denied', 0.4);
       const cancelTyping = typeTextWithSound("ACCESS DENIED. INVALID CODE.", setTerminalData);
-      typingRef.current = cancelTyping as any;
+      typingCancelRef.current = cancelTyping;
       setInputCode("");
       return;
     }
@@ -213,7 +240,7 @@ export default function TerminalInterface() {
     } else {
       audioManager.playEffect('access_denied', 0.4);
       const cancelTyping = typeTextWithSound("ACCESS DENIED. INVALID CODE.", setTerminalData);
-      typingRef.current = cancelTyping as any;
+      typingCancelRef.current = cancelTyping;
     }
     
     setInputCode("");
@@ -243,11 +270,11 @@ export default function TerminalInterface() {
         const cancelTyping = typeTextWithSound(message, setDisplayedText, () => {
           setLogTypingComplete(true);
         }, { delay: 30 });
-        typingRef.current = cancelTyping as any;
+        typingCancelRef.current = cancelTyping;
       }
     } catch (error) {
       const cancelTyping = typeTextWithSound("ERROR LOADING LOGS.", setTerminalData);
-      typingRef.current = cancelTyping as any;
+      typingCancelRef.current = cancelTyping;
     }
   };
 
@@ -284,7 +311,7 @@ export default function TerminalInterface() {
         const cancelTyping = typeTextWithSound(message, setDisplayedText, () => {
           setLogTypingComplete(true);
         }, { delay: 30 });
-        typingRef.current = cancelTyping as any;
+        typingCancelRef.current = cancelTyping;
       }
     }
   };
@@ -308,16 +335,16 @@ export default function TerminalInterface() {
         if (activeTerminal && activeTerminal.requiresRoll) {
           setRollCheck({ difficulty: activeTerminal.requiresRoll });
           const cancelTyping = typeTextWithSound("Maximum password attempts reached. Attempting alternate access method...", setTerminalData);
-          typingRef.current = cancelTyping as any;
+          typingCancelRef.current = cancelTyping;
         } else {
           const cancelTyping = typeTextWithSound("ACCESS DENIED. MAXIMUM ATTEMPTS REACHED.", setTerminalData);
-          typingRef.current = cancelTyping as any;
+          typingCancelRef.current = cancelTyping;
           setTimeout(() => handleBackToInit(), 2000);
         }
       } else {
         audioManager.playEffect('access_denied', 0.4);
         const cancelTyping = typeTextWithSound(`ACCESS DENIED. INVALID PASSWORD. ${3 - attempts} attempts remaining.`, setTerminalData);
-        typingRef.current = cancelTyping as any;
+        typingCancelRef.current = cancelTyping;
       }
     }
   };
@@ -346,7 +373,7 @@ export default function TerminalInterface() {
         const cancelTyping = typeTextWithSound(message, setDisplayedText, () => {
           setLogTypingComplete(true);
         }, { delay: 30 });
-        typingRef.current = cancelTyping as any;
+        typingCancelRef.current = cancelTyping;
       }
       audioManager.playEffect('access_granted', 0.3);
     } else {
@@ -362,7 +389,7 @@ export default function TerminalInterface() {
       } else {
         audioManager.playEffect('access_denied', 0.4);
         const cancelTyping = typeTextWithSound("Incorrect password. Please try again.", setTerminalData);
-        typingRef.current = cancelTyping as any;
+        typingCancelRef.current = cancelTyping;
       }
     }
   };
@@ -375,12 +402,12 @@ export default function TerminalInterface() {
         fetchLogs(activeTerminal.logs);
       } else {
         const cancelTyping = typeTextWithSound("ERROR: Terminal not found.", setTerminalData);
-        typingRef.current = cancelTyping as any;
+        typingCancelRef.current = cancelTyping;
       }
     } else {
       audioManager.playEffect('access_denied', 0.4);
       const cancelTyping = typeTextWithSound("ACCESS DENIED. INSUFFICIENT CLEARANCE.", setTerminalData);
-      typingRef.current = cancelTyping as any;
+      typingCancelRef.current = cancelTyping;
     }
     setRollCheck(null);
   };
@@ -414,16 +441,16 @@ export default function TerminalInterface() {
         const cancelTyping = typeTextWithSound(message, setDisplayedText, () => {
           setLogTypingComplete(true);
         }, { delay: 30 });
-        typingRef.current = cancelTyping as any;
+        typingCancelRef.current = cancelTyping;
       }
     } else {
       audioManager.playEffect('access_denied', 0.4);
       if (selectedLogData && selectedLogData.roll_check && selectedLogData.roll_check.on_failure) {
         const cancelTyping = typeTextWithSound(selectedLogData.roll_check.on_failure, setTerminalData);
-        typingRef.current = cancelTyping as any;
+        typingCancelRef.current = cancelTyping;
       } else {
         const cancelTyping = typeTextWithSound("ACCESS DENIED. INSUFFICIENT CLEARANCE.", setTerminalData);
-        typingRef.current = cancelTyping as any;
+        typingCancelRef.current = cancelTyping;
       }
       setSelectedLogData(null);
     }
@@ -438,9 +465,9 @@ export default function TerminalInterface() {
     setDisplayedText("");
     setLogTypingComplete(false);
     setCurrentView("terminal");
-    if (typingRef.current) {
-      clearTimeout(typingRef.current);
-      typingRef.current = null;
+    if (typingCancelRef.current) {
+      typingCancelRef.current();
+      typingCancelRef.current = null;
     }
   };
 
