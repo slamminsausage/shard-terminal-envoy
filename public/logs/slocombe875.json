@@ -1,0 +1,77 @@
+[
+    {
+        "title": "Personal Log – The Side Deal",
+        "location": "Haris Slocombe’s Personal Terminal",
+        "date": "051-1105",
+        "author": "Haris Slocombe",
+        "content": "This should've been easy money. Dad always said do whatever it takes. Ezrahm and the others are too deep in Lysani’s pocket to see what’s coming. The Butler Chemical Company doesn’t just want a piece of the action, they want it all. I told them I could feed them reports, but now they’re pushing for physical samples. Not sure how I'll figure out how to sneak them samples but they're giving me a month otherwise no payment.",
+        "security_level": "medium",
+        "requires_roll": true,
+        "roll_check": {
+            "difficulty": 8,
+            "skill": "Electronics (Computers)",
+            "on_success": "Access granted. Logs decrypted.",
+            "on_failure": "Access Denied."
+        }
+    },
+    {
+        "title": "Personal Log – The Mercenary Connection",
+        "location": "Haris Slocombe’s Personal Terminal",
+        "date": "053-1105",
+        "author": "Haris Slocombe",
+        "content": "The Red Claws were here again. Torak Ifyhil'ik, second-in-command, made it clear their employer isn’t happy with how slow things are moving. Rax Vennik doesn’t like waiting. Overheard him say this is a mutual deal, we provide sophonts you get my employers what they need. Ezrahm might think she’s in control, but she’s just a pawn in a much bigger game. Might be time to jump ship. Hope BCs got my back.",
+        "security_level": "medium",
+        "requires_roll": true,
+        "roll_check": {
+            "difficulty": 8,
+            "skill": "Electronics (Computers)",
+            "on_success": "Access granted. Logs decrypted.",
+            "on_failure": "Access Denied."
+        }
+    },
+    {
+        "title": "Personal Log – Vanagandr Crew",
+        "location": "Haris Slocombe’s Personal Terminal",
+        "date": "072-1105",
+        "author": "Haris Slocombe",
+        "content": "There’s something off about these prisoners… subjects… whatever you want to call them. The two who were kept under sedation—R. Voren and S. Elara—are different. Elara keeps muttering things in her sleep, talking like she’s carrying on full conversations. Voren? He just watches. The others, they react to the drugs as expected, but these two? It's like they're already broken in ways I don’t understand. Heard someone say something about 'ES1' and that they took the 'other one' to a Lysani Blacksite.",
+        "security_level": "medium",
+        "requires_roll": true,
+        "roll_check": {
+            "difficulty": 8,
+            "skill": "Electronics (Computers)",
+            "on_success": "Access granted. Logs decrypted.",
+            "on_failure": "Access Denied."
+        }
+    },
+    {
+        "title": "Unsent Message – Emergency Request",
+        "location": "Haris Slocombe’s Personal Terminal",
+        "date": "081-1105",
+        "author": "Haris Slocombe",
+        "content": "Butler, I need an extraction. NOW. My distraction did something... the test subjects are going feral, and I don’t trust the others to get us out of this alive. I'm starting to feel a little funny myself... I’ll bring the data and the samples. Just get me off this damn ship.",
+        "security_level": "medium",
+        "requires_roll": true,
+        "roll_check": {
+            "difficulty": 8,
+            "skill": "Electronics (Computers)",
+            "on_success": "Access granted. Logs decrypted.",
+            "on_failure": "Access Denied."
+        }
+    },
+    {
+        "title": "Personal Log – The Explosion Plan",
+        "location": "Haris Slocombe’s Personal Terminal",
+        "date": "075-1105",
+        "author": "Haris Slocombe",
+        "content": "This has to work. If I time it right, the explosion should knock out power to the auxiliary lab long enough for me to slip in the main and pull the full chemical formulas for the combat drugs. It won’t take much—just a minor overload in the containment regulators, and no one will be the wiser. I’ll be gone before they even realize what’s missing.\n\nAnd if the lab rats go nuts in the process? Not my problem.",
+        "security_level": "medium",
+        "requires_roll": true,
+        "roll_check": {
+            "difficulty": 8,
+            "skill": "Electronics (Computers)",
+            "on_success": "Access granted. Logs decrypted.",
+            "on_failure": "Access Denied."
+        }
+    }
+]

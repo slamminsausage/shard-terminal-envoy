@@ -1,0 +1,10 @@
+{
+    "title": "Audio Playback - Seren's Final Message",
+    "location": "Seren's Audio File Terminal",
+    "date": "083-1105",
+    "author": "Seren 'Silver' Elara",
+    "content": "An audio file begins playing. The voice is soft but strained, filled with an eerie clarity.",
+    "audio_file": "/audio/serens_last_message.mp3",
+    "security_level": "unlocked",
+    "requires_roll": false
+}

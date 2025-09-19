@@ -1,0 +1,118 @@
+[
+  {
+    "title": "System Diagnostics - Routine Report",
+    "location": "Diagnostics Terminal",
+    "date": "1105-03-27",
+    "author": "Automated Ship System",
+    "content": "All major ship functions operating within normal parameters. Minor inconsistencies in reactor efficiency detected.",
+    "security_level": "low",
+    "requires_roll": false
+  },
+  {
+    "title": "Jump Drive Anomaly Report",
+    "location": "Diagnostics Terminal",
+    "date": "1105-04-05",
+    "author": "Automated Ship System",
+    "content": "Jump Drive Status: ERROR. Anomalous readings detected prior to last transition. Navigation logs corrupted.",
+    "security_level": "medium",
+    "requires_roll": true,
+    "roll_check": {
+      "difficulty": 8,
+      "skill": "Electronics (Computers)",
+      "on_success": "Access granted. Data partially recovered.",
+      "on_failure": "No further information available."
+    }
+  },
+  {
+    "title": "Power Allocation Report",
+    "location": "Engineering Terminal",
+    "date": "1105-04-02",
+    "author": "Chief Engineer Log",
+    "content": "Power fluctuations detected post-jump. Brief spike in energy output correlating with an unknown system process.",
+    "security_level": "low",
+    "requires_roll": false
+  },
+  {
+    "title": "Unauthorized Access Attempt",
+    "location": "Security Terminal",
+    "date": "1105-04-07",
+    "author": "Ship Security Logs",
+    "content": "Unauthorized login attempt detected at 03:42. Origin: Crew Quarters Terminal. Entry denied.",
+    "security_level": "medium",
+    "requires_roll": false
+  },
+  {
+    "title": "Crew Status Report",
+    "location": "Crew Directory Terminal",
+    "date": "1105-04-06",
+    "author": "Crew Roster",
+    "content": "Error: Crew Roster Corruption Detected on Vanagandr. Vital personnel data is irretrievably scrambled—manifest records unreadable. Initiating immediate decryption and data integrity protocols... Decryption failed... Records not detected.",
+    "security_level": "medium",
+    "requires_roll": false
+  },
+  {
+    "title": "Unsent Transmission - Emergency Distress",
+    "location": "Transmission Logs Terminal",
+    "date": "1105-04-08",
+    "author": "Capt. Elias Trevar",
+    "content": "Transmission draft detected but never sent. Subject: Urgent Request for Assistance. Message: For anyone out there, we are in dire straits.",
+    "security_level": "high",
+    "requires_roll": true,
+    "roll_check": {
+      "difficulty": 10,
+      "skill": "Electronics (Comms)",
+      "on_success": "Transmission decrypted. Message contents revealed.",
+      "on_failure": "Transmission remains inaccessible."
+    }
+  },
+  {
+    "title": "Encrypted Audio Logs",
+    "location": "ENCRYPTED FOLDER - Restricted Access",
+    "date": "1105-04-09",
+    "author": "Capt. Elias Trevar",
+    "content": "Access to encrypted audio logs requires password verification.",
+    "security_level": "high",
+    "requires_password": true,
+    "password": "bestkeptsecrets",
+    "attemptsAllowed": 3,
+    "requires_roll": true,
+    "roll_check": {
+      "difficulty": 10,
+      "skill": "Electronics (Computers)",
+      "on_success": "Decryption successful. Playback begins.",
+      "on_failure": "Decryption failed. Access denied."
+    },
+    "logs": [
+      {
+        "title": "Audio Playback - The Beginning of the End",
+        "content": "An audio log begins playing. Trevar's voice is steady, though tension is evident.",
+        "audio_file": "/audio/WolfAudioFile1.mp3"
+      },
+      {
+        "title": "Audio Playback - Desperate Measures",
+        "content": "Trevar sounds increasingly desperate. His tone hints at dwindling hope.",
+        "audio_file": "/audio/WolfAudioFile2.mp3"
+      },
+      {
+        "title": "Audio Playback - Caught in the Web",
+        "content": "A hint of paranoia emerges in Trevar's voice, mixed with frustration.",
+        "audio_file": "/audio/WolfAudioFile3.mp3"
+      },
+      {
+        "title": "Audio Playback - The Eclipse Shard",
+        "content": "Trevar speaks quietly, as if confiding in himself, his words heavy with regret.",
+        "audio_file": "/audio/WolfAudioFile4.mp3"
+      },
+      {
+        "title": "Audio Playback - The Betrayal",
+        "content": "Anger and regret intertwine as Trevar recounts a betrayal that changed everything.",
+        "audio_file": "/audio/WolfAudioFile5.mp3"
+      },
+      {
+        "title": "Audio Playback - Final Plea",
+        "content": "A haunting final message, delivered in a near-whisper, pleading for help.",
+        "audio_file": "/audio/WolfAudioFile6.mp3"
+      }
+    ]
+  }
+]

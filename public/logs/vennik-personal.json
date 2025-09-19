@@ -1,0 +1,53 @@
+[
+  {
+    "title": "Vennik Syndicate - Operative Dossier",
+    "location": "Vennik's Personal Terminal",
+    "date": "081-1105",
+    "author": "Rax Vennik",
+    "content": "Operative: Sayelle\nStatus: Active\n\nNotes: Recovery from Neon incident exceeded expectations. Cybernetic enhancements functioning at optimal levels after repairs. Psychological evaluation shows intensified fixation on Vanagandr crew - this obsession makes her both valuable and unpredictable.\n\nI've authorized full resources for her hunt. She's already left surveillance packages throughout Eternium. Her methods are... theatrical, but effective at destabilizing targets. Perfect for our needs with the auction approaching.\n\nRecommendation: Continue allowing operational freedom. Her vendetta aligns with our objectives. When the Vanagandr crew inevitably arrives, they'll be too psychologically compromised to present a serious threat.",
+    "security_level": "high",
+    "requires_roll": false
+  },
+  {
+    "title": "Black Talon Arrangements",
+    "location": "Vennik's Personal Terminal",
+    "date": "082-1105",
+    "author": "Rax Vennik",
+    "content": "The Black Talon representatives arrive tomorrow. They believe I'm unaware of their true interest in the Vanagandr. Fools. Their agent has already been identified - a woman operating under the name Kira Nex.\n\nI'll allow their games for now. The auction serves multiple purposes: 1) Financial gain from the highest bidder, 2) Drawing out remaining Vanagandr crew members, 3) Identifying which factions possess knowledge of the Eclipse Shard.\n\nLysani Labs has confirmed their attendance. Their desperation to acquire the ship is palpable. They don't realize I've already thoroughly examined it. The encrypted logs remain inaccessible, but the hardware tells its own story.\n\nThe ship was designed to transport something extraordinary. The modifications to the cargo hold - the specialized containment systems... This was no ordinary courier. Whatever Trevar was carrying changed him and his crew fundamentally.\n\nThe Talon wants it. Lysani created it. And I intend to control it.",
+    "security_level": "high",
+    "requires_roll": false
+  },
+  {
+    "title": "Auction Security Protocols",
+    "location": "Vennik's Personal Terminal",
+    "date": "084-1105",
+    "author": "Security Chief Damov",
+    "content": "Sir,\n\nAll security preparations for the auction are complete. Personnel assignments:\n- Exterior perimeter: 12 guards, rotating shifts\n- Interior security: 24 operatives in civilian attire\n- Sniper positions: 4 marksmen on adjacent rooftops\n- Command center: 6 technical specialists\n\nAll automated systems have been tested and calibrated. The neural lab has been secured and evidence of operations minimized as requested.\n\nSpecial security protocols for the Vanagandr:\n1. Ship's systems remain powered down with manual override locks\n2. Docking cradle set with electrical deterrent system\n3. Hidden explosives placed at strategic points (can be activated from your command console)\n4. Continuous surveillance of all access points\n\nSayelle will operate independently during the event as requested. She has been instructed to remain hidden unless the Vanagandr crew appears.\n\nAwait your final approval.\n\n-Damov",
+    "security_level": "high",
+    "requires_roll": false
+  },
+  {
+    "title": "Lysani Labs - Payment Confirmation",
+    "location": "Vennik's Personal Terminal",
+    "date": "064-1105",
+    "author": "Finance Department",
+    "content": "PAYMENT RECEIVED: 1,500,000 CR\nSOURCE: Lysani Laboratories (Routed through Horizon Shipping Co.)\nPROJECT CODE: EC-SHARD-CONTAINMENT\n\nNOTE: This completes payment for Project Midnight. All deliveries completed as contracted. Subject Trevar successfully transferred to Blacksite ES1. Additional bonus of 250,000 CR authorized for capture of secondary subjects (Elara, S. and Voren, R.).\n\nRELATED EXPENDITURES:\n- Operative deployment (Neon recovery): 42,000 CR\n- Medical services (Calendula): 76,000 CR\n- Security (Warehouse Complex): 38,000 CR\n- Asset acquisition (Memory Dampeners): 120,000 CR\n\nNET PROFIT: 1,474,000 CR",
+    "security_level": "high",
+    "requires_roll": false
+  },
+  {
+    "title": "Personal Thoughts - The Eclipse Shard",
+    "location": "Vennik's Personal Terminal",
+    "date": "085-1105",
+    "author": "Rax Vennik",
+    "content": "The more I learn about the Eclipse Shard, the more certain I become that controlling it will revolutionize our operations. The effect it had on Trevar and his crew - altering their abilities, enhancing their perception - the military applications alone are worth billions.\n\nLysani thinks too small. They're obsessed with understanding it, containing it, studying it. Typical corporate mentality. They don't grasp its true potential.\n\nMy sources inside Blacksite ES1 report Trevar has developed abilities beyond anything they anticipated. He perceives things no human should be able to see. He speaks of \"dimensions folded within dimensions\" and entities that exist \"between the moments of time.\"\n\nThe researchers dismiss it as delusion, but I'm not so certain. The Shard isn't just a weapon or a tool - it's a key. A key to something vast.\n\nAfter the auction, I'll accelerate plans to acquire it. Lysani's blacksite isn't as secure as they believe. And everyone has a price.\n\nThe real question: once I have it, do I risk exposure myself? The power it offers comes with costs. Trevar's mind is fracturing. But perhaps that's simply weakness on his part. A stronger will might master it completely.\n\nMy will has never failed me.",
+    "security_level": "high",
+    "requires_roll": true,
+    "roll_check": {
+      "difficulty": 12,
+      "skill": "Electronics (Computers)",
+      "on_success": "Access granted. Personal log decrypted.",
+      "on_failure": "Access denied. Security countermeasures activated."
+    }
+  }
+]

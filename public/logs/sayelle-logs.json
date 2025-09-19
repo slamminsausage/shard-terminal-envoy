@@ -1,0 +1,65 @@
+[
+  {
+    "title": "Operative File - Sayelle",
+    "location": "Sayelle's Personal Terminal",
+    "date": "075-1105",
+    "author": "Medical Division",
+    "content": "VENNIK SYNDICATE\nOPERATIVE ENHANCEMENT REPORT\n\nSUBJECT: SAYELLE\nCLASSIFICATION: ENHANCED OPERATIVE / BLOODHOUND\nSTATUS: ACTIVE\n\nBiometric Data:\n- Age: 34 standard years\n- Height: 178 cm\n- Weight: 74 kg\n- Blood Type: O-Negative (Heavily Modified)\n\nCybernetic Enhancements:\n1. Ocular System\n   - Full-spectrum visual processing\n   - Thermal imaging overlay\n   - Target acquisition and tracking\n   - Facial recognition database integration\n   - Recording and playback capability\n\n2. Neural Modifications\n   - Reflex acceleration processor (+42% reaction time)\n   - Combat analysis matrix\n   - Emotion suppression module (selective activation)\n   - Pain management system\n   - Memory enhancement architecture\n\n3. Musculoskeletal System\n   - Carbon nanotube skeletal reinforcement\n   - Synthetic muscle fiber integration\n   - Joint stabilizers and impact absorption\n   - Micro-hydraulic strength amplifiers\n\n4. Combat/Tracking Systems\n   - Subdermal weapon detection\n   - Environmental analysis suite\n   - Biological trace identification\n   - Auditory enhancement and filtering\n   - Night adaptation protocols\n\nPerformance Metrics:\n- Combat Efficiency: 94% (Elite Rating)\n- Tracking Success Rate: 99.7%\n- Mission Completion Rate: 97.3%\n- Psychological Stability: 72% (Monitoring Recommended)\n\nNotes:\nSubject demonstrates exceptional aptitude for pursuit and elimination operations. Post-Neon incident, psychological fixation on Vanagandr crew has intensified. While this enhances motivation, monitoring is advised to prevent operational compromise.\n\nSubject's combat style favors psychological warfare tactics prior to engagement. This methodology has proven highly effective, particularly against targets with military training. Recommend continued autonomy in operational parameters.",
+    "security_level": "high",
+    "requires_roll": false
+  },
+  {
+    "title": "Neon Incident Report",
+    "location": "Sayelle's Personal Terminal",
+    "date": "053-1105",
+    "author": "Sayelle",
+    "content": "MISSION REPORT: NEON INCIDENT\nSTATUS: FAILURE (SURVIVAL ACHIEVED)\n\nTarget acquisition was successful. Subject Anson eliminated as planned. Secondary targets (former Vanagandr crew) were tracked to the communications tower as anticipated.\n\nMission compromise occurred during final approach. Indigenous predator species (Pedersen's Creepers) swarmed the tower in unprecedented numbers, forcing tactical retreat. Sustained significant injuries during extraction.\n\nPrimary cybernetic systems damaged:\n- Right optic unit (completely destroyed)\n- Left arm musculature enhancement (80% failure)\n- Spinal reinforcement (partial collapse)\n- Neural processor (thermal damage)\n\nEmergency protocols engaged. Self-administered medical stabilization achieved. Utilized emergency beacon after 72-hour delay to ensure target disengagement.\n\nConclusions:\n1. Underestimated environmental threat factors\n2. Target group demonstrated unexpected resourcefulness\n3. Subject Knuck identified as primary threat - tactical capabilities exceed initial assessment\n4. Subject Ezra demonstrates anomalous abilities requiring further investigation\n\nRecommendation:\nComplete cybernetic rebuild required before resuming hunt. Psychological profile of targets now more comprehensive - will adjust tactics accordingly. Primary focus on psychological destabilization before direct engagement.\n\nPersonal Note:\nThey left me to die. They will understand what that means soon.",
+    "security_level": "high",
+    "requires_roll": false
+  },
+  {
+    "title": "Hunt Log - Eternium",
+    "location": "Sayelle's Personal Terminal",
+    "date": "084-1105",
+    "author": "Sayelle",
+    "content": "HUNT LOG: ETERNIUM PHASE\nTARGET STATUS: LOCATED\n\nThey've arrived. Just as I predicted. The Vanagandr's call is too strong for them to resist. They look different now - harder, more vigilant. But underneath, I can see the fear. They remember me, even if they pretend otherwise.\n\nSurveillance packages deployed:\n- Micro-cameras in their temporary quarters (3)\n- Audio monitoring devices in common areas (5)\n- Tracking nanites in water supply (active)\n\nPsychological warfare elements initiated:\n- Surveillance recordings delivered to personal effects\n- Strategic messages left in private spaces\n- Brief visual confirmation in crowded areas\n\nTheir reactions are... satisfying. The one called Bronco maintains composure but checks weapons constantly. Ezra appears increasingly agitated, sensing something but unable to identify source. Knuck demonstrates heightened paranoia, exactly as anticipated. Agathon shows least effect - requires specialized approach.\n\nVennik has authorized full operational freedom until the auction. I will continue to erode their psychological defenses. By the time we meet face-to-face, they will be compromised by fear and exhaustion.\n\nNext phase: Direct message delivery. Personal items taken and returned. Evidence of observation during sleep cycles.\n\nNote: Considering leaving Pedersen's Creeper claw in their quarters. Poetic reminder of our last encounter.",
+    "security_level": "high",
+    "requires_roll": true,
+    "roll_check": {
+      "difficulty": 10,
+      "skill": "Electronics (Computers)",
+      "on_success": "Access granted. Hunt log decrypted.",
+      "on_failure": "Access denied. Security alert triggered."
+    }
+  },
+  {
+    "title": "Warehouse Security Analysis",
+    "location": "Sayelle's Personal Terminal",
+    "date": "086-1105",
+    "author": "Sayelle",
+    "content": "SECURITY ANALYSIS: VENNIK WAREHOUSE COMPLEX\nOPERATION: VANAGANDR AUCTION\n\nPerimeter Security:\n- Guard patrols (12 personnel, rotating shifts)\n- Automated sentry drones (8 units)\n- Motion and heat sensors\n- Reinforced perimeter walls (7m height)\n\nInternal Security:\n- Plainclothes security personnel (24)\n- Automated security turrets (ceiling-mounted, 6 units)\n- Neural lab - separate security protocol\n- Command center (Vennik's personal security detail)\n\nVulnerabilities Identified:\n1. Ventilation system provides limited access to auction floor\n2. Security patrol pattern creates 40-second window at northeast corner\n3. Maintenance access tunnel connects to sub-level storage\n4. Roof access hatch has outdated encryption\n\nTarget Analysis:\nThe Vanagandr crew will attempt infiltration. Based on psychological profiles and previous operations, they will likely employ stealth rather than force. Subject Knuck possesses sufficient technical skill to bypass standard security systems.\n\nTactical Recommendation:\nI will not impede their initial infiltration. Maximum psychological impact will be achieved by allowing them to believe they have succeeded, then revealing my presence at their moment of perceived victory. Optimal engagement point will be aboard the Vanagandr itself, after they have expended resources and mental energy.\n\nSpecial Measures:\n- Explosives placed aboard Vanagandr (remote detonation)\n- Secondary charges at key structural points\n- Fail-safe measures if direct confrontation proves disadvantageous\n\nPersonal Note:\nThe hunt concludes tomorrow. After months of anticipation, I will finally watch the hope drain from their eyes. My new enhancements will be christened with their blood.",
+    "security_level": "high",
+    "requires_roll": true,
+    "roll_check": {
+      "difficulty": 12,
+      "skill": "Electronics (Computers)",
+      "on_success": "Access granted. Security analysis decrypted.",
+      "on_failure": "Access denied. Security countermeasures activated."
+    }
+  },
+  {
+    "title": "Personal Log - Bloodhound",
+    "location": "Sayelle's Personal Terminal",
+    "date": "087-1105",
+    "author": "Sayelle",
+    "content": "They don't remember me. Not really.\n\nThey don't remember how we served together on the Nightstalker before the Vanagandr. How Captain Trevar recruited us all, promising adventure and profit. They don't remember the missions we completed together, the nights sharing stories over synthmeal in the cramped galley.\n\nThey don't remember that I was family.\n\nWhen Trevar accepted the Eclipse Shard contract, he split the crew. Some stayed behind on Tobia - the lucky ones. The rest of us went with him. Myself, Elara, Voren... we were exposed to that thing. It changed us. But we were still crew.\n\nThen everything went wrong. Vennik's betrayal. The capture. The experiments aboard the Calendula.\n\nBut the worst betrayal came later. On Neon. When they left me to die.\n\nI saw their faces as the Creepers swarmed the tower. They saw me. They made their choice. They ran.\n\nVennik found me, rebuilt me. Gave me purpose. The irony isn't lost on me - working for the man who betrayed us all. But he recognized my value. And he's given me the means to balance the scales.\n\nTomorrow it ends. I've studied them. Tracked them. Learned their new patterns and weaknesses. I've become the perfect predator to their specific prey.\n\nI don't hate them. Not anymore. This isn't about emotion. It's about consequence. About the fundamental truth of the universe:\n\nBetrayal demands blood.",
+    "security_level": "high",
+    "requires_roll": true,
+    "roll_check": {
+      "difficulty": 14,
+      "skill": "Electronics (Computers)",
+      "on_success": "Access granted. Personal log decrypted.",
+      "on_failure": "Access denied. Security alert triggered."
+    }
+  }
+]

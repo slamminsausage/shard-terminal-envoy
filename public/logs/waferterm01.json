@@ -1,0 +1,56 @@
+[
+{
+    "title": "Video Playback - Lycur Testing",
+    "location": "Data Wafer Terminal",
+    "date": "032-1105",
+    "author": "Automated Recording - Specimen Lab Camera",
+    "content": "The screen displays a reinforced containment cell. Inside, a Lycur paces anxiously, its striped fur bristling as researchers monitor its vitals. A scientist injects a bright-blue liquid into the creature’s flank, and the reaction is immediate.\n\nThe Lycur tenses, then lunges wildly at the reinforced glass, claws scraping furiously. The researchers exchange glances before releasing an automated drone into the chamber to assess its coordination.\n\nWith impossible speed, the Lycur twists mid-air, slamming into the drone and tearing it apart with unnatural strength. The creature turns its glowing, dilated eyes toward the camera, its muscles still trembling from the enhancement.\n\nDr. Voss mutters in the background, 'We may have pushed too far.' The footage ends with the researchers scrambling for containment procedures.",
+    "security_level": "high",
+    "requires_roll": false
+},
+{
+    "title": "Video Playback - Galthin Monkey Experiment",
+    "location": "Data Wafer Terminal",
+    "date": "040-1105",
+    "author": "Automated Recording - Specimen Lab Camera",
+    "content": "The screen flickers to reveal a reinforced containment cell lined with climbing surfaces and observation panels. A Galthin Monkey is inside, its six limbs twitching as it moves with unsettling precision. Its large, black eyes reflect the infrared lights of the recording device.\n\nDr. A female voice is heard: 'Administering 1067 compound. Observing for enhanced coordination and cognitive function.'\n\nA mechanical injector arm moves forward, releasing a mist of the stimulant into the chamber. The monkey sniffs the air, then suddenly disappears from view—scrambling into the ventilation grates faster than the camera can track.\n\nOne of the researchers swears. 'Where did it go?'\n\nAn overhead camera suddenly catches movement. The monkey is perched above the observation panel, watching the scientists instead.\n\nDr. Gevar: 'It… it knew we were watching. It’s anticipating us. Increase sedation doses before—'\n\nThe footage cuts to static as the emergency alarms begin blaring.",
+    "security_level": "high",
+    "requires_roll": false
+},
+{
+    "title": "Video Playback - Sophont Neurotoxin 1103 Trial",
+    "location": "Data Wafer Terminal",
+    "date": "036-1105",
+    "author": "Automated Recording - Research Observation Camera",
+    "content": "The footage opens on a sterile chamber, where two restrained human subjects sit in separate, transparent enclosures. Gas begins to fill the rooms from overhead vents. At first, the subjects appear confused, glancing at each other through the reinforced glass.\n\nOne of them starts to blink rapidly, shaking their head. 'I… I don’t remember why I’m here…' Their voice trembles. The second subject frowns, looking down at their hands as they whisper: 'Who am I?'\n\nDr. A woman's voice is heard over the intercom: 'Memory degradation confirmed. Hallucinatory effects imminent.'\n\nThe second subject suddenly gasps and backs against the wall, staring in horror at something unseen. 'They’re in the walls! They're crawling—' They scream, slamming their fists against the enclosure. The footage ends abruptly as researchers scramble to intervene.",
+    "security_level": "high",
+    "requires_roll": false
+},
+{
+    "title": "Video Playback - Sophont Test Subjects - Compound 1079",
+    "location": "Data Wafer Terminal",
+    "date": "049-1105",
+    "author": "Automated Recording - Security Feed",
+    "content": "The video feed flickers before stabilizing, revealing a stark, dimly lit laboratory. Two human subjects, restrained in reinforced harnesses, twitch uncontrollably as IV drips deliver a glowing substance into their veins.\n\nA female scientist monitors a datapad, muttering: 'Subject 14 responding with heightened aggression… Subject 17 non-responsive. Heart rate accelerating beyond safe thresholds…'\n\nOne of the restrained subjects suddenly lets out an ear-splitting scream and thrashes violently, foaming at the mouth before stopping completely. Security personnel rush in, weapons raised, as the other subject tears free from their restraints. The subject rushes towards the female scientist. Immediately, multiple security guards intervene with stun sticks, dropping the subject, its muscles distended and veins bulging unnaturally.\n\nThe screen cuts to static.",
+    "security_level": "high",
+    "requires_roll": false
+},
+{
+    "title": "Video Playback - Subject S. Elara",
+    "location": "Data Wafer Terminal",
+    "date": "072-1105",
+    "author": "Automated Recording - Main Laboratory Feed",
+    "content": "The footage flickers to life, revealing a secured testing room. Seren 'Silver' Elara is seated in a restraint chair, her expression blank, pupils dilated. Electrodes are attached to her temples and arms, connected to a nearby medical console.\n\nDr. Voss speaks from behind the recording device, 'Administering 1067 microdose. Observing for cognitive clarity or degradation.'\n\nA robotic injector arm descends, injecting a small dose into Elara’s bloodstream. She remains still for a few seconds, then blinks rapidly. Her breathing quickens.\n\n'We are… not supposed to be here.' Her voice is barely above a whisper.\n\nA scientist exchanges looks with another researcher. 'Clarify, Subject Elara. Where should you be?'\n\nElara’s head tilts slightly, as though listening to something unseen. 'The walls… they’re breathing. You can hear them too, can’t you? They’re watching us.'\n\nSuddenly, she thrashes against her restraints, muscles tensing unnaturally. The recording ends.",
+    "security_level": "high",
+    "requires_roll": false
+},
+{
+    "title": "Video Playback - Subject R. Voren",
+    "location": "Data Wafer Terminal",
+    "date": "074-1105",
+    "author": "Automated Recording - Auxiliary Laboratory",
+    "content": "The recording begins in a dimly lit lab. Rylan 'Steel' Voren is seated on the floor, his arms wrapped around his knees. He rocks slightly, eyes darting toward the door at irregular intervals.\n\nA male voice speaks off screen: 'Subject R. Voren, can you describe what you’re experiencing?'\n\nSteel slowly raises his head. His voice is low, hollow. 'It’s quiet now. Too quiet. The moment I speak, they’ll know. The Extants are waiting for me to slip up.'\n\nThe male voice speaks again. 'Who is waiting, Subject Voren?'\n\nSteel laughs—dry, humorless. 'You don’t see them? Then they must be watching you instead.'\n\nSuddenly, he lunges toward the door, slamming his fists against it with unnatural strength. The reinforced barrier groans under the impact.\n\nThe man off screen mutters, 'Increase sedation levels. He’s escalating.'\n\nThe recording ends.",
+    "security_level": "high",
+    "requires_roll": false
+}
+]

@@ -1,0 +1,77 @@
+[
+  {
+    "title": "Auction Inventory - Special Items",
+    "location": "Vennik's Private Terminal",
+    "date": "080-1105",
+    "author": "Rax Vennik",
+    "content": "Special auction items requiring personal oversight:\n\n1. Vanagandr (Type-S Scout/Courier) - Estimated value: 35-40 million\n   Notes: Ship contains valuable data regarding Eclipse Shard. Multiple interested buyers including Lysani Labs and Black Talon Cartel. Reserve set at 30 million.\n\n2. Prototype Neural Interface (Kalex Systems) - Estimated value: 12-15 million\n   Notes: Recovered from House Azura R&D wreckage. Compatible with our skill-jacking operation.\n\n3. FUW Encryption Protocols - Estimated value: 5-7 million\n   Notes: Acquired from compromised operative. House Azura particularly interested.\n\nGareth to handle standard items. These remain under my direct supervision.",
+    "security_level": "high",
+    "requires_roll": true,
+    "roll_check": {
+      "difficulty": 10,
+      "skill": "Electronics (Computers)",
+      "on_success": "Access granted. Inventory displayed.",
+      "on_failure": "Access denied. Security alert triggered."
+    }
+  },
+  {
+    "title": "Sayelle - Status Report",
+    "location": "Vennik's Private Terminal",
+    "date": "078-1105",
+    "author": "Rax Vennik",
+    "content": "Sayelle's condition continues to deteriorate. Cybernetic enhancements functioning at optimal levels, but psychological stability declining rapidly.\n\nHer obsession with the surviving Vanagandr crew members has intensified. Surveillance logs indicate she's been leaving messages and tracking devices without authorization. This behavior, while disturbing, may prove useful in drawing out remaining crew.\n\nDr. Mercer recommends neural recalibration, but I'm hesitant to remove the edge her instability provides. Will monitor situation and intervene if her effectiveness is compromised.\n\nSecurity access remains temporarily restricted to auction-related facilities only.",
+    "security_level": "high",
+    "requires_roll": true,
+    "roll_check": {
+      "difficulty": 10,
+      "skill": "Electronics (Computers)",
+      "on_success": "Access granted. Status report displayed.",
+      "on_failure": "Access denied. Terminal locked."
+    }
+  },
+  {
+    "title": "Skill-Jacking Operations - Quarterly Report",
+    "location": "Vennik's Private Terminal",
+    "date": "075-1105",
+    "author": "Dr. Eliza Mercer",
+    "content": "Quarterly performance metrics for skill-jacking division:\n\n- Subjects processed: 27 (increase of 12% over previous quarter)\n- Successful extractions: 24 (89% success rate)\n- Skills acquired: Piloting (7), Engineering (5), Medicine (4), Combat (8)\n- Revenue generated: 22.5 million credits (increase of 17%)\n\nCurrent challenges include increased subject mortality during complex skill extractions and neural degradation in extraction specialists. Recommend acquisition of Kalex neural interface to mitigate these issues.\n\nNOTE: Black Talon representatives have expressed interest in exclusive purchase agreement for combat skill packages. Potential exists for ongoing partnership despite previous tensions.",
+    "security_level": "high",
+    "requires_roll": true,
+    "roll_check": {
+      "difficulty": 10,
+      "skill": "Electronics (Computers)",
+      "on_success": "Access granted. Operations report displayed.",
+      "on_failure": "Access denied. Security alert triggered."
+    }
+  },
+  {
+    "title": "Blacksite ES1 Arrangement",
+    "location": "Vennik's Private Terminal",
+    "date": "069-1105",
+    "author": "Rax Vennik",
+    "content": "Terms finalized with Lysani Labs regarding Eclipse Shard security operations:\n\n1. Syndicate to provide external security personnel and counter-intelligence services for Blacksite ES1\n2. 12 million credit annual payment plus 5% of all technologies developed\n3. Priority access to combat enhancement compounds for Syndicate enforcers\n4. Mutual non-disclosure regarding Shard properties and capabilities\n\nHollo Ezrahm continues to be our primary contact at Lysani. His ambition makes him predictable and manageable.\n\nCONCERN: Recent exposure events suggest the Shard may have effects beyond our current understanding. Maintain distance protocol during all inspection visits.",
+    "security_level": "high",
+    "requires_roll": true,
+    "roll_check": {
+      "difficulty": 12,
+      "skill": "Electronics (Computers)",
+      "on_success": "Access granted. Agreement details displayed.",
+      "on_failure": "Access denied. Terminal locked and user logged."
+    }
+  },
+  {
+    "title": "House Azura - Payment Records",
+    "location": "Vennik's Private Terminal",
+    "date": "077-1105",
+    "author": "Gareth Vane",
+    "content": "Monthly transfers from House Azura accounts:\n\n1. 'Consulting Services' - 750,000 credits (standard monthly payment)\n2. 'Special Project Management' - 1.2 million credits (increased from previous arrangement)\n3. 'Private Security Detail' - 500,000 credits (new line item)\n\nDarius Gren continues to be our primary contact within House Azura security division. His personal account (offworld bank) received the usual 10% commission.\n\nNOTE: Director Saren has requested increased discretion regarding our skill-jacking operations. Apparently, several prominent House members have expressed ethical concerns. No action required at this time, but monitor situation.",
+    "security_level": "high",
+    "requires_roll": true,
+    "roll_check": {
+      "difficulty": 10,
+      "skill": "Electronics (Computers)",
+      "on_success": "Access granted. Payment records displayed.",
+      "on_failure": "Access denied. Security protocols activated."
+    }
+  }
+]
