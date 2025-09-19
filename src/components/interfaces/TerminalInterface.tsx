@@ -142,6 +142,46 @@ export default function TerminalInterface() {
     displayNextMessage();
   }, []);
 
+  // ESC key handler
+  useEffect(() => {
+    const handleEscKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        // Finish any current typing
+        if (typingRef.current) {
+          clearTimeout(typingRef.current);
+          typingRef.current = null;
+        }
+
+        // Handle navigation based on current view
+        if (currentView === "loading") {
+          // Skip to init screen
+          setCurrentView("init");
+          setInitComplete(true);
+          setInitText(">> THE TRAVELLER TERMINAL IS NOW ONLINE.\n");
+        } else if (currentView === "log" && selectedLogData) {
+          // Go back to terminal view
+          setLogTypingComplete(true);
+          handleBackToTerminal();
+        } else if (currentView === "terminal" && (logData || activeTerminal)) {
+          // Go back to init screen
+          handleBackToInit();
+        } else if (requiresPassword || terminalPasswordRequired || rollCheck || specialRollCheck) {
+          // Clear any prompts and go back
+          setRequiresPassword(false);
+          setTerminalPasswordRequired(false);
+          setRollCheck(null);
+          setSpecialRollCheck(null);
+          setPasswordInput("");
+          setTerminalPasswordInput("");
+          handleBackToTerminal();
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleEscKey);
+    return () => window.removeEventListener("keydown", handleEscKey);
+  }, [currentView, selectedLogData, logData, activeTerminal, requiresPassword, terminalPasswordRequired, rollCheck, specialRollCheck]);
+
   // Handle access code
   const handleAccessCode = (codeOverride: string | null = null) => {
     const rawCode = typeof codeOverride === "string" ? codeOverride : inputCode;
@@ -478,21 +518,6 @@ export default function TerminalInterface() {
 
   return (
     <div className="min-h-screen bg-background crt-container p-4">
-      {/* Sound Toggle Button */}
-      <div className="fixed top-4 left-4 z-50">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => {
-            const isMuted = audioManager.toggleMute();
-            // Visual feedback could be added here
-          }}
-          className="font-mono"
-        >
-          {audioManager.isMuted() ? '🔇' : '🔊'}
-        </Button>
-      </div>
-
       <SignalInterference 
         level={signalInterferenceLevel} 
         terminalType={activeTerminal ? 'corrupted' : 'normal'} 
@@ -503,6 +528,7 @@ export default function TerminalInterface() {
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="terminal-text terminal-glow text-accent font-mono text-sm whitespace-pre-wrap text-center">
             {initText}
+            <div className="text-xs text-primary/60 mt-4">Press ESC to skip</div>
           </div>
         </div>
       )}
@@ -519,6 +545,7 @@ export default function TerminalInterface() {
                 <div className="text-primary font-mono text-sm">
                   ENTER ACCESS CODE
                 </div>
+                <div className="text-xs text-primary/60 mt-2">Press ESC to navigate back</div>
               </div>
               
               <div className="flex gap-2 mb-4">
@@ -715,6 +742,21 @@ export default function TerminalInterface() {
           </CardContent>
         </Card>
       )}
+
+      {/* Sound Toggle Button - Bottom Right */}
+      <div className="fixed bottom-4 right-4 z-50">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            const isMuted = audioManager.toggleMute();
+            // Visual feedback could be added here
+          }}
+          className="font-mono"
+        >
+          {audioManager.isMuted() ? '🔇' : '🔊'}
+        </Button>
+      </div>
     </div>
   );
 }
