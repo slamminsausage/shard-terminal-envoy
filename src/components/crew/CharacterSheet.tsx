@@ -25,6 +25,7 @@ interface SkillDefinition {
   parentKey?: string;
   isCustomGroup?: boolean;
   customSlots?: number;
+  isPsionic?: boolean;
 }
 
 type ArmourRow = {
@@ -169,6 +170,11 @@ const skillDefinitions: SkillDefinition[] = [
   { key: "tactics", label: "Tactics" },
   { key: "tactics_military", label: "Tactics Military", parentKey: "tactics" },
   { key: "tactics_naval", label: "Tactics Naval", parentKey: "tactics" },
+  { key: "telepathy", label: "Telepathy", isPsionic: true },
+  { key: "clairvoyance", label: "Clairvoyance", isPsionic: true },
+  { key: "psychokinesis", label: "Psychokinesis", isPsionic: true },
+  { key: "awareness", label: "Awareness", isPsionic: true },
+  { key: "teleportation", label: "Teleportation", isPsionic: true },
   { key: "vacc_suit", label: "Vacc Suit" }
 ];
 
@@ -421,7 +427,7 @@ const CharacterSheet = ({ characterId }: CharacterSheetProps = {}) => {
             type="number"
             className="w-16 h-8 text-center"
           />
-          <SkillDMDisplay proficient={state?.proficient ?? false} rawValue={state?.value} jackState={jackState} />
+          <SkillDMDisplay proficient={state?.proficient ?? false} rawValue={state?.value} jackState={jackState} isPsionic={def.isPsionic} />
         </div>
       </div>
     );
@@ -448,7 +454,7 @@ const CharacterSheet = ({ characterId }: CharacterSheetProps = {}) => {
               type="number"
               className="w-16 h-8 text-center"
             />
-            <SkillDMDisplay proficient={baseState?.proficient ?? false} rawValue={baseState?.value} jackState={jackState} />
+            <SkillDMDisplay proficient={baseState?.proficient ?? false} rawValue={baseState?.value} jackState={jackState} isPsionic={def.isPsionic} />
           </div>
         </div>
         <div className="space-y-2">
@@ -476,7 +482,7 @@ const CharacterSheet = ({ characterId }: CharacterSheetProps = {}) => {
                     type="number"
                     className="w-16 h-8 text-center"
                   />
-                  <SkillDMDisplay proficient={state?.proficient ?? false} rawValue={state?.value} jackState={jackState} />
+                  <SkillDMDisplay proficient={state?.proficient ?? false} rawValue={state?.value} jackState={jackState} isPsionic={false} />
                 </div>
               </div>
             );
@@ -712,13 +718,19 @@ interface SkillDMDisplayProps {
   proficient: boolean;
   rawValue?: string;
   jackState?: SkillState;
+  isPsionic?: boolean;
 }
 
-const SkillDMDisplay = ({ proficient, rawValue, jackState }: SkillDMDisplayProps) => {
+const SkillDMDisplay = ({ proficient, rawValue, jackState, isPsionic }: SkillDMDisplayProps) => {
   if (proficient) {
     const value = Number(rawValue ?? 0) || 0;
     const display = value >= 0 ? `+${value}` : value.toString();
     return <span className="text-xs font-mono w-10 text-center">{display}</span>;
+  }
+
+  // Psionic skills are not affected by Jack-of-All-Trades
+  if (isPsionic) {
+    return <span className="text-xs font-mono w-10 text-center text-muted-foreground">-3</span>;
   }
 
   let penalty = -3;
