@@ -6,11 +6,14 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { typeTextWithSound } from '@/lib/typing';
 import CharacterSheet from "@/components/crew/CharacterSheet";
+import { useCampaign } from "@/contexts/CampaignContext";
 
 export default function CrewInterface() {
   const [displayText, setDisplayText] = useState("");
   const [activeCrewMember, setActiveCrewMember] = useState<string | null>(null);
   const [showCharacterSheet, setShowCharacterSheet] = useState(false);
+  const [missionNotes, setMissionNotes] = useState("");
+  const { createNewCharacter, characters } = useCampaign();
 
   useEffect(() => {
     const initMessage = "CREW MANAGEMENT SYSTEM ONLINE\nAccess crew records and character sheets...\n\n";
@@ -30,6 +33,19 @@ export default function CrewInterface() {
   const handleBackToCrewInterface = () => {
     setShowCharacterSheet(false);
     setActiveCrewMember(null);
+  };
+
+  const handleAddNewCrewMember = async () => {
+    const newCharacter = await createNewCharacter();
+    if (newCharacter) {
+      setShowCharacterSheet(true);
+    }
+  };
+
+  const handleSaveNotes = () => {
+    localStorage.setItem('mission_notes', missionNotes);
+    // In a real app, this would save to the database
+    console.log('Mission notes saved:', missionNotes);
   };
 
   if (showCharacterSheet) {
@@ -74,20 +90,30 @@ export default function CrewInterface() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2">
-                    <div className="p-3 border border-primary/20 rounded font-mono text-sm">
-                      SLOT 01: [VACANT] - Assign crew member
-                    </div>
-                    <div className="p-3 border border-primary/20 rounded font-mono text-sm">
-                      SLOT 02: [VACANT] - Assign crew member
-                    </div>
-                    <div className="p-3 border border-primary/20 rounded font-mono text-sm">
-                      SLOT 03: [VACANT] - Assign crew member
-                    </div>
-                    <div className="p-3 border border-primary/20 rounded font-mono text-sm">
-                      SLOT 04: [VACANT] - Assign crew member
-                    </div>
+                    {characters.length > 0 ? (
+                      characters.map((character, index) => (
+                        <div key={character.id} className="p-3 border border-primary/20 rounded font-mono text-sm">
+                          SLOT {String(index + 1).padStart(2, '0')}: {character.name} - {character.career || 'Unassigned'}
+                        </div>
+                      ))
+                    ) : (
+                      <>
+                        <div className="p-3 border border-primary/20 rounded font-mono text-sm">
+                          SLOT 01: [VACANT] - Assign crew member
+                        </div>
+                        <div className="p-3 border border-primary/20 rounded font-mono text-sm">
+                          SLOT 02: [VACANT] - Assign crew member
+                        </div>
+                        <div className="p-3 border border-primary/20 rounded font-mono text-sm">
+                          SLOT 03: [VACANT] - Assign crew member
+                        </div>
+                        <div className="p-3 border border-primary/20 rounded font-mono text-sm">
+                          SLOT 04: [VACANT] - Assign crew member
+                        </div>
+                      </>
+                    )}
                   </div>
-                  <Button variant="outline" className="mt-4 w-full">
+                  <Button variant="outline" className="mt-4 w-full" onClick={handleAddNewCrewMember}>
                     Add New Crew Member
                   </Button>
                 </CardContent>
@@ -129,9 +155,11 @@ export default function CrewInterface() {
                         id="mission-notes"
                         className="w-full h-32 bg-background/20 border border-primary/30 rounded p-3 font-mono text-sm"
                         placeholder="Enter mission notes and status updates..."
+                        value={missionNotes}
+                        onChange={(e) => setMissionNotes(e.target.value)}
                       />
                     </div>
-                    <Button variant="outline" size="sm">
+                    <Button variant="outline" size="sm" onClick={handleSaveNotes}>
                       Save Notes
                     </Button>
                   </div>

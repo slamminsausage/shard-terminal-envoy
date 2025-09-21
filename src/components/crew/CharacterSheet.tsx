@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
+import { useCampaign } from "@/contexts/CampaignContext";
 
 interface CharacteristicValue {
   total: string;
@@ -223,6 +224,7 @@ const initialAugments: AugmentRow[] = Array.from({ length: 4 }, () => ({
 }));
 
 const CharacterSheet = () => {
+  const { saveCharacter } = useCampaign();
   const [header, setHeader] = useState({
     name: "",
     rads: "",
@@ -284,6 +286,45 @@ const CharacterSheet = () => {
     setAugments(prev => prev.map((row, idx) => (idx === index ? { ...row, [field]: value } : row)));
   };
 
+  const handleSaveCharacter = async () => {
+    try {
+      const characterData = {
+        name: header.name,
+        species: header.species,
+        gender: "", // Add if needed
+        age: parseInt(header.age) || 0,
+        homeworld: header.homeworld,
+        career: "", // Add if needed
+        rank: "", // Add if needed
+        strength: parseInt(characteristics.strength.total) || 7,
+        dexterity: parseInt(characteristics.dexterity.total) || 7,
+        endurance: parseInt(characteristics.endurance.total) || 7,
+        intellect: parseInt(characteristics.intellect.total) || 7,
+        education: parseInt(characteristics.education.total) || 7,
+        social_standing: parseInt(characteristics.social.total) || 7,
+        melee_dmg: 0,
+        ranged_dmg: 0,
+        lifeblood: 0,
+        stamina: 0,
+        terms_served: 0,
+        skills: skills,
+        equipment: equipment,
+        credits: 0,
+        debt: 0,
+        allies: "",
+        contacts: "",
+        rivals: "",
+        enemies: "",
+        weapons: weapons,
+        armor: armourRows,
+        augments: augments,
+      };
+
+      await saveCharacter(characterData);
+    } catch (error) {
+      console.error('Failed to save character:', error);
+    }
+  };
   const handleSkillToggle = (key: string, checked: boolean) => {
     setSkills(prev => ({
       ...prev,
@@ -574,7 +615,7 @@ const CharacterSheet = () => {
 
       <div className="flex justify-end gap-3">
         <Button variant="outline">Reset Sheet</Button>
-        <Button>Save Changes</Button>
+        <Button onClick={handleSaveCharacter}>Save Changes</Button>
       </div>
     </div>
   );

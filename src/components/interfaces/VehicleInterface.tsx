@@ -4,11 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { typeTextWithSound } from '@/lib/typing';
 import VehicleSheet from "@/components/crew/VehicleSheet";
+import { useCampaign } from "@/contexts/CampaignContext";
 
 export default function VehicleInterface() {
   const [displayText, setDisplayText] = useState("");
   const [showVehicleSheet, setShowVehicleSheet] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState<string | null>(null);
+  const { createNewVehicle, vehicles } = useCampaign();
 
   useEffect(() => {
     const initMessage = "VEHICLE MANAGEMENT SYSTEM ONLINE\nScanning for registered vessels and vehicles...\n\n";
@@ -29,6 +31,14 @@ export default function VehicleInterface() {
   const handleBackToVehicleInterface = () => {
     setShowVehicleSheet(false);
     setSelectedVehicle(null);
+  };
+
+  const handleRegisterNewVehicle = async (vehicleType: string) => {
+    const newVehicle = await createNewVehicle(vehicleType);
+    if (newVehicle) {
+      setSelectedVehicle(vehicleType);
+      setShowVehicleSheet(true);
+    }
   };
 
   if (showVehicleSheet) {
@@ -98,7 +108,7 @@ export default function VehicleInterface() {
                       </div>
                     </div>
                     
-                    <Button variant="outline" className="w-full">
+                    <Button variant="outline" className="w-full" onClick={() => handleRegisterNewVehicle("Ship")}>
                       Register New Spacecraft
                     </Button>
                   </div>
@@ -122,7 +132,7 @@ export default function VehicleInterface() {
                     <Button 
                       variant="outline" 
                       className="w-full"
-                      onClick={() => handleVehicleSheetAccess("vehicle")}
+                      onClick={() => handleRegisterNewVehicle("Ground Vehicle")}
                     >
                       Register New Vehicle
                     </Button>

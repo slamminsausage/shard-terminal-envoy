@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
+import { useCampaign } from "@/contexts/CampaignContext";
 
 interface PowerRequirementEntry {
   label: string;
@@ -66,6 +67,7 @@ const CRITICAL_TRACKS: CriticalTrack[] = [
 ];
 
 const VehicleSheet = () => {
+  const { saveVehicle } = useCampaign();
   const [shipInfo, setShipInfo] = useState({
     name: "",
     className: "",
@@ -124,6 +126,50 @@ const VehicleSheet = () => {
 
   const updateCargoRow = (index: number, field: keyof CargoEntry, value: string) => {
     setCargo(prev => prev.map((entry, idx) => (idx === index ? { ...entry, [field]: value } : entry)));
+  };
+
+  const handleSaveVehicle = async () => {
+    try {
+      const vehicleData = {
+        name: shipInfo.name,
+        vehicle_type: 'Ship',
+        class_type: shipInfo.className,
+        tech_level: 10,
+        tonnage: 100,
+        cost: parseInt(shipInfo.fuelCost) || 0,
+        hull: parseInt(shipInfo.hullPoints) || 1,
+        structure: 1,
+        armor: parseInt(shipInfo.armour) || 0,
+        maneuver_drive: parseInt(drives.manoeuvreThrust) || 1,
+        jump_drive: parseInt(drives.reactionThrust) || 1,
+        power_plant: 1, // No direct mapping available
+        acceleration: 1,
+        top_speed: 0,
+        jump_rating: parseInt(drives.jumpDriveJump) || 1,
+        fuel_capacity: 10,
+        cargo_capacity: 10,
+        passenger_capacity: 0,
+        weapons: weapons,
+        screens: {},
+        computer_rating: 5,
+        sensors: 1,
+        communications: 1,
+        maintenance_cost: parseInt(shipInfo.maintenanceCost) || 0,
+        crew_requirements: {},
+        specifications: {
+          software: softwarePackages,
+          systems: systems,
+          sensors: sensors,
+          powerRequirements: powerRequirements,
+          cargo: cargo,
+          criticalHits: criticalHits
+        },
+      };
+
+      await saveVehicle(vehicleData);
+    } catch (error) {
+      console.error('Failed to save vehicle:', error);
+    }
   };
 
   const toggleCriticalHit = (trackIndex: number, boxIndex: number) => {
@@ -292,6 +338,7 @@ const VehicleSheet = () => {
           variant="outline" 
           size="lg"
           className="bg-primary/20 border-2 border-primary text-primary hover:bg-primary hover:text-background font-mono text-lg px-8 py-3 terminal-glow"
+          onClick={handleSaveVehicle}
         >
           💾 SAVE VEHICLE DATA
         </Button>
