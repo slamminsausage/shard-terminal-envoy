@@ -46,7 +46,7 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
-  // Check authentication on mount
+  // Check authentication on mount and whenever it changes
   useEffect(() => {
     const isAuth = checkAuthentication();
     setIsAuthenticated(isAuth);
@@ -57,7 +57,9 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
 
   const checkAuthentication = (): boolean => {
     const authStatus = localStorage.getItem('traveller_authenticated');
-    return authStatus === 'true';
+    const isAuth = authStatus === 'true';
+    setIsAuthenticated(isAuth);
+    return isAuth;
   };
 
   const logout = () => {

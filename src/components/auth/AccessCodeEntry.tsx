@@ -37,6 +37,7 @@ export default function AccessCodeEntry({ onSuccess }: AccessCodeEntryProps) {
         description: "Welcome to the Traveller Terminal System!",
       });
       
+      // Call onSuccess to trigger parent re-render
       if (onSuccess) {
         onSuccess();
       }

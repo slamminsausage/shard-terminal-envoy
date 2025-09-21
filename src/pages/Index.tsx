@@ -4,10 +4,17 @@ import AccessCodeEntry from '@/components/auth/AccessCodeEntry';
 import { useCampaign } from '@/contexts/CampaignContext';
 
 const Index = () => {
-  const { isAuthenticated } = useCampaign();
+  const { isAuthenticated, checkAuthentication } = useCampaign();
+
+  const handleAuthSuccess = () => {
+    // Force re-check of authentication status
+    checkAuthentication();
+    // Trigger a re-render by updating the campaign context
+    window.location.reload();
+  };
 
   if (!isAuthenticated) {
-    return <AccessCodeEntry />;
+    return <AccessCodeEntry onSuccess={handleAuthSuccess} />;
   }
 
   return <MainframeShell />;
