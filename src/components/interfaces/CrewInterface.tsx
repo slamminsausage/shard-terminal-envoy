@@ -8,12 +8,16 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { typeTextWithSound } from '@/lib/typing';
 import CharacterSheet from "@/components/crew/CharacterSheet";
 import { useCampaign } from "@/contexts/CampaignContext";
+import { toast } from "@/hooks/use-toast";
 
 export default function CrewInterface() {
   const [displayText, setDisplayText] = useState("");
   const [activeCrewMember, setActiveCrewMember] = useState<string | null>(null);
   const [showCharacterSheet, setShowCharacterSheet] = useState(false);
-  const [missionNotes, setMissionNotes] = useState("");
+  const [missionNotes, setMissionNotes] = useState(() => {
+    // Load mission notes from localStorage on component mount
+    return localStorage.getItem('mission_notes') || "";
+  });
   const { createNewCharacter, characters, deleteCharacter } = useCampaign();
   const [characterToDelete, setCharacterToDelete] = useState<string | null>(null);
 
@@ -45,8 +49,19 @@ export default function CrewInterface() {
   };
 
   const handleSaveNotes = () => {
-    localStorage.setItem('mission_notes', missionNotes);
-    console.log('Mission notes saved:', missionNotes);
+    try {
+      localStorage.setItem('mission_notes', missionNotes);
+      toast({
+        title: "Mission Notes Saved",
+        description: "Your mission notes have been saved successfully.",
+      });
+    } catch (error) {
+      toast({
+        title: "Save Failed",
+        description: "Could not save mission notes. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleDeleteCharacter = async (characterId: string) => {

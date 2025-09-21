@@ -162,46 +162,6 @@ export default function VehicleInterface() {
                       </div>
                     ))}
                     
-                    {/* VÁNAGANDR (hardcoded for now) */}
-                    <div className="p-4 border border-primary/20 rounded">
-                      <div className="flex justify-between items-center">
-                        <div className="font-mono text-sm">
-                          <div className="font-semibold">VÁNAGANDR</div>
-                          <div className="text-xs opacity-70">Type-S Scout/Courier (Modified)</div>
-                          <div className="text-xs opacity-70">Status: IMPOUNDED</div>
-                          <div className="text-xs opacity-70">Crew: Unassigned</div>
-                        </div>
-                        <div className="flex gap-2">
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => {
-                              const vanagandrVehicle = vehicles.find(v => v.name.toLowerCase().includes('vanagandr'));
-                              if (vanagandrVehicle) {
-                                handleVehicleSheetAccess(vanagandrVehicle.id);
-                              }
-                            }}
-                          >
-                            Access Sheet
-                          </Button>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => handleCrewAssignment("vanagandr")}
-                          >
-                            Assign Crew
-                          </Button>
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            className="text-gray-400 border-gray-400 opacity-50 cursor-not-allowed"
-                            disabled
-                          >
-                            Impounded
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
                     
                     {vehicles.filter(v => v.vehicle_type === 'Ship').length === 0 && (
                       <div className="p-4 border border-primary/20 rounded border-dashed opacity-50">
@@ -312,14 +272,23 @@ export default function VehicleInterface() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    <div className="p-4 border border-primary/20 rounded">
-                      <div className="font-mono text-sm">
-                        <div className="font-semibold text-amber-400">VÁNAGANDR - CRITICAL</div>
-                        <div className="text-xs opacity-70">Last maintenance: 200+ days ago</div>
-                        <div className="text-xs opacity-70">Required: Full system overhaul</div>
-                        <div className="text-xs opacity-70">Cost estimate: 50,000 Cr</div>
+                    {vehicles.filter(v => v.vehicle_type === 'Ship').map(vehicle => (
+                      <div key={vehicle.id} className="p-4 border border-primary/20 rounded">
+                        <div className="font-mono text-sm">
+                          <div className="font-semibold text-amber-400">{vehicle.name.toUpperCase()} - MAINTENANCE DUE</div>
+                          <div className="text-xs opacity-70">Type: {vehicle.class_type}</div>
+                          <div className="text-xs opacity-70">Last maintenance: Unknown</div>
+                          <div className="text-xs opacity-70">Required: Routine system check</div>
+                          <div className="text-xs opacity-70">Cost estimate: {(vehicle.maintenance_cost || 1000).toLocaleString()} Cr</div>
+                        </div>
                       </div>
-                    </div>
+                    ))}
+                    
+                    {vehicles.filter(v => v.vehicle_type === 'Ship').length === 0 && (
+                      <div className="p-4 border border-primary/20 rounded text-center">
+                        <div className="font-mono text-sm opacity-70">No vehicles requiring maintenance</div>
+                      </div>
+                    )}
                     
                     <div className="grid grid-cols-2 gap-4">
                       <div className="p-3 border border-primary/20 rounded text-center">
