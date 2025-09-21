@@ -14,7 +14,213 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      characters: {
+        Row: {
+          age: number | null
+          allies: string | null
+          armor: Json | null
+          augments: Json | null
+          career: string | null
+          contacts: string | null
+          created_at: string
+          credits: number | null
+          debt: number | null
+          dexterity: number | null
+          education: number | null
+          endurance: number | null
+          enemies: string | null
+          equipment: Json | null
+          gender: string | null
+          homeworld: string | null
+          id: string
+          intellect: number | null
+          lifeblood: number | null
+          melee_dmg: number | null
+          name: string
+          player_id: string
+          ranged_dmg: number | null
+          rank: string | null
+          rivals: string | null
+          skills: Json | null
+          social_standing: number | null
+          species: string | null
+          stamina: number | null
+          strength: number | null
+          terms_served: number | null
+          updated_at: string
+          weapons: Json | null
+        }
+        Insert: {
+          age?: number | null
+          allies?: string | null
+          armor?: Json | null
+          augments?: Json | null
+          career?: string | null
+          contacts?: string | null
+          created_at?: string
+          credits?: number | null
+          debt?: number | null
+          dexterity?: number | null
+          education?: number | null
+          endurance?: number | null
+          enemies?: string | null
+          equipment?: Json | null
+          gender?: string | null
+          homeworld?: string | null
+          id?: string
+          intellect?: number | null
+          lifeblood?: number | null
+          melee_dmg?: number | null
+          name?: string
+          player_id?: string
+          ranged_dmg?: number | null
+          rank?: string | null
+          rivals?: string | null
+          skills?: Json | null
+          social_standing?: number | null
+          species?: string | null
+          stamina?: number | null
+          strength?: number | null
+          terms_served?: number | null
+          updated_at?: string
+          weapons?: Json | null
+        }
+        Update: {
+          age?: number | null
+          allies?: string | null
+          armor?: Json | null
+          augments?: Json | null
+          career?: string | null
+          contacts?: string | null
+          created_at?: string
+          credits?: number | null
+          debt?: number | null
+          dexterity?: number | null
+          education?: number | null
+          endurance?: number | null
+          enemies?: string | null
+          equipment?: Json | null
+          gender?: string | null
+          homeworld?: string | null
+          id?: string
+          intellect?: number | null
+          lifeblood?: number | null
+          melee_dmg?: number | null
+          name?: string
+          player_id?: string
+          ranged_dmg?: number | null
+          rank?: string | null
+          rivals?: string | null
+          skills?: Json | null
+          social_standing?: number | null
+          species?: string | null
+          stamina?: number | null
+          strength?: number | null
+          terms_served?: number | null
+          updated_at?: string
+          weapons?: Json | null
+        }
+        Relationships: []
+      }
+      vehicles: {
+        Row: {
+          acceleration: number | null
+          armor: number | null
+          cargo_capacity: number | null
+          class_type: string | null
+          communications: number | null
+          computer_rating: number | null
+          cost: number | null
+          created_at: string
+          crew_requirements: Json | null
+          fuel_capacity: number | null
+          hull: number | null
+          id: string
+          jump_drive: number | null
+          jump_rating: number | null
+          maintenance_cost: number | null
+          maneuver_drive: number | null
+          name: string
+          passenger_capacity: number | null
+          player_id: string
+          power_plant: number | null
+          screens: Json | null
+          sensors: number | null
+          specifications: Json | null
+          structure: number | null
+          tech_level: number | null
+          tonnage: number | null
+          top_speed: number | null
+          updated_at: string
+          vehicle_type: string | null
+          weapons: Json | null
+        }
+        Insert: {
+          acceleration?: number | null
+          armor?: number | null
+          cargo_capacity?: number | null
+          class_type?: string | null
+          communications?: number | null
+          computer_rating?: number | null
+          cost?: number | null
+          created_at?: string
+          crew_requirements?: Json | null
+          fuel_capacity?: number | null
+          hull?: number | null
+          id?: string
+          jump_drive?: number | null
+          jump_rating?: number | null
+          maintenance_cost?: number | null
+          maneuver_drive?: number | null
+          name?: string
+          passenger_capacity?: number | null
+          player_id?: string
+          power_plant?: number | null
+          screens?: Json | null
+          sensors?: number | null
+          specifications?: Json | null
+          structure?: number | null
+          tech_level?: number | null
+          tonnage?: number | null
+          top_speed?: number | null
+          updated_at?: string
+          vehicle_type?: string | null
+          weapons?: Json | null
+        }
+        Update: {
+          acceleration?: number | null
+          armor?: number | null
+          cargo_capacity?: number | null
+          class_type?: string | null
+          communications?: number | null
+          computer_rating?: number | null
+          cost?: number | null
+          created_at?: string
+          crew_requirements?: Json | null
+          fuel_capacity?: number | null
+          hull?: number | null
+          id?: string
+          jump_drive?: number | null
+          jump_rating?: number | null
+          maintenance_cost?: number | null
+          maneuver_drive?: number | null
+          name?: string
+          passenger_capacity?: number | null
+          player_id?: string
+          power_plant?: number | null
+          screens?: Json | null
+          sensors?: number | null
+          specifications?: Json | null
+          structure?: number | null
+          tech_level?: number | null
+          tonnage?: number | null
+          top_speed?: number | null
+          updated_at?: string
+          vehicle_type?: string | null
+          weapons?: Json | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
