@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Character, Vehicle } from '@/types/database';
 import { useToast } from '@/hooks/use-toast';
+import { dbHelpers } from '@/lib/supabase';
 
 interface CampaignContextType {
   // Authentication state
@@ -77,19 +78,13 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
   const refreshData = async () => {
     setIsLoading(true);
     try {
-      // Fetch all characters (no player filtering needed)
-      const charactersResponse = await fetch('/api/characters');
-      if (charactersResponse.ok) {
-        const charactersData = await charactersResponse.json();
-        setCharacters(charactersData);
-      }
+      // Fetch all characters
+      const charactersData = await dbHelpers.getAllCharacters();
+      setCharacters(charactersData);
 
-      // Fetch all vehicles
-      const vehiclesResponse = await fetch('/api/vehicles');
-      if (vehiclesResponse.ok) {
-        const vehiclesData = await vehiclesResponse.json();
-        setVehicles(vehiclesData);
-      }
+      // Fetch all vehicles  
+      const vehiclesData = await dbHelpers.getAllVehicles();
+      setVehicles(vehiclesData);
     } catch (error) {
       console.error('Failed to refresh data:', error);
       toast({
@@ -104,22 +99,7 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
 
   const saveCharacter = async (characterData: Partial<Character>): Promise<Character | null> => {
     try {
-      const method = characterData.id ? 'PUT' : 'POST';
-      const url = characterData.id ? `/api/characters/${characterData.id}` : '/api/characters';
-      
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(characterData),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to save character');
-      }
-
-      const savedCharacter = await response.json();
+      const savedCharacter = await dbHelpers.saveCharacter(characterData);
       
       // Update local state
       if (characterData.id) {
@@ -149,22 +129,7 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
 
   const saveVehicle = async (vehicleData: Partial<Vehicle>): Promise<Vehicle | null> => {
     try {
-      const method = vehicleData.id ? 'PUT' : 'POST';
-      const url = vehicleData.id ? `/api/vehicles/${vehicleData.id}` : '/api/vehicles';
-      
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(vehicleData),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to save vehicle');
-      }
-
-      const savedVehicle = await response.json();
+      const savedVehicle = await dbHelpers.saveVehicle(vehicleData);
       
       // Update local state
       if (vehicleData.id) {
@@ -246,14 +211,7 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
 
   const deleteCharacter = async (characterId: string): Promise<boolean> => {
     try {
-      const response = await fetch(`/api/characters/${characterId}`, {
-        method: 'DELETE',
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to delete character');
-      }
-
+      await dbHelpers.deleteCharacter(characterId);
       setCharacters(prev => prev.filter(char => char.id !== characterId));
       
       toast({
@@ -275,14 +233,7 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
 
   const deleteVehicle = async (vehicleId: string): Promise<boolean> => {
     try {
-      const response = await fetch(`/api/vehicles/${vehicleId}`, {
-        method: 'DELETE',
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to delete vehicle');
-      }
-
+      await dbHelpers.deleteVehicle(vehicleId);
       setVehicles(prev => prev.filter(vehicle => vehicle.id !== vehicleId));
       
       toast({
