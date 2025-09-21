@@ -17,32 +17,48 @@ export interface Character {
   // Header information
   species: string;
   gender: string;
-  age: string;
+  age: number;
   career: string;
   rank: string;
   homeworld: string;
   
-  // Characteristics
-  characteristics: Record<string, any>;
+  // Characteristics - matching database schema
+  strength: number;
+  dexterity: number;
+  endurance: number;
+  intellect: number;
+  education: number;
+  social_standing: number;
   
-  // Skills
+  // Derived characteristics
+  melee_dmg: number;
+  ranged_dmg: number;
+  lifeblood: number;
+  stamina: number;
+  
+  // Career details
+  terms_served: number;
+  
+  // Skills (stored as JSONB)
   skills: Record<string, any>;
   
   // Equipment and finances
-  equipment: any[];
-  credits: string;
-  debt: string;
-  ship_shares: string;
+  equipment: Record<string, any>;
+  credits: number;
+  debt: number;
   
-  // Weapons and armor
-  weapons: any[];
-  armor: any[];
+  // Personal details
+  allies: string;
+  contacts: string;
+  rivals: string;
+  enemies: string;
   
-  // Augments
-  augments: any[];
+  // Weapons and armor (stored as JSONB)
+  weapons: Record<string, any>;
+  armor: Record<string, any>;
   
-  // Additional notes
-  notes: string;
+  // Augments (stored as JSONB)
+  augments: Record<string, any>;
   
   created_at: string;
   updated_at: string;
@@ -54,34 +70,49 @@ export interface Vehicle {
   
   // Basic information
   name: string;
-  class_name: string;
-  configuration: string;
-  tech_level: string;
+  vehicle_type: string;
+  class_type: string;
   
   // Technical specifications
-  hull_points: string;
-  armor: string;
-  jump_drive: string;
-  maneuver_drive: string;
-  power_plant: string;
-  computer: string;
+  tech_level: number;
+  tonnage: number;
+  cost: number;
+  
+  // Hull and structure
+  hull: number;
+  structure: number;
+  armor: number;
+  
+  // Core systems
+  maneuver_drive: number;
+  jump_drive: number;
+  power_plant: number;
+  
+  // Performance
+  acceleration: number;
+  top_speed: number;
+  jump_rating: number;
+  
+  // Fuel and cargo
+  fuel_capacity: number;
+  cargo_capacity: number;
+  passenger_capacity: number;
+  
+  // Weapons and defenses (stored as JSONB)
+  weapons: Record<string, any>;
+  screens: Record<string, any>;
   
   // Systems and equipment
-  software: Record<string, any>;
-  sensors: Record<string, any>;
-  power_requirements: any[];
-  weapons: any[];
-  cargo: any[];
-  critical_hits: Record<string, any>;
+  computer_rating: number;
+  sensors: number;
+  communications: number;
   
-  // Costs and crew
-  cost: string;
-  maintenance: string;
-  crew: string;
-  passengers: string;
+  // Maintenance and operations
+  maintenance_cost: number;
+  crew_requirements: Record<string, any>;
   
-  // Vehicle type
-  vehicle_type: 'ship' | 'ground_vehicle' | 'other';
+  // Additional specifications (stored as JSONB)
+  specifications: Record<string, any>;
   
   created_at: string;
   updated_at: string;

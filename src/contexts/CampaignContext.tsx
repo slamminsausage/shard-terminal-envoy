@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Character, Vehicle } from '@/types/database';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from "@/integrations/supabase/client";
 import { dbHelpers } from '@/lib/supabase';
 
 interface CampaignContextType {
@@ -80,11 +81,11 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
     try {
       // Fetch all characters
       const charactersData = await dbHelpers.getAllCharacters();
-      setCharacters(charactersData);
+      setCharacters(charactersData as Character[]);
 
       // Fetch all vehicles  
       const vehiclesData = await dbHelpers.getAllVehicles();
-      setVehicles(vehiclesData);
+      setVehicles(vehiclesData as Vehicle[]);
     } catch (error) {
       console.error('Failed to refresh data:', error);
       // Don't show error toast immediately, might just be env vars not set up yet
@@ -121,16 +122,16 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
       // Update local state
       if (characterData.id) {
         setCharacters(prev => 
-          prev.map(char => char.id === savedCharacter.id ? savedCharacter : char)
+          prev.map(char => char.id === savedCharacter.id ? savedCharacter as Character : char)
         );
       } else {
-        setCharacters(prev => [...prev, savedCharacter]);
+        setCharacters(prev => [...prev, savedCharacter as Character]);
       }
 
       // Also save to localStorage as backup
       const updatedCharacters = characterData.id 
-        ? characters.map(char => char.id === savedCharacter.id ? savedCharacter : char)
-        : [...characters, savedCharacter];
+        ? characters.map(char => char.id === savedCharacter.id ? savedCharacter as Character : char)
+        : [...characters, savedCharacter as Character];
       localStorage.setItem('traveller_characters', JSON.stringify(updatedCharacters));
 
       toast({
@@ -138,7 +139,7 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
         description: `${savedCharacter.name} has been saved successfully.`,
       });
 
-      return savedCharacter;
+      return savedCharacter as Character;
     } catch (error) {
       console.error('Failed to save character:', error);
       
@@ -180,10 +181,10 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
       // Update local state
       if (vehicleData.id) {
         setVehicles(prev => 
-          prev.map(vehicle => vehicle.id === savedVehicle.id ? savedVehicle : vehicle)
+          prev.map(vehicle => vehicle.id === savedVehicle.id ? savedVehicle as Vehicle : vehicle)
         );
       } else {
-        setVehicles(prev => [...prev, savedVehicle]);
+        setVehicles(prev => [...prev, savedVehicle as Vehicle]);
       }
 
       toast({
@@ -191,7 +192,7 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
         description: `${savedVehicle.name} has been saved successfully.`,
       });
 
-      return savedVehicle;
+      return savedVehicle as Vehicle;
     } catch (error) {
       console.error('Failed to save vehicle:', error);
       toast({
@@ -208,48 +209,65 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
       name: 'New Character',
       species: '',
       gender: '',
-      age: '',
+      age: 0,
       career: '',
       rank: '',
       homeworld: '',
-      characteristics: {},
+      strength: 7,
+      dexterity: 7,
+      endurance: 7,
+      intellect: 7,
+      education: 7,
+      social_standing: 7,
+      melee_dmg: 0,
+      ranged_dmg: 0,
+      lifeblood: 0,
+      stamina: 0,
+      terms_served: 0,
       skills: {},
-      equipment: [],
-      credits: '0',
-      debt: '0',
-      ship_shares: '0',
-      weapons: [],
-      armor: [],
-      augments: [],
-      notes: '',
+      equipment: {},
+      credits: 0,
+      debt: 0,
+      allies: '',
+      contacts: '',
+      rivals: '',
+      enemies: '',
+      weapons: {},
+      armor: {},
+      augments: {},
     };
 
     return await saveCharacter(newCharacterData);
   };
 
-  const createNewVehicle = async (vehicleType: string = 'ship'): Promise<Vehicle | null> => {
+  const createNewVehicle = async (vehicleType: string = 'Ship'): Promise<Vehicle | null> => {
     const newVehicleData = {
-      name: vehicleType === 'ship' ? 'New Spaceship' : 'New Vehicle',
-      class_name: '',
-      configuration: '',
-      tech_level: '',
-      hull_points: '',
-      armor: '',
-      jump_drive: '',
-      maneuver_drive: '',
-      power_plant: '',
-      computer: '',
-      software: {},
-      sensors: {},
-      power_requirements: [],
-      weapons: [],
-      cargo: [],
-      critical_hits: {},
-      cost: '',
-      maintenance: '',
-      crew: '',
-      passengers: '',
-      vehicle_type: vehicleType as 'ship' | 'ground_vehicle' | 'other',
+      name: vehicleType === 'Ship' ? 'New Spaceship' : 'New Vehicle',
+      vehicle_type: vehicleType,
+      class_type: '',
+      tech_level: 10,
+      tonnage: 100,
+      cost: 0,
+      hull: 1,
+      structure: 1,
+      armor: 0,
+      maneuver_drive: 1,
+      jump_drive: 1,
+      power_plant: 1,
+      acceleration: 1,
+      top_speed: 0,
+      jump_rating: 1,
+      fuel_capacity: 10,
+      cargo_capacity: 10,
+      passenger_capacity: 0,
+      weapons: {},
+      screens: {},
+      computer_rating: 5,
+      sensors: 1,
+      communications: 1,
+      maintenance_cost: 0,
+      crew_requirements: {},
+      specifications: {},
     };
 
     return await saveVehicle(newVehicleData);
