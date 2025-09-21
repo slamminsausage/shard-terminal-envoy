@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { typeTextWithSound } from '@/lib/typing';
 import CharacterSheet from "@/components/crew/CharacterSheet";
 import { useCampaign } from "@/contexts/CampaignContext";
@@ -13,7 +14,8 @@ export default function CrewInterface() {
   const [activeCrewMember, setActiveCrewMember] = useState<string | null>(null);
   const [showCharacterSheet, setShowCharacterSheet] = useState(false);
   const [missionNotes, setMissionNotes] = useState("");
-  const { createNewCharacter, characters } = useCampaign();
+  const { createNewCharacter, characters, deleteCharacter } = useCampaign();
+  const [characterToDelete, setCharacterToDelete] = useState<string | null>(null);
 
   useEffect(() => {
     const initMessage = "CREW MANAGEMENT SYSTEM ONLINE\nAccess crew records and character sheets...\n\n";
@@ -44,8 +46,14 @@ export default function CrewInterface() {
 
   const handleSaveNotes = () => {
     localStorage.setItem('mission_notes', missionNotes);
-    // In a real app, this would save to the database
     console.log('Mission notes saved:', missionNotes);
+  };
+
+  const handleDeleteCharacter = async (characterId: string) => {
+    const success = await deleteCharacter(characterId);
+    if (success) {
+      setCharacterToDelete(null);
+    }
   };
 
   if (showCharacterSheet) {
@@ -94,16 +102,43 @@ export default function CrewInterface() {
                       characters.map((character, index) => (
                         <div key={character.id} className="p-3 border border-primary/20 rounded font-mono text-sm flex justify-between items-center">
                           <span>SLOT {String(index + 1).padStart(2, '0')}: {character.name} - {character.career || 'Unassigned'}</span>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => {
-                              setActiveCrewMember(character.id);
-                              setShowCharacterSheet(true);
-                            }}
-                          >
-                            Edit
-                          </Button>
+                          <div className="flex gap-2">
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => {
+                                setActiveCrewMember(character.id);
+                                setShowCharacterSheet(true);
+                              }}
+                            >
+                              Edit
+                            </Button>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="outline" size="sm" className="text-red-400 border-red-400 hover:bg-red-400 hover:text-white">
+                                  Delete
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Delete Character</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Are you sure you want to permanently delete "{character.name}"? This action cannot be undone. 
+                                    The character will be removed from any ship crew assignments.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction 
+                                    onClick={() => handleDeleteCharacter(character.id)}
+                                    className="bg-red-600 hover:bg-red-700"
+                                  >
+                                    Delete Permanently
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </div>
                         </div>
                       ))
                     ) : (

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { typeTextWithSound } from '@/lib/typing';
 import VehicleSheet from "@/components/crew/VehicleSheet";
 import { useCampaign } from "@/contexts/CampaignContext";
@@ -10,7 +11,7 @@ export default function VehicleInterface() {
   const [displayText, setDisplayText] = useState("");
   const [showVehicleSheet, setShowVehicleSheet] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState<string | null>(null);
-  const { createNewVehicle, vehicles } = useCampaign();
+  const { createNewVehicle, vehicles, deleteVehicle } = useCampaign();
 
   useEffect(() => {
     const initMessage = "VEHICLE MANAGEMENT SYSTEM ONLINE\nScanning for registered vessels and vehicles...\n\n";
@@ -44,9 +45,16 @@ export default function VehicleInterface() {
   };
 
   const handleCrewAssignment = (vehicleId: string) => {
-    // For now, just log - we can expand this to show a crew assignment dialog
     console.log('Assign crew to vehicle:', vehicleId);
     alert('Crew assignment functionality coming soon! For now, crew can be managed in the Character Sheets tab.');
+  };
+
+  const handleDeleteVehicle = async (vehicleId: string) => {
+    const success = await deleteVehicle(vehicleId);
+    if (success) {
+      // Refresh to show updated vehicle list
+      window.location.reload();
+    }
   };
 
   if (showVehicleSheet) {
@@ -122,6 +130,31 @@ export default function VehicleInterface() {
                             >
                               Assign Crew
                             </Button>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="outline" size="sm" className="text-red-400 border-red-400 hover:bg-red-400 hover:text-white">
+                                  Delete
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Delete Spacecraft</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Are you sure you want to permanently delete "{vehicle.name}"? This action cannot be undone. 
+                                    Any crew assigned to this vessel will become unassigned.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction 
+                                    onClick={() => handleDeleteVehicle(vehicle.id)}
+                                    className="bg-red-600 hover:bg-red-700"
+                                  >
+                                    Delete Permanently
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
                           </div>
                         </div>
                       </div>
@@ -134,14 +167,32 @@ export default function VehicleInterface() {
                           <div className="font-semibold">VÁNAGANDR</div>
                           <div className="text-xs opacity-70">Type-S Scout/Courier (Modified)</div>
                           <div className="text-xs opacity-70">Status: IMPOUNDED</div>
+                          <div className="text-xs opacity-70">Crew: Unassigned</div>
                         </div>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => handleVehicleSheetAccess("spacecraft")}
-                        >
-                          Access Sheet
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleVehicleSheetAccess("spacecraft")}
+                          >
+                            Access Sheet
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleCrewAssignment("vanagandr")}
+                          >
+                            Assign Crew
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="text-gray-400 border-gray-400 opacity-50 cursor-not-allowed"
+                            disabled
+                          >
+                            Impounded
+                          </Button>
+                        </div>
                       </div>
                     </div>
                     
@@ -176,14 +227,53 @@ export default function VehicleInterface() {
                             <div className="font-semibold">{vehicle.name}</div>
                             <div className="text-xs opacity-70">{vehicle.class_type || 'Ground Vehicle'}</div>
                             <div className="text-xs opacity-70">Status: ACTIVE</div>
+                            <div className="text-xs opacity-70">
+                              Crew: {vehicle.crew_requirements && Object.keys(vehicle.crew_requirements).length > 0 
+                                ? Object.values(vehicle.crew_requirements).join(', ') 
+                                : 'Unassigned'}
+                            </div>
                           </div>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => handleVehicleSheetAccess("vehicle")}
-                          >
-                            Access Sheet
-                          </Button>
+                          <div className="flex gap-2">
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => handleVehicleSheetAccess("vehicle")}
+                            >
+                              Access Sheet
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => handleCrewAssignment(vehicle.id)}
+                            >
+                              Assign Crew
+                            </Button>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="outline" size="sm" className="text-red-400 border-red-400 hover:bg-red-400 hover:text-white">
+                                  Delete
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Delete Vehicle</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Are you sure you want to permanently delete "{vehicle.name}"? This action cannot be undone. 
+                                    Any crew assigned to this vehicle will become unassigned.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction 
+                                    onClick={() => handleDeleteVehicle(vehicle.id)}
+                                    className="bg-red-600 hover:bg-red-700"
+                                  >
+                                    Delete Permanently
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </div>
                         </div>
                       </div>
                     ))}
