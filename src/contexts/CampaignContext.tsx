@@ -87,11 +87,28 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
       setVehicles(vehiclesData);
     } catch (error) {
       console.error('Failed to refresh data:', error);
-      toast({
-        title: "Data Error",
-        description: "Failed to load campaign data. Please try again.",
-        variant: "destructive",
-      });
+      // Don't show error toast immediately, might just be env vars not set up yet
+      console.warn('Database not available, using local storage fallback');
+      
+      // Fallback to localStorage for development
+      const savedCharacters = localStorage.getItem('traveller_characters');
+      const savedVehicles = localStorage.getItem('traveller_vehicles');
+      
+      if (savedCharacters) {
+        try {
+          setCharacters(JSON.parse(savedCharacters));
+        } catch (e) {
+          console.error('Failed to parse saved characters:', e);
+        }
+      }
+      
+      if (savedVehicles) {
+        try {
+          setVehicles(JSON.parse(savedVehicles));
+        } catch (e) {
+          console.error('Failed to parse saved vehicles:', e);
+        }
+      }
     } finally {
       setIsLoading(false);
     }
@@ -110,6 +127,12 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
         setCharacters(prev => [...prev, savedCharacter]);
       }
 
+      // Also save to localStorage as backup
+      const updatedCharacters = characterData.id 
+        ? characters.map(char => char.id === savedCharacter.id ? savedCharacter : char)
+        : [...characters, savedCharacter];
+      localStorage.setItem('traveller_characters', JSON.stringify(updatedCharacters));
+
       toast({
         title: "Character Saved",
         description: `${savedCharacter.name} has been saved successfully.`,
@@ -118,12 +141,35 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
       return savedCharacter;
     } catch (error) {
       console.error('Failed to save character:', error);
+      
+      // Fallback to localStorage
+      const characterWithId = {
+        ...characterData,
+        id: characterData.id || `char_${Date.now()}`,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        player_id: 'campaign'
+      };
+      
+      let updatedCharacters;
+      if (characterData.id) {
+        updatedCharacters = characters.map(char => 
+          char.id === characterData.id ? characterWithId as Character : char
+        );
+        setCharacters(updatedCharacters);
+      } else {
+        updatedCharacters = [...characters, characterWithId as Character];
+        setCharacters(updatedCharacters);
+      }
+      
+      localStorage.setItem('traveller_characters', JSON.stringify(updatedCharacters));
+      
       toast({
-        title: "Save Error",
-        description: "Failed to save character. Please try again.",
-        variant: "destructive",
+        title: "Character Saved Locally",
+        description: `${characterWithId.name} saved to local storage (database unavailable).`,
       });
-      return null;
+
+      return characterWithId as Character;
     }
   };
 
