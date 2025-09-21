@@ -3,7 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { PlayerProvider } from "@/contexts/PlayerContext";
+import { CampaignProvider } from "@/contexts/CampaignContext";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 
@@ -12,7 +12,7 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <PlayerProvider>
+      <CampaignProvider>
         <Toaster />
         <Sonner />
         <BrowserRouter>
@@ -22,7 +22,7 @@ const App = () => (
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
-      </PlayerProvider>
+      </CampaignProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );

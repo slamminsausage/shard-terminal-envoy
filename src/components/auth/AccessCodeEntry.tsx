@@ -4,48 +4,55 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Loader2, Terminal, Lock } from 'lucide-react';
-import { usePlayer } from '@/contexts/PlayerContext';
+import { useToast } from '@/hooks/use-toast';
+
+// Simple password - you can change this to whatever you want
+const CAMPAIGN_PASSWORD = "TRAVELLER2024";
 
 interface AccessCodeEntryProps {
   onSuccess?: () => void;
 }
 
 export default function AccessCodeEntry({ onSuccess }: AccessCodeEntryProps) {
-  const [accessCode, setAccessCode] = useState('');
+  const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { validateAccessCode, isLoading } = usePlayer();
+  const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!accessCode.trim()) {
+    if (!password.trim()) {
       return;
     }
 
     setIsSubmitting(true);
     
-    try {
-      const isValid = await validateAccessCode(accessCode.trim());
+    // Simple password check
+    if (password.toUpperCase() === CAMPAIGN_PASSWORD) {
+      // Store authentication in localStorage
+      localStorage.setItem('traveller_authenticated', 'true');
       
-      if (isValid && onSuccess) {
+      toast({
+        title: "Access Granted",
+        description: "Welcome to the Traveller Terminal System!",
+      });
+      
+      if (onSuccess) {
         onSuccess();
       }
-    } finally {
-      setIsSubmitting(false);
+    } else {
+      toast({
+        title: "Access Denied",
+        description: "Incorrect password. Please try again.",
+        variant: "destructive",
+      });
     }
-  };
-
-  const formatAccessCode = (value: string) => {
-    // Remove all non-alphanumeric characters and convert to uppercase
-    const cleaned = value.replace(/[^A-Z0-9]/gi, '').toUpperCase();
     
-    // Limit to 8 characters
-    return cleaned.slice(0, 8);
+    setIsSubmitting(false);
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const formatted = formatAccessCode(e.target.value);
-    setAccessCode(formatted);
+    setPassword(e.target.value);
   };
 
   return (
@@ -69,47 +76,43 @@ export default function AccessCodeEntry({ onSuccess }: AccessCodeEntryProps) {
         <Card className="border-primary/30 bg-background/50">
           <CardHeader className="text-center">
             <CardTitle className="text-primary font-mono">
-              Security Clearance Required
+              Campaign Access Required
             </CardTitle>
             <CardDescription className="text-primary/60 font-mono text-sm">
-              Enter your unique access code to continue
+              Enter the campaign password to continue
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="access-code" className="text-primary font-mono text-sm">
-                  Access Code
+                <Label htmlFor="password" className="text-primary font-mono text-sm">
+                  Campaign Password
                 </Label>
                 <Input
-                  id="access-code"
-                  type="text"
-                  value={accessCode}
+                  id="password"
+                  type="password"
+                  value={password}
                   onChange={handleInputChange}
-                  placeholder="Enter 8-character code"
-                  className="font-mono text-center text-lg tracking-widest uppercase bg-background/50 border-primary/30 text-primary placeholder:text-primary/40"
-                  maxLength={8}
-                  disabled={isLoading || isSubmitting}
+                  placeholder="Enter campaign password"
+                  className="font-mono bg-background/50 border-primary/30 text-primary placeholder:text-primary/40"
+                  disabled={isSubmitting}
                   autoComplete="off"
                   autoFocus
                 />
-                <p className="text-xs text-primary/40 font-mono text-center">
-                  Code format: XXXXXXXX (8 characters)
-                </p>
               </div>
               
               <Button
                 type="submit"
-                disabled={accessCode.length !== 8 || isLoading || isSubmitting}
+                disabled={password.length === 0 || isSubmitting}
                 className="w-full font-mono bg-primary text-background hover:bg-primary/90 disabled:opacity-50"
               >
-                {isLoading || isSubmitting ? (
+                {isSubmitting ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Validating...
+                    Checking...
                   </>
                 ) : (
-                  'Access System'
+                  'Access Campaign'
                 )}
               </Button>
             </form>
