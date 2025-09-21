@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { useCampaign } from "@/contexts/CampaignContext";
+import { Vehicle } from "@/types/database";
 
 interface PowerRequirementEntry {
   label: string;
@@ -66,8 +67,13 @@ const CRITICAL_TRACKS: CriticalTrack[] = [
   { label: "Weapons", boxes: 6 }
 ];
 
-const VehicleSheet = () => {
-  const { saveVehicle } = useCampaign();
+interface VehicleSheetProps {
+  vehicleId?: string;
+}
+
+const VehicleSheet = ({ vehicleId }: VehicleSheetProps) => {
+  const { saveVehicle, vehicles } = useCampaign();
+  const [currentVehicleId, setCurrentVehicleId] = useState<string | undefined>(vehicleId);
   const [shipInfo, setShipInfo] = useState({
     name: "",
     className: "",
@@ -100,6 +106,45 @@ const VehicleSheet = () => {
     }))
   );
 
+  // Load existing vehicle data when vehicleId is provided
+  useEffect(() => {
+    if (vehicleId && vehicles.length > 0) {
+      const vehicle = vehicles.find(v => v.id === vehicleId);
+      if (vehicle) {
+        setCurrentVehicleId(vehicle.id);
+        setShipInfo({
+          name: vehicle.name || "",
+          className: vehicle.class_type || "",
+          hullPoints: vehicle.hull?.toString() || "",
+          armour: vehicle.armor?.toString() || "",
+          powerPoints: vehicle.power_plant?.toString() || "",
+          softwareBandwidth: vehicle.computer_rating?.toString() || "",
+          fuelCost: vehicle.cost?.toString() || "",
+          mortgage: vehicle.maintenance_cost?.toString() || "",
+          lifeSupport: "",
+          salaries: "",
+          maintenanceCost: vehicle.maintenance_cost?.toString() || ""
+        });
+        
+        if (vehicle.specifications && typeof vehicle.specifications === 'object') {
+          const specs = vehicle.specifications as any;
+          if (specs.software) setSoftwarePackages(specs.software);
+          if (specs.systems) setSystems(specs.systems);
+          if (specs.sensors) setSensors(specs.sensors);
+          if (specs.powerRequirements) setPowerRequirements(specs.powerRequirements);
+          if (specs.cargo) setCargo(specs.cargo);
+          if (specs.criticalHits) setCriticalHits(specs.criticalHits);
+        }
+        
+        setDrives({
+          manoeuvreThrust: vehicle.maneuver_drive?.toString() || "",
+          reactionThrust: vehicle.acceleration?.toString() || "",
+          jumpDriveJump: vehicle.jump_drive?.toString() || ""
+        });
+      }
+    }
+  }, [vehicleId, vehicles]);
+
   const updateShipInfo = (field: keyof typeof shipInfo, value: string) => {
     setShipInfo(prev => ({ ...prev, [field]: value }));
   };
@@ -131,6 +176,7 @@ const VehicleSheet = () => {
   const handleSaveVehicle = async () => {
     try {
       const vehicleData = {
+        ...(currentVehicleId && { id: currentVehicleId }),
         name: shipInfo.name,
         vehicle_type: 'Ship',
         class_type: shipInfo.className,
@@ -141,9 +187,9 @@ const VehicleSheet = () => {
         structure: 1,
         armor: parseInt(shipInfo.armour) || 0,
         maneuver_drive: parseInt(drives.manoeuvreThrust) || 1,
-        jump_drive: parseInt(drives.reactionThrust) || 1,
-        power_plant: 1, // No direct mapping available
-        acceleration: 1,
+        jump_drive: parseInt(drives.jumpDriveJump) || 1,
+        power_plant: parseInt(shipInfo.powerPoints) || 1,
+        acceleration: parseInt(drives.reactionThrust) || 1,
         top_speed: 0,
         jump_rating: parseInt(drives.jumpDriveJump) || 1,
         fuel_capacity: 10,
@@ -151,7 +197,7 @@ const VehicleSheet = () => {
         passenger_capacity: 0,
         weapons: weapons,
         screens: {},
-        computer_rating: 5,
+        computer_rating: parseInt(shipInfo.softwareBandwidth) || 5,
         sensors: 1,
         communications: 1,
         maintenance_cost: parseInt(shipInfo.maintenanceCost) || 0,
@@ -166,7 +212,10 @@ const VehicleSheet = () => {
         },
       };
 
-      await saveVehicle(vehicleData);
+      const savedVehicle = await saveVehicle(vehicleData);
+      if (savedVehicle && !currentVehicleId) {
+        setCurrentVehicleId(savedVehicle.id);
+      }
     } catch (error) {
       console.error('Failed to save vehicle:', error);
     }
@@ -333,15 +382,9 @@ const VehicleSheet = () => {
         </div>
       </section>
       
-      <div className="flex justify-center pt-8">
-        <Button 
-          variant="outline" 
-          size="lg"
-          className="bg-primary/20 border-2 border-primary text-primary hover:bg-primary hover:text-background font-mono text-lg px-8 py-3 terminal-glow"
-          onClick={handleSaveVehicle}
-        >
-          💾 SAVE VEHICLE DATA
-        </Button>
+      <div className="flex justify-end gap-3">
+        <Button variant="outline">Reset Sheet</Button>
+        <Button onClick={handleSaveVehicle}>Save Changes</Button>
       </div>
     </div>
   );

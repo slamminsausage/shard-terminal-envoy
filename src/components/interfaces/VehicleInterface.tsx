@@ -10,7 +10,7 @@ import { useCampaign } from "@/contexts/CampaignContext";
 export default function VehicleInterface() {
   const [displayText, setDisplayText] = useState("");
   const [showVehicleSheet, setShowVehicleSheet] = useState(false);
-  const [selectedVehicle, setSelectedVehicle] = useState<string | null>(null);
+  const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null);
   const { createNewVehicle, vehicles, deleteVehicle } = useCampaign();
 
   useEffect(() => {
@@ -24,23 +24,21 @@ export default function VehicleInterface() {
     };
   }, []);
 
-  const handleVehicleSheetAccess = (vehicleType?: string) => {
-    setSelectedVehicle(vehicleType || null);
+  const handleVehicleSheetAccess = (vehicleId: string) => {
+    setSelectedVehicleId(vehicleId);
     setShowVehicleSheet(true);
   };
 
   const handleBackToVehicleInterface = () => {
     setShowVehicleSheet(false);
-    setSelectedVehicle(null);
+    setSelectedVehicleId(null);
   };
 
   const handleRegisterNewVehicle = async (vehicleType: string) => {
     const newVehicle = await createNewVehicle(vehicleType);
     if (newVehicle) {
-      setSelectedVehicle(vehicleType);
+      setSelectedVehicleId(newVehicle.id);
       setShowVehicleSheet(true);
-      // Refresh the data to show the new vehicle
-      window.location.reload(); // Simple refresh for now
     }
   };
 
@@ -66,13 +64,13 @@ export default function VehicleInterface() {
       <div className="p-6 space-y-6">
         <div className="flex justify-between items-center">
           <h2 className="text-xl font-mono">
-            {selectedVehicle ? `${selectedVehicle.toUpperCase()} SHEET` : "VEHICLE SHEET INTERFACE"}
+            VEHICLE SHEET INTERFACE
           </h2>
           <Button variant="outline" onClick={handleBackToVehicleInterface}>
             Back to Vehicle Management
           </Button>
         </div>
-        <VehicleSheet />
+        <VehicleSheet vehicleId={selectedVehicleId || undefined} />
       </div>
     );
   }
@@ -123,7 +121,7 @@ export default function VehicleInterface() {
                             <Button 
                               variant="outline" 
                               size="sm"
-                              onClick={() => handleVehicleSheetAccess("spacecraft")}
+                              onClick={() => handleVehicleSheetAccess(vehicle.id)}
                             >
                               Access Sheet
                             </Button>
@@ -177,7 +175,12 @@ export default function VehicleInterface() {
                           <Button 
                             variant="outline" 
                             size="sm"
-                            onClick={() => handleVehicleSheetAccess("spacecraft")}
+                            onClick={() => {
+                              const vanagandrVehicle = vehicles.find(v => v.name.toLowerCase().includes('vanagandr'));
+                              if (vanagandrVehicle) {
+                                handleVehicleSheetAccess(vanagandrVehicle.id);
+                              }
+                            }}
                           >
                             Access Sheet
                           </Button>
@@ -241,7 +244,7 @@ export default function VehicleInterface() {
                             <Button 
                               variant="outline" 
                               size="sm"
-                              onClick={() => handleVehicleSheetAccess("vehicle")}
+                              onClick={() => handleVehicleSheetAccess(vehicle.id)}
                             >
                               Access Sheet
                             </Button>
