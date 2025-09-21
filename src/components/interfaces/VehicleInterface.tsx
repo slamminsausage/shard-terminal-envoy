@@ -50,10 +50,14 @@ export default function VehicleInterface() {
   };
 
   const handleDeleteVehicle = async (vehicleId: string) => {
-    const success = await deleteVehicle(vehicleId);
-    if (success) {
-      // Refresh to show updated vehicle list
-      window.location.reload();
+    try {
+      const success = await deleteVehicle(vehicleId);
+      if (success) {
+        // The vehicles list will be updated automatically by the context
+        // No need to reload the page
+      }
+    } catch (error) {
+      console.error('Error deleting vehicle:', error);
     }
   };
 

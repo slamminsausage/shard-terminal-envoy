@@ -275,38 +275,18 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
 
   const deleteCharacter = async (characterId: string): Promise<boolean> => {
     try {
-      // Remove character from any vehicle crew assignments
-      const updatedVehicles = vehicles.map(vehicle => {
-        if (vehicle.crew_requirements && typeof vehicle.crew_requirements === 'object') {
-          const updatedCrewRequirements = { ...vehicle.crew_requirements };
-          // Remove character from all crew positions
-          Object.keys(updatedCrewRequirements).forEach(position => {
-            if (updatedCrewRequirements[position] === characterId) {
-              delete updatedCrewRequirements[position];
-            }
-          });
-          return { ...vehicle, crew_requirements: updatedCrewRequirements };
-        }
-        return vehicle;
-      });
-
-      // Update vehicles in database that had this character assigned
-      for (const vehicle of updatedVehicles) {
-        if (vehicle.crew_requirements !== vehicles.find(v => v.id === vehicle.id)?.crew_requirements) {
-          await dbHelpers.saveVehicle(vehicle);
-        }
-      }
-
-      // Delete the character
+      // Delete the character first
       await dbHelpers.deleteCharacter(characterId);
       
-      // Update local state
+      // Update local state - remove character
       setCharacters(prev => prev.filter(char => char.id !== characterId));
-      setVehicles(updatedVehicles);
+      
+      // Note: For now, we're not implementing complex crew assignment tracking
+      // In a future enhancement, we could track and update vehicle crew assignments
       
       toast({
         title: "Character Deleted",
-        description: "Character and all crew assignments have been removed successfully.",
+        description: "Character has been deleted successfully.",
       });
 
       return true;
@@ -323,28 +303,15 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
 
   const deleteVehicle = async (vehicleId: string): Promise<boolean> => {
     try {
-      const vehicleToDelete = vehicles.find(v => v.id === vehicleId);
-      
-      // Get list of characters assigned to this vehicle
-      const assignedCharacterIds: string[] = [];
-      if (vehicleToDelete?.crew_requirements && typeof vehicleToDelete.crew_requirements === 'object') {
-        Object.values(vehicleToDelete.crew_requirements).forEach(charId => {
-          if (typeof charId === 'string' && charId) {
-            assignedCharacterIds.push(charId);
-          }
-        });
-      }
-
-      // Delete the vehicle
+      // Delete the vehicle from database
       await dbHelpers.deleteVehicle(vehicleId);
       
-      // Update local state
+      // Update local state - remove vehicle
       setVehicles(prev => prev.filter(vehicle => vehicle.id !== vehicleId));
       
-      const crewCount = assignedCharacterIds.length;
       toast({
         title: "Vehicle Deleted",
-        description: `Vehicle has been deleted successfully.${crewCount > 0 ? ` ${crewCount} crew member(s) are now unassigned.` : ''}`,
+        description: "Vehicle has been deleted successfully.",
       });
 
       return true;
