@@ -14,9 +14,12 @@ export default function CrewInterface() {
   const [displayText, setDisplayText] = useState("");
   const [activeCrewMember, setActiveCrewMember] = useState<string | null>(null);
   const [showCharacterSheet, setShowCharacterSheet] = useState(false);
-  const [missionNotes, setMissionNotes] = useState(() => {
-    // Load mission notes from localStorage on component mount
-    return localStorage.getItem('mission_notes') || "";
+  const [missionNotes, setMissionNotes] = useState("");
+  const [currentNoteFile, setCurrentNoteFile] = useState<string | null>(null);
+  const [noteFileName, setNoteFileName] = useState("");
+  const [savedNoteFiles, setSavedNoteFiles] = useState<string[]>(() => {
+    const saved = localStorage.getItem('saved_note_files');
+    return saved ? JSON.parse(saved) : [];
   });
   const { createNewCharacter, characters, deleteCharacter } = useCampaign();
   const [characterToDelete, setCharacterToDelete] = useState<string | null>(null);
@@ -49,16 +52,72 @@ export default function CrewInterface() {
   };
 
   const handleSaveNotes = () => {
+    if (!noteFileName.trim()) {
+      toast({
+        title: "Filename Required",
+        description: "Please enter a filename for your mission notes.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
-      localStorage.setItem('mission_notes', missionNotes);
+      const filename = noteFileName.trim();
+      localStorage.setItem(`mission_notes_${filename}`, missionNotes);
+      
+      const updatedFiles = savedNoteFiles.includes(filename) 
+        ? savedNoteFiles 
+        : [...savedNoteFiles, filename];
+      
+      setSavedNoteFiles(updatedFiles);
+      localStorage.setItem('saved_note_files', JSON.stringify(updatedFiles));
+      setCurrentNoteFile(filename);
+      
       toast({
         title: "Mission Notes Saved",
-        description: "Your mission notes have been saved successfully.",
+        description: `File "${filename}" has been saved successfully.`,
       });
     } catch (error) {
       toast({
         title: "Save Failed",
         description: "Could not save mission notes. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleOpenNoteFile = (filename: string) => {
+    const notes = localStorage.getItem(`mission_notes_${filename}`) || "";
+    setMissionNotes(notes);
+    setCurrentNoteFile(filename);
+    setNoteFileName(filename);
+  };
+
+  const handleNewNoteFile = () => {
+    setMissionNotes("");
+    setCurrentNoteFile(null);
+    setNoteFileName("");
+  };
+
+  const handleDeleteNoteFile = (filename: string) => {
+    try {
+      localStorage.removeItem(`mission_notes_${filename}`);
+      const updatedFiles = savedNoteFiles.filter(f => f !== filename);
+      setSavedNoteFiles(updatedFiles);
+      localStorage.setItem('saved_note_files', JSON.stringify(updatedFiles));
+      
+      if (currentNoteFile === filename) {
+        handleNewNoteFile();
+      }
+      
+      toast({
+        title: "File Deleted",
+        description: `Mission note file "${filename}" has been deleted.`,
+      });
+    } catch (error) {
+      toast({
+        title: "Delete Failed",
+        description: "Could not delete the file. Please try again.",
         variant: "destructive",
       });
     }
@@ -207,9 +266,58 @@ export default function CrewInterface() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
+                    {savedNoteFiles.length > 0 && (
+                      <div>
+                        <Label className="font-mono text-xs">Saved Note Files</Label>
+                        <div className="mt-2 space-y-1">
+                          {savedNoteFiles.map((filename) => (
+                            <div key={filename} className="flex items-center justify-between p-2 border border-primary/20 rounded">
+                              <button
+                                onClick={() => handleOpenNoteFile(filename)}
+                                className="font-mono text-sm text-left flex-1 hover:text-primary transition-colors"
+                              >
+                                {filename} {currentNoteFile === filename && "(current)"}
+                              </button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleDeleteNoteFile(filename)}
+                                className="text-red-400 border-red-400 hover:bg-red-400 hover:text-white ml-2"
+                              >
+                                Delete
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
+                    <div className="flex gap-2">
+                      <div className="flex-1">
+                        <Label htmlFor="note-filename" className="font-mono text-xs">
+                          Filename
+                        </Label>
+                        <Input
+                          id="note-filename"
+                          placeholder="Enter filename..."
+                          value={noteFileName}
+                          onChange={(e) => setNoteFileName(e.target.value)}
+                          className="font-mono text-sm"
+                        />
+                      </div>
+                      <div className="flex items-end gap-2">
+                        <Button variant="outline" size="sm" onClick={handleNewNoteFile}>
+                          New
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={handleSaveNotes}>
+                          Save
+                        </Button>
+                      </div>
+                    </div>
+                    
                     <div>
                       <Label htmlFor="mission-notes" className="font-mono text-xs">
-                        Current Mission Status
+                        Mission Notes Content
                       </Label>
                       <textarea 
                         id="mission-notes"
@@ -219,9 +327,6 @@ export default function CrewInterface() {
                         onChange={(e) => setMissionNotes(e.target.value)}
                       />
                     </div>
-                    <Button variant="outline" size="sm" onClick={handleSaveNotes}>
-                      Save Notes
-                    </Button>
                   </div>
                 </CardContent>
               </Card>
