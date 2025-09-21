@@ -38,7 +38,15 @@ export default function VehicleInterface() {
     if (newVehicle) {
       setSelectedVehicle(vehicleType);
       setShowVehicleSheet(true);
+      // Refresh the data to show the new vehicle
+      window.location.reload(); // Simple refresh for now
     }
+  };
+
+  const handleCrewAssignment = (vehicleId: string) => {
+    // For now, just log - we can expand this to show a crew assignment dialog
+    console.log('Assign crew to vehicle:', vehicleId);
+    alert('Crew assignment functionality coming soon! For now, crew can be managed in the Character Sheets tab.');
   };
 
   if (showVehicleSheet) {
@@ -85,6 +93,41 @@ export default function VehicleInterface() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
+                    {/* Show existing vehicles */}
+                    {vehicles.filter(v => v.vehicle_type === 'Ship').map((vehicle) => (
+                      <div key={vehicle.id} className="p-4 border border-primary/20 rounded">
+                        <div className="flex justify-between items-center">
+                          <div className="font-mono text-sm">
+                            <div className="font-semibold">{vehicle.name}</div>
+                            <div className="text-xs opacity-70">{vehicle.class_type || 'Type-S Scout/Courier'}</div>
+                            <div className="text-xs opacity-70">Status: ACTIVE</div>
+                            <div className="text-xs opacity-70">
+                              Crew: {vehicle.crew_requirements && Object.keys(vehicle.crew_requirements).length > 0 
+                                ? Object.values(vehicle.crew_requirements).join(', ') 
+                                : 'Unassigned'}
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => handleVehicleSheetAccess("spacecraft")}
+                            >
+                              Access Sheet
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => handleCrewAssignment(vehicle.id)}
+                            >
+                              Assign Crew
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    
+                    {/* VÁNAGANDR (hardcoded for now) */}
                     <div className="p-4 border border-primary/20 rounded">
                       <div className="flex justify-between items-center">
                         <div className="font-mono text-sm">
@@ -102,11 +145,13 @@ export default function VehicleInterface() {
                       </div>
                     </div>
                     
-                    <div className="p-4 border border-primary/20 rounded border-dashed opacity-50">
-                      <div className="font-mono text-sm text-center">
-                        [EMPTY BERTH] - Register new spacecraft
+                    {vehicles.filter(v => v.vehicle_type === 'Ship').length === 0 && (
+                      <div className="p-4 border border-primary/20 rounded border-dashed opacity-50">
+                        <div className="font-mono text-sm text-center">
+                          [EMPTY BERTH] - Register new spacecraft
+                        </div>
                       </div>
-                    </div>
+                    )}
                     
                     <Button variant="outline" className="w-full" onClick={() => handleRegisterNewVehicle("Ship")}>
                       Register New Spacecraft
@@ -123,11 +168,33 @@ export default function VehicleInterface() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    <div className="p-4 border border-primary/20 rounded border-dashed opacity-50">
-                      <div className="font-mono text-sm text-center">
-                        [NO VEHICLES REGISTERED]
+                    {/* Show existing ground vehicles */}
+                    {vehicles.filter(v => v.vehicle_type === 'Ground Vehicle').map((vehicle) => (
+                      <div key={vehicle.id} className="p-4 border border-primary/20 rounded">
+                        <div className="flex justify-between items-center">
+                          <div className="font-mono text-sm">
+                            <div className="font-semibold">{vehicle.name}</div>
+                            <div className="text-xs opacity-70">{vehicle.class_type || 'Ground Vehicle'}</div>
+                            <div className="text-xs opacity-70">Status: ACTIVE</div>
+                          </div>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleVehicleSheetAccess("vehicle")}
+                          >
+                            Access Sheet
+                          </Button>
+                        </div>
                       </div>
-                    </div>
+                    ))}
+                    
+                    {vehicles.filter(v => v.vehicle_type === 'Ground Vehicle').length === 0 && (
+                      <div className="p-4 border border-primary/20 rounded border-dashed opacity-50">
+                        <div className="font-mono text-sm text-center">
+                          [NO VEHICLES REGISTERED]
+                        </div>
+                      </div>
+                    )}
                     
                     <Button 
                       variant="outline" 

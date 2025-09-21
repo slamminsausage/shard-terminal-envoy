@@ -1,8 +1,12 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { useCampaign } from "@/contexts/CampaignContext";
+
+interface CharacterSheetProps {
+  characterId?: string;
+}
 
 interface CharacteristicValue {
   total: string;
@@ -223,8 +227,9 @@ const initialAugments: AugmentRow[] = Array.from({ length: 4 }, () => ({
   improvement: ""
 }));
 
-const CharacterSheet = () => {
-  const { saveCharacter } = useCampaign();
+const CharacterSheet = ({ characterId }: CharacterSheetProps = {}) => {
+  const { saveCharacter, characters } = useCampaign();
+  const [currentCharacterId, setCurrentCharacterId] = useState<string | undefined>(characterId);
   const [header, setHeader] = useState({
     name: "",
     rads: "",
@@ -252,6 +257,34 @@ const CharacterSheet = () => {
   const [equipment, setEquipment] = useState(initialEquipment);
   const [augments, setAugments] = useState(initialAugments);
   const [totalMass, setTotalMass] = useState("");
+
+  // Load character data if editing an existing character
+  useEffect(() => {
+    if (currentCharacterId) {
+      const character = characters.find(c => c.id === currentCharacterId);
+      if (character) {
+        setHeader({
+          name: character.name,
+          rads: "",
+          age: character.age.toString(),
+          species: character.species,
+          speciesTraits: "",
+          homeworld: character.homeworld
+        });
+        setCharacteristics({
+          strength: { total: character.strength.toString(), current: character.strength.toString() },
+          dexterity: { total: character.dexterity.toString(), current: character.dexterity.toString() },
+          endurance: { total: character.endurance.toString(), current: character.endurance.toString() },
+          intellect: { total: character.intellect.toString(), current: character.intellect.toString() },
+          education: { total: character.education.toString(), current: character.education.toString() },
+          social: { total: character.social_standing.toString(), current: character.social_standing.toString() },
+          psionics: { total: "", current: "" },
+          initiative: { total: "", current: "" }
+        });
+        // Load other character data...
+      }
+    }
+  }, [currentCharacterId, characters]);
   const [skills, setSkills] = useState<Record<string, SkillState>>(baseSkillState);
 
   const jackState = skills["jack_of_all_trades"];
@@ -289,6 +322,7 @@ const CharacterSheet = () => {
   const handleSaveCharacter = async () => {
     try {
       const characterData = {
+        id: currentCharacterId, // Include ID for updates
         name: header.name,
         species: header.species,
         gender: "", // Add if needed

@@ -57,7 +57,7 @@ export default function CrewInterface() {
             Back to Crew Management
           </Button>
         </div>
-        <CharacterSheet />
+        <CharacterSheet characterId={activeCrewMember || undefined} />
       </div>
     );
   }
@@ -92,8 +92,18 @@ export default function CrewInterface() {
                   <div className="space-y-2">
                     {characters.length > 0 ? (
                       characters.map((character, index) => (
-                        <div key={character.id} className="p-3 border border-primary/20 rounded font-mono text-sm">
-                          SLOT {String(index + 1).padStart(2, '0')}: {character.name} - {character.career || 'Unassigned'}
+                        <div key={character.id} className="p-3 border border-primary/20 rounded font-mono text-sm flex justify-between items-center">
+                          <span>SLOT {String(index + 1).padStart(2, '0')}: {character.name} - {character.career || 'Unassigned'}</span>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => {
+                              setActiveCrewMember(character.id);
+                              setShowCharacterSheet(true);
+                            }}
+                          >
+                            Edit
+                          </Button>
                         </div>
                       ))
                     ) : (
