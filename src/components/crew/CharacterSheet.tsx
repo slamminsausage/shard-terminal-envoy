@@ -172,7 +172,7 @@ const skillDefinitions: SkillDefinition[] = [
   { key: "tactics_naval", label: "Tactics Naval", parentKey: "tactics" },
   { key: "telepathy", label: "Telepathy", isPsionic: true },
   { key: "clairvoyance", label: "Clairvoyance", isPsionic: true },
-  { key: "psychokinesis", label: "Psychokinesis", isPsionic: true },
+  { key: "telekinesis", label: "Telekinesis", isPsionic: true },
   { key: "awareness", label: "Awareness", isPsionic: true },
   { key: "teleportation", label: "Teleportation", isPsionic: true },
   { key: "vacc_suit", label: "Vacc Suit" }
