@@ -64,7 +64,10 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
 
   const checkAuthentication = (): boolean => {
     const authStatus = localStorage.getItem('traveller_authenticated');
+    console.log('CampaignProvider - localStorage traveller_authenticated:', authStatus);
+    console.log('CampaignProvider - localStorage keys:', Object.keys(localStorage));
     const isAuth = authStatus === 'true';
+    console.log('CampaignProvider - isAuth result:', isAuth);
     setIsAuthenticated(isAuth);
     return isAuth;
   };
