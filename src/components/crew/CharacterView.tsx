@@ -92,8 +92,9 @@ const CharacterView = ({ characterId }: CharacterViewProps) => {
     // Handle both object and array format for skills
     const skillsToProcess = Array.isArray(skills) ? {} : skills;
     
+    // Show ALL skills, not just proficient ones
     Object.entries(skillsToProcess).forEach(([key, skill]: [string, any]) => {
-      if (skill && (skill.proficient || skill.value || (typeof skill === 'object' && skill.level))) {
+      if (skill && typeof skill === 'object') {
         const group = skill.parentKey || 'Base Skills';
         if (!skillGroups[group]) skillGroups[group] = [];
         skillGroups[group].push({ key, ...skill });
@@ -118,8 +119,8 @@ const CharacterView = ({ characterId }: CharacterViewProps) => {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <div className="max-w-4xl mx-auto p-8 print:p-4">
+    <div className="min-h-screen bg-background text-foreground overflow-auto">
+      <div className="max-w-4xl mx-auto p-8 print:p-4 min-h-full">
         {/* Header */}
         <div className="border-2 border-border rounded-lg p-6 mb-6 bg-card">
           <h1 className="text-3xl font-bold mb-4 text-center">TRAVELLER CHARACTER SHEET</h1>
@@ -183,7 +184,7 @@ const CharacterView = ({ characterId }: CharacterViewProps) => {
           {/* Skills */}
           <div className="border border-border rounded-lg p-4 bg-card">
             <h2 className="text-xl font-bold mb-4">SKILLS</h2>
-            <div className="max-h-96 overflow-y-auto">
+            <div className="max-h-[500px] overflow-y-auto pr-2">
               {renderSkills()}
             </div>
           </div>
