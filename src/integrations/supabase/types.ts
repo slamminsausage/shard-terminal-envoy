@@ -122,6 +122,24 @@ export type Database = {
         }
         Relationships: []
       }
+      unlocked_terminals: {
+        Row: {
+          created_at: string
+          id: string
+          terminal_code: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          terminal_code: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          terminal_code?: string
+        }
+        Relationships: []
+      }
       vehicles: {
         Row: {
           acceleration: number | null

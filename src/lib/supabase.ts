@@ -129,5 +129,41 @@ export const dbHelpers = {
     
     if (error) throw error
     return true
+  },
+
+  // Unlocked Terminals
+  async getUnlockedTerminals() {
+    try {
+      const { data, error } = await supabase
+        .from('unlocked_terminals')
+        .select('terminal_code')
+        .order('created_at', { ascending: true })
+      
+      if (error) {
+        console.error('Database error:', error)
+        return []
+      }
+      return (data || []).map(item => item.terminal_code)
+    } catch (error) {
+      console.error('Failed to fetch unlocked terminals:', error)
+      return []
+    }
+  },
+
+  async addUnlockedTerminal(terminalCode: string) {
+    try {
+      const { error } = await supabase
+        .from('unlocked_terminals')
+        .insert([{ terminal_code: terminalCode }])
+      
+      if (error && error.code !== '23505') { // Ignore unique constraint violations
+        console.error('Database error:', error)
+        throw error
+      }
+      return true
+    } catch (error) {
+      console.error('Failed to add unlocked terminal:', error)
+      throw error
+    }
   }
 }

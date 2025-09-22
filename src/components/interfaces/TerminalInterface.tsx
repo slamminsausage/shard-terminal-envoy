@@ -11,6 +11,7 @@ import { typeTextWithSound } from '@/lib/typing';
 import { applyGlitch } from '@/lib/glitchText';
 import { TERMINALS, getTerminalDefinition, type TerminalDefinition } from '@/lib/terminals';
 import DeepCoreTerminal from '@/components/DeepCoreTerminal';
+import { dbHelpers } from '@/lib/supabase';
 
 // Terminal visual effects
 const getTerminalEffectClasses = (terminalId: string) => {
@@ -83,6 +84,10 @@ export default function TerminalInterface() {
   // Signal interference
   const [signalInterferenceLevel, setSignalInterferenceLevel] = useState(0);
 
+  // Terminal unlock state
+  const [unlockedTerminals, setUnlockedTerminals] = useState<string[]>([]);
+  const [terminalsLoading, setTerminalsLoading] = useState(true);
+
   // Initialize terminal and audio
   useEffect(() => {
     if (hasInitialized.current) return;
@@ -117,6 +122,22 @@ export default function TerminalInterface() {
       }
     };
     displayNextMessage();
+  }, []);
+
+  // Load unlocked terminals on mount
+  useEffect(() => {
+    const loadUnlockedTerminals = async () => {
+      try {
+        const unlocked = await dbHelpers.getUnlockedTerminals();
+        setUnlockedTerminals(unlocked);
+      } catch (error) {
+        console.error('Failed to load unlocked terminals:', error);
+      } finally {
+        setTerminalsLoading(false);
+      }
+    };
+
+    loadUnlockedTerminals();
   }, []);
 
   // ESC key handler with two-step process
@@ -188,7 +209,7 @@ export default function TerminalInterface() {
   }, [currentView, selectedLogData, logData, activeTerminal, requiresPassword, terminalPasswordRequired, rollCheck, specialRollCheck, logTypingComplete, showAudioLogsPage]);
 
   // Handle access code
-  const handleAccessCode = (codeOverride: string | null = null) => {
+  const handleAccessCode = async (codeOverride: string | null = null) => {
     const rawCode = typeof codeOverride === "string" ? codeOverride : inputCode;
     const trimmedCode = rawCode.trim();
     
@@ -213,6 +234,16 @@ export default function TerminalInterface() {
       setActiveTerminal(terminal);
       setCurrentView("terminal");
       audioManager.playEffect('access_granted', 0.3);
+      
+      // Add terminal to unlocked list
+      try {
+        await dbHelpers.addUnlockedTerminal(normalizedCode);
+        if (!unlockedTerminals.includes(normalizedCode)) {
+          setUnlockedTerminals(prev => [...prev, normalizedCode]);
+        }
+      } catch (error) {
+        console.error('Failed to unlock terminal:', error);
+      }
       
       if (terminal.requiresPassword) {
         setTerminalPasswordRequired(true);
@@ -577,19 +608,23 @@ export default function TerminalInterface() {
           <Card className="bg-card border-primary/30 terminal-window">
             <CardContent className="p-6">
               <div className="text-primary/80 font-mono text-sm mb-4">AVAILABLE TERMINALS:</div>
-              <div className="grid grid-cols-6 gap-4 text-primary font-mono text-xs">
-                {TERMINALS.map((terminal, index) => (
-                  <div 
-                    key={terminal.code}
-                    className="border border-primary/30 p-2 cursor-pointer hover:text-accent hover:border-accent/50 transition-colors"
-                    onClick={() => setInputCode(terminal.code)}
-                    title={terminal.name}
-                  >
-                    <div className="truncate">{terminal.code}</div>
-                    <div className="text-primary/60 text-xs truncate">{terminal.name}</div>
-                  </div>
-                ))}
-              </div>
+              {terminalsLoading ? (
+                <div className="text-primary/60 font-mono text-xs">Loading available terminals...</div>
+              ) : (
+                <div className="grid grid-cols-6 gap-4 text-primary font-mono text-xs">
+                  {TERMINALS.filter(terminal => unlockedTerminals.includes(terminal.code)).map((terminal, index) => (
+                    <div 
+                      key={terminal.code}
+                      className="border border-primary/30 p-2 cursor-pointer hover:text-accent hover:border-accent/50 transition-colors"
+                      onClick={() => setInputCode(terminal.code)}
+                      title={terminal.name}
+                    >
+                      <div className="truncate">{terminal.code}</div>
+                      <div className="text-primary/60 text-xs truncate">{terminal.name}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
