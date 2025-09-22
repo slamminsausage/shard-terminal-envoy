@@ -26,7 +26,7 @@ const VehicleView = ({ vehicleId }: VehicleViewProps) => {
   // Show loading state while data is being fetched
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background text-foreground p-8">
+      <div className="h-screen bg-background text-foreground p-8 overflow-auto">
         <div className="max-w-4xl mx-auto flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
@@ -39,7 +39,7 @@ const VehicleView = ({ vehicleId }: VehicleViewProps) => {
 
   if (!vehicle) {
     return (
-      <div className="min-h-screen bg-background text-foreground p-8">
+      <div className="h-screen bg-background text-foreground p-8 overflow-auto">
         <div className="max-w-4xl mx-auto">
           <h1 className="text-2xl font-bold mb-4">Vehicle Not Found</h1>
           <p>Unable to load vehicle data.</p>
@@ -93,8 +93,8 @@ const VehicleView = ({ vehicleId }: VehicleViewProps) => {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <div className="max-w-4xl mx-auto p-8 print:p-4">
+    <div className="h-screen bg-background text-foreground overflow-auto">
+      <div className="max-w-4xl mx-auto p-6 print:p-4">
         {/* Header */}
         <div className="border-2 border-border rounded-lg p-6 mb-6 bg-card">
           <h1 className="text-3xl font-bold mb-4 text-center">TRAVELLER VEHICLE SHEET</h1>
