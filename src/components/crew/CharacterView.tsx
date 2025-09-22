@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react";
 import { useCampaign } from "@/contexts/CampaignContext";
 import { Character } from "@/types/database";
+import { Badge } from "@/components/ui/badge";
 
 interface CharacterViewProps {
   characterId: string;
 }
 
 const CharacterView = ({ characterId }: CharacterViewProps) => {
-  const { characters } = useCampaign();
+  const { characters, vehicles } = useCampaign();
   const [character, setCharacter] = useState<Character | null>(null);
 
   useEffect(() => {
@@ -68,8 +69,11 @@ const CharacterView = ({ characterId }: CharacterViewProps) => {
   const renderSkills = () => {
     const skillGroups: { [key: string]: any[] } = {};
     
-    Object.entries(skills).forEach(([key, skill]: [string, any]) => {
-      if (skill.proficient || skill.value) {
+    // Handle both object and array format for skills
+    const skillsToProcess = Array.isArray(skills) ? {} : skills;
+    
+    Object.entries(skillsToProcess).forEach(([key, skill]: [string, any]) => {
+      if (skill && (skill.proficient || skill.value || (typeof skill === 'object' && skill.level))) {
         const group = skill.parentKey || 'Base Skills';
         if (!skillGroups[group]) skillGroups[group] = [];
         skillGroups[group].push({ key, ...skill });
@@ -85,7 +89,7 @@ const CharacterView = ({ characterId }: CharacterViewProps) => {
           {groupSkills.map((skill) => (
             <div key={skill.key} className="flex justify-between items-center py-1 border-b border-border/30">
               <span className="text-sm">{skill.customLabel || skill.key.replace(/_/g, ' ')}</span>
-              <span className="font-mono text-sm">{skill.value || '0'}</span>
+              <span className="font-mono text-sm">{skill.value || skill.level || '0'}</span>
             </div>
           ))}
         </div>
@@ -99,6 +103,20 @@ const CharacterView = ({ characterId }: CharacterViewProps) => {
         {/* Header */}
         <div className="border-2 border-border rounded-lg p-6 mb-6 bg-card">
           <h1 className="text-3xl font-bold mb-4 text-center">TRAVELLER CHARACTER SHEET</h1>
+          {(() => {
+            // Find assigned vehicle
+            const assignedVehicle = vehicles.find(vehicle => 
+              vehicle.crew_requirements && 
+              Object.keys(vehicle.crew_requirements).includes(character.id)
+            );
+            return assignedVehicle && (
+              <div className="text-center mb-4">
+                <Badge variant="outline" className="font-mono">
+                  Assigned to: {assignedVehicle.name}
+                </Badge>
+              </div>
+            );
+          })()}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             <div>
               <label className="text-xs font-semibold text-muted-foreground uppercase">Name</label>
@@ -131,12 +149,12 @@ const CharacterView = ({ characterId }: CharacterViewProps) => {
               {Object.entries(characteristics).map(([key, values]: [string, any]) => (
                 <div key={key} className="flex justify-between items-center py-2 border-b border-border/30">
                   <span className="capitalize font-medium">{key}</span>
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono text-lg">{values?.current || values?.total || '0'}</span>
-                    <span className="text-sm text-muted-foreground w-8 text-center">
-                      ({getCharacteristicDM(values?.current || values?.total || '0')})
-                    </span>
-                  </div>
+            <div className="flex items-center gap-2">
+              <span className="font-mono text-lg">{values || '0'}</span>
+              <span className="text-sm text-muted-foreground w-8 text-center">
+                ({getCharacteristicDM(values || '0')})
+              </span>
+            </div>
                 </div>
               ))}
             </div>

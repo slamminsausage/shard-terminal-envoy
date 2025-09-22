@@ -21,7 +21,7 @@ export default function CrewInterface() {
     const saved = localStorage.getItem('saved_note_files');
     return saved ? JSON.parse(saved) : [];
   });
-  const { createNewCharacter, characters, deleteCharacter } = useCampaign();
+  const { createNewCharacter, characters, vehicles, deleteCharacter } = useCampaign();
   const [characterToDelete, setCharacterToDelete] = useState<string | null>(null);
 
   useEffect(() => {
@@ -173,9 +173,17 @@ export default function CrewInterface() {
                 <CardContent>
                   <div className="space-y-2">
                     {characters.length > 0 ? (
-                      characters.map((character, index) => (
+                      characters.map((character, index) => {
+                        // Find which vehicle this character is assigned to
+                        const assignedVehicle = vehicles.find(vehicle => 
+                          vehicle.crew_requirements && 
+                          Object.keys(vehicle.crew_requirements).includes(character.id)
+                        );
+                        const assignmentStatus = assignedVehicle ? `Assigned to ${assignedVehicle.name}` : 'Unassigned';
+                        
+                        return (
                         <div key={character.id} className="p-3 border border-primary/20 rounded font-mono text-sm flex justify-between items-center">
-                          <span>SLOT {String(index + 1).padStart(2, '0')}: {character.name} - {character.career || 'Unassigned'}</span>
+                          <span>SLOT {String(index + 1).padStart(2, '0')}: {character.name} - {assignmentStatus}</span>
                            <div className="flex gap-2">
                              <Button 
                                variant="outline" 
@@ -221,10 +229,11 @@ export default function CrewInterface() {
                                   </AlertDialogAction>
                                 </AlertDialogFooter>
                               </AlertDialogContent>
-                            </AlertDialog>
-                          </div>
+                             </AlertDialog>
+                           </div>
                         </div>
-                      ))
+                        );
+                      })
                     ) : (
                       <>
                         <div className="p-3 border border-primary/20 rounded font-mono text-sm">
