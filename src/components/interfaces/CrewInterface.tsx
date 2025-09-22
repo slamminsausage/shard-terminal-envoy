@@ -176,17 +176,27 @@ export default function CrewInterface() {
                       characters.map((character, index) => (
                         <div key={character.id} className="p-3 border border-primary/20 rounded font-mono text-sm flex justify-between items-center">
                           <span>SLOT {String(index + 1).padStart(2, '0')}: {character.name} - {character.career || 'Unassigned'}</span>
-                          <div className="flex gap-2">
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={() => {
-                                setActiveCrewMember(character.id);
-                                setShowCharacterSheet(true);
-                              }}
-                            >
-                              Edit
-                            </Button>
+                           <div className="flex gap-2">
+                             <Button 
+                               variant="outline" 
+                               size="sm"
+                               onClick={() => {
+                                 setActiveCrewMember(character.id);
+                                 setShowCharacterSheet(true);
+                               }}
+                             >
+                               Edit
+                             </Button>
+                             <Button
+                               onClick={() => {
+                                 const url = `/character-view/${character.id}`;
+                                 window.open(url, '_blank', 'width=1200,height=800,scrollbars=yes,resizable=yes');
+                               }}
+                               variant="secondary"
+                               size="sm"
+                             >
+                               View
+                             </Button>
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
                                 <Button variant="outline" size="sm" className="text-red-400 border-red-400 hover:bg-red-400 hover:text-white">

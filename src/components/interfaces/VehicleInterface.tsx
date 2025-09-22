@@ -128,21 +128,31 @@ export default function VehicleInterface() {
                                 : 'Unassigned'}
                             </div>
                           </div>
-                          <div className="flex gap-2">
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={() => handleVehicleSheetAccess(vehicle.id)}
-                            >
-                              Access Sheet
-                            </Button>
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={() => handleCrewAssignment(vehicle.id)}
-                            >
-                              Assign Crew
-                            </Button>
+                           <div className="flex gap-2">
+                             <Button 
+                               variant="outline" 
+                               size="sm"
+                               onClick={() => handleVehicleSheetAccess(vehicle.id)}
+                             >
+                               Edit Sheet
+                             </Button>
+                             <Button
+                               onClick={() => {
+                                 const url = `/vehicle-view/${vehicle.id}`;
+                                 window.open(url, '_blank', 'width=1200,height=800,scrollbars=yes,resizable=yes');
+                               }}
+                               variant="secondary"
+                               size="sm"
+                             >
+                               View
+                             </Button>
+                             <Button 
+                               variant="outline" 
+                               size="sm"
+                               onClick={() => handleCrewAssignment(vehicle.id)}
+                             >
+                               Assign Crew
+                             </Button>
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
                                 <Button variant="outline" size="sm" className="text-red-400 border-red-400 hover:bg-red-400 hover:text-white">
@@ -211,21 +221,31 @@ export default function VehicleInterface() {
                                 : 'Unassigned'}
                             </div>
                           </div>
-                          <div className="flex gap-2">
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={() => handleVehicleSheetAccess(vehicle.id)}
-                            >
-                              Access Sheet
-                            </Button>
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={() => handleCrewAssignment(vehicle.id)}
-                            >
-                              Assign Crew
-                            </Button>
+                           <div className="flex gap-2">
+                             <Button 
+                               variant="outline" 
+                               size="sm"
+                               onClick={() => handleVehicleSheetAccess(vehicle.id)}
+                             >
+                               Edit Sheet
+                             </Button>
+                             <Button
+                               onClick={() => {
+                                 const url = `/vehicle-view/${vehicle.id}`;
+                                 window.open(url, '_blank', 'width=1200,height=800,scrollbars=yes,resizable=yes');
+                               }}
+                               variant="secondary"
+                               size="sm"
+                             >
+                               View
+                             </Button>
+                             <Button 
+                               variant="outline" 
+                               size="sm"
+                               onClick={() => handleCrewAssignment(vehicle.id)}
+                             >
+                               Assign Crew
+                             </Button>
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
                                 <Button variant="outline" size="sm" className="text-red-400 border-red-400 hover:bg-red-400 hover:text-white">
