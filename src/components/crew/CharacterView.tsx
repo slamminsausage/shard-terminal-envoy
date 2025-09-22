@@ -12,7 +12,13 @@ const CharacterView = ({ characterId }: CharacterViewProps) => {
   const [character, setCharacter] = useState<Character | null>(null);
 
   useEffect(() => {
+    console.log('CharacterView - characterId:', characterId);
+    console.log('CharacterView - characters length:', characters.length);
+    console.log('CharacterView - characters:', characters.map(c => ({ id: c.id, name: c.name })));
+    
     const foundCharacter = characters.find(c => c.id === characterId);
+    console.log('CharacterView - foundCharacter:', foundCharacter ? foundCharacter.name : 'NOT FOUND');
+    
     if (foundCharacter) {
       setCharacter(foundCharacter);
     }

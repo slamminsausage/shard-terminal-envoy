@@ -11,7 +11,13 @@ const VehicleView = ({ vehicleId }: VehicleViewProps) => {
   const [vehicle, setVehicle] = useState<Vehicle | null>(null);
 
   useEffect(() => {
+    console.log('VehicleView - vehicleId:', vehicleId);
+    console.log('VehicleView - vehicles length:', vehicles.length);
+    console.log('VehicleView - vehicles:', vehicles.map(v => ({ id: v.id, name: v.name })));
+    
     const foundVehicle = vehicles.find(v => v.id === vehicleId);
+    console.log('VehicleView - foundVehicle:', foundVehicle ? foundVehicle.name : 'NOT FOUND');
+    
     if (foundVehicle) {
       setVehicle(foundVehicle);
     }

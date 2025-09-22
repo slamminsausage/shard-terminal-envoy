@@ -50,10 +50,15 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
 
   // Check authentication on mount and whenever it changes
   useEffect(() => {
+    console.log('CampaignProvider - checking authentication...');
     const isAuth = checkAuthentication();
+    console.log('CampaignProvider - isAuth:', isAuth);
     setIsAuthenticated(isAuth);
     if (isAuth) {
+      console.log('CampaignProvider - authenticated, refreshing data...');
       refreshData();
+    } else {
+      console.log('CampaignProvider - not authenticated, skipping data refresh');
     }
   }, []);
 
@@ -77,14 +82,19 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
   };
 
   const refreshData = async () => {
+    console.log('CampaignProvider - refreshData starting...');
     setIsLoading(true);
     try {
       // Fetch all characters
+      console.log('CampaignProvider - fetching characters from database...');
       const charactersData = await dbHelpers.getAllCharacters();
+      console.log('CampaignProvider - characters from DB:', charactersData?.length || 0);
       setCharacters(charactersData as Character[]);
 
       // Fetch all vehicles  
+      console.log('CampaignProvider - fetching vehicles from database...');
       const vehiclesData = await dbHelpers.getAllVehicles();
+      console.log('CampaignProvider - vehicles from DB:', vehiclesData?.length || 0);
       setVehicles(vehiclesData as Vehicle[]);
     } catch (error) {
       console.error('Failed to refresh data:', error);
@@ -92,12 +102,18 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
       console.warn('Database not available, using local storage fallback');
       
       // Fallback to localStorage for development
+      console.log('CampaignProvider - falling back to localStorage...');
       const savedCharacters = localStorage.getItem('traveller_characters');
       const savedVehicles = localStorage.getItem('traveller_vehicles');
       
+      console.log('CampaignProvider - savedCharacters from localStorage:', savedCharacters ? 'found' : 'not found');
+      console.log('CampaignProvider - savedVehicles from localStorage:', savedVehicles ? 'found' : 'not found');
+      
       if (savedCharacters) {
         try {
-          setCharacters(JSON.parse(savedCharacters));
+          const parsedCharacters = JSON.parse(savedCharacters);
+          console.log('CampaignProvider - parsed characters:', parsedCharacters.length);
+          setCharacters(parsedCharacters);
         } catch (e) {
           console.error('Failed to parse saved characters:', e);
         }
@@ -105,12 +121,15 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
       
       if (savedVehicles) {
         try {
-          setVehicles(JSON.parse(savedVehicles));
+          const parsedVehicles = JSON.parse(savedVehicles);
+          console.log('CampaignProvider - parsed vehicles:', parsedVehicles.length);
+          setVehicles(parsedVehicles);
         } catch (e) {
           console.error('Failed to parse saved vehicles:', e);
         }
       }
     } finally {
+      console.log('CampaignProvider - refreshData complete, setting isLoading to false');
       setIsLoading(false);
     }
   };
