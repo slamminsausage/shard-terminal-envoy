@@ -54,12 +54,11 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
     const isAuth = checkAuthentication();
     console.log('CampaignProvider - isAuth:', isAuth);
     setIsAuthenticated(isAuth);
-    if (isAuth) {
-      console.log('CampaignProvider - authenticated, refreshing data...');
-      refreshData();
-    } else {
-      console.log('CampaignProvider - not authenticated, skipping data refresh');
-    }
+    
+    // Always try to refresh data for view components, regardless of auth state
+    // This allows character/vehicle view tabs to work even without shared localStorage
+    console.log('CampaignProvider - attempting to refresh data...');
+    refreshData();
   }, []);
 
   const checkAuthentication = (): boolean => {
