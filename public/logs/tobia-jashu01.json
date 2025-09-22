@@ -1,0 +1,133 @@
+[
+  {
+    "title": "Welcome to Tobia — Jashu Port Complex",
+    "location": "Jashu Downport – Arrival Concourse",
+    "date": "266-1105",
+    "author": "Port Authority Announcer",
+    "content": "Welcome to Tobia, capital of the Trojan Reach. Please keep berthing transponders active, carry your Ident Chip, and comply with local scan requests. Grav cars and shuttles serve all Jashu districts and the Space Elevator terminal.",
+    "audio_file": "/audio/tobia-jashu01-welcome.mp3",
+    "security_level": "unlocked",
+    "requires_roll": false
+  },
+  {
+    "title": "Planetary Summary",
+    "location": "Jashu Civic Desk",
+    "date": "266-1105",
+    "author": "Civic Liaison",
+    "content": "Type: Dry garden world (thin atmo, ~0.6G). Pop: ~23B (+2–3B orbit). Tech: TL15. Ocean coverage ~40%. Arcologies dominate; grav-floated neighborhoods common. Summer brings allergic fungal spores—masks recommended outdoors.",
+    "security_level": "unlocked",
+    "requires_roll": false
+  },
+  {
+    "title": "Starport System Overview",
+    "location": "Jashu – Port & Transit",
+    "date": "266-1105",
+    "author": "Port Authority",
+    "content": "Highport (Star City): ~1.5B population; orbital governance; Navy fortress platforms; remote docking override mandated. Downport (Jashu): ground pads and mobile grav docking platforms; reconfigurable luxury bays; direct grav links to districts and the Space Elevator.",
+    "security_level": "unlocked",
+    "requires_roll": false
+  },
+  {
+    "title": "Space Elevator Schedule",
+    "location": "Jashu Space Elevator Terminal",
+    "date": "266-1105",
+    "author": "Transit Directorate",
+    "content": "Luxury capsule departures every 90 minutes. Standard ascent/descent ~12 hours. Cargo windows prioritized 03:00–05:00 and 17:00–19:00 local. Expect inspection at both termini.",
+    "security_level": "unlocked",
+    "requires_roll": false
+  },
+  {
+    "title": "Berthing & Fuel",
+    "location": "Downport Finance Kiosk",
+    "date": "266-1105",
+    "author": "Finance Subsystem",
+    "content": "Berthing (Scout/Courier): 500 Cr/week baseline. Refined fuel premium during orbital festival cycles. Unrefined fuel available; skimming permits require Navy clearance. Late fees after 24h.",
+    "security_level": "unlocked",
+    "requires_roll": false
+  },
+  {
+    "title": "Ident & Manifest Compliance",
+    "location": "Registry Desk – Jashu",
+    "date": "265-1105",
+    "author": "Registry Clerk",
+    "content": "Crew manifests must match the Imperial Registry. Jump-lag exists, but deep scans reconcile anomalies. Violations can result in berth suspension and bond seizure.",
+    "security_level": "unlocked",
+    "requires_roll": false
+  },
+  {
+    "title": "Cultural Bulletin — Jashu",
+    "location": "Jashu Grand Concourse",
+    "date": "266-1105",
+    "author": "Cultural Directorate",
+    "content": "Arcology galleries feature First Imperium relics and modern kinetic architecture tours. Dress standards vary; formal wear expected in elevated grav neighborhoods and governmental halls.",
+    "security_level": "unlocked",
+    "requires_roll": false
+  },
+  {
+    "title": "Health Advisory: Summer Spores",
+    "location": "Public Health Node",
+    "date": "266-1105",
+    "author": "Health Directorate",
+    "content": "Thin atmosphere plus seasonal fungal spores may irritate lungs and eyes. Recommended: light masks, antihistamine tabs, and sealed grav transit for long cross-city trips.",
+    "security_level": "unlocked",
+    "requires_roll": false
+  },
+  {
+    "title": "Tobia Commerce Guild — Traffic Notice",
+    "location": "Jashu Trade Hall",
+    "date": "266-1105",
+    "author": "TCG Port Liaison",
+    "content": "High-volume freight pulses expected along the Aslan route. Escorts prioritized for megafreighters. Independent captains should register convoy interest 24h prior to departure.",
+    "security_level": "unlocked",
+    "requires_roll": false
+  },
+  {
+    "title": "Trade Irregularities (Flagged)",
+    "location": "Customs Analytics",
+    "date": "266-1105",
+    "author": "Customs AI Auditor",
+    "content": "Pattern alerts triggered on neural-interface components and psionically shielded housings. Full details require elevated access.",
+    "security_level": "restricted",
+    "requires_roll": true,
+    "roll_check": {
+      "difficulty": 8,
+      "skill": "Electronics (computers)",
+      "on_success": "Cross-ref shows ambiguous lot numbers and micro-mesh Faraday liners routed through shell brokers. Recommend secondary scans; potential linkage to prior seizures.",
+      "on_failure": "Access denied. Submit Form T-221 for audit briefing."
+    }
+  },
+  {
+    "title": "Navy Advisory — Remote Docking Overrides",
+    "location": "Star City Highport Control",
+    "date": "266-1105",
+    "author": "Highport Operations",
+    "content": "All civilian vessels must maintain handshake readiness. Interlocks may trigger automatic course corrections during congestion or security actions. Override logic details restricted.",
+    "security_level": "restricted",
+    "requires_roll": true,
+    "roll_check": {
+      "difficulty": 8,
+      "skill": "Electronics (computers)",
+      "on_success": "Override windows open during scheduled convoy turns and military transits. Non-compliance flags vessels for enhanced inspection on next berth.",
+      "on_failure": "Insufficient clearance. Contact Highport Ops liaison."
+    }
+  },
+  {
+    "title": "Civic Services & Embassies",
+    "location": "Jashu Administrative Row",
+    "date": "265-1105",
+    "author": "Civic Liaison",
+    "content": "Embassy Row handles interstellar visas, notarizations, and arbitration. Merchant Guild offices provide manifests and bond services. Licensed fixers listed in the Blue Ledger registry.",
+    "security_level": "unlocked",
+    "requires_roll": false
+  },
+  {
+    "title": "Real-time Public Berths (Experimental)",
+    "location": "Downport Ops Dashboard",
+    "date": "266-1105",
+    "author": "Ops Telemetry",
+    "content": "Live bay allocation feed for public berths. Last refresh: {{current_date}}.",
+    "security_level": "unlocked",
+    "requires_roll": false,
+    "dynamic": true
+  }
+]
