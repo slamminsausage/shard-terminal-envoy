@@ -138,5 +138,19 @@
   "content": "🌐 GeDeCo — Building Tomorrow, Today 🌐\n\nThe General Development Company proudly reaffirms its commitment to progress across the Trojan Reach. Through stable investment and cultural stewardship, we bring order, prosperity, and modern technology to worlds once left in shadow. Our contracts provide:\n\n• New starports and orbital infrastructure\n• Technical training and long-term economic stability\n• Trade access to the Imperium and beyond\n\nPartner with GeDeCo, and your children will inherit a future of boundless opportunity. Our legacy spans four centuries — and continues to shape civilisation, one world at a time.\n\n*For inquiries on development contracts, contact your local GeDeCo Liaison Office in Jashu.*",
   "security_level": "unlocked",
   "requires_roll": false
-}
+},
+  {
+  "title": "Internal Strategy Bulletin — Reach Stability Assessment",
+  "location": "GeDeCo Liaison Office – Jashu",
+  "date": "099-1105",
+  "author": "Sector Directorate, Vorito",
+  "content": "Summary excerpt. Full bulletin requires clearance.",
+  "security_level": "restricted",
+  "requires_roll": true,
+  "roll_check": {
+    "difficulty": 10,
+    "skill": "Electronics (computers)",
+    "on_success": "Directive 7A: Continued investment in Tobia’s cultural prominence is projected to ensure loyalty across the subsector. Though Duke Mark Duduuna Udi Aella appears at odds with our goals and openly supports Aslan Trade. Local client worlds under Type I and II contracts show rising dependency indexes — favorable. \n\nNote: Maintain public narrative of 'partnership' while expanding monopolies on strategic imports. Watch for Aslan economic encroachment along the Florian Corridor. The Jaskarl projections (Ref: Psychohistory Model 841) remain valid — Reach collapse probable within 50 years. Our priority is to ensure GeDeCo assets retain value regardless of outcome.",
+    "on_failure": "Access denied. This file is sealed to Directorate staff only."
+  }
 ]
