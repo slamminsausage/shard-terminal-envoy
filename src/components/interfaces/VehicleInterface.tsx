@@ -5,12 +5,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { typeTextWithSound } from '@/lib/typing';
 import VehicleSheet from "@/components/crew/VehicleSheet";
+import CrewAssignmentDialog from "@/components/crew/CrewAssignmentDialog";
 import { useCampaign } from "@/contexts/CampaignContext";
+import { Vehicle } from "@/types/database";
 
 export default function VehicleInterface() {
   const [displayText, setDisplayText] = useState("");
   const [showVehicleSheet, setShowVehicleSheet] = useState(false);
   const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null);
+  const [showCrewAssignment, setShowCrewAssignment] = useState(false);
+  const [selectedVehicleForCrew, setSelectedVehicleForCrew] = useState<Vehicle | null>(null);
   const { createNewVehicle, vehicles, deleteVehicle } = useCampaign();
 
   useEffect(() => {
@@ -43,8 +47,16 @@ export default function VehicleInterface() {
   };
 
   const handleCrewAssignment = (vehicleId: string) => {
-    console.log('Assign crew to vehicle:', vehicleId);
-    alert('Crew assignment functionality coming soon! For now, crew can be managed in the Character Sheets tab.');
+    const vehicle = vehicles.find(v => v.id === vehicleId);
+    if (vehicle) {
+      setSelectedVehicleForCrew(vehicle);
+      setShowCrewAssignment(true);
+    }
+  };
+
+  const handleCrewAssignmentComplete = (vehicleId: string, assignedCrew: string[]) => {
+    // The vehicle list will be automatically updated by the context
+    console.log(`Crew assignment completed for vehicle ${vehicleId}:`, assignedCrew);
   };
 
   const handleDeleteVehicle = async (vehicleId: string) => {
@@ -90,10 +102,9 @@ export default function VehicleInterface() {
           </div>
           
           <Tabs defaultValue="hangar" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="hangar">Ship Hangar</TabsTrigger>
               <TabsTrigger value="vehicles">Vehicles</TabsTrigger>
-              <TabsTrigger value="maintenance">Maintenance</TabsTrigger>
             </TabsList>
             
             <TabsContent value="hangar" className="space-y-4">
@@ -265,52 +276,19 @@ export default function VehicleInterface() {
               </Card>
             </TabsContent>
             
-            <TabsContent value="maintenance" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="font-mono text-sm">MAINTENANCE SCHEDULE</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {vehicles.filter(v => v.vehicle_type === 'Ship').map(vehicle => (
-                      <div key={vehicle.id} className="p-4 border border-primary/20 rounded">
-                        <div className="font-mono text-sm">
-                          <div className="font-semibold text-amber-400">{vehicle.name.toUpperCase()} - MAINTENANCE DUE</div>
-                          <div className="text-xs opacity-70">Type: {vehicle.class_type}</div>
-                          <div className="text-xs opacity-70">Last maintenance: Unknown</div>
-                          <div className="text-xs opacity-70">Required: Routine system check</div>
-                          <div className="text-xs opacity-70">Cost estimate: {(vehicle.maintenance_cost || 1000).toLocaleString()} Cr</div>
-                        </div>
-                      </div>
-                    ))}
-                    
-                    {vehicles.filter(v => v.vehicle_type === 'Ship').length === 0 && (
-                      <div className="p-4 border border-primary/20 rounded text-center">
-                        <div className="font-mono text-sm opacity-70">No vehicles requiring maintenance</div>
-                      </div>
-                    )}
-                    
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="p-3 border border-primary/20 rounded text-center">
-                        <div className="font-mono text-xs font-semibold">HULL INTEGRITY</div>
-                        <div className="font-mono text-lg text-amber-400">67%</div>
-                      </div>
-                      <div className="p-3 border border-primary/20 rounded text-center">
-                        <div className="font-mono text-xs font-semibold">SYSTEM STATUS</div>
-                        <div className="font-mono text-lg text-red-400">CRITICAL</div>
-                      </div>
-                    </div>
-                    
-                    <Button variant="outline" className="w-full">
-                      Schedule Maintenance
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
           </Tabs>
         </CardContent>
       </Card>
+
+      {/* Crew Assignment Dialog */}
+      {selectedVehicleForCrew && (
+        <CrewAssignmentDialog
+          open={showCrewAssignment}
+          onOpenChange={setShowCrewAssignment}
+          vehicle={selectedVehicleForCrew}
+          onAssignmentComplete={handleCrewAssignmentComplete}
+        />
+      )}
     </div>
   );
 }
