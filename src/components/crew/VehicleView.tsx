@@ -7,7 +7,7 @@ interface VehicleViewProps {
 }
 
 const VehicleView = ({ vehicleId }: VehicleViewProps) => {
-  const { vehicles } = useCampaign();
+  const { vehicles, isLoading } = useCampaign();
   const [vehicle, setVehicle] = useState<Vehicle | null>(null);
 
   useEffect(() => {
@@ -16,6 +16,20 @@ const VehicleView = ({ vehicleId }: VehicleViewProps) => {
       setVehicle(foundVehicle);
     }
   }, [vehicleId, vehicles]);
+
+  // Show loading state while data is being fetched
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background text-foreground p-8">
+        <div className="max-w-4xl mx-auto flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+            <p>Loading vehicle data...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!vehicle) {
     return (

@@ -8,7 +8,7 @@ interface CharacterViewProps {
 }
 
 const CharacterView = ({ characterId }: CharacterViewProps) => {
-  const { characters, vehicles } = useCampaign();
+  const { characters, vehicles, isLoading } = useCampaign();
   const [character, setCharacter] = useState<Character | null>(null);
 
   useEffect(() => {
@@ -17,6 +17,20 @@ const CharacterView = ({ characterId }: CharacterViewProps) => {
       setCharacter(foundCharacter);
     }
   }, [characterId, characters]);
+
+  // Show loading state while data is being fetched
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background text-foreground p-8">
+        <div className="max-w-4xl mx-auto flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+            <p>Loading character data...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!character) {
     return (
