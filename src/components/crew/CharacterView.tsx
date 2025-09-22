@@ -87,40 +87,196 @@ const CharacterView = ({ characterId }: CharacterViewProps) => {
   };
 
   const renderSkills = () => {
+    // Skill definitions in the same order as the editable character sheet
+    const skillDefinitions = [
+      { key: "admin", label: "Admin" },
+      { key: "advocate", label: "Advocate" },
+      { key: "animals", label: "Animals" },
+      { key: "animals_handling", label: "Animals Handling", parentKey: "animals" },
+      { key: "animals_training", label: "Animals Training", parentKey: "animals" },
+      { key: "animals_veterinary", label: "Animals Veterinary", parentKey: "animals" },
+      { key: "art", label: "Art" },
+      { key: "art_performer", label: "Art Performer", parentKey: "art" },
+      { key: "art_holography", label: "Art Holography", parentKey: "art" },
+      { key: "art_instrument", label: "Art Instrument", parentKey: "art" },
+      { key: "art_visual_media", label: "Art Visual Media", parentKey: "art" },
+      { key: "art_write", label: "Art Write", parentKey: "art" },
+      { key: "astrogation", label: "Astrogation" },
+      { key: "athletics", label: "Athletics" },
+      { key: "athletics_dex", label: "Athletics DEX", parentKey: "athletics" },
+      { key: "athletics_end", label: "Athletics END", parentKey: "athletics" },
+      { key: "athletics_str", label: "Athletics STR", parentKey: "athletics" },
+      { key: "broker", label: "Broker" },
+      { key: "carouse", label: "Carouse" },
+      { key: "deception", label: "Deception" },
+      { key: "diplomat", label: "Diplomat" },
+      { key: "drive", label: "Drive" },
+      { key: "drive_hovercraft", label: "Drive Hovercraft", parentKey: "drive" },
+      { key: "drive_mole", label: "Drive Mole", parentKey: "drive" },
+      { key: "drive_track", label: "Drive Track", parentKey: "drive" },
+      { key: "drive_walker", label: "Drive Walker", parentKey: "drive" },
+      { key: "drive_wheel", label: "Drive Wheel", parentKey: "drive" },
+      { key: "electronics", label: "Electronics" },
+      { key: "electronics_comms", label: "Electronics Comms", parentKey: "electronics" },
+      { key: "electronics_computers", label: "Electronics Computers", parentKey: "electronics" },
+      { key: "electronics_remote_ops", label: "Electronics Remote Ops", parentKey: "electronics" },
+      { key: "electronics_sensors", label: "Electronics Sensors", parentKey: "electronics" },
+      { key: "engineer", label: "Engineer" },
+      { key: "engineer_m_drive", label: "Engineer M-drive", parentKey: "engineer" },
+      { key: "engineer_j_drive", label: "Engineer J-drive", parentKey: "engineer" },
+      { key: "engineer_life_support", label: "Engineer Life Support", parentKey: "engineer" },
+      { key: "engineer_power", label: "Engineer Power", parentKey: "engineer" },
+      { key: "explosives", label: "Explosives" },
+      { key: "flyer", label: "Flyer" },
+      { key: "flyer_airship", label: "Flyer Airship", parentKey: "flyer" },
+      { key: "flyer_grav", label: "Flyer Grav", parentKey: "flyer" },
+      { key: "flyer_ornithopter", label: "Flyer Ornithopter", parentKey: "flyer" },
+      { key: "flyer_rotor", label: "Flyer Rotor", parentKey: "flyer" },
+      { key: "flyer_wing", label: "Flyer Wing", parentKey: "flyer" },
+      { key: "gambler", label: "Gambler" },
+      { key: "gunner", label: "Gunner" },
+      { key: "gunner_turret", label: "Gunner Turret", parentKey: "gunner" },
+      { key: "gunner_ortillery", label: "Gunner Ortillery", parentKey: "gunner" },
+      { key: "gunner_screen", label: "Gunner Screen", parentKey: "gunner" },
+      { key: "gunner_capital", label: "Gunner Capital", parentKey: "gunner" },
+      { key: "gun_combat", label: "Gun Combat" },
+      { key: "gun_combat_archaic", label: "Gun Combat Archaic", parentKey: "gun_combat" },
+      { key: "gun_combat_energy", label: "Gun Combat Energy", parentKey: "gun_combat" },
+      { key: "gun_combat_slug", label: "Gun Combat Slug", parentKey: "gun_combat" },
+      { key: "heavy_weapons", label: "Heavy Weapons" },
+      { key: "heavy_weapons_artillery", label: "Heavy Weapons Artillery", parentKey: "heavy_weapons" },
+      { key: "heavy_weapons_portable", label: "Heavy Weapons Portable", parentKey: "heavy_weapons" },
+      { key: "heavy_weapons_vehicle", label: "Heavy Weapons Vehicle", parentKey: "heavy_weapons" },
+      { key: "investigate", label: "Investigate" },
+      { key: "jack_of_all_trades", label: "Jack-of-All-Trades" },
+      { key: "language", label: "Language" },
+      { key: "language_1", label: "Language 1", parentKey: "language" },
+      { key: "language_2", label: "Language 2", parentKey: "language" },
+      { key: "language_3", label: "Language 3", parentKey: "language" },
+      { key: "language_4", label: "Language 4", parentKey: "language" },
+      { key: "language_5", label: "Language 5", parentKey: "language" },
+      { key: "leadership", label: "Leadership" },
+      { key: "mechanic", label: "Mechanic" },
+      { key: "medic", label: "Medic" },
+      { key: "melee", label: "Melee" },
+      { key: "melee_unarmed", label: "Melee Unarmed", parentKey: "melee" },
+      { key: "melee_blade", label: "Melee Blade", parentKey: "melee" },
+      { key: "melee_bludgeon", label: "Melee Bludgeon", parentKey: "melee" },
+      { key: "melee_natural", label: "Melee Natural", parentKey: "melee" },
+      { key: "navigation", label: "Navigation" },
+      { key: "persuade", label: "Persuade" },
+      { key: "pilot", label: "Pilot" },
+      { key: "pilot_small_craft", label: "Pilot Small Craft", parentKey: "pilot" },
+      { key: "pilot_spacecraft", label: "Pilot Spacecraft", parentKey: "pilot" },
+      { key: "pilot_capital_ships", label: "Pilot Capital Ships", parentKey: "pilot" },
+      { key: "profession", label: "Profession" },
+      { key: "profession_1", label: "Profession 1", parentKey: "profession" },
+      { key: "profession_2", label: "Profession 2", parentKey: "profession" },
+      { key: "profession_3", label: "Profession 3", parentKey: "profession" },
+      { key: "profession_4", label: "Profession 4", parentKey: "profession" },
+      { key: "profession_5", label: "Profession 5", parentKey: "profession" },
+      { key: "recon", label: "Recon" },
+      { key: "science", label: "Science" },
+      { key: "science_1", label: "Science 1", parentKey: "science" },
+      { key: "science_2", label: "Science 2", parentKey: "science" },
+      { key: "science_3", label: "Science 3", parentKey: "science" },
+      { key: "science_4", label: "Science 4", parentKey: "science" },
+      { key: "science_5", label: "Science 5", parentKey: "science" },
+      { key: "seafarer", label: "Seafarer" },
+      { key: "seafarer_ocean_ships", label: "Seafarer Ocean Ships", parentKey: "seafarer" },
+      { key: "seafarer_personal", label: "Seafarer Personal", parentKey: "seafarer" },
+      { key: "seafarer_sail", label: "Seafarer Sail", parentKey: "seafarer" },
+      { key: "seafarer_submarine", label: "Seafarer Submarine", parentKey: "seafarer" },
+      { key: "stealth", label: "Stealth" },
+      { key: "steward", label: "Steward" },
+      { key: "streetwise", label: "Streetwise" },
+      { key: "survival", label: "Survival" },
+      { key: "tactics", label: "Tactics" },
+      { key: "tactics_military", label: "Tactics Military", parentKey: "tactics" },
+      { key: "tactics_naval", label: "Tactics Naval", parentKey: "tactics" },
+      { key: "vacc_suit", label: "Vacc Suit" }
+    ];
+
+    const psionicSkills = [
+      { key: "telepathy", label: "Telepathy" },
+      { key: "clairvoyance", label: "Clairvoyance" },
+      { key: "telekinesis", label: "Telekinesis" },
+      { key: "awareness", label: "Awareness" },
+      { key: "teleportation", label: "Teleportation" }
+    ];
+
+    const skillsToProcess = Array.isArray(skills) ? {} : skills;
     const skillGroups: { [key: string]: any[] } = {};
     
-    // Handle both object and array format for skills
-    const skillsToProcess = Array.isArray(skills) ? {} : skills;
-    
-    // Show ALL skills, not just proficient ones
-    Object.entries(skillsToProcess).forEach(([key, skill]: [string, any]) => {
+    // Process regular skills in order
+    skillDefinitions.forEach(def => {
+      const skill = skillsToProcess[def.key];
       if (skill && typeof skill === 'object') {
-        const group = skill.parentKey || 'Base Skills';
+        const group = def.parentKey || 'Base Skills';
         if (!skillGroups[group]) skillGroups[group] = [];
-        skillGroups[group].push({ key, ...skill });
+        skillGroups[group].push({ 
+          key: def.key, 
+          label: def.label,
+          customLabel: skill.customLabel,
+          ...skill 
+        });
       }
     });
 
-    return Object.entries(skillGroups).map(([groupName, groupSkills]) => (
-      <div key={groupName} className="mb-4">
-        <h4 className="font-semibold text-sm mb-2 text-muted-foreground uppercase tracking-wide">
-          {groupName}
-        </h4>
-        <div className="grid grid-cols-2 gap-2">
-          {groupSkills.map((skill) => (
-            <div key={skill.key} className="flex justify-between items-center py-1 border-b border-border/30">
-              <span className="text-sm">{skill.customLabel || skill.key.replace(/_/g, ' ')}</span>
-              <span className="font-mono text-sm">{skill.value || skill.level || '0'}</span>
+    // Process psionic skills separately
+    const psionicGroup: any[] = [];
+    psionicSkills.forEach(def => {
+      const skill = skillsToProcess[def.key];
+      if (skill && typeof skill === 'object') {
+        psionicGroup.push({ 
+          key: def.key, 
+          label: def.label,
+          customLabel: skill.customLabel,
+          ...skill 
+        });
+      }
+    });
+
+    return (
+      <div>
+        {Object.entries(skillGroups).map(([groupName, groupSkills]) => (
+          <div key={groupName} className="mb-4">
+            <h4 className="font-semibold text-sm mb-2 text-muted-foreground uppercase tracking-wide">
+              {groupName}
+            </h4>
+            <div className="grid grid-cols-2 gap-2">
+              {groupSkills.map((skill) => (
+                <div key={skill.key} className="flex justify-between items-center py-1 border-b border-border/30">
+                  <span className="text-sm">{skill.customLabel || skill.label}</span>
+                  <span className="font-mono text-sm">{skill.value || skill.level || '0'}</span>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          </div>
+        ))}
+        
+        {psionicGroup.length > 0 && (
+          <div className="mb-4">
+            <h4 className="font-semibold text-sm mb-2 text-muted-foreground uppercase tracking-wide">
+              Psionics
+            </h4>
+            <div className="grid grid-cols-2 gap-2">
+              {psionicGroup.map((skill) => (
+                <div key={skill.key} className="flex justify-between items-center py-1 border-b border-border/30">
+                  <span className="text-sm">{skill.customLabel || skill.label}</span>
+                  <span className="font-mono text-sm">{skill.value || skill.level || '0'}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
-    ));
+    );
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground overflow-auto">
-      <div className="max-w-4xl mx-auto p-8 print:p-4 min-h-full">
+    <div className="min-h-screen max-h-screen bg-background text-foreground overflow-y-auto">
+      <div className="max-w-4xl mx-auto p-8 print:p-4 min-h-full pb-8">
         {/* Header */}
         <div className="border-2 border-border rounded-lg p-6 mb-6 bg-card">
           <h1 className="text-3xl font-bold mb-4 text-center">TRAVELLER CHARACTER SHEET</h1>
