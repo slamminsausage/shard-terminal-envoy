@@ -1,0 +1,104 @@
+[
+  {
+    "title": "Specimen Theta — Initial Intake",
+    "location": "ES-1 BioContainment, Sub-Level 1",
+    "date": "233-1105",
+    "author": "Dr. Netali Varos",
+    "content": "Specimen Theta arrived via recovery vessel S-728 from Sector VF-19. Subject recovered cryogenically stabilized within unknown stasis architecture.\n\nPod material is a metallic-biological composite resistant to standard scanning. Subject displays human baseline physiology with significant unclassified genomic deviations. Psionic dampeners raised on intake as per Sub-Level 1 protocol.\n\nRecommend additional personnel for observation. Pod markings remain untranslated.",
+    "security_level": "high",
+    "requires_roll": true,
+    "roll_check": {
+      "difficulty": 10,
+      "skill": "Electronics (Computers)",
+      "on_success": "Clearance accepted. Intake analysis decrypted.",
+      "on_failure": "Access denied. Redacted at Epsilon-4 clearance."
+    }
+  },
+  {
+    "title": "Containment Alert — Unmapped Bioshell Units",
+    "location": "ES-1 BioContainment, Sub-Level 1",
+    "date": "234-1105",
+    "author": "Lt. Harce Vell",
+    "content": "Two hours after Specimen Theta was removed from the original stasis cradle, auxiliary pods 2B-01 through 2B-10 registered thermal fluctuation and neural spike activity.\n\nEntities inside pods remain unidentified; movement detected in units 3, 6, and 10. Psionic dampeners and isolation fields raised to maximum output.\n\nRecommend halting disassembly of alien cradle structure pending further review.",
+    "security_level": "high",
+    "requires_roll": true,
+    "roll_check": {
+      "difficulty": 12,
+      "skill": "Electronics (Computers)",
+      "on_success": "Access granted. Full bioshell sensor feeds loaded.",
+      "on_failure": "Access denied. Containment logs corrupted or sealed."
+    }
+  },
+  {
+    "title": "Incident Report Theta-4 — Sub-Level 1 Breach",
+    "location": "ES-1 BioContainment, Sub-Level 1",
+    "date": "235-1105",
+    "author": "ColdSec Officer Relle Torvik",
+    "content": "At 0442 hours, containment pods 2B-03 through 2B-08 entered active state and forcibly breached from within. Entities displayed coordinated movement and exceptional resistance to ColdSec non-lethal measures.\n\nSix entities extracted Specimen Theta from Biobed A. Visual feeds show two units terminated during the conflict; remaining group escaped into Maintenance Shaft C-9.\n\nUnauthorized launch recorded from Auxiliary Hangar 2. Subject Theta status: MISSING.",
+    "security_level": "critical",
+    "requires_roll": true,
+    "roll_check": {
+      "difficulty": 10,
+      "skill": "Electronics (Computers)",
+      "on_success": "Movement paths and breach timeline reconstructed.",
+      "on_failure": "Insufficient data. Partial report displayed."
+    }
+  },
+  {
+    "title": "Post-Incident Evaluation — Loss of Specimen Theta",
+    "location": "ES-1 Admin Terminal",
+    "date": "236-1105",
+    "author": "Dr. Avar Kess",
+    "content": "Fragments of the escape vessel recovered on far side of asteroid cluster. A single cryo-ejection capsule was launched moments before vessel rupture. Trajectory suggests interception by unidentified non-transponder craft.\n\nColdSec recovered two surviving bioshell organisms from pods 2B-04 and 2B-09. Both sedated and refrozen. Remaining escaped bioshell units unaccounted for.\n\nBiocontainment remains under Delta-Lock until further directive.",
+    "security_level": "critical",
+    "requires_roll": false
+  },
+  {
+    "title": "ColdSec Memo — Bioshell Containment Protocols",
+    "location": "ES-1 ColdSec Network",
+    "date": "236-1105",
+    "author": "Commander V. Strahn",
+    "content": "Standing order: Do NOT approach containment pods 2B-04 or 2B-09 without direct authorization. Organisms possess internal alloy-organic structures and have demonstrated coordinated hostile response.\n\nClassification updated from 'xenobiological units' to 'bioshell constructs.' Further disassembly of the recovered stasis cradle suspended.",
+    "security_level": "high",
+    "requires_roll": false
+  },
+  {
+    "title": "Internal Inquiry — Theta Recovery Probability",
+    "location": "ES-1 Admin Terminal",
+    "date": "237-1105",
+    "author": "Analyst Lera Quann",
+    "content": "Probability of recovering Specimen Theta alive: <6%.\nProbability of recovering escaped bioshell constructs: <3%.\n\nRecommendation: Maintain strict secrecy on all Theta-associated files. Forward only sanitized summaries to corporate oversight. Do not disclose bioshell intelligence markers pending review.",
+    "security_level": "high",
+    "requires_roll": false
+  },
+  {
+    "title": "Redacted Report — Theta Wing Power Outage",
+    "location": "ES-1 BioContainment, Sub-Level 1 (Theta Wing)",
+    "date": "234-1105",
+    "author": "Systems Engineer Rokk Hadeen",
+    "content": "[REDACTED] logged a full-cycle power dip across Theta Wing at 234-0318. Backup capacitors activated but failed to maintain stable psionic suppression levels for approximately [REDACTED] seconds.\n\nDuring the outage, several biometric alarms registered anomalous activity from pods 2B-0[REDACTED]. Visual feed unavailable—records marked corrupted.\n\nRecommend investigating cross-feed instability between isolation lattice and stasis cradle mountings.\n\nNote: Do not distribute this report outside Sub-Level 1.",
+    "security_level": "critical",
+    "requires_roll": true,
+    "roll_check": {
+      "difficulty": 12,
+      "skill": "Electronics (Computers)",
+      "on_success": "Redacted segments partially restored. Power logs decrypted.",
+      "on_failure": "Access denied. Report remains heavily redacted."
+    }
+  },
+  {
+    "title": "Personal Log — ColdSec Officer Torvik",
+    "location": "ES-1 ColdSec Secure Locker (Hidden File)",
+    "date": "235-1105",
+    "author": "Officer Relle Torvik",
+    "content": "I don't know who will find this. Files like these get purged, but I need it written somewhere.\n\nTheta Wing isn't a containment problem—it's something else. Those things in the pods weren't confused. They weren't afraid. They moved like they'd done it before. Like they knew exactly where to go.\n\nAnd when they reached the girl, the way they stood around her... it wasn't extraction. It was recognition.\n\nColdSec protocol says classify them as bioshell constructs. That's wrong. There's intent in their movements.\n\nIf command reads this: shut down Theta Wing. Seal it. Burn it if you have to.\n\nWe were never in control.",
+    "security_level": "high",
+    "requires_roll": true,
+    "roll_check": {
+      "difficulty": 12,
+      "skill": "Electronics (Computers)",
+      "on_success": "Hidden diary file decrypted.",
+      "on_failure": "No result. File appears missing or corrupted."
+    }
+  }
+]
