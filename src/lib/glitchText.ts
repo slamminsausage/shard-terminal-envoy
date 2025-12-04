@@ -18,7 +18,8 @@ export interface GlitchResult {
 }
 
 const CORRUPT_TERMINALS = new Set([
-  'blacksite-es1',
+  'es1-delta',
+  'es1-gamma',
   'vennik-personal',
   'sayelle-logs',
   'blacktalon'
@@ -60,13 +61,13 @@ export const getCorruptionParams = (
   const eclipseContent =
     content.includes('Eclipse Shard') ||
     content.includes('ES1') ||
-    terminalName === 'blacksite-es1';
+    terminalName === 'es1-delta';
 
   if (eclipseContent) {
     return { level: 0.03, isEclipseShard: true };
   }
 
-  if (terminalName.includes('blacksite')) {
+  if (terminalName.includes('es1-')) {
     return { level: 0.02, isEclipseShard: false };
   }
 

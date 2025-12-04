@@ -27,7 +27,8 @@ export const TERMINALS: TerminalDefinition[] = [
     password: 'vennik4ever'
   },
   { code: 'caldonis_public', name: 'Caldonis Public Network', logPath: '/logs/caldonis_public.json' },
-  { code: 'blacksite-es1', name: 'Blacksite ES1', logPath: '/logs/blacksite-es1.json', requiresRoll: 10 },
+  { code: 'es1-delta', name: 'ES1-Delta (Sub-Level 2)', logPath: '/logs/es1-delta.json', requiresRoll: 10 },
+  { code: 'es1-gamma', name: 'ES1-Gamma (Sub-Level 1)', logPath: '/logs/es1-gamma.json', requiresRoll: 10 },
   { code: 'blacktalon', name: 'Black Talon Operations', logPath: '/logs/blacktalon.json', requiresRoll: 12 },
   { code: 'vennik-personal', name: 'R. Vennik Personal Node', logPath: '/logs/vennik-personal.json', requiresRoll: 10 },
   { code: 'sayelle-logs', name: 'Sayelle Archive', logPath: '/logs/sayelle-logs.json', requiresRoll: 8 },

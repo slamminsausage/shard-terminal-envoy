@@ -21,7 +21,7 @@ const getTerminalEffectClasses = (terminalId: string) => {
     ? terminalId.replace("/logs/", "").replace(".json", "")
     : terminalId;
 
-  const damagedTerminals = ["blacksite-es1", "sayelle-logs", "vennik-personal"];
+  const damagedTerminals = ["es1-delta", "es1-gamma", "sayelle-logs", "vennik-personal"];
   const minorGlitchTerminals = ["fuwnet", "vanagandr001", "fuw01", "blacktalon"];
 
   if (damagedTerminals.includes(terminalName)) {
