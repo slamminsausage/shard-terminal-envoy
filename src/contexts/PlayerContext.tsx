@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Player, Character, Vehicle } from '@/types/database';
 import { useToast } from '@/hooks/use-toast';
+import { fetchWithTimeout } from '@/lib/fetchWithTimeout';
 
 interface PlayerContextType {
   // Current player state
@@ -58,7 +59,9 @@ export const PlayerProvider: React.FC<PlayerProviderProps> = ({ children }) => {
         setCurrentPlayer(playerData);
       } catch (error) {
         console.error('Failed to parse saved player data:', error);
+        // Clear corrupted data
         localStorage.removeItem('traveller_player');
+        setCurrentPlayer(null);
       }
     }
   }, []);
@@ -71,18 +74,19 @@ export const PlayerProvider: React.FC<PlayerProviderProps> = ({ children }) => {
       setCharacters([]);
       setVehicles([]);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPlayer]);
 
   const validateAccessCode = async (code: string): Promise<boolean> => {
     setIsLoading(true);
     try {
-      const response = await fetch('/api/validate-code', {
+      const response = await fetchWithTimeout('/api/validate-code', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ code: code.toUpperCase() }),
-      });
+      }, 10000);
 
       if (!response.ok) {
         throw new Error('Network error');
@@ -148,17 +152,29 @@ export const PlayerProvider: React.FC<PlayerProviderProps> = ({ children }) => {
     setIsLoading(true);
     try {
       // Fetch characters
-      const charactersResponse = await fetch(`/api/characters?player_id=${currentPlayer.id}`);
+      const charactersResponse = await fetchWithTimeout(`/api/characters?player_id=${currentPlayer.id}`, {}, 10000);
       if (charactersResponse.ok) {
-        const charactersData = await charactersResponse.json();
-        setCharacters(charactersData);
+        try {
+          const charactersData = await charactersResponse.json();
+          setCharacters(charactersData);
+        } catch (jsonError) {
+          console.error('Failed to parse characters response:', jsonError);
+        }
+      } else {
+        console.warn('Characters fetch failed with status:', charactersResponse.status);
       }
 
       // Fetch vehicles
-      const vehiclesResponse = await fetch(`/api/vehicles?player_id=${currentPlayer.id}`);
+      const vehiclesResponse = await fetchWithTimeout(`/api/vehicles?player_id=${currentPlayer.id}`, {}, 10000);
       if (vehiclesResponse.ok) {
-        const vehiclesData = await vehiclesResponse.json();
-        setVehicles(vehiclesData);
+        try {
+          const vehiclesData = await vehiclesResponse.json();
+          setVehicles(vehiclesData);
+        } catch (jsonError) {
+          console.error('Failed to parse vehicles response:', jsonError);
+        }
+      } else {
+        console.warn('Vehicles fetch failed with status:', vehiclesResponse.status);
       }
     } catch (error) {
       console.error('Failed to refresh data:', error);
@@ -178,8 +194,8 @@ export const PlayerProvider: React.FC<PlayerProviderProps> = ({ children }) => {
     try {
       const method = characterData.id ? 'PUT' : 'POST';
       const url = characterData.id ? `/api/characters/${characterData.id}` : '/api/characters';
-      
-      const response = await fetch(url, {
+
+      const response = await fetchWithTimeout(url, {
         method,
         headers: {
           'Content-Type': 'application/json',
@@ -188,7 +204,7 @@ export const PlayerProvider: React.FC<PlayerProviderProps> = ({ children }) => {
           ...characterData,
           player_id: currentPlayer.id,
         }),
-      });
+      }, 10000);
 
       if (!response.ok) {
         throw new Error('Failed to save character');
@@ -228,8 +244,8 @@ export const PlayerProvider: React.FC<PlayerProviderProps> = ({ children }) => {
     try {
       const method = vehicleData.id ? 'PUT' : 'POST';
       const url = vehicleData.id ? `/api/vehicles/${vehicleData.id}` : '/api/vehicles';
-      
-      const response = await fetch(url, {
+
+      const response = await fetchWithTimeout(url, {
         method,
         headers: {
           'Content-Type': 'application/json',
@@ -238,7 +254,7 @@ export const PlayerProvider: React.FC<PlayerProviderProps> = ({ children }) => {
           ...vehicleData,
           player_id: currentPlayer.id,
         }),
-      });
+      }, 10000);
 
       if (!response.ok) {
         throw new Error('Failed to save vehicle');
@@ -347,9 +363,9 @@ export const PlayerProvider: React.FC<PlayerProviderProps> = ({ children }) => {
 
   const deleteCharacter = async (characterId: string): Promise<boolean> => {
     try {
-      const response = await fetch(`/api/characters/${characterId}`, {
+      const response = await fetchWithTimeout(`/api/characters/${characterId}`, {
         method: 'DELETE',
-      });
+      }, 10000);
 
       if (!response.ok) {
         throw new Error('Failed to delete character');
@@ -376,9 +392,9 @@ export const PlayerProvider: React.FC<PlayerProviderProps> = ({ children }) => {
 
   const deleteVehicle = async (vehicleId: string): Promise<boolean> => {
     try {
-      const response = await fetch(`/api/vehicles/${vehicleId}`, {
+      const response = await fetchWithTimeout(`/api/vehicles/${vehicleId}`, {
         method: 'DELETE',
-      });
+      }, 10000);
 
       if (!response.ok) {
         throw new Error('Failed to delete vehicle');

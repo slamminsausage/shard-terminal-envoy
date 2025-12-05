@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { CampaignProvider } from "@/contexts/CampaignContext";
+import ErrorBoundary from "@/components/ErrorBoundary";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import CharacterView from "./components/crew/CharacterView";
@@ -23,23 +24,25 @@ const VehicleViewRoute = () => {
 const queryClient = new QueryClient();
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <CampaignProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/character-view/:id" element={<CharacterViewRoute />} />
-            <Route path="/vehicle-view/:id" element={<VehicleViewRoute />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </CampaignProvider>
-    </TooltipProvider>
-  </QueryClientProvider>
+  <ErrorBoundary fallbackMessage="Terminal system failure">
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <CampaignProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/character-view/:id" element={<CharacterViewRoute />} />
+              <Route path="/vehicle-view/:id" element={<VehicleViewRoute />} />
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </CampaignProvider>
+      </TooltipProvider>
+    </QueryClientProvider>
+  </ErrorBoundary>
 );
 
 export default App;

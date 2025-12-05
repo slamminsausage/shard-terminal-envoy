@@ -31,11 +31,26 @@ class AudioManager {
 
   playEffect(effect: string, volume: number = this.volume) {
     if (this.muted || !this.sounds[effect]) return;
-    
+
     try {
       const sound = this.sounds[effect].cloneNode() as HTMLAudioElement;
       sound.volume = Math.min(volume, 1);
-      sound.play().catch(e => console.warn('Audio play failed:', e));
+
+      // Clean up cloned audio node after it finishes playing to prevent memory leak
+      const cleanup = () => {
+        sound.removeEventListener('ended', cleanup);
+        sound.removeEventListener('error', cleanup);
+        sound.src = '';
+        sound.load();
+      };
+
+      sound.addEventListener('ended', cleanup);
+      sound.addEventListener('error', cleanup);
+
+      sound.play().catch(e => {
+        console.warn('Audio play failed:', e);
+        cleanup();
+      });
     } catch (error) {
       console.warn(`Failed to play effect: ${effect}`, error);
     }

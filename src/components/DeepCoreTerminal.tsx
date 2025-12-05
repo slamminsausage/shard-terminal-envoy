@@ -170,14 +170,18 @@ export default function RiftjawTerminal({ onBack }: RiftjawTerminalProps) {
   const [systemInit, setSystemInit] = useState(false);
   const typingQueueRef = useRef([]);
   const isTypingRef = useRef(false);
+  const timeoutIdsRef = useRef<number[]>([]);
 
   // Initialize audio
   useEffect(() => {
     audioManager.preloadSounds();
     audioManager.playAmbient('terminal-hum');
-    
+
     return () => {
       audioManager.stopAmbient();
+      // Clean up all timeouts on unmount
+      timeoutIdsRef.current.forEach(id => clearTimeout(id));
+      timeoutIdsRef.current = [];
     };
   }, []);
 
@@ -190,31 +194,40 @@ export default function RiftjawTerminal({ onBack }: RiftjawTerminalProps) {
 
   // Fixed typing function that queues messages
   const queueMessage = (text, callback) => {
+    // Prevent race condition by using a lock
+    const shouldProcess = typingQueueRef.current.length === 0 && !isTypingRef.current;
     typingQueueRef.current.push({ text, callback });
-    processQueue();
+    if (shouldProcess) {
+      processQueue();
+    }
   };
 
   const processQueue = async () => {
+    // Guard against concurrent execution
     if (isTypingRef.current || typingQueueRef.current.length === 0) return;
-    
+
     isTypingRef.current = true;
     const { text, callback } = typingQueueRef.current.shift();
-    
+
     // Type the message character by character
     for (let i = 0; i < text.length; i++) {
       setCinematicText(prev => prev + text[i]);
       await new Promise(resolve => setTimeout(resolve, 30));
     }
-    
+
     setCinematicText(prev => prev + "\n");
-    
+
     if (callback) {
       await new Promise(resolve => setTimeout(resolve, 500));
       callback();
     }
-    
+
     isTypingRef.current = false;
-    processQueue(); // Process next message in queue
+
+    // Process next message in queue if any
+    if (typingQueueRef.current.length > 0) {
+      processQueue();
+    }
   };
 
   // Run cinematic sequence
@@ -223,65 +236,74 @@ export default function RiftjawTerminal({ onBack }: RiftjawTerminalProps) {
     setCinematicText("");
     typingQueueRef.current = [];
     isTypingRef.current = false;
-    
+
     // Queue all cinematic messages with delays
     for (let i = 0; i < cinematicSequence.length; i++) {
       const msg = cinematicSequence[i];
-      setTimeout(() => {
+      const timeoutId = window.setTimeout(() => {
         if (msg.warning) {
           audioManager.playEffect('warning-beep', 0.3);
         }
         queueMessage(msg.text, undefined);
       }, msg.delay);
+      timeoutIdsRef.current.push(timeoutId);
     }
-    
+
     // Environmental effects
-    setTimeout(() => {
+    const envTimeoutId = window.setTimeout(() => {
       setEnvironmentalEffects(true);
       audioManager.playEffect('glitch-sound', 0.5);
-      
+
       // Screen flicker
       document.body.style.animation = 'powerFlicker 2s ease-out';
-      
+
       // Floor shudder effect
-      setTimeout(() => {
+      const shudder1 = window.setTimeout(() => {
         document.body.style.transform = 'translateY(2px)';
-        setTimeout(() => {
+        const shudder2 = window.setTimeout(() => {
           document.body.style.transform = 'translateY(-2px)';
-          setTimeout(() => {
+          const shudder3 = window.setTimeout(() => {
             document.body.style.transform = 'translateY(0)';
           }, 100);
+          timeoutIdsRef.current.push(shudder3);
         }, 100);
+        timeoutIdsRef.current.push(shudder2);
       }, 500);
+      timeoutIdsRef.current.push(shudder1);
     }, 8000);
-    
+    timeoutIdsRef.current.push(envTimeoutId);
+
     // Blue circuits activation
-    setTimeout(() => {
+    const blueCircuitsId = window.setTimeout(() => {
       setBlueCircuits(true);
       audioManager.playEffect('data-corruption', 0.4);
     }, 10000);
-    
+    timeoutIdsRef.current.push(blueCircuitsId);
+
     // System initialization
-    setTimeout(() => {
+    const systemInitId = window.setTimeout(() => {
       setCinematicText("");
       setSystemInit(true);
       audioManager.playAmbient('static-hum');
       typingQueueRef.current = [];
       isTypingRef.current = false;
-      
+
       // Queue system messages
       for (let i = 0; i < systemInitSequence.length; i++) {
         const msg = systemInitSequence[i];
-        setTimeout(() => {
+        const msgTimeoutId = window.setTimeout(() => {
           queueMessage(msg.text, i === systemInitSequence.length - 1 ? () => {
-            setTimeout(() => {
+            const finalId = window.setTimeout(() => {
               setCinematicActive(false);
               setShowFinalArchive(true);
             }, 2000);
+            timeoutIdsRef.current.push(finalId);
           } : undefined);
         }, msg.delay);
+        timeoutIdsRef.current.push(msgTimeoutId);
       }
     }, 12000);
+    timeoutIdsRef.current.push(systemInitId);
   };
 
   const handlePasswordSubmit = () => {
@@ -300,12 +322,12 @@ export default function RiftjawTerminal({ onBack }: RiftjawTerminalProps) {
       if (currentLevel < authLevels.length - 1) {
         audioManager.playEffect('mechanical-key', 0.2);
       }
-      
+
       // Auto-advance after 2 seconds
-      setTimeout(() => {
+      const advanceId = window.setTimeout(() => {
         setShowSuccess(false);
         setSuccessMessage("");
-        
+
         if (currentLevel < authLevels.length - 1) {
           setCurrentLevel(currentLevel + 1);
         } else {
@@ -313,20 +335,22 @@ export default function RiftjawTerminal({ onBack }: RiftjawTerminalProps) {
           runCinematicSequence();
         }
       }, 2000);
+      timeoutIdsRef.current.push(advanceId);
     } else {
       // Wrong password
       audioManager.playEffect('error-buzz', 0.4);
       const attempts = passwordAttempts + 1;
       setPasswordAttempts(attempts);
       setPasswordInput("");
-      
+
       if (attempts >= 3) {
         // Max attempts reached
         audioManager.playEffect('warning-beep', 0.5);
         setErrorMessage("Maximum attempts exceeded. Access denied.");
-        setTimeout(() => {
+        const navigateId = window.setTimeout(() => {
           navigate("/");
         }, 2000);
+        timeoutIdsRef.current.push(navigateId);
       } else {
         // Show failure message
         setErrorMessage(`${level.failureMessage}\n\nAttempts remaining: ${3 - attempts}`);
