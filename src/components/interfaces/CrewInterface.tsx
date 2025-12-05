@@ -19,7 +19,13 @@ export default function CrewInterface() {
   const [noteFileName, setNoteFileName] = useState("");
   const [savedNoteFiles, setSavedNoteFiles] = useState<string[]>(() => {
     const saved = localStorage.getItem('saved_note_files');
-    return saved ? JSON.parse(saved) : [];
+    if (!saved) return [];
+    try {
+      return JSON.parse(saved);
+    } catch (error) {
+      console.error('Failed to parse saved note files:', error);
+      return [];
+    }
   });
   const { createNewCharacter, characters, vehicles, deleteCharacter } = useCampaign();
   const [characterToDelete, setCharacterToDelete] = useState<string | null>(null);
