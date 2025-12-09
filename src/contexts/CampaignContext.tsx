@@ -3,6 +3,7 @@ import { Character, Vehicle } from '@/types/database';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from "@/integrations/supabase/client";
 import { dbHelpers } from '@/lib/supabase';
+import { defaultCharacters, defaultVehicles } from "@/data/campaignDefaults";
 
 interface CampaignContextType {
   // Authentication state
@@ -95,11 +96,14 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
       // Fallback to localStorage for development
       const savedCharacters = localStorage.getItem('traveller_characters');
       const savedVehicles = localStorage.getItem('traveller_vehicles');
+      let usedLocalCharacters = false;
+      let usedLocalVehicles = false;
 
       if (savedCharacters) {
         try {
           const parsedCharacters = JSON.parse(savedCharacters);
           setCharacters(parsedCharacters);
+          usedLocalCharacters = true;
         } catch (e) {
           console.error('Failed to parse saved characters:', e);
         }
@@ -109,9 +113,18 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
         try {
           const parsedVehicles = JSON.parse(savedVehicles);
           setVehicles(parsedVehicles);
+          usedLocalVehicles = true;
         } catch (e) {
           console.error('Failed to parse saved vehicles:', e);
         }
+      }
+
+      // Fallback to typed defaults so UI still has content in offline mode
+      if (!usedLocalCharacters) {
+        setCharacters(defaultCharacters);
+      }
+      if (!usedLocalVehicles) {
+        setVehicles(defaultVehicles);
       }
     } finally {
       setIsLoading(false);

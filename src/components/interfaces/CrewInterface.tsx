@@ -140,7 +140,7 @@ export default function CrewInterface() {
     return (
       <div className="p-6 space-y-6">
         <div className="flex justify-between items-center">
-          <h2 className="text-xl font-mono">CHARACTER SHEET INTERFACE</h2>
+          <h2 className="text-xl font-mono tracking-[0.2em] text-primary">CHARACTER SHEET INTERFACE</h2>
           <Button variant="outline" onClick={handleBackToCrewInterface}>
             Back to Crew Management
           </Button>
@@ -153,34 +153,33 @@ export default function CrewInterface() {
   return (
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-xl font-mono">CREW MANAGEMENT SYSTEM</h2>
+        <h2 className="text-xl font-mono tracking-[0.2em] text-primary">CREW MANAGEMENT SYSTEM</h2>
       </div>
 
-      <Card className="bg-card/60 border-primary/30">
+      <Card className="bg-background/60 border-primary/30 shadow-[0_0_24px_rgba(0,255,0,0.12)]">
         <CardContent className="p-6">
-          <div className="terminal terminal-flicker h-[200px] overflow-auto mb-4">
-            <div className="font-mono text-sm whitespace-pre-wrap p-4">
+          <div className="terminal terminal-flicker h-[200px] overflow-auto mb-4 border border-primary/30 rounded">
+            <div className="font-mono text-sm whitespace-pre-wrap p-4 text-primary">
               {displayText}
             </div>
           </div>
           
           <Tabs defaultValue="roster" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="roster">Crew Roster</TabsTrigger>
-              <TabsTrigger value="sheets">Character Sheets</TabsTrigger>
-              <TabsTrigger value="notes">Mission Notes</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-3 bg-black/60 border border-primary/30 rounded">
+              <TabsTrigger value="roster" className="font-mono">Crew Roster</TabsTrigger>
+              <TabsTrigger value="sheets" className="font-mono">Character Sheets</TabsTrigger>
+              <TabsTrigger value="notes" className="font-mono">Mission Notes</TabsTrigger>
             </TabsList>
             
             <TabsContent value="roster" className="space-y-4">
-              <Card>
+              <Card className="bg-black/60 border-primary/30 shadow-[0_0_18px_rgba(0,255,0,0.08)]">
                 <CardHeader>
-                  <CardTitle className="font-mono text-sm">ACTIVE CREW MEMBERS</CardTitle>
+                  <CardTitle className="font-mono text-sm text-primary">ACTIVE CREW MEMBERS</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2">
                     {characters.length > 0 ? (
                       characters.map((character, index) => {
-                        // Find which vehicle this character is assigned to
                         const assignedVehicle = vehicles.find(vehicle => 
                           vehicle.crew_requirements && 
                           Object.keys(vehicle.crew_requirements).includes(character.id)
@@ -188,8 +187,10 @@ export default function CrewInterface() {
                         const assignmentStatus = assignedVehicle ? `Assigned to ${assignedVehicle.name}` : 'Unassigned';
                         
                         return (
-                        <div key={character.id} className="p-3 border border-primary/20 rounded font-mono text-sm flex justify-between items-center">
-                          <span>SLOT {String(index + 1).padStart(2, '0')}: {character.name} - {assignmentStatus}</span>
+                        <div key={character.id} className="p-3 border border-primary/20 rounded font-mono text-sm flex justify-between items-center bg-background/40">
+                          <span className="text-primary">
+                            SLOT {String(index + 1).padStart(2, '0')}: {character.name} - <span className="text-secondary">{assignmentStatus}</span>
+                          </span>
                            <div className="flex gap-2">
                              <Button 
                                variant="outline" 
@@ -242,16 +243,16 @@ export default function CrewInterface() {
                       })
                     ) : (
                       <>
-                        <div className="p-3 border border-primary/20 rounded font-mono text-sm">
+                        <div className="p-3 border border-primary/20 rounded font-mono text-sm text-primary bg-background/30">
                           SLOT 01: [VACANT] - Assign crew member
                         </div>
-                        <div className="p-3 border border-primary/20 rounded font-mono text-sm">
+                        <div className="p-3 border border-primary/20 rounded font-mono text-sm text-primary bg-background/30">
                           SLOT 02: [VACANT] - Assign crew member
                         </div>
-                        <div className="p-3 border border-primary/20 rounded font-mono text-sm">
+                        <div className="p-3 border border-primary/20 rounded font-mono text-sm text-primary bg-background/30">
                           SLOT 03: [VACANT] - Assign crew member
                         </div>
-                        <div className="p-3 border border-primary/20 rounded font-mono text-sm">
+                        <div className="p-3 border border-primary/20 rounded font-mono text-sm text-primary bg-background/30">
                           SLOT 04: [VACANT] - Assign crew member
                         </div>
                       </>
@@ -265,12 +266,12 @@ export default function CrewInterface() {
             </TabsContent>
             
             <TabsContent value="sheets" className="space-y-4">
-              <Card>
+              <Card className="bg-black/60 border-primary/30 shadow-[0_0_18px_rgba(0,255,0,0.08)]">
                 <CardHeader>
-                  <CardTitle className="font-mono text-sm">CHARACTER SHEET ACCESS</CardTitle>
+                  <CardTitle className="font-mono text-sm text-primary">CHARACTER SHEET ACCESS</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="font-mono text-sm mb-4 opacity-70">
+                  <p className="font-mono text-sm mb-4 text-primary/80">
                     Access and manage character sheets for crew members.
                   </p>
                   <Button 
@@ -285,18 +286,18 @@ export default function CrewInterface() {
             </TabsContent>
             
             <TabsContent value="notes" className="space-y-4">
-              <Card>
+              <Card className="bg-black/60 border-primary/30 shadow-[0_0_18px_rgba(0,255,0,0.08)]">
                 <CardHeader>
-                  <CardTitle className="font-mono text-sm">MISSION NOTES</CardTitle>
+                  <CardTitle className="font-mono text-sm text-primary">MISSION NOTES</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
                     {savedNoteFiles.length > 0 && (
                       <div>
-                        <Label className="font-mono text-xs">Saved Note Files</Label>
+                        <Label className="font-mono text-xs text-primary/80">Saved Note Files</Label>
                         <div className="mt-2 space-y-1">
                           {savedNoteFiles.map((filename) => (
-                            <div key={filename} className="flex items-center justify-between p-2 border border-primary/20 rounded">
+                            <div key={filename} className="flex items-center justify-between p-2 border border-primary/20 rounded bg-background/30">
                               <button
                                 onClick={() => handleOpenNoteFile(filename)}
                                 className="font-mono text-sm text-left flex-1 hover:text-primary transition-colors"
@@ -319,7 +320,7 @@ export default function CrewInterface() {
                     
                     <div className="flex gap-2">
                       <div className="flex-1">
-                        <Label htmlFor="note-filename" className="font-mono text-xs">
+                        <Label htmlFor="note-filename" className="font-mono text-xs text-primary/80">
                           Filename
                         </Label>
                         <Input
@@ -341,12 +342,12 @@ export default function CrewInterface() {
                     </div>
                     
                     <div>
-                      <Label htmlFor="mission-notes" className="font-mono text-xs">
+                      <Label htmlFor="mission-notes" className="font-mono text-xs text-primary/80">
                         Mission Notes Content
                       </Label>
                       <textarea 
                         id="mission-notes"
-                        className="w-full h-32 bg-background/20 border border-primary/30 rounded p-3 font-mono text-sm"
+                        className="w-full h-32 bg-background/20 border border-primary/30 rounded p-3 font-mono text-sm text-primary"
                         placeholder="Enter mission notes and status updates..."
                         value={missionNotes}
                         onChange={(e) => setMissionNotes(e.target.value)}

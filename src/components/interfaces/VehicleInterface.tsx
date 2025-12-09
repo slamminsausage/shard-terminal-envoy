@@ -75,7 +75,7 @@ export default function VehicleInterface() {
     return (
       <div className="p-6 space-y-6">
         <div className="flex justify-between items-center">
-          <h2 className="text-xl font-mono">
+          <h2 className="text-xl font-mono tracking-[0.2em] text-primary">
             VEHICLE SHEET INTERFACE
           </h2>
           <Button variant="outline" onClick={handleBackToVehicleInterface}>
@@ -90,35 +90,35 @@ export default function VehicleInterface() {
   return (
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-xl font-mono">VEHICLE MANAGEMENT SYSTEM</h2>
+        <h2 className="text-xl font-mono tracking-[0.2em] text-primary">VEHICLE MANAGEMENT SYSTEM</h2>
       </div>
 
-      <Card className="bg-card/60 border-primary/30">
+      <Card className="bg-background/60 border-primary/30 shadow-[0_0_24px_rgba(0,255,0,0.12)]">
         <CardContent className="p-6">
-          <div className="terminal terminal-flicker h-[200px] overflow-auto mb-4">
-            <div className="font-mono text-sm whitespace-pre-wrap p-4">
+          <div className="terminal terminal-flicker h-[200px] overflow-auto mb-4 border border-primary/30 rounded">
+            <div className="font-mono text-sm whitespace-pre-wrap p-4 text-primary">
               {displayText}
             </div>
           </div>
           
           <Tabs defaultValue="hangar" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="hangar">Ship Hangar</TabsTrigger>
-              <TabsTrigger value="vehicles">Vehicles</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-2 bg-black/60 border border-primary/30 rounded">
+              <TabsTrigger value="hangar" className="font-mono">Ship Hangar</TabsTrigger>
+              <TabsTrigger value="vehicles" className="font-mono">Vehicles</TabsTrigger>
             </TabsList>
             
             <TabsContent value="hangar" className="space-y-4">
-              <Card>
+              <Card className="bg-black/60 border-primary/30 shadow-[0_0_18px_rgba(0,255,0,0.08)]">
                 <CardHeader>
-                  <CardTitle className="font-mono text-sm">REGISTERED SPACECRAFT</CardTitle>
+                  <CardTitle className="font-mono text-sm text-primary">REGISTERED SPACECRAFT</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
                     {/* Show existing vehicles */}
                     {vehicles.filter(v => v.vehicle_type === 'Ship').map((vehicle) => (
-                      <div key={vehicle.id} className="p-4 border border-primary/20 rounded">
+                      <div key={vehicle.id} className="p-4 border border-primary/20 rounded bg-background/30">
                         <div className="flex justify-between items-center">
-                          <div className="font-mono text-sm">
+                          <div className="font-mono text-sm text-primary">
                             <div className="font-semibold">{vehicle.name}</div>
                             <div className="text-xs opacity-70">{vehicle.class_type || 'Type-S Scout/Courier'}</div>
                             <div className="text-xs opacity-70">Status: ACTIVE</div>
@@ -185,8 +185,8 @@ export default function VehicleInterface() {
                     
                     
                     {vehicles.filter(v => v.vehicle_type === 'Ship').length === 0 && (
-                      <div className="p-4 border border-primary/20 rounded border-dashed opacity-50">
-                        <div className="font-mono text-sm text-center">
+                      <div className="p-4 border border-primary/20 rounded border-dashed opacity-50 bg-background/30">
+                        <div className="font-mono text-sm text-center text-primary">
                           [EMPTY BERTH] - Register new spacecraft
                         </div>
                       </div>
@@ -201,17 +201,17 @@ export default function VehicleInterface() {
             </TabsContent>
             
             <TabsContent value="vehicles" className="space-y-4">
-              <Card>
+              <Card className="bg-black/60 border-primary/30 shadow-[0_0_18px_rgba(0,255,0,0.08)]">
                 <CardHeader>
-                  <CardTitle className="font-mono text-sm">GROUND VEHICLES</CardTitle>
+                  <CardTitle className="font-mono text-sm text-primary">GROUND VEHICLES</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
                     {/* Show existing ground vehicles */}
                     {vehicles.filter(v => v.vehicle_type === 'Ground Vehicle').map((vehicle) => (
-                      <div key={vehicle.id} className="p-4 border border-primary/20 rounded">
+                      <div key={vehicle.id} className="p-4 border border-primary/20 rounded bg-background/30">
                         <div className="flex justify-between items-center">
-                          <div className="font-mono text-sm">
+                          <div className="font-mono text-sm text-primary">
                             <div className="font-semibold">{vehicle.name}</div>
                             <div className="text-xs opacity-70">{vehicle.class_type || 'Ground Vehicle'}</div>
                             <div className="text-xs opacity-70">Status: ACTIVE</div>
@@ -277,8 +277,8 @@ export default function VehicleInterface() {
                     ))}
                     
                     {vehicles.filter(v => v.vehicle_type === 'Ground Vehicle').length === 0 && (
-                      <div className="p-4 border border-primary/20 rounded border-dashed opacity-50">
-                        <div className="font-mono text-sm text-center">
+                      <div className="p-4 border border-primary/20 rounded border-dashed opacity-50 bg-background/30">
+                        <div className="font-mono text-sm text-center text-primary">
                           [NO VEHICLES REGISTERED]
                         </div>
                       </div>

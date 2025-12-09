@@ -1,56 +1,39 @@
-import React, { useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Terminal, FileText, Users } from "lucide-react";
-import { cn } from "@/lib/utils";
+import React, { useEffect, useState } from "react";
+import { Terminal, FileText, Users, Radar } from "lucide-react";
 import TerminalInterface from "./interfaces/TerminalInterface";
 import CrewInterface from "./interfaces/CrewInterface";
 import VehicleInterface from "./interfaces/VehicleInterface";
+import AppHeader from "./layout/AppHeader";
+import { BridgeConsole } from "./bridge/BridgeConsole";
 
 export default function MainframeShell() {
-  const [activeTab, setActiveTab] = useState("terminal");
+  const [activeTab, setActiveTab] = useState(() => {
+    if (typeof window === "undefined") return "terminal";
+    return localStorage.getItem("mainframe_active_tab") || "terminal";
+  });
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("mainframe_active_tab", activeTab);
+    }
+  }, [activeTab]);
 
   const tabs = [
     { id: "terminal", label: "Terminal", icon: Terminal },
     { id: "crew", label: "Crew & Sheets", icon: Users },
-    { id: "vehicles", label: "Vehicles & Spaceships", icon: FileText }
+    { id: "vehicles", label: "Vehicles & Spaceships", icon: FileText },
+    { id: "bridge", label: "Bridge Console", icon: Radar }
   ];
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b border-primary/30 bg-background p-2">
-        <div className="flex items-start justify-between">
-          <div className="flex flex-col">
-            <h1 className="text-primary font-mono text-sm mb-1">TRAVELLER TERMINAL SYSTEM</h1>
-            <div className="text-primary/60 font-mono text-xs">
-              2025-09-19 08:01:14
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* Navigation */}
-      <nav className="border-b border-primary/30 bg-background">
-        <div className="flex">
-          {tabs.map((tab) => {
-            const Icon = tab.icon;
-            return (
-              <Button
-                key={tab.id}
-                variant="terminal"
-                onClick={() => setActiveTab(tab.id)}
-                className={cn(
-                  "rounded-none border-r border-primary/30 px-4 py-2 font-mono text-xs h-8",
-                  activeTab === tab.id && "bg-primary text-background"
-                )}
-              >
-                {tab.label}
-              </Button>
-            );
-          })}
-        </div>
-      </nav>
+      <AppHeader
+        title="Traveller Terminal"
+        subtitle="Eclipse Shard Saga Interface"
+        tabs={tabs}
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+      />
 
       {/* Content */}
       <main className="flex-1">
@@ -62,6 +45,9 @@ export default function MainframeShell() {
         )}
         {activeTab === "vehicles" && (
           <VehicleInterface />
+        )}
+        {activeTab === "bridge" && (
+          <BridgeConsole />
         )}
       </main>
     </div>

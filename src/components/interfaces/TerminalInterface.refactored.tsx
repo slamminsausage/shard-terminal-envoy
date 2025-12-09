@@ -11,11 +11,10 @@
  * - Maintains all existing functionality
  */
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import SignalInterference from '../SignalInterference';
 import DeepCoreTerminal from '@/components/DeepCoreTerminal';
-import { Button } from "@/components/ui/button";
 import audioManager from '@/lib/audioManager';
 import { typeTextWithSound } from '@/lib/typing';
 import { TERMINALS, getTerminalDefinition } from '@/lib/terminals';
@@ -33,8 +32,6 @@ import RollCheckPrompt from '../terminal/SecurityChallenge/RollCheckPrompt';
 // New hooks
 import { useTerminalSession } from '@/hooks/useTerminalSession';
 import { usePasswordAuth } from '@/hooks/usePasswordAuth';
-import { useCharacterSkills } from '@/hooks/useCharacterSkills';
-import type { DiceRoll } from '@/lib/dice';
 
 // Terminal visual effects helper
 const getTerminalEffectClasses = (terminalId: string) => {
@@ -67,11 +64,6 @@ export default function TerminalInterface() {
   // Use consolidated terminal session state
   const session = useTerminalSession();
 
-  // Local state for typing animations (useState required for typeTextWithSound)
-  const [localInitText, setLocalInitText] = useState('');
-  const [localDisplayedText, setLocalDisplayedText] = useState('');
-  const [localTypingComplete, setLocalTypingComplete] = useState(false);
-
   // Password authentication for log access
   const logPasswordAuth = usePasswordAuth({
     correctPassword: session.selectedLog?.password || '',
@@ -81,12 +73,10 @@ export default function TerminalInterface() {
       session.resetPasswordAttempts();
       // Start typing animation for log content
       if (session.selectedLog?.content) {
-        setLocalDisplayedText('');
-        setLocalTypingComplete(false);
         const cancel = typeTextWithSound(
           session.selectedLog.content,
-          setLocalDisplayedText,
-          () => setLocalTypingComplete(true),
+          session.setDisplayedText,
+          () => session.setTypingComplete(true),
           { delay: 20 }
         );
         typingCancelRef.current = cancel;
@@ -113,9 +103,6 @@ export default function TerminalInterface() {
     },
   });
 
-  // Character skills for roll checks
-  const { getSkillInfo } = useCharacterSkills();
-
   // Initialize on mount
   useEffect(() => {
     if (hasInitialized.current) return;
@@ -136,7 +123,7 @@ export default function TerminalInterface() {
     const fullText = loadingMessages.join("\n");
     const cancel = typeTextWithSound(
       fullText,
-      setLocalInitText,
+      session.setInitText,
       () => {
         session.setInitComplete(true);
         setTimeout(() => session.setView('init'), 1000);
@@ -166,12 +153,6 @@ export default function TerminalInterface() {
           }
           session.setView('init');
         } else if (session.currentView === 'log') {
-          // Cancel typing animation and reset state
-          if (typingCancelRef.current) {
-            typingCancelRef.current();
-          }
-          setLocalDisplayedText('');
-          setLocalTypingComplete(false);
           session.goToTerminal();
         } else if (session.currentView === 'terminal') {
           session.goToInit();
@@ -185,15 +166,11 @@ export default function TerminalInterface() {
 
   // Load unlocked terminals from database
   const loadUnlockedTerminals = async () => {
-    session.setTerminalsLoading(true);
-    session.setTerminalsError(null);
-
     try {
       const codes = await dbHelpers.getUnlockedTerminals();
       session.setUnlockedTerminals(codes);
     } catch (error) {
       console.error('Failed to load unlocked terminals:', error);
-      session.setTerminalsError('Unable to sync unlocked terminals. Using cached codes.');
     } finally {
       session.setTerminalsLoading(false);
     }
@@ -203,26 +180,14 @@ export default function TerminalInterface() {
   const loadTerminalLogs = async () => {
     if (!session.activeTerminal) return;
 
-    session.setLogsError(null);
-    session.setLogsLoading(true);
-    session.setLogData(null);
-    session.setView('terminal');
-
     try {
       const response = await fetch(session.activeTerminal.logPath);
-      if (!response.ok) {
-        throw new Error(`Failed to load logs: ${response.status}`);
-      }
       const data = await response.json();
       session.setLogData(data);
       session.setView('terminal');
     } catch (error) {
       console.error('Failed to load logs:', error);
-      session.setLogsError('Failed to load logs. Check connection or retry.');
-      session.setView('terminal');
       audioManager.playEffect('access_denied');
-    } finally {
-      session.setLogsLoading(false);
     }
   };
 
@@ -234,14 +199,6 @@ export default function TerminalInterface() {
 
     // Special case: Deep Core terminal
     if (code === 'DEEPCORE') {
-      // Clear any lingering state
-      session.setActiveTerminal(null);
-      session.setSelectedLog(null);
-      session.setRequiresPassword(false);
-      session.setTerminalPasswordRequired(false);
-      session.setRollCheck(null);
-      session.setSpecialRollCheck(null);
-      // Show Deep Core terminal
       session.setShowDeepCore(true);
       return;
     }
@@ -255,18 +212,6 @@ export default function TerminalInterface() {
 
     session.setActiveTerminal(terminal);
     audioManager.playEffect('access_granted');
-    session.addCommandToHistory(code);
-
-    // Terminal-level roll gate
-    if (terminal.requiresRoll) {
-      session.setPendingTerminalForRoll(terminal);
-      session.setRollCheck({
-        difficulty: terminal.requiresRoll,
-        skill: 'Electronics (Computers)'
-      });
-      session.setView('log');
-      return;
-    }
 
     // Add to unlocked terminals
     try {
@@ -276,7 +221,7 @@ export default function TerminalInterface() {
       console.error('Failed to save unlocked terminal:', error);
     }
 
-    // Check if terminal requires password (after roll gate)
+    // Check if terminal requires password
     if (terminal.password) {
       session.setTerminalPasswordRequired(true);
     } else {
@@ -287,8 +232,8 @@ export default function TerminalInterface() {
   // Handle log selection
   const handleLogClick = (log: any) => {
     session.setSelectedLog(log);
-    setLocalDisplayedText('');
-    setLocalTypingComplete(false);
+    session.setDisplayedText('');
+    session.setTypingComplete(false);
     session.setView('log');
 
     // Check for special audio logs
@@ -318,8 +263,8 @@ export default function TerminalInterface() {
     if (log.content) {
       const cancel = typeTextWithSound(
         log.content,
-        setLocalDisplayedText,
-        () => setLocalTypingComplete(true),
+        session.setDisplayedText,
+        () => session.setTypingComplete(true),
         { delay: 20 }
       );
       typingCancelRef.current = cancel;
@@ -327,107 +272,52 @@ export default function TerminalInterface() {
   };
 
   // Handle roll check result
-  const handleRollCheck = (result: DiceRoll) => {
+  const handleRollCheck = (passed: boolean) => {
     session.setRollCheck(null);
-    // Terminal connect flow
-    if (session.pendingTerminalForRoll) {
-      if (result.success) {
-        audioManager.playEffect('access_granted');
-        session.setPendingTerminalForRoll(null);
-        loadTerminalLogs();
-      } else {
-        audioManager.playEffect('access_denied');
-        session.setPendingTerminalForRoll(null);
-        session.goToInit();
-      }
-      return;
-    }
 
-    if (result.success) {
+    if (passed) {
       audioManager.playEffect('access_granted');
-      // Passing the roll check bypasses password requirement (hacking in)
-      if (session.selectedLog?.content) {
-        setLocalDisplayedText('');
-        setLocalTypingComplete(false);
+      if (session.selectedLog?.requires_password && session.selectedLog?.password) {
+        session.setRequiresPassword(true);
+      } else if (session.selectedLog?.content) {
         const cancel = typeTextWithSound(
           session.selectedLog.content,
-          setLocalDisplayedText,
-          () => setLocalTypingComplete(true),
+          session.setDisplayedText,
+          () => session.setTypingComplete(true),
           { delay: 20 }
         );
         typingCancelRef.current = cancel;
       }
     } else {
       audioManager.playEffect('access_denied');
-
-      // On failure: check if password is available as fallback
-      if (session.selectedLog?.requires_password && session.selectedLog?.password) {
-        // Show password prompt as fallback
-        session.setRequiresPassword(true);
-      } else {
-        // No password available, go back to terminal
-        session.goToTerminal();
-      }
+      session.goToTerminal();
     }
   };
 
   // Handle special roll check result
-  const handleSpecialRollCheck = (result: DiceRoll) => {
+  const handleSpecialRollCheck = (passed: boolean) => {
     session.setSpecialRollCheck(null);
 
-    if (result.success) {
+    if (passed) {
       audioManager.playEffect('access_granted');
       if (session.selectedLog?.content) {
-        setLocalDisplayedText('');
-        setLocalTypingComplete(false);
         const cancel = typeTextWithSound(
           session.selectedLog.content,
-          setLocalDisplayedText,
-          () => setLocalTypingComplete(true),
+          session.setDisplayedText,
+          () => session.setTypingComplete(true),
           { delay: 20 }
         );
         typingCancelRef.current = cancel;
       }
     } else {
       audioManager.playEffect('access_denied');
-
-      // On failure: check if password is available as fallback
-      if (session.selectedLog?.requires_password && session.selectedLog?.password) {
-        session.setRequiresPassword(true);
-      } else {
-        session.goToTerminal();
-      }
+      session.goToTerminal();
     }
   };
 
-  // Command history navigation for access code input
-  const handleInitInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      const recalled = session.recallHistory('back');
-      session.setInputCode(recalled);
-      return;
-    }
-
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      const recalled = session.recallHistory('forward');
-      session.setInputCode(recalled);
-      return;
-    }
-
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      handleAccessCode(null);
-    }
-  };
-
-  // Render Deep Core terminal (always takes priority)
+  // Render Deep Core terminal
   if (session.showDeepCore) {
-    return <DeepCoreTerminal onBack={() => {
-      session.setShowDeepCore(false);
-      session.goToInit();
-    }} />;
+    return <DeepCoreTerminal onBack={() => session.setShowDeepCore(false)} />;
   }
 
   // Render Audio Logs page
@@ -460,26 +350,24 @@ export default function TerminalInterface() {
       {/* Loading View */}
       {session.currentView === 'loading' && (
         <LoadingScreen
-          initText={localInitText}
+          initText={session.initText}
           onSkip={() => session.setView('init')}
         />
       )}
 
       {/* Init View */}
       {session.currentView === 'init' && (
-      <InitScreen
-        inputCode={session.inputCode}
-        onCodeChange={session.setInputCode}
-        onSubmit={() => handleAccessCode(null)}
-        unlockedTerminals={unlockedTerminalsList}
-        loading={session.terminalsLoading}
-        statusMessage="Use ARROW UP/DOWN to recall previous access codes."
-        errorMessage={session.terminalsError}
-        onKeyDown={handleInitInputKeyDown}
-        onTerminalSelect={(code) => {
-          session.setInputCode(code);
-        }}
-      />
+        <InitScreen
+          inputCode={session.inputCode}
+          onCodeChange={session.setInputCode}
+          onSubmit={() => handleAccessCode(null)}
+          unlockedTerminals={unlockedTerminalsList}
+          loading={session.terminalsLoading}
+          onTerminalSelect={(code) => {
+            session.setInputCode(code);
+            handleAccessCode(code);
+          }}
+        />
       )}
 
       {/* Terminal/Log View */}
@@ -493,28 +381,8 @@ export default function TerminalInterface() {
             } h-full overflow-auto relative bg-background/20 border border-primary/30 p-6`}
             ref={terminalRef}
           >
-            {session.logsLoading && !session.terminalPasswordRequired && (
-              <div className="mb-4 p-3 text-sm font-mono border border-primary/30 rounded bg-background/60">
-                Synchronizing terminal logs...
-              </div>
-            )}
-
-            {session.logsError && !session.logsLoading && !session.terminalPasswordRequired && (
-              <div className="mb-4 p-3 text-sm font-mono border border-red-500/40 rounded bg-red-900/40 text-red-100">
-                {session.logsError}
-                <div className="mt-3 flex gap-2">
-                  <Button variant="outline" size="sm" onClick={loadTerminalLogs}>
-                    Retry
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={session.goToInit}>
-                    Back
-                  </Button>
-                </div>
-              </div>
-            )}
-
             {/* Terminal Password Prompt */}
-            {session.terminalPasswordRequired && !session.showDeepCore && (
+            {session.terminalPasswordRequired && (
               <PasswordPrompt
                 label={`Terminal ${session.activeTerminal?.name || ''} requires password`}
                 maxAttempts={3}
@@ -531,43 +399,29 @@ export default function TerminalInterface() {
             )}
 
             {/* Special Roll Check */}
-            {session.specialRollCheck && !session.terminalPasswordRequired && !session.showDeepCore && (() => {
-              const skillInfo = getSkillInfo(session.specialRollCheck.skill);
-              return (
-                <RollCheckPrompt
-                  difficulty={session.specialRollCheck.difficulty}
-                  skill={session.specialRollCheck.skill}
-                  subject={session.selectedLog?.title || 'this file'}
-                  skillDM={skillInfo.skillDM}
-                  charDM={skillInfo.charDM}
-                  onRollResult={handleSpecialRollCheck}
-                  onBack={session.goToTerminal}
-                />
-              );
-            })()}
+            {session.specialRollCheck && !session.terminalPasswordRequired && (
+              <RollCheckPrompt
+                difficulty={session.specialRollCheck.difficulty}
+                skill={session.specialRollCheck.skill}
+                subject={session.selectedLog?.title || 'this file'}
+                onYes={() => handleSpecialRollCheck(true)}
+                onNo={() => handleSpecialRollCheck(false)}
+              />
+            )}
 
             {/* Standard Roll Check */}
-            {session.rollCheck && !session.terminalPasswordRequired && !session.specialRollCheck && !session.showDeepCore && (() => {
-              const skillInfo = getSkillInfo('Electronics (Computers)');
-              return (
-                <RollCheckPrompt
-                  difficulty={session.rollCheck.difficulty}
-                  skill="Electronics (Computers)"
-                  subject={session.selectedLog?.title || 'this file'}
-                  skillDM={skillInfo.skillDM}
-                  charDM={skillInfo.charDM}
-                  onRollResult={handleRollCheck}
-                  onBack={session.goToTerminal}
-                />
-              );
-            })()}
+            {session.rollCheck && !session.terminalPasswordRequired && !session.specialRollCheck && (
+              <RollCheckPrompt
+                difficulty={session.rollCheck.difficulty}
+                skill="Electronics (Computers)"
+                subject={session.selectedLog?.title || 'this file'}
+                onYes={() => handleRollCheck(true)}
+                onNo={() => handleRollCheck(false)}
+              />
+            )}
 
             {/* Log Password Prompt */}
-            {session.requiresPassword &&
-             !session.terminalPasswordRequired &&
-             !session.rollCheck &&
-             !session.specialRollCheck &&
-             !session.showDeepCore && (
+            {session.requiresPassword && !session.terminalPasswordRequired && !session.rollCheck && !session.specialRollCheck && (
               <PasswordPrompt
                 label="This log requires password authentication"
                 maxAttempts={session.selectedLog?.attemptsAllowed || 3}
@@ -591,8 +445,8 @@ export default function TerminalInterface() {
              !session.terminalPasswordRequired && (
               <LogDetailView
                 log={session.selectedLog}
-                displayedText={localDisplayedText}
-                typingComplete={localTypingComplete}
+                displayedText={session.displayedText}
+                typingComplete={session.typingComplete}
                 onBack={session.goToTerminal}
               />
             )}
@@ -612,9 +466,7 @@ export default function TerminalInterface() {
             {/* Empty state */}
             {!session.logData &&
              !session.selectedLog &&
-             !session.terminalPasswordRequired &&
-             !session.logsLoading &&
-             !session.logsError && (
+             !session.terminalPasswordRequired && (
               <p className="p-4 text-sm">ENTER ACCESS CODE TO PROCEED</p>
             )}
           </div>

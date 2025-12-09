@@ -4,6 +4,49 @@ import { supabase } from "@/integrations/supabase/client";
 // Re-export for convenience
 export { supabase };
 
+const isDev = import.meta.env?.DEV ?? false;
+const supabaseDisabled =
+  import.meta.env?.VITE_DISABLE_SUPABASE === 'true' ||
+  (isDev && import.meta.env?.VITE_ENABLE_SUPABASE !== 'true');
+
+const LOCAL_UNLOCKED_KEY = 'dev_unlocked_terminals';
+const fallbackUnlocked = [
+  'lysani01',
+  's.elara01',
+  'slocombe875',
+  'waferterm01',
+  'labpc81',
+  'vanagandr001',
+  'blackcircuit01',
+  'fuw01',
+  'azura01',
+  'vennik01',
+  'caldonis_public',
+  'es1-delta',
+  'es1-gamma',
+  'blacktalon',
+  'vennik-personal'
+];
+
+const getLocalUnlockedTerminals = () => {
+  try {
+    const raw = localStorage.getItem(LOCAL_UNLOCKED_KEY);
+    if (!raw) return fallbackUnlocked;
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : fallbackUnlocked;
+  } catch {
+    return fallbackUnlocked;
+  }
+};
+
+const addLocalUnlockedTerminal = (terminalCode: string) => {
+  const existing = getLocalUnlockedTerminals();
+  if (existing.includes(terminalCode)) return existing;
+  const updated = [...existing, terminalCode];
+  localStorage.setItem(LOCAL_UNLOCKED_KEY, JSON.stringify(updated));
+  return updated;
+};
+
 // Database helper functions
 export const dbHelpers = {
   // Characters
@@ -133,6 +176,8 @@ export const dbHelpers = {
 
   // Unlocked Terminals
   async getUnlockedTerminals() {
+    if (supabaseDisabled) return getLocalUnlockedTerminals();
+
     try {
       const { data, error } = await supabase
         .from('unlocked_terminals')
@@ -151,6 +196,11 @@ export const dbHelpers = {
   },
 
   async addUnlockedTerminal(terminalCode: string) {
+    if (supabaseDisabled) {
+      addLocalUnlockedTerminal(terminalCode);
+      return true;
+    }
+
     try {
       const { error } = await supabase
         .from('unlocked_terminals')

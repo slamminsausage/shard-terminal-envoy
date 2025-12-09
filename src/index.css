@@ -1,5 +1,8 @@
 @import url('https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@400;500;600;700&display=swap');
 
+/* Import new design system */
+@import './styles/design-system.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -8,15 +11,16 @@
 
 @layer base {
   :root {
-    /* Terminal Colors - Matrix Green with Yellow Accents */
+    /* Terminal Colors - Matrix Green with Orange Accents - UPDATED */
     --terminal-black: 0 0% 0%;
-    --terminal-dark: 120 20% 8%;
-    --terminal-green: 120 100% 50%;
+    --terminal-dark: 0 0% 4%; /* Very dark panel - updated from greenish */
+    --terminal-green: 120 100% 50%; /* #00ff00 - bright green */
     --terminal-green-bright: 120 100% 60%;
-    --terminal-green-dim: 120 80% 40%;
-    --terminal-green-glow: 120 100% 55%;
-    --terminal-yellow: 60 100% 70%;
-    --terminal-red: 0 100% 60%;
+    --terminal-green-dim: 120 100% 33%; /* #00aa00 - updated for consistency */
+    --terminal-green-glow: 120 100% 50%;
+    --terminal-orange: 24 100% 50%; /* #ff6600 - orange warnings */
+    --terminal-cyan: 189 100% 50%; /* #00ccff - cyan accents */
+    --terminal-red: 354 100% 60%; /* #ff3344 - red alerts */
     
     /* CRT Effects */
     --crt-flicker: 0.02;
@@ -37,7 +41,7 @@
     --secondary-foreground: var(--terminal-green-dim);
     --muted: var(--terminal-dark);
     --muted-foreground: var(--terminal-green-dim);
-    --accent: var(--terminal-yellow);
+    --accent: var(--terminal-orange); /* Updated to orange */
     --accent-foreground: var(--terminal-black);
     --destructive: var(--terminal-red);
     --destructive-foreground: var(--terminal-green);
@@ -278,4 +282,79 @@
 
 .mute-toggle:hover {
   color: hsl(var(--accent));
+}
+
+/* Bridge Console visuals */
+.bridge-console {
+  --friendly: #00ff88;
+  --unknown: #00ccff;
+  --enemy: #ff4455;
+}
+
+.ship-marker.friendly { color: var(--friendly); filter: drop-shadow(0 0 6px var(--friendly)); }
+.ship-marker.unknown { color: var(--unknown); filter: drop-shadow(0 0 6px var(--unknown)); }
+.ship-marker.enemy { color: var(--enemy); filter: drop-shadow(0 0 6px var(--enemy)); }
+
+.range-ring {
+  fill: none;
+  stroke: hsla(var(--border), 0.8);
+  stroke-width: 1;
+  stroke-dasharray: 4 4;
+}
+
+.crosshairs {
+  stroke: hsla(var(--primary), 0.5);
+  stroke-width: 1;
+}
+
+.crosshair-line {
+  stroke: rgba(0, 255, 136, 0.45);
+  stroke-width: 1;
+  stroke-dasharray: 2 6;
+}
+
+.tactical-bg {
+  background: radial-gradient(ellipse at center, rgba(0, 255, 0, 0.06) 0%, rgba(0, 0, 0, 0.9) 60%, rgba(0, 0, 0, 1) 100%);
+  background-color: #020a03;
+}
+
+.tactical-wrapper {
+  background: #0b100e;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  box-shadow: 0 0 24px rgba(0, 255, 0, 0.18);
+  padding: 12px;
+  width: 100%;
+}
+
+.tactical-canvas {
+  position: relative;
+  background: radial-gradient(ellipse at center, rgba(0, 255, 136, 0.02) 0%, rgba(0, 0, 0, 0.85) 70%);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+  min-height: 720px;
+}
+
+.tactical-svg {
+  width: 100%;
+  height: 100%;
+  max-height: 820px;
+}
+
+.range-label {
+  font-size: 10px;
+  fill: var(--text-dim);
+  font-family: 'Share Tech Mono', monospace;
+}
+
+.tactical-legend {
+  position: absolute;
+  bottom: 8px;
+  left: 12px;
+  display: flex;
+  gap: 12px;
+  font-size: 11px;
+  font-family: 'Share Tech Mono', monospace;
+  color: var(--text-dim);
 }

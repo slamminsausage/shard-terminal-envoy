@@ -3,6 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { useCampaign } from "@/contexts/CampaignContext";
+import { performSkillCheck, rollDamageExpression, getCharacteristicDM, getSkillDM } from "@/lib/dice";
 
 interface CharacterSheetProps {
   characterId?: string;
@@ -193,7 +194,7 @@ const baseSkillState = skillDefinitions.reduce<Record<string, SkillState>>((acc,
   return acc;
 }, {});
 
-const characteristicDM = (value: number): number => {
+const getCharacteristicDMTable = (value: number): number => {
   if (Number.isNaN(value)) return 0;
   if (value <= 2) return -2;
   if (value <= 5) return -1;
@@ -260,9 +261,14 @@ const CharacterSheet = ({ characterId }: CharacterSheetProps = {}) => {
   });
   const [notes, setNotes] = useState("");
   const [weapons, setWeapons] = useState(initialWeapons);
+  const [weaponCharMods, setWeaponCharMods] = useState<string[]>(initialWeapons.map(() => "none"));
   const [equipment, setEquipment] = useState(initialEquipment);
   const [augments, setAugments] = useState(initialAugments);
   const [totalMass, setTotalMass] = useState("");
+  const [skillRollDifficulty, setSkillRollDifficulty] = useState("8");
+  const [skillRollCharacteristic, setSkillRollCharacteristic] = useState<CharacteristicKey>("intellect");
+  const [skillRollModifier, setSkillRollModifier] = useState("0");
+  const [lastRollLog, setLastRollLog] = useState<string>("");
 
   // Load character data if editing an existing character
   useEffect(() => {
@@ -287,7 +293,13 @@ const CharacterSheet = ({ characterId }: CharacterSheetProps = {}) => {
           psionics: { total: "", current: "" },
           initiative: { total: "", current: "" }
         });
-        // Load other character data...
+        // Load other character data safely
+        if (character.weapons) setWeapons(character.weapons as any);
+        if (character.armor) setArmourRows(character.armor as any);
+        if (character.equipment) setEquipment(character.equipment as any);
+        if (character.augments) setAugments(character.augments as any);
+        if (character.skills) setSkills(character.skills as any);
+        if (typeof character.notes === "string") setNotes(character.notes);
       }
     }
   }, [currentCharacterId, characters]);
@@ -396,6 +408,45 @@ const CharacterSheet = ({ characterId }: CharacterSheetProps = {}) => {
     }));
   };
 
+  const resolveCharacteristicDM = (key: CharacteristicKey) => {
+    const value = characteristics[key];
+    const numeric = Number(value?.current || value?.total || 0) || 0;
+    return getCharacteristicDM(numeric);
+  };
+
+  const handleSkillRoll = (def: SkillDefinition) => {
+    const skillState = skills[def.key];
+    const level = Number(skillState?.value ?? 0) || 0;
+    const jackLevel = jackState?.proficient ? Number(jackState.value ?? 0) || 0 : undefined;
+    const skillDM = getSkillDM(Boolean(skillState?.proficient), level, jackLevel);
+    const rangeAccTraitDM = Number(skillRollModifier) || 0;
+    const difficulty = Number(skillRollDifficulty) || 8;
+    const charDM = resolveCharacteristicDM(skillRollCharacteristic);
+    const result = performSkillCheck(difficulty, skillDM + rangeAccTraitDM, charDM);
+    setLastRollLog(
+      `Skill Roll: ${def.label} vs ${difficulty}+ -> ${result.total} (dice ${result.dice} + skill ${skillDM} + situational ${rangeAccTraitDM} + char ${charDM}) ${result.success ? "SUCCESS" : "FAIL"}`
+    );
+  };
+
+  const handleWeaponCharSelect = (index: number, value: string) => {
+    setWeaponCharMods(prev => prev.map((v, i) => (i === index ? value : v)));
+  };
+
+  const handleWeaponDamageRoll = (index: number) => {
+    const weapon = weapons[index];
+    if (!weapon) return;
+    const charKey = weaponCharMods[index] as CharacteristicKey | "none";
+    const charDM = charKey && charKey !== "none" ? resolveCharacteristicDM(charKey) : 0;
+    const result = rollDamageExpression(weapon.damage || "0", charDM);
+    setLastRollLog(
+      `Damage Roll: ${weapon.weapon || "Weapon"} ${weapon.damage || ""} -> ${result.total} (dice ${
+        result.diceResults.join("+") || "0"
+      } ${result.modifier ? `${result.modifier >= 0 ? "+" : ""}${result.modifier}` : ""} ${
+        charDM ? `+ char ${charDM}` : ""
+      })`
+    );
+  };
+
   const renderSkillEntry = (def: SkillDefinition) => {
     const state = skills[def.key];
     const isSpecialisation = Boolean(def.parentKey);
@@ -428,6 +479,14 @@ const CharacterSheet = ({ characterId }: CharacterSheetProps = {}) => {
             className="w-16 h-8 text-center"
           />
           <SkillDMDisplay proficient={state?.proficient ?? false} rawValue={state?.value} jackState={jackState} isPsionic={def.isPsionic} />
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-8 px-2"
+            onClick={() => handleSkillRoll(def)}
+          >
+            Roll
+          </Button>
         </div>
       </div>
     );
@@ -492,17 +551,43 @@ const CharacterSheet = ({ characterId }: CharacterSheetProps = {}) => {
     );
   };
 
-  const baseSkills = skillDefinitions.filter(def => !def.parentKey && !def.isCustomGroup);
-  const customGroups = skillDefinitions.filter(def => def.isCustomGroup);
+const baseSkills = skillDefinitions.filter(def => !def.parentKey && !def.isCustomGroup);
+const customGroups = skillDefinitions.filter(def => def.isCustomGroup);
 
-  const getCharacteristicDM = (key: CharacteristicKey, value: CharacteristicValue) => {
+  const getCharacteristicDMDisplay = (key: CharacteristicKey, value: CharacteristicValue) => {
     if (key === "psionics") {
       return value.current || value.total || "0";
     }
     const currentVal = Number(value.current || value.total);
-    const dm = characteristicDM(currentVal || 0);
+    const dm = getCharacteristicDMTable(currentVal || 0);
     return dm >= 0 ? `+${dm}` : dm.toString();
   };
+
+  const isSkillTrained = (def: SkillDefinition) => {
+    const state = skills[def.key];
+    if (!state) return false;
+    if (state.proficient) return true;
+    const numeric = Number(state.value);
+    return !Number.isNaN(numeric) && numeric > 0;
+  };
+
+  const sortedBaseSkills = useMemo(() => {
+    const trained: SkillDefinition[] = [];
+    const untrained: SkillDefinition[] = [];
+
+    baseSkills.forEach(def => {
+      if (isSkillTrained(def)) {
+        trained.push(def);
+      } else {
+        untrained.push(def);
+      }
+    });
+
+    trained.sort((a, b) => (skills[b.key]?.value ?? "").localeCompare(skills[a.key]?.value ?? ""));
+    untrained.sort((a, b) => a.label.localeCompare(b.label));
+
+    return { trained, untrained };
+  }, [baseSkills, skills]);
 
   return (
     <div className="space-y-10 text-sm max-h-[80vh] overflow-y-auto">
@@ -549,7 +634,7 @@ const CharacterSheet = ({ characterId }: CharacterSheetProps = {}) => {
                     className="h-8"
                   />
                 </div>
-                <div className="text-xs text-muted-foreground font-mono">DM: {getCharacteristicDM(key, value)}</div>
+                <div className="text-xs text-muted-foreground font-mono">DM: {getCharacteristicDMDisplay(key, value)}</div>
               </div>
             );
           })}
@@ -591,12 +676,71 @@ const CharacterSheet = ({ characterId }: CharacterSheetProps = {}) => {
       </section>
 
       <section className="border border-primary/30 bg-card/30">
-        <div className="p-4 border-b border-primary/20 flex items-center justify-between">
-          <h2 className="text-xs font-semibold uppercase tracking-wide">Skills</h2>
-          <span className="text-xs text-muted-foreground">Unchecked skills automatically apply the untrained DM.</span>
+        <div className="p-4 border-b border-primary/20 flex flex-col gap-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xs font-semibold uppercase tracking-wide">Skills</h2>
+            <span className="text-xs text-muted-foreground">Trained skills bubble to the top.</span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+            <label className="flex items-center gap-2">
+              <span className="uppercase tracking-wide">Difficulty</span>
+              <Input
+                type="number"
+                className="h-8 w-20"
+                value={skillRollDifficulty}
+                onChange={e => setSkillRollDifficulty(e.target.value)}
+              />
+            </label>
+            <label className="flex items-center gap-2">
+              <span className="uppercase tracking-wide">Characteristic</span>
+              <select
+                className="bg-background border border-primary/40 rounded px-2 h-8 text-xs"
+                value={skillRollCharacteristic}
+                onChange={e => setSkillRollCharacteristic(e.target.value as CharacteristicKey)}
+              >
+                <option value="strength">Strength</option>
+                <option value="dexterity">Dexterity</option>
+                <option value="endurance">Endurance</option>
+                <option value="intellect">Intellect</option>
+                <option value="education">Education</option>
+                <option value="social">Social</option>
+              </select>
+            </label>
+            <label className="flex items-center gap-2">
+              <span className="uppercase tracking-wide">Situational DM</span>
+              <Input
+                type="number"
+                className="h-8 w-24"
+                value={skillRollModifier}
+                onChange={e => setSkillRollModifier(e.target.value)}
+              />
+            </label>
+            {lastRollLog && (
+              <div className="text-[11px] font-mono text-primary/80">
+                {lastRollLog}
+              </div>
+            )}
+          </div>
         </div>
         <div className="max-h-[420px] overflow-y-auto divide-y divide-border">
-          {baseSkills.map(def => (
+          {sortedBaseSkills.trained.length > 0 && (
+            <div className="bg-primary/5 px-3 py-2 text-[11px] font-mono text-primary">
+              TRAINED SKILLS
+            </div>
+          )}
+          {sortedBaseSkills.trained.map(def => (
+            <div key={def.key}>
+              {renderSkillEntry(def)}
+              {skillDefinitions
+                .filter(child => child.parentKey === def.key)
+                .map(child => renderSkillEntry(child))}
+            </div>
+          ))}
+
+          <div className="bg-primary/5 px-3 py-2 text-[11px] font-mono text-primary">
+            OTHER SKILLS
+          </div>
+          {sortedBaseSkills.untrained.map(def => (
             <div key={def.key}>
               {renderSkillEntry(def)}
               {skillDefinitions
@@ -612,12 +756,56 @@ const CharacterSheet = ({ characterId }: CharacterSheetProps = {}) => {
         <div className="p-4 border-b border-primary/20">
           <h2 className="text-xs font-semibold uppercase tracking-wide">Weapons</h2>
         </div>
-        <Table
-          headers={["Weapon", "Accuracy", "Range", "Damage", "KG", "Magazine", "Traits"]}
-          fields={["weapon", "accuracy", "range", "damage", "kg", "magazine", "traits"]}
-          values={weapons}
-          onChange={updateWeaponRow}
-        />
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs">
+            <thead className="bg-primary/20 text-primary-foreground">
+              <tr>
+                {["Weapon", "Accuracy", "Range", "Damage", "KG", "Magazine", "Traits", "Char Mod", "Roll"].map(header => (
+                  <th key={header} className="px-2 py-1 text-left uppercase tracking-wide font-semibold">
+                    {header}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {weapons.map((row, rowIndex) => (
+                <tr key={rowIndex} className="border-t border-primary/20">
+                  {(["weapon", "accuracy", "range", "damage", "kg", "magazine", "traits"] as const).map(field => (
+                    <td key={field} className="p-1">
+                      <Input
+                        className="h-8"
+                        value={row[field] ?? ""}
+                        onChange={event => updateWeaponRow(rowIndex, field, event.target.value)}
+                      />
+                    </td>
+                  ))}
+                  <td className="p-1">
+                    <select
+                      className="bg-background border border-primary/40 rounded px-2 h-8 text-xs"
+                      value={weaponCharMods[rowIndex] || "none"}
+                      onChange={e => handleWeaponCharSelect(rowIndex, e.target.value)}
+                    >
+                      <option value="none">None</option>
+                      <option value="strength">Strength</option>
+                      <option value="dexterity">Dexterity</option>
+                      <option value="endurance">Endurance</option>
+                    </select>
+                  </td>
+                  <td className="p-1">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-8 w-full"
+                      onClick={() => handleWeaponDamageRoll(rowIndex)}
+                    >
+                      Roll
+                    </Button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </section>
 
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
