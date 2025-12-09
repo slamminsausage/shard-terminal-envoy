@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState } from "react";
 import { useJumpPlanner } from "@/contexts/JumpPlannerContext";
-import { generateMapUrl } from "@/lib/travellerMapApi";
+import { generateMapUrl, padHex } from "@/lib/travellerMapApi";
 
 export function StarMapPanel() {
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -9,6 +9,7 @@ export function StarMapPanel() {
     mapHex,
     currentLocation,
     setMapLocation,
+    setCurrentLocation,
   } = useJumpPlanner();
 
   const [sectorInput, setSectorInput] = useState(mapSector);
@@ -17,18 +18,26 @@ export function StarMapPanel() {
   // Update inputs when map location changes
   useEffect(() => {
     setSectorInput(mapSector);
-    setHexInput(mapHex);
+    setHexInput(padHex(mapHex));
   }, [mapSector, mapHex]);
 
   const handleGoToLocation = () => {
     if (sectorInput && hexInput) {
-      setMapLocation(sectorInput, hexInput);
+      const paddedHex = padHex(hexInput);
+      setMapLocation(sectorInput, paddedHex);
+    }
+  };
+
+  const handleSelectLocation = async () => {
+    if (sectorInput && hexInput) {
+      const paddedHex = padHex(hexInput);
+      await setCurrentLocation(sectorInput, paddedHex);
     }
   };
 
   const mapUrl = generateMapUrl(mapSector, mapHex, {
     style: "poster",
-    hideui: true,
+    scale: 32,
   });
 
   return (
@@ -38,7 +47,7 @@ export function StarMapPanel() {
         <span className="panel-status">
           {currentLocation
             ? `${currentLocation.sector} ${currentLocation.hex}`
-            : "Click map to select"}
+            : "Enter location below"}
         </span>
       </div>
 
@@ -49,7 +58,7 @@ export function StarMapPanel() {
             type="text"
             value={sectorInput}
             onChange={(e) => setSectorInput(e.target.value)}
-            placeholder="Sector"
+            placeholder="Sector (e.g., Spinward Marches)"
             className="terminal-input flex-1 text-sm"
           />
           <input
@@ -57,14 +66,22 @@ export function StarMapPanel() {
             value={hexInput}
             onChange={(e) => setHexInput(e.target.value)}
             placeholder="Hex"
-            className="terminal-input w-20 text-sm"
+            className="terminal-input w-24 text-sm"
             maxLength={4}
           />
+        </div>
+        <div className="flex gap-2 px-4">
           <button
             onClick={handleGoToLocation}
-            className="terminal-btn text-xs"
+            className="terminal-btn secondary text-xs flex-1"
           >
-            GO
+            CENTER MAP
+          </button>
+          <button
+            onClick={handleSelectLocation}
+            className="terminal-btn text-xs flex-1"
+          >
+            SELECT WORLD
           </button>
         </div>
 
@@ -75,15 +92,8 @@ export function StarMapPanel() {
             src={mapUrl}
             className="absolute inset-0 w-full h-full border-t border-[#1a2420]"
             title="TravellerMap"
-            sandbox="allow-scripts allow-same-origin"
+            allow="fullscreen"
           />
-
-          {/* Overlay for instructions */}
-          <div className="absolute bottom-2 left-2 right-2 text-center">
-            <span className="text-xs text-[#446655] bg-black/80 px-2 py-1 rounded">
-              Click on a world to select it. The map will post click events.
-            </span>
-          </div>
         </div>
 
         {/* Current Selection Display */}
@@ -96,12 +106,20 @@ export function StarMapPanel() {
                   {currentLocation.worldName || currentLocation.hex}
                 </span>
               </div>
-              <span className="text-[#00ccff] text-sm">
+              <span className="text-[#00ccff] text-sm font-mono">
                 {currentLocation.sector} {currentLocation.hex}
               </span>
             </div>
           </div>
         )}
+
+        {/* Instructions */}
+        <div className="px-4 pb-3 text-center">
+          <span className="text-xs text-[#446655]">
+            Enter a sector name and hex code, then click SELECT WORLD to load data.
+            Use CENTER MAP to navigate the map view.
+          </span>
+        </div>
       </div>
     </div>
   );

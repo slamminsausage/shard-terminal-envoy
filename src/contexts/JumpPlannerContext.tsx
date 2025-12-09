@@ -4,6 +4,8 @@ import {
   calculateRoute,
   getCoordinates,
   getWorldData,
+  padHex,
+  getSectorAbbreviation,
 } from "@/lib/travellerMapApi";
 import { dbHelpers } from "@/lib/supabase";
 import type {
@@ -153,27 +155,31 @@ export function JumpPlannerProvider({ children }: { children: React.ReactNode })
 
   const setCurrentLocation = useCallback(
     async (sector: string, hex: string) => {
+      const paddedHex = padHex(hex);
+
       setState((prev) => ({
         ...prev,
-        currentLocation: { sector, hex },
+        currentLocation: { sector, hex: paddedHex },
         mapSector: sector,
-        mapHex: hex,
+        mapHex: paddedHex,
         error: null,
       }));
 
       // Try to get world data for name
       try {
-        const worldData = await getWorldData(sector, hex);
+        const worldData = await getWorldData(sector, paddedHex);
         if (worldData) {
+          const sectorAbbr = getSectorAbbreviation(sector);
           setState((prev) => ({
             ...prev,
             currentLocation: {
               sector,
-              hex,
+              sectorAbbr,
+              hex: paddedHex,
               worldName: worldData.name,
             },
             selectedWorld: worldData,
-            routeStart: `${sector} ${hex}`,
+            routeStart: `${sector} ${paddedHex}`,
           }));
         }
       } catch (error) {
@@ -181,7 +187,7 @@ export function JumpPlannerProvider({ children }: { children: React.ReactNode })
       }
 
       // Load note for this location
-      await loadNote(sector, hex);
+      await loadNote(sector, paddedHex);
     },
     []
   );
@@ -192,7 +198,10 @@ export function JumpPlannerProvider({ children }: { children: React.ReactNode })
         const coords = await getCoordinates(x, y);
         if (coords) {
           const sector = coords.Sector || state.mapSector;
-          const hex = coords.Hex || `${coords.hx}${coords.hy}`;
+          // Build hex from hx and hy, ensuring 4 digits
+          const hx = String(coords.hx || 0).padStart(2, "0");
+          const hy = String(coords.hy || 0).padStart(2, "0");
+          const hex = coords.Hex || padHex(`${hx}${hy}`);
           await setCurrentLocation(sector, hex);
         }
       } catch (error) {
@@ -249,12 +258,13 @@ export function JumpPlannerProvider({ children }: { children: React.ReactNode })
   }, [state.currentLocation, state.jumpRating]);
 
   const selectJumpWorld = useCallback((world: JumpWorld) => {
+    const paddedHex = padHex(world.hex);
     setState((prev) => ({
       ...prev,
-      selectedWorld: world,
+      selectedWorld: { ...world, hex: paddedHex },
     }));
     // Load note for selected world
-    loadNote(world.sector, world.hex);
+    loadNote(world.sector, paddedHex);
   }, []);
 
   // ===== Route Actions =====
@@ -278,9 +288,10 @@ export function JumpPlannerProvider({ children }: { children: React.ReactNode })
   );
 
   const setRouteEndFromWorld = useCallback((world: JumpWorld) => {
+    const paddedHex = padHex(world.hex);
     setState((prev) => ({
       ...prev,
-      routeEnd: `${world.sector} ${world.hex}`,
+      routeEnd: `${world.sector} ${paddedHex}`,
     }));
   }, []);
 
@@ -325,15 +336,16 @@ export function JumpPlannerProvider({ children }: { children: React.ReactNode })
   // ===== Note Actions =====
 
   const loadNote = useCallback(async (sector: string, hex: string) => {
+    const paddedHex = padHex(hex);
     setState((prev) => ({ ...prev, isLoadingNote: true }));
 
     try {
-      const note = await dbHelpers.getWorldNote(sector, hex);
+      const note = await dbHelpers.getWorldNote(sector, paddedHex);
       setState((prev) => ({
         ...prev,
         currentNote: note || {
           sector,
-          hex,
+          hex: paddedHex,
           status: "UNKNOWN",
         },
         isLoadingNote: false,
@@ -342,7 +354,7 @@ export function JumpPlannerProvider({ children }: { children: React.ReactNode })
       console.error("Failed to load note:", error);
       setState((prev) => ({
         ...prev,
-        currentNote: { sector, hex, status: "UNKNOWN" },
+        currentNote: { sector, hex: paddedHex, status: "UNKNOWN" },
         isLoadingNote: false,
       }));
     }
@@ -394,10 +406,11 @@ export function JumpPlannerProvider({ children }: { children: React.ReactNode })
   // ===== Map Actions =====
 
   const setMapLocation = useCallback((sector: string, hex: string) => {
+    const paddedHex = padHex(hex);
     setState((prev) => ({
       ...prev,
       mapSector: sector,
-      mapHex: hex,
+      mapHex: paddedHex,
     }));
   }, []);
 

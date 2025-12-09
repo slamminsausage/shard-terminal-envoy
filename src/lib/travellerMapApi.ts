@@ -18,13 +18,96 @@ import type {
 const TRAVELLER_MAP_BASE_URL = "https://travellermap.com";
 
 /**
+ * Pad hex to 4 digits (e.g., "222" -> "0222")
+ */
+export function padHex(hex: string): string {
+  const cleaned = hex.replace(/\D/g, "");
+  return cleaned.padStart(4, "0");
+}
+
+/**
+ * Sector name to abbreviation mapping (reverse lookup)
+ */
+const SECTOR_NAME_TO_ABBR: Record<string, string> = {
+  "spinward marches": "spin",
+  "deneb": "dene",
+  "trojan reach": "trin",
+  "reft": "rect",
+  "gushemege": "gush",
+  "dagudashaag": "dagu",
+  "core": "core",
+  "massilia": "mass",
+  "solomani rim": "solo",
+  "alpha crucis": "alph",
+  "corridor": "corr",
+  "vland": "vlan",
+  "lishun": "lish",
+  "antares": "anta",
+  "empty quarter": "empt",
+  "ley": "ley",
+  "glimmerdrift reaches": "glim",
+  "diaspora": "dias",
+  "old expanses": "olde",
+  "fornast": "forn",
+  "riftspan reaches": "rsre",
+};
+
+/**
+ * Common sector abbreviations to full names
+ */
+export const SECTOR_ABBREVIATIONS: Record<string, string> = {
+  spin: "Spinward Marches",
+  dene: "Deneb",
+  trin: "Trojan Reach",
+  rect: "Reft",
+  gush: "Gushemege",
+  dagu: "Dagudashaag",
+  core: "Core",
+  mass: "Massilia",
+  solo: "Solomani Rim",
+  alph: "Alpha Crucis",
+  corr: "Corridor",
+  vlan: "Vland",
+  lish: "Lishun",
+  anta: "Antares",
+  empt: "Empty Quarter",
+  ley: "Ley",
+  glim: "Glimmerdrift Reaches",
+  dias: "Diaspora",
+  olde: "Old Expanses",
+  forn: "Fornast",
+};
+
+/**
+ * Get sector abbreviation from full name
+ */
+export function getSectorAbbreviation(sector: string): string {
+  const lower = sector.toLowerCase().trim();
+  // Check if it's already an abbreviation
+  if (SECTOR_ABBREVIATIONS[lower]) {
+    return lower;
+  }
+  // Look up the abbreviation
+  return SECTOR_NAME_TO_ABBR[lower] || sector;
+}
+
+/**
+ * Get full sector name from abbreviation
+ */
+export function getSectorFullName(abbr: string): string {
+  const lower = abbr.toLowerCase();
+  return SECTOR_ABBREVIATIONS[lower] || abbr;
+}
+
+/**
  * Converts TravellerMap API world to simplified JumpWorld
  */
 function toJumpWorld(world: TravellerWorld, defaultSector?: string): JumpWorld {
   return {
     name: world.Name || "Unknown",
     sector: world.Sector || defaultSector || "",
-    hex: world.Hex || "",
+    sectorAbbr: getSectorAbbreviation(world.Sector || defaultSector || ""),
+    hex: padHex(world.Hex || ""),
     uwp: world.UWP || "???????-?",
     zone: world.Zone || "",
     allegiance: world.Allegiance || "",
@@ -41,9 +124,10 @@ export async function getJumpWorlds(
   jump: number = 2
 ): Promise<JumpWorld[]> {
   try {
+    const paddedHex = padHex(hex);
     const url = new URL("/api/jumpworlds", TRAVELLER_MAP_BASE_URL);
     url.searchParams.set("sector", sector);
-    url.searchParams.set("hex", hex);
+    url.searchParams.set("hex", paddedHex);
     url.searchParams.set("jump", jump.toString());
 
     const response = await fetch(url.toString(), {
@@ -53,6 +137,8 @@ export async function getJumpWorlds(
     });
 
     if (!response.ok) {
+      const text = await response.text();
+      console.error("JumpWorlds API error:", response.status, text);
       throw new Error(`TravellerMap API error: ${response.status}`);
     }
 
@@ -76,9 +162,23 @@ export async function calculateRoute(
   request: RouteRequest
 ): Promise<RouteLeg[]> {
   try {
+    // Parse and format start/end locations
+    const startLoc = parseLocation(request.start);
+    const endLoc = parseLocation(request.end);
+
+    if (!startLoc || !endLoc) {
+      throw new Error("Invalid start or end location format. Use 'Sector Hex' (e.g., 'Spinward Marches 1910')");
+    }
+
+    // Use sector abbreviations for the API
+    const startAbbr = getSectorAbbreviation(startLoc.sector);
+    const endAbbr = getSectorAbbreviation(endLoc.sector);
+    const startHex = padHex(startLoc.hex);
+    const endHex = padHex(endLoc.hex);
+
     const url = new URL("/api/route", TRAVELLER_MAP_BASE_URL);
-    url.searchParams.set("start", request.start);
-    url.searchParams.set("end", request.end);
+    url.searchParams.set("start", `${startAbbr} ${startHex}`);
+    url.searchParams.set("end", `${endAbbr} ${endHex}`);
     url.searchParams.set("jump", request.jump.toString());
 
     if (request.wild) {
@@ -91,6 +191,8 @@ export async function calculateRoute(
       url.searchParams.set("im", "1");
     }
 
+    console.log("Route API URL:", url.toString());
+
     const response = await fetch(url.toString(), {
       headers: {
         Accept: "application/json",
@@ -98,7 +200,9 @@ export async function calculateRoute(
     });
 
     if (!response.ok) {
-      throw new Error(`TravellerMap API error: ${response.status}`);
+      const text = await response.text();
+      console.error("Route API error:", response.status, text);
+      throw new Error(`Route calculation failed: ${text || response.status}`);
     }
 
     const data: RouteResponse = await response.json();
@@ -109,8 +213,8 @@ export async function calculateRoute(
 
     return data.Route.map((world) => ({
       sector: world.Sector || "",
-      sectorAbbr: world.SectorAbbreviation || "",
-      hex: world.Hex || "",
+      sectorAbbr: getSectorAbbreviation(world.Sector || ""),
+      hex: padHex(world.Hex || ""),
       name: world.Name || "Unknown",
       uwp: world.UWP || "",
       distance: world.Distance,
@@ -140,10 +244,17 @@ export async function getCoordinates(
     });
 
     if (!response.ok) {
+      const text = await response.text();
+      console.error("Coordinates API error:", response.status, text);
       throw new Error(`TravellerMap API error: ${response.status}`);
     }
 
-    return await response.json();
+    const data = await response.json();
+    // Ensure hex is padded
+    if (data.hx !== undefined && data.hy !== undefined) {
+      data.Hex = padHex(`${data.hx}${data.hy}`);
+    }
+    return data;
   } catch (error) {
     console.error("Failed to get coordinates:", error);
     throw error;
@@ -151,14 +262,20 @@ export async function getCoordinates(
 }
 
 /**
- * Get world data for a specific location
+ * Get world data for a specific location using jumpworlds with jump=0
  */
 export async function getWorldData(
   sector: string,
   hex: string
 ): Promise<JumpWorld | null> {
   try {
-    const url = new URL(`/data/${encodeURIComponent(sector)}/${hex}`, TRAVELLER_MAP_BASE_URL);
+    const paddedHex = padHex(hex);
+
+    // Use jumpworlds API with jump=0 to get just this world
+    const url = new URL("/api/jumpworlds", TRAVELLER_MAP_BASE_URL);
+    url.searchParams.set("sector", sector);
+    url.searchParams.set("hex", paddedHex);
+    url.searchParams.set("jump", "0");
 
     const response = await fetch(url.toString(), {
       headers: {
@@ -170,10 +287,11 @@ export async function getWorldData(
       if (response.status === 404) {
         return null;
       }
-      throw new Error(`TravellerMap API error: ${response.status}`);
+      console.error("World data API error:", response.status);
+      return null;
     }
 
-    const data = await response.json();
+    const data: JumpWorldsResponse = await response.json();
 
     if (data.Worlds && data.Worlds.length > 0) {
       return toJumpWorld(data.Worlds[0], sector);
@@ -201,48 +319,30 @@ export function generateMapUrl(
   } = {}
 ): string {
   const {
-    style = "terminal",
-    scale,
-    hideui = true,
+    style = "poster",
+    scale = 32,
     galdir = false,
     routes = true,
   } = options;
 
-  const url = new URL(
-    `/go/${encodeURIComponent(sector)}/${encodeURIComponent(hex)}`,
-    TRAVELLER_MAP_BASE_URL
-  );
+  const paddedHex = padHex(hex);
 
+  // Use the embed-friendly URL format
+  const url = new URL("/", TRAVELLER_MAP_BASE_URL);
+  url.searchParams.set("p", `${sector} ${paddedHex}`);
   url.searchParams.set("style", style);
+  url.searchParams.set("scale", scale.toString());
 
-  if (scale !== undefined) {
-    url.searchParams.set("scale", scale.toString());
-  }
+  // Build options bitmask
+  let opts = 0;
+  if (galdir) opts |= 0x0001;
+  if (routes) opts |= 0x0002;
+  opts |= 0x0010; // dimunofficial
+  opts |= 41975; // Default options that enable click events
 
-  if (hideui) {
-    url.searchParams.set("options", buildOptions({ galdir, routes, dimunofficial: true }));
-  }
+  url.searchParams.set("options", opts.toString());
 
   return url.toString();
-}
-
-/**
- * Build options bitmask for TravellerMap
- */
-function buildOptions(flags: {
-  galdir?: boolean;
-  routes?: boolean;
-  dimunofficial?: boolean;
-}): string {
-  let options = 0;
-
-  // TravellerMap option flags (from their API docs)
-  // These are bitmask values
-  if (flags.galdir) options |= 0x0001;
-  if (flags.routes) options |= 0x0002;
-  if (flags.dimunofficial) options |= 0x0010;
-
-  return options.toString();
 }
 
 /**
@@ -314,7 +414,7 @@ export function getZoneDescription(zone: string | undefined): string {
  * Format sector and hex for display
  */
 export function formatLocation(sector: string, hex: string): string {
-  return `${sector} ${hex}`;
+  return `${sector} ${padHex(hex)}`;
 }
 
 /**
@@ -323,38 +423,14 @@ export function formatLocation(sector: string, hex: string): string {
 export function parseLocation(location: string): { sector: string; hex: string } | null {
   const trimmed = location.trim();
 
-  // Try to split by last space before 4-digit hex
-  const match = trimmed.match(/^(.+?)\s+(\d{4})$/);
+  // Try to split by last space before hex (3 or 4 digits)
+  const match = trimmed.match(/^(.+?)\s+(\d{3,4})$/);
   if (match) {
     return {
       sector: match[1].trim(),
-      hex: match[2],
+      hex: padHex(match[2]),
     };
   }
 
   return null;
-}
-
-/**
- * Common sector abbreviations
- */
-export const SECTOR_ABBREVIATIONS: Record<string, string> = {
-  spin: "Spinward Marches",
-  dene: "Deneb",
-  trin: "Trojan Reach",
-  rect: "Reft",
-  gush: "Gushemege",
-  dagu: "Dagudashaag",
-  core: "Core",
-  mass: "Massilia",
-  shar: "Solomani Rim",
-  alph: "Alpha Crucis",
-};
-
-/**
- * Get full sector name from abbreviation
- */
-export function getSectorFullName(abbr: string): string {
-  const lower = abbr.toLowerCase();
-  return SECTOR_ABBREVIATIONS[lower] || abbr;
 }
