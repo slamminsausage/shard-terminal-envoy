@@ -1,0 +1,437 @@
+import React, { createContext, useContext, useState, useCallback, useEffect } from "react";
+import {
+  getJumpWorlds,
+  calculateRoute,
+  getCoordinates,
+  getWorldData,
+} from "@/lib/travellerMapApi";
+import { dbHelpers } from "@/lib/supabase";
+import type {
+  JumpWorld,
+  RouteLeg,
+  WorldNote,
+  CurrentLocation,
+  TravellerMapMessage,
+} from "@/types/navigation";
+
+// ===== Context Types =====
+
+interface JumpPlannerState {
+  // Current selection
+  currentLocation: CurrentLocation | null;
+  selectedWorld: JumpWorld | null;
+
+  // Jump calculations
+  jumpRating: number;
+  jumpWorlds: JumpWorld[];
+  isLoadingJumpWorlds: boolean;
+
+  // Route planning
+  routeStart: string;
+  routeEnd: string;
+  route: RouteLeg[];
+  isLoadingRoute: boolean;
+  routeOptions: {
+    wild: boolean;
+    nored: boolean;
+    im: boolean;
+  };
+
+  // World notes
+  currentNote: WorldNote | null;
+  allNotes: WorldNote[];
+  isLoadingNote: boolean;
+  isSavingNote: boolean;
+
+  // Map state
+  mapSector: string;
+  mapHex: string;
+
+  // Error handling
+  error: string | null;
+}
+
+interface JumpPlannerActions {
+  // Location actions
+  setCurrentLocation: (sector: string, hex: string) => Promise<void>;
+  handleMapClick: (x: number, y: number) => Promise<void>;
+
+  // Jump world actions
+  setJumpRating: (rating: number) => void;
+  loadJumpWorlds: () => Promise<void>;
+  selectJumpWorld: (world: JumpWorld) => void;
+
+  // Route actions
+  setRouteStart: (location: string) => void;
+  setRouteEnd: (location: string) => void;
+  setRouteOptions: (options: Partial<JumpPlannerState["routeOptions"]>) => void;
+  planRoute: () => Promise<void>;
+  setRouteEndFromWorld: (world: JumpWorld) => void;
+
+  // Note actions
+  loadNote: (sector: string, hex: string) => Promise<void>;
+  updateNote: (note: Partial<WorldNote>) => void;
+  saveNote: () => Promise<void>;
+  loadAllNotes: () => Promise<void>;
+
+  // Map actions
+  setMapLocation: (sector: string, hex: string) => void;
+
+  // Error handling
+  clearError: () => void;
+}
+
+interface JumpPlannerContextValue extends JumpPlannerState, JumpPlannerActions {}
+
+// ===== Initial State =====
+
+const initialState: JumpPlannerState = {
+  currentLocation: null,
+  selectedWorld: null,
+  jumpRating: 2,
+  jumpWorlds: [],
+  isLoadingJumpWorlds: false,
+  routeStart: "",
+  routeEnd: "",
+  route: [],
+  isLoadingRoute: false,
+  routeOptions: {
+    wild: false,
+    nored: true,
+    im: false,
+  },
+  currentNote: null,
+  allNotes: [],
+  isLoadingNote: false,
+  isSavingNote: false,
+  mapSector: "Spinward Marches",
+  mapHex: "1910",
+  error: null,
+};
+
+// ===== Context =====
+
+const JumpPlannerContext = createContext<JumpPlannerContextValue | null>(null);
+
+export function useJumpPlanner(): JumpPlannerContextValue {
+  const context = useContext(JumpPlannerContext);
+  if (!context) {
+    throw new Error("useJumpPlanner must be used within a JumpPlannerProvider");
+  }
+  return context;
+}
+
+// ===== Provider =====
+
+export function JumpPlannerProvider({ children }: { children: React.ReactNode }) {
+  const [state, setState] = useState<JumpPlannerState>(initialState);
+
+  // Load all notes on mount
+  useEffect(() => {
+    loadAllNotes();
+  }, []);
+
+  // Listen for TravellerMap iframe messages
+  useEffect(() => {
+    function handleMessage(event: MessageEvent) {
+      const data = event.data as TravellerMapMessage;
+      if (!data || data.source !== "travellermap") return;
+
+      if (data.type === "click" || data.type === "doubleclick") {
+        const { x, y } = data.location || {};
+        if (typeof x === "number" && typeof y === "number") {
+          handleMapClick(x, y);
+        }
+      }
+    }
+
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
+  }, [state.jumpRating]);
+
+  // ===== Location Actions =====
+
+  const setCurrentLocation = useCallback(
+    async (sector: string, hex: string) => {
+      setState((prev) => ({
+        ...prev,
+        currentLocation: { sector, hex },
+        mapSector: sector,
+        mapHex: hex,
+        error: null,
+      }));
+
+      // Try to get world data for name
+      try {
+        const worldData = await getWorldData(sector, hex);
+        if (worldData) {
+          setState((prev) => ({
+            ...prev,
+            currentLocation: {
+              sector,
+              hex,
+              worldName: worldData.name,
+            },
+            selectedWorld: worldData,
+            routeStart: `${sector} ${hex}`,
+          }));
+        }
+      } catch (error) {
+        console.error("Failed to get world data:", error);
+      }
+
+      // Load note for this location
+      await loadNote(sector, hex);
+    },
+    []
+  );
+
+  const handleMapClick = useCallback(
+    async (x: number, y: number) => {
+      try {
+        const coords = await getCoordinates(x, y);
+        if (coords) {
+          const sector = coords.Sector || state.mapSector;
+          const hex = coords.Hex || `${coords.hx}${coords.hy}`;
+          await setCurrentLocation(sector, hex);
+        }
+      } catch (error) {
+        console.error("Coordinate lookup failed:", error);
+        setState((prev) => ({
+          ...prev,
+          error: "Failed to get coordinates from map click",
+        }));
+      }
+    },
+    [state.mapSector, setCurrentLocation]
+  );
+
+  // ===== Jump World Actions =====
+
+  const setJumpRating = useCallback((rating: number) => {
+    setState((prev) => ({
+      ...prev,
+      jumpRating: Math.max(1, Math.min(6, rating)),
+    }));
+  }, []);
+
+  const loadJumpWorlds = useCallback(async () => {
+    const { currentLocation, jumpRating } = state;
+    if (!currentLocation) {
+      setState((prev) => ({
+        ...prev,
+        error: "No location selected",
+      }));
+      return;
+    }
+
+    setState((prev) => ({ ...prev, isLoadingJumpWorlds: true, error: null }));
+
+    try {
+      const worlds = await getJumpWorlds(
+        currentLocation.sector,
+        currentLocation.hex,
+        jumpRating
+      );
+      setState((prev) => ({
+        ...prev,
+        jumpWorlds: worlds,
+        isLoadingJumpWorlds: false,
+      }));
+    } catch (error) {
+      console.error("Failed to load jump worlds:", error);
+      setState((prev) => ({
+        ...prev,
+        isLoadingJumpWorlds: false,
+        error: "Failed to load nearby worlds",
+      }));
+    }
+  }, [state.currentLocation, state.jumpRating]);
+
+  const selectJumpWorld = useCallback((world: JumpWorld) => {
+    setState((prev) => ({
+      ...prev,
+      selectedWorld: world,
+    }));
+    // Load note for selected world
+    loadNote(world.sector, world.hex);
+  }, []);
+
+  // ===== Route Actions =====
+
+  const setRouteStart = useCallback((location: string) => {
+    setState((prev) => ({ ...prev, routeStart: location }));
+  }, []);
+
+  const setRouteEnd = useCallback((location: string) => {
+    setState((prev) => ({ ...prev, routeEnd: location }));
+  }, []);
+
+  const setRouteOptions = useCallback(
+    (options: Partial<JumpPlannerState["routeOptions"]>) => {
+      setState((prev) => ({
+        ...prev,
+        routeOptions: { ...prev.routeOptions, ...options },
+      }));
+    },
+    []
+  );
+
+  const setRouteEndFromWorld = useCallback((world: JumpWorld) => {
+    setState((prev) => ({
+      ...prev,
+      routeEnd: `${world.sector} ${world.hex}`,
+    }));
+  }, []);
+
+  const planRoute = useCallback(async () => {
+    const { routeStart, routeEnd, jumpRating, routeOptions } = state;
+
+    if (!routeStart || !routeEnd) {
+      setState((prev) => ({
+        ...prev,
+        error: "Please specify start and end locations",
+      }));
+      return;
+    }
+
+    setState((prev) => ({ ...prev, isLoadingRoute: true, error: null }));
+
+    try {
+      const legs = await calculateRoute({
+        start: routeStart,
+        end: routeEnd,
+        jump: jumpRating,
+        wild: routeOptions.wild,
+        nored: routeOptions.nored,
+        im: routeOptions.im,
+      });
+
+      setState((prev) => ({
+        ...prev,
+        route: legs,
+        isLoadingRoute: false,
+      }));
+    } catch (error) {
+      console.error("Route planning failed:", error);
+      setState((prev) => ({
+        ...prev,
+        isLoadingRoute: false,
+        error: "Failed to calculate route",
+      }));
+    }
+  }, [state.routeStart, state.routeEnd, state.jumpRating, state.routeOptions]);
+
+  // ===== Note Actions =====
+
+  const loadNote = useCallback(async (sector: string, hex: string) => {
+    setState((prev) => ({ ...prev, isLoadingNote: true }));
+
+    try {
+      const note = await dbHelpers.getWorldNote(sector, hex);
+      setState((prev) => ({
+        ...prev,
+        currentNote: note || {
+          sector,
+          hex,
+          status: "UNKNOWN",
+        },
+        isLoadingNote: false,
+      }));
+    } catch (error) {
+      console.error("Failed to load note:", error);
+      setState((prev) => ({
+        ...prev,
+        currentNote: { sector, hex, status: "UNKNOWN" },
+        isLoadingNote: false,
+      }));
+    }
+  }, []);
+
+  const loadAllNotes = useCallback(async () => {
+    try {
+      const notes = await dbHelpers.getAllWorldNotes();
+      setState((prev) => ({ ...prev, allNotes: notes }));
+    } catch (error) {
+      console.error("Failed to load all notes:", error);
+    }
+  }, []);
+
+  const updateNote = useCallback((updates: Partial<WorldNote>) => {
+    setState((prev) => ({
+      ...prev,
+      currentNote: prev.currentNote
+        ? { ...prev.currentNote, ...updates }
+        : null,
+    }));
+  }, []);
+
+  const saveNote = useCallback(async () => {
+    const { currentNote } = state;
+    if (!currentNote) return;
+
+    setState((prev) => ({ ...prev, isSavingNote: true }));
+
+    try {
+      const saved = await dbHelpers.saveWorldNote(currentNote);
+      setState((prev) => ({
+        ...prev,
+        currentNote: saved || currentNote,
+        isSavingNote: false,
+      }));
+      // Reload all notes
+      await loadAllNotes();
+    } catch (error) {
+      console.error("Failed to save note:", error);
+      setState((prev) => ({
+        ...prev,
+        isSavingNote: false,
+        error: "Failed to save world note",
+      }));
+    }
+  }, [state.currentNote, loadAllNotes]);
+
+  // ===== Map Actions =====
+
+  const setMapLocation = useCallback((sector: string, hex: string) => {
+    setState((prev) => ({
+      ...prev,
+      mapSector: sector,
+      mapHex: hex,
+    }));
+  }, []);
+
+  // ===== Error Handling =====
+
+  const clearError = useCallback(() => {
+    setState((prev) => ({ ...prev, error: null }));
+  }, []);
+
+  // ===== Context Value =====
+
+  const value: JumpPlannerContextValue = {
+    ...state,
+    setCurrentLocation,
+    handleMapClick,
+    setJumpRating,
+    loadJumpWorlds,
+    selectJumpWorld,
+    setRouteStart,
+    setRouteEnd,
+    setRouteOptions,
+    setRouteEndFromWorld,
+    planRoute,
+    loadNote,
+    loadAllNotes,
+    updateNote,
+    saveNote,
+    setMapLocation,
+    clearError,
+  };
+
+  return (
+    <JumpPlannerContext.Provider value={value}>
+      {children}
+    </JumpPlannerContext.Provider>
+  );
+}

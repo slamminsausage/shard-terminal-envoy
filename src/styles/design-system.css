@@ -524,6 +524,104 @@
 }
 
 /* ===================================
+   JUMP PLANNER SPECIFIC
+   =================================== */
+.jump-planner {
+  min-height: calc(100vh - 120px);
+}
+
+.jump-planner-header {
+  flex-shrink: 0;
+}
+
+.star-map-panel iframe {
+  background: #000;
+}
+
+/* Terminal select styling */
+select.terminal-input {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2300aa00' d='M2 4l4 4 4-4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 36px;
+  cursor: pointer;
+}
+
+select.terminal-input option {
+  background: #0a0a0a;
+  color: #00ff00;
+  padding: 8px;
+}
+
+/* Terminal textarea styling */
+textarea.terminal-input {
+  resize: vertical;
+  min-height: 60px;
+}
+
+/* World list items */
+.world-list-item {
+  background: rgba(0, 255, 0, 0.02);
+  border: 1px solid #1a2420;
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.world-list-item:hover {
+  background: rgba(0, 255, 0, 0.08);
+  border-color: rgba(0, 255, 0, 0.3);
+}
+
+.world-list-item.selected {
+  background: rgba(0, 255, 0, 0.12);
+  border-color: var(--primary);
+  box-shadow: 0 0 10px rgba(0, 255, 0, 0.2);
+}
+
+/* Zone colors */
+.zone-green { color: var(--primary); }
+.zone-amber { color: #ffaa00; }
+.zone-red { color: #ff4455; }
+
+/* Route display */
+.route-leg {
+  border-left: 2px solid rgba(0, 255, 0, 0.3);
+  padding-left: 12px;
+  margin-left: 8px;
+}
+
+.route-leg:hover {
+  border-left-color: var(--primary);
+}
+
+/* Jump rating buttons */
+.jump-rating-btn {
+  width: 32px;
+  height: 32px;
+  border: 1px solid #1a2420;
+  background: transparent;
+  color: #446655;
+  font-family: 'Orbitron', sans-serif;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.jump-rating-btn:hover {
+  border-color: rgba(0, 255, 0, 0.5);
+  color: var(--primary);
+}
+
+.jump-rating-btn.active {
+  border-color: var(--primary);
+  background: rgba(0, 255, 0, 0.2);
+  color: var(--primary);
+  box-shadow: 0 0 10px rgba(0, 255, 0, 0.4);
+}
+
+/* ===================================
    RESPONSIVE UTILITIES
    =================================== */
 @media (max-width: 768px) {
@@ -540,5 +638,14 @@
   .terminal-btn {
     padding: 6px 12px;
     font-size: 0.65rem;
+  }
+
+  /* Jump planner responsive */
+  .jump-planner > .flex-1 {
+    grid-template-columns: 1fr !important;
+  }
+
+  .jump-planner .star-map-panel {
+    min-height: 300px;
   }
 }
