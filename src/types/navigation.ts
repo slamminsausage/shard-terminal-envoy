@@ -47,6 +47,39 @@ export interface CoordinatesResponse {
   hy: number;
 }
 
+// Search API response types
+export interface SearchResultWorld {
+  World: string;
+  Sector: string;
+  Hex: string;
+  Name?: string;
+}
+
+export interface SearchResultSector {
+  Sector: string;
+  SectorX: number;
+  SectorY: number;
+}
+
+export interface SearchResultSubsector {
+  Subsector: string;
+  Sector: string;
+  Index: string;
+}
+
+export interface SearchResultItem {
+  World?: SearchResultWorld;
+  Sector?: SearchResultSector;
+  Subsector?: SearchResultSubsector;
+}
+
+export interface SearchResponse {
+  Results: {
+    Count: number;
+    Items: SearchResultItem[];
+  };
+}
+
 // TravellerMap iframe message types
 export interface TravellerMapMessage {
   source: "travellermap";

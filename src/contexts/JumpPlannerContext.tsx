@@ -23,6 +23,9 @@ interface JumpPlannerState {
   currentLocation: CurrentLocation | null;
   selectedWorld: JumpWorld | null;
 
+  // Player location ("You Are Here" marker)
+  playerLocation: CurrentLocation | null;
+
   // Jump calculations
   jumpRating: number;
   jumpWorlds: JumpWorld[];
@@ -56,6 +59,7 @@ interface JumpPlannerState {
 interface JumpPlannerActions {
   // Location actions
   setCurrentLocation: (sector: string, hex: string) => Promise<void>;
+  setPlayerLocation: (sector: string, hex: string) => void;
   handleMapClick: (x: number, y: number) => Promise<void>;
 
   // Jump world actions
@@ -90,6 +94,7 @@ interface JumpPlannerContextValue extends JumpPlannerState, JumpPlannerActions {
 const initialState: JumpPlannerState = {
   currentLocation: null,
   selectedWorld: null,
+  playerLocation: null,
   jumpRating: 2,
   jumpWorlds: [],
   isLoadingJumpWorlds: false,
@@ -414,6 +419,32 @@ export function JumpPlannerProvider({ children }: { children: React.ReactNode })
     }));
   }, []);
 
+  // ===== Player Location Actions =====
+
+  const setPlayerLocation = useCallback((sector: string, hex: string) => {
+    const paddedHex = padHex(hex);
+    setState((prev) => {
+      // Get world name from current location if it matches
+      const worldName =
+        prev.currentLocation?.sector === sector &&
+        prev.currentLocation?.hex === paddedHex
+          ? prev.currentLocation.worldName
+          : prev.selectedWorld?.sector === sector &&
+            prev.selectedWorld?.hex === paddedHex
+            ? prev.selectedWorld.name
+            : undefined;
+
+      return {
+        ...prev,
+        playerLocation: {
+          sector,
+          hex: paddedHex,
+          worldName,
+        },
+      };
+    });
+  }, []);
+
   // ===== Error Handling =====
 
   const clearError = useCallback(() => {
@@ -425,6 +456,7 @@ export function JumpPlannerProvider({ children }: { children: React.ReactNode })
   const value: JumpPlannerContextValue = {
     ...state,
     setCurrentLocation,
+    setPlayerLocation,
     handleMapClick,
     setJumpRating,
     loadJumpWorlds,
