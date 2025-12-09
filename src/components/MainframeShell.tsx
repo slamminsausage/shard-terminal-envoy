@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { Terminal, FileText, Users, Radar } from "lucide-react";
+import { Terminal, FileText, Users, Radar, Navigation } from "lucide-react";
 import TerminalInterface from "./interfaces/TerminalInterface";
 import CrewInterface from "./interfaces/CrewInterface";
 import VehicleInterface from "./interfaces/VehicleInterface";
 import AppHeader from "./layout/AppHeader";
 import { BridgeConsole } from "./bridge/BridgeConsole";
+import { JumpPlannerInterface } from "./navigation/JumpPlannerInterface";
 
 export default function MainframeShell() {
   const [activeTab, setActiveTab] = useState(() => {
@@ -22,7 +23,8 @@ export default function MainframeShell() {
     { id: "terminal", label: "Terminal", icon: Terminal },
     { id: "crew", label: "Crew & Sheets", icon: Users },
     { id: "vehicles", label: "Vehicles & Spaceships", icon: FileText },
-    { id: "bridge", label: "Bridge Console", icon: Radar }
+    { id: "bridge", label: "Bridge Console", icon: Radar },
+    { id: "navigation", label: "Star Map", icon: Navigation }
   ];
 
   return (
@@ -48,6 +50,9 @@ export default function MainframeShell() {
         )}
         {activeTab === "bridge" && (
           <BridgeConsole />
+        )}
+        {activeTab === "navigation" && (
+          <JumpPlannerInterface />
         )}
       </main>
     </div>
