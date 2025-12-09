@@ -1,5 +1,6 @@
 import { useJumpPlanner } from "@/contexts/JumpPlannerContext";
-import { parseUWP, getZoneDescription } from "@/lib/travellerMapApi";
+import { parseUWP, getZoneDescription, type WorldSearchResult } from "@/lib/travellerMapApi";
+import { WorldSearchAutocomplete } from "./WorldSearchAutocomplete";
 import { Loader2 } from "lucide-react";
 
 export function ControlPanel() {
@@ -157,32 +158,30 @@ export function ControlPanel() {
         </div>
         <div className="panel-content space-y-3">
           {/* Start Location */}
-          <div>
-            <label className="text-[#446655] text-xs block mb-1">
-              START LOCATION:
-            </label>
-            <input
-              type="text"
-              value={routeStart}
-              onChange={(e) => setRouteStart(e.target.value)}
-              placeholder="e.g., Spinward Marches 1910"
-              className="terminal-input text-sm"
-            />
-          </div>
+          <WorldSearchAutocomplete
+            label="START LOCATION:"
+            value={routeStart}
+            onChange={setRouteStart}
+            onSelect={(result: WorldSearchResult) => {
+              if (result.type === "world") {
+                setRouteStart(`${result.sector} ${result.hex}`);
+              }
+            }}
+            placeholder="Search or type: Spinward Marches 1910"
+          />
 
           {/* End Location */}
-          <div>
-            <label className="text-[#446655] text-xs block mb-1">
-              DESTINATION:
-            </label>
-            <input
-              type="text"
-              value={routeEnd}
-              onChange={(e) => setRouteEnd(e.target.value)}
-              placeholder="e.g., Spinward Marches 2230"
-              className="terminal-input text-sm"
-            />
-          </div>
+          <WorldSearchAutocomplete
+            label="DESTINATION:"
+            value={routeEnd}
+            onChange={setRouteEnd}
+            onSelect={(result: WorldSearchResult) => {
+              if (result.type === "world") {
+                setRouteEnd(`${result.sector} ${result.hex}`);
+              }
+            }}
+            placeholder="Search or type: Spinward Marches 2230"
+          />
 
           {/* Route Options */}
           <div className="flex flex-wrap gap-3 text-xs">

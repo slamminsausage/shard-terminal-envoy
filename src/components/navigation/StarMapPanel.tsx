@@ -1,6 +1,8 @@
 import { useRef, useEffect, useState } from "react";
 import { useJumpPlanner } from "@/contexts/JumpPlannerContext";
-import { generateMapUrl, padHex } from "@/lib/travellerMapApi";
+import { generateMapUrl, padHex, type WorldSearchResult } from "@/lib/travellerMapApi";
+import { WorldSearchAutocomplete } from "./WorldSearchAutocomplete";
+import { MapPin, Navigation } from "lucide-react";
 
 export function StarMapPanel() {
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -8,36 +10,49 @@ export function StarMapPanel() {
     mapSector,
     mapHex,
     currentLocation,
+    playerLocation,
     setMapLocation,
     setCurrentLocation,
+    setPlayerLocation,
   } = useJumpPlanner();
 
-  const [sectorInput, setSectorInput] = useState(mapSector);
+  const [searchValue, setSearchValue] = useState("");
   const [hexInput, setHexInput] = useState(mapHex);
 
-  // Update inputs when map location changes
+  // Update hex input when map location changes
   useEffect(() => {
-    setSectorInput(mapSector);
     setHexInput(padHex(mapHex));
-  }, [mapSector, mapHex]);
+  }, [mapHex]);
 
-  const handleGoToLocation = () => {
-    if (sectorInput && hexInput) {
-      const paddedHex = padHex(hexInput);
-      setMapLocation(sectorInput, paddedHex);
+  const handleSearchSelect = async (result: WorldSearchResult) => {
+    if (result.type === "world") {
+      setMapLocation(result.sector, result.hex);
+      await setCurrentLocation(result.sector, result.hex);
+    } else {
+      // For sectors/subsectors, just navigate to the center
+      setMapLocation(result.sector, "1620");
+    }
+    setSearchValue("");
+  };
+
+  const handleSetPlayerLocation = () => {
+    if (currentLocation) {
+      setPlayerLocation(currentLocation.sector, currentLocation.hex);
     }
   };
 
-  const handleSelectLocation = async () => {
-    if (sectorInput && hexInput) {
-      const paddedHex = padHex(hexInput);
-      await setCurrentLocation(sectorInput, paddedHex);
+  const handleGoToPlayerLocation = () => {
+    if (playerLocation) {
+      setMapLocation(playerLocation.sector, playerLocation.hex);
     }
   };
 
+  // Generate map URL with "You Are Here" marker if player location is set
   const mapUrl = generateMapUrl(mapSector, mapHex, {
-    style: "poster",
+    style: "terminal",
     scale: 32,
+    yahSector: playerLocation?.sector,
+    yahHex: playerLocation?.hex,
   });
 
   return (
@@ -47,43 +62,83 @@ export function StarMapPanel() {
         <span className="panel-status">
           {currentLocation
             ? `${currentLocation.sector} ${currentLocation.hex}`
-            : "Enter location below"}
+            : "Search for a world"}
         </span>
       </div>
 
       <div className="panel-content flex flex-col gap-3 p-0">
-        {/* Quick Nav Controls */}
-        <div className="flex gap-2 px-4 pt-4">
-          <input
-            type="text"
-            value={sectorInput}
-            onChange={(e) => setSectorInput(e.target.value)}
-            placeholder="Sector (e.g., Spinward Marches)"
-            className="terminal-input flex-1 text-sm"
+        {/* Search Controls */}
+        <div className="px-4 pt-4">
+          <WorldSearchAutocomplete
+            value={searchValue}
+            onChange={setSearchValue}
+            onSelect={handleSearchSelect}
+            placeholder="Search worlds by name (e.g., Regina, Terra...)"
           />
+        </div>
+
+        {/* Quick Nav - Hex input for manual entry */}
+        <div className="flex gap-2 px-4">
           <input
             type="text"
             value={hexInput}
             onChange={(e) => setHexInput(e.target.value)}
-            placeholder="Hex"
+            placeholder="Hex (e.g., 1910)"
             className="terminal-input w-24 text-sm"
             maxLength={4}
           />
-        </div>
-        <div className="flex gap-2 px-4">
           <button
-            onClick={handleGoToLocation}
+            onClick={() => {
+              if (currentLocation?.sector && hexInput) {
+                const paddedHex = padHex(hexInput);
+                setMapLocation(currentLocation.sector, paddedHex);
+                setCurrentLocation(currentLocation.sector, paddedHex);
+              }
+            }}
+            disabled={!currentLocation?.sector || !hexInput}
             className="terminal-btn secondary text-xs flex-1"
           >
-            CENTER MAP
-          </button>
-          <button
-            onClick={handleSelectLocation}
-            className="terminal-btn text-xs flex-1"
-          >
-            SELECT WORLD
+            GO TO HEX
           </button>
         </div>
+
+        {/* Player Location Controls */}
+        <div className="flex gap-2 px-4">
+          <button
+            onClick={handleSetPlayerLocation}
+            disabled={!currentLocation}
+            className="terminal-btn text-xs flex-1 flex items-center justify-center gap-1"
+            title="Mark current location as your ship's position"
+          >
+            <MapPin className="w-3 h-3" />
+            SET "YOU ARE HERE"
+          </button>
+          <button
+            onClick={handleGoToPlayerLocation}
+            disabled={!playerLocation}
+            className="terminal-btn secondary text-xs flex-1 flex items-center justify-center gap-1"
+            title="Navigate to your ship's location"
+          >
+            <Navigation className="w-3 h-3" />
+            GO TO SHIP
+          </button>
+        </div>
+
+        {/* Player Location Display */}
+        {playerLocation && (
+          <div className="px-4 py-2 bg-[#00ff88]/5 border-y border-primary/20">
+            <div className="flex items-center gap-2">
+              <MapPin className="w-4 h-4 text-primary" />
+              <span className="text-xs text-[#446655]">SHIP LOCATION:</span>
+              <span className="text-primary font-bold text-sm">
+                {playerLocation.worldName || playerLocation.hex}
+              </span>
+              <span className="text-[#00ccff] text-xs font-mono ml-auto">
+                {playerLocation.sector} {playerLocation.hex}
+              </span>
+            </div>
+          </div>
+        )}
 
         {/* Map Iframe */}
         <div className="flex-1 relative min-h-[400px]">
@@ -116,8 +171,8 @@ export function StarMapPanel() {
         {/* Instructions */}
         <div className="px-4 pb-3 text-center">
           <span className="text-xs text-[#446655]">
-            Enter a sector name and hex code, then click SELECT WORLD to load data.
-            Use CENTER MAP to navigate the map view.
+            Search for worlds by name, or click on the map to select a hex.
+            Set your ship location to display "You Are Here" marker.
           </span>
         </div>
       </div>

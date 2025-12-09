@@ -13,6 +13,8 @@ import type {
   JumpWorld,
   RouteLeg,
   RouteRequest,
+  SearchResponse,
+  SearchResultItem,
 } from "@/types/navigation";
 
 const TRAVELLER_MAP_BASE_URL = "https://travellermap.com";
@@ -27,12 +29,13 @@ export function padHex(hex: string): string {
 
 /**
  * Sector name to abbreviation mapping (reverse lookup)
+ * TravellerMap uses first 4 letters as abbreviations (except Ley which is 3)
  */
 const SECTOR_NAME_TO_ABBR: Record<string, string> = {
   "spinward marches": "spin",
   "deneb": "dene",
-  "trojan reach": "trin",
-  "reft": "rect",
+  "trojan reach": "troj",
+  "reft": "reft",
   "gushemege": "gush",
   "dagudashaag": "dagu",
   "core": "core",
@@ -49,7 +52,39 @@ const SECTOR_NAME_TO_ABBR: Record<string, string> = {
   "diaspora": "dias",
   "old expanses": "olde",
   "fornast": "forn",
-  "riftspan reaches": "rsre",
+  "riftspan reaches": "rift",
+  "trojan reaches": "troj",
+  "the beyond": "beyo",
+  "far frontiers": "farf",
+  "vanguard reaches": "vang",
+  "crucis margin": "cruc",
+  "magyar": "magy",
+  "daibei": "daib",
+  "reaver's deep": "reav",
+  "dark nebula": "dark",
+  "ustral quadrant": "ustr",
+  "canopus": "cano",
+  "aldebaran": "alde",
+  "neworld": "newo",
+  "langere": "lang",
+  "aktifao": "akti",
+  "mendan": "mend",
+  "amdukan": "amdu",
+  "zarushagar": "zaru",
+  "ilelish": "ilel",
+  "verge": "verg",
+  "ealiyasiyw": "eali",
+  "staihaia'yo": "stai",
+  "hlakhoi": "hlak",
+  "iwahfuah": "iwah",
+  "arzul": "arzu",
+  "kaa g'kul": "kaag",
+  "touchstone": "touc",
+  "delta": "delt",
+  "hinterworlds": "hint",
+  "pax rulin": "paxr",
+  "spica": "spic",
+  "foreven": "fore",
 };
 
 /**
@@ -58,8 +93,8 @@ const SECTOR_NAME_TO_ABBR: Record<string, string> = {
 export const SECTOR_ABBREVIATIONS: Record<string, string> = {
   spin: "Spinward Marches",
   dene: "Deneb",
-  trin: "Trojan Reach",
-  rect: "Reft",
+  troj: "Trojan Reach",
+  reft: "Reft",
   gush: "Gushemege",
   dagu: "Dagudashaag",
   core: "Core",
@@ -76,6 +111,38 @@ export const SECTOR_ABBREVIATIONS: Record<string, string> = {
   dias: "Diaspora",
   olde: "Old Expanses",
   forn: "Fornast",
+  rift: "Riftspan Reaches",
+  beyo: "The Beyond",
+  farf: "Far Frontiers",
+  vang: "Vanguard Reaches",
+  cruc: "Crucis Margin",
+  magy: "Magyar",
+  daib: "Daibei",
+  reav: "Reaver's Deep",
+  dark: "Dark Nebula",
+  ustr: "Ustral Quadrant",
+  cano: "Canopus",
+  alde: "Aldebaran",
+  newo: "Neworld",
+  lang: "Langere",
+  akti: "Aktifao",
+  mend: "Mendan",
+  amdu: "Amdukan",
+  zaru: "Zarushagar",
+  ilel: "Ilelish",
+  verg: "Verge",
+  eali: "Ealiyasiyw",
+  stai: "Staihaia'yo",
+  hlak: "Hlakhoi",
+  iwah: "Iwahfuah",
+  arzu: "Arzul",
+  kaag: "Kaa G'kul",
+  touc: "Touchstone",
+  delt: "Delta",
+  hint: "Hinterworlds",
+  paxr: "Pax Rulin",
+  spic: "Spica",
+  fore: "Foreven",
 };
 
 /**
@@ -170,15 +237,15 @@ export async function calculateRoute(
       throw new Error("Invalid start or end location format. Use 'Sector Hex' (e.g., 'Spinward Marches 1910')");
     }
 
-    // Use sector abbreviations for the API
-    const startAbbr = getSectorAbbreviation(startLoc.sector);
-    const endAbbr = getSectorAbbreviation(endLoc.sector);
+    // Get full sector names for more reliable API calls
+    const startSector = getSectorFullName(startLoc.sector);
+    const endSector = getSectorFullName(endLoc.sector);
     const startHex = padHex(startLoc.hex);
     const endHex = padHex(endLoc.hex);
 
     const url = new URL("/api/route", TRAVELLER_MAP_BASE_URL);
-    url.searchParams.set("start", `${startAbbr} ${startHex}`);
-    url.searchParams.set("end", `${endAbbr} ${endHex}`);
+    url.searchParams.set("start", `${startSector} ${startHex}`);
+    url.searchParams.set("end", `${endSector} ${endHex}`);
     url.searchParams.set("jump", request.jump.toString());
 
     if (request.wild) {
@@ -311,36 +378,61 @@ export function generateMapUrl(
   sector: string,
   hex: string,
   options: {
-    style?: "poster" | "atlas" | "print" | "candy" | "draft" | "fasa" | "terminal";
+    style?: "poster" | "atlas" | "print" | "candy" | "draft" | "fasa" | "terminal" | "mongoose";
     scale?: number;
     hideui?: boolean;
     galdir?: boolean;
     routes?: boolean;
+    yahSector?: string;
+    yahHex?: string;
   } = {}
 ): string {
   const {
-    style = "poster",
+    style = "terminal",
     scale = 32,
     galdir = false,
     routes = true,
+    yahSector,
+    yahHex,
   } = options;
 
   const paddedHex = padHex(hex);
 
-  // Use the embed-friendly URL format
-  const url = new URL("/", TRAVELLER_MAP_BASE_URL);
-  url.searchParams.set("p", `${sector} ${paddedHex}`);
+  // Use the /go/ URL format which properly handles sector+hex navigation
+  const url = new URL(`/go/${encodeURIComponent(sector)}/${paddedHex}`, TRAVELLER_MAP_BASE_URL);
   url.searchParams.set("style", style);
   url.searchParams.set("scale", scale.toString());
 
-  // Build options bitmask
+  // Build options bitmask for rendering
+  // See: https://travellermap.com/doc/api#options
   let opts = 0;
-  if (galdir) opts |= 0x0001;
-  if (routes) opts |= 0x0002;
-  opts |= 0x0010; // dimunofficial
-  opts |= 41975; // Default options that enable click events
+  opts |= 0x0001; // SectorGrid
+  opts |= 0x0002; // SubsectorGrid
+  opts |= 0x0010; // BordersMajor
+  opts |= 0x0020; // BordersMinor
+  opts |= 0x0040; // NamesMajor
+  opts |= 0x0080; // NamesMinor
+  opts |= 0x0100; // WorldsCapitals
+  opts |= 0x0200; // WorldsHomeworlds
+  opts |= 0x8000; // FilledBorders
 
   url.searchParams.set("options", opts.toString());
+
+  // Galactic directions overlay
+  if (!galdir) {
+    url.searchParams.set("galdir", "0");
+  }
+
+  // Routes
+  if (!routes) {
+    url.searchParams.set("routes", "0");
+  }
+
+  // "You Are Here" marker support
+  if (yahSector && yahHex) {
+    url.searchParams.set("yah_sector", yahSector);
+    url.searchParams.set("yah_hex", padHex(yahHex));
+  }
 
   return url.toString();
 }
@@ -433,4 +525,82 @@ export function parseLocation(location: string): { sector: string; hex: string }
   }
 
   return null;
+}
+
+/**
+ * Search result item normalized for display
+ */
+export interface WorldSearchResult {
+  name: string;
+  sector: string;
+  hex: string;
+  type: "world" | "sector" | "subsector";
+}
+
+/**
+ * Search for worlds, sectors, and subsectors by name
+ */
+export async function searchWorlds(
+  query: string,
+  maxResults: number = 20
+): Promise<WorldSearchResult[]> {
+  try {
+    if (!query || query.length < 2) {
+      return [];
+    }
+
+    const url = new URL("/api/search", TRAVELLER_MAP_BASE_URL);
+    url.searchParams.set("q", query);
+
+    const response = await fetch(url.toString(), {
+      headers: {
+        Accept: "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      console.error("Search API error:", response.status);
+      return [];
+    }
+
+    const data: SearchResponse = await response.json();
+
+    if (!data.Results || !data.Results.Items) {
+      return [];
+    }
+
+    const results: WorldSearchResult[] = [];
+
+    for (const item of data.Results.Items) {
+      if (results.length >= maxResults) break;
+
+      if (item.World) {
+        results.push({
+          name: item.World.World || item.World.Name || "Unknown",
+          sector: item.World.Sector,
+          hex: padHex(item.World.Hex),
+          type: "world",
+        });
+      } else if (item.Sector) {
+        results.push({
+          name: item.Sector.Sector,
+          sector: item.Sector.Sector,
+          hex: "",
+          type: "sector",
+        });
+      } else if (item.Subsector) {
+        results.push({
+          name: `${item.Subsector.Subsector} (${item.Subsector.Sector})`,
+          sector: item.Subsector.Sector,
+          hex: "",
+          type: "subsector",
+        });
+      }
+    }
+
+    return results;
+  } catch (error) {
+    console.error("Failed to search worlds:", error);
+    return [];
+  }
 }
