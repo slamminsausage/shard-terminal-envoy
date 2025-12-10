@@ -206,6 +206,7 @@ export function JumpPlannerProvider({ children }: { children: React.ReactNode })
   const handleMapClick = useCallback(
     async (x: number, y: number) => {
       try {
+        // getCoordinates now resolves sector name via Metadata API
         const coords = await getCoordinates(x, y);
         if (!coords) {
           console.warn("No coordinates returned from API");
@@ -214,10 +215,8 @@ export function JumpPlannerProvider({ children }: { children: React.ReactNode })
 
         console.log("Processing coordinates:", coords);
 
-        // Try to get sector from various possible fields
-        const sector = coords.Sector || coords.sector || coords.SectorName;
-
-        if (!sector) {
+        // Sector name is now resolved by getCoordinates via Metadata API lookup
+        if (!coords.Sector) {
           console.error("Could not determine sector from coordinates:", coords);
           setState((prev) => ({
             ...prev,
@@ -226,17 +225,14 @@ export function JumpPlannerProvider({ children }: { children: React.ReactNode })
           return;
         }
 
-        // Construct hex from available data
-        const hx = String(coords.hx || 0).padStart(2, "0");
-        const hy = String(coords.hy || 0).padStart(2, "0");
-        const hex = coords.Hex || padHex(`${hx}${hy}`);
-
+        // Hex is now properly constructed by getCoordinates (XXYY format)
+        const hex = coords.Hex;
         if (!hex || hex === "0000") {
           console.error("Could not determine valid hex from coordinates:", coords);
           return;
         }
 
-        const sectorFull = getSectorFullName(sector);
+        const sectorFull = getSectorFullName(coords.Sector);
         console.log("Setting location to:", sectorFull, hex);
 
         await setCurrentLocation(sectorFull, hex);
