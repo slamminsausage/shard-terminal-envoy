@@ -43,9 +43,10 @@ export function StarMapPanel() {
     }
   };
 
-  const handleGoToPlayerLocation = () => {
+  const handleGoToPlayerLocation = async () => {
     if (playerLocation) {
       setMapLocation(playerLocation.sector, playerLocation.hex);
+      await setCurrentLocation(playerLocation.sector, playerLocation.hex);
     }
   };
 

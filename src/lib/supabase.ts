@@ -285,20 +285,16 @@ export const dbHelpers = {
       const { data, error } = await supabase
         .from('world_notes')
         .select('*')
-        .ilike('sector', sector)
+        .eq('sector', sector)
         .eq('hex', hex)
-        .single();
+        .maybeSingle();
 
       if (error) {
-        if (error.code === 'PGRST116') {
-          // No rows found
-          return null;
-        }
         console.error('Database error:', error);
         return null;
       }
 
-      return data as WorldNote;
+      return data as WorldNote | null;
     } catch (error) {
       console.error('Failed to fetch world note:', error);
       return null;
@@ -413,7 +409,7 @@ export const dbHelpers = {
       const { error } = await supabase
         .from('world_notes')
         .delete()
-        .ilike('sector', sector)
+        .eq('sector', sector)
         .eq('hex', hex);
 
       if (error) {
@@ -440,7 +436,7 @@ export const dbHelpers = {
       const { data, error } = await supabase
         .from('world_notes')
         .select('*')
-        .ilike('sector', sector)
+        .eq('sector', sector)
         .order('hex', { ascending: true });
 
       if (error) {
