@@ -212,9 +212,13 @@ export function JumpPlannerProvider({ children }: { children: React.ReactNode })
           return;
         }
 
-        // Require sector data - don't fallback to default
-        if (!coords.Sector) {
-          console.error("Coordinates API returned no sector data");
+        console.log("Processing coordinates:", coords);
+
+        // Try to get sector from various possible fields
+        const sector = coords.Sector || coords.sector || coords.SectorName;
+
+        if (!sector) {
+          console.error("Could not determine sector from coordinates:", coords);
           setState((prev) => ({
             ...prev,
             error: "Could not determine sector for map location",
@@ -222,17 +226,20 @@ export function JumpPlannerProvider({ children }: { children: React.ReactNode })
           return;
         }
 
-        const sector = getSectorFullName(coords.Sector);
+        // Construct hex from available data
         const hx = String(coords.hx || 0).padStart(2, "0");
         const hy = String(coords.hy || 0).padStart(2, "0");
         const hex = coords.Hex || padHex(`${hx}${hy}`);
 
-        if (!hex) {
-          console.error("Could not determine hex from coordinates");
+        if (!hex || hex === "0000") {
+          console.error("Could not determine valid hex from coordinates:", coords);
           return;
         }
 
-        await setCurrentLocation(sector, hex);
+        const sectorFull = getSectorFullName(sector);
+        console.log("Setting location to:", sectorFull, hex);
+
+        await setCurrentLocation(sectorFull, hex);
       } catch (error) {
         console.error("Coordinate lookup failed:", error);
         setState((prev) => ({
