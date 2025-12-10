@@ -32,9 +32,9 @@ export interface RouteWorld {
 export type RouteResponse = RouteWorld[] | { route?: RouteWorld[]; Route?: RouteWorld[] };
 
 export interface CoordinatesResponse {
-  Sector: string;
-  SectorAbbreviation: string;
-  Hex: string;
+  Sector?: string;
+  SectorAbbreviation?: string;
+  Hex?: string;
   x: number;
   y: number;
   sx: number;

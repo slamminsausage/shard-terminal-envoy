@@ -167,7 +167,7 @@ export function ControlPanel() {
                 setRouteStart(`${result.sector} ${result.hex}`);
               }
             }}
-            placeholder="Search or type: Spinward Marches 1910"
+            placeholder="Search or type: Trojan Reach 2223"
           />
 
           {/* End Location */}
@@ -180,7 +180,7 @@ export function ControlPanel() {
                 setRouteEnd(`${result.sector} ${result.hex}`);
               }
             }}
-            placeholder="Search or type: Spinward Marches 2230"
+            placeholder="Search or type: Trojan Reach 3201"
           />
 
           {/* Route Options */}
@@ -234,7 +234,7 @@ export function ControlPanel() {
           {route.length > 0 && (
             <div className="mt-3">
               <div className="text-[#446655] text-xs mb-2">
-                ROUTE ({route.length} JUMPS):
+                ROUTE ({route.length} waypoints, {Math.max(0, route.length - 1)} jump{route.length === 2 ? '' : 's'}):
               </div>
               <div className="max-h-48 overflow-y-auto">
                 <ol className="space-y-1">

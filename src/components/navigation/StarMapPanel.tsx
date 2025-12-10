@@ -75,7 +75,7 @@ export function StarMapPanel() {
             value={searchValue}
             onChange={setSearchValue}
             onSelect={handleSearchSelect}
-            placeholder="Search worlds by name (e.g., Regina, Terra...)"
+            placeholder="Search worlds by name (e.g., Drinax, Theev...)"
           />
         </div>
 
@@ -85,7 +85,7 @@ export function StarMapPanel() {
             type="text"
             value={hexInput}
             onChange={(e) => setHexInput(e.target.value)}
-            placeholder="Hex (e.g., 1910)"
+            placeholder="Hex (e.g., 2223)"
             className="terminal-input w-24 text-sm"
             maxLength={4}
           />
