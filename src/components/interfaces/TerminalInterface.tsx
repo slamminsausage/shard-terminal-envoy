@@ -79,7 +79,16 @@ export default function TerminalInterface() {
     onSuccess: () => {
       session.setRequiresPassword(false);
       session.resetPasswordAttempts();
-      // Start typing animation for log content
+      audioManager.playEffect('access_granted');
+
+      // Check if log has nested audio logs
+      if (session.selectedLog?.logs && Array.isArray(session.selectedLog.logs) && session.selectedLog.logs.length > 0) {
+        session.setShowAudioLogs(true);
+        session.setAudioLogsData(session.selectedLog.logs);
+        return;
+      }
+
+      // Otherwise type the content
       if (session.selectedLog?.content) {
         setLocalDisplayedText('');
         setLocalTypingComplete(false);
@@ -94,7 +103,17 @@ export default function TerminalInterface() {
     },
     onFailure: () => {
       audioManager.playEffect('access_denied');
-      session.goToTerminal();
+
+      // On password failure: check if roll check is available as fallback
+      if (session.selectedLog?.roll_check || session.selectedLog?.requires_roll) {
+        const rollCheck = session.selectedLog.roll_check || {
+          difficulty: 10,
+          skill: 'Electronics (Computers)'
+        };
+        session.setRollCheck(rollCheck);
+      } else {
+        session.goToTerminal();
+      }
     },
   });
 
@@ -214,7 +233,9 @@ export default function TerminalInterface() {
         throw new Error(`Failed to load logs: ${response.status}`);
       }
       const data = await response.json();
-      session.setLogData(data);
+      // Normalize single-object logs to array format
+      const normalizedData = Array.isArray(data) ? data : [data];
+      session.setLogData(normalizedData);
       session.setView('terminal');
     } catch (error) {
       console.error('Failed to load logs:', error);
@@ -284,6 +305,30 @@ export default function TerminalInterface() {
     }
   };
 
+  // Helper function to show log content or nested audio logs
+  const showLogContent = (log: any) => {
+    // Check if log has nested audio logs
+    if (log.logs && Array.isArray(log.logs) && log.logs.length > 0) {
+      // Show nested audio logs page
+      session.setShowAudioLogs(true);
+      session.setAudioLogsData(log.logs);
+      return;
+    }
+
+    // Otherwise, type the content
+    if (log.content) {
+      setLocalDisplayedText('');
+      setLocalTypingComplete(false);
+      const cancel = typeTextWithSound(
+        log.content,
+        setLocalDisplayedText,
+        () => setLocalTypingComplete(true),
+        { delay: 20 }
+      );
+      typingCancelRef.current = cancel;
+    }
+  };
+
   // Handle log selection
   const handleLogClick = (log: any) => {
     session.setSelectedLog(log);
@@ -291,7 +336,7 @@ export default function TerminalInterface() {
     setLocalTypingComplete(false);
     session.setView('log');
 
-    // Check for special audio logs
+    // Check for special audio logs (title contains 'AUDIO LOG')
     if (log.title?.includes('AUDIO LOG')) {
       session.setShowAudioLogs(true);
       session.setAudioLogsData([log]);
@@ -304,26 +349,21 @@ export default function TerminalInterface() {
       return;
     }
 
-    if (log.roll_check) {
-      session.setRollCheck(log.roll_check);
-      return;
-    }
-
+    // PASSWORD FIRST: Check password before roll check
+    // This allows password as primary auth with roll as fallback
     if (log.requires_password && log.password) {
       session.setRequiresPassword(true);
       return;
     }
 
-    // No security - start typing
-    if (log.content) {
-      const cancel = typeTextWithSound(
-        log.content,
-        setLocalDisplayedText,
-        () => setLocalTypingComplete(true),
-        { delay: 20 }
-      );
-      typingCancelRef.current = cancel;
+    // Roll check only if no password required
+    if (log.roll_check) {
+      session.setRollCheck(log.roll_check);
+      return;
     }
+
+    // No security - show content directly
+    showLogContent(log);
   };
 
   // Handle roll check result
@@ -345,7 +385,15 @@ export default function TerminalInterface() {
 
     if (result.success) {
       audioManager.playEffect('access_granted');
-      // Passing the roll check bypasses password requirement (hacking in)
+
+      // Check if log has nested audio logs
+      if (session.selectedLog?.logs && Array.isArray(session.selectedLog.logs) && session.selectedLog.logs.length > 0) {
+        session.setShowAudioLogs(true);
+        session.setAudioLogsData(session.selectedLog.logs);
+        return;
+      }
+
+      // Otherwise type the content
       if (session.selectedLog?.content) {
         setLocalDisplayedText('');
         setLocalTypingComplete(false);
@@ -359,15 +407,8 @@ export default function TerminalInterface() {
       }
     } else {
       audioManager.playEffect('access_denied');
-
-      // On failure: check if password is available as fallback
-      if (session.selectedLog?.requires_password && session.selectedLog?.password) {
-        // Show password prompt as fallback
-        session.setRequiresPassword(true);
-      } else {
-        // No password available, go back to terminal
-        session.goToTerminal();
-      }
+      // Roll check is the final fallback after password failure, so go back to terminal
+      session.goToTerminal();
     }
   };
 
@@ -377,6 +418,15 @@ export default function TerminalInterface() {
 
     if (result.success) {
       audioManager.playEffect('access_granted');
+
+      // Check if log has nested audio logs
+      if (session.selectedLog?.logs && Array.isArray(session.selectedLog.logs) && session.selectedLog.logs.length > 0) {
+        session.setShowAudioLogs(true);
+        session.setAudioLogsData(session.selectedLog.logs);
+        return;
+      }
+
+      // Otherwise type the content
       if (session.selectedLog?.content) {
         setLocalDisplayedText('');
         setLocalTypingComplete(false);

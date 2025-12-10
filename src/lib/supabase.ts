@@ -264,12 +264,17 @@ export const dbHelpers = {
         .from('unlocked_terminals')
         .insert([{ terminal_code: terminalCode }])
 
-      if (error && error.code !== '23505') { // Ignore unique constraint violations
+      // Ignore unique constraint violations (23505 is PostgreSQL code, 409 is HTTP status for conflicts)
+      if (error && error.code !== '23505' && (error as any).status !== 409) {
         console.error('Database error:', error)
         throw error
       }
       return true
-    } catch (error) {
+    } catch (error: any) {
+      // Also catch and ignore duplicate key errors that bubble up as exceptions
+      if (error?.code === '23505' || error?.status === 409 || error?.message?.includes('duplicate')) {
+        return true; // Terminal already unlocked, this is fine
+      }
       console.error('Failed to add unlocked terminal:', error)
       throw error
     }
