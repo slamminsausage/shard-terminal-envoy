@@ -113,11 +113,11 @@ const VehicleSheet = ({ vehicleId }: VehicleSheetProps) => {
       const vehicle = vehicles.find(v => v.id === vehicleId);
       if (vehicle) {
         setCurrentVehicleId(vehicle.id);
-        // Get hullCurrent from specifications if available
+        // Get hullCurrent from database field (with fallback to specifications for backward compat)
         const specs = vehicle.specifications && typeof vehicle.specifications === 'object'
           ? vehicle.specifications as any
           : {};
-        const hullCurrentValue = specs.hullCurrent ?? vehicle.hull;
+        const hullCurrentValue = vehicle.hull_current ?? specs.hullCurrent ?? vehicle.hull;
 
         setShipInfo({
           name: vehicle.name || "",
@@ -191,6 +191,7 @@ const VehicleSheet = ({ vehicleId }: VehicleSheetProps) => {
         tonnage: 100,
         cost: parseInt(shipInfo.fuelCost) || 0,
         hull: hullMax,
+        hull_current: hullCurrent,
         structure: 1,
         armor: parseInt(shipInfo.armour) || 0,
         maneuver_drive: parseInt(drives.manoeuvreThrust) || 1,
@@ -216,7 +217,6 @@ const VehicleSheet = ({ vehicleId }: VehicleSheetProps) => {
           powerRequirements: powerRequirements,
           cargo: cargo,
           criticalHits: criticalHits,
-          hullCurrent: hullCurrent,
         },
       };
 
