@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { CampaignProvider } from "@/contexts/CampaignContext";
 import { BridgeProvider } from "@/contexts/BridgeContext";
+import { JumpPlannerProvider } from "@/contexts/JumpPlannerContext";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import CRTOverlay from "@/components/ui/CRTOverlay";
 import Index from "./pages/Index";
@@ -31,6 +32,7 @@ const App = () => (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <CampaignProvider>
+          <JumpPlannerProvider>
           <BridgeProvider>
             <CRTOverlay />
             <Toaster />
@@ -46,6 +48,7 @@ const App = () => (
               </Routes>
             </BrowserRouter>
           </BridgeProvider>
+          </JumpPlannerProvider>
         </CampaignProvider>
       </TooltipProvider>
     </QueryClientProvider>

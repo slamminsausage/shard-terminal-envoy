@@ -80,6 +80,7 @@ export interface Vehicle {
   
   // Hull and structure
   hull: number;
+  hull_current?: number;
   structure: number;
   armor: number;
   

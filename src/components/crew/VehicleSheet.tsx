@@ -78,6 +78,7 @@ const VehicleSheet = ({ vehicleId }: VehicleSheetProps) => {
     name: "",
     className: "",
     hullPoints: "",
+    currentHullPoints: "",
     armour: "",
     powerPoints: "",
     softwareBandwidth: "",
@@ -116,6 +117,7 @@ const VehicleSheet = ({ vehicleId }: VehicleSheetProps) => {
           name: vehicle.name || "",
           className: vehicle.class_type || "",
           hullPoints: vehicle.hull?.toString() || "",
+          currentHullPoints: vehicle.hull_current?.toString() || vehicle.hull?.toString() || "",
           armour: vehicle.armor?.toString() || "",
           powerPoints: vehicle.power_plant?.toString() || "",
           softwareBandwidth: vehicle.computer_rating?.toString() || "",
@@ -175,6 +177,8 @@ const VehicleSheet = ({ vehicleId }: VehicleSheetProps) => {
 
   const handleSaveVehicle = async () => {
     try {
+      const hullMax = parseInt(shipInfo.hullPoints) || 1;
+      const hullCurrent = parseInt(shipInfo.currentHullPoints) || hullMax;
       const vehicleData = {
         ...(currentVehicleId && { id: currentVehicleId }),
         name: shipInfo.name,
@@ -183,7 +187,8 @@ const VehicleSheet = ({ vehicleId }: VehicleSheetProps) => {
         tech_level: 10,
         tonnage: 100,
         cost: parseInt(shipInfo.fuelCost) || 0,
-        hull: parseInt(shipInfo.hullPoints) || 1,
+        hull: hullMax,
+        hull_current: hullCurrent,
         structure: 1,
         armor: parseInt(shipInfo.armour) || 0,
         maneuver_drive: parseInt(drives.manoeuvreThrust) || 1,
@@ -237,8 +242,9 @@ const VehicleSheet = ({ vehicleId }: VehicleSheetProps) => {
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <TextField label="Ship's Name" value={shipInfo.name} onChange={value => updateShipInfo("name", value)} />
         <TextField label="Class" value={shipInfo.className} onChange={value => updateShipInfo("className", value)} />
-        <div className="grid grid-cols-2 gap-3">
-          <TextField label="Hull Points" value={shipInfo.hullPoints} onChange={value => updateShipInfo("hullPoints", value)} />
+        <div className="grid grid-cols-3 gap-3">
+          <TextField label="Hull Points (Max)" value={shipInfo.hullPoints} onChange={value => updateShipInfo("hullPoints", value)} />
+          <TextField label="Current Hull" value={shipInfo.currentHullPoints} onChange={value => updateShipInfo("currentHullPoints", value)} />
           <TextField label="Armour" value={shipInfo.armour} onChange={value => updateShipInfo("armour", value)} />
         </div>
         <div className="grid grid-cols-2 gap-3">

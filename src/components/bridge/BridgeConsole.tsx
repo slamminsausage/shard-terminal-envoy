@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { useBridge } from "@/contexts/BridgeContext";
+import { useJumpPlanner } from "@/contexts/JumpPlannerContext";
+import { useCampaign } from "@/contexts/CampaignContext";
 import { TacticalDisplay } from "./TacticalDisplay";
 import { CommunicationsPanel } from "./CommunicationsPanel";
 import { ContactsList } from "./ContactsList";
@@ -27,6 +29,12 @@ export function BridgeConsole() {
     isOnline
   } = useBridge();
 
+  // Navigation data from Jump Planner
+  const { playerLocation, route, selectedWorld } = useJumpPlanner();
+
+  // Vehicle data from Campaign context
+  const { vehicles } = useCampaign();
+
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
   const [showMessageComposer, setShowMessageComposer] = useState(false);
   const [showAddContact, setShowAddContact] = useState(false);
@@ -34,6 +42,26 @@ export function BridgeConsole() {
   const [showScan, setShowScan] = useState(false);
 
   const playerShip = contacts.find(c => c.isPlayerShip);
+
+  // Get linked vehicle data for the player ship
+  const linkedVehicle = playerShip?.vehicleId
+    ? vehicles.find(v => v.id === playerShip.vehicleId)
+    : null;
+
+  // Derive navigation display values from Jump Planner
+  const currentPosition = playerLocation?.worldName || playerLocation?.hex || "UNKNOWN";
+
+  // Get destination from route (last leg in the route array)
+  const destination = route.length > 0
+    ? route[route.length - 1]?.name || route[route.length - 1]?.hex || "---"
+    : undefined;
+
+  // Calculate ETA as number of jumps × 7 days
+  // Route includes start world, so jumps = route.length - 1
+  const jumpCount = route.length > 1 ? route.length - 1 : 0;
+  const eta = jumpCount > 0
+    ? `${jumpCount * 7} DAYS`
+    : undefined;
 
   const handleShipSelect = (contact: Contact) => setSelectedContact(contact);
 
@@ -117,20 +145,20 @@ export function BridgeConsole() {
           <div className="nav-info grid grid-cols-3 bg-[#0d1210] border border-[#1a2420] rounded">
             <div className="p-3 text-center border-r border-[#1a2420]">
               <div className="text-[0.6rem] text-[#446655] tracking-[2px] mb-1">CURRENT POSITION</div>
-              <div className="font-['Orbitron'] font-bold text-[#00ccff] drop-shadow-[0_0_10px_#00ccff]">
-                {bridgeState.currentSystem || "UNKNOWN"}
+              <div className="font-['Orbitron'] font-bold text-[#00ccff] drop-shadow-[0_0_10px_#00ccff] uppercase">
+                {currentPosition}
               </div>
             </div>
             <div className="p-3 text-center border-r border-[#1a2420]">
               <div className="text-[0.6rem] text-[#446655] tracking-[2px] mb-1">DESTINATION</div>
-              <div className="font-['Orbitron'] font-bold text-[#00ccff] drop-shadow-[0_0_10px_#00ccff]">
-                {bridgeState.destination || "---"}
+              <div className="font-['Orbitron'] font-bold text-[#00ccff] drop-shadow-[0_0_10px_#00ccff] uppercase">
+                {destination || "---"}
               </div>
             </div>
             <div className="p-3 text-center">
               <div className="text-[0.6rem] text-[#446655] tracking-[2px] mb-1">ETA</div>
               <div className="font-['Orbitron'] font-bold text-[#00ccff] drop-shadow-[0_0_10px_#00ccff]">
-                {bridgeState.eta || "---"}
+                {eta || "---"}
               </div>
             </div>
           </div>
@@ -157,7 +185,13 @@ export function BridgeConsole() {
             showHidden={false}
           />
 
-          {playerShip && <ShipStatusMini ship={playerShip} />}
+          {playerShip && (
+            <ShipStatusMini
+              ship={playerShip}
+              linkedVehicle={linkedVehicle}
+              alertLevel={bridgeState.alertLevel}
+            />
+          )}
         </div>
       </div>
 
