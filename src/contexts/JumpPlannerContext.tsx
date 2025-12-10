@@ -90,6 +90,10 @@ interface JumpPlannerActions {
 
 interface JumpPlannerContextValue extends JumpPlannerState, JumpPlannerActions {}
 
+// ===== Constants =====
+
+const PLAYER_LOCATION_STORAGE_KEY = 'traveller_player_location';
+
 // ===== Initial State =====
 
 const initialState: JumpPlannerState = {
@@ -138,6 +142,42 @@ export function JumpPlannerProvider({ children }: { children: React.ReactNode })
   useEffect(() => {
     loadAllNotes();
   }, []);
+
+  // Load player location from localStorage on mount
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const saved = localStorage.getItem(PLAYER_LOCATION_STORAGE_KEY);
+        if (saved) {
+          const playerLocation = JSON.parse(saved) as CurrentLocation;
+          if (playerLocation.sector && playerLocation.hex) {
+            setState((prev) => ({ ...prev, playerLocation }));
+          }
+        }
+      } catch (error) {
+        console.error("Failed to load player location from localStorage:", error);
+      }
+    }
+  }, []);
+
+  // Save player location to localStorage when it changes
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      if (state.playerLocation) {
+        try {
+          localStorage.setItem(
+            PLAYER_LOCATION_STORAGE_KEY,
+            JSON.stringify(state.playerLocation)
+          );
+        } catch (error) {
+          console.error("Failed to save player location to localStorage:", error);
+        }
+      } else {
+        // Remove from localStorage if cleared
+        localStorage.removeItem(PLAYER_LOCATION_STORAGE_KEY);
+      }
+    }
+  }, [state.playerLocation]);
 
   // Listen for TravellerMap iframe messages
   useEffect(() => {
