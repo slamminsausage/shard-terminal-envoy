@@ -206,6 +206,17 @@ export function useBridgeState() {
     void init();
   }, [loadBridgeState, loadContacts, loadMessages, loadScans]);
 
+  // Fallback polling every 5s to keep state fresh when realtime is unavailable
+  useEffect(() => {
+    if (!bridgeState.id || bridgeState.id === "local-dev") return;
+    const interval = setInterval(() => {
+      void loadContacts(bridgeState.id);
+      void loadMessages(bridgeState.id);
+      void loadScans(bridgeState.id);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [bridgeState.id, loadContacts, loadMessages, loadScans]);
+
   // =========================================================
   // REAL-TIME SUBSCRIPTIONS
   // =========================================================

@@ -6,6 +6,7 @@ import {
   getWorldData,
   padHex,
   getSectorAbbreviation,
+  getSectorFullName
 } from "@/lib/travellerMapApi";
 import { dbHelpers } from "@/lib/supabase";
 import type {
@@ -145,9 +146,13 @@ export function JumpPlannerProvider({ children }: { children: React.ReactNode })
       if (!data || data.source !== "travellermap") return;
 
       if (data.type === "click" || data.type === "doubleclick") {
-        const { x, y } = data.location || {};
-        if (typeof x === "number" && typeof y === "number") {
-          handleMapClick(x, y);
+        const { sector, hex, x, y } = data.location || {};
+        if (sector && hex) {
+          // Prefer direct sector/hex from TravellerMap event to avoid coordinate jitter
+          void setCurrentLocation(sector, hex);
+        } else if (typeof x === "number" && typeof y === "number") {
+          // Fallback: resolve via coordinates API
+          void handleMapClick(x, y);
         }
       }
     }
@@ -161,30 +166,31 @@ export function JumpPlannerProvider({ children }: { children: React.ReactNode })
   const setCurrentLocation = useCallback(
     async (sector: string, hex: string) => {
       const paddedHex = padHex(hex);
+      const sectorFull = getSectorFullName(sector);
 
       setState((prev) => ({
         ...prev,
-        currentLocation: { sector, hex: paddedHex },
-        mapSector: sector,
+        currentLocation: { sector: sectorFull, hex: paddedHex },
+        mapSector: sectorFull,
         mapHex: paddedHex,
         error: null,
       }));
 
       // Try to get world data for name
       try {
-        const worldData = await getWorldData(sector, paddedHex);
+        const worldData = await getWorldData(sectorFull, paddedHex);
         if (worldData) {
-          const sectorAbbr = getSectorAbbreviation(sector);
+          const sectorAbbr = getSectorAbbreviation(sectorFull);
           setState((prev) => ({
             ...prev,
             currentLocation: {
-              sector,
+              sector: sectorFull,
               sectorAbbr,
               hex: paddedHex,
               worldName: worldData.name,
             },
             selectedWorld: worldData,
-            routeStart: `${sector} ${paddedHex}`,
+            routeStart: `${sectorFull} ${paddedHex}`,
           }));
         }
       } catch (error) {
@@ -201,14 +207,15 @@ export function JumpPlannerProvider({ children }: { children: React.ReactNode })
     async (x: number, y: number) => {
       try {
         const coords = await getCoordinates(x, y);
-        if (coords) {
-          const sector = coords.Sector || state.mapSector;
-          // Build hex from hx and hy, ensuring 4 digits
-          const hx = String(coords.hx || 0).padStart(2, "0");
-          const hy = String(coords.hy || 0).padStart(2, "0");
-          const hex = coords.Hex || padHex(`${hx}${hy}`);
-          await setCurrentLocation(sector, hex);
-        }
+        if (!coords) return;
+
+        const sector = getSectorFullName(coords.Sector || state.mapSector);
+        const hx = String(coords.hx || 0).padStart(2, "0");
+        const hy = String(coords.hy || 0).padStart(2, "0");
+        const hex = coords.Hex || padHex(`${hx}${hy}`);
+        if (!hex) return;
+
+        await setCurrentLocation(sector, hex);
       } catch (error) {
         console.error("Coordinate lookup failed:", error);
         setState((prev) => ({

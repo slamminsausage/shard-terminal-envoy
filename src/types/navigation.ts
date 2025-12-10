@@ -18,9 +18,7 @@ export interface TravellerWorld {
   HexY?: number;
 }
 
-export interface JumpWorldsResponse {
-  Worlds: TravellerWorld[];
-}
+export type JumpWorldsResponse = TravellerWorld[] | { Worlds?: TravellerWorld[] };
 
 export interface RouteWorld {
   Sector: string;
@@ -31,9 +29,7 @@ export interface RouteWorld {
   Distance?: number;
 }
 
-export interface RouteResponse {
-  Route?: RouteWorld[];
-}
+export type RouteResponse = RouteWorld[] | { route?: RouteWorld[]; Route?: RouteWorld[] };
 
 export interface CoordinatesResponse {
   Sector: string;
@@ -49,10 +45,10 @@ export interface CoordinatesResponse {
 
 // Search API response types
 export interface SearchResultWorld {
-  World: string;
+  Name?: string;    // TravellerMap often returns Name
+  World?: string;   // Sometimes World is present
   Sector: string;
   Hex: string;
-  Name?: string;
 }
 
 export interface SearchResultSector {
@@ -87,6 +83,8 @@ export interface TravellerMapMessage {
   location: {
     x: number;
     y: number;
+    sector?: string;
+    hex?: string;
   };
 }
 

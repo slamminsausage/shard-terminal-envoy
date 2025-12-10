@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState } from "react";
 import { useJumpPlanner } from "@/contexts/JumpPlannerContext";
-import { generateMapUrl, padHex, type WorldSearchResult } from "@/lib/travellerMapApi";
+import { generateMapUrl, padHex, getSectorFullName, type WorldSearchResult } from "@/lib/travellerMapApi";
 import { WorldSearchAutocomplete } from "./WorldSearchAutocomplete";
 import { MapPin, Navigation } from "lucide-react";
 
@@ -26,11 +26,13 @@ export function StarMapPanel() {
 
   const handleSearchSelect = async (result: WorldSearchResult) => {
     if (result.type === "world") {
-      setMapLocation(result.sector, result.hex);
-      await setCurrentLocation(result.sector, result.hex);
+      const sectorFull = getSectorFullName(result.sector);
+      setMapLocation(sectorFull, result.hex);
+      await setCurrentLocation(sectorFull, result.hex);
     } else {
       // For sectors/subsectors, just navigate to the center
-      setMapLocation(result.sector, "1620");
+      const sectorFull = getSectorFullName(result.sector);
+      setMapLocation(sectorFull, "1620");
     }
     setSearchValue("");
   };
@@ -49,14 +51,14 @@ export function StarMapPanel() {
 
   // Generate map URL with "You Are Here" marker if player location is set
   const mapUrl = generateMapUrl(mapSector, mapHex, {
-    style: "terminal",
+    style: "poster", // switch back to the original TravellerMap look
     scale: 32,
     yahSector: playerLocation?.sector,
     yahHex: playerLocation?.hex,
   });
 
   return (
-    <div className="star-map-panel flex-1 flex flex-col panel">
+    <div className="star-map-panel flex-1 flex flex-col panel min-w-0">
       <div className="panel-header">
         <span className="panel-title">STAR MAP</span>
         <span className="panel-status">
@@ -66,7 +68,7 @@ export function StarMapPanel() {
         </span>
       </div>
 
-      <div className="panel-content flex flex-col gap-3 p-0">
+      <div className="panel-content flex flex-col gap-3 p-0 min-h-0">
         {/* Search Controls */}
         <div className="px-4 pt-4">
           <WorldSearchAutocomplete
@@ -141,7 +143,7 @@ export function StarMapPanel() {
         )}
 
         {/* Map Iframe */}
-        <div className="flex-1 relative min-h-[400px]">
+        <div className="flex-1 relative min-h-[320px] min-w-0">
           <iframe
             ref={iframeRef}
             src={mapUrl}

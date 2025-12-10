@@ -192,8 +192,9 @@ export async function getJumpWorlds(
 ): Promise<JumpWorld[]> {
   try {
     const paddedHex = padHex(hex);
+    const sectorFull = getSectorFullName(sector);
     const url = new URL("/api/jumpworlds", TRAVELLER_MAP_BASE_URL);
-    url.searchParams.set("sector", sector);
+    url.searchParams.set("sector", sectorFull);
     url.searchParams.set("hex", paddedHex);
     url.searchParams.set("jump", jump.toString());
 
@@ -210,12 +211,13 @@ export async function getJumpWorlds(
     }
 
     const data: JumpWorldsResponse = await response.json();
+    const worlds = Array.isArray(data)
+      ? data
+      : Array.isArray(data.Worlds)
+        ? data.Worlds
+        : [];
 
-    if (!data.Worlds || !Array.isArray(data.Worlds)) {
-      return [];
-    }
-
-    return data.Worlds.map((w) => toJumpWorld(w, sector));
+    return worlds.map((w) => toJumpWorld(w, sectorFull));
   } catch (error) {
     console.error("Failed to fetch jump worlds:", error);
     throw error;
@@ -273,12 +275,15 @@ export async function calculateRoute(
     }
 
     const data: RouteResponse = await response.json();
+    const legs = Array.isArray(data)
+      ? data
+      : Array.isArray(data.route)
+        ? data.route
+        : Array.isArray(data.Route)
+          ? data.Route
+          : [];
 
-    if (!data.Route || !Array.isArray(data.Route)) {
-      return [];
-    }
-
-    return data.Route.map((world) => ({
+    return legs.map((world) => ({
       sector: world.Sector || "",
       sectorAbbr: getSectorAbbreviation(world.Sector || ""),
       hex: padHex(world.Hex || ""),
@@ -337,31 +342,53 @@ export async function getWorldData(
 ): Promise<JumpWorld | null> {
   try {
     const paddedHex = padHex(hex);
+    const sectorFull = getSectorFullName(sector);
 
-    // Use jumpworlds API with jump=0 to get just this world
-    const url = new URL("/api/jumpworlds", TRAVELLER_MAP_BASE_URL);
-    url.searchParams.set("sector", sector);
-    url.searchParams.set("hex", paddedHex);
-    url.searchParams.set("jump", "0");
-
-    const response = await fetch(url.toString(), {
-      headers: {
-        Accept: "application/json",
-      },
+    // Prefer the data URL for a single world
+    const dataUrl = new URL(`/data/${encodeURIComponent(sectorFull)}/${paddedHex}`, TRAVELLER_MAP_BASE_URL);
+    let response = await fetch(dataUrl.toString(), {
+      headers: { Accept: "application/json" },
     });
 
+    // Fallback to jumpworlds if needed
     if (!response.ok) {
-      if (response.status === 404) {
+      const fallbackUrl = new URL("/api/jumpworlds", TRAVELLER_MAP_BASE_URL);
+      fallbackUrl.searchParams.set("sector", sectorFull);
+      fallbackUrl.searchParams.set("hex", paddedHex);
+      fallbackUrl.searchParams.set("jump", "0");
+      response = await fetch(fallbackUrl.toString(), { headers: { Accept: "application/json" } });
+      if (!response.ok) {
+        if (response.status === 404) return null;
+        console.error("World data API error:", response.status);
         return null;
       }
-      console.error("World data API error:", response.status);
-      return null;
     }
 
-    const data: JumpWorldsResponse = await response.json();
+    const data = await response.json();
 
-    if (data.Worlds && data.Worlds.length > 0) {
-      return toJumpWorld(data.Worlds[0], sector);
+    // jumpworlds shape or bare array
+    if (Array.isArray(data) && data.length > 0) {
+      return toJumpWorld(data[0], sectorFull);
+    }
+    if (data.Worlds && Array.isArray(data.Worlds) && data.Worlds.length > 0) {
+      return toJumpWorld(data.Worlds[0], sectorFull);
+    }
+
+    // data URL shape (single world)
+    if (data && data.Sector && data.Hex) {
+      return toJumpWorld(
+        {
+          Name: data.Name || data.World,
+          World: data.World,
+          Sector: data.Sector,
+          Hex: data.Hex,
+          UWP: data.UWP,
+          Zone: data.Zone,
+          Allegiance: data.Allegiance,
+          Remarks: data.Remarks,
+        } as any,
+        sectorFull
+      );
     }
 
     return null;
@@ -387,6 +414,7 @@ export function generateMapUrl(
     yahHex?: string;
   } = {}
 ): string {
+  const sectorFull = getSectorFullName(sector);
   const {
     style = "terminal",
     scale = 32,
@@ -399,7 +427,7 @@ export function generateMapUrl(
   const paddedHex = padHex(hex);
 
   // Use the /go/ URL format which properly handles sector+hex navigation
-  const url = new URL(`/go/${encodeURIComponent(sector)}/${paddedHex}`, TRAVELLER_MAP_BASE_URL);
+  const url = new URL(`/go/${encodeURIComponent(sectorFull)}/${paddedHex}`, TRAVELLER_MAP_BASE_URL);
   url.searchParams.set("style", style);
   url.searchParams.set("scale", scale.toString());
 

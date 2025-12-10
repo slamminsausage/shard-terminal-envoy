@@ -27,15 +27,15 @@ export function WorldInfoPanel() {
   const uwp = selectedWorld ? parseUWP(selectedWorld.uwp) : null;
 
   return (
-    <div className="world-info-panel flex flex-col gap-3">
+    <div className="world-info-panel flex flex-col gap-3 min-w-0">
       {/* World Data */}
       {selectedWorld && (
-        <div className="panel">
+        <div className="panel overflow-hidden">
           <div className="panel-header">
             <span className="panel-title">WORLD DATA</span>
             <span className="panel-status">{selectedWorld.hex}</span>
           </div>
-          <div className="panel-content space-y-3">
+          <div className="panel-content space-y-3 max-h-[70vh] overflow-y-auto pr-2">
             {/* World Name & Basic Info */}
             <div className="text-center border-b border-[#1a2420] pb-3">
               <h3 className="text-xl font-['Orbitron'] font-bold text-primary drop-shadow-[0_0_10px_rgba(0,255,0,0.4)]">
