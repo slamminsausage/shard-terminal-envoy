@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, useEffect } from "react";
+import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from "react";
 import {
   getJumpWorlds,
   calculateRoute,
@@ -137,46 +137,49 @@ export function useJumpPlanner(): JumpPlannerContextValue {
 
 export function JumpPlannerProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<JumpPlannerState>(initialState);
+  const initialLoadComplete = useRef(false);
 
   // Load all notes on mount
   useEffect(() => {
     loadAllNotes();
   }, []);
 
-  // Load player location from localStorage on mount
+  // Load player location from Supabase (with localStorage fallback) on mount
   useEffect(() => {
-    if (typeof window !== "undefined") {
+    async function loadPlayerLocation() {
       try {
-        const saved = localStorage.getItem(PLAYER_LOCATION_STORAGE_KEY);
-        if (saved) {
-          const playerLocation = JSON.parse(saved) as CurrentLocation;
-          if (playerLocation.sector && playerLocation.hex) {
-            setState((prev) => ({ ...prev, playerLocation }));
-          }
+        const playerLocation = await dbHelpers.getGameSetting<CurrentLocation>(PLAYER_LOCATION_STORAGE_KEY);
+        if (playerLocation?.sector && playerLocation?.hex) {
+          setState((prev) => ({ ...prev, playerLocation }));
         }
       } catch (error) {
-        console.error("Failed to load player location from localStorage:", error);
+        console.error("Failed to load player location:", error);
+      } finally {
+        initialLoadComplete.current = true;
       }
     }
+
+    loadPlayerLocation();
   }, []);
 
-  // Save player location to localStorage when it changes
+  // Save player location to Supabase (with localStorage backup) when it changes
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      if (state.playerLocation) {
-        try {
-          localStorage.setItem(
-            PLAYER_LOCATION_STORAGE_KEY,
-            JSON.stringify(state.playerLocation)
-          );
-        } catch (error) {
-          console.error("Failed to save player location to localStorage:", error);
+    // Skip the initial save - only save after user interactions
+    if (!initialLoadComplete.current) return;
+
+    async function savePlayerLocation() {
+      try {
+        if (state.playerLocation) {
+          await dbHelpers.setGameSetting(PLAYER_LOCATION_STORAGE_KEY, state.playerLocation);
+        } else {
+          await dbHelpers.deleteGameSetting(PLAYER_LOCATION_STORAGE_KEY);
         }
-      } else {
-        // Remove from localStorage if cleared
-        localStorage.removeItem(PLAYER_LOCATION_STORAGE_KEY);
+      } catch (error) {
+        console.error("Failed to save player location:", error);
       }
     }
+
+    savePlayerLocation();
   }, [state.playerLocation]);
 
   // Listen for TravellerMap iframe messages

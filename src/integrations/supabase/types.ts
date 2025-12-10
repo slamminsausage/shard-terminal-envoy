@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      game_settings: {
+        Row: {
+          id: string
+          setting_key: string
+          setting_value: Json
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          setting_key: string
+          setting_value?: Json
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          setting_key?: string
+          setting_value?: Json
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       characters: {
         Row: {
           age: number | null
