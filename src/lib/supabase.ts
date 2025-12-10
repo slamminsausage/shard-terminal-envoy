@@ -105,6 +105,35 @@ const deleteLocalWorldNote = (sector: string, hex: string): boolean => {
   return filtered.length < notes.length;
 };
 
+// Game settings localStorage helpers
+const LOCAL_GAME_SETTINGS_PREFIX = 'game_setting_';
+
+const getLocalGameSetting = <T>(key: string): T | null => {
+  try {
+    const raw = localStorage.getItem(`${LOCAL_GAME_SETTINGS_PREFIX}${key}`);
+    if (!raw) return null;
+    return JSON.parse(raw) as T;
+  } catch {
+    return null;
+  }
+};
+
+const saveLocalGameSetting = <T>(key: string, value: T): void => {
+  try {
+    localStorage.setItem(`${LOCAL_GAME_SETTINGS_PREFIX}${key}`, JSON.stringify(value));
+  } catch (error) {
+    console.error('Failed to save game setting to localStorage:', error);
+  }
+};
+
+const removeLocalGameSetting = (key: string): void => {
+  try {
+    localStorage.removeItem(`${LOCAL_GAME_SETTINGS_PREFIX}${key}`);
+  } catch (error) {
+    console.error('Failed to remove game setting from localStorage:', error);
+  }
+};
+
 // Database helper functions
 export const dbHelpers = {
   // Characters
@@ -453,6 +482,93 @@ export const dbHelpers = {
     } catch (error) {
       console.error('Failed to fetch sector world notes:', error);
       return [];
+    }
+  },
+
+  // Game Settings - key-value store for persistent campaign state
+  async getGameSetting<T>(key: string): Promise<T | null> {
+    if (supabaseDisabled) {
+      return getLocalGameSetting<T>(key);
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('game_settings')
+        .select('setting_value')
+        .eq('setting_key', key)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Database error:', error);
+        // Fall back to localStorage on error
+        return getLocalGameSetting<T>(key);
+      }
+
+      return data?.setting_value as T | null;
+    } catch (error) {
+      console.error('Failed to fetch game setting:', error);
+      // Fall back to localStorage on error
+      return getLocalGameSetting<T>(key);
+    }
+  },
+
+  async setGameSetting<T>(key: string, value: T): Promise<boolean> {
+    // Always save to localStorage as backup
+    saveLocalGameSetting(key, value);
+
+    if (supabaseDisabled) {
+      return true;
+    }
+
+    try {
+      const now = new Date().toISOString();
+
+      // Use upsert to insert or update
+      const { error } = await supabase
+        .from('game_settings')
+        .upsert({
+          setting_key: key,
+          setting_value: value as any,
+          updated_at: now,
+        }, {
+          onConflict: 'setting_key',
+        });
+
+      if (error) {
+        console.error('Database error:', error);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Failed to save game setting:', error);
+      return false;
+    }
+  },
+
+  async deleteGameSetting(key: string): Promise<boolean> {
+    // Remove from localStorage
+    removeLocalGameSetting(key);
+
+    if (supabaseDisabled) {
+      return true;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('game_settings')
+        .delete()
+        .eq('setting_key', key);
+
+      if (error) {
+        console.error('Database error:', error);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Failed to delete game setting:', error);
+      return false;
     }
   }
 }
