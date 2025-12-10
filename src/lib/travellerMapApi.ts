@@ -22,7 +22,8 @@ const TRAVELLER_MAP_BASE_URL = "https://travellermap.com";
 /**
  * Pad hex to 4 digits (e.g., "222" -> "0222")
  */
-export function padHex(hex: string): string {
+export function padHex(hex: string | undefined | null): string {
+  if (!hex) return "0000";
   const cleaned = hex.replace(/\D/g, "");
   return cleaned.padStart(4, "0");
 }
@@ -309,6 +310,8 @@ export async function getCoordinates(
     url.searchParams.set("x", x.toString());
     url.searchParams.set("y", y.toString());
 
+    console.log("Fetching coordinates for:", { x, y, url: url.toString() });
+
     const response = await fetch(url.toString(), {
       headers: {
         Accept: "application/json",
@@ -322,10 +325,19 @@ export async function getCoordinates(
     }
 
     const data = await response.json();
+    console.log("Coordinates API response:", data);
+
+    // Validate we got sector data
+    if (!data.Sector) {
+      console.error("Coordinates API returned data without Sector:", data);
+      throw new Error("Incomplete coordinate data - missing sector information");
+    }
+
     // Ensure hex is padded
     if (data.hx !== undefined && data.hy !== undefined) {
       data.Hex = padHex(`${data.hx}${data.hy}`);
     }
+
     return data;
   } catch (error) {
     console.error("Failed to get coordinates:", error);
@@ -603,6 +615,11 @@ export async function searchWorlds(
       if (results.length >= maxResults) break;
 
       if (item.World) {
+        // Skip results with missing critical data
+        if (!item.World.Sector || !item.World.Hex) {
+          console.warn("Skipping world with incomplete data:", item.World);
+          continue;
+        }
         results.push({
           name: item.World.World || item.World.Name || "Unknown",
           sector: item.World.Sector,

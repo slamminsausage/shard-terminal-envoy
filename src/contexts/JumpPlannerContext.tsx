@@ -112,8 +112,8 @@ const initialState: JumpPlannerState = {
   allNotes: [],
   isLoadingNote: false,
   isSavingNote: false,
-  mapSector: "Spinward Marches",
-  mapHex: "1910",
+  mapSector: "Trojan Reach",
+  mapHex: "2223",
   error: null,
 };
 
@@ -207,13 +207,30 @@ export function JumpPlannerProvider({ children }: { children: React.ReactNode })
     async (x: number, y: number) => {
       try {
         const coords = await getCoordinates(x, y);
-        if (!coords) return;
+        if (!coords) {
+          console.warn("No coordinates returned from API");
+          return;
+        }
 
-        const sector = getSectorFullName(coords.Sector || state.mapSector);
+        // Require sector data - don't fallback to default
+        if (!coords.Sector) {
+          console.error("Coordinates API returned no sector data");
+          setState((prev) => ({
+            ...prev,
+            error: "Could not determine sector for map location",
+          }));
+          return;
+        }
+
+        const sector = getSectorFullName(coords.Sector);
         const hx = String(coords.hx || 0).padStart(2, "0");
         const hy = String(coords.hy || 0).padStart(2, "0");
         const hex = coords.Hex || padHex(`${hx}${hy}`);
-        if (!hex) return;
+
+        if (!hex) {
+          console.error("Could not determine hex from coordinates");
+          return;
+        }
 
         await setCurrentLocation(sector, hex);
       } catch (error) {
@@ -224,7 +241,7 @@ export function JumpPlannerProvider({ children }: { children: React.ReactNode })
         }));
       }
     },
-    [state.mapSector, setCurrentLocation]
+    [setCurrentLocation]
   );
 
   // ===== Jump World Actions =====
