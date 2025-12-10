@@ -325,17 +325,19 @@ export async function getCoordinates(
     }
 
     const data = await response.json();
-    console.log("Coordinates API response:", data);
+    console.log("Coordinates API response:", JSON.stringify(data, null, 2));
 
-    // Validate we got sector data
-    if (!data.Sector) {
-      console.error("Coordinates API returned data without Sector:", data);
-      throw new Error("Incomplete coordinate data - missing sector information");
-    }
-
-    // Ensure hex is padded
+    // Ensure hex is padded from hx/hy coordinates
     if (data.hx !== undefined && data.hy !== undefined) {
       data.Hex = padHex(`${data.hx}${data.hy}`);
+    }
+
+    // TravellerMap might return sector in different fields, try multiple options
+    if (!data.Sector && data.sector) {
+      data.Sector = data.sector;
+    }
+    if (!data.Sector && data.SectorName) {
+      data.Sector = data.SectorName;
     }
 
     return data;
@@ -616,14 +618,26 @@ export async function searchWorlds(
 
       if (item.World) {
         // Skip results with missing critical data
-        if (!item.World.Sector || !item.World.Hex) {
-          console.warn("Skipping world with incomplete data:", item.World);
+        if (!item.World.Sector) {
+          console.warn("Skipping world with incomplete sector data:", item.World);
           continue;
         }
+
+        // Get hex from Hex field or construct from HexX/HexY
+        let hex = item.World.Hex;
+        if (!hex && item.World.HexX !== undefined && item.World.HexY !== undefined) {
+          hex = `${String(item.World.HexX).padStart(2, '0')}${String(item.World.HexY).padStart(2, '0')}`;
+        }
+
+        if (!hex) {
+          console.warn("Skipping world with incomplete hex data:", item.World);
+          continue;
+        }
+
         results.push({
           name: item.World.World || item.World.Name || "Unknown",
           sector: item.World.Sector,
-          hex: padHex(item.World.Hex),
+          hex: padHex(hex),
           type: "world",
         });
       } else if (item.Sector) {
