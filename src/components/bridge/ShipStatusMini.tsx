@@ -14,9 +14,10 @@ export function ShipStatusMini({ ship, linkedVehicle, alertLevel }: ShipStatusMi
   const [jDriveStatus, setJDriveStatus] = useState<"CHARGING" | "ONLINE">("CHARGING");
   const [showHullModal, setShowHullModal] = useState(false);
 
-  // Hull percentage: prefer linked vehicle data, fallback to contact data
+  // Hull percentage: prefer linked vehicle data (from specifications), fallback to contact data
   const hullMax = linkedVehicle?.hull ?? ship.hullMax ?? 0;
-  const hullCurrent = linkedVehicle?.hull_current ?? ship.hullCurrent ?? hullMax;
+  const specs = linkedVehicle?.specifications as { hullCurrent?: number } | undefined;
+  const hullCurrent = specs?.hullCurrent ?? ship.hullCurrent ?? hullMax;
   const hullPercent = hullMax > 0 ? Math.round((hullCurrent / hullMax) * 100) : 100;
 
   // Armor value from linked vehicle (displayed instead of shields)

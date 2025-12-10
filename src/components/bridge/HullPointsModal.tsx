@@ -11,7 +11,12 @@ interface HullPointsModalProps {
 
 export function HullPointsModal({ vehicle, onClose }: HullPointsModalProps) {
   const { saveVehicle } = useCampaign();
-  const [currentHull, setCurrentHull] = useState(vehicle.hull_current ?? vehicle.hull ?? 0);
+
+  // Read hullCurrent from specifications
+  const specs = vehicle.specifications as { hullCurrent?: number; [key: string]: any } | undefined;
+  const initialHull = specs?.hullCurrent ?? vehicle.hull ?? 0;
+
+  const [currentHull, setCurrentHull] = useState(initialHull);
   const [isSaving, setIsSaving] = useState(false);
 
   const maxHull = vehicle.hull ?? 0;
@@ -33,9 +38,15 @@ export function HullPointsModal({ vehicle, onClose }: HullPointsModalProps) {
   const handleSave = async () => {
     setIsSaving(true);
     try {
+      // Save hullCurrent in specifications (not as a top-level field)
+      const updatedSpecs = {
+        ...(specs || {}),
+        hullCurrent: currentHull,
+      };
+
       await saveVehicle({
         ...vehicle,
-        hull_current: currentHull,
+        specifications: updatedSpecs,
       });
       onClose();
     } catch (error) {
