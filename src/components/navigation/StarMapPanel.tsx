@@ -146,6 +146,8 @@ export function StarMapPanel() {
         <div className="flex-1 relative min-h-[320px] min-w-0">
           <iframe
             ref={iframeRef}
+            // Key forces iframe to fully reload when sector/hex changes
+            key={`${mapSector}-${mapHex}`}
             src={mapUrl}
             className="absolute inset-0 w-full h-full border-t border-[#1a2420]"
             title="TravellerMap"
