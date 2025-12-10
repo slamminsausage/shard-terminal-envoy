@@ -11,6 +11,7 @@ interface HullPointsModalProps {
 
 export function HullPointsModal({ vehicle, onClose }: HullPointsModalProps) {
   const { saveVehicle } = useCampaign();
+
   const [currentHull, setCurrentHull] = useState(vehicle.hull_current ?? vehicle.hull ?? 0);
   const [isSaving, setIsSaving] = useState(false);
 

@@ -113,11 +113,17 @@ const VehicleSheet = ({ vehicleId }: VehicleSheetProps) => {
       const vehicle = vehicles.find(v => v.id === vehicleId);
       if (vehicle) {
         setCurrentVehicleId(vehicle.id);
+        // Get hullCurrent from database field (with fallback to specifications for backward compat)
+        const specs = vehicle.specifications && typeof vehicle.specifications === 'object'
+          ? vehicle.specifications as any
+          : {};
+        const hullCurrentValue = vehicle.hull_current ?? specs.hullCurrent ?? vehicle.hull;
+
         setShipInfo({
           name: vehicle.name || "",
           className: vehicle.class_type || "",
           hullPoints: vehicle.hull?.toString() || "",
-          currentHullPoints: vehicle.hull_current?.toString() || vehicle.hull?.toString() || "",
+          currentHullPoints: hullCurrentValue?.toString() || vehicle.hull?.toString() || "",
           armour: vehicle.armor?.toString() || "",
           powerPoints: vehicle.power_plant?.toString() || "",
           softwareBandwidth: vehicle.computer_rating?.toString() || "",
@@ -127,16 +133,13 @@ const VehicleSheet = ({ vehicleId }: VehicleSheetProps) => {
           salaries: "",
           maintenanceCost: vehicle.maintenance_cost?.toString() || ""
         });
-        
-        if (vehicle.specifications && typeof vehicle.specifications === 'object') {
-          const specs = vehicle.specifications as any;
-          if (specs.software) setSoftwarePackages(specs.software);
-          if (specs.systems) setSystems(specs.systems);
-          if (specs.sensors) setSensors(specs.sensors);
-          if (specs.powerRequirements) setPowerRequirements(specs.powerRequirements);
-          if (specs.cargo) setCargo(specs.cargo);
-          if (specs.criticalHits) setCriticalHits(specs.criticalHits);
-        }
+
+        if (specs.software) setSoftwarePackages(specs.software);
+        if (specs.systems) setSystems(specs.systems);
+        if (specs.sensors) setSensors(specs.sensors);
+        if (specs.powerRequirements) setPowerRequirements(specs.powerRequirements);
+        if (specs.cargo) setCargo(specs.cargo);
+        if (specs.criticalHits) setCriticalHits(specs.criticalHits);
         
         setDrives({
           manoeuvreThrust: vehicle.maneuver_drive?.toString() || "",
@@ -213,7 +216,7 @@ const VehicleSheet = ({ vehicleId }: VehicleSheetProps) => {
           sensors: sensors,
           powerRequirements: powerRequirements,
           cargo: cargo,
-          criticalHits: criticalHits
+          criticalHits: criticalHits,
         },
       };
 
