@@ -168,6 +168,46 @@ export function getSectorFullName(abbr: string): string {
 }
 
 /**
+ * Get sector name from numeric sector coordinates (sx, sy)
+ * Uses the Metadata API to look up sector info
+ */
+export async function getSectorNameFromCoords(
+  sx: number,
+  sy: number
+): Promise<string | null> {
+  try {
+    const url = new URL("/api/metadata", TRAVELLER_MAP_BASE_URL);
+    url.searchParams.set("sx", sx.toString());
+    url.searchParams.set("sy", sy.toString());
+
+    const response = await fetch(url.toString(), {
+      headers: {
+        Accept: "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      console.error("Metadata API error:", response.status);
+      return null;
+    }
+
+    const data = await response.json();
+
+    // The Metadata API returns sector info with Names array
+    // Names[0].Text contains the primary sector name
+    if (data.Names && Array.isArray(data.Names) && data.Names.length > 0) {
+      return data.Names[0].Text || null;
+    }
+
+    // Fallback to other possible field names
+    return data.Name || data.Sector || data.SectorName || null;
+  } catch (error) {
+    console.error("Failed to get sector name from coordinates:", error);
+    return null;
+  }
+}
+
+/**
  * Converts TravellerMap API world to simplified JumpWorld
  */
 function toJumpWorld(world: TravellerWorld, defaultSector?: string): JumpWorld {
@@ -300,6 +340,9 @@ export async function calculateRoute(
 
 /**
  * Convert map-space x,y coordinates to sector + hex
+ *
+ * The Coordinates API returns sx, sy (numeric sector coords) and hx, hy (hex coords)
+ * but NOT the sector name. We need to look up the sector name via Metadata API.
  */
 export async function getCoordinates(
   x: number,
@@ -327,17 +370,27 @@ export async function getCoordinates(
     const data = await response.json();
     console.log("Coordinates API response:", JSON.stringify(data, null, 2));
 
-    // Ensure hex is padded from hx/hy coordinates
+    // Construct hex from hx/hy coordinates
+    // hx and hy are separate numbers (e.g., hx=19, hy=10 → "1910")
     if (data.hx !== undefined && data.hy !== undefined) {
-      data.Hex = padHex(`${data.hx}${data.hy}`);
+      // Hex format: XXYY where XX is column (hx) and YY is row (hy)
+      const hxPadded = String(data.hx).padStart(2, "0");
+      const hyPadded = String(data.hy).padStart(2, "0");
+      data.Hex = `${hxPadded}${hyPadded}`;
     }
 
-    // TravellerMap might return sector in different fields, try multiple options
-    if (!data.Sector && data.sector) {
-      data.Sector = data.sector;
-    }
-    if (!data.Sector && data.SectorName) {
-      data.Sector = data.SectorName;
+    // The Coordinates API does NOT return sector name when called with x/y
+    // It only returns sx, sy (numeric sector coordinates)
+    // We need to look up the sector name via the Metadata API
+    if (!data.Sector && data.sx !== undefined && data.sy !== undefined) {
+      console.log("Looking up sector name for sx:", data.sx, "sy:", data.sy);
+      const sectorName = await getSectorNameFromCoords(data.sx, data.sy);
+      if (sectorName) {
+        data.Sector = sectorName;
+        console.log("Resolved sector name:", sectorName);
+      } else {
+        console.error("Could not resolve sector name from coordinates sx:", data.sx, "sy:", data.sy);
+      }
     }
 
     return data;

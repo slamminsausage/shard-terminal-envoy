@@ -32,13 +32,18 @@ export interface RouteWorld {
 export type RouteResponse = RouteWorld[] | { route?: RouteWorld[]; Route?: RouteWorld[] };
 
 export interface CoordinatesResponse {
+  // Sector name - resolved via Metadata API lookup from sx/sy
   Sector?: string;
   SectorAbbreviation?: string;
+  // Hex in XXYY format, constructed from hx/hy
   Hex?: string;
+  // World-space coordinates (input)
   x: number;
   y: number;
+  // Sector coordinates (numeric)
   sx: number;
   sy: number;
+  // Hex coordinates (numeric, separate column/row)
   hx: number;
   hy: number;
 }
