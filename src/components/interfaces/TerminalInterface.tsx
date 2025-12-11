@@ -135,6 +135,17 @@ export default function TerminalInterface() {
   // Character skills for roll checks
   const { getSkillInfo } = useCharacterSkills();
 
+  // Reset password auth state when selected log changes
+  // This prevents stale attempt counts from carrying over between logs
+  useEffect(() => {
+    logPasswordAuth.reset();
+  }, [session.selectedLog?.title]);
+
+  // Reset terminal password auth state when active terminal changes
+  useEffect(() => {
+    terminalPasswordAuth.reset();
+  }, [session.activeTerminal?.code]);
+
   // Initialize on mount
   useEffect(() => {
     if (hasInitialized.current) return;
@@ -528,6 +539,7 @@ export default function TerminalInterface() {
         onKeyDown={handleInitInputKeyDown}
         onTerminalSelect={(code) => {
           session.setInputCode(code);
+          handleAccessCode(code);
         }}
       />
       )}

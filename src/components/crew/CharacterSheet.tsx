@@ -269,6 +269,7 @@ const CharacterSheet = ({ characterId }: CharacterSheetProps = {}) => {
   const [skillRollCharacteristic, setSkillRollCharacteristic] = useState<CharacteristicKey>("intellect");
   const [skillRollModifier, setSkillRollModifier] = useState("0");
   const [lastRollLog, setLastRollLog] = useState<string>("");
+  const [skills, setSkills] = useState<Record<string, SkillState>>(baseSkillState);
 
   // Load character data if editing an existing character
   useEffect(() => {
@@ -303,7 +304,6 @@ const CharacterSheet = ({ characterId }: CharacterSheetProps = {}) => {
       }
     }
   }, [currentCharacterId, characters]);
-  const [skills, setSkills] = useState<Record<string, SkillState>>(baseSkillState);
 
   const jackState = skills["jack_of_all_trades"];
 
