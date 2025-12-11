@@ -193,15 +193,21 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
   const saveVehicle = async (vehicleData: Partial<Vehicle>): Promise<Vehicle | null> => {
     try {
       const savedVehicle = await dbHelpers.saveVehicle(vehicleData);
-      
+
       // Update local state
       if (vehicleData.id) {
-        setVehicles(prev => 
+        setVehicles(prev =>
           prev.map(vehicle => vehicle.id === savedVehicle.id ? savedVehicle as Vehicle : vehicle)
         );
       } else {
         setVehicles(prev => [...prev, savedVehicle as Vehicle]);
       }
+
+      // Also save to localStorage as backup
+      const updatedVehicles = vehicleData.id
+        ? vehicles.map(vehicle => vehicle.id === savedVehicle.id ? savedVehicle as Vehicle : vehicle)
+        : [...vehicles, savedVehicle as Vehicle];
+      localStorage.setItem('traveller_vehicles', JSON.stringify(updatedVehicles));
 
       toast({
         title: "Vehicle Saved",
@@ -211,12 +217,35 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
       return savedVehicle as Vehicle;
     } catch (error) {
       console.error('Failed to save vehicle:', error);
+
+      // Fallback to localStorage
+      const vehicleWithId = {
+        ...vehicleData,
+        id: vehicleData.id || `vehicle_${Date.now()}`,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        player_id: 'campaign'
+      };
+
+      let updatedVehicles;
+      if (vehicleData.id) {
+        updatedVehicles = vehicles.map(vehicle =>
+          vehicle.id === vehicleData.id ? vehicleWithId as Vehicle : vehicle
+        );
+        setVehicles(updatedVehicles);
+      } else {
+        updatedVehicles = [...vehicles, vehicleWithId as Vehicle];
+        setVehicles(updatedVehicles);
+      }
+
+      localStorage.setItem('traveller_vehicles', JSON.stringify(updatedVehicles));
+
       toast({
-        title: "Save Error",
-        description: "Failed to save vehicle. Please try again.",
-        variant: "destructive",
+        title: "Vehicle Saved Locally",
+        description: `${vehicleWithId.name} saved to local storage (database unavailable).`,
       });
-      return null;
+
+      return vehicleWithId as Vehicle;
     }
   };
 
