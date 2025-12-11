@@ -77,17 +77,17 @@ export function TacticalDisplay({
   };
 
   return (
-    <div className="tactical-display flex-1 flex flex-col bg-[#0d1210] border border-[#1a2420] rounded overflow-hidden">
+    <div className="tactical-display flex-1 flex flex-col bg-[#0d1210] border border-[#1a2420] rounded overflow-hidden max-h-[600px]">
       <div className="panel-header flex justify-between items-center px-4 py-2 bg-[#00ff8808] border-b border-[#1a2420]">
         <span className="font-['Orbitron'] text-xs tracking-[3px] text-[#446655]">NAVIGATION</span>
         <span className="font-['Orbitron'] text-xs tracking-[2px] text-[#00ff88]">TACTICAL VIEW</span>
       </div>
 
       <div
-        className="flex-1 flex items-center justify-center p-4"
+        className="flex-1 flex items-center justify-center p-4 overflow-hidden"
         style={{ background: "radial-gradient(ellipse at center, rgba(0, 255, 136, 0.02) 0%, transparent 70%)" }}
       >
-        <svg viewBox="0 0 500 500" className="w-full h-full max-h-[500px]">
+        <svg viewBox="0 0 500 500" className="w-full h-full max-w-[500px] max-h-[500px]">
           <circle cx="250" cy="250" r="60" fill="none" stroke="#1a2420" strokeWidth="1" strokeDasharray="4 4" />
           <circle cx="250" cy="250" r="120" fill="none" stroke="#1a2420" strokeWidth="1" strokeDasharray="4 4" />
           <circle cx="250" cy="250" r="180" fill="none" stroke="#1a2420" strokeWidth="1" strokeDasharray="4 4" />

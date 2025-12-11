@@ -33,7 +33,7 @@ export function CommunicationsPanel({
 
   if (selectedMessage) {
     return (
-      <div className="comms-panel flex-1 flex flex-col bg-[#0d1210] border border-[#1a2420] rounded overflow-hidden min-h-[200px]">
+      <div className="comms-panel flex flex-col bg-[#0d1210] border border-[#1a2420] rounded overflow-hidden max-h-[400px]">
         <div className="panel-header flex justify-between items-center px-4 py-2 bg-[#00ff8808] border-b border-[#1a2420]">
           <span className="font-['Orbitron'] text-xs tracking-[3px] text-[#446655]">TRANSMISSION</span>
           <button
@@ -77,7 +77,7 @@ export function CommunicationsPanel({
   }
 
   return (
-    <div className="comms-panel flex-1 flex flex-col bg-[#0d1210] border border-[#1a2420] rounded overflow-hidden min-h-[200px]">
+    <div className="comms-panel flex flex-col bg-[#0d1210] border border-[#1a2420] rounded overflow-hidden max-h-[400px]">
       <div className="panel-header flex justify-between items-center px-4 py-2 bg-[#00ff8808] border-b border-[#1a2420]">
         <span className="font-['Orbitron'] text-xs tracking-[3px] text-[#446655]">COMMUNICATIONS</span>
         <div className="flex items-center gap-3">
@@ -91,7 +91,7 @@ export function CommunicationsPanel({
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-2">
+      <div className="overflow-y-auto p-2 max-h-[280px]">
         {messages.length === 0 ? (
           <div className="text-center text-[#446655] text-sm py-8">NO TRANSMISSIONS</div>
         ) : (

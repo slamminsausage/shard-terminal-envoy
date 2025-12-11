@@ -138,7 +138,7 @@ export function BridgeConsole() {
   };
 
   return (
-    <div className="bridge-console h-full flex flex-col bg-[#0a0e0c] text-[#00ff88] font-mono crt-container border border-primary/30 rounded shadow-[0_0_32px_rgba(0,255,0,0.12)]">
+    <div className="bridge-console h-screen max-h-screen flex flex-col bg-[#0a0e0c] text-[#00ff88] font-mono crt-container border border-primary/30 rounded shadow-[0_0_32px_rgba(0,255,0,0.12)] overflow-hidden">
       {/* Header */}
       <header className="bridge-header flex justify-between items-center px-6 py-3 border-b border-[#1a2420] bg-gradient-to-b from-[#00ff8808] to-transparent">
         <div className="ship-identity">
@@ -195,9 +195,9 @@ export function BridgeConsole() {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 grid grid-cols-[1fr_340px] gap-3 p-3 min-h-0">
+      <div className="flex-1 grid grid-cols-[1fr_340px] gap-3 p-3 min-h-0 overflow-hidden">
         {/* Left: Tactical Display */}
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-3 min-h-0 overflow-hidden">
           <TacticalDisplay
             contacts={contacts}
             selectedContact={selectedContact}
@@ -230,7 +230,7 @@ export function BridgeConsole() {
         </div>
 
         {/* Right: Sidebar */}
-        <div className="flex flex-col gap-3 min-h-0">
+        <div className="flex flex-col gap-3 min-h-0 overflow-hidden">
           <CommunicationsPanel
             messages={messages}
             unreadCount={unreadCount}
