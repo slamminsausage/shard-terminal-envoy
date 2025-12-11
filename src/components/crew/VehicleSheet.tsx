@@ -131,8 +131,8 @@ const VehicleSheet = ({ vehicleId }: VehicleSheetProps) => {
           softwareBandwidth: vehicle.computer_rating?.toString() || "",
           fuelCost: vehicle.cost?.toString() || "",
           mortgage: vehicle.maintenance_cost?.toString() || "",
-          lifeSupport: "",
-          salaries: "",
+          lifeSupport: vehicle.life_support?.toString() || "",
+          salaries: vehicle.salaries?.toString() || "",
           maintenanceCost: vehicle.maintenance_cost?.toString() || ""
         });
 
@@ -142,7 +142,18 @@ const VehicleSheet = ({ vehicleId }: VehicleSheetProps) => {
         if (specs.powerRequirements) setPowerRequirements(specs.powerRequirements);
         if (specs.cargo) setCargo(specs.cargo);
         if (specs.criticalHits) setCriticalHits(specs.criticalHits);
-        
+
+        // Load weapons from database
+        if (vehicle.weapons && Array.isArray(vehicle.weapons)) {
+          setWeapons(vehicle.weapons as WeaponEntry[]);
+        } else if (Array.isArray(vehicle.weapons)) {
+          // Handle if weapons is stored as object with array values
+          const weaponsArray = Object.values(vehicle.weapons);
+          if (weaponsArray.length > 0 && typeof weaponsArray[0] === 'object') {
+            setWeapons(weaponsArray as WeaponEntry[]);
+          }
+        }
+
         setDrives({
           manoeuvreThrust: vehicle.maneuver_drive?.toString() || "",
           reactionThrust: vehicle.acceleration?.toString() || "",
@@ -211,6 +222,8 @@ const VehicleSheet = ({ vehicleId }: VehicleSheetProps) => {
         sensors: 1,
         communications: 1,
         maintenance_cost: parseInt(shipInfo.maintenanceCost) || 0,
+        life_support: parseInt(shipInfo.lifeSupport) || 0,
+        salaries: parseInt(shipInfo.salaries) || 0,
         crew_requirements: {},
         specifications: {
           software: softwarePackages,
