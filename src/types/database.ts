@@ -29,6 +29,8 @@ export interface Character {
   intellect: number;
   education: number;
   social_standing: number;
+  psionics?: number;
+  initiative?: number;
   
   // Derived characteristics
   melee_dmg: number;
