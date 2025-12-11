@@ -4,6 +4,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { useCampaign } from "@/contexts/CampaignContext";
 import { Vehicle } from "@/types/database";
+import { rollDamageExpression } from "@/lib/dice";
 
 interface PowerRequirementEntry {
   label: string;
@@ -100,6 +101,7 @@ const VehicleSheet = ({ vehicleId }: VehicleSheetProps) => {
   const [powerRequirements, setPowerRequirements] = useState(POWER_REQUIREMENT_FIELDS);
   const [weapons, setWeapons] = useState(DEFAULT_WEAPONS);
   const [cargo, setCargo] = useState(DEFAULT_CARGO);
+  const [lastWeaponRollLog, setLastWeaponRollLog] = useState<string>("");
   const [criticalHits, setCriticalHits] = useState(() =>
     CRITICAL_TRACKS.map(track => ({
       label: track.label,
@@ -240,34 +242,58 @@ const VehicleSheet = ({ vehicleId }: VehicleSheetProps) => {
     );
   };
 
+  const handleWeaponDamageRoll = (index: number) => {
+    const weapon = weapons[index];
+    if (!weapon || !weapon.damage) return;
+    const result = rollDamageExpression(weapon.damage, 0);
+    setLastWeaponRollLog(
+      `Damage Roll: ${weapon.weapon || "Weapon"} ${weapon.damage} -> ${result.total} (dice ${
+        result.diceResults.join("+") || "0"
+      }${result.modifier ? ` ${result.modifier >= 0 ? "+" : ""}${result.modifier}` : ""})`
+    );
+  };
+
+  const addCargoSlot = () => {
+    setCargo(prev => [...prev, { description: "", tons: "" }]);
+  };
+
   return (
-    <div className="space-y-8 text-sm max-h-[80vh] overflow-y-auto pb-20">
-      <section className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <TextField label="Ship's Name" value={shipInfo.name} onChange={value => updateShipInfo("name", value)} />
-        <TextField label="Class" value={shipInfo.className} onChange={value => updateShipInfo("className", value)} />
-        <div className="grid grid-cols-3 gap-3">
-          <TextField label="Hull Points (Max)" value={shipInfo.hullPoints} onChange={value => updateShipInfo("hullPoints", value)} />
-          <TextField label="Current Hull" value={shipInfo.currentHullPoints} onChange={value => updateShipInfo("currentHullPoints", value)} />
-          <TextField label="Armour" value={shipInfo.armour} onChange={value => updateShipInfo("armour", value)} />
+    <div className="space-y-6 text-sm max-h-[80vh] overflow-y-auto pb-20 font-mono">
+      <section className="panel">
+        <div className="panel-header">
+          <span className="panel-title">SHIP INFORMATION</span>
         </div>
-        <div className="grid grid-cols-2 gap-3">
-          <TextField label="Power Points" value={shipInfo.powerPoints} onChange={value => updateShipInfo("powerPoints", value)} />
-          <TextField label="Software Bandwidth" value={shipInfo.softwareBandwidth} onChange={value => updateShipInfo("softwareBandwidth", value)} />
+        <div className="panel-content grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <TextField label="Ship's Name" value={shipInfo.name} onChange={value => updateShipInfo("name", value)} />
+          <TextField label="Class" value={shipInfo.className} onChange={value => updateShipInfo("className", value)} />
+          <div className="grid grid-cols-3 gap-3">
+            <TextField label="Hull Points (Max)" value={shipInfo.hullPoints} onChange={value => updateShipInfo("hullPoints", value)} />
+            <TextField label="Current Hull" value={shipInfo.currentHullPoints} onChange={value => updateShipInfo("currentHullPoints", value)} />
+            <TextField label="Armour" value={shipInfo.armour} onChange={value => updateShipInfo("armour", value)} />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <TextField label="Power Points" value={shipInfo.powerPoints} onChange={value => updateShipInfo("powerPoints", value)} />
+            <TextField label="Software Bandwidth" value={shipInfo.softwareBandwidth} onChange={value => updateShipInfo("softwareBandwidth", value)} />
+          </div>
         </div>
       </section>
 
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="border border-primary/30 bg-card/40 p-4 space-y-3">
-          <h2 className="text-xs font-semibold uppercase tracking-wide">Ship's Computer</h2>
-          <div className="space-y-2">
+        <div className="panel">
+          <div className="panel-header">
+            <span className="panel-title">SHIP'S COMPUTER</span>
+          </div>
+          <div className="panel-content space-y-2">
             {softwarePackages.map((entry, index) => (
-              <Input key={index} value={entry} onChange={event => updateSoftware(index, event.target.value)} className="h-8" placeholder="Software Package" />
+              <Input key={index} value={entry} onChange={event => updateSoftware(index, event.target.value)} className="terminal-input h-8" placeholder="Software Package" />
             ))}
           </div>
         </div>
-        <div className="border border-primary/30 bg-card/40 p-4 space-y-3">
-          <h2 className="text-xs font-semibold uppercase tracking-wide">Power Requirement</h2>
-          <div className="space-y-2">
+        <div className="panel">
+          <div className="panel-header">
+            <span className="panel-title">POWER REQUIREMENT</span>
+          </div>
+          <div className="panel-content space-y-2">
             {powerRequirements.map((entry, index) => (
               <div key={entry.label} className="flex items-center justify-between gap-3">
                 <span className="text-xs uppercase tracking-wide">{entry.label}</span>
@@ -276,44 +302,63 @@ const VehicleSheet = ({ vehicleId }: VehicleSheetProps) => {
             ))}
           </div>
         </div>
-        <div className="border border-primary/30 bg-card/40 p-4 space-y-3">
-          <h2 className="text-xs font-semibold uppercase tracking-wide">Sensors</h2>
-          {sensors.map((entry, index) => (
-            <div key={index} className="grid grid-cols-[2fr_1fr] gap-2">
-              <Input value={entry.type} onChange={event => updateSensor(index, "type", event.target.value)} placeholder="Type" className="h-8" />
-              <Input value={entry.dm} onChange={event => updateSensor(index, "dm", event.target.value)} placeholder="DM" className="h-8" />
-            </div>
-          ))}
-          <Button variant="outline" size="sm" onClick={() => setSensors(prev => [...prev, { type: "", dm: "" }])}>Add Sensor</Button>
+        <div className="panel">
+          <div className="panel-header">
+            <span className="panel-title">SENSORS</span>
+          </div>
+          <div className="panel-content space-y-2">
+            {sensors.map((entry, index) => (
+              <div key={index} className="grid grid-cols-[2fr_1fr] gap-2">
+                <Input value={entry.type} onChange={event => updateSensor(index, "type", event.target.value)} placeholder="Type" className="terminal-input h-8" />
+                <Input value={entry.dm} onChange={event => updateSensor(index, "dm", event.target.value)} placeholder="DM" className="terminal-input h-8" />
+              </div>
+            ))}
+            <button className="terminal-btn w-full" onClick={() => setSensors(prev => [...prev, { type: "", dm: "" }])}>Add Sensor</button>
+          </div>
         </div>
       </section>
 
       <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="border border-primary/30 bg-card/40 p-4 space-y-3">
-          <h2 className="text-xs font-semibold uppercase tracking-wide">Systems</h2>
-          {systems.map((entry, index) => (
-            <Input key={index} value={entry} onChange={event => updateSystem(index, event.target.value)} placeholder="System" className="h-8" />
-          ))}
+        <div className="panel">
+          <div className="panel-header">
+            <span className="panel-title">SYSTEMS</span>
+          </div>
+          <div className="panel-content space-y-2">
+            {systems.map((entry, index) => (
+              <Input key={index} value={entry} onChange={event => updateSystem(index, event.target.value)} placeholder="System" className="terminal-input h-8" />
+            ))}
+          </div>
         </div>
-        <div className="border border-primary/30 bg-card/40 p-4 space-y-3">
-          <h2 className="text-xs font-semibold uppercase tracking-wide">Drives</h2>
+        <div className="panel">
+          <div className="panel-header">
+            <span className="panel-title">DRIVES</span>
+          </div>
+          <div className="panel-content space-y-3">
           <TextField label="Manoeuvre Drive Thrust" value={drives.manoeuvreThrust} onChange={value => setDrives(prev => ({ ...prev, manoeuvreThrust: value }))} />
           <TextField label="Reaction Drive Thrust" value={drives.reactionThrust} onChange={value => setDrives(prev => ({ ...prev, reactionThrust: value }))} />
           <TextField label="Jump Drive Jump" value={drives.jumpDriveJump} onChange={value => setDrives(prev => ({ ...prev, jumpDriveJump: value }))} />
+          </div>
         </div>
       </section>
 
       <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="border border-primary/30 bg-card/40 p-4 space-y-3">
-          <h2 className="text-xs font-semibold uppercase tracking-wide">Costs</h2>
-          <TextField label="Fuel (Full Tank) Cost" value={shipInfo.fuelCost} onChange={value => updateShipInfo("fuelCost", value)} />
-          <TextField label="Mortgage" value={shipInfo.mortgage} onChange={value => updateShipInfo("mortgage", value)} />
-          <TextField label="Life Support" value={shipInfo.lifeSupport} onChange={value => updateShipInfo("lifeSupport", value)} />
-          <TextField label="Salaries" value={shipInfo.salaries} onChange={value => updateShipInfo("salaries", value)} />
-          <TextField label="Cost per Maintenance Period" value={shipInfo.maintenanceCost} onChange={value => updateShipInfo("maintenanceCost", value)} />
+        <div className="panel">
+          <div className="panel-header">
+            <span className="panel-title">COSTS</span>
+          </div>
+          <div className="panel-content space-y-3">
+            <TextField label="Fuel (Full Tank) Cost" value={shipInfo.fuelCost} onChange={value => updateShipInfo("fuelCost", value)} />
+            <TextField label="Mortgage" value={shipInfo.mortgage} onChange={value => updateShipInfo("mortgage", value)} />
+            <TextField label="Life Support" value={shipInfo.lifeSupport} onChange={value => updateShipInfo("lifeSupport", value)} />
+            <TextField label="Salaries" value={shipInfo.salaries} onChange={value => updateShipInfo("salaries", value)} />
+            <TextField label="Cost per Maintenance Period" value={shipInfo.maintenanceCost} onChange={value => updateShipInfo("maintenanceCost", value)} />
+          </div>
         </div>
-        <div className="border border-primary/30 bg-card/40 p-4 space-y-3">
-          <h2 className="text-xs font-semibold uppercase tracking-wide">Critical Hits</h2>
+        <div className="panel">
+          <div className="panel-header">
+            <span className="panel-title">CRITICAL HITS</span>
+          </div>
+          <div className="panel-content">
           <div className="grid grid-cols-2 gap-3">
             {criticalHits.map((track, trackIndex) => (
               <div key={track.label} className="space-y-1">
@@ -330,18 +375,24 @@ const VehicleSheet = ({ vehicleId }: VehicleSheetProps) => {
               </div>
             ))}
           </div>
+          </div>
         </div>
       </section>
 
-      <section className="border border-primary/30 bg-card/30">
-        <div className="p-4 border-b border-primary/20">
-          <h2 className="text-xs font-semibold uppercase tracking-wide">Weapons</h2>
+      <section className="panel">
+        <div className="panel-header">
+          <span className="panel-title">WEAPONS</span>
+          {lastWeaponRollLog && (
+            <div className="text-[11px] font-mono text-primary/80 mt-2">
+              {lastWeaponRollLog}
+            </div>
+          )}
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-xs">
             <thead className="bg-primary/20 text-primary-foreground">
               <tr>
-                {['Weapon', 'Mount', 'TL', 'Range', 'Damage', 'Ammunition', 'Traits'].map(header => (
+                {['Weapon', 'Mount', 'TL', 'Range', 'Damage', 'Ammunition', 'Traits', 'Roll'].map(header => (
                   <th key={header} className="px-2 py-1 text-left uppercase tracking-wide font-semibold">
                     {header}
                   </th>
@@ -360,6 +411,16 @@ const VehicleSheet = ({ vehicleId }: VehicleSheetProps) => {
                       />
                     </td>
                   ))}
+                  <td className="p-1">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-8 w-full"
+                      onClick={() => handleWeaponDamageRoll(index)}
+                    >
+                      Roll
+                    </Button>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -367,33 +428,38 @@ const VehicleSheet = ({ vehicleId }: VehicleSheetProps) => {
         </div>
       </section>
 
-      <section className="border border-primary/30 bg-card/30">
-        <div className="p-4 border-b border-primary/20">
-          <h2 className="text-xs font-semibold uppercase tracking-wide">Cargo Hold Content</h2>
+      <section className="panel">
+        <div className="panel-header">
+          <span className="panel-title">CARGO HOLD CONTENT</span>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
+        <div className="panel-content">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {cargo.map((entry, index) => (
             <div key={index} className="flex items-center gap-3">
               <Input
                 value={entry.description}
                 onChange={event => updateCargoRow(index, "description", event.target.value)}
                 placeholder="Description"
-                className="h-8 flex-1"
+                className="terminal-input h-8 flex-1"
               />
               <Input
                 value={entry.tons}
                 onChange={event => updateCargoRow(index, "tons", event.target.value)}
                 placeholder="Tons"
-                className="h-8 w-24 text-center"
+                className="terminal-input h-8 w-24 text-center"
               />
             </div>
           ))}
+          </div>
+          <button className="terminal-btn w-full mt-4" onClick={addCargoSlot}>
+            Add Cargo Slot
+          </button>
         </div>
       </section>
-      
+
       <div className="flex justify-end gap-3">
-        <Button variant="outline">Reset Sheet</Button>
-        <Button onClick={handleSaveVehicle}>Save Changes</Button>
+        <Button variant="outline" className="terminal-btn">Reset Sheet</Button>
+        <Button onClick={handleSaveVehicle} className="terminal-btn primary">Save Changes</Button>
       </div>
     </div>
   );
@@ -407,9 +473,9 @@ interface TextFieldProps {
 }
 
 const TextField = ({ label, value, onChange, className = "" }: TextFieldProps) => (
-  <label className={`flex flex-col gap-1 text-xs uppercase tracking-wide ${className}`}>
+  <label className={`flex flex-col gap-1 text-xs uppercase tracking-wide text-primary/80 ${className}`}>
     <span>{label}</span>
-    <Input value={value} onChange={event => onChange(event.target.value)} className="h-8" />
+    <Input value={value} onChange={event => onChange(event.target.value)} className="terminal-input h-8" />
   </label>
 );
 

@@ -74,13 +74,13 @@ export default function VehicleInterface() {
   if (showVehicleSheet) {
     return (
       <div className="p-6 space-y-6">
-        <div className="flex justify-between items-center">
-          <h2 className="text-xl font-mono tracking-[0.2em] text-primary">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-['Orbitron'] tracking-[0.2em] text-primary drop-shadow-[0_0_10px_rgba(0,255,0,0.4)]">
             VEHICLE SHEET INTERFACE
           </h2>
-          <Button variant="outline" onClick={handleBackToVehicleInterface}>
+          <button className="terminal-btn" onClick={handleBackToVehicleInterface}>
             Back to Vehicle Management
-          </Button>
+          </button>
         </div>
         <VehicleSheet vehicleId={selectedVehicleId || undefined} />
       </div>
@@ -89,12 +89,12 @@ export default function VehicleInterface() {
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-xl font-mono tracking-[0.2em] text-primary">VEHICLE MANAGEMENT SYSTEM</h2>
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-xl font-['Orbitron'] tracking-[0.2em] text-primary drop-shadow-[0_0_10px_rgba(0,255,0,0.4)]">VEHICLE MANAGEMENT SYSTEM</h2>
       </div>
 
-      <Card className="bg-background/60 border-primary/30 shadow-[0_0_24px_rgba(0,255,0,0.12)]">
-        <CardContent className="p-6">
+      <div className="panel">
+        <div className="panel-content">
           <div className="terminal terminal-flicker h-[200px] overflow-auto mb-4 border border-primary/30 rounded">
             <div className="font-mono text-sm whitespace-pre-wrap p-4 text-primary">
               {displayText}
@@ -108,11 +108,11 @@ export default function VehicleInterface() {
             </TabsList>
             
             <TabsContent value="hangar" className="space-y-4">
-              <Card className="bg-black/60 border-primary/30 shadow-[0_0_18px_rgba(0,255,0,0.08)]">
-                <CardHeader>
-                  <CardTitle className="font-mono text-sm text-primary">REGISTERED SPACECRAFT</CardTitle>
-                </CardHeader>
-                <CardContent>
+              <div className="panel">
+                <div className="panel-header">
+                  <span className="panel-title">REGISTERED SPACECRAFT</span>
+                </div>
+                <div className="panel-content">
                   <div className="space-y-4">
                     {/* Show existing vehicles */}
                     {vehicles.filter(v => v.vehicle_type === 'Ship').map((vehicle) => (
@@ -192,20 +192,20 @@ export default function VehicleInterface() {
                       </div>
                     )}
                     
-                    <Button variant="outline" className="w-full" onClick={() => handleRegisterNewVehicle("Ship")}>
+                    <button className="terminal-btn w-full" onClick={() => handleRegisterNewVehicle("Ship")}>
                       Register New Spacecraft
-                    </Button>
+                    </button>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             </TabsContent>
-            
+
             <TabsContent value="vehicles" className="space-y-4">
-              <Card className="bg-black/60 border-primary/30 shadow-[0_0_18px_rgba(0,255,0,0.08)]">
-                <CardHeader>
-                  <CardTitle className="font-mono text-sm text-primary">GROUND VEHICLES</CardTitle>
-                </CardHeader>
-                <CardContent>
+              <div className="panel">
+                <div className="panel-header">
+                  <span className="panel-title">GROUND VEHICLES</span>
+                </div>
+                <div className="panel-content">
                   <div className="space-y-4">
                     {/* Show existing ground vehicles */}
                     {vehicles.filter(v => v.vehicle_type === 'Ground Vehicle').map((vehicle) => (
@@ -284,21 +284,20 @@ export default function VehicleInterface() {
                       </div>
                     )}
                     
-                    <Button 
-                      variant="outline" 
-                      className="w-full"
+                    <button
+                      className="terminal-btn w-full"
                       onClick={() => handleRegisterNewVehicle("Ground Vehicle")}
                     >
                       Register New Vehicle
-                    </Button>
+                    </button>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             </TabsContent>
-            
+
           </Tabs>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Crew Assignment Dialog */}
       {selectedVehicleForCrew && (
