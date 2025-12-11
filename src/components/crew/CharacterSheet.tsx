@@ -279,10 +279,10 @@ const CharacterSheet = ({ characterId }: CharacterSheetProps = {}) => {
       if (character) {
         setHeader({
           name: character.name,
-          rads: "",
+          rads: character.rads || "",
           age: character.age.toString(),
           species: character.species,
-          speciesTraits: "",
+          speciesTraits: character.species_traits || "",
           homeworld: character.homeworld
         });
         // Initiative defaults to dexterity if not set in the database
@@ -329,6 +329,22 @@ const CharacterSheet = ({ characterId }: CharacterSheetProps = {}) => {
         }
 
         if (typeof character.notes === "string") setNotes(character.notes);
+
+        // Load finances
+        setFinances({
+          pension: character.pension?.toString() || "",
+          debt: character.debt?.toString() || "",
+          cashOnHand: character.cash_on_hand?.toString() || "",
+          shipPayments: character.ship_payments?.toString() || "",
+          livingCost: character.living_cost?.toString() || ""
+        });
+
+        // Load study period
+        setStudyPeriod({
+          skill: character.study_skill || "",
+          weeks: character.study_weeks || "",
+          complete: character.study_complete || ""
+        });
       }
     }
   }, [currentCharacterId, characters]);
@@ -374,6 +390,9 @@ const CharacterSheet = ({ characterId }: CharacterSheetProps = {}) => {
         gender: "", // Add if needed
         age: parseInt(header.age) || 0,
         homeworld: header.homeworld,
+        rads: header.rads,
+        species_traits: header.speciesTraits,
+        notes: notes,
         career: "", // Add if needed
         rank: "", // Add if needed
         strength: parseInt(characteristics.strength.total) || 7,
@@ -391,8 +410,15 @@ const CharacterSheet = ({ characterId }: CharacterSheetProps = {}) => {
         terms_served: 0,
         skills: skills,
         equipment: equipment,
-        credits: 0,
-        debt: 0,
+        credits: parseInt(finances.cashOnHand) || 0,
+        debt: parseInt(finances.debt) || 0,
+        pension: parseInt(finances.pension) || 0,
+        ship_payments: parseInt(finances.shipPayments) || 0,
+        living_cost: parseInt(finances.livingCost) || 0,
+        cash_on_hand: parseInt(finances.cashOnHand) || 0,
+        study_skill: studyPeriod.skill,
+        study_weeks: studyPeriod.weeks,
+        study_complete: studyPeriod.complete,
         allies: "",
         contacts: "",
         rivals: "",
