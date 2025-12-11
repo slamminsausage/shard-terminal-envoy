@@ -124,6 +124,8 @@ export interface Vehicle {
   
   // Maintenance and operations
   maintenance_cost: number;
+  life_support?: number;
+  salaries?: number;
   crew_requirements: Record<string, any>;
   
   // Additional specifications (stored as JSONB)
