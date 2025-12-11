@@ -96,11 +96,11 @@ export function BridgeConsole() {
       <header className="bridge-header flex justify-between items-center px-6 py-3 border-b border-[#1a2420] bg-gradient-to-b from-[#00ff8808] to-transparent">
         <div className="ship-identity">
           <span className="font-['Orbitron'] font-black text-xl tracking-[4px] drop-shadow-[0_0_20px_#00ff88]">
-            {playerShip?.name || "NO SHIP SELECTED"}
+            {linkedVehicle?.name || playerShip?.name || "NO SHIP SELECTED"}
           </span>
-          {playerShip?.shipClass && (
+          {(linkedVehicle?.class_type || playerShip?.shipClass) && (
             <span className="text-[#446655] text-sm ml-4">
-              {playerShip.shipClass} - {playerShip.tonnage ?? "?"}t
+              {linkedVehicle?.class_type || playerShip?.shipClass} - {linkedVehicle?.tonnage || playerShip?.tonnage || "?"}t
             </span>
           )}
         </div>
