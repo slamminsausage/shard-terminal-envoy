@@ -285,6 +285,10 @@ const CharacterSheet = ({ characterId }: CharacterSheetProps = {}) => {
           speciesTraits: "",
           homeworld: character.homeworld
         });
+        // Initiative defaults to dexterity if not set in the database
+        const initiativeValue = character.initiative ?? character.dexterity;
+        const psionicsValue = character.psionics ?? 0;
+
         setCharacteristics({
           strength: { total: character.strength.toString(), current: character.strength.toString() },
           dexterity: { total: character.dexterity.toString(), current: character.dexterity.toString() },
@@ -292,8 +296,8 @@ const CharacterSheet = ({ characterId }: CharacterSheetProps = {}) => {
           intellect: { total: character.intellect.toString(), current: character.intellect.toString() },
           education: { total: character.education.toString(), current: character.education.toString() },
           social: { total: character.social_standing.toString(), current: character.social_standing.toString() },
-          psionics: { total: "", current: "" },
-          initiative: { total: "", current: "" }
+          psionics: { total: psionicsValue.toString(), current: psionicsValue.toString() },
+          initiative: { total: initiativeValue.toString(), current: initiativeValue.toString() }
         });
         // Load other character data safely with array validation
         if (character.weapons && Array.isArray(character.weapons)) {
@@ -378,6 +382,8 @@ const CharacterSheet = ({ characterId }: CharacterSheetProps = {}) => {
         intellect: parseInt(characteristics.intellect.total) || 7,
         education: parseInt(characteristics.education.total) || 7,
         social_standing: parseInt(characteristics.social.total) || 7,
+        psionics: parseInt(characteristics.psionics.total) || 0,
+        initiative: parseInt(characteristics.initiative.total) || 7,
         melee_dmg: 0,
         ranged_dmg: 0,
         lifeblood: 0,
@@ -579,9 +585,6 @@ const baseSkills = skillDefinitions.filter(def => !def.parentKey && !def.isCusto
 const customGroups = skillDefinitions.filter(def => def.isCustomGroup);
 
   const getCharacteristicDMDisplay = (key: CharacteristicKey, value: CharacteristicValue) => {
-    if (key === "psionics") {
-      return value.current || value.total || "0";
-    }
     const currentVal = Number(value.current || value.total);
     const dm = getCharacteristicDMTable(currentVal || 0);
     return dm >= 0 ? `+${dm}` : dm.toString();
