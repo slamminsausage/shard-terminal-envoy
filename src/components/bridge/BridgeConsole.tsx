@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useBridge } from "@/contexts/BridgeContext";
 import { useJumpPlanner } from "@/contexts/JumpPlannerContext";
 import { useCampaign } from "@/contexts/CampaignContext";
@@ -22,10 +22,12 @@ export function BridgeConsole() {
     addContact,
     removeContact,
     updateContactStatus,
+    updateContactFields,
     sendMessage,
     markMessageRead,
     updateAlertLevel,
     runScan,
+    setPlayerShip,
     isOnline
   } = useBridge();
 
@@ -40,6 +42,7 @@ export function BridgeConsole() {
   const [showAddContact, setShowAddContact] = useState(false);
   const [selectedMessage, setSelectedMessage] = useState<BridgeMessage | null>(null);
   const [showScan, setShowScan] = useState(false);
+  const [selectedVehicleId, setSelectedVehicleId] = useState<string>("");
 
   const playerShip = contacts.find(c => c.isPlayerShip);
 
@@ -47,6 +50,13 @@ export function BridgeConsole() {
   const linkedVehicle = playerShip?.vehicleId
     ? vehicles.find(v => v.id === playerShip.vehicleId)
     : null;
+
+  // Sync selected vehicle ID with current player ship
+  useEffect(() => {
+    if (playerShip?.vehicleId) {
+      setSelectedVehicleId(playerShip.vehicleId);
+    }
+  }, [playerShip?.vehicleId]);
 
   // Derive navigation display values from Jump Planner
   const currentPosition = playerLocation?.worldName || playerLocation?.hex || "UNKNOWN";
@@ -90,6 +100,43 @@ export function BridgeConsole() {
     await updateAlertLevel(level);
   };
 
+  const handleShipChange = async (vehicleId: string) => {
+    setSelectedVehicleId(vehicleId);
+    if (!vehicleId) return;
+
+    // Find existing contact for this vehicle or create one
+    const existing = contacts.find(c => c.vehicleId === vehicleId);
+    let contactId = existing?.id;
+
+    if (!existing) {
+      const vehicle = vehicles.find(v => v.id === vehicleId);
+      if (!vehicle) return;
+
+      // Create new contact for this vehicle, positioned at center (0,0)
+      const created = await addContact({
+        name: vehicle.name,
+        shipClass: vehicle.class_type ?? vehicle.vehicle_type ?? "Ship",
+        tonnage: vehicle.tonnage ?? undefined,
+        status: "friendly",
+        hexQ: 0,
+        hexR: 0,
+        facing: 0,
+        hullCurrent: vehicle.hull_current ?? vehicle.hull ?? undefined,
+        hullMax: vehicle.hull ?? undefined,
+        isPlayerShip: true,
+        vehicleId
+      });
+      contactId = created?.id;
+    } else {
+      // Update existing contact to be player ship
+      await updateContactFields(existing.id, { isPlayerShip: true, status: "friendly", vehicleId });
+    }
+
+    if (contactId) {
+      await setPlayerShip(contactId, vehicleId);
+    }
+  };
+
   return (
     <div className="bridge-console h-full flex flex-col bg-[#0a0e0c] text-[#00ff88] font-mono crt-container border border-primary/30 rounded shadow-[0_0_32px_rgba(0,255,0,0.12)]">
       {/* Header */}
@@ -123,7 +170,25 @@ export function BridgeConsole() {
           </div>
         </div>
       </header>
-      <div className="px-6 pb-2 flex justify-end">
+      <div className="px-6 pb-2 flex justify-between items-center">
+        {/* Ship Selector */}
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-[#446655] tracking-[2px]">ACTIVE SHIP:</span>
+          <select
+            className="bg-[#0d1210] border border-[#1a2420] px-3 py-1 text-xs font-mono text-[#00ff88] rounded focus:outline-none focus:border-[#00ff88] transition-colors"
+            value={playerShip?.vehicleId || selectedVehicleId}
+            onChange={(e) => handleShipChange(e.target.value)}
+          >
+            <option value="">Select ship...</option>
+            {vehicles
+              .filter(v => v.vehicle_type === "Ship" || v.vehicle_type === "Ship " || v.vehicle_type === "Spaceship")
+              .map(v => (
+                <option key={v.id} value={v.id}>
+                  {v.name} ({v.class_type || "Ship"})
+                </option>
+              ))}
+          </select>
+        </div>
         <span className={`text-xs font-mono px-3 py-1 rounded border ${isOnline ? "border-[#00aa55] text-[#00ff88]" : "border-[#ff4455] text-[#ff8899]"}`}>
           {isOnline ? "LIVE (Supabase)" : "OFFLINE (local fallback)"}
         </span>
