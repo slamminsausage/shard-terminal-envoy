@@ -21,6 +21,9 @@ export interface Character {
   career: string;
   rank: string;
   homeworld: string;
+  rads?: string;
+  species_traits?: string;
+  notes?: string;
   
   // Characteristics - matching database schema
   strength: number;
@@ -40,14 +43,23 @@ export interface Character {
   
   // Career details
   terms_served: number;
-  
+
   // Skills (stored as JSONB)
   skills: Record<string, any>;
+
+  // Study tracking
+  study_skill?: string;
+  study_weeks?: string;
+  study_complete?: string;
   
   // Equipment and finances
   equipment: Record<string, any>;
   credits: number;
   debt: number;
+  pension?: number;
+  ship_payments?: number;
+  living_cost?: number;
+  cash_on_hand?: number;
   
   // Personal details
   allies: string;
