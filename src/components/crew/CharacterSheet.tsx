@@ -269,6 +269,7 @@ const CharacterSheet = ({ characterId }: CharacterSheetProps = {}) => {
   const [skillRollCharacteristic, setSkillRollCharacteristic] = useState<CharacteristicKey>("intellect");
   const [skillRollModifier, setSkillRollModifier] = useState("0");
   const [lastRollLog, setLastRollLog] = useState<string>("");
+  const [lastWeaponRollLog, setLastWeaponRollLog] = useState<string>("");
   const [skills, setSkills] = useState<Record<string, SkillState>>(baseSkillState);
 
   // Load character data if editing an existing character
@@ -294,12 +295,35 @@ const CharacterSheet = ({ characterId }: CharacterSheetProps = {}) => {
           psionics: { total: "", current: "" },
           initiative: { total: "", current: "" }
         });
-        // Load other character data safely
-        if (character.weapons) setWeapons(character.weapons as any);
-        if (character.armor) setArmourRows(character.armor as any);
-        if (character.equipment) setEquipment(character.equipment as any);
-        if (character.augments) setAugments(character.augments as any);
-        if (character.skills) setSkills(character.skills as any);
+        // Load other character data safely with array validation
+        if (character.weapons && Array.isArray(character.weapons)) {
+          setWeapons(character.weapons as WeaponRow[]);
+        } else {
+          setWeapons(initialWeapons);
+        }
+
+        if (character.armor && Array.isArray(character.armor)) {
+          setArmourRows(character.armor as ArmourRow[]);
+        } else {
+          setArmourRows(initialArmourRows);
+        }
+
+        if (character.equipment && Array.isArray(character.equipment)) {
+          setEquipment(character.equipment as EquipmentRow[]);
+        } else {
+          setEquipment(initialEquipment);
+        }
+
+        if (character.augments && Array.isArray(character.augments)) {
+          setAugments(character.augments as AugmentRow[]);
+        } else {
+          setAugments(initialAugments);
+        }
+
+        if (character.skills && typeof character.skills === 'object') {
+          setSkills(character.skills as Record<string, SkillState>);
+        }
+
         if (typeof character.notes === "string") setNotes(character.notes);
       }
     }
@@ -438,7 +462,7 @@ const CharacterSheet = ({ characterId }: CharacterSheetProps = {}) => {
     const charKey = weaponCharMods[index] as CharacteristicKey | "none";
     const charDM = charKey && charKey !== "none" ? resolveCharacteristicDM(charKey) : 0;
     const result = rollDamageExpression(weapon.damage || "0", charDM);
-    setLastRollLog(
+    setLastWeaponRollLog(
       `Damage Roll: ${weapon.weapon || "Weapon"} ${weapon.damage || ""} -> ${result.total} (dice ${
         result.diceResults.join("+") || "0"
       } ${result.modifier ? `${result.modifier >= 0 ? "+" : ""}${result.modifier}` : ""} ${
@@ -590,8 +614,12 @@ const customGroups = skillDefinitions.filter(def => def.isCustomGroup);
   }, [baseSkills, skills]);
 
   return (
-    <div className="space-y-10 text-sm max-h-[80vh] overflow-y-auto">
-      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div className="space-y-6 text-sm max-h-[80vh] overflow-y-auto font-mono">
+      <section className="panel">
+        <div className="panel-header">
+          <span className="panel-title">CHARACTER PROFILE</span>
+        </div>
+        <div className="panel-content grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <TextField label="Name" value={header.name} onChange={value => handleHeaderChange("name", value)} />
         <TextField label="Rads" value={header.rads} onChange={value => handleHeaderChange("rads", value)} />
         <TextField label="Age" value={header.age} onChange={value => handleHeaderChange("age", value)} />
@@ -608,11 +636,14 @@ const customGroups = skillDefinitions.filter(def => def.isCustomGroup);
           onChange={value => handleHeaderChange("homeworld", value)}
           className="md:col-span-3"
         />
+        </div>
       </section>
 
-      <section>
-        <h2 className="text-xs font-semibold uppercase tracking-wide mb-3">Characteristics</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <section className="panel">
+        <div className="panel-header">
+          <span className="panel-title">CHARACTERISTICS</span>
+        </div>
+        <div className="panel-content grid grid-cols-2 md:grid-cols-4 gap-4">
           {characteristicKeys.map(key => {
             const value = characteristics[key];
             return (
@@ -641,45 +672,11 @@ const customGroups = skillDefinitions.filter(def => def.isCustomGroup);
         </div>
       </section>
 
-      <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="border border-primary/30 bg-card/40 p-4 space-y-3">
-          <h3 className="text-xs font-semibold uppercase tracking-wide">Armour</h3>
-          <Table
-            headers={["Type", "RAD", "Protection", "KG", "Options", "Total"]}
-            fields={["type", "rad", "protection", "kg", "options", "total"]}
-            values={armourRows}
-            onChange={updateArmourRow}
-          />
-        </div>
-        <div className="border border-primary/30 bg-card/40 p-4 space-y-3">
-          <h3 className="text-xs font-semibold uppercase tracking-wide">Finances</h3>
-          <div className="space-y-2">
-            <TextField label="Pension" value={finances.pension} onChange={value => setFinances(prev => ({ ...prev, pension: value }))} compact />
-            <TextField label="Debt" value={finances.debt} onChange={value => setFinances(prev => ({ ...prev, debt: value }))} compact />
-            <TextField label="Cash on Hand" value={finances.cashOnHand} onChange={value => setFinances(prev => ({ ...prev, cashOnHand: value }))} compact />
-            <TextField label="Monthly Ship Payments" value={finances.shipPayments} onChange={value => setFinances(prev => ({ ...prev, shipPayments: value }))} compact />
-            <TextField label="Living Cost" value={finances.livingCost} onChange={value => setFinances(prev => ({ ...prev, livingCost: value }))} compact />
-          </div>
-        </div>
-        <div className="border border-primary/30 bg-card/40 p-4 space-y-4">
-          <h3 className="text-xs font-semibold uppercase tracking-wide">Study Period</h3>
-          <div className="space-y-2">
-            <TextField label="Training in Skill" value={studyPeriod.skill} onChange={value => setStudyPeriod(prev => ({ ...prev, skill: value }))} compact />
-            <TextField label="Weeks" value={studyPeriod.weeks} onChange={value => setStudyPeriod(prev => ({ ...prev, weeks: value }))} compact />
-            <TextField label="Study Periods Complete" value={studyPeriod.complete} onChange={value => setStudyPeriod(prev => ({ ...prev, complete: value }))} compact />
-          </div>
-          <div>
-            <h4 className="text-xs font-semibold uppercase tracking-wide mb-1">Allies, Contacts, Enemies, Rivals</h4>
-            <textarea className="w-full bg-background border border-primary/30 rounded p-2 h-32 text-xs" value={notes} onChange={event => setNotes(event.target.value)} />
-          </div>
-        </div>
-      </section>
-
-      <section className="border border-primary/30 bg-card/30">
-        <div className="p-4 border-b border-primary/20 flex flex-col gap-3">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xs font-semibold uppercase tracking-wide">Skills</h2>
-            <span className="text-xs text-muted-foreground">Trained skills bubble to the top.</span>
+      <section className="panel">
+        <div className="panel-header flex-col gap-3">
+          <div className="flex items-center justify-between w-full">
+            <span className="panel-title">SKILLS</span>
+            <span className="panel-status">Trained skills bubble to the top</span>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
             <label className="flex items-center gap-2">
@@ -722,7 +719,7 @@ const customGroups = skillDefinitions.filter(def => def.isCustomGroup);
             )}
           </div>
         </div>
-        <div className="max-h-[420px] overflow-y-auto divide-y divide-border">
+        <div className="panel-content max-h-[420px] overflow-y-auto divide-y divide-border p-0">
           {sortedBaseSkills.trained.length > 0 && (
             <div className="bg-primary/5 px-3 py-2 text-[11px] font-mono text-primary">
               TRAINED SKILLS
@@ -752,9 +749,14 @@ const customGroups = skillDefinitions.filter(def => def.isCustomGroup);
         </div>
       </section>
 
-      <section className="border border-primary/30 bg-card/30">
-        <div className="p-4 border-b border-primary/20">
-          <h2 className="text-xs font-semibold uppercase tracking-wide">Weapons</h2>
+      <section className="panel">
+        <div className="panel-header">
+          <span className="panel-title">WEAPONS</span>
+          {lastWeaponRollLog && (
+            <div className="text-[11px] font-mono text-primary/80 mt-2">
+              {lastWeaponRollLog}
+            </div>
+          )}
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-xs">
@@ -809,41 +811,90 @@ const customGroups = skillDefinitions.filter(def => def.isCustomGroup);
       </section>
 
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="border border-primary/30 bg-card/30">
-          <div className="p-4 border-b border-primary/20">
-            <h2 className="text-xs font-semibold uppercase tracking-wide">Equipment</h2>
+        <div className="panel">
+          <div className="panel-header">
+            <span className="panel-title">EQUIPMENT</span>
           </div>
+          <div className="panel-content p-0">
+            <Table
+              headers={["Equipment", "Mass"]}
+              fields={["item", "mass"]}
+              values={equipment}
+              onChange={updateEquipmentRow}
+            />
+          </div>
+        </div>
+        <div className="panel">
+          <div className="panel-header">
+            <span className="panel-title">AUGMENTS</span>
+          </div>
+          <div className="panel-content p-0">
+            <Table
+              headers={["Type", "TL", "Improvement"]}
+              fields={["type", "tl", "improvement"]}
+              values={augments}
+              onChange={updateAugmentRow}
+            />
+          </div>
+        </div>
+        <div className="panel flex flex-col">
+          <div className="panel-header">
+            <span className="panel-title">TOTAL CARRIED MASS</span>
+          </div>
+          <div className="panel-content flex-1 flex items-center justify-center">
+            <Input placeholder="Total" className="terminal-input w-32 text-center" value={totalMass} onChange={event => setTotalMass(event.target.value)} />
+          </div>
+        </div>
+      </section>
+
+      <section className="panel">
+        <div className="panel-header">
+          <span className="panel-title">ARMOUR</span>
+        </div>
+        <div className="panel-content">
           <Table
-            headers={["Equipment", "Mass"]}
-            fields={["item", "mass"]}
-            values={equipment}
-            onChange={updateEquipmentRow}
+            headers={["Type", "RAD", "Protection", "KG", "Options", "Total"]}
+            fields={["type", "rad", "protection", "kg", "options", "total"]}
+            values={armourRows}
+            onChange={updateArmourRow}
           />
         </div>
-        <div className="border border-primary/30 bg-card/30">
-          <div className="p-4 border-b border-primary/20">
-            <h2 className="text-xs font-semibold uppercase tracking-wide">Augments</h2>
+      </section>
+
+      <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="panel">
+          <div className="panel-header">
+            <span className="panel-title">FINANCES</span>
           </div>
-          <Table
-            headers={["Type", "TL", "Improvement"]}
-            fields={["type", "tl", "improvement"]}
-            values={augments}
-            onChange={updateAugmentRow}
-          />
+          <div className="panel-content space-y-2">
+            <TextField label="Pension" value={finances.pension} onChange={value => setFinances(prev => ({ ...prev, pension: value }))} compact />
+            <TextField label="Debt" value={finances.debt} onChange={value => setFinances(prev => ({ ...prev, debt: value }))} compact />
+            <TextField label="Cash on Hand" value={finances.cashOnHand} onChange={value => setFinances(prev => ({ ...prev, cashOnHand: value }))} compact />
+            <TextField label="Monthly Ship Payments" value={finances.shipPayments} onChange={value => setFinances(prev => ({ ...prev, shipPayments: value }))} compact />
+            <TextField label="Living Cost" value={finances.livingCost} onChange={value => setFinances(prev => ({ ...prev, livingCost: value }))} compact />
+          </div>
         </div>
-        <div className="border border-primary/30 bg-card/30 flex flex-col">
-          <div className="p-4 border-b border-primary/20">
-            <h2 className="text-xs font-semibold uppercase tracking-wide">Total Carried Mass</h2>
+        <div className="panel">
+          <div className="panel-header">
+            <span className="panel-title">STUDY PERIOD & NOTES</span>
           </div>
-          <div className="p-4 flex-1 flex items-center justify-center">
-            <Input placeholder="Total" className="w-32 text-center" value={totalMass} onChange={event => setTotalMass(event.target.value)} />
+          <div className="panel-content space-y-4">
+            <div className="space-y-2">
+              <TextField label="Training in Skill" value={studyPeriod.skill} onChange={value => setStudyPeriod(prev => ({ ...prev, skill: value }))} compact />
+              <TextField label="Weeks" value={studyPeriod.weeks} onChange={value => setStudyPeriod(prev => ({ ...prev, weeks: value }))} compact />
+              <TextField label="Study Periods Complete" value={studyPeriod.complete} onChange={value => setStudyPeriod(prev => ({ ...prev, complete: value }))} compact />
+            </div>
+            <div>
+              <h4 className="text-xs font-semibold uppercase tracking-wide mb-2 text-primary">Allies, Contacts, Enemies, Rivals</h4>
+              <textarea className="terminal-input w-full h-32 text-xs" value={notes} onChange={event => setNotes(event.target.value)} />
+            </div>
           </div>
         </div>
       </section>
 
       <div className="flex justify-end gap-3">
-        <Button variant="outline">Reset Sheet</Button>
-        <Button onClick={handleSaveCharacter}>Save Changes</Button>
+        <Button variant="outline" className="terminal-btn">Reset Sheet</Button>
+        <Button onClick={handleSaveCharacter} className="terminal-btn primary">Save Changes</Button>
       </div>
     </div>
   );
@@ -858,9 +909,9 @@ interface TextFieldProps {
 }
 
 const TextField = ({ label, value, onChange, className = "", compact }: TextFieldProps) => (
-  <label className={`flex flex-col gap-1 text-xs uppercase tracking-wide ${className}`}>
+  <label className={`flex flex-col gap-1 text-xs uppercase tracking-wide text-primary/80 ${className}`}>
     <span>{label}</span>
-    <Input className={compact ? "h-8" : ""} value={value} onChange={event => onChange(event.target.value)} />
+    <Input className={`terminal-input ${compact ? "h-8" : ""}`} value={value} onChange={event => onChange(event.target.value)} />
   </label>
 );
 
