@@ -294,12 +294,35 @@ const CharacterSheet = ({ characterId }: CharacterSheetProps = {}) => {
           psionics: { total: "", current: "" },
           initiative: { total: "", current: "" }
         });
-        // Load other character data safely
-        if (character.weapons) setWeapons(character.weapons as any);
-        if (character.armor) setArmourRows(character.armor as any);
-        if (character.equipment) setEquipment(character.equipment as any);
-        if (character.augments) setAugments(character.augments as any);
-        if (character.skills) setSkills(character.skills as any);
+        // Load other character data safely with array validation
+        if (character.weapons && Array.isArray(character.weapons)) {
+          setWeapons(character.weapons as WeaponRow[]);
+        } else {
+          setWeapons(initialWeapons);
+        }
+
+        if (character.armor && Array.isArray(character.armor)) {
+          setArmourRows(character.armor as ArmourRow[]);
+        } else {
+          setArmourRows(initialArmourRows);
+        }
+
+        if (character.equipment && Array.isArray(character.equipment)) {
+          setEquipment(character.equipment as EquipmentRow[]);
+        } else {
+          setEquipment(initialEquipment);
+        }
+
+        if (character.augments && Array.isArray(character.augments)) {
+          setAugments(character.augments as AugmentRow[]);
+        } else {
+          setAugments(initialAugments);
+        }
+
+        if (character.skills && typeof character.skills === 'object') {
+          setSkills(character.skills as Record<string, SkillState>);
+        }
+
         if (typeof character.notes === "string") setNotes(character.notes);
       }
     }
