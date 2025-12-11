@@ -139,11 +139,11 @@ export default function CrewInterface() {
   if (showCharacterSheet) {
     return (
       <div className="p-6 space-y-6">
-        <div className="flex justify-between items-center">
-          <h2 className="text-xl font-mono tracking-[0.2em] text-primary">CHARACTER SHEET INTERFACE</h2>
-          <Button variant="outline" onClick={handleBackToCrewInterface}>
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-['Orbitron'] tracking-[0.2em] text-primary drop-shadow-[0_0_10px_rgba(0,255,0,0.4)]">CHARACTER SHEET INTERFACE</h2>
+          <button className="terminal-btn" onClick={handleBackToCrewInterface}>
             Back to Crew Management
-          </Button>
+          </button>
         </div>
         <CharacterSheet characterId={activeCrewMember || undefined} />
       </div>
@@ -152,12 +152,12 @@ export default function CrewInterface() {
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-xl font-mono tracking-[0.2em] text-primary">CREW MANAGEMENT SYSTEM</h2>
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-xl font-['Orbitron'] tracking-[0.2em] text-primary drop-shadow-[0_0_10px_rgba(0,255,0,0.4)]">CREW MANAGEMENT SYSTEM</h2>
       </div>
 
-      <Card className="bg-background/60 border-primary/30 shadow-[0_0_24px_rgba(0,255,0,0.12)]">
-        <CardContent className="p-6">
+      <div className="panel">
+        <div className="panel-content">
           <div className="terminal terminal-flicker h-[200px] overflow-auto mb-4 border border-primary/30 rounded">
             <div className="font-mono text-sm whitespace-pre-wrap p-4 text-primary">
               {displayText}
@@ -172,11 +172,11 @@ export default function CrewInterface() {
             </TabsList>
             
             <TabsContent value="roster" className="space-y-4">
-              <Card className="bg-black/60 border-primary/30 shadow-[0_0_18px_rgba(0,255,0,0.08)]">
-                <CardHeader>
-                  <CardTitle className="font-mono text-sm text-primary">ACTIVE CREW MEMBERS</CardTitle>
-                </CardHeader>
-                <CardContent>
+              <div className="panel">
+                <div className="panel-header">
+                  <span className="panel-title">ACTIVE CREW MEMBERS</span>
+                </div>
+                <div className="panel-content">
                   <div className="space-y-2">
                     {characters.length > 0 ? (
                       characters.map((character, index) => {
@@ -258,39 +258,38 @@ export default function CrewInterface() {
                       </>
                     )}
                   </div>
-                  <Button variant="outline" className="mt-4 w-full" onClick={handleAddNewCrewMember}>
+                  <button className="terminal-btn w-full mt-4" onClick={handleAddNewCrewMember}>
                     Add New Crew Member
-                  </Button>
-                </CardContent>
-              </Card>
+                  </button>
+                </div>
+              </div>
             </TabsContent>
-            
+
             <TabsContent value="sheets" className="space-y-4">
-              <Card className="bg-black/60 border-primary/30 shadow-[0_0_18px_rgba(0,255,0,0.08)]">
-                <CardHeader>
-                  <CardTitle className="font-mono text-sm text-primary">CHARACTER SHEET ACCESS</CardTitle>
-                </CardHeader>
-                <CardContent>
+              <div className="panel">
+                <div className="panel-header">
+                  <span className="panel-title">CHARACTER SHEET ACCESS</span>
+                </div>
+                <div className="panel-content">
                   <p className="font-mono text-sm mb-4 text-primary/80">
                     Access and manage character sheets for crew members.
                   </p>
-                  <Button 
-                    variant="outline" 
-                    className="w-full"
+                  <button
+                    className="terminal-btn w-full"
                     onClick={handleCharacterSheetAccess}
                   >
                     Open Character Sheet Interface
-                  </Button>
-                </CardContent>
-              </Card>
+                  </button>
+                </div>
+              </div>
             </TabsContent>
-            
+
             <TabsContent value="notes" className="space-y-4">
-              <Card className="bg-black/60 border-primary/30 shadow-[0_0_18px_rgba(0,255,0,0.08)]">
-                <CardHeader>
-                  <CardTitle className="font-mono text-sm text-primary">MISSION NOTES</CardTitle>
-                </CardHeader>
-                <CardContent>
+              <div className="panel">
+                <div className="panel-header">
+                  <span className="panel-title">MISSION NOTES</span>
+                </div>
+                <div className="panel-content">
                   <div className="space-y-4">
                     {savedNoteFiles.length > 0 && (
                       <div>
@@ -328,38 +327,38 @@ export default function CrewInterface() {
                           placeholder="Enter filename..."
                           value={noteFileName}
                           onChange={(e) => setNoteFileName(e.target.value)}
-                          className="font-mono text-sm"
+                          className="terminal-input"
                         />
                       </div>
                       <div className="flex items-end gap-2">
-                        <Button variant="outline" size="sm" onClick={handleNewNoteFile}>
+                        <button className="terminal-btn" onClick={handleNewNoteFile}>
                           New
-                        </Button>
-                        <Button variant="outline" size="sm" onClick={handleSaveNotes}>
+                        </button>
+                        <button className="terminal-btn primary" onClick={handleSaveNotes}>
                           Save
-                        </Button>
+                        </button>
                       </div>
                     </div>
-                    
+
                     <div>
                       <Label htmlFor="mission-notes" className="font-mono text-xs text-primary/80">
                         Mission Notes Content
                       </Label>
-                      <textarea 
+                      <textarea
                         id="mission-notes"
-                        className="w-full h-32 bg-background/20 border border-primary/30 rounded p-3 font-mono text-sm text-primary"
+                        className="terminal-input w-full h-32"
                         placeholder="Enter mission notes and status updates..."
                         value={missionNotes}
                         onChange={(e) => setMissionNotes(e.target.value)}
                       />
                     </div>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             </TabsContent>
           </Tabs>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }
