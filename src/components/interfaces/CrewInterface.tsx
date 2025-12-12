@@ -165,9 +165,8 @@ export default function CrewInterface() {
           </div>
           
           <Tabs defaultValue="roster" className="w-full">
-            <TabsList className="grid w-full grid-cols-3 bg-black/60 border border-primary/30 rounded">
+            <TabsList className="grid w-full grid-cols-2 bg-black/60 border border-primary/30 rounded">
               <TabsTrigger value="roster" className="font-mono">Crew Roster</TabsTrigger>
-              <TabsTrigger value="sheets" className="font-mono">Character Sheets</TabsTrigger>
               <TabsTrigger value="notes" className="font-mono">Mission Notes</TabsTrigger>
             </TabsList>
             
@@ -260,25 +259,6 @@ export default function CrewInterface() {
                   </div>
                   <button className="terminal-btn w-full mt-4" onClick={handleAddNewCrewMember}>
                     Add New Crew Member
-                  </button>
-                </div>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="sheets" className="space-y-4">
-              <div className="panel">
-                <div className="panel-header">
-                  <span className="panel-title">CHARACTER SHEET ACCESS</span>
-                </div>
-                <div className="panel-content">
-                  <p className="font-mono text-sm mb-4 text-primary/80">
-                    Access and manage character sheets for crew members.
-                  </p>
-                  <button
-                    className="terminal-btn w-full"
-                    onClick={handleCharacterSheetAccess}
-                  >
-                    Open Character Sheet Interface
                   </button>
                 </div>
               </div>

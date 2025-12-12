@@ -21,7 +21,7 @@ export default function MainframeShell() {
 
   const tabs = [
     { id: "terminal", label: "Terminal", icon: Terminal },
-    { id: "crew", label: "Crew & Sheets", icon: Users },
+    { id: "crew", label: "Crew", icon: Users },
     { id: "vehicles", label: "Vehicles & Spaceships", icon: FileText },
     { id: "bridge", label: "Bridge Console", icon: Radar },
     { id: "navigation", label: "Star Map", icon: Navigation }
