@@ -838,52 +838,51 @@ textarea.terminal-input {
 /* ===================================
    CRT MONOCHROME EMOJI STYLING
    =================================== */
-/* Convert colorful emojis to monochrome CRT terminal aesthetic */
+/* Convert colorful emojis to green CRT terminal aesthetic */
+/* Uses sepia + hue-rotate to convert colors to green phosphor tone */
+
 .marker-emoji,
 .panel-content span[role="img"],
-button span:not(.lucide):not(.sr-only) {
-  filter: grayscale(100%) brightness(1.2) contrast(1.1);
-  color: var(--primary) !important;
-  text-shadow: 0 0 5px rgba(0, 255, 0, 0.5);
+button span:not(.lucide):not(.sr-only):not([class*="text-"]) {
+  filter: sepia(100%) hue-rotate(50deg) saturate(3) brightness(1.3) contrast(1.1);
+  text-shadow: 0 0 8px rgba(0, 255, 0, 0.6);
   font-style: normal;
 }
 
-/* Specific styling for marker icons in different contexts */
-/* Marker type selector options */
-select option {
-  filter: grayscale(100%);
-}
-
-/* Icon picker grid */
-.icon-picker-button,
-button[title]:has(span:only-child) {
-  filter: grayscale(100%) brightness(1.2);
-}
-
-/* Marker panel emoji icons */
-.hex-marker-icon,
-.marker-type-icon {
-  filter: grayscale(100%) brightness(1.3) contrast(1.2);
-  color: inherit;
-  text-shadow: 0 0 8px currentColor;
+/* Marker panel emoji icons - bright green with strong glow */
+.hex-marker-icon {
+  filter: sepia(100%) hue-rotate(50deg) saturate(4) brightness(1.4) contrast(1.2) !important;
+  text-shadow: 0 0 10px rgba(0, 255, 0, 0.8), 0 0 5px rgba(0, 255, 0, 0.5) !important;
   display: inline-block;
 }
 
-/* Legend emoji icons - maintain their custom colors but make them more CRT-like */
-.marker-legend-icon {
-  filter: grayscale(70%) brightness(1.1) saturate(0.6);
-  text-shadow: 0 0 6px currentColor;
-}
-
-/* Emoji in modal/editor forms */
-.terminal-input:has(+ span),
+/* Emoji in modal/editor forms - green phosphor */
 .marker-icon-display {
-  filter: grayscale(100%) brightness(1.2);
+  filter: sepia(100%) hue-rotate(50deg) saturate(4) brightness(1.3) contrast(1.1) !important;
+  text-shadow: 0 0 10px rgba(0, 255, 0, 0.7) !important;
 }
 
-/* Make sure lucide icons aren't affected */
+/* Icon picker grid buttons */
+.icon-picker-button span {
+  filter: sepia(100%) hue-rotate(50deg) saturate(3) brightness(1.2) !important;
+  text-shadow: 0 0 8px rgba(0, 255, 0, 0.5) !important;
+}
+
+/* Legend emoji icons - subtle green with hint of original color */
+.marker-legend-icon {
+  filter: sepia(80%) hue-rotate(50deg) saturate(2.5) brightness(1.2) contrast(1.1) !important;
+  text-shadow: 0 0 8px rgba(0, 255, 0, 0.6) !important;
+}
+
+/* Marker type selector dropdown options */
+select option {
+  filter: sepia(100%) hue-rotate(50deg) saturate(3);
+}
+
+/* Make sure lucide icons and text aren't affected */
 .lucide,
-svg {
+svg,
+.lucide-icon {
   filter: none !important;
 }
 
