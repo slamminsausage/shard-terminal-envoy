@@ -625,6 +625,55 @@ textarea.terminal-input {
    RESPONSIVE UTILITIES
    =================================== */
 @media (max-width: 768px) {
+  /* Header responsive layout */
+  .app-shell-header .container {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+
+  .app-shell-header .container > div {
+    flex-direction: column !important;
+    gap: 1rem !important;
+    align-items: flex-start !important;
+  }
+
+  .app-shell-title {
+    font-size: 1.25rem !important;
+  }
+
+  .app-shell-subtitle {
+    font-size: 0.65rem !important;
+  }
+
+  /* Mobile tab navigation - horizontal scroll */
+  .app-shell-tabs {
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    gap: 0.5rem !important;
+    padding-bottom: 0.5rem;
+  }
+
+  .app-shell-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Smaller tabs on mobile */
+  .tab-button {
+    padding: 0.5rem 0.75rem !important;
+    font-size: 0.7rem !important;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .tab-button svg {
+    width: 12px !important;
+    height: 12px !important;
+  }
+
+  /* General mobile optimizations */
   .terminal-grid {
     grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
     gap: 8px;
@@ -632,12 +681,29 @@ textarea.terminal-input {
 
   .panel-header {
     font-size: 0.65rem;
-    padding: 6px 10px;
+    padding: 8px 12px;
+    letter-spacing: 2px;
+  }
+
+  .panel-content {
+    padding: 12px;
   }
 
   .terminal-btn {
-    padding: 6px 12px;
+    padding: 8px 14px;
     font-size: 0.65rem;
+    letter-spacing: 1.5px;
+  }
+
+  /* Modal responsive */
+  .modal {
+    width: 95% !important;
+    max-height: 90vh !important;
+  }
+
+  .modal-body {
+    padding: 16px;
+    max-height: calc(90vh - 50px) !important;
   }
 
   /* Jump planner responsive */
@@ -647,5 +713,51 @@ textarea.terminal-input {
 
   .jump-planner .star-map-panel {
     min-height: 300px;
+  }
+
+  /* Terminal window padding */
+  .terminal-window {
+    padding: 1rem;
+  }
+
+  /* Tactical display responsive */
+  .tactical-canvas {
+    min-height: 400px !important;
+  }
+
+  .tactical-svg {
+    max-height: 500px !important;
+  }
+}
+
+/* Small mobile devices */
+@media (max-width: 480px) {
+  .app-shell-title {
+    font-size: 1rem !important;
+    letter-spacing: 0.05em !important;
+  }
+
+  .app-shell-subtitle {
+    font-size: 0.6rem !important;
+  }
+
+  .tab-button {
+    padding: 0.45rem 0.65rem !important;
+    font-size: 0.65rem !important;
+    gap: 0.25rem !important;
+  }
+
+  .panel-header {
+    font-size: 0.6rem;
+    padding: 6px 10px;
+  }
+
+  .terminal-btn {
+    padding: 6px 12px;
+    font-size: 0.6rem;
+  }
+
+  .terminal-window {
+    padding: 0.75rem;
   }
 }

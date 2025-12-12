@@ -138,10 +138,10 @@ export default function CrewInterface() {
 
   if (showCharacterSheet) {
     return (
-      <div className="p-6 space-y-6">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-['Orbitron'] tracking-[0.2em] text-primary drop-shadow-[0_0_10px_rgba(0,255,0,0.4)]">CHARACTER SHEET INTERFACE</h2>
-          <button className="terminal-btn" onClick={handleBackToCrewInterface}>
+      <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4 sm:mb-6">
+          <h2 className="text-base sm:text-xl font-['Orbitron'] tracking-[0.15em] sm:tracking-[0.2em] text-primary drop-shadow-[0_0_10px_rgba(0,255,0,0.4)]">CHARACTER SHEET INTERFACE</h2>
+          <button className="terminal-btn text-xs sm:text-sm w-full sm:w-auto" onClick={handleBackToCrewInterface}>
             Back to Crew Management
           </button>
         </div>
@@ -151,23 +151,23 @@ export default function CrewInterface() {
   }
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-['Orbitron'] tracking-[0.2em] text-primary drop-shadow-[0_0_10px_rgba(0,255,0,0.4)]">CREW MANAGEMENT SYSTEM</h2>
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
+      <div className="flex justify-between items-center mb-4 sm:mb-6">
+        <h2 className="text-base sm:text-xl font-['Orbitron'] tracking-[0.15em] sm:tracking-[0.2em] text-primary drop-shadow-[0_0_10px_rgba(0,255,0,0.4)]">CREW MANAGEMENT SYSTEM</h2>
       </div>
 
       <div className="panel">
         <div className="panel-content">
           <div className="terminal terminal-flicker h-[200px] overflow-auto mb-4 border border-primary/30 rounded">
-            <div className="font-mono text-sm whitespace-pre-wrap p-4 text-primary">
+            <div className="font-mono text-xs sm:text-sm whitespace-pre-wrap p-3 sm:p-4 text-primary">
               {displayText}
             </div>
           </div>
-          
+
           <Tabs defaultValue="roster" className="w-full">
             <TabsList className="grid w-full grid-cols-2 bg-black/60 border border-primary/30 rounded">
-              <TabsTrigger value="roster" className="font-mono">Crew Roster</TabsTrigger>
-              <TabsTrigger value="notes" className="font-mono">Mission Notes</TabsTrigger>
+              <TabsTrigger value="roster" className="font-mono text-xs sm:text-sm">Crew Roster</TabsTrigger>
+              <TabsTrigger value="notes" className="font-mono text-xs sm:text-sm">Mission Notes</TabsTrigger>
             </TabsList>
             
             <TabsContent value="roster" className="space-y-4">
@@ -186,14 +186,15 @@ export default function CrewInterface() {
                         const assignmentStatus = assignedVehicle ? `Assigned to ${assignedVehicle.name}` : 'Unassigned';
                         
                         return (
-                        <div key={character.id} className="p-3 border border-primary/20 rounded font-mono text-sm flex justify-between items-center bg-background/40">
-                          <span className="text-primary">
+                        <div key={character.id} className="p-2 sm:p-3 border border-primary/20 rounded font-mono text-xs sm:text-sm flex flex-col sm:flex-row justify-between sm:items-center gap-2 bg-background/40">
+                          <span className="text-primary break-words">
                             SLOT {String(index + 1).padStart(2, '0')}: {character.name} - <span className="text-secondary">{assignmentStatus}</span>
                           </span>
-                           <div className="flex gap-2">
-                             <Button 
-                               variant="outline" 
+                           <div className="flex gap-2 flex-wrap">
+                             <Button
+                               variant="outline"
                                size="sm"
+                               className="text-xs"
                                onClick={() => {
                                  setActiveCrewMember(character.id);
                                  setShowCharacterSheet(true);
@@ -208,12 +209,13 @@ export default function CrewInterface() {
                                }}
                                variant="secondary"
                                size="sm"
+                               className="text-xs"
                              >
                                View
                              </Button>
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
-                                <Button variant="outline" size="sm" className="text-red-400 border-red-400 hover:bg-red-400 hover:text-white">
+                                <Button variant="outline" size="sm" className="text-xs text-red-400 border-red-400 hover:bg-red-400 hover:text-white">
                                   Delete
                                 </Button>
                               </AlertDialogTrigger>
