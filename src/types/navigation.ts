@@ -141,13 +141,69 @@ export interface WorldNote {
   world_name?: string;
   status?: WorldStatus;
   tags?: string;
+
+  // Enhanced note structure
+  planet_description?: string;    // General planet info (player-visible)
+  custom_notes?: string;          // Campaign/session notes (player-visible)
+  gm_notes?: string;              // GM-only notes (for future GM mode)
+
+  // Legacy fields (keep for backward compatibility)
   summary?: string;
   patrons?: string;
-  gm_notes?: string;
+
   last_visited?: string;
   gm_only?: boolean;
   created_at?: string;
   updated_at?: string;
+}
+
+// ===== Hex Markers Types =====
+
+export type MarkerType =
+  | "CUSTOM_PLANET"
+  | "RESEARCH_STATION"
+  | "PIRATE_SHIP"
+  | "CONVOY"
+  | "MISSION"
+  | "STORY_POINT"
+  | "IMPERIAL_VESSEL"
+  | "TRADE_ROUTE"
+  | "ANOMALY"
+  | "WAYPOINT"
+  | "DANGER_ZONE"
+  | "RESOURCE"
+  | "SETTLEMENT"
+  | "RUINS"
+  | "CUSTOM";
+
+export interface HexMarker {
+  id?: string;
+  sector: string;
+  hex: string;
+  marker_type: MarkerType;
+  marker_label: string;
+  marker_icon?: string;
+  marker_color?: string;
+  description?: string;
+  gm_notes?: string;
+  is_active?: boolean;
+  is_visible_to_players?: boolean;
+  display_order?: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface MarkerTypeConfig {
+  type: MarkerType;
+  label: string;
+  icon: string;
+  defaultColor: string;
+  description: string;
+}
+
+export interface MarkerFilter {
+  types: MarkerType[];
+  showInactive: boolean;
 }
 
 // ===== Route Planning Types =====
@@ -188,6 +244,13 @@ export interface JumpPlannerState {
   currentNote: WorldNote | null;
   isLoadingNote: boolean;
   isSavingNote: boolean;
+
+  // Hex markers
+  hexMarkers: HexMarker[];
+  currentHexMarkers: HexMarker[];
+  isLoadingMarkers: boolean;
+  isSavingMarker: boolean;
+  markerFilter: MarkerFilter;
 
   // Map state
   mapSector: string;

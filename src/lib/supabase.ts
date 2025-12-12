@@ -1,6 +1,6 @@
 // Use the integrated Supabase client instead of environment variables
 import { supabase } from "@/integrations/supabase/client";
-import type { WorldNote } from "@/types/navigation";
+import type { WorldNote, HexMarker } from "@/types/navigation";
 
 // Re-export for convenience
 export { supabase };
@@ -12,6 +12,7 @@ const supabaseDisabled =
 
 const LOCAL_UNLOCKED_KEY = 'dev_unlocked_terminals';
 const LOCAL_WORLD_NOTES_KEY = 'dev_world_notes';
+const LOCAL_HEX_MARKERS_KEY = 'dev_hex_markers';
 const fallbackUnlocked = [
   'lysani01',
   's.elara01',
@@ -103,6 +104,62 @@ const deleteLocalWorldNote = (sector: string, hex: string): boolean => {
   );
   saveLocalWorldNotes(filtered);
   return filtered.length < notes.length;
+};
+
+// Hex markers localStorage helpers
+const getLocalHexMarkers = (): HexMarker[] => {
+  try {
+    const raw = localStorage.getItem(LOCAL_HEX_MARKERS_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+};
+
+const saveLocalHexMarkers = (markers: HexMarker[]): void => {
+  localStorage.setItem(LOCAL_HEX_MARKERS_KEY, JSON.stringify(markers));
+};
+
+const getLocalHexMarkersForHex = (sector: string, hex: string): HexMarker[] => {
+  const markers = getLocalHexMarkers();
+  return markers.filter(
+    (m) => m.sector.toLowerCase() === sector.toLowerCase() && m.hex === hex
+  );
+};
+
+const saveLocalHexMarker = (marker: HexMarker): HexMarker => {
+  const markers = getLocalHexMarkers();
+
+  const now = new Date().toISOString();
+  const updatedMarker: HexMarker = {
+    ...marker,
+    id: marker.id || `local-${Date.now()}-${Math.random().toString(36).substring(7)}`,
+    updated_at: now,
+    created_at: marker.created_at || now,
+  };
+
+  if (marker.id) {
+    const existingIndex = markers.findIndex((m) => m.id === marker.id);
+    if (existingIndex >= 0) {
+      markers[existingIndex] = updatedMarker;
+    } else {
+      markers.push(updatedMarker);
+    }
+  } else {
+    markers.push(updatedMarker);
+  }
+
+  saveLocalHexMarkers(markers);
+  return updatedMarker;
+};
+
+const deleteLocalHexMarker = (id: string): boolean => {
+  const markers = getLocalHexMarkers();
+  const filtered = markers.filter((m) => m.id !== id);
+  saveLocalHexMarkers(filtered);
+  return filtered.length < markers.length;
 };
 
 // Game settings localStorage helpers
@@ -569,6 +626,257 @@ export const dbHelpers = {
     } catch (error) {
       console.error('Failed to delete game setting:', error);
       return false;
+    }
+  },
+
+  // Hex Markers
+  async getHexMarkers(sector: string, hex: string): Promise<HexMarker[]> {
+    if (supabaseDisabled) {
+      return getLocalHexMarkersForHex(sector, hex);
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('hex_markers')
+        .select('*')
+        .eq('sector', sector)
+        .eq('hex', hex)
+        .order('display_order', { ascending: true });
+
+      if (error) {
+        console.error('Database error:', error);
+        return [];
+      }
+
+      return (data || []) as HexMarker[];
+    } catch (error) {
+      console.error('Failed to fetch hex markers:', error);
+      return [];
+    }
+  },
+
+  async getAllHexMarkers(): Promise<HexMarker[]> {
+    if (supabaseDisabled) {
+      return getLocalHexMarkers();
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('hex_markers')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Database error:', error);
+        return [];
+      }
+
+      return (data || []) as HexMarker[];
+    } catch (error) {
+      console.error('Failed to fetch all hex markers:', error);
+      return [];
+    }
+  },
+
+  async getHexMarkersForSector(sector: string): Promise<HexMarker[]> {
+    if (supabaseDisabled) {
+      const markers = getLocalHexMarkers();
+      return markers.filter(
+        (m) => m.sector.toLowerCase() === sector.toLowerCase()
+      );
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('hex_markers')
+        .select('*')
+        .eq('sector', sector)
+        .order('hex', { ascending: true })
+        .order('display_order', { ascending: true });
+
+      if (error) {
+        console.error('Database error:', error);
+        return [];
+      }
+
+      return (data || []) as HexMarker[];
+    } catch (error) {
+      console.error('Failed to fetch sector hex markers:', error);
+      return [];
+    }
+  },
+
+  async getActiveMarkers(sector?: string): Promise<HexMarker[]> {
+    if (supabaseDisabled) {
+      const markers = getLocalHexMarkers();
+      const activeMarkers = markers.filter((m) => m.is_active !== false);
+      if (sector) {
+        return activeMarkers.filter(
+          (m) => m.sector.toLowerCase() === sector.toLowerCase()
+        );
+      }
+      return activeMarkers;
+    }
+
+    try {
+      let query = supabase
+        .from('hex_markers')
+        .select('*')
+        .eq('is_active', true);
+
+      if (sector) {
+        query = query.eq('sector', sector);
+      }
+
+      const { data, error } = await query
+        .order('display_order', { ascending: true });
+
+      if (error) {
+        console.error('Database error:', error);
+        return [];
+      }
+
+      return (data || []) as HexMarker[];
+    } catch (error) {
+      console.error('Failed to fetch active markers:', error);
+      return [];
+    }
+  },
+
+  async saveHexMarker(marker: HexMarker): Promise<HexMarker | null> {
+    if (supabaseDisabled) {
+      return saveLocalHexMarker(marker);
+    }
+
+    try {
+      const now = new Date().toISOString();
+
+      if (marker.id && !marker.id.startsWith('local-')) {
+        // Update existing marker
+        const { data, error } = await supabase
+          .from('hex_markers')
+          .update({
+            ...marker,
+            updated_at: now,
+          })
+          .eq('id', marker.id)
+          .select()
+          .single();
+
+        if (error) {
+          console.error('Database error:', error);
+          throw error;
+        }
+
+        return data as HexMarker;
+      } else {
+        // Insert new marker
+        const { id: _id, ...markerWithoutId } = marker;
+        const { data, error } = await supabase
+          .from('hex_markers')
+          .insert([{
+            ...markerWithoutId,
+            created_at: now,
+            updated_at: now,
+          }])
+          .select()
+          .single();
+
+        if (error) {
+          console.error('Database error:', error);
+          throw error;
+        }
+
+        return data as HexMarker;
+      }
+    } catch (error) {
+      console.error('Failed to save hex marker:', error);
+      throw error;
+    }
+  },
+
+  async deleteHexMarker(id: string): Promise<boolean> {
+    if (supabaseDisabled) {
+      return deleteLocalHexMarker(id);
+    }
+
+    try {
+      const { error } = await supabase
+        .from('hex_markers')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        console.error('Database error:', error);
+        throw error;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Failed to delete hex marker:', error);
+      throw error;
+    }
+  },
+
+  async toggleMarkerActive(id: string, isActive: boolean): Promise<void> {
+    if (supabaseDisabled) {
+      const markers = getLocalHexMarkers();
+      const markerIndex = markers.findIndex((m) => m.id === id);
+      if (markerIndex >= 0) {
+        markers[markerIndex].is_active = isActive;
+        markers[markerIndex].updated_at = new Date().toISOString();
+        saveLocalHexMarkers(markers);
+      }
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('hex_markers')
+        .update({
+          is_active: isActive,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', id);
+
+      if (error) {
+        console.error('Database error:', error);
+        throw error;
+      }
+    } catch (error) {
+      console.error('Failed to toggle marker active:', error);
+      throw error;
+    }
+  },
+
+  async toggleMarkerVisibility(id: string, isVisible: boolean): Promise<void> {
+    if (supabaseDisabled) {
+      const markers = getLocalHexMarkers();
+      const markerIndex = markers.findIndex((m) => m.id === id);
+      if (markerIndex >= 0) {
+        markers[markerIndex].is_visible_to_players = isVisible;
+        markers[markerIndex].updated_at = new Date().toISOString();
+        saveLocalHexMarkers(markers);
+      }
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('hex_markers')
+        .update({
+          is_visible_to_players: isVisible,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', id);
+
+      if (error) {
+        console.error('Database error:', error);
+        throw error;
+      }
+    } catch (error) {
+      console.error('Failed to toggle marker visibility:', error);
+      throw error;
     }
   }
 }

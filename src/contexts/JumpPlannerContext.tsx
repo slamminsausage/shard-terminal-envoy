@@ -15,6 +15,9 @@ import type {
   WorldNote,
   CurrentLocation,
   TravellerMapMessage,
+  HexMarker,
+  MarkerFilter,
+  MarkerType,
 } from "@/types/navigation";
 
 // ===== Context Types =====
@@ -49,6 +52,13 @@ interface JumpPlannerState {
   isLoadingNote: boolean;
   isSavingNote: boolean;
 
+  // Hex markers
+  hexMarkers: HexMarker[];
+  currentHexMarkers: HexMarker[];
+  isLoadingMarkers: boolean;
+  isSavingMarker: boolean;
+  markerFilter: MarkerFilter;
+
   // Map state
   mapSector: string;
   mapHex: string;
@@ -80,6 +90,14 @@ interface JumpPlannerActions {
   updateNote: (note: Partial<WorldNote>) => void;
   saveNote: () => Promise<void>;
   loadAllNotes: () => Promise<void>;
+
+  // Marker actions
+  loadAllMarkers: () => Promise<void>;
+  loadMarkersForHex: (sector: string, hex: string) => Promise<void>;
+  saveMarker: (marker: HexMarker) => Promise<void>;
+  deleteMarker: (id: string) => Promise<void>;
+  toggleMarkerActive: (id: string, isActive: boolean) => Promise<void>;
+  setMarkerFilter: (filter: Partial<MarkerFilter>) => void;
 
   // Map actions
   setMapLocation: (sector: string, hex: string) => void;
@@ -116,6 +134,14 @@ const initialState: JumpPlannerState = {
   allNotes: [],
   isLoadingNote: false,
   isSavingNote: false,
+  hexMarkers: [],
+  currentHexMarkers: [],
+  isLoadingMarkers: false,
+  isSavingMarker: false,
+  markerFilter: {
+    types: [],
+    showInactive: false,
+  },
   mapSector: "Trojan Reach",
   mapHex: "2223",
   error: null,
@@ -142,6 +168,11 @@ export function JumpPlannerProvider({ children }: { children: React.ReactNode })
   // Load all notes on mount
   useEffect(() => {
     loadAllNotes();
+  }, []);
+
+  // Load all markers on mount
+  useEffect(() => {
+    loadAllMarkers();
   }, []);
 
   // Load player location from Supabase (with localStorage fallback) on mount
@@ -242,6 +273,9 @@ export function JumpPlannerProvider({ children }: { children: React.ReactNode })
 
       // Load note for this location
       await loadNote(sector, paddedHex);
+
+      // Load markers for this location
+      await loadMarkersForHex(sector, paddedHex);
     },
     []
   );
@@ -478,6 +512,112 @@ export function JumpPlannerProvider({ children }: { children: React.ReactNode })
     }
   }, [state.currentNote, loadAllNotes]);
 
+  // ===== Marker Actions =====
+
+  const loadAllMarkers = useCallback(async () => {
+    setState((prev) => ({ ...prev, isLoadingMarkers: true }));
+    try {
+      const markers = await dbHelpers.getAllHexMarkers();
+      setState((prev) => ({ ...prev, hexMarkers: markers, isLoadingMarkers: false }));
+    } catch (error) {
+      console.error("Failed to load all markers:", error);
+      setState((prev) => ({ ...prev, isLoadingMarkers: false }));
+    }
+  }, []);
+
+  const loadMarkersForHex = useCallback(async (sector: string, hex: string) => {
+    const paddedHex = padHex(hex);
+    setState((prev) => ({ ...prev, isLoadingMarkers: true }));
+    try {
+      const markers = await dbHelpers.getHexMarkers(sector, paddedHex);
+      setState((prev) => ({
+        ...prev,
+        currentHexMarkers: markers,
+        isLoadingMarkers: false,
+      }));
+    } catch (error) {
+      console.error("Failed to load hex markers:", error);
+      setState((prev) => ({
+        ...prev,
+        currentHexMarkers: [],
+        isLoadingMarkers: false,
+      }));
+    }
+  }, []);
+
+  const saveMarker = useCallback(async (marker: HexMarker) => {
+    setState((prev) => ({ ...prev, isSavingMarker: true }));
+    try {
+      const saved = await dbHelpers.saveHexMarker(marker);
+      setState((prev) => ({ ...prev, isSavingMarker: false }));
+
+      // Reload markers for current hex and all markers
+      if (saved) {
+        await loadMarkersForHex(marker.sector, marker.hex);
+        await loadAllMarkers();
+      }
+    } catch (error) {
+      console.error("Failed to save marker:", error);
+      setState((prev) => ({
+        ...prev,
+        isSavingMarker: false,
+        error: "Failed to save marker",
+      }));
+      throw error;
+    }
+  }, []);
+
+  const deleteMarker = useCallback(async (id: string) => {
+    try {
+      await dbHelpers.deleteHexMarker(id);
+
+      // Remove from local state
+      setState((prev) => ({
+        ...prev,
+        hexMarkers: prev.hexMarkers.filter((m) => m.id !== id),
+        currentHexMarkers: prev.currentHexMarkers.filter((m) => m.id !== id),
+      }));
+    } catch (error) {
+      console.error("Failed to delete marker:", error);
+      setState((prev) => ({
+        ...prev,
+        error: "Failed to delete marker",
+      }));
+      throw error;
+    }
+  }, []);
+
+  const toggleMarkerActive = useCallback(async (id: string, isActive: boolean) => {
+    try {
+      await dbHelpers.toggleMarkerActive(id, isActive);
+
+      // Update local state
+      setState((prev) => ({
+        ...prev,
+        hexMarkers: prev.hexMarkers.map((m) =>
+          m.id === id ? { ...m, is_active: isActive } : m
+        ),
+        currentHexMarkers: prev.currentHexMarkers.map((m) =>
+          m.id === id ? { ...m, is_active: isActive } : m
+        ),
+      }));
+    } catch (error) {
+      console.error("Failed to toggle marker active:", error);
+      setState((prev) => ({
+        ...prev,
+        error: "Failed to update marker status",
+      }));
+      throw error;
+    }
+  }, []);
+
+  const setMarkerFilter = useCallback((filter: Partial<MarkerFilter>) => {
+    setState((prev) => ({
+      ...prev,
+      markerFilter: { ...prev.markerFilter, ...filter },
+    }));
+  }, []);
+
   // ===== Map Actions =====
 
   const setMapLocation = useCallback((sector: string, hex: string) => {
@@ -540,6 +680,12 @@ export function JumpPlannerProvider({ children }: { children: React.ReactNode })
     loadAllNotes,
     updateNote,
     saveNote,
+    loadAllMarkers,
+    loadMarkersForHex,
+    saveMarker,
+    deleteMarker,
+    toggleMarkerActive,
+    setMarkerFilter,
     setMapLocation,
     clearError,
   };
