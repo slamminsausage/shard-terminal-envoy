@@ -58,22 +58,21 @@ export function HexMarkerPanel({ onEditMarker, onCreateMarker }: HexMarkerPanelP
       defaultExpanded={false}
       headerAction={headerAction}
     >
-      <div>
-          {isLoadingMarkers ? (
-            <div className="text-center py-4 text-[#446655]">Loading markers...</div>
-          ) : currentHexMarkers.length === 0 ? (
-            <div className="text-center py-4 text-[#446655]">
-              No markers on this hex.
-              <button
-                className="terminal-btn mt-2 text-xs"
-                onClick={onCreateMarker}
-              >
-                <Plus className="w-3 h-3 inline mr-1" />
-                Create First Marker
-              </button>
-            </div>
-          ) : (
-            <div className="space-y-2">
+      {isLoadingMarkers ? (
+        <div className="text-center py-4 text-[#446655]">Loading markers...</div>
+      ) : currentHexMarkers.length === 0 ? (
+        <div className="text-center py-4 text-[#446655]">
+          No markers on this hex.
+          <button
+            className="terminal-btn mt-2 text-xs"
+            onClick={onCreateMarker}
+          >
+            <Plus className="w-3 h-3 inline mr-1" />
+            Create First Marker
+          </button>
+        </div>
+      ) : (
+        <div className="space-y-2">
               {currentHexMarkers.map((marker) => {
                 const config = getMarkerTypeConfig(marker.marker_type);
                 const isInactive = marker.is_active === false;
@@ -151,9 +150,8 @@ export function HexMarkerPanel({ onEditMarker, onCreateMarker }: HexMarkerPanelP
                   </div>
                 );
               })}
-            </div>
-          )}
         </div>
+      )}
     </AccordionPanel>
   );
 }

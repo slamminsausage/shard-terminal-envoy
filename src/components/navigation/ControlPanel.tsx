@@ -1,6 +1,7 @@
 import { useJumpPlanner } from "@/contexts/JumpPlannerContext";
 import { parseUWP, getZoneDescription, type WorldSearchResult } from "@/lib/travellerMapApi";
 import { WorldSearchAutocomplete } from "./WorldSearchAutocomplete";
+import { AccordionPanel } from "./AccordionPanel";
 import { Loader2 } from "lucide-react";
 
 export function ControlPanel() {
@@ -45,12 +46,12 @@ export function ControlPanel() {
       )}
 
       {/* Jump Calculator */}
-      <div className="panel">
-        <div className="panel-header">
-          <span className="panel-title">JUMP CALCULATOR</span>
-        </div>
-        <div className="panel-content space-y-3">
-          {/* Jump Rating Selector */}
+      <AccordionPanel
+        title="JUMP CALCULATOR"
+        defaultExpanded={true}
+      >
+        {/* Jump Rating Selector */}
+        <div className="space-y-3">
           <div className="flex items-center gap-3">
             <label className="text-[#446655] text-xs whitespace-nowrap">
               JUMP RATING:
@@ -149,14 +150,14 @@ export function ControlPanel() {
             </div>
           )}
         </div>
-      </div>
+      </AccordionPanel>
 
       {/* Route Planner */}
-      <div className="panel">
-        <div className="panel-header">
-          <span className="panel-title">ROUTE PLANNER</span>
-        </div>
-        <div className="panel-content space-y-3">
+      <AccordionPanel
+        title="ROUTE PLANNER"
+        defaultExpanded={false}
+      >
+        <div className="space-y-3">
           {/* Start Location */}
           <WorldSearchAutocomplete
             label="START LOCATION:"
@@ -267,7 +268,7 @@ export function ControlPanel() {
             </div>
           )}
         </div>
-      </div>
+      </AccordionPanel>
     </div>
   );
 }

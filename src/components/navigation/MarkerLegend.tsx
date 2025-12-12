@@ -55,9 +55,8 @@ export function MarkerLegend() {
       defaultExpanded={false}
       headerAction={headerAction}
     >
-      <div>
-          {/* Quick Actions */}
-          <div className="flex gap-2 mb-3">
+      {/* Quick Actions */}
+      <div className="flex gap-2 mb-3">
             <button
               className="terminal-btn secondary text-xs px-2 py-1 flex-1"
               onClick={handleShowAll}
@@ -143,7 +142,6 @@ export function MarkerLegend() {
             <div className="flex justify-between mt-1 font-bold">
               <span>Total markers:</span>
               <span className="text-primary">{hexMarkers.length}</span>
-            </div>
           </div>
         </div>
     </AccordionPanel>
