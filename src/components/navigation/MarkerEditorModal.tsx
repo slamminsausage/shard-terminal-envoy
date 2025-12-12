@@ -176,7 +176,7 @@ export function MarkerEditorModal({
                     className="terminal-input w-full text-left flex items-center gap-2"
                     onClick={() => setShowIconPicker(!showIconPicker)}
                   >
-                    <span className="text-2xl">
+                    <span className="text-2xl marker-icon-display">
                       {formData.marker_icon || selectedTypeConfig?.icon || "⭐"}
                     </span>
                     <span className="text-xs text-[#446655]">
@@ -189,14 +189,14 @@ export function MarkerEditorModal({
                         <button
                           key={icon}
                           type="button"
-                          className="text-2xl hover:bg-[#1a2420] p-1 rounded transition-colors"
+                          className="text-2xl hover:bg-[#1a2420] p-1 rounded transition-colors icon-picker-button"
                           onClick={() => {
                             setFormData({ ...formData, marker_icon: icon });
                             setShowIconPicker(false);
                           }}
                           title={icon}
                         >
-                          {icon}
+                          <span className="marker-icon-display">{icon}</span>
                         </button>
                       ))}
                     </div>

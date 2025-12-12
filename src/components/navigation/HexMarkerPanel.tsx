@@ -103,7 +103,7 @@ export function HexMarkerPanel({ onEditMarker, onCreateMarker }: HexMarkerPanelP
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <span
-                            className="text-xl flex-shrink-0"
+                            className="text-xl flex-shrink-0 hex-marker-icon"
                             style={{ color: marker.marker_color || config.defaultColor }}
                             title={config.label}
                           >
