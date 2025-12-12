@@ -6,6 +6,7 @@ type HeaderTab = {
   id: string;
   label: string;
   icon?: LucideIcon;
+  emoji?: string;
 };
 
 interface AppHeaderProps {
@@ -44,7 +45,11 @@ export default function AppHeader({
                   className={cn("tab-button", isActive && "tab-button--active")}
                   onClick={() => onTabChange(tab.id)}
                 >
-                  {Icon && <Icon size={14} aria-hidden className="opacity-70" />}
+                  {tab.emoji ? (
+                    <span className="opacity-70" aria-hidden>{tab.emoji}</span>
+                  ) : Icon ? (
+                    <Icon size={14} aria-hidden className="opacity-70" />
+                  ) : null}
                   <span>{tab.label.toUpperCase()}</span>
                 </button>
               );
