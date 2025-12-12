@@ -115,7 +115,7 @@ export function MarkerLegend() {
                       onChange={() => handleToggleType(type.type)}
                     />
                     <span
-                      className="text-base flex-shrink-0"
+                      className="text-base flex-shrink-0 marker-legend-icon"
                       style={{ color: type.defaultColor }}
                     >
                       {type.icon}
