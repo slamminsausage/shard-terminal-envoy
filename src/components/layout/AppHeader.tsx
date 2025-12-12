@@ -46,7 +46,7 @@ export default function AppHeader({
                   onClick={() => onTabChange(tab.id)}
                 >
                   {tab.emoji ? (
-                    <span className="opacity-70" aria-hidden>{tab.emoji}</span>
+                    <span className="opacity-70 text-sm leading-none" style={{ fontSize: '14px' }} aria-hidden>{tab.emoji}</span>
                   ) : Icon ? (
                     <Icon size={14} aria-hidden className="opacity-70" />
                   ) : null}
