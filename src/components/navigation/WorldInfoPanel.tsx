@@ -1,6 +1,9 @@
+import { useState } from "react";
 import { useJumpPlanner } from "@/contexts/JumpPlannerContext";
 import { parseUWP, getStarportDescription, getZoneDescription } from "@/lib/travellerMapApi";
-import type { WorldStatus } from "@/types/navigation";
+import { HexMarkerPanel } from "./HexMarkerPanel";
+import { MarkerEditorModal } from "./MarkerEditorModal";
+import type { WorldStatus, HexMarker } from "@/types/navigation";
 import { Loader2 } from "lucide-react";
 
 const STATUS_OPTIONS: { value: WorldStatus; label: string; color: string }[] = [
@@ -18,13 +21,32 @@ export function WorldInfoPanel() {
   const {
     selectedWorld,
     currentNote,
+    currentLocation,
     isLoadingNote,
     isSavingNote,
     updateNote,
     saveNote,
   } = useJumpPlanner();
 
+  const [isMarkerModalOpen, setIsMarkerModalOpen] = useState(false);
+  const [editingMarker, setEditingMarker] = useState<HexMarker | null>(null);
+
   const uwp = selectedWorld ? parseUWP(selectedWorld.uwp) : null;
+
+  const handleCreateMarker = () => {
+    setEditingMarker(null);
+    setIsMarkerModalOpen(true);
+  };
+
+  const handleEditMarker = (marker: HexMarker) => {
+    setEditingMarker(marker);
+    setIsMarkerModalOpen(true);
+  };
+
+  const handleCloseMarkerModal = () => {
+    setIsMarkerModalOpen(false);
+    setEditingMarker(null);
+  };
 
   return (
     <div className="world-info-panel flex flex-col gap-3 min-w-0">
@@ -110,6 +132,25 @@ export function WorldInfoPanel() {
         </div>
       )}
 
+      {/* Custom Markers Panel */}
+      {currentLocation && (
+        <HexMarkerPanel
+          onEditMarker={handleEditMarker}
+          onCreateMarker={handleCreateMarker}
+        />
+      )}
+
+      {/* Marker Editor Modal */}
+      {currentLocation && (
+        <MarkerEditorModal
+          isOpen={isMarkerModalOpen}
+          onClose={handleCloseMarkerModal}
+          marker={editingMarker}
+          sector={currentLocation.sector}
+          hex={currentLocation.hex}
+        />
+      )}
+
       {/* World Notes Editor */}
       <div className="panel flex-1">
         <div className="panel-header">
@@ -162,16 +203,29 @@ export function WorldInfoPanel() {
                 />
               </div>
 
-              {/* Summary */}
+              {/* Planet Description */}
               <div>
                 <label className="text-[#446655] text-xs block mb-1">
-                  SUMMARY (player-visible):
+                  PLANET DESCRIPTION:
                 </label>
                 <textarea
-                  value={currentNote.summary || ""}
-                  onChange={(e) => updateNote({ summary: e.target.value })}
-                  placeholder="Brief description for players..."
-                  className="terminal-input text-sm min-h-[60px] resize-y"
+                  value={currentNote.planet_description || ""}
+                  onChange={(e) => updateNote({ planet_description: e.target.value })}
+                  placeholder="General planet information visible to all..."
+                  className="terminal-input text-sm min-h-[80px] resize-y"
+                />
+              </div>
+
+              {/* Custom Notes */}
+              <div>
+                <label className="text-[#446655] text-xs block mb-1">
+                  CAMPAIGN NOTES:
+                </label>
+                <textarea
+                  value={currentNote.custom_notes || ""}
+                  onChange={(e) => updateNote({ custom_notes: e.target.value })}
+                  placeholder="Session notes, events, player actions..."
+                  className="terminal-input text-sm min-h-[80px] resize-y"
                 />
               </div>
 
