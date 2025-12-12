@@ -138,21 +138,21 @@ export function BridgeConsole() {
   };
 
   return (
-    <div className="bridge-console h-screen max-h-screen flex flex-col bg-[#0a0e0c] text-[#00ff88] font-mono crt-container border border-primary/30 rounded shadow-[0_0_32px_rgba(0,255,0,0.12)] overflow-hidden">
+    <div className="bridge-console min-h-screen md:h-screen md:max-h-screen flex flex-col bg-[#0a0e0c] text-[#00ff88] font-mono crt-container border border-primary/30 rounded shadow-[0_0_32px_rgba(0,255,0,0.12)] overflow-hidden">
       {/* Header */}
-      <header className="bridge-header flex justify-between items-center px-6 py-3 border-b border-[#1a2420] bg-gradient-to-b from-[#00ff8808] to-transparent">
+      <header className="bridge-header flex flex-col md:flex-row justify-between md:items-center gap-2 px-4 md:px-6 py-3 border-b border-[#1a2420] bg-gradient-to-b from-[#00ff8808] to-transparent">
         <div className="ship-identity">
-          <span className="font-['Orbitron'] font-black text-xl tracking-[4px] drop-shadow-[0_0_20px_#00ff88]">
+          <span className="font-['Orbitron'] font-black text-base md:text-xl tracking-[2px] md:tracking-[4px] drop-shadow-[0_0_20px_#00ff88]">
             {linkedVehicle?.name || playerShip?.name || "NO SHIP SELECTED"}
           </span>
           {(linkedVehicle?.class_type || playerShip?.shipClass) && (
-            <span className="text-[#446655] text-sm ml-4">
+            <span className="text-[#446655] text-xs md:text-sm ml-2 md:ml-4">
               {linkedVehicle?.class_type || playerShip?.shipClass} - {linkedVehicle?.tonnage || playerShip?.tonnage || "?"}t
             </span>
           )}
         </div>
 
-        <div className="header-status flex gap-8 text-sm">
+        <div className="header-status flex gap-4 md:gap-8 text-xs md:text-sm">
           <div className="flex items-center gap-2">
             <div
               className={`w-2 h-2 rounded-full animate-pulse ${
@@ -170,12 +170,12 @@ export function BridgeConsole() {
           </div>
         </div>
       </header>
-      <div className="px-6 pb-2 flex justify-between items-center">
+      <div className="px-3 md:px-6 pb-2 flex flex-col md:flex-row gap-2 md:gap-0 justify-between items-start md:items-center">
         {/* Ship Selector */}
-        <div className="flex items-center gap-3">
-          <span className="text-xs text-[#446655] tracking-[2px]">ACTIVE SHIP:</span>
+        <div className="flex items-center gap-2 md:gap-3 w-full md:w-auto">
+          <span className="text-[0.6rem] md:text-xs text-[#446655] tracking-[2px] whitespace-nowrap">ACTIVE SHIP:</span>
           <select
-            className="bg-[#0d1210] border border-[#1a2420] px-3 py-1 text-xs font-mono text-[#00ff88] rounded focus:outline-none focus:border-[#00ff88] transition-colors"
+            className="bg-[#0d1210] border border-[#1a2420] px-2 md:px-3 py-1 text-[0.65rem] md:text-xs font-mono text-[#00ff88] rounded focus:outline-none focus:border-[#00ff88] transition-colors flex-1 md:flex-none"
             value={playerShip?.vehicleId || selectedVehicleId}
             onChange={(e) => handleShipChange(e.target.value)}
           >
@@ -189,15 +189,15 @@ export function BridgeConsole() {
               ))}
           </select>
         </div>
-        <span className={`text-xs font-mono px-3 py-1 rounded border ${isOnline ? "border-[#00aa55] text-[#00ff88]" : "border-[#ff4455] text-[#ff8899]"}`}>
+        <span className={`text-[0.65rem] md:text-xs font-mono px-2 md:px-3 py-1 rounded border ${isOnline ? "border-[#00aa55] text-[#00ff88]" : "border-[#ff4455] text-[#ff8899]"}`}>
           {isOnline ? "LIVE (Supabase)" : "OFFLINE (local fallback)"}
         </span>
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 grid grid-cols-[1fr_340px] gap-3 p-3 min-h-0 overflow-hidden">
+      <div className="flex-1 grid grid-cols-1 md:grid-cols-[1fr_340px] gap-3 p-2 md:p-3 min-h-0 overflow-y-auto md:overflow-hidden">
         {/* Left: Tactical Display */}
-        <div className="flex flex-col gap-3 min-h-0 overflow-hidden">
+        <div className="flex flex-col gap-3 min-h-0 overflow-hidden order-1">
           <TacticalDisplay
             contacts={contacts}
             selectedContact={selectedContact}
@@ -207,22 +207,22 @@ export function BridgeConsole() {
           />
 
           {/* Navigation Info Bar */}
-          <div className="nav-info grid grid-cols-3 bg-[#0d1210] border border-[#1a2420] rounded">
-            <div className="p-3 text-center border-r border-[#1a2420]">
+          <div className="nav-info grid grid-cols-1 md:grid-cols-3 bg-[#0d1210] border border-[#1a2420] rounded">
+            <div className="p-2 md:p-3 text-center border-b md:border-b-0 md:border-r border-[#1a2420]">
               <div className="text-[0.6rem] text-[#446655] tracking-[2px] mb-1">CURRENT POSITION</div>
-              <div className="font-['Orbitron'] font-bold text-[#00ccff] drop-shadow-[0_0_10px_#00ccff] uppercase">
+              <div className="font-['Orbitron'] font-bold text-sm md:text-base text-[#00ccff] drop-shadow-[0_0_10px_#00ccff] uppercase">
                 {currentPosition}
               </div>
             </div>
-            <div className="p-3 text-center border-r border-[#1a2420]">
+            <div className="p-2 md:p-3 text-center border-b md:border-b-0 md:border-r border-[#1a2420]">
               <div className="text-[0.6rem] text-[#446655] tracking-[2px] mb-1">DESTINATION</div>
-              <div className="font-['Orbitron'] font-bold text-[#00ccff] drop-shadow-[0_0_10px_#00ccff] uppercase">
+              <div className="font-['Orbitron'] font-bold text-sm md:text-base text-[#00ccff] drop-shadow-[0_0_10px_#00ccff] uppercase">
                 {destination || "---"}
               </div>
             </div>
-            <div className="p-3 text-center">
+            <div className="p-2 md:p-3 text-center">
               <div className="text-[0.6rem] text-[#446655] tracking-[2px] mb-1">ETA</div>
-              <div className="font-['Orbitron'] font-bold text-[#00ccff] drop-shadow-[0_0_10px_#00ccff]">
+              <div className="font-['Orbitron'] font-bold text-sm md:text-base text-[#00ccff] drop-shadow-[0_0_10px_#00ccff]">
                 {eta || "---"}
               </div>
             </div>
@@ -230,7 +230,7 @@ export function BridgeConsole() {
         </div>
 
         {/* Right: Sidebar */}
-        <div className="flex flex-col gap-3 min-h-0 overflow-hidden">
+        <div className="flex flex-col gap-3 min-h-0 overflow-hidden order-2">
           <CommunicationsPanel
             messages={messages}
             unreadCount={unreadCount}
