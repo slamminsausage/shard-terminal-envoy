@@ -266,9 +266,20 @@ export function JumpPlannerProvider({ children }: { children: React.ReactNode })
             selectedWorld: worldData,
             routeStart: `${sectorFull} ${paddedHex}`,
           }));
+        } else {
+          // No world at this hex - clear selectedWorld
+          setState((prev) => ({
+            ...prev,
+            selectedWorld: null,
+          }));
         }
       } catch (error) {
         console.error("Failed to get world data:", error);
+        // Clear selectedWorld on error too
+        setState((prev) => ({
+          ...prev,
+          selectedWorld: null,
+        }));
       }
 
       // Load note for this location

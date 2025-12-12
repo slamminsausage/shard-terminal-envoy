@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useJumpPlanner } from "@/contexts/JumpPlannerContext";
 import { getMarkerTypeConfig } from "@/config/markerTypes";
-import { ChevronDown, ChevronRight, Plus, Edit2, Trash2, Eye, EyeOff } from "lucide-react";
+import { AccordionPanel } from "./AccordionPanel";
+import { Plus, Edit2, Trash2, Eye, EyeOff } from "lucide-react";
 import type { HexMarker } from "@/types/navigation";
 
 interface HexMarkerPanelProps {
@@ -11,7 +12,6 @@ interface HexMarkerPanelProps {
 
 export function HexMarkerPanel({ onEditMarker, onCreateMarker }: HexMarkerPanelProps) {
   const { currentHexMarkers, isLoadingMarkers, deleteMarker, toggleMarkerActive } = useJumpPlanner();
-  const [isExpanded, setIsExpanded] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const handleDelete = async (marker: HexMarker) => {
@@ -41,37 +41,24 @@ export function HexMarkerPanel({ onEditMarker, onCreateMarker }: HexMarkerPanelP
     }
   };
 
-  return (
-    <div className="panel overflow-hidden">
-      <div
-        className="panel-header cursor-pointer select-none hover:bg-[#1a2420] transition-colors"
-        onClick={() => setIsExpanded(!isExpanded)}
-      >
-        <div className="flex items-center gap-2">
-          {isExpanded ? (
-            <ChevronDown className="w-4 h-4" />
-          ) : (
-            <ChevronRight className="w-4 h-4" />
-          )}
-          <span className="panel-title">CUSTOM MARKERS</span>
-          <span className="panel-status">
-            {isLoadingMarkers ? "..." : currentHexMarkers.length}
-          </span>
-        </div>
-        <button
-          className="terminal-btn px-2 py-1 text-xs"
-          onClick={(e) => {
-            e.stopPropagation();
-            onCreateMarker();
-          }}
-        >
-          <Plus className="w-3 h-3 inline mr-1" />
-          ADD
-        </button>
-      </div>
+  const headerAction = (
+    <button
+      className="terminal-btn px-2 py-1 text-xs"
+      onClick={onCreateMarker}
+    >
+      <Plus className="w-3 h-3 inline mr-1" />
+      ADD
+    </button>
+  );
 
-      {isExpanded && (
-        <div className="panel-content">
+  return (
+    <AccordionPanel
+      title="CUSTOM MARKERS"
+      statusLabel={isLoadingMarkers ? "..." : currentHexMarkers.length}
+      defaultExpanded={false}
+      headerAction={headerAction}
+    >
+      <div>
           {isLoadingMarkers ? (
             <div className="text-center py-4 text-[#446655]">Loading markers...</div>
           ) : currentHexMarkers.length === 0 ? (
@@ -167,7 +154,6 @@ export function HexMarkerPanel({ onEditMarker, onCreateMarker }: HexMarkerPanelP
             </div>
           )}
         </div>
-      )}
-    </div>
+    </AccordionPanel>
   );
 }

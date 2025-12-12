@@ -1,13 +1,11 @@
-import { useState } from "react";
 import { useJumpPlanner } from "@/contexts/JumpPlannerContext";
 import { getAllMarkerTypes } from "@/config/markerTypes";
-import { ChevronDown, ChevronRight, Filter } from "lucide-react";
+import { AccordionPanel } from "./AccordionPanel";
+import { Filter } from "lucide-react";
 import type { MarkerType } from "@/types/navigation";
 
 export function MarkerLegend() {
   const { markerFilter, setMarkerFilter, hexMarkers } = useJumpPlanner();
-  const [isExpanded, setIsExpanded] = useState(false);
-
   const markerTypes = getAllMarkerTypes();
 
   // Count markers by type
@@ -44,26 +42,20 @@ export function MarkerLegend() {
     return !markerFilter.types.includes(type);
   };
 
-  return (
-    <div className="panel overflow-hidden">
-      <div
-        className="panel-header cursor-pointer select-none hover:bg-[#1a2420] transition-colors"
-        onClick={() => setIsExpanded(!isExpanded)}
-      >
-        <div className="flex items-center gap-2">
-          {isExpanded ? (
-            <ChevronDown className="w-4 h-4" />
-          ) : (
-            <ChevronRight className="w-4 h-4" />
-          )}
-          <Filter className="w-4 h-4" />
-          <span className="panel-title">MARKER LEGEND</span>
-          <span className="panel-status">{hexMarkers.length}</span>
-        </div>
-      </div>
+  const headerAction = (
+    <div className="flex items-center gap-2 text-[#446655]">
+      <Filter className="w-4 h-4" />
+    </div>
+  );
 
-      {isExpanded && (
-        <div className="panel-content">
+  return (
+    <AccordionPanel
+      title="MARKER LEGEND"
+      statusLabel={hexMarkers.length}
+      defaultExpanded={false}
+      headerAction={headerAction}
+    >
+      <div>
           {/* Quick Actions */}
           <div className="flex gap-2 mb-3">
             <button
@@ -154,7 +146,6 @@ export function MarkerLegend() {
             </div>
           </div>
         </div>
-      )}
-    </div>
+    </AccordionPanel>
   );
 }

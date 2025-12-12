@@ -1,6 +1,9 @@
 import { StarMapPanel } from "./StarMapPanel";
 import { ControlPanel } from "./ControlPanel";
 import { WorldInfoPanel } from "./WorldInfoPanel";
+import { CustomMarkersPanel } from "./CustomMarkersPanel";
+import { CampaignNotesPanel } from "./CampaignNotesPanel";
+import { MarkerLegend } from "./MarkerLegend";
 
 export function JumpPlannerInterface() {
   return (
@@ -27,10 +30,22 @@ export function JumpPlannerInterface() {
           <StarMapPanel />
         </div>
 
-        {/* Right: Controls & Info */}
+        {/* Right: Controls & Info - Reorganized Order */}
         <div className="flex flex-col gap-3 min-h-0 min-w-0 overflow-y-auto max-h-[calc(100vh-180px)] pr-1">
+          {/* 1-3: Jump Calculator, Jump Worlds, Route Planner (in ControlPanel with accordions) */}
           <ControlPanel />
+
+          {/* 4: World Information (non-collapsible, hidden when no world) */}
           <WorldInfoPanel />
+
+          {/* 5: Custom Markers (accordion) */}
+          <CustomMarkersPanel />
+
+          {/* 6: Campaign Notes (accordion) */}
+          <CampaignNotesPanel />
+
+          {/* 7: Marker Legend (accordion, at bottom) */}
+          <MarkerLegend />
         </div>
       </div>
     </div>

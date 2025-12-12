@@ -1,7 +1,6 @@
 import { useJumpPlanner } from "@/contexts/JumpPlannerContext";
 import { parseUWP, getZoneDescription, type WorldSearchResult } from "@/lib/travellerMapApi";
 import { WorldSearchAutocomplete } from "./WorldSearchAutocomplete";
-import { MarkerLegend } from "./MarkerLegend";
 import { Loader2 } from "lucide-react";
 
 export function ControlPanel() {
@@ -269,9 +268,6 @@ export function ControlPanel() {
           )}
         </div>
       </div>
-
-      {/* Marker Legend */}
-      <MarkerLegend />
     </div>
   );
 }
