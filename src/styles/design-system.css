@@ -625,6 +625,64 @@ textarea.terminal-input {
    RESPONSIVE UTILITIES
    =================================== */
 @media (max-width: 768px) {
+  /* Bridge Console mobile fixes */
+  .bridge-console {
+    height: auto !important;
+    max-height: none !important;
+  }
+
+  .bridge-console > div:has(.grid.grid-cols-\[1fr_340px\]) {
+    grid-template-columns: 1fr !important;
+    overflow-y: auto !important;
+    max-height: none !important;
+  }
+
+  .bridge-console .grid.grid-cols-\[1fr_340px\] {
+    grid-template-columns: 1fr !important;
+    overflow-y: auto !important;
+    max-height: none !important;
+  }
+
+  .tactical-display {
+    max-height: 400px !important;
+    min-height: 300px !important;
+  }
+
+  .tactical-display svg {
+    max-width: 100% !important;
+    max-height: 350px !important;
+  }
+
+  .bridge-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 0.5rem !important;
+    padding: 0.75rem 1rem !important;
+  }
+
+  .bridge-header .ship-identity span:first-child {
+    font-size: 1rem !important;
+    letter-spacing: 2px !important;
+  }
+
+  .bridge-header .header-status {
+    font-size: 0.7rem !important;
+    gap: 1rem !important;
+  }
+
+  .nav-info {
+    grid-template-columns: 1fr !important;
+  }
+
+  .nav-info > div {
+    border-right: none !important;
+    border-bottom: 1px solid #1a2420 !important;
+  }
+
+  .nav-info > div:last-child {
+    border-bottom: none !important;
+  }
+
   /* Header responsive layout */
   .app-shell-header .container {
     padding-left: 1rem !important;
@@ -732,6 +790,21 @@ textarea.terminal-input {
 
 /* Small mobile devices */
 @media (max-width: 480px) {
+  .bridge-console .grid.grid-cols-\[1fr_340px\] {
+    padding: 0.5rem !important;
+    gap: 0.75rem !important;
+  }
+
+  .tactical-display {
+    max-height: 300px !important;
+    min-height: 250px !important;
+  }
+
+  .bridge-header .ship-identity span:first-child {
+    font-size: 0.875rem !important;
+    letter-spacing: 1px !important;
+  }
+
   .app-shell-title {
     font-size: 1rem !important;
     letter-spacing: 0.05em !important;
