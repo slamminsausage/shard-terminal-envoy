@@ -19,7 +19,7 @@ export function AccordionPanel({
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
 
   return (
-    <div className="panel overflow-hidden">
+    <div className="panel accordion-panel overflow-hidden">
       <div
         className="panel-header cursor-pointer select-none hover:bg-[#1a2420] transition-colors"
         onClick={() => setIsExpanded(!isExpanded)}

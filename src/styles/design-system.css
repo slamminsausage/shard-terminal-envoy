@@ -138,6 +138,12 @@
   overflow-y: auto;
 }
 
+/* Override height for accordion panels to allow natural flow */
+.panel.accordion-panel .panel-content,
+.accordion-panel .panel-content {
+  height: auto;
+}
+
 /* ===================================
    BUTTON STYLES
    =================================== */
