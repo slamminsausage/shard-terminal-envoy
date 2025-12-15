@@ -172,12 +172,14 @@ export function JumpPlannerProvider({ children }: { children: React.ReactNode })
   // Load all notes on mount
   useEffect(() => {
     loadAllNotes();
-  }, [loadAllNotes]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Load all markers on mount
   useEffect(() => {
     loadAllMarkers();
-  }, [loadAllMarkers]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Load player location from Supabase (with localStorage fallback) on mount
   useEffect(() => {
@@ -589,7 +591,8 @@ export function JumpPlannerProvider({ children }: { children: React.ReactNode })
       }));
       throw error;
     }
-  }, [loadMarkersForHex, loadAllMarkers]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const deleteMarker = useCallback(async (id: string) => {
     try {
