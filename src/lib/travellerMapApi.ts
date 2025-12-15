@@ -122,73 +122,6 @@ export async function sectorHexToWorldSpace(
 }
 
 /**
- * HexMarker with pre-calculated world-space coordinates
- */
-export interface MarkerWithWorldCoords extends HexMarker {
-  worldX: number;
-  worldY: number;
-}
-
-/**
- * Generate overlay circle parameter string from markers
- * Format: x!y!radius!fillstyle~x2!y2!radius!fillstyle~...
- */
-export function generateOverlayCircles(
-  markers: MarkerWithWorldCoords[],
-  options: { radius?: number } = {}
-): string {
-  const radius = options.radius ?? 0.5; // Default 0.5 parsec radius
-
-  const activeMarkers = markers.filter((m) => m.is_active !== false);
-
-  console.log(`[Overlay Circles] Processing ${activeMarkers.length} active markers out of ${markers.length} total`);
-
-  const overlays = activeMarkers.map((marker) => {
-    const { worldX, worldY } = marker;
-    const color = marker.marker_color || "#ff0000"; // Default to red
-    // Don't encode color here - URLSearchParams.set() will handle encoding automatically
-
-    console.log(`[Overlay Circles] Marker "${marker.marker_label}" at (${worldX}, ${worldY}) with color ${color}`);
-
-    return `${worldX}!${worldY}!${radius}!${color}`;
-  });
-
-  const result = overlays.join("~");
-  console.log(`[Overlay Circles] Generated overlay string:`, result);
-
-  return result;
-}
-
-/**
- * Calculate world-space coordinates for all markers
- */
-export async function calculateMarkerWorldCoordinates(
-  markers: HexMarker[]
-): Promise<MarkerWithWorldCoords[]> {
-  console.log(`[Marker Coords] Calculating world coordinates for ${markers.length} markers`);
-
-  const markersWithCoords = await Promise.all(
-    markers.map(async (marker) => {
-      const coords = await sectorHexToWorldSpace(marker.sector, marker.hex);
-
-      if (!coords) {
-        console.warn(`[Marker Coords] Failed to calculate coordinates for marker "${marker.marker_label}" at ${marker.sector} ${marker.hex}`);
-      } else {
-        console.log(`[Marker Coords] Marker "${marker.marker_label}": ${marker.sector} ${marker.hex} → (${coords.x}, ${coords.y})`);
-      }
-
-      return {
-        ...marker,
-        worldX: coords?.x ?? 0,
-        worldY: coords?.y ?? 0,
-      };
-    })
-  );
-
-  return markersWithCoords;
-}
-
-/**
  * Sector name to abbreviation mapping (reverse lookup)
  * TravellerMap uses first 4 letters as abbreviations (except Ley which is 3)
  */
@@ -639,8 +572,6 @@ export function generateMapUrl(
     routes?: boolean;
     yahSector?: string;
     yahHex?: string;
-    markers?: MarkerWithWorldCoords[];
-    markerRadius?: number;
   } = {}
 ): string {
   const sectorFull = getSectorFullName(sector);
@@ -689,16 +620,6 @@ export function generateMapUrl(
   if (yahSector && yahHex) {
     url.searchParams.set("yah_sector", yahSector);
     url.searchParams.set("yah_hex", padHex(yahHex));
-  }
-
-  // Custom marker overlays
-  if (options.markers && options.markers.length > 0) {
-    const overlayString = generateOverlayCircles(options.markers, {
-      radius: options.markerRadius,
-    });
-    if (overlayString) {
-      url.searchParams.set("oc", overlayString);
-    }
   }
 
   return url.toString();

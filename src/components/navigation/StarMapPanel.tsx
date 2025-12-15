@@ -2,6 +2,7 @@ import { useRef, useEffect, useState } from "react";
 import { useJumpPlanner } from "@/contexts/JumpPlannerContext";
 import { generateMapUrl, padHex, getSectorFullName, type WorldSearchResult } from "@/lib/travellerMapApi";
 import { WorldSearchAutocomplete } from "./WorldSearchAutocomplete";
+import { MapMarkerOverlay } from "./MapMarkerOverlay";
 import { MapPin, Navigation } from "lucide-react";
 
 export function StarMapPanel() {
@@ -11,7 +12,7 @@ export function StarMapPanel() {
     mapHex,
     currentLocation,
     playerLocation,
-    markersWithWorldCoords,
+    hexMarkers,
     setMapLocation,
     setCurrentLocation,
     setPlayerLocation,
@@ -51,19 +52,13 @@ export function StarMapPanel() {
     }
   };
 
-  // Generate map URL with "You Are Here" marker and custom markers
+  // Generate map URL with "You Are Here" marker
   const mapUrl = generateMapUrl(mapSector, mapHex, {
-    style: "poster", // switch back to the original TravellerMap look
+    style: "poster",
     scale: 32,
     yahSector: playerLocation?.sector,
     yahHex: playerLocation?.hex,
-    markers: markersWithWorldCoords,
-    markerRadius: 5, // 5 parsec radius circles (increased from 0.5 for visibility)
   });
-
-  // Debug: Log the generated URL to verify oc parameter is present
-  console.log("[StarMapPanel] Generated map URL:", mapUrl);
-  console.log("[StarMapPanel] Number of markers with world coords:", markersWithWorldCoords.length);
 
   return (
     <div className="star-map-panel flex-1 flex flex-col panel min-w-0">
@@ -150,7 +145,7 @@ export function StarMapPanel() {
           </div>
         )}
 
-        {/* Map Iframe */}
+        {/* Map Iframe with Marker Overlay */}
         <div className="flex-1 relative min-h-[320px] min-w-0">
           <iframe
             ref={iframeRef}
@@ -160,6 +155,13 @@ export function StarMapPanel() {
             className="absolute inset-0 w-full h-full border-t border-[#1a2420]"
             title="TravellerMap"
             allow="fullscreen"
+          />
+          {/* SVG Overlay for Hex Markers */}
+          <MapMarkerOverlay
+            markers={hexMarkers}
+            centerSector={mapSector}
+            centerHex={mapHex}
+            scale={32}
           />
         </div>
 
