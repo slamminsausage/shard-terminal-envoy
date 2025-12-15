@@ -29,7 +29,7 @@ export function ControlPanel() {
   } = useJumpPlanner();
 
   return (
-    <div className="control-panel flex flex-col gap-3">
+    <div className="control-panel flex flex-col gap-3 flex-shrink-0">
       {/* Error Display */}
       {error && (
         <div className="panel border-[#ff4455]">
