@@ -54,11 +54,15 @@ export async function getSectorCoordinates(
 
   // Check cache first
   if (sectorCoordinatesCache.has(sectorKey)) {
-    return sectorCoordinatesCache.get(sectorKey)!;
+    const cached = sectorCoordinatesCache.get(sectorKey)!;
+    console.log(`[Sector Coords] Using cached coordinates for "${sector}": sx=${cached.sx}, sy=${cached.sy}`);
+    return cached;
   }
 
   try {
     const sectorFull = getSectorFullName(sector);
+    console.log(`[Sector Coords] Fetching metadata for "${sector}" (full name: "${sectorFull}")`);
+
     const url = new URL("/api/metadata", TRAVELLER_MAP_BASE_URL);
     url.searchParams.set("sector", sectorFull);
 
@@ -69,7 +73,7 @@ export async function getSectorCoordinates(
     });
 
     if (!response.ok) {
-      console.error("Metadata API error:", response.status);
+      console.error(`[Sector Coords] Metadata API error for "${sector}":`, response.status);
       return null;
     }
 
@@ -80,15 +84,16 @@ export async function getSectorCoordinates(
     const sy = data.SectorY ?? data.sy ?? data.Y;
 
     if (sx === undefined || sy === undefined) {
-      console.error("Could not find sector coordinates in metadata:", data);
+      console.error(`[Sector Coords] Could not find sector coordinates in metadata for "${sector}":`, data);
       return null;
     }
 
     const coords = { sx, sy };
+    console.log(`[Sector Coords] Fetched coordinates for "${sector}": sx=${sx}, sy=${sy}`);
     sectorCoordinatesCache.set(sectorKey, coords);
     return coords;
   } catch (error) {
-    console.error("Failed to get sector coordinates:", error);
+    console.error(`[Sector Coords] Failed to get sector coordinates for "${sector}":`, error);
     return null;
   }
 }
@@ -134,17 +139,24 @@ export function generateOverlayCircles(
 ): string {
   const radius = options.radius ?? 0.5; // Default 0.5 parsec radius
 
-  const overlays = markers
-    .filter((m) => m.is_active !== false) // Include active markers (default true if undefined)
-    .map((marker) => {
-      const { worldX, worldY } = marker;
-      const color = marker.marker_color || "#ff0000"; // Default to red
-      const encodedColor = encodeURIComponent(color);
+  const activeMarkers = markers.filter((m) => m.is_active !== false);
 
-      return `${worldX}!${worldY}!${radius}!${encodedColor}`;
-    });
+  console.log(`[Overlay Circles] Processing ${activeMarkers.length} active markers out of ${markers.length} total`);
 
-  return overlays.join("~");
+  const overlays = activeMarkers.map((marker) => {
+    const { worldX, worldY } = marker;
+    const color = marker.marker_color || "#ff0000"; // Default to red
+    const encodedColor = encodeURIComponent(color);
+
+    console.log(`[Overlay Circles] Marker "${marker.marker_label}" at (${worldX}, ${worldY}) with color ${color}`);
+
+    return `${worldX}!${worldY}!${radius}!${encodedColor}`;
+  });
+
+  const result = overlays.join("~");
+  console.log(`[Overlay Circles] Generated overlay string:`, result);
+
+  return result;
 }
 
 /**
@@ -153,9 +165,18 @@ export function generateOverlayCircles(
 export async function calculateMarkerWorldCoordinates(
   markers: HexMarker[]
 ): Promise<MarkerWithWorldCoords[]> {
+  console.log(`[Marker Coords] Calculating world coordinates for ${markers.length} markers`);
+
   const markersWithCoords = await Promise.all(
     markers.map(async (marker) => {
       const coords = await sectorHexToWorldSpace(marker.sector, marker.hex);
+
+      if (!coords) {
+        console.warn(`[Marker Coords] Failed to calculate coordinates for marker "${marker.marker_label}" at ${marker.sector} ${marker.hex}`);
+      } else {
+        console.log(`[Marker Coords] Marker "${marker.marker_label}": ${marker.sector} ${marker.hex} → (${coords.x}, ${coords.y})`);
+      }
+
       return {
         ...marker,
         worldX: coords?.x ?? 0,
