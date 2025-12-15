@@ -138,10 +138,32 @@
   overflow-y: auto;
 }
 
-/* Override height for accordion panels to allow natural flow */
+/* Ensure accordion panels stack properly in flex containers */
+.panel.accordion-panel,
+.accordion-panel {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-height: fit-content;
+  position: relative;
+}
+
+/* Accordion panel header - ensure it's positioned properly */
+.panel.accordion-panel .panel-header,
+.accordion-panel .panel-header {
+  flex-shrink: 0;
+  position: relative;
+  z-index: 1;
+}
+
+/* Override height and overflow for accordion panel content to allow natural flow */
 .panel.accordion-panel .panel-content,
 .accordion-panel .panel-content {
   height: auto;
+  overflow-y: visible;
+  max-height: none;
+  flex-shrink: 0;
 }
 
 /* ===================================
