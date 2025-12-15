@@ -7,8 +7,6 @@ import {
   padHex,
   getSectorAbbreviation,
   getSectorFullName,
-  calculateMarkerWorldCoordinates,
-  type MarkerWithWorldCoords,
 } from "@/lib/travellerMapApi";
 import { dbHelpers } from "@/lib/supabase";
 import type {
@@ -57,7 +55,6 @@ interface JumpPlannerState {
   // Hex markers
   hexMarkers: HexMarker[];
   currentHexMarkers: HexMarker[];
-  markersWithWorldCoords: MarkerWithWorldCoords[]; // Markers with pre-calculated world-space coords for map overlay
   isLoadingMarkers: boolean;
   isSavingMarker: boolean;
   markerFilter: MarkerFilter;
@@ -139,7 +136,6 @@ const initialState: JumpPlannerState = {
   isSavingNote: false,
   hexMarkers: [],
   currentHexMarkers: [],
-  markersWithWorldCoords: [],
   isLoadingMarkers: false,
   isSavingMarker: false,
   markerFilter: {
@@ -535,14 +531,9 @@ export function JumpPlannerProvider({ children }: { children: React.ReactNode })
     setState((prev) => ({ ...prev, isLoadingMarkers: true }));
     try {
       const markers = await dbHelpers.getAllHexMarkers();
-
-      // Calculate world-space coordinates for all markers
-      const markersWithCoords = await calculateMarkerWorldCoordinates(markers);
-
       setState((prev) => ({
         ...prev,
         hexMarkers: markers,
-        markersWithWorldCoords: markersWithCoords,
         isLoadingMarkers: false
       }));
     } catch (error) {
@@ -603,7 +594,6 @@ export function JumpPlannerProvider({ children }: { children: React.ReactNode })
         ...prev,
         hexMarkers: prev.hexMarkers.filter((m) => m.id !== id),
         currentHexMarkers: prev.currentHexMarkers.filter((m) => m.id !== id),
-        markersWithWorldCoords: prev.markersWithWorldCoords.filter((m) => m.id !== id),
       }));
     } catch (error) {
       console.error("Failed to delete marker:", error);
@@ -626,9 +616,6 @@ export function JumpPlannerProvider({ children }: { children: React.ReactNode })
           m.id === id ? { ...m, is_active: isActive } : m
         ),
         currentHexMarkers: prev.currentHexMarkers.map((m) =>
-          m.id === id ? { ...m, is_active: isActive } : m
-        ),
-        markersWithWorldCoords: prev.markersWithWorldCoords.map((m) =>
           m.id === id ? { ...m, is_active: isActive } : m
         ),
       }));
