@@ -58,7 +58,7 @@ export function StarMapPanel() {
     yahSector: playerLocation?.sector,
     yahHex: playerLocation?.hex,
     markers: markersWithWorldCoords,
-    markerRadius: 0.5, // 0.5 parsec radius circles
+    markerRadius: 5, // 5 parsec radius circles (increased from 0.5 for visibility)
   });
 
   // Debug: Log the generated URL to verify oc parameter is present
