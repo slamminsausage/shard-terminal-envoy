@@ -11,7 +11,7 @@ interface HexMarkerPanelProps {
 }
 
 export function HexMarkerPanel({ onEditMarker, onCreateMarker }: HexMarkerPanelProps) {
-  const { currentHexMarkers, isLoadingMarkers, deleteMarker, toggleMarkerActive } = useJumpPlanner();
+  const { currentHexMarkers, isLoadingMarkers, deleteMarker, toggleMarkerActive, currentLocation } = useJumpPlanner();
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const handleDelete = async (marker: HexMarker) => {
@@ -54,11 +54,15 @@ export function HexMarkerPanel({ onEditMarker, onCreateMarker }: HexMarkerPanelP
   return (
     <AccordionPanel
       title="CUSTOM MARKERS"
-      statusLabel={isLoadingMarkers ? "..." : currentHexMarkers.length}
+      statusLabel={!currentLocation ? "????" : isLoadingMarkers ? "..." : currentHexMarkers.length}
       defaultExpanded={false}
-      headerAction={headerAction}
+      headerAction={currentLocation ? headerAction : undefined}
     >
-      {isLoadingMarkers ? (
+      {!currentLocation ? (
+        <div className="text-center py-4 text-[#446655]">
+          Select a hex to view or add markers
+        </div>
+      ) : isLoadingMarkers ? (
         <div className="text-center py-4 text-[#446655]">Loading markers...</div>
       ) : currentHexMarkers.length === 0 ? (
         <div className="text-center py-4 text-[#446655]">

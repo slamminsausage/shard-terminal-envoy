@@ -24,10 +24,6 @@ export function CustomMarkersPanel() {
     setEditingMarker(null);
   };
 
-  if (!currentLocation) {
-    return null;
-  }
-
   return (
     <>
       <HexMarkerPanel
@@ -35,13 +31,15 @@ export function CustomMarkersPanel() {
         onCreateMarker={handleCreateMarker}
       />
 
-      <MarkerEditorModal
-        isOpen={isMarkerModalOpen}
-        onClose={handleCloseMarkerModal}
-        marker={editingMarker}
-        sector={currentLocation.sector}
-        hex={currentLocation.hex}
-      />
+      {currentLocation && (
+        <MarkerEditorModal
+          isOpen={isMarkerModalOpen}
+          onClose={handleCloseMarkerModal}
+          marker={editingMarker}
+          sector={currentLocation.sector}
+          hex={currentLocation.hex}
+        />
+      )}
     </>
   );
 }

@@ -24,17 +24,17 @@ export function CampaignNotesPanel() {
     saveNote,
   } = useJumpPlanner();
 
-  if (!currentLocation) {
-    return null;
-  }
-
   return (
     <AccordionPanel
       title="CAMPAIGN NOTES"
-      statusLabel={isSavingNote ? "SAVING..." : undefined}
+      statusLabel={!currentLocation ? "????" : isSavingNote ? "SAVING..." : undefined}
       defaultExpanded={false}
     >
-      {isLoadingNote ? (
+      {!currentLocation ? (
+        <div className="text-center py-8 text-[#446655]">
+          <p>Select a hex to view or add campaign notes</p>
+        </div>
+      ) : isLoadingNote ? (
         <div className="flex items-center justify-center py-8">
           <Loader2 className="w-6 h-6 animate-spin text-primary" />
         </div>
