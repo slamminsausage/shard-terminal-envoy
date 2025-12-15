@@ -15,6 +15,7 @@ import type {
   RouteRequest,
   SearchResponse,
   SearchResultItem,
+  HexMarker,
 } from "@/types/navigation";
 
 const TRAVELLER_MAP_BASE_URL = "https://travellermap.com";
@@ -26,6 +27,144 @@ export function padHex(hex: string | undefined | null): string {
   if (!hex) return "0000";
   const cleaned = hex.replace(/\D/g, "");
   return cleaned.padStart(4, "0");
+}
+
+/**
+ * Parse hex string "1910" into { hx: 19, hy: 10 }
+ */
+export function parseHexCoords(hex: string): { hx: number; hy: number } {
+  const padded = padHex(hex);
+  const hx = parseInt(padded.substring(0, 2), 10);
+  const hy = parseInt(padded.substring(2, 4), 10);
+  return { hx, hy };
+}
+
+/**
+ * Cache for sector coordinates to avoid repeated API calls
+ */
+const sectorCoordinatesCache = new Map<string, { sx: number; sy: number }>();
+
+/**
+ * Get sector coordinates (sx, sy) from sector name using Metadata API
+ */
+export async function getSectorCoordinates(
+  sector: string
+): Promise<{ sx: number; sy: number } | null> {
+  const sectorKey = sector.toLowerCase().trim();
+
+  // Check cache first
+  if (sectorCoordinatesCache.has(sectorKey)) {
+    return sectorCoordinatesCache.get(sectorKey)!;
+  }
+
+  try {
+    const sectorFull = getSectorFullName(sector);
+    const url = new URL("/api/metadata", TRAVELLER_MAP_BASE_URL);
+    url.searchParams.set("sector", sectorFull);
+
+    const response = await fetch(url.toString(), {
+      headers: {
+        Accept: "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      console.error("Metadata API error:", response.status);
+      return null;
+    }
+
+    const data = await response.json();
+
+    // Try different possible field names
+    const sx = data.SectorX ?? data.sx ?? data.X;
+    const sy = data.SectorY ?? data.sy ?? data.Y;
+
+    if (sx === undefined || sy === undefined) {
+      console.error("Could not find sector coordinates in metadata:", data);
+      return null;
+    }
+
+    const coords = { sx, sy };
+    sectorCoordinatesCache.set(sectorKey, coords);
+    return coords;
+  } catch (error) {
+    console.error("Failed to get sector coordinates:", error);
+    return null;
+  }
+}
+
+/**
+ * Convert sector/hex to world-space coordinates (in parsecs)
+ * World-space: Reference point is Core sector 0140 at (0, 0)
+ * Positive X = Trailing, Positive Y = Rimward
+ */
+export async function sectorHexToWorldSpace(
+  sector: string,
+  hex: string
+): Promise<{ x: number; y: number } | null> {
+  const sectorCoords = await getSectorCoordinates(sector);
+  if (!sectorCoords) return null;
+
+  const { hx, hy } = parseHexCoords(hex);
+  const { sx, sy } = sectorCoords;
+
+  // World-space formula
+  // Reference is at Core sector (sx=0, sy=0) hex 0140 (hx=1, hy=40)
+  const x = sx * 32 + (hx - 1);
+  const y = sy * 40 + (hy - 40);
+
+  return { x, y };
+}
+
+/**
+ * HexMarker with pre-calculated world-space coordinates
+ */
+export interface MarkerWithWorldCoords extends HexMarker {
+  worldX: number;
+  worldY: number;
+}
+
+/**
+ * Generate overlay circle parameter string from markers
+ * Format: x!y!radius!fillstyle~x2!y2!radius!fillstyle~...
+ */
+export function generateOverlayCircles(
+  markers: MarkerWithWorldCoords[],
+  options: { radius?: number } = {}
+): string {
+  const radius = options.radius ?? 0.5; // Default 0.5 parsec radius
+
+  const overlays = markers
+    .filter((m) => m.is_active !== false) // Include active markers (default true if undefined)
+    .map((marker) => {
+      const { worldX, worldY } = marker;
+      const color = marker.marker_color || "#ff0000"; // Default to red
+      const encodedColor = encodeURIComponent(color);
+
+      return `${worldX}!${worldY}!${radius}!${encodedColor}`;
+    });
+
+  return overlays.join("~");
+}
+
+/**
+ * Calculate world-space coordinates for all markers
+ */
+export async function calculateMarkerWorldCoordinates(
+  markers: HexMarker[]
+): Promise<MarkerWithWorldCoords[]> {
+  const markersWithCoords = await Promise.all(
+    markers.map(async (marker) => {
+      const coords = await sectorHexToWorldSpace(marker.sector, marker.hex);
+      return {
+        ...marker,
+        worldX: coords?.x ?? 0,
+        worldY: coords?.y ?? 0,
+      };
+    })
+  );
+
+  return markersWithCoords;
 }
 
 /**
@@ -479,6 +618,8 @@ export function generateMapUrl(
     routes?: boolean;
     yahSector?: string;
     yahHex?: string;
+    markers?: MarkerWithWorldCoords[];
+    markerRadius?: number;
   } = {}
 ): string {
   const sectorFull = getSectorFullName(sector);
@@ -527,6 +668,16 @@ export function generateMapUrl(
   if (yahSector && yahHex) {
     url.searchParams.set("yah_sector", yahSector);
     url.searchParams.set("yah_hex", padHex(yahHex));
+  }
+
+  // Custom marker overlays
+  if (options.markers && options.markers.length > 0) {
+    const overlayString = generateOverlayCircles(options.markers, {
+      radius: options.markerRadius,
+    });
+    if (overlayString) {
+      url.searchParams.set("oc", overlayString);
+    }
   }
 
   return url.toString();
