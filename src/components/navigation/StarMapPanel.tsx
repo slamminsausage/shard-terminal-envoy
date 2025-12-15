@@ -58,8 +58,12 @@ export function StarMapPanel() {
     yahSector: playerLocation?.sector,
     yahHex: playerLocation?.hex,
     markers: markersWithWorldCoords,
-    markerRadius: 0.5, // 0.5 parsec radius circles
+    markerRadius: 5, // 5 parsec radius circles (increased from 0.5 for visibility)
   });
+
+  // Debug: Log the generated URL to verify oc parameter is present
+  console.log("[StarMapPanel] Generated map URL:", mapUrl);
+  console.log("[StarMapPanel] Number of markers with world coords:", markersWithWorldCoords.length);
 
   return (
     <div className="star-map-panel flex-1 flex flex-col panel min-w-0">
