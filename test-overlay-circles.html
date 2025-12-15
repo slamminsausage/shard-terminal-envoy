@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>TravellerMap Overlay Circle Test</title>
+  <style>
+    body { margin: 0; padding: 20px; font-family: monospace; }
+    iframe { width: 100%; height: 600px; border: 2px solid #ccc; margin: 10px 0; }
+    .url-display { background: #f0f0f0; padding: 10px; margin: 10px 0; word-break: break-all; }
+  </style>
+</head>
+<body>
+  <h1>TravellerMap Overlay Circle Parameter Test</h1>
+
+  <h2>Test 1: Standard Map (No Overlay)</h2>
+  <div class="url-display">
+    https://travellermap.com/go/Reft/0414?style=poster&scale=32
+  </div>
+  <iframe src="https://travellermap.com/go/Reft/0414?style=poster&scale=32"></iframe>
+
+  <h2>Test 2: With "You Are Here" Marker (Known to Work)</h2>
+  <div class="url-display">
+    https://travellermap.com/go/Reft/0414?style=poster&scale=32&yah_sector=Reft&yah_hex=0414
+  </div>
+  <iframe src="https://travellermap.com/go/Reft/0414?style=poster&scale=32&yah_sector=Reft&yah_hex=0414"></iframe>
+
+  <h2>Test 3: With "oc" Parameter (Testing Overlay Circles)</h2>
+  <div class="url-display">
+    https://travellermap.com/go/Reft/0414?style=poster&scale=32&oc=-93!-25!1!red~-93!-26!1!blue
+  </div>
+  <iframe src="https://travellermap.com/go/Reft/0414?style=poster&scale=32&oc=-93!-25!1!red~-93!-26!1!blue"></iframe>
+
+  <h2>Test 4: With "oc" Parameter + Larger Radius + Hex Colors</h2>
+  <div class="url-display">
+    https://travellermap.com/go/Reft/0414?style=poster&scale=32&oc=-93!-25!3!%23ff0000~-93!-26!3!%230000ff
+  </div>
+  <iframe src="https://travellermap.com/go/Reft/0414?style=poster&scale=32&oc=-93!-25!3!%23ff0000~-93!-26!3!%230000ff"></iframe>
+
+  <h2>Instructions</h2>
+  <p>Compare the four maps above:</p>
+  <ul>
+    <li><strong>Test 1:</strong> Should show a standard map with no markers</li>
+    <li><strong>Test 2:</strong> Should show the "YOU ARE HERE" pin marker (proves the API works for that feature)</li>
+    <li><strong>Test 3 & 4:</strong> If overlay circles work, you should see red and blue circles. If they DON'T appear, the "oc" parameter is not supported by TravellerMap</li>
+  </ul>
+
+  <p><strong>Expected markers at world coordinates:</strong></p>
+  <ul>
+    <li>(-93, -25) = Reft 0414 (Riftjaw)</li>
+    <li>(-93, -26) = Reft 0415 (Blacksite ES1)</li>
+  </ul>
+</body>
+</html>

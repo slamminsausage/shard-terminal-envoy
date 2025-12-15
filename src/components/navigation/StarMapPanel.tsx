@@ -61,6 +61,10 @@ export function StarMapPanel() {
     markerRadius: 0.5, // 0.5 parsec radius circles
   });
 
+  // Debug: Log the generated URL to verify oc parameter is present
+  console.log("[StarMapPanel] Generated map URL:", mapUrl);
+  console.log("[StarMapPanel] Number of markers with world coords:", markersWithWorldCoords.length);
+
   return (
     <div className="star-map-panel flex-1 flex flex-col panel min-w-0">
       <div className="panel-header">
