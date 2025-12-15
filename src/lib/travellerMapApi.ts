@@ -118,6 +118,8 @@ export async function sectorHexToWorldSpace(
   const x = sx * 32 + (hx - 1);
   const y = sy * 40 + (hy - 40);
 
+  console.log(`[World Space] ${sector} ${hex}: sx=${sx}, sy=${sy}, hx=${hx}, hy=${hy} → world (${x}, ${y})`);
+
   return { x, y };
 }
 
