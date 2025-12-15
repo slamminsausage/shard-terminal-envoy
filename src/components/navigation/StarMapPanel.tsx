@@ -11,6 +11,7 @@ export function StarMapPanel() {
     mapHex,
     currentLocation,
     playerLocation,
+    markersWithWorldCoords,
     setMapLocation,
     setCurrentLocation,
     setPlayerLocation,
@@ -50,12 +51,14 @@ export function StarMapPanel() {
     }
   };
 
-  // Generate map URL with "You Are Here" marker if player location is set
+  // Generate map URL with "You Are Here" marker and custom markers
   const mapUrl = generateMapUrl(mapSector, mapHex, {
     style: "poster", // switch back to the original TravellerMap look
     scale: 32,
     yahSector: playerLocation?.sector,
     yahHex: playerLocation?.hex,
+    markers: markersWithWorldCoords,
+    markerRadius: 0.5, // 0.5 parsec radius circles
   });
 
   return (
