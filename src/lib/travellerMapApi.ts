@@ -146,11 +146,11 @@ export function generateOverlayCircles(
   const overlays = activeMarkers.map((marker) => {
     const { worldX, worldY } = marker;
     const color = marker.marker_color || "#ff0000"; // Default to red
-    const encodedColor = encodeURIComponent(color);
+    // Don't encode color here - URLSearchParams.set() will handle encoding automatically
 
     console.log(`[Overlay Circles] Marker "${marker.marker_label}" at (${worldX}, ${worldY}) with color ${color}`);
 
-    return `${worldX}!${worldY}!${radius}!${encodedColor}`;
+    return `${worldX}!${worldY}!${radius}!${color}`;
   });
 
   const result = overlays.join("~");
