@@ -172,12 +172,12 @@ export function JumpPlannerProvider({ children }: { children: React.ReactNode })
   // Load all notes on mount
   useEffect(() => {
     loadAllNotes();
-  }, []);
+  }, [loadAllNotes]);
 
   // Load all markers on mount
   useEffect(() => {
     loadAllMarkers();
-  }, []);
+  }, [loadAllMarkers]);
 
   // Load player location from Supabase (with localStorage fallback) on mount
   useEffect(() => {
@@ -589,7 +589,7 @@ export function JumpPlannerProvider({ children }: { children: React.ReactNode })
       }));
       throw error;
     }
-  }, []);
+  }, [loadMarkersForHex, loadAllMarkers]);
 
   const deleteMarker = useCallback(async (id: string) => {
     try {
