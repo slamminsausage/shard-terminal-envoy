@@ -2,7 +2,6 @@ import { useRef, useEffect, useState } from "react";
 import { useJumpPlanner } from "@/contexts/JumpPlannerContext";
 import { generateMapUrl, padHex, getSectorFullName, type WorldSearchResult } from "@/lib/travellerMapApi";
 import { WorldSearchAutocomplete } from "./WorldSearchAutocomplete";
-import { MapMarkerOverlay } from "./MapMarkerOverlay";
 import { MapPin, Navigation } from "lucide-react";
 
 export function StarMapPanel() {
@@ -12,7 +11,6 @@ export function StarMapPanel() {
     mapHex,
     currentLocation,
     playerLocation,
-    hexMarkers,
     setMapLocation,
     setCurrentLocation,
     setPlayerLocation,
@@ -145,7 +143,7 @@ export function StarMapPanel() {
           </div>
         )}
 
-        {/* Map Iframe with Marker Overlay */}
+        {/* Map Iframe */}
         <div className="flex-1 relative min-h-[320px] min-w-0">
           <iframe
             ref={iframeRef}
@@ -155,13 +153,6 @@ export function StarMapPanel() {
             className="absolute inset-0 w-full h-full border-t border-[#1a2420]"
             title="TravellerMap"
             allow="fullscreen"
-          />
-          {/* SVG Overlay for Hex Markers */}
-          <MapMarkerOverlay
-            markers={hexMarkers}
-            centerSector={mapSector}
-            centerHex={mapHex}
-            scale={32}
           />
         </div>
 

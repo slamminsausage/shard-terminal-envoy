@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useJumpPlanner } from "@/contexts/JumpPlannerContext";
 import { getMarkerTypeConfig } from "@/config/markerTypes";
 import { AccordionPanel } from "./AccordionPanel";
-import { Plus, Edit2, Trash2, Eye, EyeOff } from "lucide-react";
+import { Plus, Edit2, Trash2, Eye, EyeOff, Navigation } from "lucide-react";
 import type { HexMarker } from "@/types/navigation";
 
 interface HexMarkerPanelProps {
@@ -11,7 +11,15 @@ interface HexMarkerPanelProps {
 }
 
 export function HexMarkerPanel({ onEditMarker, onCreateMarker }: HexMarkerPanelProps) {
-  const { currentHexMarkers, isLoadingMarkers, deleteMarker, toggleMarkerActive, currentLocation } = useJumpPlanner();
+  const {
+    hexMarkers,
+    isLoadingMarkers,
+    deleteMarker,
+    toggleMarkerActive,
+    currentLocation,
+    setMapLocation,
+    setCurrentLocation
+  } = useJumpPlanner();
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const handleDelete = async (marker: HexMarker) => {
@@ -41,6 +49,11 @@ export function HexMarkerPanel({ onEditMarker, onCreateMarker }: HexMarkerPanelP
     }
   };
 
+  const handleGoTo = async (marker: HexMarker) => {
+    setMapLocation(marker.sector, marker.hex);
+    await setCurrentLocation(marker.sector, marker.hex);
+  };
+
   const headerAction = (
     <button
       className="terminal-btn px-2 py-1 text-xs"
@@ -54,30 +67,28 @@ export function HexMarkerPanel({ onEditMarker, onCreateMarker }: HexMarkerPanelP
   return (
     <AccordionPanel
       title="CUSTOM MARKERS"
-      statusLabel={!currentLocation ? "????" : isLoadingMarkers ? "..." : currentHexMarkers.length}
+      statusLabel={isLoadingMarkers ? "..." : hexMarkers.length}
       defaultExpanded={false}
       headerAction={currentLocation ? headerAction : undefined}
     >
-      {!currentLocation ? (
-        <div className="text-center py-4 text-[#446655]">
-          Select a hex to view or add markers
-        </div>
-      ) : isLoadingMarkers ? (
+      {isLoadingMarkers ? (
         <div className="text-center py-4 text-[#446655]">Loading markers...</div>
-      ) : currentHexMarkers.length === 0 ? (
+      ) : hexMarkers.length === 0 ? (
         <div className="text-center py-4 text-[#446655]">
-          No markers on this hex.
-          <button
-            className="terminal-btn mt-2 text-xs"
-            onClick={onCreateMarker}
-          >
-            <Plus className="w-3 h-3 inline mr-1" />
-            Create First Marker
-          </button>
+          No markers created yet.
+          {currentLocation && (
+            <button
+              className="terminal-btn mt-2 text-xs"
+              onClick={onCreateMarker}
+            >
+              <Plus className="w-3 h-3 inline mr-1" />
+              Create First Marker
+            </button>
+          )}
         </div>
       ) : (
         <div className="space-y-2">
-              {currentHexMarkers.map((marker) => {
+              {hexMarkers.map((marker) => {
                 const config = getMarkerTypeConfig(marker.marker_type);
                 const isInactive = marker.is_active === false;
 
@@ -106,6 +117,9 @@ export function HexMarkerPanel({ onEditMarker, onCreateMarker }: HexMarkerPanelP
                             <div className="text-xs text-[#446655]">
                               {config.label}
                             </div>
+                            <div className="text-xs text-[#00ccff] font-mono mt-0.5">
+                              {marker.sector} {marker.hex}
+                            </div>
                           </div>
                         </div>
 
@@ -115,10 +129,20 @@ export function HexMarkerPanel({ onEditMarker, onCreateMarker }: HexMarkerPanelP
                             {marker.description}
                           </div>
                         )}
+
+                        {/* Go To Button */}
+                        <button
+                          className="terminal-btn secondary text-xs mt-2 w-full flex items-center justify-center gap-1"
+                          onClick={() => handleGoTo(marker)}
+                          title="Navigate map to this location"
+                        >
+                          <Navigation className="w-3 h-3" />
+                          GO TO HEX
+                        </button>
                       </div>
 
                       {/* Actions */}
-                      <div className="flex items-center gap-1 flex-shrink-0">
+                      <div className="flex flex-col gap-1 flex-shrink-0">
                         <button
                           className="p-1 hover:bg-[#1a2420] text-[#00ccff] hover:text-primary transition-colors"
                           onClick={() => handleToggleActive(marker)}
