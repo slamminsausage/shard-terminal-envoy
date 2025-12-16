@@ -3,7 +3,6 @@ import { ControlPanel } from "./ControlPanel";
 import { WorldInfoPanel } from "./WorldInfoPanel";
 import { CustomMarkersPanel } from "./CustomMarkersPanel";
 import { CampaignNotesPanel } from "./CampaignNotesPanel";
-import { MarkerLegend } from "./MarkerLegend";
 
 export function JumpPlannerInterface() {
   return (
@@ -43,9 +42,6 @@ export function JumpPlannerInterface() {
 
           {/* 6: Campaign Notes (accordion) */}
           <CampaignNotesPanel />
-
-          {/* 7: Marker Legend (accordion, at bottom) */}
-          <MarkerLegend />
         </div>
       </div>
     </div>
