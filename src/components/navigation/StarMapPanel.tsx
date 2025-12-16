@@ -2,7 +2,8 @@ import { useRef, useEffect, useState } from "react";
 import { useJumpPlanner } from "@/contexts/JumpPlannerContext";
 import { generateMapUrl, padHex, getSectorFullName, type WorldSearchResult } from "@/lib/travellerMapApi";
 import { WorldSearchAutocomplete } from "./WorldSearchAutocomplete";
-import { MapPin, Navigation } from "lucide-react";
+import { MapPin, Navigation, Info } from "lucide-react";
+import { StarMapLegendModal } from "./StarMapLegendModal";
 
 export function StarMapPanel() {
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -18,6 +19,7 @@ export function StarMapPanel() {
 
   const [searchValue, setSearchValue] = useState("");
   const [hexInput, setHexInput] = useState(mapHex);
+  const [isLegendOpen, setIsLegendOpen] = useState(false);
 
   // Update hex input when map location changes
   useEffect(() => {
@@ -127,6 +129,18 @@ export function StarMapPanel() {
           </button>
         </div>
 
+        {/* Legend Button */}
+        <div className="px-4">
+          <button
+            onClick={() => setIsLegendOpen(true)}
+            className="terminal-btn secondary text-xs w-full flex items-center justify-center gap-1"
+            title="View map legend and symbol key"
+          >
+            <Info className="w-3 h-3" />
+            MAP LEGEND
+          </button>
+        </div>
+
         {/* Player Location Display */}
         {playerLocation && (
           <div className="px-4 py-2 bg-[#00ff88]/5 border-y border-primary/20">
@@ -181,6 +195,12 @@ export function StarMapPanel() {
           </span>
         </div>
       </div>
+
+      {/* Legend Modal */}
+      <StarMapLegendModal
+        isOpen={isLegendOpen}
+        onClose={() => setIsLegendOpen(false)}
+      />
     </div>
   );
 }
