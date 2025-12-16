@@ -2,7 +2,8 @@ import { useState } from "react";
 import { useJumpPlanner } from "@/contexts/JumpPlannerContext";
 import { getMarkerTypeConfig } from "@/config/markerTypes";
 import { AccordionPanel } from "./AccordionPanel";
-import { Plus, Edit2, Trash2, Eye, EyeOff, Navigation } from "lucide-react";
+import { MarkerInfoModal } from "./MarkerInfoModal";
+import { Plus, Edit2, Trash2, Info, Navigation } from "lucide-react";
 import type { HexMarker } from "@/types/navigation";
 
 interface HexMarkerPanelProps {
@@ -15,12 +16,12 @@ export function HexMarkerPanel({ onEditMarker, onCreateMarker }: HexMarkerPanelP
     hexMarkers,
     isLoadingMarkers,
     deleteMarker,
-    toggleMarkerActive,
     currentLocation,
     setMapLocation,
     setCurrentLocation
   } = useJumpPlanner();
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [viewingMarker, setViewingMarker] = useState<HexMarker | null>(null);
 
   const handleDelete = async (marker: HexMarker) => {
     if (!marker.id) return;
@@ -40,18 +41,13 @@ export function HexMarkerPanel({ onEditMarker, onCreateMarker }: HexMarkerPanelP
     }
   };
 
-  const handleToggleActive = async (marker: HexMarker) => {
-    if (!marker.id) return;
-    try {
-      await toggleMarkerActive(marker.id, !marker.is_active);
-    } catch (error) {
-      console.error("Failed to toggle marker:", error);
-    }
-  };
-
   const handleGoTo = async (marker: HexMarker) => {
     setMapLocation(marker.sector, marker.hex);
     await setCurrentLocation(marker.sector, marker.hex);
+  };
+
+  const handleViewInfo = (marker: HexMarker) => {
+    setViewingMarker(marker);
   };
 
   const headerAction = (
@@ -145,14 +141,10 @@ export function HexMarkerPanel({ onEditMarker, onCreateMarker }: HexMarkerPanelP
                       <div className="flex flex-col gap-1 flex-shrink-0">
                         <button
                           className="p-1 hover:bg-[#1a2420] text-[#00ccff] hover:text-primary transition-colors"
-                          onClick={() => handleToggleActive(marker)}
-                          title={isInactive ? "Activate marker" : "Deactivate marker"}
+                          onClick={() => handleViewInfo(marker)}
+                          title="View marker details"
                         >
-                          {isInactive ? (
-                            <EyeOff className="w-3 h-3" />
-                          ) : (
-                            <Eye className="w-3 h-3" />
-                          )}
+                          <Info className="w-3 h-3" />
                         </button>
                         <button
                           className="p-1 hover:bg-[#1a2420] text-[#00ccff] hover:text-primary transition-colors"
@@ -179,6 +171,15 @@ export function HexMarkerPanel({ onEditMarker, onCreateMarker }: HexMarkerPanelP
                 );
               })}
         </div>
+      )}
+
+      {/* Marker Info Modal */}
+      {viewingMarker && (
+        <MarkerInfoModal
+          marker={viewingMarker}
+          isOpen={!!viewingMarker}
+          onClose={() => setViewingMarker(null)}
+        />
       )}
     </AccordionPanel>
   );
