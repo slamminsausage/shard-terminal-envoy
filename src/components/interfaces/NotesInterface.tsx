@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Edit2, Trash2, Save, X, Image as ImageIcon, Video, FileText, Folder, Maximize2 } from 'lucide-react';
+import { Edit2, Trash2, Save, X, Image as ImageIcon, Video, FileText, Folder, Maximize2, ZoomIn, ZoomOut, RotateCcw } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -261,10 +261,12 @@ export const NotesInterface: React.FC = () => {
                 </CardContent>
               </Card>
             ) : (
-              <div className="grid gap-4 md:grid-cols-2">
-                {visibleHandouts.map((handout) => (
-                  <HandoutCard key={handout.id} handout={handout} />
-                ))}
+              <div className="max-h-[calc(100vh-300px)] overflow-y-auto pr-2">
+                <div className="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+                  {visibleHandouts.map((handout) => (
+                    <HandoutCard key={handout.id} handout={handout} />
+                  ))}
+                </div>
               </div>
             )}
           </TabsContent>
@@ -416,18 +418,30 @@ interface HandoutCardProps {
 
 const HandoutCard: React.FC<HandoutCardProps> = ({ handout }) => {
   const [showFullSize, setShowFullSize] = useState(false);
+  const [zoom, setZoom] = useState(1);
+
+  const handleZoomIn = () => setZoom(prev => Math.min(prev + 0.25, 3));
+  const handleZoomOut = () => setZoom(prev => Math.max(prev - 0.25, 0.5));
+  const handleZoomReset = () => setZoom(1);
+
+  const handleDialogClose = (open: boolean) => {
+    setShowFullSize(open);
+    if (!open) {
+      setZoom(1); // Reset zoom when closing
+    }
+  };
 
   return (
     <Card className="bg-black border-[#00ff41]/30 hover:border-[#00ff41]/50 transition-colors">
-      <CardHeader>
+      <CardHeader className="p-3">
         <div className="flex items-start gap-2">
-          {handout.type === 'image' && <ImageIcon className="h-5 w-5 text-[#00ff41]/70 mt-1" />}
-          {handout.type === 'video' && <Video className="h-5 w-5 text-[#00ff41]/70 mt-1" />}
-          {handout.type === 'text' && <FileText className="h-5 w-5 text-[#00ff41]/70 mt-1" />}
-          <div className="flex-1">
-            <CardTitle className="text-[#00ff41]">{handout.title}</CardTitle>
+          {handout.type === 'image' && <ImageIcon className="h-4 w-4 text-[#00ff41]/70 mt-1 flex-shrink-0" />}
+          {handout.type === 'video' && <Video className="h-4 w-4 text-[#00ff41]/70 mt-1 flex-shrink-0" />}
+          {handout.type === 'text' && <FileText className="h-4 w-4 text-[#00ff41]/70 mt-1 flex-shrink-0" />}
+          <div className="flex-1 min-w-0">
+            <CardTitle className="text-[#00ff41] text-sm truncate">{handout.title}</CardTitle>
             {handout.description && (
-              <CardDescription className="text-[#00ff41]/70 text-sm mt-1">
+              <CardDescription className="text-[#00ff41]/70 text-xs mt-1 line-clamp-2">
                 {handout.description}
               </CardDescription>
             )}
@@ -435,9 +449,9 @@ const HandoutCard: React.FC<HandoutCardProps> = ({ handout }) => {
         </div>
       </CardHeader>
       <Separator className="bg-[#00ff41]/30" />
-      <CardContent className="pt-4">
+      <CardContent className="p-3">
         {handout.type === 'text' && handout.content && (
-          <p className="text-[#00ff41]/90 whitespace-pre-wrap">{handout.content}</p>
+          <p className="text-[#00ff41]/90 text-xs whitespace-pre-wrap line-clamp-4">{handout.content}</p>
         )}
         {handout.type === 'image' && handout.mediaUrl && (
           <>
@@ -448,23 +462,57 @@ const HandoutCard: React.FC<HandoutCardProps> = ({ handout }) => {
               <img
                 src={handout.mediaUrl}
                 alt={handout.title}
-                className="w-full max-w-[288px] max-h-[192px] object-cover rounded border border-[#00ff41]/30 mx-auto"
+                className="w-full h-24 object-cover rounded border border-[#00ff41]/30"
               />
               <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded">
-                <Maximize2 className="h-8 w-8 text-[#00ff41]" />
+                <Maximize2 className="h-6 w-6 text-[#00ff41]" />
               </div>
             </div>
-            <Dialog open={showFullSize} onOpenChange={setShowFullSize}>
-              <DialogContent className="max-w-[90vw] max-h-[90vh] bg-black border-[#00ff41]/50">
-                <DialogHeader>
-                  <DialogTitle className="text-[#00ff41]">{handout.title}</DialogTitle>
+            <Dialog open={showFullSize} onOpenChange={handleDialogClose}>
+              <DialogContent className="max-w-[95vw] max-h-[95vh] bg-black border-[#00ff41]/50 p-0">
+                <DialogHeader className="p-4 pb-2">
+                  <div className="flex items-center justify-between">
+                    <DialogTitle className="text-[#00ff41]">{handout.title}</DialogTitle>
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={handleZoomOut}
+                        size="sm"
+                        variant="outline"
+                        className="border-[#00ff41]/50 text-[#00ff41] hover:bg-[#00ff41]/20 h-8 w-8 p-0"
+                        disabled={zoom <= 0.5}
+                      >
+                        <ZoomOut className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        onClick={handleZoomReset}
+                        size="sm"
+                        variant="outline"
+                        className="border-[#00ff41]/50 text-[#00ff41] hover:bg-[#00ff41]/20 h-8 px-2"
+                      >
+                        <RotateCcw className="h-4 w-4 mr-1" />
+                        {Math.round(zoom * 100)}%
+                      </Button>
+                      <Button
+                        onClick={handleZoomIn}
+                        size="sm"
+                        variant="outline"
+                        className="border-[#00ff41]/50 text-[#00ff41] hover:bg-[#00ff41]/20 h-8 w-8 p-0"
+                        disabled={zoom >= 3}
+                      >
+                        <ZoomIn className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
                 </DialogHeader>
-                <div className="overflow-auto max-h-[75vh]">
-                  <img
-                    src={handout.mediaUrl}
-                    alt={handout.title}
-                    className="w-full h-auto rounded"
-                  />
+                <div className="overflow-auto max-h-[calc(95vh-80px)] p-4 pt-2">
+                  <div className="flex items-center justify-center min-h-[200px]">
+                    <img
+                      src={handout.mediaUrl}
+                      alt={handout.title}
+                      className="max-w-full max-h-[calc(95vh-120px)] object-contain rounded transition-transform duration-200"
+                      style={{ transform: `scale(${zoom})` }}
+                    />
+                  </div>
                 </div>
               </DialogContent>
             </Dialog>
@@ -478,24 +526,58 @@ const HandoutCard: React.FC<HandoutCardProps> = ({ handout }) => {
             >
               <video
                 src={handout.mediaUrl}
-                className="w-full max-w-[288px] max-h-[192px] object-cover rounded border border-[#00ff41]/30 mx-auto"
+                className="w-full h-24 object-cover rounded border border-[#00ff41]/30"
               />
               <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded">
-                <Maximize2 className="h-8 w-8 text-[#00ff41]" />
+                <Maximize2 className="h-6 w-6 text-[#00ff41]" />
               </div>
             </div>
-            <Dialog open={showFullSize} onOpenChange={setShowFullSize}>
-              <DialogContent className="max-w-[90vw] max-h-[90vh] bg-black border-[#00ff41]/50">
-                <DialogHeader>
-                  <DialogTitle className="text-[#00ff41]">{handout.title}</DialogTitle>
+            <Dialog open={showFullSize} onOpenChange={handleDialogClose}>
+              <DialogContent className="max-w-[95vw] max-h-[95vh] bg-black border-[#00ff41]/50 p-0">
+                <DialogHeader className="p-4 pb-2">
+                  <div className="flex items-center justify-between">
+                    <DialogTitle className="text-[#00ff41]">{handout.title}</DialogTitle>
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={handleZoomOut}
+                        size="sm"
+                        variant="outline"
+                        className="border-[#00ff41]/50 text-[#00ff41] hover:bg-[#00ff41]/20 h-8 w-8 p-0"
+                        disabled={zoom <= 0.5}
+                      >
+                        <ZoomOut className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        onClick={handleZoomReset}
+                        size="sm"
+                        variant="outline"
+                        className="border-[#00ff41]/50 text-[#00ff41] hover:bg-[#00ff41]/20 h-8 px-2"
+                      >
+                        <RotateCcw className="h-4 w-4 mr-1" />
+                        {Math.round(zoom * 100)}%
+                      </Button>
+                      <Button
+                        onClick={handleZoomIn}
+                        size="sm"
+                        variant="outline"
+                        className="border-[#00ff41]/50 text-[#00ff41] hover:bg-[#00ff41]/20 h-8 w-8 p-0"
+                        disabled={zoom >= 3}
+                      >
+                        <ZoomIn className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
                 </DialogHeader>
-                <div className="overflow-auto max-h-[75vh]">
-                  <video
-                    src={handout.mediaUrl}
-                    controls
-                    autoPlay
-                    className="w-full h-auto rounded"
-                  />
+                <div className="overflow-auto max-h-[calc(95vh-80px)] p-4 pt-2">
+                  <div className="flex items-center justify-center min-h-[200px]">
+                    <video
+                      src={handout.mediaUrl}
+                      controls
+                      autoPlay
+                      className="max-w-full max-h-[calc(95vh-120px)] object-contain rounded transition-transform duration-200"
+                      style={{ transform: `scale(${zoom})` }}
+                    />
+                  </div>
                 </div>
               </DialogContent>
             </Dialog>
