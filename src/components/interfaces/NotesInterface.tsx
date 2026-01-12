@@ -43,6 +43,15 @@ export const NotesInterface: React.FC = () => {
   // Only show visible handouts (admin page controls visibility)
   const visibleHandouts = handouts.filter(h => h.isVisible);
 
+  // Debug logging
+  React.useEffect(() => {
+    console.log('NotesInterface - Total handouts:', handouts.length);
+    console.log('NotesInterface - Visible handouts:', visibleHandouts.length);
+    if (handouts.length > 0) {
+      console.log('All handouts:', handouts.map(h => ({ title: h.title, isVisible: h.isVisible, type: h.type })));
+    }
+  }, [handouts, visibleHandouts]);
+
   // Filter notes by folder
   const filteredNotes = useMemo(() => {
     if (selectedFolder === 'all') return playerNotes;
