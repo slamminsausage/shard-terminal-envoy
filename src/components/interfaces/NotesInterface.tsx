@@ -6,11 +6,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Edit2, Trash2, Save, X, Image as ImageIcon, Video, FileText, Folder } from 'lucide-react';
+import { Edit2, Trash2, Save, X, Image as ImageIcon, Video, FileText, Folder, Maximize2 } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { PlayerNote, Handout, NoteFolder } from '@/types/notes';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 const FOLDERS: { value: NoteFolder; label: string; emoji: string }[] = [
   { value: 'general', label: 'General', emoji: '📝' },
@@ -405,6 +406,8 @@ interface HandoutCardProps {
 }
 
 const HandoutCard: React.FC<HandoutCardProps> = ({ handout }) => {
+  const [showFullSize, setShowFullSize] = useState(false);
+
   return (
     <Card className="bg-black border-[#00ff41]/30 hover:border-[#00ff41]/50 transition-colors">
       <CardHeader>
@@ -428,18 +431,66 @@ const HandoutCard: React.FC<HandoutCardProps> = ({ handout }) => {
           <p className="text-[#00ff41]/90 whitespace-pre-wrap">{handout.content}</p>
         )}
         {handout.type === 'image' && handout.mediaUrl && (
-          <img
-            src={handout.mediaUrl}
-            alt={handout.title}
-            className="w-full rounded border border-[#00ff41]/30"
-          />
+          <>
+            <div
+              className="relative group cursor-pointer"
+              onClick={() => setShowFullSize(true)}
+            >
+              <img
+                src={handout.mediaUrl}
+                alt={handout.title}
+                className="w-full max-w-[288px] max-h-[192px] object-cover rounded border border-[#00ff41]/30 mx-auto"
+              />
+              <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded">
+                <Maximize2 className="h-8 w-8 text-[#00ff41]" />
+              </div>
+            </div>
+            <Dialog open={showFullSize} onOpenChange={setShowFullSize}>
+              <DialogContent className="max-w-[90vw] max-h-[90vh] bg-black border-[#00ff41]/50">
+                <DialogHeader>
+                  <DialogTitle className="text-[#00ff41]">{handout.title}</DialogTitle>
+                </DialogHeader>
+                <div className="overflow-auto max-h-[75vh]">
+                  <img
+                    src={handout.mediaUrl}
+                    alt={handout.title}
+                    className="w-full h-auto rounded"
+                  />
+                </div>
+              </DialogContent>
+            </Dialog>
+          </>
         )}
         {handout.type === 'video' && handout.mediaUrl && (
-          <video
-            src={handout.mediaUrl}
-            controls
-            className="w-full rounded border border-[#00ff41]/30"
-          />
+          <>
+            <div
+              className="relative group cursor-pointer"
+              onClick={() => setShowFullSize(true)}
+            >
+              <video
+                src={handout.mediaUrl}
+                className="w-full max-w-[288px] max-h-[192px] object-cover rounded border border-[#00ff41]/30 mx-auto"
+              />
+              <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded">
+                <Maximize2 className="h-8 w-8 text-[#00ff41]" />
+              </div>
+            </div>
+            <Dialog open={showFullSize} onOpenChange={setShowFullSize}>
+              <DialogContent className="max-w-[90vw] max-h-[90vh] bg-black border-[#00ff41]/50">
+                <DialogHeader>
+                  <DialogTitle className="text-[#00ff41]">{handout.title}</DialogTitle>
+                </DialogHeader>
+                <div className="overflow-auto max-h-[75vh]">
+                  <video
+                    src={handout.mediaUrl}
+                    controls
+                    autoPlay
+                    className="w-full h-auto rounded"
+                  />
+                </div>
+              </DialogContent>
+            </Dialog>
+          </>
         )}
       </CardContent>
     </Card>
