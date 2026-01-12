@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { PlayerNote, Handout } from '@/types/notes';
+import { dbHelpers } from '@/lib/supabase';
 
 interface NotesContextType {
   // Player notes
@@ -10,9 +11,9 @@ interface NotesContextType {
 
   // Handouts
   handouts: Handout[];
-  addHandout: (handout: Omit<Handout, 'id' | 'createdAt' | 'updatedAt'>) => void;
+  addHandout: (handout: Omit<Handout, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
   updateHandout: (id: string, updates: Partial<Handout>) => void;
-  deleteHandout: (id: string) => void;
+  deleteHandout: (id: string) => Promise<void>;
   toggleHandoutVisibility: (id: string) => void;
 
   // GM mode
@@ -28,23 +29,80 @@ export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   // Load data from localStorage on mount
   useEffect(() => {
-    try {
-      const savedPlayerNotes = localStorage.getItem('traveller_player_notes');
-      const savedHandouts = localStorage.getItem('traveller_handouts');
-      const savedGMMode = localStorage.getItem('traveller_authenticated');
+    const migrateHandoutsToStorage = async (loadedHandouts: Handout[]) => {
+      const migratedHandouts = [];
+      let anyMigrated = false;
 
-      if (savedPlayerNotes) {
-        setPlayerNotes(JSON.parse(savedPlayerNotes));
+      for (const handout of loadedHandouts) {
+        // Check if this handout has a base64 media URL that needs migration
+        if (handout.mediaUrl &&
+            (handout.mediaUrl.startsWith('data:image/') || handout.mediaUrl.startsWith('data:video/'))) {
+          console.log(`Migrating handout "${handout.title}" to Supabase Storage...`);
+
+          const mimeType = handout.mediaUrl.split(';')[0].split(':')[1];
+          const uploadedUrl = await dbHelpers.uploadHandoutMediaFromDataURL(
+            handout.mediaUrl,
+            handout.id,
+            mimeType
+          );
+
+          if (uploadedUrl) {
+            migratedHandouts.push({ ...handout, mediaUrl: uploadedUrl });
+            anyMigrated = true;
+            console.log(`Successfully migrated "${handout.title}" to Supabase Storage`);
+          } else {
+            console.warn(`Failed to migrate "${handout.title}", keeping original`);
+            migratedHandouts.push(handout);
+          }
+        } else {
+          migratedHandouts.push(handout);
+        }
       }
-      if (savedHandouts) {
-        setHandouts(JSON.parse(savedHandouts));
+
+      return { handouts: migratedHandouts, migrated: anyMigrated };
+    };
+
+    const loadData = async () => {
+      try {
+        const savedPlayerNotes = localStorage.getItem('traveller_player_notes');
+        const savedHandouts = localStorage.getItem('traveller_handouts');
+        const savedGMMode = localStorage.getItem('traveller_authenticated');
+
+        if (savedPlayerNotes) {
+          setPlayerNotes(JSON.parse(savedPlayerNotes));
+        }
+
+        if (savedHandouts) {
+          const loadedHandouts = JSON.parse(savedHandouts);
+
+          // Check if migration is needed
+          const hasMigrationNeeded = loadedHandouts.some(
+            (h: Handout) => h.mediaUrl &&
+              (h.mediaUrl.startsWith('data:image/') || h.mediaUrl.startsWith('data:video/'))
+          );
+
+          if (hasMigrationNeeded) {
+            console.log('Found handouts with base64 data, migrating to Supabase Storage...');
+            const { handouts: migratedHandouts, migrated } = await migrateHandoutsToStorage(loadedHandouts);
+            setHandouts(migratedHandouts);
+
+            if (migrated) {
+              console.log('Migration complete! Handouts now use Supabase Storage.');
+            }
+          } else {
+            setHandouts(loadedHandouts);
+          }
+        }
+
+        if (savedGMMode) {
+          setIsGMMode(savedGMMode === 'true');
+        }
+      } catch (error) {
+        console.error('Error loading notes from localStorage:', error);
       }
-      if (savedGMMode) {
-        setIsGMMode(savedGMMode === 'true');
-      }
-    } catch (error) {
-      console.error('Error loading notes from localStorage:', error);
-    }
+    };
+
+    loadData();
   }, []);
 
   // Save player notes to localStorage
@@ -56,17 +114,28 @@ export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   }, [playerNotes]);
 
-  // Save handouts to localStorage
+  // Save handouts to localStorage (only metadata, media is in Supabase Storage)
   useEffect(() => {
     try {
       const handoutsJSON = JSON.stringify(handouts);
-      console.log(`Saving ${handouts.length} handouts to localStorage (${(handoutsJSON.length / 1024).toFixed(2)} KB)`);
+      const sizeKB = (handoutsJSON.length / 1024).toFixed(2);
+      console.log(`Saving ${handouts.length} handouts to localStorage (${sizeKB} KB)`);
+
+      // Check for any remaining base64 data URLs (shouldn't happen, but just in case)
+      const hasBase64 = handouts.some(
+        h => h.mediaUrl && (h.mediaUrl.startsWith('data:image/') || h.mediaUrl.startsWith('data:video/'))
+      );
+
+      if (hasBase64) {
+        console.warn('Warning: Some handouts still contain base64 data. This may cause storage issues.');
+      }
+
       localStorage.setItem('traveller_handouts', handoutsJSON);
-      console.log('Handouts saved successfully');
+      console.log('Handouts saved successfully to localStorage');
     } catch (error) {
       if (error instanceof DOMException && error.name === 'QuotaExceededError') {
-        console.error('localStorage quota exceeded! Cannot save handouts.');
-        alert('Storage limit exceeded! Your handouts are too large. Try using smaller images or removing old handouts.');
+        console.error('localStorage quota exceeded! This should not happen with Supabase Storage.');
+        alert('Storage limit exceeded! Please contact support - media should be stored in cloud storage.');
       } else {
         console.error('Error saving handouts to localStorage:', error);
       }
@@ -99,10 +168,28 @@ export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, []);
 
   // Handouts functions
-  const addHandout = useCallback((handout: Omit<Handout, 'id' | 'createdAt' | 'updatedAt'>) => {
+  const addHandout = useCallback(async (handout: Omit<Handout, 'id' | 'createdAt' | 'updatedAt'>) => {
+    const handoutId = `handout-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    let mediaUrl = handout.mediaUrl;
+
+    // If there's a media URL and it's a data URL (base64), upload it to Supabase Storage
+    if (mediaUrl && (mediaUrl.startsWith('data:image/') || mediaUrl.startsWith('data:video/'))) {
+      console.log('Uploading media to Supabase Storage...');
+      const mimeType = mediaUrl.split(';')[0].split(':')[1];
+      const uploadedUrl = await dbHelpers.uploadHandoutMediaFromDataURL(mediaUrl, handoutId, mimeType);
+
+      if (uploadedUrl) {
+        mediaUrl = uploadedUrl;
+        console.log('Media uploaded successfully to Supabase Storage');
+      } else {
+        console.warn('Failed to upload media to Supabase Storage, keeping data URL');
+      }
+    }
+
     const newHandout: Handout = {
       ...handout,
-      id: `handout-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      id: handoutId,
+      mediaUrl,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       // Ensure isVisible is explicitly set (defaults to false if not provided)
@@ -126,7 +213,11 @@ export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     );
   }, []);
 
-  const deleteHandout = useCallback((id: string) => {
+  const deleteHandout = useCallback(async (id: string) => {
+    // Delete media from Supabase Storage first
+    await dbHelpers.deleteHandoutMedia(id);
+
+    // Then remove from state
     setHandouts(prev => prev.filter(handout => handout.id !== id));
   }, []);
 

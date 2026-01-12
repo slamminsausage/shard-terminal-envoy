@@ -67,9 +67,9 @@ export default function AdminNotes() {
     }
   };
 
-  const handleAddHandout = () => {
+  const handleAddHandout = async () => {
     if (newHandoutTitle.trim() && (newHandoutDescription.trim() || newHandoutContent.trim() || newHandoutMediaUrl)) {
-      addHandout({
+      await addHandout({
         title: newHandoutTitle,
         description: newHandoutDescription,
         type: newHandoutType,
@@ -287,7 +287,7 @@ export default function AdminNotes() {
                     setEditingHandout(null);
                   }}
                   onCancel={() => setEditingHandout(null)}
-                  onDelete={() => deleteHandout(handout.id)}
+                  onDelete={async () => await deleteHandout(handout.id)}
                   onToggleVisibility={() => toggleHandoutVisibility(handout.id)}
                 />
               ))}
