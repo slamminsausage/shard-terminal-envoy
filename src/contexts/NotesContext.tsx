@@ -59,9 +59,17 @@ export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // Save handouts to localStorage
   useEffect(() => {
     try {
-      localStorage.setItem('traveller_handouts', JSON.stringify(handouts));
+      const handoutsJSON = JSON.stringify(handouts);
+      console.log(`Saving ${handouts.length} handouts to localStorage (${(handoutsJSON.length / 1024).toFixed(2)} KB)`);
+      localStorage.setItem('traveller_handouts', handoutsJSON);
+      console.log('Handouts saved successfully');
     } catch (error) {
-      console.error('Error saving handouts to localStorage:', error);
+      if (error instanceof DOMException && error.name === 'QuotaExceededError') {
+        console.error('localStorage quota exceeded! Cannot save handouts.');
+        alert('Storage limit exceeded! Your handouts are too large. Try using smaller images or removing old handouts.');
+      } else {
+        console.error('Error saving handouts to localStorage:', error);
+      }
     }
   }, [handouts]);
 
@@ -100,7 +108,12 @@ export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       // Ensure isVisible is explicitly set (defaults to false if not provided)
       isVisible: handout.isVisible ?? false,
     };
-    setHandouts(prev => [...prev, newHandout]);
+    console.log('Adding handout:', newHandout.title, 'isVisible:', newHandout.isVisible, 'type:', newHandout.type);
+    setHandouts(prev => {
+      const updated = [...prev, newHandout];
+      console.log('Total handouts after add:', updated.length);
+      return updated;
+    });
   }, []);
 
   const updateHandout = useCallback((id: string, updates: Partial<Handout>) => {
@@ -118,13 +131,19 @@ export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, []);
 
   const toggleHandoutVisibility = useCallback((id: string) => {
-    setHandouts(prev =>
-      prev.map(handout =>
-        handout.id === id
-          ? { ...handout, isVisible: !handout.isVisible, updatedAt: new Date().toISOString() }
-          : handout
-      )
-    );
+    setHandouts(prev => {
+      const handout = prev.find(h => h.id === id);
+      if (handout) {
+        console.log('Toggling visibility for:', handout.title, 'from', handout.isVisible, 'to', !handout.isVisible);
+      }
+      const updated = prev.map(h =>
+        h.id === id
+          ? { ...h, isVisible: !h.isVisible, updatedAt: new Date().toISOString() }
+          : h
+      );
+      console.log('Handouts after toggle:', updated.map(h => ({ title: h.title, visible: h.isVisible })));
+      return updated;
+    });
   }, []);
 
   return (
