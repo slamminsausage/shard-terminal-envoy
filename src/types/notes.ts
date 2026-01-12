@@ -7,6 +7,7 @@ export interface PlayerNote {
   createdBy: 'player' | 'gm';
   folder?: string; // e.g., "planets", "locations", "npcs", "general"
   tags?: string[];
+  thumbnailUrl?: string; // for NPC portraits and other note thumbnails
 }
 
 export interface Handout {

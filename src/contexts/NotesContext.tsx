@@ -110,6 +110,7 @@ export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                   createdBy: n.created_by,
                   folder: n.folder,
                   tags: n.tags || [],
+                  thumbnailUrl: n.thumbnail_url || undefined,
                 })));
 
                 // Clear localStorage after successful migration
@@ -129,6 +130,7 @@ export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             createdBy: n.created_by,
             folder: n.folder,
             tags: n.tags || [],
+            thumbnailUrl: n.thumbnail_url || undefined,
           })));
         }
 
@@ -195,9 +197,27 @@ export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   // Player notes functions
   const addPlayerNote = useCallback(async (note: Omit<PlayerNote, 'id' | 'createdAt' | 'updatedAt'>) => {
+    const noteId = `note-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    let thumbnailUrl = note.thumbnailUrl;
+
+    // If there's a thumbnail URL and it's a data URL (base64), upload it to Supabase Storage
+    if (thumbnailUrl && thumbnailUrl.startsWith('data:image/')) {
+      console.log('Uploading player note thumbnail to Supabase Storage...');
+      const mimeType = thumbnailUrl.split(';')[0].split(':')[1];
+      const uploadedUrl = await dbHelpers.uploadPlayerNoteThumbnailFromDataURL(thumbnailUrl, noteId, mimeType);
+
+      if (uploadedUrl) {
+        thumbnailUrl = uploadedUrl;
+        console.log('Player note thumbnail uploaded successfully to Supabase Storage');
+      } else {
+        console.warn('Failed to upload player note thumbnail to Supabase Storage, keeping data URL');
+      }
+    }
+
     const newNote: PlayerNote = {
       ...note,
-      id: `note-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      id: noteId,
+      thumbnailUrl,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -215,9 +235,26 @@ export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const existingNote = playerNotes.find(n => n.id === id);
     if (!existingNote) return;
 
+    let thumbnailUrl = updates.thumbnailUrl;
+
+    // If there's a new thumbnail URL and it's a data URL (base64), upload it to Supabase Storage
+    if (thumbnailUrl && thumbnailUrl.startsWith('data:image/')) {
+      console.log('Uploading updated player note thumbnail to Supabase Storage...');
+      const mimeType = thumbnailUrl.split(';')[0].split(':')[1];
+      const uploadedUrl = await dbHelpers.uploadPlayerNoteThumbnailFromDataURL(thumbnailUrl, id, mimeType);
+
+      if (uploadedUrl) {
+        thumbnailUrl = uploadedUrl;
+        console.log('Player note thumbnail updated successfully in Supabase Storage');
+      } else {
+        console.warn('Failed to upload player note thumbnail to Supabase Storage, keeping data URL');
+      }
+    }
+
     const updatedNote = {
       ...existingNote,
       ...updates,
+      thumbnailUrl: thumbnailUrl !== undefined ? thumbnailUrl : existingNote.thumbnailUrl,
       updatedAt: new Date().toISOString(),
     };
 
@@ -234,13 +271,19 @@ export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const deletePlayerNote = useCallback(async (id: string) => {
     try {
+      // Delete the thumbnail first if it exists
+      const note = playerNotes.find(n => n.id === id);
+      if (note?.thumbnailUrl) {
+        await dbHelpers.deletePlayerNoteThumbnail(id);
+      }
+
       await dbHelpers.deletePlayerNote(id);
       setPlayerNotes(prev => prev.filter(note => note.id !== id));
     } catch (error) {
       console.error('Failed to delete player note:', error);
       throw error;
     }
-  }, []);
+  }, [playerNotes]);
 
   // Handouts functions
   const addHandout = useCallback(async (handout: Omit<Handout, 'id' | 'createdAt' | 'updatedAt'>) => {

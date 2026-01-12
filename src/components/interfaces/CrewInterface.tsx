@@ -1,32 +1,14 @@
 import React, { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { typeTextWithSound } from '@/lib/typing';
 import CharacterSheet from "@/components/crew/CharacterSheet";
 import { useCampaign } from "@/contexts/CampaignContext";
-import { toast } from "@/hooks/use-toast";
 
 export default function CrewInterface() {
   const [displayText, setDisplayText] = useState("");
   const [activeCrewMember, setActiveCrewMember] = useState<string | null>(null);
   const [showCharacterSheet, setShowCharacterSheet] = useState(false);
-  const [missionNotes, setMissionNotes] = useState("");
-  const [currentNoteFile, setCurrentNoteFile] = useState<string | null>(null);
-  const [noteFileName, setNoteFileName] = useState("");
-  const [savedNoteFiles, setSavedNoteFiles] = useState<string[]>(() => {
-    const saved = localStorage.getItem('saved_note_files');
-    if (!saved) return [];
-    try {
-      return JSON.parse(saved);
-    } catch (error) {
-      console.error('Failed to parse saved note files:', error);
-      return [];
-    }
-  });
   const { createNewCharacter, characters, vehicles, deleteCharacter } = useCampaign();
   const [characterToDelete, setCharacterToDelete] = useState<string | null>(null);
 
@@ -54,78 +36,6 @@ export default function CrewInterface() {
     const newCharacter = await createNewCharacter();
     if (newCharacter) {
       setShowCharacterSheet(true);
-    }
-  };
-
-  const handleSaveNotes = () => {
-    if (!noteFileName.trim()) {
-      toast({
-        title: "Filename Required",
-        description: "Please enter a filename for your mission notes.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      const filename = noteFileName.trim();
-      localStorage.setItem(`mission_notes_${filename}`, missionNotes);
-      
-      const updatedFiles = savedNoteFiles.includes(filename) 
-        ? savedNoteFiles 
-        : [...savedNoteFiles, filename];
-      
-      setSavedNoteFiles(updatedFiles);
-      localStorage.setItem('saved_note_files', JSON.stringify(updatedFiles));
-      setCurrentNoteFile(filename);
-      
-      toast({
-        title: "Mission Notes Saved",
-        description: `File "${filename}" has been saved successfully.`,
-      });
-    } catch (error) {
-      toast({
-        title: "Save Failed",
-        description: "Could not save mission notes. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleOpenNoteFile = (filename: string) => {
-    const notes = localStorage.getItem(`mission_notes_${filename}`) || "";
-    setMissionNotes(notes);
-    setCurrentNoteFile(filename);
-    setNoteFileName(filename);
-  };
-
-  const handleNewNoteFile = () => {
-    setMissionNotes("");
-    setCurrentNoteFile(null);
-    setNoteFileName("");
-  };
-
-  const handleDeleteNoteFile = (filename: string) => {
-    try {
-      localStorage.removeItem(`mission_notes_${filename}`);
-      const updatedFiles = savedNoteFiles.filter(f => f !== filename);
-      setSavedNoteFiles(updatedFiles);
-      localStorage.setItem('saved_note_files', JSON.stringify(updatedFiles));
-      
-      if (currentNoteFile === filename) {
-        handleNewNoteFile();
-      }
-      
-      toast({
-        title: "File Deleted",
-        description: `Mission note file "${filename}" has been deleted.`,
-      });
-    } catch (error) {
-      toast({
-        title: "Delete Failed",
-        description: "Could not delete the file. Please try again.",
-        variant: "destructive",
-      });
     }
   };
 
@@ -164,13 +74,7 @@ export default function CrewInterface() {
             </div>
           </div>
 
-          <Tabs defaultValue="roster" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 bg-black/60 border border-primary/30 rounded">
-              <TabsTrigger value="roster" className="font-mono text-xs sm:text-sm">Crew Roster</TabsTrigger>
-              <TabsTrigger value="notes" className="font-mono text-xs sm:text-sm">Mission Notes</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="roster" className="space-y-4">
+          <div className="space-y-4 mt-4">
               <div className="panel">
                 <div className="panel-header">
                   <span className="panel-title">ACTIVE CREW MEMBERS</span>
@@ -264,81 +168,7 @@ export default function CrewInterface() {
                   </button>
                 </div>
               </div>
-            </TabsContent>
-
-            <TabsContent value="notes" className="space-y-4">
-              <div className="panel">
-                <div className="panel-header">
-                  <span className="panel-title">MISSION NOTES</span>
-                </div>
-                <div className="panel-content">
-                  <div className="space-y-4">
-                    {savedNoteFiles.length > 0 && (
-                      <div>
-                        <Label className="font-mono text-xs text-primary/80">Saved Note Files</Label>
-                        <div className="mt-2 space-y-1">
-                          {savedNoteFiles.map((filename) => (
-                            <div key={filename} className="flex items-center justify-between p-2 border border-primary/20 rounded bg-background/30">
-                              <button
-                                onClick={() => handleOpenNoteFile(filename)}
-                                className="font-mono text-sm text-left flex-1 hover:text-primary transition-colors"
-                              >
-                                {filename} {currentNoteFile === filename && "(current)"}
-                              </button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleDeleteNoteFile(filename)}
-                                className="text-red-400 border-red-400 hover:bg-red-400 hover:text-white ml-2"
-                              >
-                                Delete
-                              </Button>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    
-                    <div className="flex gap-2">
-                      <div className="flex-1">
-                        <Label htmlFor="note-filename" className="font-mono text-xs text-primary/80">
-                          Filename
-                        </Label>
-                        <Input
-                          id="note-filename"
-                          placeholder="Enter filename..."
-                          value={noteFileName}
-                          onChange={(e) => setNoteFileName(e.target.value)}
-                          className="terminal-input"
-                        />
-                      </div>
-                      <div className="flex items-end gap-2">
-                        <button className="terminal-btn" onClick={handleNewNoteFile}>
-                          New
-                        </button>
-                        <button className="terminal-btn primary" onClick={handleSaveNotes}>
-                          Save
-                        </button>
-                      </div>
-                    </div>
-
-                    <div>
-                      <Label htmlFor="mission-notes" className="font-mono text-xs text-primary/80">
-                        Mission Notes Content
-                      </Label>
-                      <textarea
-                        id="mission-notes"
-                        className="terminal-input w-full h-32"
-                        placeholder="Enter mission notes and status updates..."
-                        value={missionNotes}
-                        onChange={(e) => setMissionNotes(e.target.value)}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </TabsContent>
-          </Tabs>
+          </div>
         </div>
       </div>
     </div>

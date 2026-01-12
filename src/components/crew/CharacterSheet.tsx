@@ -4,6 +4,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { useCampaign } from "@/contexts/CampaignContext";
 import { performSkillCheck, rollDamageExpression, getCharacteristicDM, getSkillDM } from "@/lib/dice";
+import { compressImage } from "@/lib/mediaCompression";
+import { dbHelpers } from "@/lib/supabase";
+import { Upload, X } from "lucide-react";
 
 interface CharacterSheetProps {
   characterId?: string;
@@ -271,6 +274,8 @@ const CharacterSheet = ({ characterId }: CharacterSheetProps = {}) => {
   const [lastRollLog, setLastRollLog] = useState<string>("");
   const [lastWeaponRollLog, setLastWeaponRollLog] = useState<string>("");
   const [skills, setSkills] = useState<Record<string, SkillState>>(baseSkillState);
+  const [thumbnailUrl, setThumbnailUrl] = useState<string>("");
+  const [isUploadingThumbnail, setIsUploadingThumbnail] = useState(false);
 
   // Load character data if editing an existing character
   useEffect(() => {
@@ -345,6 +350,9 @@ const CharacterSheet = ({ characterId }: CharacterSheetProps = {}) => {
           weeks: character.study_weeks || "",
           complete: character.study_complete || ""
         });
+
+        // Load thumbnail
+        if (typeof character.thumbnail_url === "string") setThumbnailUrl(character.thumbnail_url);
       }
     }
   }, [currentCharacterId, characters]);
@@ -381,8 +389,70 @@ const CharacterSheet = ({ characterId }: CharacterSheetProps = {}) => {
     setAugments(prev => prev.map((row, idx) => (idx === index ? { ...row, [field]: value } : row)));
   };
 
+  const handleThumbnailUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setIsUploadingThumbnail(true);
+
+      // Compress the image to a smaller size for thumbnails (max 300px, quality 0.85)
+      const compressedDataUrl = await compressImage(file, 300, 300, 0.85);
+
+      // If we have a character ID, upload to Supabase Storage
+      if (currentCharacterId) {
+        const mimeType = compressedDataUrl.split(';')[0].split(':')[1];
+        const uploadedUrl = await dbHelpers.uploadCharacterThumbnailFromDataURL(
+          compressedDataUrl,
+          currentCharacterId,
+          mimeType
+        );
+
+        if (uploadedUrl) {
+          setThumbnailUrl(uploadedUrl);
+        } else {
+          alert('Failed to upload thumbnail. Please try again.');
+        }
+      } else {
+        // For new characters, store the data URL temporarily
+        setThumbnailUrl(compressedDataUrl);
+      }
+    } catch (error) {
+      console.error('Error uploading thumbnail:', error);
+      alert('Failed to upload thumbnail. Please try again.');
+    } finally {
+      setIsUploadingThumbnail(false);
+    }
+  };
+
+  const handleRemoveThumbnail = async () => {
+    try {
+      if (currentCharacterId) {
+        await dbHelpers.deleteCharacterThumbnail(currentCharacterId);
+      }
+      setThumbnailUrl('');
+    } catch (error) {
+      console.error('Error removing thumbnail:', error);
+    }
+  };
+
   const handleSaveCharacter = async () => {
     try {
+      let finalThumbnailUrl = thumbnailUrl;
+
+      // If we have a data URL thumbnail and a character ID, upload it
+      if (thumbnailUrl && thumbnailUrl.startsWith('data:image/') && currentCharacterId) {
+        const mimeType = thumbnailUrl.split(';')[0].split(':')[1];
+        const uploadedUrl = await dbHelpers.uploadCharacterThumbnailFromDataURL(
+          thumbnailUrl,
+          currentCharacterId,
+          mimeType
+        );
+        if (uploadedUrl) {
+          finalThumbnailUrl = uploadedUrl;
+        }
+      }
+
       const characterData = {
         id: currentCharacterId, // Include ID for updates
         name: header.name,
@@ -426,6 +496,7 @@ const CharacterSheet = ({ characterId }: CharacterSheetProps = {}) => {
         weapons: weapons,
         armor: armourRows,
         augments: augments,
+        thumbnail_url: finalThumbnailUrl || null,
       };
 
       await saveCharacter(characterData);
@@ -648,7 +719,50 @@ const customGroups = skillDefinitions.filter(def => def.isCustomGroup);
         <div className="panel-header">
           <span className="panel-title">CHARACTER PROFILE</span>
         </div>
-        <div className="panel-content grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="panel-content">
+          {/* Character Thumbnail Section */}
+          <div className="mb-6 pb-4 border-b border-primary/20">
+            <label className="text-xs font-semibold uppercase tracking-wide text-primary/80 mb-2 block">Character Portrait</label>
+            <div className="flex items-center gap-4">
+              {thumbnailUrl && (
+                <div className="relative">
+                  <img
+                    src={thumbnailUrl}
+                    alt="Character Thumbnail"
+                    className="w-24 h-24 object-cover rounded border border-primary/30"
+                  />
+                  <Button
+                    onClick={handleRemoveThumbnail}
+                    size="sm"
+                    variant="outline"
+                    className="absolute -top-2 -right-2 h-6 w-6 p-0 rounded-full bg-red-500 border-red-500 hover:bg-red-600"
+                  >
+                    <X className="h-3 w-3 text-white" />
+                  </Button>
+                </div>
+              )}
+              <div className="flex-1">
+                <label className="cursor-pointer">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleThumbnailUpload}
+                    className="hidden"
+                    disabled={isUploadingThumbnail}
+                  />
+                  <div className="border border-primary/40 rounded p-3 text-center hover:bg-primary/5 transition-colors">
+                    <Upload className="h-5 w-5 mx-auto mb-1 text-primary" />
+                    <span className="text-xs text-primary">
+                      {isUploadingThumbnail ? 'Uploading...' : thumbnailUrl ? 'Change Portrait' : 'Upload Portrait'}
+                    </span>
+                  </div>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          {/* Character Info Fields */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <TextField label="Name" value={header.name} onChange={value => handleHeaderChange("name", value)} />
         <TextField label="Rads" value={header.rads} onChange={value => handleHeaderChange("rads", value)} />
         <TextField label="Age" value={header.age} onChange={value => handleHeaderChange("age", value)} />
@@ -665,6 +779,7 @@ const customGroups = skillDefinitions.filter(def => def.isCustomGroup);
           onChange={value => handleHeaderChange("homeworld", value)}
           className="md:col-span-3"
         />
+          </div>
         </div>
       </section>
 

@@ -73,7 +73,10 @@ export interface Character {
   
   // Augments (stored as JSONB)
   augments: Record<string, any>;
-  
+
+  // Character portrait
+  thumbnail_url?: string;
+
   created_at: string;
   updated_at: string;
 }

@@ -1039,6 +1039,7 @@ export const dbHelpers = {
         created_by: note.createdBy || 'player',
         folder: note.folder || 'general',
         tags: note.tags || [],
+        thumbnail_url: note.thumbnailUrl || null,
       };
 
       // Check if note exists
@@ -1113,6 +1114,202 @@ export const dbHelpers = {
     } catch (error) {
       console.error('Failed to delete player note:', error);
       throw error;
+    }
+  },
+
+  // Player Note Thumbnail Functions
+  async uploadPlayerNoteThumbnail(file: File | Blob, noteId: string): Promise<string | null> {
+    try {
+      const fileExt = file instanceof File ? file.name.split('.').pop() : 'jpg';
+      const fileName = `note_${noteId}.${fileExt}`;
+      const filePath = `${fileName}`;
+
+      console.log(`Uploading player note thumbnail: ${filePath} (${(file.size / 1024).toFixed(2)} KB)`);
+
+      const { data, error } = await supabase.storage
+        .from('player_note_thumbnails')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: true, // Allow overwriting existing files
+        });
+
+      if (error) {
+        console.error('Upload error:', error);
+        throw error;
+      }
+
+      // Get the public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('player_note_thumbnails')
+        .getPublicUrl(filePath);
+
+      console.log('Upload successful, public URL:', publicUrl);
+      return publicUrl;
+    } catch (error) {
+      console.error('Failed to upload player note thumbnail:', error);
+      return null;
+    }
+  },
+
+  async uploadPlayerNoteThumbnailFromDataURL(dataUrl: string, noteId: string, mimeType: string): Promise<string | null> {
+    try {
+      // Convert data URL to blob
+      const response = await fetch(dataUrl);
+      const blob = await response.blob();
+
+      // Determine file extension from mime type
+      const fileExt = mimeType.split('/')[1] || 'jpg';
+      const fileName = `note_${noteId}.${fileExt}`;
+
+      console.log(`Uploading player note thumbnail from data URL: ${fileName} (${(blob.size / 1024).toFixed(2)} KB)`);
+
+      const { data, error } = await supabase.storage
+        .from('player_note_thumbnails')
+        .upload(fileName, blob, {
+          cacheControl: '3600',
+          upsert: true,
+          contentType: mimeType,
+        });
+
+      if (error) {
+        console.error('Upload error:', error);
+        throw error;
+      }
+
+      // Get the public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('player_note_thumbnails')
+        .getPublicUrl(fileName);
+
+      console.log('Upload successful, public URL:', publicUrl);
+      return publicUrl;
+    } catch (error) {
+      console.error('Failed to upload player note thumbnail from data URL:', error);
+      return null;
+    }
+  },
+
+  async deletePlayerNoteThumbnail(noteId: string): Promise<boolean> {
+    try {
+      // Try to delete files with common extensions
+      const extensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+
+      for (const ext of extensions) {
+        const filePath = `note_${noteId}.${ext}`;
+        const { error } = await supabase.storage
+          .from('player_note_thumbnails')
+          .remove([filePath]);
+
+        // If no error, file was deleted
+        if (!error) {
+          console.log(`Deleted player note thumbnail: ${filePath}`);
+          return true;
+        }
+      }
+
+      console.log('No player note thumbnail found to delete for:', noteId);
+      return true;
+    } catch (error) {
+      console.error('Failed to delete player note thumbnail:', error);
+      return false;
+    }
+  },
+
+  // Character Thumbnail Functions
+  async uploadCharacterThumbnail(file: File | Blob, characterId: string): Promise<string | null> {
+    try {
+      const fileExt = file instanceof File ? file.name.split('.').pop() : 'jpg';
+      const fileName = `character_${characterId}.${fileExt}`;
+      const filePath = `${fileName}`;
+
+      console.log(`Uploading character thumbnail: ${filePath} (${(file.size / 1024).toFixed(2)} KB)`);
+
+      const { data, error } = await supabase.storage
+        .from('character_thumbnails')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: true, // Allow overwriting existing files
+        });
+
+      if (error) {
+        console.error('Upload error:', error);
+        throw error;
+      }
+
+      // Get the public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('character_thumbnails')
+        .getPublicUrl(filePath);
+
+      console.log('Upload successful, public URL:', publicUrl);
+      return publicUrl;
+    } catch (error) {
+      console.error('Failed to upload character thumbnail:', error);
+      return null;
+    }
+  },
+
+  async uploadCharacterThumbnailFromDataURL(dataUrl: string, characterId: string, mimeType: string): Promise<string | null> {
+    try {
+      // Convert data URL to blob
+      const response = await fetch(dataUrl);
+      const blob = await response.blob();
+
+      // Determine file extension from mime type
+      const fileExt = mimeType.split('/')[1] || 'jpg';
+      const fileName = `character_${characterId}.${fileExt}`;
+
+      console.log(`Uploading character thumbnail from data URL: ${fileName} (${(blob.size / 1024).toFixed(2)} KB)`);
+
+      const { data, error } = await supabase.storage
+        .from('character_thumbnails')
+        .upload(fileName, blob, {
+          cacheControl: '3600',
+          upsert: true,
+          contentType: mimeType,
+        });
+
+      if (error) {
+        console.error('Upload error:', error);
+        throw error;
+      }
+
+      // Get the public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('character_thumbnails')
+        .getPublicUrl(fileName);
+
+      console.log('Upload successful, public URL:', publicUrl);
+      return publicUrl;
+    } catch (error) {
+      console.error('Failed to upload character thumbnail from data URL:', error);
+      return null;
+    }
+  },
+
+  async deleteCharacterThumbnail(characterId: string): Promise<boolean> {
+    try {
+      // Try to delete files with common extensions
+      const extensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+
+      for (const ext of extensions) {
+        const filePath = `character_${characterId}.${ext}`;
+        const { error } = await supabase.storage
+          .from('character_thumbnails')
+          .remove([filePath]);
+
+        // If no error, file was deleted
+        if (!error) {
+          console.log(`Deleted character thumbnail: ${filePath}`);
+          return true;
+        }
+      }
+
+      console.log('No character thumbnail found to delete for:', characterId);
+      return true;
+    } catch (error) {
+      console.error('Failed to delete character thumbnail:', error);
+      return false;
     }
   }
 }
