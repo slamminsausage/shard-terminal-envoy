@@ -6,12 +6,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Edit2, Trash2, Save, X, Image as ImageIcon, Video, FileText, Folder, Maximize2, ZoomIn, ZoomOut, RotateCcw } from 'lucide-react';
+import { Edit2, Trash2, Save, X, Image as ImageIcon, Video, FileText, Folder, Maximize2, ZoomIn, ZoomOut, RotateCcw, Upload } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { PlayerNote, Handout, NoteFolder } from '@/types/notes';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { compressImage } from '@/lib/mediaCompression';
+import { dbHelpers } from '@/lib/supabase';
 
 const FOLDERS: { value: NoteFolder; label: string; emoji: string }[] = [
   { value: 'general', label: 'General', emoji: '📝' },
@@ -37,6 +39,8 @@ export const NotesInterface: React.FC = () => {
   const [newNoteTitle, setNewNoteTitle] = useState('');
   const [newNoteContent, setNewNoteContent] = useState('');
   const [newNoteFolder, setNewNoteFolder] = useState<NoteFolder>('general');
+  const [newNoteThumbnailUrl, setNewNoteThumbnailUrl] = useState('');
+  const [isUploadingNewNoteThumbnail, setIsUploadingNewNoteThumbnail] = useState(false);
   const [selectedFolder, setSelectedFolder] = useState<NoteFolder | 'all'>('all');
   const [showNewNoteForm, setShowNewNoteForm] = useState(false);
 
@@ -77,16 +81,43 @@ export const NotesInterface: React.FC = () => {
           folder: newNoteFolder,
           createdBy: isGMMode ? 'gm' : 'player',
           tags: [],
+          thumbnailUrl: newNoteThumbnailUrl || undefined,
         });
         setNewNoteTitle('');
         setNewNoteContent('');
         setNewNoteFolder('general');
+        setNewNoteThumbnailUrl('');
         setShowNewNoteForm(false);
       } catch (error) {
         console.error('Failed to add player note:', error);
         alert('Failed to save note. Please try again.');
       }
     }
+  };
+
+  const handleNewNoteThumbnailUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setIsUploadingNewNoteThumbnail(true);
+
+      // Compress the image to a smaller size for thumbnails (max 400px, quality 0.8)
+      const compressedDataUrl = await compressImage(file, 400, 400, 0.8);
+
+      // For new notes, we'll store the data URL temporarily
+      // It will be uploaded to storage when the note is saved
+      setNewNoteThumbnailUrl(compressedDataUrl);
+    } catch (error) {
+      console.error('Error processing thumbnail:', error);
+      alert('Failed to process thumbnail. Please try again.');
+    } finally {
+      setIsUploadingNewNoteThumbnail(false);
+    }
+  };
+
+  const handleRemoveNewNoteThumbnail = () => {
+    setNewNoteThumbnailUrl('');
   };
 
   return (
@@ -198,6 +229,50 @@ export const NotesInterface: React.FC = () => {
                     rows={6}
                     className="bg-black border-[#00ff41]/50 text-[#00ff41] resize-none"
                   />
+
+                  {/* Thumbnail Upload Section for NPCs */}
+                  {newNoteFolder === 'npcs' && (
+                    <div className="space-y-2">
+                      <label className="text-xs text-[#00ff41]/70 uppercase">NPC Portrait</label>
+                      <div className="flex items-center gap-2">
+                        {newNoteThumbnailUrl && (
+                          <div className="relative">
+                            <img
+                              src={newNoteThumbnailUrl}
+                              alt="NPC Thumbnail"
+                              className="w-20 h-20 object-cover rounded border border-[#00ff41]/30"
+                            />
+                            <Button
+                              onClick={handleRemoveNewNoteThumbnail}
+                              size="sm"
+                              variant="outline"
+                              className="absolute -top-2 -right-2 h-6 w-6 p-0 rounded-full bg-red-500 border-red-500 hover:bg-red-600"
+                            >
+                              <X className="h-3 w-3 text-white" />
+                            </Button>
+                          </div>
+                        )}
+                        <div className="flex-1">
+                          <label className="cursor-pointer">
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={handleNewNoteThumbnailUpload}
+                              className="hidden"
+                              disabled={isUploadingNewNoteThumbnail}
+                            />
+                            <div className="border border-[#00ff41]/50 rounded p-2 text-center hover:bg-[#00ff41]/10 transition-colors">
+                              <Upload className="h-4 w-4 mx-auto mb-1 text-[#00ff41]" />
+                              <span className="text-xs text-[#00ff41]">
+                                {isUploadingNewNoteThumbnail ? 'Processing...' : newNoteThumbnailUrl ? 'Change Portrait' : 'Upload Portrait'}
+                              </span>
+                            </div>
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="flex gap-2">
                     <Button
                       onClick={handleAddPlayerNote}
@@ -212,6 +287,7 @@ export const NotesInterface: React.FC = () => {
                         setNewNoteTitle('');
                         setNewNoteContent('');
                         setNewNoteFolder('general');
+                        setNewNoteThumbnailUrl('');
                       }}
                       variant="outline"
                       className="border-[#00ff41]/50 text-[#00ff41] hover:bg-[#00ff41]/20"
@@ -316,8 +392,52 @@ const NoteCard: React.FC<NoteCardProps> = ({
   const [title, setTitle] = useState(note.title);
   const [content, setContent] = useState(note.content);
   const [folder, setFolder] = useState<NoteFolder>((note.folder as NoteFolder) || 'general');
+  const [thumbnailUrl, setThumbnailUrl] = useState(note.thumbnailUrl || '');
+  const [isUploadingThumbnail, setIsUploadingThumbnail] = useState(false);
 
   const folderInfo = FOLDERS.find(f => f.value === (note.folder || 'general'));
+
+  const handleThumbnailUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setIsUploadingThumbnail(true);
+
+      // Compress the image to a smaller size for thumbnails (max 400px, quality 0.8)
+      const compressedDataUrl = await compressImage(file, 400, 400, 0.8);
+
+      // Extract mime type from data URL
+      const mimeType = compressedDataUrl.split(';')[0].split(':')[1];
+
+      // Upload to Supabase Storage
+      const uploadedUrl = await dbHelpers.uploadPlayerNoteThumbnailFromDataURL(
+        compressedDataUrl,
+        note.id,
+        mimeType
+      );
+
+      if (uploadedUrl) {
+        setThumbnailUrl(uploadedUrl);
+      } else {
+        alert('Failed to upload thumbnail. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error uploading thumbnail:', error);
+      alert('Failed to upload thumbnail. Please try again.');
+    } finally {
+      setIsUploadingThumbnail(false);
+    }
+  };
+
+  const handleRemoveThumbnail = async () => {
+    try {
+      await dbHelpers.deletePlayerNoteThumbnail(note.id);
+      setThumbnailUrl('');
+    } catch (error) {
+      console.error('Error removing thumbnail:', error);
+    }
+  };
 
   if (isEditing) {
     return (
@@ -354,9 +474,53 @@ const NoteCard: React.FC<NoteCardProps> = ({
             rows={6}
             className="bg-black border-[#00ff41]/50 text-[#00ff41] resize-none"
           />
+
+          {/* Thumbnail Upload Section */}
+          {folder === 'npcs' && (
+            <div className="space-y-2">
+              <label className="text-xs text-[#00ff41]/70 uppercase">NPC Portrait</label>
+              <div className="flex items-center gap-2">
+                {thumbnailUrl && (
+                  <div className="relative">
+                    <img
+                      src={thumbnailUrl}
+                      alt="NPC Thumbnail"
+                      className="w-20 h-20 object-cover rounded border border-[#00ff41]/30"
+                    />
+                    <Button
+                      onClick={handleRemoveThumbnail}
+                      size="sm"
+                      variant="outline"
+                      className="absolute -top-2 -right-2 h-6 w-6 p-0 rounded-full bg-red-500 border-red-500 hover:bg-red-600"
+                    >
+                      <X className="h-3 w-3 text-white" />
+                    </Button>
+                  </div>
+                )}
+                <div className="flex-1">
+                  <label className="cursor-pointer">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleThumbnailUpload}
+                      className="hidden"
+                      disabled={isUploadingThumbnail}
+                    />
+                    <div className="border border-[#00ff41]/50 rounded p-2 text-center hover:bg-[#00ff41]/10 transition-colors">
+                      <Upload className="h-4 w-4 mx-auto mb-1 text-[#00ff41]" />
+                      <span className="text-xs text-[#00ff41]">
+                        {isUploadingThumbnail ? 'Uploading...' : thumbnailUrl ? 'Change Portrait' : 'Upload Portrait'}
+                      </span>
+                    </div>
+                  </label>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="flex gap-2">
             <Button
-              onClick={() => onSave({ title, content, folder })}
+              onClick={() => onSave({ title, content, folder, thumbnailUrl })}
               size="sm"
               className="bg-[#00ff41]/20 text-[#00ff41] hover:bg-[#00ff41]/30"
             >
@@ -423,6 +587,15 @@ const NoteCard: React.FC<NoteCardProps> = ({
       </CardHeader>
       <Separator className="bg-[#00ff41]/30" />
       <CardContent className="pt-4">
+        {note.thumbnailUrl && (
+          <div className="mb-3">
+            <img
+              src={note.thumbnailUrl}
+              alt={note.title}
+              className="w-24 h-24 object-cover rounded border border-[#00ff41]/30"
+            />
+          </div>
+        )}
         <p className="text-[#00ff41]/90 whitespace-pre-wrap">{note.content}</p>
       </CardContent>
     </Card>
