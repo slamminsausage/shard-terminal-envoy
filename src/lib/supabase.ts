@@ -25,7 +25,7 @@ const fallbackUnlocked = [
   'azura01',
   'vennik01',
   'caldonis_public',
-  'es1-delta',
+  'es1-omegalab',
   'es1-gamma',
   'blacktalon',
   'vennik-personal'

@@ -1,16 +1,7 @@
 [
   {
-    "title": "BLACKSITE ES1 - Facility Overview",
-    "location": "Blacksite ES1 Terminal",
-    "date": "070-1105",
-    "author": "Dr. Mordova, Site Director",
-    "content": "BLACKSITE ES1 - FACILITY OVERVIEW\n\nLocation: Coordinates redacted, Helix Debris Field, Sector 7\nSecurity Level: OMEGA\nPrimary Purpose: Eclipse Shard Research & Containment\n\nFacility Sections:\n- Alpha Wing: Administration & Security Operations\n- Beta Wing: Research Laboratories & Data Analysis\n- Gamma Wing: Specialized Containment Units\n- Delta Wing: Staff Quarters & Medical Facilities\n\nThe unique gravitational conditions at this location enhance the Shard's properties while simultaneously allowing for more effective containment. All personnel are reminded that exposure protocols are non-negotiable.\n\nCurrent research priorities:\n1. Neural synchronization between Subject Trevar and the Shard\n2. Dimensional resonance patterns observed in laboratory conditions\n3. Enhanced cognitive abilities in exposed test subjects\n4. Possible applications for FTL communication\n\nReminder: All communications and research data are automatically encrypted and routed through dummy relays. Physical access to this facility requires three-factor authentication and executive clearance.",
-    "security_level": "high",
-    "requires_roll": false
-  },
-  {
     "title": "Subject Trevar - Containment Logs",
-    "location": "Blacksite ES1 Terminal",
+    "location": "ES1-OmegaLab Terminal",
     "date": "089-1105",
     "author": "Dr. Yuran Tazeel, Lead Researcher",
     "content": "SUBJECT: ELIAS TREVAR\nSTATUS: CONTAINED - SPECIAL PROTOCOLS\n\nDay 19 of continuous observation\n\nSubject's neural synchronization with the Eclipse Shard has reached unprecedented levels. Standard containment protocols were insufficient after day 15. We've implemented a specialized chamber utilizing quantum field inhibitors and psionic dampeners.\n\nThe subject no longer requires verbal communication. Thoughts are directly transmitted to sensitives on our research team. Most concerning is his ability to accurately predict events before they occur and perceive information from outside his containment cell without any apparent sensory input.\n\nKey observations from today's session:\n1. Subject described detailed layouts of sections of the facility he has never visited\n2. Subject referenced conversations between staff members that occurred in private\n3. Subject named the crew members of supply ship arriving tomorrow\n4. Subject warned of \"thinning barriers between what is and what could be\"\n\nRecommendation: Increase psionic dampening by 40%. Rotate research staff every 24 hours to minimize exposure to subject. Consider evacuation protocols if synchronization exceeds 95%.",
@@ -19,7 +10,7 @@
     },
   {
     "title": "Eclipse Shard - Research Summary",
-    "location": "Blacksite ES1 Terminal",
+    "location": "ES1-OmegaLab Terminal",
     "date": "088-1105",
     "author": "Research Division",
     "content": "ECLIPSE SHARD - COMPREHENSIVE ANALYSIS\n\nOrigin: Unknown. Material composition does not match any known element or compound. Theoretical models suggest extra-dimensional origin.\n\nPhysical Properties:\n- Appears as a purple crystalline fragment approximately 15cm x 8cm x 7cm\n- Color shifts between deep black and iridescent purple depending on observer angle\n- Mass fluctuates under observation, violating conservation laws\n- Temperature remains constant at 3.7K regardless of environmental conditions\n- Demonstrates quantum superposition under certain test conditions\n\nPsychological/Neural Effects:\n- Proximity exposure (30 minutes to 1 hour) leads to neurological changes\n- Enhanced perception (electromagnetic, quantum fields)\n- Development of anomalous cognitive abilities\n- Subject-specific manifestations (varies by individual)\n- Apparent addiction-like dependency with prolonged exposure\n\nMost subjects develop painful withdrawal symptoms when separated from the Shard after extended exposure. Subject Trevar represents our most integrated case, demonstrating abilities that defy conventional explanation.\n\nHypothesis: The Shard is a fragment of a larger artifact of non-human origin, possibly a communication device or consciousness-altering technology. Its effect on human neural architecture suggests it may be interfacing with or altering fundamental aspects of perception and cognition.\n\nWARNING: All research personnel are to be rotated after 20 hours of cumulative Shard exposure. Mandatory neural scans required weekly. Any unauthorized exposure will result in immediate quarantine.",
@@ -34,7 +25,7 @@
   },
   {
     "title": "Emergency Protocol - Containment Breach",
-    "location": "Blacksite ES1 Terminal",
+    "location": "ES1-OmegaLab Terminal",
     "date": "092-1105",
     "author": "Security Division",
     "content": "EMERGENCY PROTOCOL: CONTAINMENT BREACH\n\nThis document outlines procedures to be followed in the event of Subject Trevar achieving containment breach or loss of Shard containment:\n\n1. IMMEDIATE ACTIONS:\n   - Automated lockdown of Gamma Wing\n   - Deployment of suppression fields in all connecting corridors\n   - Release of aerosolized psionic suppressants\n   - Evacuation of all non-essential personnel to emergency shuttles\n\n2. SECURITY RESPONSE:\n   - Tactical team Alpha will secure Subject Trevar using non-lethal methods\n   - Tactical teams Beta will secure the Eclipse Shard\n   - Subject must be separated from Shard immediately\n\n3. WORST-CASE SCENARIO - PROTOCOL OMEGA:\n   If Subject and Shard cannot be secured within 30 minutes of breach:\n   - Station self-destruct sequence will be initiated\n   - All data will be transmitted to backup facility\n   - Remaining personnel will evacuate via emergency pods\n   - Automated beacon will warn all approaching vessels\n\nAUTHORIZATION CODES FOR PROTOCOL OMEGA:\n   Primary: ECLIPSE-SHADOW-FALL-93472\n   Secondary: VOID-COLLAPSE-83901-TERMINUS\n   Tertiary: BEYOND-EVENT-HORIZON-12583\n\nNOTE: All three authorization codes must be entered by separate command staff with Level Omega clearance within 60 seconds of each other to initiate Protocol Omega.",
@@ -43,7 +34,7 @@
   },
   {
     "title": "Director's Personal Log",
-    "location": "Blacksite ES1 Terminal",
+    "location": "ES1-OmegaLab Terminal",
     "date": "082-1105",
     "author": "Dr. Mordova, Site Director",
     "content": "Personal Log - Dr. Elena Mordova\nDay 151\n\nI've begun experiencing the dreams. Just like the other researchers with extended exposure. Always the same pattern - vast geometric spaces folding in impossible ways, and something moving between them. Watching us. Studying us, just as we study it.\n\nTrevar is getting stronger. Yesterday he named my childhood pet - information that exists nowhere in any database. When I asked how he knew, he simply smiled and said, \"I can see all the paths you've walked.\"\n\nSomething is happening to the fabric of reality around the Shard. Sensors in Gamma Wing have begun picking up temporal anomalies - microscopic variances in the flow of time. Objects occasionally appear to move before they're touched. Security footage shows momentary duplications of staff members.\n\nI fear we've gone too far. The corporate board insists on pushing forward, demanding weaponization protocols and enhanced extraction of Trevar's abilities. They don't understand what we're dealing with. This isn't just a powerful object or energy source - it's a doorway. And Trevar is halfway through it already.\n\nI've taken the precaution of updating Protocol Omega. If containment fails completely, this facility and everything in it must be destroyed. The risk is too great.\n\nIf anyone finds this log, a final warning: The Eclipse Shard isn't a tool to be used. It's using us.",
@@ -58,7 +49,7 @@
   },
   {
     "title": "Fragmented Builder Transmission",
-    "location": "Blacksite ES1 Terminal",
+    "location": "ES1-OmegaLab Terminal",
     "date": "089-1105",
     "author": "Encryption Division",
     "content": "CODEX ENTRY: BUILDER SIGNAL FRAGMENT\n\nRecovered from Shard resonance chamber, Gamma Wing.\n\nSignal Structure:\n- Encoded in ultra-low frequency pulses embedded in Shard emissions.\n- Temporal spacing inconsistent with Imperial standards.\n- Partial decryption yields fragments of Ancient Builder script.\n\nDecoded Text (approx.):\n\"BEHIND THE EYE → MADE PERFECT → SOMETHING AWAKES.\"\n\nNotes: Attempts to force translation beyond this phrase trigger recursive loops in decryption algorithms, causing system instability. Several researchers reported auditory hallucinations during the process.\n\nHypothesis: The Shard may be broadcasting dormant activation codes intended for Builder technology still hidden in the sector.",
@@ -73,10 +64,10 @@
   },
   {
     "title": "Neural Cross-link Event",
-    "location": "Blacksite ES1 Terminal",
+    "location": "ES1-OmegaLab Terminal",
     "date": "095-1105",
     "author": "Dr. Yuran Tazeel",
-    "content": "SUBJECT: ELIAS TREVAR\n\nDuring latest synchronization test, Trevar began speaking in an unknown language. Later analysis confirms structural similarity to Builder dialect samples recovered from Lishun Sector ruins.\n\nPhrases included:\n- \"Continuum awaits the return.\"\n- \"The lattice is broken, but the seed endures.\"\n- \"Keth-Mirra… beneath the ash.\"\n\nTrevar claimed no memory of uttering these words, but displayed agitation when shown recordings. Psi-scans reveal elevated activity in regions consistent with deep memory encoding.\n\nRecommendation: Increase psionic dampeners and cross-reference utterances with Builder glyph databases. Potential breakthrough in understanding the Shard’s original creators.",
+    "content": "SUBJECT: ELIAS TREVAR\n\nDuring latest synchronization test, Trevar began speaking in an unknown language. Later analysis confirms structural similarity to Builder dialect samples recovered from Lishun Sector ruins.\n\nPhrases included:\n- \"Continuum awaits the return.\"\n- \"The lattice is broken, but the seed endures.\"\n- \"Keth-Mirra… beneath the ash.\"\n\nTrevar claimed no memory of uttering these words, but displayed agitation when shown recordings. Psi-scans reveal elevated activity in regions consistent with deep memory encoding.\n\nRecommendation: Increase psionic dampeners and cross-reference utterances with Builder glyph databases. Potential breakthrough in understanding the Shard's original creators.",
     "security_level": "high",
     "requires_roll": true,
     "roll_check": {
@@ -88,7 +79,7 @@
   },
   {
     "title": "Lysani Decryption Log – Project BLACK DAWN",
-    "location": "Blacksite ES1 Terminal",
+    "location": "ES1-OmegaLab Terminal",
     "date": "096-1105",
     "author": "Corporate Oversight Node",
     "content": "PROJECT BLACK DAWN – ENCRYPTION REPORT\n\nObjective: Translate Builder messages carried within Eclipse Shard resonance fields.\n\nAttempts:\n1. Quantum algorithm decryption (FAILED)\n2. Neural-net mimicry using sedated psionic subjects (FAILED)\n3. Synchronization with Subject Trevar (PARTIAL SUCCESS)\n\nObservations:\n- Each partial success destabilizes Shard containment field momentarily.\n- Trevar appears to shield researchers from worst effects, though unknowingly.\n- Builder code references 'ASCENDANT PROTOCOLS' and 'PHASED RETURN.'\n\nConclusion: Current Lysani resources insufficient for complete translation. Further attempts risk facility stability.\n\nRecommendation: Archive Builder data in offsite vaults until stable decryption methods found.",
@@ -103,7 +94,7 @@
   },
   {
     "title": "Post-Containment Incident Report - Body Vanished",
-    "location": "Blacksite ES1 Terminal",
+    "location": "ES1-OmegaLab Terminal",
     "date": "097-1105",
     "author": "Dr. Yuran Tazeel, Lead Researcher",
     "content": "INCIDENT REPORT: Subject Trevar's containment chamber found empty at 0340 hours. No breach detected. Quantum field inhibitors still active. Monitoring equipment shows a sudden collapse of biological readings followed by a surge in Shard resonance.\n\nComms interference began minutes later: multiple staff reported hearing Trevar's voice over the intercom and personal comms. Messages shifted between recognizable English phrases (\"I'm still here\", \"The lattice breathes\") and fragments of Builder dialect that remain untranslated.\n\nSecurity sweep found no physical trace of Trevar's body. Hypothesis: neural and physical integration with the Shard reached completion.",
@@ -118,7 +109,7 @@
   },
   {
     "title": "Comms Anomaly - Eerie Broadcasts",
-    "location": "Blacksite ES1 Terminal",
+    "location": "ES1-OmegaLab Terminal",
     "date": "098-1105",
     "author": "Encryption Division",
     "content": "COMMS ANOMALY REPORT\n\nFollowing the disappearance of Subject Trevar's body, station-wide comms continue to receive intermittent broadcasts. The voice is identifiable as Trevar, though layered with distortion and echoes consistent with Shard resonance fields.\n\nSample excerpts:\n- English: \"You cannot close the doorway.\"\n- English: \"All paths converge beneath the ash.\"\n- Builder dialect (approx. translation): \"Seed returns. Continuum binds.\"\n\nAttempts to filter or block the signal have failed. The broadcasts occur without regard to channel encryption. Hypothesis: The Shard is using station infrastructure as a carrier for projection of Trevar's consciousness.",
