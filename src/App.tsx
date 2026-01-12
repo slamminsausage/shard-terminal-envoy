@@ -15,6 +15,7 @@ import CharacterView from "./components/crew/CharacterView";
 import VehicleView from "./components/crew/VehicleView";
 import { useParams } from "react-router-dom";
 import AdminBridge from "./pages/AdminBridge";
+import AdminNotes from "./pages/AdminNotes";
 
 const CharacterViewRoute = () => {
   const { id } = useParams<{ id: string }>();
@@ -45,6 +46,7 @@ const App = () => (
                 <Route path="/character-view/:id" element={<CharacterViewRoute />} />
                 <Route path="/vehicle-view/:id" element={<VehicleViewRoute />} />
                 <Route path="/admin/bridge" element={<AdminBridge />} />
+                <Route path="/admin/notes" element={<AdminNotes />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
