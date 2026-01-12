@@ -878,5 +878,103 @@ export const dbHelpers = {
       console.error('Failed to toggle marker visibility:', error);
       throw error;
     }
+  },
+
+  // Handout Storage Functions
+  async uploadHandoutMedia(file: File | Blob, handoutId: string): Promise<string | null> {
+    try {
+      const fileExt = file instanceof File ? file.name.split('.').pop() : 'jpg';
+      const fileName = `${handoutId}.${fileExt}`;
+      const filePath = `${fileName}`;
+
+      console.log(`Uploading handout media: ${filePath} (${(file.size / 1024).toFixed(2)} KB)`);
+
+      const { data, error } = await supabase.storage
+        .from('handouts')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: true, // Allow overwriting existing files
+        });
+
+      if (error) {
+        console.error('Upload error:', error);
+        throw error;
+      }
+
+      // Get the public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('handouts')
+        .getPublicUrl(filePath);
+
+      console.log('Upload successful, public URL:', publicUrl);
+      return publicUrl;
+    } catch (error) {
+      console.error('Failed to upload handout media:', error);
+      return null;
+    }
+  },
+
+  async deleteHandoutMedia(handoutId: string): Promise<boolean> {
+    try {
+      // Try to delete files with common extensions
+      const extensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'mp4', 'webm', 'mov'];
+
+      for (const ext of extensions) {
+        const filePath = `${handoutId}.${ext}`;
+        const { error } = await supabase.storage
+          .from('handouts')
+          .remove([filePath]);
+
+        // If no error, file was deleted
+        if (!error) {
+          console.log(`Deleted handout media: ${filePath}`);
+          return true;
+        }
+      }
+
+      console.log('No handout media found to delete for:', handoutId);
+      return true;
+    } catch (error) {
+      console.error('Failed to delete handout media:', error);
+      return false;
+    }
+  },
+
+  async uploadHandoutMediaFromDataURL(dataUrl: string, handoutId: string, mimeType: string): Promise<string | null> {
+    try {
+      // Convert data URL to blob
+      const response = await fetch(dataUrl);
+      const blob = await response.blob();
+
+      // Determine file extension from mime type
+      const fileExt = mimeType.split('/')[1] || 'jpg';
+      const fileName = `${handoutId}.${fileExt}`;
+
+      console.log(`Uploading handout from data URL: ${fileName} (${(blob.size / 1024).toFixed(2)} KB)`);
+
+      const { data, error } = await supabase.storage
+        .from('handouts')
+        .upload(fileName, blob, {
+          cacheControl: '3600',
+          upsert: true,
+          contentType: mimeType,
+        });
+
+      if (error) {
+        console.error('Upload error:', error);
+        throw error;
+      }
+
+      // Get the public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('handouts')
+        .getPublicUrl(fileName);
+
+      console.log('Upload successful, public URL:', publicUrl);
+      return publicUrl;
+    } catch (error) {
+      console.error('Failed to upload handout from data URL:', error);
+      return null;
+    }
   }
 }
