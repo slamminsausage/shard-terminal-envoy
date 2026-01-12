@@ -39,16 +39,8 @@ export const NotesInterface: React.FC = () => {
   const [selectedFolder, setSelectedFolder] = useState<NoteFolder | 'all'>('all');
   const [showNewNoteForm, setShowNewNoteForm] = useState(false);
 
-  // Visible handouts for players (all handouts for GM)
-  const visibleHandouts = isGMMode ? handouts : handouts.filter(h => h.isVisible);
-
-  // Debug logging
-  React.useEffect(() => {
-    console.log('NotesInterface - GM Mode:', isGMMode);
-    console.log('NotesInterface - Total handouts:', handouts.length);
-    console.log('NotesInterface - Visible handouts:', visibleHandouts.length);
-    handouts.forEach(h => console.log(`  - ${h.title}: isVisible=${h.isVisible}`));
-  }, [handouts, visibleHandouts, isGMMode]);
+  // Only show visible handouts (admin page controls visibility)
+  const visibleHandouts = handouts.filter(h => h.isVisible);
 
   // Filter notes by folder
   const filteredNotes = useMemo(() => {
@@ -86,12 +78,10 @@ export const NotesInterface: React.FC = () => {
     <div className="h-full flex flex-col bg-black text-[#00ff41] font-mono">
       <div className="border-b border-[#00ff41]/30 p-4">
         <h1 className="text-2xl font-bold text-[#00ff41]">
-          {isGMMode ? 'NOTES & HANDOUTS MANAGER' : 'PLAYER NOTES & HANDOUTS'}
+          NOTES & HANDOUTS
         </h1>
         <p className="text-[#00ff41]/70 text-sm mt-1">
-          {isGMMode
-            ? 'Track campaign notes and manage shared handouts'
-            : 'Track your campaign notes and view shared handouts'}
+          Track campaign notes and view shared handouts
         </p>
       </div>
 
@@ -257,9 +247,7 @@ export const NotesInterface: React.FC = () => {
             {visibleHandouts.length === 0 ? (
               <Card className="bg-black border-[#00ff41]/30">
                 <CardContent className="p-8 text-center text-[#00ff41]/70">
-                  {isGMMode
-                    ? 'No handouts yet. Go to the Handout Manager to create handouts.'
-                    : 'No handouts available yet. Check back later!'}
+                  No handouts available yet. Handouts will appear here when revealed.
                 </CardContent>
               </Card>
             ) : (
