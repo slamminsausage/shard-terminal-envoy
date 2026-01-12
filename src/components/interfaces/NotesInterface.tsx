@@ -6,12 +6,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Edit2, Trash2, Save, X, Image as ImageIcon, Video, FileText, Folder, ExternalLink } from 'lucide-react';
+import { Edit2, Trash2, Save, X, Image as ImageIcon, Video, FileText, Folder } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { PlayerNote, Handout, NoteFolder } from '@/types/notes';
-import { useNavigate } from 'react-router-dom';
 
 const FOLDERS: { value: NoteFolder; label: string; emoji: string }[] = [
   { value: 'general', label: 'General', emoji: '📝' },
@@ -24,7 +23,6 @@ const FOLDERS: { value: NoteFolder; label: string; emoji: string }[] = [
 ];
 
 export const NotesInterface: React.FC = () => {
-  const navigate = useNavigate();
   const {
     playerNotes,
     addPlayerNote,
@@ -79,28 +77,14 @@ export const NotesInterface: React.FC = () => {
   return (
     <div className="h-full flex flex-col bg-black text-[#00ff41] font-mono">
       <div className="border-b border-[#00ff41]/30 p-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-[#00ff41]">
-              {isGMMode ? 'NOTES & HANDOUTS MANAGER' : 'PLAYER NOTES & HANDOUTS'}
-            </h1>
-            <p className="text-[#00ff41]/70 text-sm mt-1">
-              {isGMMode
-                ? 'Track campaign notes and manage shared handouts'
-                : 'Track your campaign notes and view shared handouts'}
-            </p>
-          </div>
-          {isGMMode && (
-            <Button
-              onClick={() => navigate('/admin/notes')}
-              variant="outline"
-              className="border-[#00ff41]/50 text-[#00ff41] hover:bg-[#00ff41]/20"
-            >
-              <ExternalLink className="h-4 w-4 mr-2" />
-              Handout Manager
-            </Button>
-          )}
-        </div>
+        <h1 className="text-2xl font-bold text-[#00ff41]">
+          {isGMMode ? 'NOTES & HANDOUTS MANAGER' : 'PLAYER NOTES & HANDOUTS'}
+        </h1>
+        <p className="text-[#00ff41]/70 text-sm mt-1">
+          {isGMMode
+            ? 'Track campaign notes and manage shared handouts'
+            : 'Track your campaign notes and view shared handouts'}
+        </p>
       </div>
 
       <ScrollArea className="flex-1 p-4">
