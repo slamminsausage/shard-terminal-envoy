@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { CampaignProvider } from "@/contexts/CampaignContext";
 import { BridgeProvider } from "@/contexts/BridgeContext";
 import { JumpPlannerProvider } from "@/contexts/JumpPlannerContext";
+import { NotesProvider } from "@/contexts/NotesContext";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import CRTOverlay from "@/components/ui/CRTOverlay";
 import Index from "./pages/Index";
@@ -33,6 +34,7 @@ const App = () => (
       <TooltipProvider>
         <CampaignProvider>
           <JumpPlannerProvider>
+          <NotesProvider>
           <BridgeProvider>
             <CRTOverlay />
             <Toaster />
@@ -48,6 +50,7 @@ const App = () => (
               </Routes>
             </BrowserRouter>
           </BridgeProvider>
+          </NotesProvider>
           </JumpPlannerProvider>
         </CampaignProvider>
       </TooltipProvider>

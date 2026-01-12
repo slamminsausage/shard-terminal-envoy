@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from "react";
-import { Terminal, FileText, Users, Radar, Navigation, Bot } from "lucide-react";
+import { Terminal, FileText, Users, Radar, Navigation, Bot, BookOpen } from "lucide-react";
 import TerminalInterface from "./interfaces/TerminalInterface";
 import CrewInterface from "./interfaces/CrewInterface";
 import VehicleInterface from "./interfaces/VehicleInterface";
 import NexaInterface from "./interfaces/NexaInterface";
+import { NotesInterface } from "./interfaces/NotesInterface";
 import AppHeader from "./layout/AppHeader";
 import { BridgeConsole } from "./bridge/BridgeConsole";
 import { JumpPlannerInterface } from "./navigation/JumpPlannerInterface";
@@ -26,6 +27,7 @@ export default function MainframeShell() {
     { id: "vehicles", label: "Hangar", emoji: "🛦" },
     { id: "bridge", label: "Bridge", icon: Radar },
     { id: "navigation", label: "Star Map", icon: Navigation },
+    { id: "notes", label: "Notes", icon: BookOpen },
     { id: "nexa", label: "NEXA", icon: Bot }
   ];
 
@@ -55,6 +57,9 @@ export default function MainframeShell() {
         )}
         {activeTab === "navigation" && (
           <JumpPlannerInterface />
+        )}
+        {activeTab === "notes" && (
+          <NotesInterface />
         )}
         {activeTab === "nexa" && (
           <NexaInterface />
