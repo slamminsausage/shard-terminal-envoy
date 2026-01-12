@@ -5,9 +5,9 @@ import { dbHelpers } from '@/lib/supabase';
 interface NotesContextType {
   // Player notes
   playerNotes: PlayerNote[];
-  addPlayerNote: (note: Omit<PlayerNote, 'id' | 'createdAt' | 'updatedAt'>) => void;
-  updatePlayerNote: (id: string, updates: Partial<PlayerNote>) => void;
-  deletePlayerNote: (id: string) => void;
+  addPlayerNote: (note: Omit<PlayerNote, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
+  updatePlayerNote: (id: string, updates: Partial<PlayerNote>) => Promise<void>;
+  deletePlayerNote: (id: string) => Promise<void>;
 
   // Handouts
   handouts: Handout[];
@@ -27,7 +27,7 @@ export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [handouts, setHandouts] = useState<Handout[]>([]);
   const [isGMMode, setIsGMMode] = useState(false);
 
-  // Load data from localStorage on mount
+  // Load data from database on mount
   useEffect(() => {
     const migrateHandoutsToStorage = async (loadedHandouts: Handout[]) => {
       const migratedHandouts = [];
@@ -62,16 +62,78 @@ export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       return { handouts: migratedHandouts, migrated: anyMigrated };
     };
 
+    const migratePlayerNotesToDatabase = async (localNotes: PlayerNote[]) => {
+      console.log(`Migrating ${localNotes.length} player notes to database...`);
+      let migratedCount = 0;
+
+      for (const note of localNotes) {
+        try {
+          await dbHelpers.savePlayerNote(note);
+          migratedCount++;
+        } catch (error) {
+          console.error(`Failed to migrate note "${note.title}":`, error);
+        }
+      }
+
+      console.log(`Successfully migrated ${migratedCount}/${localNotes.length} player notes to database`);
+      return migratedCount > 0;
+    };
+
     const loadData = async () => {
       try {
-        const savedPlayerNotes = localStorage.getItem('traveller_player_notes');
-        const savedHandouts = localStorage.getItem('traveller_handouts');
         const savedGMMode = localStorage.getItem('traveller_authenticated');
-
-        if (savedPlayerNotes) {
-          setPlayerNotes(JSON.parse(savedPlayerNotes));
+        if (savedGMMode) {
+          setIsGMMode(savedGMMode === 'true');
         }
 
+        // Load player notes from database
+        const dbNotes = await dbHelpers.getAllPlayerNotes();
+
+        // Check if we need to migrate from localStorage
+        if (dbNotes.length === 0) {
+          const savedPlayerNotes = localStorage.getItem('traveller_player_notes');
+          if (savedPlayerNotes) {
+            const localNotes = JSON.parse(savedPlayerNotes);
+            if (localNotes.length > 0) {
+              console.log('Found player notes in localStorage, migrating to database...');
+              const migrated = await migratePlayerNotesToDatabase(localNotes);
+
+              if (migrated) {
+                // Reload from database after migration
+                const migratedNotes = await dbHelpers.getAllPlayerNotes();
+                setPlayerNotes(migratedNotes.map((n: any) => ({
+                  id: n.id,
+                  title: n.title,
+                  content: n.content,
+                  createdAt: n.created_at,
+                  updatedAt: n.updated_at,
+                  createdBy: n.created_by,
+                  folder: n.folder,
+                  tags: n.tags || [],
+                })));
+
+                // Clear localStorage after successful migration
+                localStorage.removeItem('traveller_player_notes');
+                console.log('Player notes migration complete!');
+              }
+            }
+          }
+        } else {
+          // Load notes from database
+          setPlayerNotes(dbNotes.map((n: any) => ({
+            id: n.id,
+            title: n.title,
+            content: n.content,
+            createdAt: n.created_at,
+            updatedAt: n.updated_at,
+            createdBy: n.created_by,
+            folder: n.folder,
+            tags: n.tags || [],
+          })));
+        }
+
+        // Load handouts from localStorage (with migration support)
+        const savedHandouts = localStorage.getItem('traveller_handouts');
         if (savedHandouts) {
           const loadedHandouts = JSON.parse(savedHandouts);
 
@@ -93,26 +155,15 @@ export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             setHandouts(loadedHandouts);
           }
         }
-
-        if (savedGMMode) {
-          setIsGMMode(savedGMMode === 'true');
-        }
       } catch (error) {
-        console.error('Error loading notes from localStorage:', error);
+        console.error('Error loading data:', error);
       }
     };
 
     loadData();
   }, []);
 
-  // Save player notes to localStorage
-  useEffect(() => {
-    try {
-      localStorage.setItem('traveller_player_notes', JSON.stringify(playerNotes));
-    } catch (error) {
-      console.error('Error saving player notes to localStorage:', error);
-    }
-  }, [playerNotes]);
+  // Player notes are now saved to database, no need for localStorage sync
 
   // Save handouts to localStorage (only metadata, media is in Supabase Storage)
   useEffect(() => {
@@ -143,28 +194,52 @@ export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, [handouts]);
 
   // Player notes functions
-  const addPlayerNote = useCallback((note: Omit<PlayerNote, 'id' | 'createdAt' | 'updatedAt'>) => {
+  const addPlayerNote = useCallback(async (note: Omit<PlayerNote, 'id' | 'createdAt' | 'updatedAt'>) => {
     const newNote: PlayerNote = {
       ...note,
       id: `note-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
-    setPlayerNotes(prev => [...prev, newNote]);
+
+    try {
+      await dbHelpers.savePlayerNote(newNote);
+      setPlayerNotes(prev => [...prev, newNote]);
+    } catch (error) {
+      console.error('Failed to add player note:', error);
+      throw error;
+    }
   }, []);
 
-  const updatePlayerNote = useCallback((id: string, updates: Partial<PlayerNote>) => {
-    setPlayerNotes(prev =>
-      prev.map(note =>
-        note.id === id
-          ? { ...note, ...updates, updatedAt: new Date().toISOString() }
-          : note
-      )
-    );
-  }, []);
+  const updatePlayerNote = useCallback(async (id: string, updates: Partial<PlayerNote>) => {
+    const existingNote = playerNotes.find(n => n.id === id);
+    if (!existingNote) return;
 
-  const deletePlayerNote = useCallback((id: string) => {
-    setPlayerNotes(prev => prev.filter(note => note.id !== id));
+    const updatedNote = {
+      ...existingNote,
+      ...updates,
+      updatedAt: new Date().toISOString(),
+    };
+
+    try {
+      await dbHelpers.savePlayerNote(updatedNote);
+      setPlayerNotes(prev =>
+        prev.map(note => note.id === id ? updatedNote : note)
+      );
+    } catch (error) {
+      console.error('Failed to update player note:', error);
+      throw error;
+    }
+  }, [playerNotes]);
+
+  const deletePlayerNote = useCallback(async (id: string) => {
+    try {
+      await dbHelpers.deletePlayerNote(id);
+      setPlayerNotes(prev => prev.filter(note => note.id !== id));
+    } catch (error) {
+      console.error('Failed to delete player note:', error);
+      throw error;
+    }
   }, []);
 
   // Handouts functions
