@@ -7,9 +7,11 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Eye, EyeOff, Edit2, Trash2, Save, X, Upload, Image, Video, FileText, ArrowLeft } from 'lucide-react';
+import { Eye, EyeOff, Edit2, Trash2, Save, X, Upload, Image, Video, FileText, ArrowLeft, Maximize2 } from 'lucide-react';
 import { Handout } from '@/types/notes';
 import { useNavigate } from 'react-router-dom';
+import { compressImage, compressVideo, formatFileSize } from '@/lib/mediaCompression';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 export default function AdminNotes() {
   const navigate = useNavigate();
@@ -30,22 +32,37 @@ export default function AdminNotes() {
   const [newHandoutMediaUrl, setNewHandoutMediaUrl] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Convert file to base64 data URL for persistence
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64String = reader.result as string;
-        setNewHandoutMediaUrl(base64String);
-      };
-      reader.readAsDataURL(file);
+      console.log(`Original file size: ${formatFileSize(file.size)}`);
 
-      // Detect file type
+      // Detect file type and compress accordingly
       if (file.type.startsWith('image/')) {
         setNewHandoutType('image');
+        // Compress image to max 1920px and 80% quality
+        compressImage(file, 1920, 1920, 0.8).then(compressed => {
+          setNewHandoutMediaUrl(compressed);
+          const compressedSize = compressed.length * 0.75; // Approximate base64 size
+          console.log(`Image compressed: ${formatFileSize(file.size)} → ${formatFileSize(compressedSize)}`);
+        }).catch(err => {
+          console.error('Error compressing image:', err);
+          // Fallback to uncompressed
+          const reader = new FileReader();
+          reader.onloadend = () => setNewHandoutMediaUrl(reader.result as string);
+          reader.readAsDataURL(file);
+        });
       } else if (file.type.startsWith('video/')) {
         setNewHandoutType('video');
+        const originalSize = formatFileSize(file.size);
+        console.log(`Loading video file: ${file.name} (${originalSize})`);
+
+        compressVideo(file).then(dataUrl => {
+          setNewHandoutMediaUrl(dataUrl);
+        }).catch(error => {
+          console.error('Error processing video:', error);
+          alert('Failed to process video file. Please try a smaller file.');
+        });
       }
     }
   };
@@ -304,6 +321,7 @@ const HandoutAdminCard: React.FC<HandoutAdminCardProps> = ({
   const [title, setTitle] = useState(handout.title);
   const [description, setDescription] = useState(handout.description);
   const [content, setContent] = useState(handout.content || '');
+  const [showFullSize, setShowFullSize] = useState(false);
 
   if (isEditing && handout.type === 'text') {
     return (
@@ -419,18 +437,65 @@ const HandoutAdminCard: React.FC<HandoutAdminCardProps> = ({
           </p>
         )}
         {handout.type === 'image' && handout.mediaUrl && (
-          <img
-            src={handout.mediaUrl}
-            alt={handout.title}
-            className="w-full h-32 object-cover rounded"
-          />
+          <>
+            <div
+              className="relative group cursor-pointer"
+              onClick={() => setShowFullSize(true)}
+            >
+              <img
+                src={handout.mediaUrl}
+                alt={handout.title}
+                className="w-full max-w-[288px] max-h-[192px] object-cover rounded border border-[#00ff41]/30 mx-auto"
+              />
+              <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded">
+                <Maximize2 className="h-8 w-8 text-[#00ff41]" />
+              </div>
+            </div>
+            <Dialog open={showFullSize} onOpenChange={setShowFullSize}>
+              <DialogContent className="max-w-[90vw] max-h-[90vh] bg-black border-[#00ff41]/50">
+                <DialogHeader>
+                  <DialogTitle className="text-[#00ff41]">{handout.title}</DialogTitle>
+                </DialogHeader>
+                <div className="overflow-auto max-h-[75vh]">
+                  <img
+                    src={handout.mediaUrl}
+                    alt={handout.title}
+                    className="w-full h-auto rounded"
+                  />
+                </div>
+              </DialogContent>
+            </Dialog>
+          </>
         )}
         {handout.type === 'video' && handout.mediaUrl && (
-          <video
-            src={handout.mediaUrl}
-            className="w-full h-32 object-cover rounded"
-            controls
-          />
+          <>
+            <div
+              className="relative group cursor-pointer"
+              onClick={() => setShowFullSize(true)}
+            >
+              <video
+                src={handout.mediaUrl}
+                className="w-full max-w-[288px] max-h-[192px] object-cover rounded border border-[#00ff41]/30 mx-auto"
+              />
+              <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded">
+                <Maximize2 className="h-8 w-8 text-[#00ff41]" />
+              </div>
+            </div>
+            <Dialog open={showFullSize} onOpenChange={setShowFullSize}>
+              <DialogContent className="max-w-[90vw] max-h-[90vh] bg-black border-[#00ff41]/50">
+                <DialogHeader>
+                  <DialogTitle className="text-[#00ff41]">{handout.title}</DialogTitle>
+                </DialogHeader>
+                <div className="overflow-auto max-h-[75vh]">
+                  <video
+                    src={handout.mediaUrl}
+                    controls
+                    className="w-full h-auto rounded"
+                  />
+                </div>
+              </DialogContent>
+            </Dialog>
+          </>
         )}
       </CardContent>
     </Card>
