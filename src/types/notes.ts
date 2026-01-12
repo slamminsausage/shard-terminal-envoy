@@ -5,32 +5,22 @@ export interface PlayerNote {
   createdAt: string;
   updatedAt: string;
   createdBy: 'player' | 'gm';
+  folder?: string; // e.g., "planets", "locations", "npcs", "general"
   tags?: string[];
 }
 
 export interface Handout {
   id: string;
   title: string;
-  content: string;
+  description: string;
+  type: 'text' | 'image' | 'video';
+  content?: string; // for text handouts
+  mediaUrl?: string; // for image/video handouts
+  thumbnailUrl?: string; // optional thumbnail for videos
   createdAt: string;
   updatedAt: string;
   isVisible: boolean; // GM controls visibility to players
   tags?: string[];
-  attachments?: HandoutAttachment[];
 }
 
-export interface HandoutAttachment {
-  id: string;
-  name: string;
-  type: 'image' | 'document' | 'audio' | 'other';
-  url: string;
-}
-
-export interface GMNote {
-  id: string;
-  title: string;
-  content: string;
-  createdAt: string;
-  updatedAt: string;
-  tags?: string[];
-}
+export type NoteFolder = 'general' | 'planets' | 'locations' | 'npcs' | 'quests' | 'items' | 'other';
