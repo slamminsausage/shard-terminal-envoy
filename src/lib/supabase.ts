@@ -976,5 +976,143 @@ export const dbHelpers = {
       console.error('Failed to upload handout from data URL:', error);
       return null;
     }
+  },
+
+  // Player Notes Functions
+  async getAllPlayerNotes() {
+    if (supabaseDisabled) {
+      try {
+        const raw = localStorage.getItem('traveller_player_notes');
+        return raw ? JSON.parse(raw) : [];
+      } catch {
+        return [];
+      }
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('player_notes')
+        .select('*')
+        .order('updated_at', { ascending: false });
+
+      if (error) {
+        console.error('Database error:', error);
+        return [];
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error('Failed to fetch player notes:', error);
+      return [];
+    }
+  },
+
+  async savePlayerNote(note: any) {
+    if (supabaseDisabled) {
+      try {
+        const raw = localStorage.getItem('traveller_player_notes');
+        const notes = raw ? JSON.parse(raw) : [];
+        const existingIndex = notes.findIndex((n: any) => n.id === note.id);
+
+        if (existingIndex >= 0) {
+          notes[existingIndex] = note;
+        } else {
+          notes.push(note);
+        }
+
+        localStorage.setItem('traveller_player_notes', JSON.stringify(notes));
+        return note;
+      } catch (error) {
+        console.error('Failed to save note to localStorage:', error);
+        throw error;
+      }
+    }
+
+    try {
+      const now = new Date().toISOString();
+      const noteData = {
+        id: note.id,
+        title: note.title,
+        content: note.content,
+        created_at: note.createdAt || now,
+        updated_at: now,
+        created_by: note.createdBy || 'player',
+        folder: note.folder || 'general',
+        tags: note.tags || [],
+      };
+
+      // Check if note exists
+      const { data: existing } = await supabase
+        .from('player_notes')
+        .select('id')
+        .eq('id', note.id)
+        .maybeSingle();
+
+      if (existing) {
+        // Update existing note
+        const { data, error } = await supabase
+          .from('player_notes')
+          .update(noteData)
+          .eq('id', note.id)
+          .select()
+          .single();
+
+        if (error) {
+          console.error('Database error:', error);
+          throw error;
+        }
+
+        return data;
+      } else {
+        // Insert new note
+        const { data, error } = await supabase
+          .from('player_notes')
+          .insert([noteData])
+          .select()
+          .single();
+
+        if (error) {
+          console.error('Database error:', error);
+          throw error;
+        }
+
+        return data;
+      }
+    } catch (error) {
+      console.error('Failed to save player note:', error);
+      throw error;
+    }
+  },
+
+  async deletePlayerNote(noteId: string) {
+    if (supabaseDisabled) {
+      try {
+        const raw = localStorage.getItem('traveller_player_notes');
+        const notes = raw ? JSON.parse(raw) : [];
+        const filtered = notes.filter((n: any) => n.id !== noteId);
+        localStorage.setItem('traveller_player_notes', JSON.stringify(filtered));
+        return true;
+      } catch (error) {
+        console.error('Failed to delete note from localStorage:', error);
+        throw error;
+      }
+    }
+
+    try {
+      const { error } = await supabase
+        .from('player_notes')
+        .delete()
+        .eq('id', noteId);
+
+      if (error) {
+        console.error('Database error:', error);
+        throw error;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Failed to delete player note:', error);
+      throw error;
+    }
   }
 }

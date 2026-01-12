@@ -68,19 +68,24 @@ export const NotesInterface: React.FC = () => {
     return counts;
   }, [playerNotes]);
 
-  const handleAddPlayerNote = () => {
+  const handleAddPlayerNote = async () => {
     if (newNoteTitle.trim() && newNoteContent.trim()) {
-      addPlayerNote({
-        title: newNoteTitle,
-        content: newNoteContent,
-        folder: newNoteFolder,
-        createdBy: isGMMode ? 'gm' : 'player',
-        tags: [],
-      });
-      setNewNoteTitle('');
-      setNewNoteContent('');
-      setNewNoteFolder('general');
-      setShowNewNoteForm(false);
+      try {
+        await addPlayerNote({
+          title: newNoteTitle,
+          content: newNoteContent,
+          folder: newNoteFolder,
+          createdBy: isGMMode ? 'gm' : 'player',
+          tags: [],
+        });
+        setNewNoteTitle('');
+        setNewNoteContent('');
+        setNewNoteFolder('general');
+        setShowNewNoteForm(false);
+      } catch (error) {
+        console.error('Failed to add player note:', error);
+        alert('Failed to save note. Please try again.');
+      }
     }
   };
 
@@ -235,12 +240,24 @@ export const NotesInterface: React.FC = () => {
                     note={note}
                     isEditing={editingNote === note.id}
                     onEdit={() => setEditingNote(note.id)}
-                    onSave={(updates) => {
-                      updatePlayerNote(note.id, updates);
-                      setEditingNote(null);
+                    onSave={async (updates) => {
+                      try {
+                        await updatePlayerNote(note.id, updates);
+                        setEditingNote(null);
+                      } catch (error) {
+                        console.error('Failed to update note:', error);
+                        alert('Failed to update note. Please try again.');
+                      }
                     }}
                     onCancel={() => setEditingNote(null)}
-                    onDelete={() => deletePlayerNote(note.id)}
+                    onDelete={async () => {
+                      try {
+                        await deletePlayerNote(note.id);
+                      } catch (error) {
+                        console.error('Failed to delete note:', error);
+                        alert('Failed to delete note. Please try again.');
+                      }
+                    }}
                     showCreator={isGMMode}
                   />
                 ))}
@@ -281,9 +298,9 @@ interface NoteCardProps {
   note: PlayerNote;
   isEditing: boolean;
   onEdit: () => void;
-  onSave: (updates: Partial<PlayerNote>) => void;
+  onSave: (updates: Partial<PlayerNote>) => Promise<void>;
   onCancel: () => void;
-  onDelete: () => void;
+  onDelete: () => Promise<void>;
   showCreator?: boolean;
 }
 
