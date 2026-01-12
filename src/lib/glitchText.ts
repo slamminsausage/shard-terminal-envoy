@@ -18,7 +18,7 @@ export interface GlitchResult {
 }
 
 const CORRUPT_TERMINALS = new Set([
-  'es1-delta',
+  'es1-omegalab',
   'es1-gamma',
   'vennik-personal',
   'sayelle-logs',
@@ -61,7 +61,7 @@ export const getCorruptionParams = (
   const eclipseContent =
     content.includes('Eclipse Shard') ||
     content.includes('ES1') ||
-    terminalName === 'es1-delta';
+    terminalName === 'es1-omegalab';
 
   if (eclipseContent) {
     return { level: 0.03, isEclipseShard: true };
