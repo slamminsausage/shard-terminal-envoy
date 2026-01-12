@@ -42,6 +42,14 @@ export const NotesInterface: React.FC = () => {
   // Visible handouts for players (all handouts for GM)
   const visibleHandouts = isGMMode ? handouts : handouts.filter(h => h.isVisible);
 
+  // Debug logging
+  React.useEffect(() => {
+    console.log('NotesInterface - GM Mode:', isGMMode);
+    console.log('NotesInterface - Total handouts:', handouts.length);
+    console.log('NotesInterface - Visible handouts:', visibleHandouts.length);
+    handouts.forEach(h => console.log(`  - ${h.title}: isVisible=${h.isVisible}`));
+  }, [handouts, visibleHandouts, isGMMode]);
+
   // Filter notes by folder
   const filteredNotes = useMemo(() => {
     if (selectedFolder === 'all') return playerNotes;

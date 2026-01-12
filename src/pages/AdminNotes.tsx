@@ -33,9 +33,13 @@ export default function AdminNotes() {
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Create a local URL for the file
-      const url = URL.createObjectURL(file);
-      setNewHandoutMediaUrl(url);
+      // Convert file to base64 data URL for persistence
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result as string;
+        setNewHandoutMediaUrl(base64String);
+      };
+      reader.readAsDataURL(file);
 
       // Detect file type
       if (file.type.startsWith('image/')) {
