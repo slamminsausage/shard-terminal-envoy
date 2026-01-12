@@ -97,8 +97,11 @@ export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       id: `handout-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
+      // Ensure isVisible is explicitly set (defaults to false if not provided)
+      isVisible: handout.isVisible ?? false,
     };
     setHandouts(prev => [...prev, newHandout]);
+    console.log('Handout added:', newHandout.title, 'isVisible:', newHandout.isVisible);
   }, []);
 
   const updateHandout = useCallback((id: string, updates: Partial<Handout>) => {
@@ -117,11 +120,14 @@ export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const toggleHandoutVisibility = useCallback((id: string) => {
     setHandouts(prev =>
-      prev.map(handout =>
-        handout.id === id
-          ? { ...handout, isVisible: !handout.isVisible, updatedAt: new Date().toISOString() }
-          : handout
-      )
+      prev.map(handout => {
+        if (handout.id === id) {
+          const newVisibility = !handout.isVisible;
+          console.log('Toggling handout visibility:', handout.title, 'from', handout.isVisible, 'to', newVisibility);
+          return { ...handout, isVisible: newVisibility, updatedAt: new Date().toISOString() };
+        }
+        return handout;
+      })
     );
   }, []);
 
