@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Heart, Shield, Swords, RefreshCw, ArrowUp, ArrowDown, User } from 'lucide-react';
+import { Plus, Trash2, Heart, Shield, RefreshCw, ArrowUp, ArrowDown, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -246,7 +246,7 @@ export default function CombatInterface() {
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-3xl font-bold flex items-center gap-2">
-            <Swords className="w-8 h-8" />
+            <span className="text-3xl">🔫</span>
             Combat Tracker
           </h2>
           <p className="text-muted-foreground">Manage initiative, health, and actions</p>
@@ -269,7 +269,7 @@ export default function CombatInterface() {
       {combatants.length === 0 ? (
         <Card>
           <CardContent className="py-16 text-center">
-            <Swords className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
+            <div className="text-6xl mb-4">🔫</div>
             <h3 className="text-xl font-semibold mb-2">No combatants yet</h3>
             <p className="text-muted-foreground mb-4">
               Add characters from your crew or create NPCs to start tracking combat
