@@ -154,6 +154,56 @@ export interface AccessCode {
   created_at: string;
 }
 
+export interface Combatant {
+  id: string;
+  name: string;
+  type: 'character' | 'npc';
+  characterId?: string;
+
+  // Initiative
+  initiative: number;
+
+  // Health - flexible system for Traveller
+  healthType: 'characteristics' | 'hits';
+
+  // For characters (sophonts) - track STR, DEX, END
+  currentStr?: number;
+  maxStr?: number;
+  currentDex?: number;
+  maxDex?: number;
+  currentEnd?: number;
+  maxEnd?: number;
+
+  // For inanimate objects, robots, animals - track Hits
+  hits?: number;
+  hitsMax?: number;
+
+  // Combat stats
+  armor: number;
+  cover: 'none' | 'partial' | 'full';
+  range: 'close' | 'short' | 'medium' | 'long' | 'extreme';
+
+  // Action economy
+  actionsRemaining: number;
+  reactionsRemaining: number;
+  hasMovedThisRound: boolean;
+
+  // Status
+  isActive: boolean;
+  isDowned: boolean;
+  notes: string;
+}
+
+export interface CombatEncounter {
+  id: string;
+  player_id: string;
+  current_round: number;
+  current_turn_index: number;
+  combatants: Combatant[];
+  created_at: string;
+  updated_at: string;
+}
+
 // API response types
 export interface CodeValidationResponse {
   is_valid: boolean;

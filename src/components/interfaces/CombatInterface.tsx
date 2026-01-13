@@ -20,8 +20,9 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { useCampaign } from '@/contexts/CampaignContext';
-import type { Character } from '@/types/database';
+import type { Character, Combatant, CombatEncounter } from '@/types/database';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/lib/supabase';
 
 // Calculate Traveller characteristic DM
 function getCharacteristicDM(value: number): number {
@@ -37,46 +38,6 @@ function getCharacteristicDM(value: number): number {
 // Roll 2d6
 function roll2d6(): number {
   return Math.floor(Math.random() * 6) + 1 + Math.floor(Math.random() * 6) + 1;
-}
-
-interface Combatant {
-  id: string;
-  name: string;
-  type: 'character' | 'npc';
-  characterId?: string;
-
-  // Initiative
-  initiative: number;
-
-  // Health - flexible system for Traveller
-  healthType: 'characteristics' | 'hits'; // Characters use characteristics, inanimate/animals use hits
-
-  // For characters (sophonts) - track STR, DEX, END
-  currentStr?: number;
-  maxStr?: number;
-  currentDex?: number;
-  maxDex?: number;
-  currentEnd?: number;
-  maxEnd?: number;
-
-  // For inanimate objects, robots, animals - track Hits
-  hits?: number;
-  hitsMax?: number;
-
-  // Combat stats
-  armor: number;
-  cover: 'none' | 'partial' | 'full';
-  range: 'close' | 'short' | 'medium' | 'long' | 'extreme';
-
-  // Action economy
-  actionsRemaining: number;
-  reactionsRemaining: number;
-  hasMovedThisRound: boolean;
-
-  // Status
-  isActive: boolean;
-  isDowned: boolean;
-  notes: string;
 }
 
 export default function CombatInterface() {
@@ -109,6 +70,86 @@ export default function CombatInterface() {
   const sortedCombatants = [...combatants].sort((a, b) => b.initiative - a.initiative);
   const activeCombatant = sortedCombatants[currentTurnIndex];
 
+  // Player ID for database queries (matches CampaignContext)
+  const PLAYER_ID = 'campaign';
+
+  // Load combat encounter from database
+  const loadCombat = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('combat_encounters')
+        .select('*')
+        .eq('player_id', PLAYER_ID)
+        .single();
+
+      if (error && error.code !== 'PGRST116') { // PGRST116 = no rows found
+        console.error('Error loading combat:', error);
+        return;
+      }
+
+      if (data) {
+        setCombatants(data.combatants || []);
+        setCurrentRound(data.current_round);
+        setCurrentTurnIndex(data.current_turn_index);
+      }
+    } catch (error) {
+      console.error('Error loading combat:', error);
+    }
+  };
+
+  // Save combat encounter to database
+  const saveCombat = async () => {
+    // Don't save if there are no combatants
+    if (combatants.length === 0) return;
+
+    try {
+      const { error } = await supabase
+        .from('combat_encounters')
+        .upsert({
+          player_id: PLAYER_ID,
+          current_round: currentRound,
+          current_turn_index: currentTurnIndex,
+          combatants: combatants,
+        }, {
+          onConflict: 'player_id'
+        });
+
+      if (error) {
+        console.error('Error saving combat:', error);
+      }
+    } catch (error) {
+      console.error('Error saving combat:', error);
+    }
+  };
+
+  // Delete combat encounter from database
+  const deleteCombat = async () => {
+    try {
+      const { error } = await supabase
+        .from('combat_encounters')
+        .delete()
+        .eq('player_id', PLAYER_ID);
+
+      if (error) {
+        console.error('Error deleting combat:', error);
+      }
+    } catch (error) {
+      console.error('Error deleting combat:', error);
+    }
+  };
+
+  // Load combat on mount
+  useEffect(() => {
+    loadCombat();
+  }, []);
+
+  // Auto-save combat whenever it changes
+  useEffect(() => {
+    if (combatants.length > 0) {
+      saveCombat();
+    }
+  }, [combatants, currentRound, currentTurnIndex]);
+
   const handleAddCharacter = () => {
     const character = characters.find(c => c.id === selectedCharacterId);
     if (!character) return;
@@ -117,7 +158,7 @@ export default function CombatInterface() {
     setIsAddDialogOpen(false);
     setPendingCharacter(character);
     setInitiativeCharacteristic('dex'); // Default to DEX
-    setInitiativeBonus(character.initiative || 0); // Use the initiative field as a bonus
+    setInitiativeBonus(0); // Bonuses are situational (tactics, etc), not static
     handleRollInitiative('dex', character);
     setIsInitiativeDialogOpen(true);
   };
@@ -362,10 +403,11 @@ export default function CombatInterface() {
     }));
   };
 
-  const handleResetCombat = () => {
+  const handleResetCombat = async () => {
     setCombatants([]);
     setCurrentRound(1);
     setCurrentTurnIndex(0);
+    await deleteCombat(); // Remove from database
   };
 
   return (
