@@ -1,9 +1,40 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
 import { Character, Vehicle } from '@/types/database';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from "@/integrations/supabase/client";
 import { dbHelpers } from '@/lib/supabase';
 import { defaultCharacters, defaultVehicles } from "@/data/campaignDefaults";
+
+// Session validation helper
+interface Session {
+  token: string;
+  createdAt: number;
+  expiresAt: number;
+}
+
+const isValidSession = (): boolean => {
+  try {
+    const sessionStr = localStorage.getItem('traveller_session');
+    if (!sessionStr) {
+      // Fallback for backward compatibility
+      return localStorage.getItem('traveller_authenticated') === 'true';
+    }
+
+    const session: Session = JSON.parse(sessionStr);
+
+    // Check if session has expired
+    if (Date.now() > session.expiresAt) {
+      // Clear expired session
+      localStorage.removeItem('traveller_session');
+      localStorage.removeItem('traveller_authenticated');
+      return false;
+    }
+
+    return true;
+  } catch {
+    return localStorage.getItem('traveller_authenticated') === 'true';
+  }
+};
 
 interface CampaignContextType {
   // Authentication state
@@ -49,6 +80,19 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
+  // Refs to track latest state for localStorage backup (avoids stale closure)
+  const charactersRef = useRef<Character[]>([]);
+  const vehiclesRef = useRef<Vehicle[]>([]);
+
+  // Keep refs in sync with state
+  useEffect(() => {
+    charactersRef.current = characters;
+  }, [characters]);
+
+  useEffect(() => {
+    vehiclesRef.current = vehicles;
+  }, [vehicles]);
+
   // Check authentication on mount and whenever it changes
   useEffect(() => {
     const isAuth = checkAuthentication();
@@ -61,8 +105,7 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
   }, []);
 
   const checkAuthentication = (): boolean => {
-    const authStatus = localStorage.getItem('traveller_authenticated');
-    const isAuth = authStatus === 'true';
+    const isAuth = isValidSession();
     setIsAuthenticated(isAuth);
     return isAuth;
   };
@@ -72,7 +115,8 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
     setCharacters([]);
     setVehicles([]);
     localStorage.removeItem('traveller_authenticated');
-    
+    localStorage.removeItem('traveller_session');
+
     toast({
       title: "Logged Out",
       description: "You have been logged out successfully.",
@@ -144,10 +188,11 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
         setCharacters(prev => [...prev, savedCharacter as Character]);
       }
 
-      // Also save to localStorage as backup
-      const updatedCharacters = characterData.id 
-        ? characters.map(char => char.id === savedCharacter.id ? savedCharacter as Character : char)
-        : [...characters, savedCharacter as Character];
+      // Also save to localStorage as backup (using ref to get latest state)
+      const currentCharacters = charactersRef.current;
+      const updatedCharacters = characterData.id
+        ? currentCharacters.map(char => char.id === savedCharacter.id ? savedCharacter as Character : char)
+        : [...currentCharacters, savedCharacter as Character];
       localStorage.setItem('traveller_characters', JSON.stringify(updatedCharacters));
 
       toast({
@@ -203,10 +248,11 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
         setVehicles(prev => [...prev, savedVehicle as Vehicle]);
       }
 
-      // Also save to localStorage as backup
+      // Also save to localStorage as backup (using ref to get latest state)
+      const currentVehicles = vehiclesRef.current;
       const updatedVehicles = vehicleData.id
-        ? vehicles.map(vehicle => vehicle.id === savedVehicle.id ? savedVehicle as Vehicle : vehicle)
-        : [...vehicles, savedVehicle as Vehicle];
+        ? currentVehicles.map(vehicle => vehicle.id === savedVehicle.id ? savedVehicle as Vehicle : vehicle)
+        : [...currentVehicles, savedVehicle as Vehicle];
       localStorage.setItem('traveller_vehicles', JSON.stringify(updatedVehicles));
 
       toast({
