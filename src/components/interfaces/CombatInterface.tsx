@@ -32,11 +32,20 @@ interface Combatant {
   // Initiative
   initiative: number;
 
-  // Health
-  lifeblood: number;
-  lifebloodMax: number;
-  stamina: number;
-  staminaMax: number;
+  // Health - flexible system for Traveller
+  healthType: 'characteristics' | 'hits'; // Characters use characteristics, inanimate/animals use hits
+
+  // For characters (sophonts) - track STR, DEX, END
+  currentStr?: number;
+  maxStr?: number;
+  currentDex?: number;
+  maxDex?: number;
+  currentEnd?: number;
+  maxEnd?: number;
+
+  // For inanimate objects, robots, animals - track Hits
+  hits?: number;
+  hitsMax?: number;
 
   // Combat stats
   armor: number;
@@ -55,7 +64,7 @@ interface Combatant {
 }
 
 export default function CombatInterface() {
-  const { characters } = useCampaign();
+  const { characters, saveCharacter } = useCampaign();
   const [combatants, setCombatants] = useState<Combatant[]>([]);
   const [currentRound, setCurrentRound] = useState(1);
   const [currentTurnIndex, setCurrentTurnIndex] = useState(0);
@@ -66,8 +75,11 @@ export default function CombatInterface() {
   // NPC creation fields
   const [npcName, setNpcName] = useState('');
   const [npcInitiative, setNpcInitiative] = useState(0);
-  const [npcLifeblood, setNpcLifeblood] = useState(10);
-  const [npcStamina, setNpcStamina] = useState(10);
+  const [npcHealthType, setNpcHealthType] = useState<'characteristics' | 'hits'>('hits');
+  const [npcHits, setNpcHits] = useState(10);
+  const [npcStr, setNpcStr] = useState(7);
+  const [npcDex, setNpcDex] = useState(7);
+  const [npcEnd, setNpcEnd] = useState(7);
   const [npcArmor, setNpcArmor] = useState(0);
 
   // Sort combatants by initiative
@@ -84,10 +96,13 @@ export default function CombatInterface() {
       type: 'character',
       characterId: character.id,
       initiative: character.initiative || 0,
-      lifeblood: character.lifeblood,
-      lifebloodMax: character.lifeblood,
-      stamina: character.stamina,
-      staminaMax: character.stamina,
+      healthType: 'characteristics', // Characters track STR/DEX/END
+      currentStr: character.strength,
+      maxStr: character.strength,
+      currentDex: character.dexterity,
+      maxDex: character.dexterity,
+      currentEnd: character.endurance,
+      maxEnd: character.endurance,
       armor: 0, // TODO: Calculate from character armor
       cover: 'none',
       range: 'medium',
@@ -112,10 +127,19 @@ export default function CombatInterface() {
       name: npcName,
       type: 'npc',
       initiative: npcInitiative,
-      lifeblood: npcLifeblood,
-      lifebloodMax: npcLifeblood,
-      stamina: npcStamina,
-      staminaMax: npcStamina,
+      healthType: npcHealthType,
+      // Set appropriate health values based on type
+      ...(npcHealthType === 'hits' ? {
+        hits: npcHits,
+        hitsMax: npcHits,
+      } : {
+        currentStr: npcStr,
+        maxStr: npcStr,
+        currentDex: npcDex,
+        maxDex: npcDex,
+        currentEnd: npcEnd,
+        maxEnd: npcEnd,
+      }),
       armor: npcArmor,
       cover: 'none',
       range: 'medium',
@@ -133,8 +157,11 @@ export default function CombatInterface() {
     // Reset NPC form
     setNpcName('');
     setNpcInitiative(0);
-    setNpcLifeblood(10);
-    setNpcStamina(10);
+    setNpcHealthType('hits');
+    setNpcHits(10);
+    setNpcStr(7);
+    setNpcDex(7);
+    setNpcEnd(7);
     setNpcArmor(0);
   };
 
@@ -181,56 +208,103 @@ export default function CombatInterface() {
     ));
   };
 
-  const handleApplyDamage = (id: string, damage: number, targetStamina: boolean = true) => {
+  // Sync character stats back to character sheet
+  const syncCharacterStats = async (combatant: Combatant) => {
+    if (combatant.type !== 'character' || !combatant.characterId) return;
+
+    const character = characters.find(c => c.id === combatant.characterId);
+    if (!character) return;
+
+    // Update character with current stats if using characteristics
+    if (combatant.healthType === 'characteristics') {
+      const updatedCharacter = {
+        ...character,
+        strength: combatant.currentStr || character.strength,
+        dexterity: combatant.currentDex || character.dexterity,
+        endurance: combatant.currentEnd || character.endurance,
+      };
+      await saveCharacter(updatedCharacter);
+    }
+  };
+
+  const handleApplyDamage = (id: string, damage: number, stat?: 'str' | 'dex' | 'end') => {
     setCombatants(combatants.map(c => {
       if (c.id !== id) return c;
 
-      let newLifeblood = c.lifeblood;
-      let newStamina = c.stamina;
       let isDowned = false;
+      const updated = { ...c };
 
-      if (targetStamina && c.stamina > 0) {
-        // Damage stamina first
-        newStamina = Math.max(0, c.stamina - damage);
-        const overflow = damage - c.stamina;
-        if (overflow > 0) {
-          newLifeblood = Math.max(0, c.lifeblood - overflow);
+      if (c.healthType === 'hits') {
+        // Damage hits
+        updated.hits = Math.max(0, (c.hits || 0) - damage);
+        if (updated.hits === 0) {
+          isDowned = true;
         }
       } else {
-        // Damage lifeblood directly
-        newLifeblood = Math.max(0, c.lifeblood - damage);
+        // Damage characteristics - default to END if not specified
+        const targetStat = stat || 'end';
+
+        if (targetStat === 'str') {
+          updated.currentStr = Math.max(0, (c.currentStr || 0) - damage);
+        } else if (targetStat === 'dex') {
+          updated.currentDex = Math.max(0, (c.currentDex || 0) - damage);
+        } else {
+          updated.currentEnd = Math.max(0, (c.currentEnd || 0) - damage);
+        }
+
+        // Check if downed (all characteristics at 0)
+        if (updated.currentStr === 0 && updated.currentDex === 0 && updated.currentEnd === 0) {
+          isDowned = true;
+        }
       }
 
-      // Check if downed (lifeblood at 0)
-      if (newLifeblood === 0) {
-        isDowned = true;
+      updated.isDowned = isDowned;
+
+      // Sync to character sheet if this is a character
+      if (updated.type === 'character' && updated.healthType === 'characteristics') {
+        syncCharacterStats(updated);
       }
 
-      return {
-        ...c,
-        lifeblood: newLifeblood,
-        stamina: newStamina,
-        isDowned
-      };
+      return updated;
     }));
   };
 
-  const handleHeal = (id: string, amount: number, healStamina: boolean = true) => {
+  const handleHeal = (id: string, amount: number, stat?: 'str' | 'dex' | 'end') => {
     setCombatants(combatants.map(c => {
       if (c.id !== id) return c;
 
-      if (healStamina) {
-        return {
-          ...c,
-          stamina: Math.min(c.staminaMax, c.stamina + amount)
-        };
+      const updated = { ...c };
+
+      if (c.healthType === 'hits') {
+        // Heal hits
+        updated.hits = Math.min(c.hitsMax || 0, (c.hits || 0) + amount);
+        if (updated.hits > 0) {
+          updated.isDowned = false;
+        }
       } else {
-        return {
-          ...c,
-          lifeblood: Math.min(c.lifebloodMax, c.lifeblood + amount),
-          isDowned: false
-        };
+        // Heal characteristics - default to END if not specified
+        const targetStat = stat || 'end';
+
+        if (targetStat === 'str') {
+          updated.currentStr = Math.min(c.maxStr || 0, (c.currentStr || 0) + amount);
+        } else if (targetStat === 'dex') {
+          updated.currentDex = Math.min(c.maxDex || 0, (c.currentDex || 0) + amount);
+        } else {
+          updated.currentEnd = Math.min(c.maxEnd || 0, (c.currentEnd || 0) + amount);
+        }
+
+        // Remove downed status if any stat is above 0
+        if ((updated.currentStr || 0) > 0 || (updated.currentDex || 0) > 0 || (updated.currentEnd || 0) > 0) {
+          updated.isDowned = false;
+        }
       }
+
+      // Sync to character sheet if this is a character
+      if (updated.type === 'character' && updated.healthType === 'characteristics') {
+        syncCharacterStats(updated);
+      }
+
+      return updated;
     }));
   };
 
@@ -361,66 +435,139 @@ export default function CombatInterface() {
 
                   <CardContent className="space-y-4">
                     {/* Health */}
-                    <div className="grid grid-cols-2 gap-4">
+                    {combatant.healthType === 'hits' ? (
+                      // Show Hits for inanimate objects, robots, animals
                       <div className="space-y-2">
                         <Label className="flex items-center gap-1">
                           <Heart className="w-3 h-3 text-red-500" />
-                          Lifeblood
+                          Hits
                         </Label>
                         <div className="flex items-center gap-2">
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => handleApplyDamage(combatant.id, 1, false)}
+                            onClick={() => handleApplyDamage(combatant.id, 1)}
                           >
                             -1
                           </Button>
                           <div className="flex-1 text-center">
                             <span className={cn(
                               "text-2xl font-bold",
-                              combatant.lifeblood === 0 && "text-destructive"
+                              combatant.hits === 0 && "text-destructive"
                             )}>
-                              {combatant.lifeblood}
+                              {combatant.hits}
                             </span>
-                            <span className="text-muted-foreground">/{combatant.lifebloodMax}</span>
+                            <span className="text-muted-foreground">/{combatant.hitsMax}</span>
                           </div>
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => handleHeal(combatant.id, 1, false)}
+                            onClick={() => handleHeal(combatant.id, 1)}
                           >
                             +1
                           </Button>
                         </div>
                       </div>
+                    ) : (
+                      // Show STR/DEX/END for characters (sophonts)
+                      <div className="grid grid-cols-3 gap-2">
+                        {/* STR */}
+                        <div className="space-y-2">
+                          <Label className="text-xs font-bold">STR</Label>
+                          <div className="flex flex-col items-center gap-1">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-6 w-full"
+                              onClick={() => handleHeal(combatant.id, 1, 'str')}
+                            >
+                              +1
+                            </Button>
+                            <div className="text-center">
+                              <span className={cn(
+                                "text-xl font-bold",
+                                combatant.currentStr === 0 && "text-destructive"
+                              )}>
+                                {combatant.currentStr}
+                              </span>
+                              <span className="text-xs text-muted-foreground">/{combatant.maxStr}</span>
+                            </div>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-6 w-full"
+                              onClick={() => handleApplyDamage(combatant.id, 1, 'str')}
+                            >
+                              -1
+                            </Button>
+                          </div>
+                        </div>
 
-                      <div className="space-y-2">
-                        <Label className="flex items-center gap-1">
-                          <Shield className="w-3 h-3 text-blue-500" />
-                          Stamina
-                        </Label>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleApplyDamage(combatant.id, 1, true)}
-                          >
-                            -1
-                          </Button>
-                          <div className="flex-1 text-center">
-                            <span className="text-2xl font-bold">{combatant.stamina}</span>
-                            <span className="text-muted-foreground">/{combatant.staminaMax}</span>
+                        {/* DEX */}
+                        <div className="space-y-2">
+                          <Label className="text-xs font-bold">DEX</Label>
+                          <div className="flex flex-col items-center gap-1">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-6 w-full"
+                              onClick={() => handleHeal(combatant.id, 1, 'dex')}
+                            >
+                              +1
+                            </Button>
+                            <div className="text-center">
+                              <span className={cn(
+                                "text-xl font-bold",
+                                combatant.currentDex === 0 && "text-destructive"
+                              )}>
+                                {combatant.currentDex}
+                              </span>
+                              <span className="text-xs text-muted-foreground">/{combatant.maxDex}</span>
+                            </div>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-6 w-full"
+                              onClick={() => handleApplyDamage(combatant.id, 1, 'dex')}
+                            >
+                              -1
+                            </Button>
                           </div>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleHeal(combatant.id, 1, true)}
-                          >
-                            +1
-                          </Button>
+                        </div>
+
+                        {/* END */}
+                        <div className="space-y-2">
+                          <Label className="text-xs font-bold">END</Label>
+                          <div className="flex flex-col items-center gap-1">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-6 w-full"
+                              onClick={() => handleHeal(combatant.id, 1, 'end')}
+                            >
+                              +1
+                            </Button>
+                            <div className="text-center">
+                              <span className={cn(
+                                "text-xl font-bold",
+                                combatant.currentEnd === 0 && "text-destructive"
+                              )}>
+                                {combatant.currentEnd}
+                              </span>
+                              <span className="text-xs text-muted-foreground">/{combatant.maxEnd}</span>
+                            </div>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-6 w-full"
+                              onClick={() => handleApplyDamage(combatant.id, 1, 'end')}
+                            >
+                              -1
+                            </Button>
+                          </div>
                         </div>
                       </div>
-                    </div>
+                    )}
 
                     {/* Action Economy */}
                     <div className="grid grid-cols-3 gap-2 text-center">
@@ -579,24 +726,68 @@ export default function CombatInterface() {
                     />
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <Label>Lifeblood</Label>
-                    <Input
-                      type="number"
-                      value={npcLifeblood}
-                      onChange={(e) => setNpcLifeblood(parseInt(e.target.value) || 10)}
-                    />
-                  </div>
-                  <div>
-                    <Label>Stamina</Label>
-                    <Input
-                      type="number"
-                      value={npcStamina}
-                      onChange={(e) => setNpcStamina(parseInt(e.target.value) || 10)}
-                    />
+
+                {/* Health Type Selection */}
+                <div>
+                  <Label>Health Type</Label>
+                  <div className="grid grid-cols-2 gap-2 mt-1">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={npcHealthType === 'hits' ? 'default' : 'outline'}
+                      onClick={() => setNpcHealthType('hits')}
+                    >
+                      Hits (Objects/Animals)
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={npcHealthType === 'characteristics' ? 'default' : 'outline'}
+                      onClick={() => setNpcHealthType('characteristics')}
+                    >
+                      Characteristics (Sophonts)
+                    </Button>
                   </div>
                 </div>
+
+                {/* Health Fields */}
+                {npcHealthType === 'hits' ? (
+                  <div>
+                    <Label>Hits</Label>
+                    <Input
+                      type="number"
+                      value={npcHits}
+                      onChange={(e) => setNpcHits(parseInt(e.target.value) || 10)}
+                    />
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-3 gap-2">
+                    <div>
+                      <Label>STR</Label>
+                      <Input
+                        type="number"
+                        value={npcStr}
+                        onChange={(e) => setNpcStr(parseInt(e.target.value) || 7)}
+                      />
+                    </div>
+                    <div>
+                      <Label>DEX</Label>
+                      <Input
+                        type="number"
+                        value={npcDex}
+                        onChange={(e) => setNpcDex(parseInt(e.target.value) || 7)}
+                      />
+                    </div>
+                    <div>
+                      <Label>END</Label>
+                      <Input
+                        type="number"
+                        value={npcEnd}
+                        onChange={(e) => setNpcEnd(parseInt(e.target.value) || 7)}
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
