@@ -69,8 +69,7 @@ const characteristicKeys = [
   "intellect",
   "education",
   "social",
-  "psionics",
-  "initiative"
+  "psionics"
 ] as const;
 
 type CharacteristicKey = (typeof characteristicKeys)[number];
@@ -292,8 +291,6 @@ const CharacterSheet = ({ characterId }: CharacterSheetProps = {}) => {
           speciesTraits: character.species_traits || "",
           homeworld: character.homeworld
         });
-        // Initiative defaults to dexterity if not set in the database
-        const initiativeValue = character.initiative ?? character.dexterity;
         const psionicsValue = character.psionics ?? 0;
 
         // Use current stats if available (for tracking damage), otherwise use base stats
@@ -313,8 +310,7 @@ const CharacterSheet = ({ characterId }: CharacterSheetProps = {}) => {
           intellect: { total: character.intellect.toString(), current: character.intellect.toString() },
           education: { total: character.education.toString(), current: character.education.toString() },
           social: { total: character.social_standing.toString(), current: character.social_standing.toString() },
-          psionics: { total: psionicsValue.toString(), current: psionicsValue.toString() },
-          initiative: { total: initiativeValue.toString(), current: initiativeValue.toString() }
+          psionics: { total: psionicsValue.toString(), current: psionicsValue.toString() }
         });
         // Load other character data safely with array validation
         if (character.weapons && Array.isArray(character.weapons)) {
@@ -509,7 +505,6 @@ const CharacterSheet = ({ characterId }: CharacterSheetProps = {}) => {
         education: parseInt(characteristics.education.total) || 7,
         social_standing: parseInt(characteristics.social.total) || 7,
         psionics: parseInt(characteristics.psionics.total) || 0,
-        initiative: parseInt(characteristics.initiative.total) || 7,
         melee_dmg: 0,
         ranged_dmg: 0,
         lifeblood: 0,
@@ -849,51 +844,32 @@ const customGroups = skillDefinitions.filter(def => def.isCustomGroup);
         <div className="panel-content grid grid-cols-2 md:grid-cols-4 gap-4">
           {characteristicKeys.map(key => {
             const value = characteristics[key];
-            const isInitiative = key === 'initiative';
             return (
               <div key={key} className="border border-primary/30 bg-card/40 rounded p-3 space-y-2">
                 <div className="text-xs font-semibold uppercase tracking-wide">
-                  {isInitiative ? 'INITIATIVE BONUS' : key.replace(/_/g, " ")}
+                  {key.replace(/_/g, " ")}
                 </div>
-                {isInitiative ? (
-                  // Initiative is just a bonus modifier, not a max/current stat
+                <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-1">
+                    <label className="text-[10px] text-muted-foreground uppercase tracking-wide">Max</label>
                     <Input
                       value={value.total}
                       onChange={event => handleCharacteristicChange(key, "total", event.target.value)}
                       type="number"
                       className="h-8"
-                      placeholder="0"
                     />
-                    <div className="text-[10px] text-muted-foreground">
-                      Added to 2d6 + DEX/INT DM
-                    </div>
                   </div>
-                ) : (
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="space-y-1">
-                      <label className="text-[10px] text-muted-foreground uppercase tracking-wide">Max</label>
-                      <Input
-                        value={value.total}
-                        onChange={event => handleCharacteristicChange(key, "total", event.target.value)}
-                        type="number"
-                        className="h-8"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-[10px] text-muted-foreground uppercase tracking-wide">Current</label>
-                      <Input
-                        value={value.current}
-                        onChange={event => handleCharacteristicChange(key, "current", event.target.value)}
-                        type="number"
-                        className="h-8"
-                      />
-                    </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] text-muted-foreground uppercase tracking-wide">Current</label>
+                    <Input
+                      value={value.current}
+                      onChange={event => handleCharacteristicChange(key, "current", event.target.value)}
+                      type="number"
+                      className="h-8"
+                    />
                   </div>
-                )}
-                {!isInitiative && (
-                  <div className="text-xs text-muted-foreground font-mono">DM: {getCharacteristicDMDisplay(key, value)}</div>
-                )}
+                </div>
+                <div className="text-xs text-muted-foreground font-mono">DM: {getCharacteristicDMDisplay(key, value)}</div>
               </div>
             );
           })}
