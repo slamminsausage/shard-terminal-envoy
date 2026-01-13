@@ -16,6 +16,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import UnlockedTerminalGrid from '../UnlockedTerminalGrid';
+import { RecentTerminals } from '../RecentTerminals';
 
 interface Terminal {
   code: string;
@@ -131,6 +132,13 @@ export default function InitScreen({
               CONNECT
             </button>
           </div>
+        </div>
+
+        {/* Recent Terminals */}
+        <div className="mb-8">
+          <RecentTerminals
+            onTerminalSelect={onTerminalSelect}
+          />
         </div>
 
         {/* Unlocked terminals grid */}
