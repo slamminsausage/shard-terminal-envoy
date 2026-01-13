@@ -296,10 +296,20 @@ const CharacterSheet = ({ characterId }: CharacterSheetProps = {}) => {
         const initiativeValue = character.initiative ?? character.dexterity;
         const psionicsValue = character.psionics ?? 0;
 
+        // Use current stats if available (for tracking damage), otherwise use base stats
         setCharacteristics({
-          strength: { total: character.strength.toString(), current: character.strength.toString() },
-          dexterity: { total: character.dexterity.toString(), current: character.dexterity.toString() },
-          endurance: { total: character.endurance.toString(), current: character.endurance.toString() },
+          strength: {
+            total: character.strength.toString(),
+            current: (character.current_strength ?? character.strength).toString()
+          },
+          dexterity: {
+            total: character.dexterity.toString(),
+            current: (character.current_dexterity ?? character.dexterity).toString()
+          },
+          endurance: {
+            total: character.endurance.toString(),
+            current: (character.current_endurance ?? character.endurance).toString()
+          },
           intellect: { total: character.intellect.toString(), current: character.intellect.toString() },
           education: { total: character.education.toString(), current: character.education.toString() },
           social: { total: character.social_standing.toString(), current: character.social_standing.toString() },
@@ -492,6 +502,9 @@ const CharacterSheet = ({ characterId }: CharacterSheetProps = {}) => {
         strength: parseInt(characteristics.strength.total) || 7,
         dexterity: parseInt(characteristics.dexterity.total) || 7,
         endurance: parseInt(characteristics.endurance.total) || 7,
+        current_strength: parseInt(characteristics.strength.current) || undefined,
+        current_dexterity: parseInt(characteristics.dexterity.current) || undefined,
+        current_endurance: parseInt(characteristics.endurance.current) || undefined,
         intellect: parseInt(characteristics.intellect.total) || 7,
         education: parseInt(characteristics.education.total) || 7,
         social_standing: parseInt(characteristics.social.total) || 7,
@@ -839,21 +852,25 @@ const customGroups = skillDefinitions.filter(def => def.isCustomGroup);
             return (
               <div key={key} className="border border-primary/30 bg-card/40 rounded p-3 space-y-2">
                 <div className="text-xs font-semibold uppercase tracking-wide">{key.replace(/_/g, " ")}</div>
-                <div className="flex gap-2">
-                  <Input
-                    value={value.total}
-                    onChange={event => handleCharacteristicChange(key, "total", event.target.value)}
-                    placeholder="Total"
-                    type="number"
-                    className="h-8"
-                  />
-                  <Input
-                    value={value.current}
-                    onChange={event => handleCharacteristicChange(key, "current", event.target.value)}
-                    placeholder="Current"
-                    type="number"
-                    className="h-8"
-                  />
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <label className="text-[10px] text-muted-foreground uppercase tracking-wide">Max</label>
+                    <Input
+                      value={value.total}
+                      onChange={event => handleCharacteristicChange(key, "total", event.target.value)}
+                      type="number"
+                      className="h-8"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] text-muted-foreground uppercase tracking-wide">Current</label>
+                    <Input
+                      value={value.current}
+                      onChange={event => handleCharacteristicChange(key, "current", event.target.value)}
+                      type="number"
+                      className="h-8"
+                    />
+                  </div>
                 </div>
                 <div className="text-xs text-muted-foreground font-mono">DM: {getCharacteristicDMDisplay(key, value)}</div>
               </div>

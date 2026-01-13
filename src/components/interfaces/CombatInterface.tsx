@@ -97,11 +97,12 @@ export default function CombatInterface() {
       characterId: character.id,
       initiative: character.initiative || 0,
       healthType: 'characteristics', // Characters track STR/DEX/END
-      currentStr: character.strength,
+      // Use current stats if available, otherwise use base stats
+      currentStr: character.current_strength ?? character.strength,
       maxStr: character.strength,
-      currentDex: character.dexterity,
+      currentDex: character.current_dexterity ?? character.dexterity,
       maxDex: character.dexterity,
-      currentEnd: character.endurance,
+      currentEnd: character.current_endurance ?? character.endurance,
       maxEnd: character.endurance,
       armor: 0, // TODO: Calculate from character armor
       cover: 'none',
@@ -216,12 +217,13 @@ export default function CombatInterface() {
     if (!character) return;
 
     // Update character with current stats if using characteristics
+    // Only update the CURRENT values, not the max/base values
     if (combatant.healthType === 'characteristics') {
       const updatedCharacter = {
         ...character,
-        strength: combatant.currentStr || character.strength,
-        dexterity: combatant.currentDex || character.dexterity,
-        endurance: combatant.currentEnd || character.endurance,
+        current_strength: combatant.currentStr,
+        current_dexterity: combatant.currentDex,
+        current_endurance: combatant.currentEnd,
       };
       await saveCharacter(updatedCharacter);
     }
