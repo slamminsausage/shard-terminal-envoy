@@ -1,6 +1,7 @@
 // Use the integrated Supabase client instead of environment variables
 import { supabase } from "@/integrations/supabase/client";
 import type { WorldNote, HexMarker } from "@/types/navigation";
+import type { Character, Vehicle } from "@/types/database";
 
 // Re-export for convenience
 export { supabase };
@@ -212,37 +213,93 @@ export const dbHelpers = {
     }
   },
 
-  async saveCharacter(characterData: any) {
+  async saveCharacter(characterData: Partial<Character>) {
+    // Explicitly map only valid database columns to avoid 400 errors
+    const dbPayload: Record<string, unknown> = {};
+
+    // Map valid character fields to database columns
+    if (characterData.name !== undefined) dbPayload.name = characterData.name;
+    if (characterData.species !== undefined) dbPayload.species = characterData.species;
+    if (characterData.gender !== undefined) dbPayload.gender = characterData.gender;
+    if (characterData.age !== undefined) dbPayload.age = characterData.age;
+    if (characterData.career !== undefined) dbPayload.career = characterData.career;
+    if (characterData.rank !== undefined) dbPayload.rank = characterData.rank;
+    if (characterData.homeworld !== undefined) dbPayload.homeworld = characterData.homeworld;
+    if (characterData.rads !== undefined) dbPayload.rads = characterData.rads;
+    if (characterData.species_traits !== undefined) dbPayload.species_traits = characterData.species_traits;
+    if (characterData.notes !== undefined) dbPayload.notes = characterData.notes;
+
+    // Characteristics
+    if (characterData.strength !== undefined) dbPayload.strength = characterData.strength;
+    if (characterData.dexterity !== undefined) dbPayload.dexterity = characterData.dexterity;
+    if (characterData.endurance !== undefined) dbPayload.endurance = characterData.endurance;
+    if (characterData.intellect !== undefined) dbPayload.intellect = characterData.intellect;
+    if (characterData.education !== undefined) dbPayload.education = characterData.education;
+    if (characterData.social_standing !== undefined) dbPayload.social_standing = characterData.social_standing;
+    if (characterData.psionics !== undefined) dbPayload.psionics = characterData.psionics;
+    if (characterData.initiative !== undefined) dbPayload.initiative = characterData.initiative;
+
+    // Derived characteristics
+    if (characterData.melee_dmg !== undefined) dbPayload.melee_dmg = characterData.melee_dmg;
+    if (characterData.ranged_dmg !== undefined) dbPayload.ranged_dmg = characterData.ranged_dmg;
+    if (characterData.lifeblood !== undefined) dbPayload.lifeblood = characterData.lifeblood;
+    if (characterData.stamina !== undefined) dbPayload.stamina = characterData.stamina;
+    if (characterData.terms_served !== undefined) dbPayload.terms_served = characterData.terms_served;
+
+    // JSONB fields
+    if (characterData.skills !== undefined) dbPayload.skills = characterData.skills;
+    if (characterData.equipment !== undefined) dbPayload.equipment = characterData.equipment;
+    if (characterData.weapons !== undefined) dbPayload.weapons = characterData.weapons;
+    if (characterData.armor !== undefined) dbPayload.armor = characterData.armor;
+    if (characterData.augments !== undefined) dbPayload.augments = characterData.augments;
+
+    // Finances
+    if (characterData.credits !== undefined) dbPayload.credits = characterData.credits;
+    if (characterData.debt !== undefined) dbPayload.debt = characterData.debt;
+    if (characterData.pension !== undefined) dbPayload.pension = characterData.pension;
+    if (characterData.ship_payments !== undefined) dbPayload.ship_payments = characterData.ship_payments;
+    if (characterData.living_cost !== undefined) dbPayload.living_cost = characterData.living_cost;
+    if (characterData.cash_on_hand !== undefined) dbPayload.cash_on_hand = characterData.cash_on_hand;
+
+    // Personal details
+    if (characterData.allies !== undefined) dbPayload.allies = characterData.allies;
+    if (characterData.contacts !== undefined) dbPayload.contacts = characterData.contacts;
+    if (characterData.rivals !== undefined) dbPayload.rivals = characterData.rivals;
+    if (characterData.enemies !== undefined) dbPayload.enemies = characterData.enemies;
+
+    // Study tracking
+    if (characterData.study_skill !== undefined) dbPayload.study_skill = characterData.study_skill;
+    if (characterData.study_weeks !== undefined) dbPayload.study_weeks = characterData.study_weeks;
+    if (characterData.study_complete !== undefined) dbPayload.study_complete = characterData.study_complete;
+
+    // Thumbnail
+    if (characterData.thumbnail_url !== undefined) dbPayload.thumbnail_url = characterData.thumbnail_url;
+
     try {
       if (characterData.id) {
         // Update existing character
         const { data, error } = await supabase
           .from('characters')
-          .update({
-            ...characterData,
-            updated_at: new Date().toISOString()
-          })
+          .update(dbPayload)
           .eq('id', characterData.id)
           .select()
           .single()
-        
+
         if (error) {
           console.error('Database error:', error)
           throw error
         }
         return data
       } else {
-        // Create new character
+        // Create new character - add player_id for new records
+        dbPayload.player_id = 'campaign';
+
         const { data, error } = await supabase
           .from('characters')
-          .insert([{
-            ...characterData,
-            player_id: 'campaign', // Use a fixed player_id for campaign mode
-            updated_at: new Date().toISOString()
-          }])
+          .insert([dbPayload])
           .select()
           .single()
-        
+
         if (error) {
           console.error('Database error:', error)
           throw error
@@ -276,35 +333,91 @@ export const dbHelpers = {
     return data || []
   },
 
-  async saveVehicle(vehicleData: any) {
-    if (vehicleData.id) {
-      // Update existing vehicle
-      const { data, error } = await supabase
-        .from('vehicles')
-        .update({
-          ...vehicleData,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', vehicleData.id)
-        .select()
-        .single()
-      
-      if (error) throw error
-      return data
-    } else {
-      // Create new vehicle
-      const { data, error } = await supabase
-        .from('vehicles')
-        .insert([{
-          ...vehicleData,
-          player_id: 'campaign', // Use a fixed player_id for campaign mode
-          updated_at: new Date().toISOString()
-        }])
-        .select()
-        .single()
-      
-      if (error) throw error
-      return data
+  async saveVehicle(vehicleData: Partial<Vehicle>) {
+    // Explicitly map only valid database columns to avoid 400 errors
+    const dbPayload: Record<string, unknown> = {};
+
+    // Basic information
+    if (vehicleData.name !== undefined) dbPayload.name = vehicleData.name;
+    if (vehicleData.vehicle_type !== undefined) dbPayload.vehicle_type = vehicleData.vehicle_type;
+    if (vehicleData.class_type !== undefined) dbPayload.class_type = vehicleData.class_type;
+
+    // Technical specifications
+    if (vehicleData.tech_level !== undefined) dbPayload.tech_level = vehicleData.tech_level;
+    if (vehicleData.tonnage !== undefined) dbPayload.tonnage = vehicleData.tonnage;
+    if (vehicleData.cost !== undefined) dbPayload.cost = vehicleData.cost;
+
+    // Hull and structure
+    if (vehicleData.hull !== undefined) dbPayload.hull = vehicleData.hull;
+    if (vehicleData.hull_current !== undefined) dbPayload.hull_current = vehicleData.hull_current;
+    if (vehicleData.structure !== undefined) dbPayload.structure = vehicleData.structure;
+    if (vehicleData.armor !== undefined) dbPayload.armor = vehicleData.armor;
+
+    // Core systems
+    if (vehicleData.maneuver_drive !== undefined) dbPayload.maneuver_drive = vehicleData.maneuver_drive;
+    if (vehicleData.jump_drive !== undefined) dbPayload.jump_drive = vehicleData.jump_drive;
+    if (vehicleData.power_plant !== undefined) dbPayload.power_plant = vehicleData.power_plant;
+
+    // Performance
+    if (vehicleData.acceleration !== undefined) dbPayload.acceleration = vehicleData.acceleration;
+    if (vehicleData.top_speed !== undefined) dbPayload.top_speed = vehicleData.top_speed;
+    if (vehicleData.jump_rating !== undefined) dbPayload.jump_rating = vehicleData.jump_rating;
+
+    // Fuel and cargo
+    if (vehicleData.fuel_capacity !== undefined) dbPayload.fuel_capacity = vehicleData.fuel_capacity;
+    if (vehicleData.cargo_capacity !== undefined) dbPayload.cargo_capacity = vehicleData.cargo_capacity;
+    if (vehicleData.passenger_capacity !== undefined) dbPayload.passenger_capacity = vehicleData.passenger_capacity;
+
+    // JSONB fields
+    if (vehicleData.weapons !== undefined) dbPayload.weapons = vehicleData.weapons;
+    if (vehicleData.screens !== undefined) dbPayload.screens = vehicleData.screens;
+    if (vehicleData.crew_requirements !== undefined) dbPayload.crew_requirements = vehicleData.crew_requirements;
+    if (vehicleData.specifications !== undefined) dbPayload.specifications = vehicleData.specifications;
+
+    // Systems and equipment
+    if (vehicleData.computer_rating !== undefined) dbPayload.computer_rating = vehicleData.computer_rating;
+    if (vehicleData.sensors !== undefined) dbPayload.sensors = vehicleData.sensors;
+    if (vehicleData.communications !== undefined) dbPayload.communications = vehicleData.communications;
+
+    // Maintenance and operations
+    if (vehicleData.maintenance_cost !== undefined) dbPayload.maintenance_cost = vehicleData.maintenance_cost;
+    if (vehicleData.life_support !== undefined) dbPayload.life_support = vehicleData.life_support;
+    if (vehicleData.salaries !== undefined) dbPayload.salaries = vehicleData.salaries;
+
+    try {
+      if (vehicleData.id) {
+        // Update existing vehicle
+        const { data, error } = await supabase
+          .from('vehicles')
+          .update(dbPayload)
+          .eq('id', vehicleData.id)
+          .select()
+          .single()
+
+        if (error) {
+          console.error('Database error:', error)
+          throw error
+        }
+        return data
+      } else {
+        // Create new vehicle - add player_id for new records
+        dbPayload.player_id = 'campaign';
+
+        const { data, error } = await supabase
+          .from('vehicles')
+          .insert([dbPayload])
+          .select()
+          .single()
+
+        if (error) {
+          console.error('Database error:', error)
+          throw error
+        }
+        return data
+      }
+    } catch (error) {
+      console.error('Failed to save vehicle:', error)
+      throw error
     }
   },
 
