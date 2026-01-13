@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Terminal, FileText, Users, Radar, Navigation, BookOpen } from "lucide-react";
+import { Terminal, FileText, Users, Radar, Navigation, BookOpen, Swords } from "lucide-react";
 import TerminalInterface from "./interfaces/TerminalInterface";
 import CrewInterface from "./interfaces/CrewInterface";
 import VehicleInterface from "./interfaces/VehicleInterface";
@@ -29,7 +29,7 @@ export default function MainframeShell() {
     { id: "bridge", label: "Bridge", icon: Radar },
     { id: "navigation", label: "Star Map", icon: Navigation },
     { id: "notes", label: "Notes", icon: BookOpen },
-    { id: "combat", label: "Combat", emoji: "🔫" }
+    { id: "combat", label: "Combat", icon: Swords }
   ];
 
   return (
