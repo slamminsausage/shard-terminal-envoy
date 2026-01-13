@@ -148,12 +148,14 @@ export default function InitScreen({
               <span className="panel-title">AVAILABLE TERMINALS</span>
               <span className="panel-status">QUICK ACCESS</span>
             </div>
-            <div className="panel-content terminal-grid-container">
-              <UnlockedTerminalGrid
-                terminals={unlockedTerminals}
-                loading={loading}
-                onSelect={onTerminalSelect}
-              />
+            <div className="panel-content" style={{ padding: 0, height: 'auto', overflow: 'visible' }}>
+              <div className="terminal-grid-container">
+                <UnlockedTerminalGrid
+                  terminals={unlockedTerminals}
+                  loading={loading}
+                  onSelect={onTerminalSelect}
+                />
+              </div>
             </div>
           </div>
         )}
