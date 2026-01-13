@@ -412,10 +412,18 @@
 /* ===================================
    TERMINAL GRID
    =================================== */
+.terminal-grid-container {
+  max-height: 400px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 0 !important;
+}
+
 .terminal-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   gap: 12px;
+  padding: 16px;
 }
 
 .terminal-grid-item {
@@ -760,9 +768,19 @@ textarea.terminal-input {
   }
 
   /* General mobile optimizations */
+  .terminal-grid-container {
+    max-height: 300px;
+  }
+
   .terminal-grid {
-    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
     gap: 8px;
+    padding: 12px;
+  }
+
+  .terminal-grid-item {
+    padding: 10px 8px;
+    font-size: 0.7rem;
   }
 
   .panel-header {
@@ -860,6 +878,21 @@ textarea.terminal-input {
 
   .terminal-window {
     padding: 0.75rem;
+  }
+
+  .terminal-grid-container {
+    max-height: 250px;
+  }
+
+  .terminal-grid {
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 6px;
+    padding: 10px;
+  }
+
+  .terminal-grid-item {
+    padding: 8px 6px;
+    font-size: 0.65rem;
   }
 }
 

@@ -148,7 +148,7 @@ export default function InitScreen({
               <span className="panel-title">AVAILABLE TERMINALS</span>
               <span className="panel-status">QUICK ACCESS</span>
             </div>
-            <div className="panel-content">
+            <div className="panel-content terminal-grid-container">
               <UnlockedTerminalGrid
                 terminals={unlockedTerminals}
                 loading={loading}
