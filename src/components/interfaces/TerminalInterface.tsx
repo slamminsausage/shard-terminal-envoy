@@ -34,6 +34,7 @@ import RollCheckPrompt from '../terminal/SecurityChallenge/RollCheckPrompt';
 import { useTerminalSession } from '@/hooks/useTerminalSession';
 import { usePasswordAuth } from '@/hooks/usePasswordAuth';
 import { useCharacterSkills } from '@/hooks/useCharacterSkills';
+import { useTerminalHistory } from '@/hooks/useTerminalHistory';
 import type { DiceRoll } from '@/lib/dice';
 
 // Terminal visual effects helper
@@ -66,6 +67,9 @@ export default function TerminalInterface() {
 
   // Use consolidated terminal session state
   const session = useTerminalSession();
+
+  // Terminal history tracking
+  const terminalHistory = useTerminalHistory();
 
   // Local state for typing animations (useState required for typeTextWithSound)
   const [localInitText, setLocalInitText] = useState('');
@@ -289,6 +293,9 @@ export default function TerminalInterface() {
     audioManager.playEffect('access_granted');
     session.addCommandToHistory(code);
 
+    // Record terminal access in history
+    terminalHistory.recordAccess(terminal.code, terminal.name);
+
     // Terminal-level roll gate
     if (terminal.requiresRoll) {
       session.setPendingTerminalForRoll(terminal);
@@ -346,6 +353,11 @@ export default function TerminalInterface() {
     setLocalDisplayedText('');
     setLocalTypingComplete(false);
     session.setView('log');
+
+    // Record log as viewed in history
+    if (session.activeTerminal && log.title) {
+      terminalHistory.recordLogViewed(session.activeTerminal.code, log.title);
+    }
 
     // Check for special audio logs (title contains 'AUDIO LOG')
     if (log.title?.includes('AUDIO LOG')) {

@@ -15,12 +15,77 @@ export interface DiceRoll {
 }
 
 /**
+ * Roll a single d6 (returns 1-6)
+ */
+export function roll1d6(): number {
+  return Math.floor(Math.random() * 6) + 1;
+}
+
+/**
  * Roll 2d6 (returns 2-12)
  */
 export function roll2d6(): number {
-  const die1 = Math.floor(Math.random() * 6) + 1;
-  const die2 = Math.floor(Math.random() * 6) + 1;
+  const die1 = roll1d6();
+  const die2 = roll1d6();
   return die1 + die2;
+}
+
+export interface BoonBaneRoll {
+  rolls: number[];      // All three dice rolled
+  kept: number[];       // The two dice kept
+  dropped: number;      // The die that was dropped
+  total: number;        // Sum of kept dice
+  type: 'boon' | 'bane' | 'normal';
+}
+
+/**
+ * Roll with Boon (advantage): Roll 3d6, keep best 2
+ */
+export function rollWithBoon(): BoonBaneRoll {
+  const rolls = [roll1d6(), roll1d6(), roll1d6()].sort((a, b) => b - a);
+  const kept = [rolls[0], rolls[1]];
+  const dropped = rolls[2];
+
+  return {
+    rolls,
+    kept,
+    dropped,
+    total: kept[0] + kept[1],
+    type: 'boon'
+  };
+}
+
+/**
+ * Roll with Bane (disadvantage): Roll 3d6, keep worst 2
+ */
+export function rollWithBane(): BoonBaneRoll {
+  const rolls = [roll1d6(), roll1d6(), roll1d6()].sort((a, b) => a - b);
+  const kept = [rolls[0], rolls[1]];
+  const dropped = rolls[2];
+
+  return {
+    rolls: rolls.sort((a, b) => b - a), // Sort descending for display
+    kept,
+    dropped,
+    total: kept[0] + kept[1],
+    type: 'bane'
+  };
+}
+
+/**
+ * Normal 2d6 roll in BoonBane format for consistency
+ */
+export function rollNormal(): BoonBaneRoll {
+  const die1 = roll1d6();
+  const die2 = roll1d6();
+
+  return {
+    rolls: [die1, die2],
+    kept: [die1, die2],
+    dropped: 0,
+    total: die1 + die2,
+    type: 'normal'
+  };
 }
 
 /**

@@ -10,6 +10,7 @@ import { ActionBar } from "./ActionBar";
 import { MessageComposer } from "./MessageComposer";
 import { AddContactModal } from "./AddContactModal";
 import { ScanModal } from "./ScanModal";
+import { DamageCalculator } from "./DamageCalculator";
 import type { BridgeMessage, Contact, NewContact } from "@/lib/bridge/bridgeTypes";
 
 export function BridgeConsole() {
@@ -42,6 +43,7 @@ export function BridgeConsole() {
   const [showAddContact, setShowAddContact] = useState(false);
   const [selectedMessage, setSelectedMessage] = useState<BridgeMessage | null>(null);
   const [showScan, setShowScan] = useState(false);
+  const [showDamageCalc, setShowDamageCalc] = useState(false);
   const [selectedVehicleId, setSelectedVehicleId] = useState<string>("");
 
   const playerShip = contacts.find(c => c.isPlayerShip);
@@ -265,6 +267,7 @@ export function BridgeConsole() {
         onAlertChange={handleAlertChange}
         onScanClick={() => setShowScan(true)}
         onHailClick={() => setShowMessageComposer(true)}
+        onDamageCalcClick={() => setShowDamageCalc(true)}
       />
 
       {showMessageComposer && (
@@ -288,6 +291,17 @@ export function BridgeConsole() {
         <AddContactModal
           onAdd={handleAddContact}
           onClose={() => setShowAddContact(false)}
+        />
+      )}
+
+      {showDamageCalc && (
+        <DamageCalculator
+          isOpen={showDamageCalc}
+          onClose={() => setShowDamageCalc(false)}
+          onApplyDamage={(damage, location) => {
+            console.log(`Apply ${damage} damage to ${location || 'hull'}`);
+            // TODO: Apply damage to selected contact
+          }}
         />
       )}
     </div>
