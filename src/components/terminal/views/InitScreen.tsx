@@ -134,16 +134,9 @@ export default function InitScreen({
           </div>
         </div>
 
-        {/* Recent Terminals */}
-        <div className="mb-8">
-          <RecentTerminals
-            onTerminalSelect={onTerminalSelect}
-          />
-        </div>
-
         {/* Unlocked terminals grid */}
         {unlockedTerminals.length > 0 && (
-          <div className="panel">
+          <div className="panel mb-8">
             <div className="panel-header">
               <span className="panel-title">AVAILABLE TERMINALS</span>
               <span className="panel-status">QUICK ACCESS</span>
@@ -159,6 +152,13 @@ export default function InitScreen({
             </div>
           </div>
         )}
+
+        {/* Recent Terminals */}
+        <div>
+          <RecentTerminals
+            onTerminalSelect={onTerminalSelect}
+          />
+        </div>
       </div>
     </div>
   );

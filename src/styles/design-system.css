@@ -413,7 +413,7 @@
    TERMINAL GRID
    =================================== */
 .terminal-grid-container {
-  max-height: 400px;
+  max-height: 500px;
   overflow-y: auto;
   overflow-x: hidden;
   padding: 0 !important;
@@ -769,7 +769,7 @@ textarea.terminal-input {
 
   /* General mobile optimizations */
   .terminal-grid-container {
-    max-height: 300px;
+    max-height: 400px;
   }
 
   .terminal-grid {
@@ -881,7 +881,7 @@ textarea.terminal-input {
   }
 
   .terminal-grid-container {
-    max-height: 250px;
+    max-height: 350px;
   }
 
   .terminal-grid {
