@@ -34,6 +34,11 @@ export interface Character {
   social_standing: number;
   psionics?: number;
   initiative?: number;
+
+  // Current characteristics (for tracking damage)
+  current_strength?: number;
+  current_dexterity?: number;
+  current_endurance?: number;
   
   // Derived characteristics
   melee_dmg: number;
