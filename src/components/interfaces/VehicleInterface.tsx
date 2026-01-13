@@ -117,18 +117,18 @@ export default function VehicleInterface() {
                     {/* Show existing vehicles */}
                     {vehicles.filter(v => v.vehicle_type === 'Ship').map((vehicle) => (
                       <div key={vehicle.id} className="p-4 border border-primary/20 rounded bg-background/30">
-                        <div className="flex justify-between items-center">
+                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                           <div className="font-mono text-sm text-primary">
                             <div className="font-semibold">{vehicle.name}</div>
                             <div className="text-xs opacity-70">{vehicle.class_type || 'Type-S Scout/Courier'}</div>
                             <div className="text-xs opacity-70">Status: ACTIVE</div>
                             <div className="text-xs opacity-70">
-                              Crew: {vehicle.crew_requirements && Object.keys(vehicle.crew_requirements).length > 0 
-                                ? Object.values(vehicle.crew_requirements).join(', ') 
+                              Crew: {vehicle.crew_requirements && Object.keys(vehicle.crew_requirements).length > 0
+                                ? Object.values(vehicle.crew_requirements).join(', ')
                                 : 'Unassigned'}
                             </div>
                           </div>
-                           <div className="flex gap-2">
+                           <div className="flex flex-wrap gap-2">
                              <Button 
                                variant="outline" 
                                size="sm"
@@ -210,18 +210,18 @@ export default function VehicleInterface() {
                     {/* Show existing ground vehicles */}
                     {vehicles.filter(v => v.vehicle_type === 'Ground Vehicle').map((vehicle) => (
                       <div key={vehicle.id} className="p-4 border border-primary/20 rounded bg-background/30">
-                        <div className="flex justify-between items-center">
+                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                           <div className="font-mono text-sm text-primary">
                             <div className="font-semibold">{vehicle.name}</div>
                             <div className="text-xs opacity-70">{vehicle.class_type || 'Ground Vehicle'}</div>
                             <div className="text-xs opacity-70">Status: ACTIVE</div>
                             <div className="text-xs opacity-70">
-                              Crew: {vehicle.crew_requirements && Object.keys(vehicle.crew_requirements).length > 0 
-                                ? Object.values(vehicle.crew_requirements).join(', ') 
+                              Crew: {vehicle.crew_requirements && Object.keys(vehicle.crew_requirements).length > 0
+                                ? Object.values(vehicle.crew_requirements).join(', ')
                                 : 'Unassigned'}
                             </div>
                           </div>
-                           <div className="flex gap-2">
+                           <div className="flex flex-wrap gap-2">
                              <Button 
                                variant="outline" 
                                size="sm"
