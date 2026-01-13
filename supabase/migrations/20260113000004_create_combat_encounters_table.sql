@@ -3,7 +3,7 @@
 
 CREATE TABLE IF NOT EXISTS combat_encounters (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  player_id UUID NOT NULL REFERENCES players(id) ON DELETE CASCADE,
+  player_id TEXT NOT NULL DEFAULT 'campaign',
 
   -- Combat state
   current_round INTEGER NOT NULL DEFAULT 1,
