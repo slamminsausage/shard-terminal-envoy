@@ -849,30 +849,51 @@ const customGroups = skillDefinitions.filter(def => def.isCustomGroup);
         <div className="panel-content grid grid-cols-2 md:grid-cols-4 gap-4">
           {characteristicKeys.map(key => {
             const value = characteristics[key];
+            const isInitiative = key === 'initiative';
             return (
               <div key={key} className="border border-primary/30 bg-card/40 rounded p-3 space-y-2">
-                <div className="text-xs font-semibold uppercase tracking-wide">{key.replace(/_/g, " ")}</div>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="text-xs font-semibold uppercase tracking-wide">
+                  {isInitiative ? 'INITIATIVE BONUS' : key.replace(/_/g, " ")}
+                </div>
+                {isInitiative ? (
+                  // Initiative is just a bonus modifier, not a max/current stat
                   <div className="space-y-1">
-                    <label className="text-[10px] text-muted-foreground uppercase tracking-wide">Max</label>
                     <Input
                       value={value.total}
                       onChange={event => handleCharacteristicChange(key, "total", event.target.value)}
                       type="number"
                       className="h-8"
+                      placeholder="0"
                     />
+                    <div className="text-[10px] text-muted-foreground">
+                      Added to 2d6 + DEX/INT DM
+                    </div>
                   </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] text-muted-foreground uppercase tracking-wide">Current</label>
-                    <Input
-                      value={value.current}
-                      onChange={event => handleCharacteristicChange(key, "current", event.target.value)}
-                      type="number"
-                      className="h-8"
-                    />
+                ) : (
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <label className="text-[10px] text-muted-foreground uppercase tracking-wide">Max</label>
+                      <Input
+                        value={value.total}
+                        onChange={event => handleCharacteristicChange(key, "total", event.target.value)}
+                        type="number"
+                        className="h-8"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] text-muted-foreground uppercase tracking-wide">Current</label>
+                      <Input
+                        value={value.current}
+                        onChange={event => handleCharacteristicChange(key, "current", event.target.value)}
+                        type="number"
+                        className="h-8"
+                      />
+                    </div>
                   </div>
-                </div>
-                <div className="text-xs text-muted-foreground font-mono">DM: {getCharacteristicDMDisplay(key, value)}</div>
+                )}
+                {!isInitiative && (
+                  <div className="text-xs text-muted-foreground font-mono">DM: {getCharacteristicDMDisplay(key, value)}</div>
+                )}
               </div>
             );
           })}
