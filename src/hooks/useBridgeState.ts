@@ -11,6 +11,62 @@ import type {
   NewContact
 } from "@/lib/bridge/bridgeTypes";
 
+// Database row types for type-safe mapping
+interface DbBridgeStateRow {
+  id: string;
+  mode?: string;
+  current_system?: string;
+  destination?: string;
+  eta?: string;
+  alert_level?: string;
+  player_ship_id?: string | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+interface DbContactRow {
+  id: string;
+  bridge_state_id: string;
+  name: string;
+  ship_class?: string;
+  tonnage?: number;
+  status?: string;
+  hex_q?: number;
+  hex_r?: number;
+  facing?: number;
+  hull_current?: number;
+  hull_max?: number;
+  is_player_ship?: boolean;
+  vehicle_id?: string | null;
+  is_hidden?: boolean;
+  scan_dc?: number | null;
+  created_at?: string;
+}
+
+interface DbMessageRow {
+  id: string;
+  bridge_state_id: string;
+  sender: string;
+  content: string;
+  priority?: string;
+  encrypted?: boolean;
+  encryption_difficulty?: number | null;
+  is_read?: boolean;
+  sent_at?: string;
+}
+
+interface DbScanRow {
+  id: string;
+  bridge_state_id: string;
+  initiated_by?: string;
+  skill_check_roll?: number;
+  difficulty?: number;
+  result?: string;
+  revealed_contact_ids?: string[];
+  notes?: string;
+  created_at: string;
+}
+
 // Local dev seed data so the Bridge Console renders even without Supabase
 const devContacts: Contact[] = [
   { id: "player", name: "Vanagandr", shipClass: "Type-S Scout/Courier", tonnage: 100, status: "friendly", hexQ: 0, hexR: 0, facing: 2, hullCurrent: 12, hullMax: 12, isPlayerShip: true },
@@ -24,7 +80,7 @@ const devMessages: BridgeMessage[] = [
   { id: "m3", sender: "Vennik Interdictor", content: "Power down drives and prepare to be boarded.", priority: "emergency", sentAt: new Date().toISOString() }
 ];
 
-const mapDbStateToUi = (row: any): BridgeState => ({
+const mapDbStateToUi = (row: DbBridgeStateRow): BridgeState => ({
   id: row.id,
   mode: (row.mode as BridgeMode) ?? "tactical",
   currentSystem: row.current_system ?? "UNKNOWN",
@@ -34,12 +90,12 @@ const mapDbStateToUi = (row: any): BridgeState => ({
   playerShipId: row.player_ship_id ?? null
 });
 
-const mapDbContactToUi = (row: any): Contact => ({
+const mapDbContactToUi = (row: DbContactRow): Contact => ({
   id: row.id,
   name: row.name,
   shipClass: row.ship_class ?? undefined,
   tonnage: row.tonnage ?? undefined,
-  status: row.status ?? "unknown",
+  status: (row.status as ContactStatus) ?? "unknown",
   hexQ: row.hex_q ?? 0,
   hexR: row.hex_r ?? 0,
   facing: row.facing ?? 0,
@@ -51,18 +107,18 @@ const mapDbContactToUi = (row: any): Contact => ({
   scanDc: row.scan_dc ?? null
 });
 
-const mapDbMessageToUi = (row: any): BridgeMessage => ({
+const mapDbMessageToUi = (row: DbMessageRow): BridgeMessage => ({
   id: row.id,
   sender: row.sender,
   content: row.content,
-  priority: row.priority ?? "normal",
+  priority: (row.priority as BridgeMessage["priority"]) ?? "normal",
   encrypted: row.encrypted ?? false,
   encryptionDifficulty: row.encryption_difficulty ?? null,
   isRead: row.is_read ?? false,
   sentAt: row.sent_at ?? new Date().toISOString()
 });
 
-const mapDbScanToUi = (row: any): BridgeScan => ({
+const mapDbScanToUi = (row: DbScanRow): BridgeScan => ({
   id: row.id,
   bridgeStateId: row.bridge_state_id,
   initiatedBy: row.initiated_by,
@@ -94,7 +150,8 @@ export function useBridgeState() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const sb = supabase as any;
+  // Type assertion for Supabase client to work with dynamic table names
+  const sb = supabase;
 
   // =========================================================
   // INITIAL LOAD
@@ -207,14 +264,52 @@ export function useBridgeState() {
   }, [loadBridgeState, loadContacts, loadMessages, loadScans]);
 
   // Fallback polling every 5s to keep state fresh when realtime is unavailable
+  // Uses visibility check to pause polling when tab is hidden (performance optimization)
   useEffect(() => {
     if (!bridgeState.id || bridgeState.id === "local-dev") return;
-    const interval = setInterval(() => {
-      void loadContacts(bridgeState.id);
-      void loadMessages(bridgeState.id);
-      void loadScans(bridgeState.id);
-    }, 5000);
-    return () => clearInterval(interval);
+
+    let interval: ReturnType<typeof setInterval> | null = null;
+
+    const startPolling = () => {
+      if (interval) return; // Already polling
+      interval = setInterval(() => {
+        void loadContacts(bridgeState.id);
+        void loadMessages(bridgeState.id);
+        void loadScans(bridgeState.id);
+      }, 5000);
+    };
+
+    const stopPolling = () => {
+      if (interval) {
+        clearInterval(interval);
+        interval = null;
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        // Tab became visible - refresh immediately then resume polling
+        void loadContacts(bridgeState.id);
+        void loadMessages(bridgeState.id);
+        void loadScans(bridgeState.id);
+        startPolling();
+      } else {
+        // Tab hidden - stop polling to save resources
+        stopPolling();
+      }
+    };
+
+    // Start polling if tab is currently visible
+    if (document.visibilityState === 'visible') {
+      startPolling();
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      stopPolling();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, [bridgeState.id, loadContacts, loadMessages, loadScans]);
 
   // =========================================================
@@ -364,7 +459,7 @@ export function useBridgeState() {
   const updateContactFields = useCallback(async (contactId: string, fields: Partial<Contact>) => {
     setContacts(prev => prev.map(c => c.id === contactId ? { ...c, ...fields } : c));
     if (bridgeState.id === "local-dev") return;
-    const payload: Record<string, any> = {};
+    const payload: Record<string, string | number | boolean | null | undefined> = {};
     if (fields.status !== undefined) payload.status = fields.status;
     if (fields.hexQ !== undefined) payload.hex_q = fields.hexQ;
     if (fields.hexR !== undefined) payload.hex_r = fields.hexR;

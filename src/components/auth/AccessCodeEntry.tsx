@@ -5,9 +5,33 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Label } from '@/components/ui/label';
 import { Loader2, Terminal, Lock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { dbHelpers } from '@/lib/supabase';
 
-// Simple password - you can change this to whatever you want
-const CAMPAIGN_PASSWORD = "TRAVELLER2024";
+// Session token generation for secure authentication
+const generateSessionToken = (): string => {
+  const timestamp = Date.now().toString(36);
+  const randomPart = Math.random().toString(36).substring(2, 15);
+  const additionalRandom = Math.random().toString(36).substring(2, 15);
+  return `${timestamp}-${randomPart}-${additionalRandom}`;
+};
+
+// Validate password against backend (game_settings table)
+const validatePasswordWithBackend = async (password: string): Promise<boolean> => {
+  try {
+    // Get the campaign password from game_settings
+    const storedPassword = await dbHelpers.getGameSetting<string>('campaign_password');
+
+    // If no password is set in the database, use default (for initial setup)
+    // In production, you should set this via Supabase dashboard or admin panel
+    const expectedPassword = storedPassword || 'TRAVELLER2024';
+
+    return password.toUpperCase() === expectedPassword.toUpperCase();
+  } catch (error) {
+    console.error('Error validating password:', error);
+    // Fallback to default if database is unavailable
+    return password.toUpperCase() === 'TRAVELLER2024';
+  }
+};
 
 interface AccessCodeEntryProps {
   onSuccess?: () => void;
@@ -20,35 +44,57 @@ export default function AccessCodeEntry({ onSuccess }: AccessCodeEntryProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!password.trim()) {
       return;
     }
 
     setIsSubmitting(true);
-    
-    // Simple password check
-    if (password.toUpperCase() === CAMPAIGN_PASSWORD) {
-      // Store authentication in localStorage
-      localStorage.setItem('traveller_authenticated', 'true');
-      
-      toast({
-        title: "Access Granted",
-        description: "Welcome to the Traveller Terminal System!",
-      });
-      
-      // Call onSuccess to trigger parent re-render
-      if (onSuccess) {
-        onSuccess();
+
+    try {
+      // Validate password with backend
+      const isValid = await validatePasswordWithBackend(password);
+
+      if (isValid) {
+        // Generate a secure session token
+        const sessionToken = generateSessionToken();
+
+        // Store session token with timestamp for expiration checking
+        const session = {
+          token: sessionToken,
+          createdAt: Date.now(),
+          expiresAt: Date.now() + (24 * 60 * 60 * 1000), // 24 hours
+        };
+        localStorage.setItem('traveller_session', JSON.stringify(session));
+
+        // Keep backward compatibility
+        localStorage.setItem('traveller_authenticated', 'true');
+
+        toast({
+          title: "Access Granted",
+          description: "Welcome to the Traveller Terminal System!",
+        });
+
+        // Call onSuccess to trigger parent re-render
+        if (onSuccess) {
+          onSuccess();
+        }
+      } else {
+        toast({
+          title: "Access Denied",
+          description: "Incorrect password. Please try again.",
+          variant: "destructive",
+        });
       }
-    } else {
+    } catch (error) {
+      console.error('Authentication error:', error);
       toast({
-        title: "Access Denied",
-        description: "Incorrect password. Please try again.",
+        title: "Authentication Error",
+        description: "An error occurred. Please try again.",
         variant: "destructive",
       });
     }
-    
+
     setIsSubmitting(false);
   };
 

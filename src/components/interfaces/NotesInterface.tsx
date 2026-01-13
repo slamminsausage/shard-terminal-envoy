@@ -6,15 +6,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Edit2, Trash2, Save, X, Image as ImageIcon, Video, FileText, Folder, Maximize2, ZoomIn, ZoomOut, RotateCcw, Upload, Crop } from 'lucide-react';
+import { Edit2, Trash2, Save, X, Image as ImageIcon, Video, FileText, Folder, Maximize2, Upload, Crop } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { PlayerNote, Handout, NoteFolder } from '@/types/notes';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { compressImage } from '@/lib/mediaCompression';
 import { dbHelpers } from '@/lib/supabase';
 import { ThumbnailCropper } from '@/components/ui/ThumbnailCropper';
+import { MediaDialog } from '@/components/ui/MediaDialog';
 
 const FOLDERS: { value: NoteFolder; label: string; emoji: string }[] = [
   { value: 'general', label: 'General', emoji: '📝' },
@@ -50,14 +50,6 @@ export const NotesInterface: React.FC = () => {
   // Only show visible handouts (admin page controls visibility)
   const visibleHandouts = handouts.filter(h => h.isVisible);
 
-  // Debug logging
-  React.useEffect(() => {
-    console.log('NotesInterface - Total handouts:', handouts.length);
-    console.log('NotesInterface - Visible handouts:', visibleHandouts.length);
-    if (handouts.length > 0) {
-      console.log('All handouts:', handouts.map(h => ({ title: h.title, isVisible: h.isVisible, type: h.type })));
-    }
-  }, [handouts, visibleHandouts]);
 
   // Filter notes by folder
   const filteredNotes = useMemo(() => {
@@ -690,18 +682,6 @@ interface HandoutCardProps {
 
 const HandoutCard: React.FC<HandoutCardProps> = ({ handout }) => {
   const [showFullSize, setShowFullSize] = useState(false);
-  const [zoom, setZoom] = useState(1);
-
-  const handleZoomIn = () => setZoom(prev => Math.min(prev + 0.25, 3));
-  const handleZoomOut = () => setZoom(prev => Math.max(prev - 0.25, 0.5));
-  const handleZoomReset = () => setZoom(1);
-
-  const handleDialogClose = (open: boolean) => {
-    setShowFullSize(open);
-    if (!open) {
-      setZoom(1); // Reset zoom when closing
-    }
-  };
 
   return (
     <Card className="bg-black border-[#00ff41]/30 hover:border-[#00ff41]/50 transition-colors">
@@ -740,54 +720,13 @@ const HandoutCard: React.FC<HandoutCardProps> = ({ handout }) => {
                 <Maximize2 className="h-6 w-6 text-[#00ff41]" />
               </div>
             </div>
-            <Dialog open={showFullSize} onOpenChange={handleDialogClose}>
-              <DialogContent className="max-w-[95vw] max-h-[95vh] bg-black border-[#00ff41]/50 p-0">
-                <DialogHeader className="p-4 pb-2">
-                  <div className="flex items-center justify-between">
-                    <DialogTitle className="text-[#00ff41]">{handout.title}</DialogTitle>
-                    <div className="flex gap-2">
-                      <Button
-                        onClick={handleZoomOut}
-                        size="sm"
-                        variant="outline"
-                        className="border-[#00ff41]/50 text-[#00ff41] hover:bg-[#00ff41]/20 h-8 w-8 p-0"
-                        disabled={zoom <= 0.5}
-                      >
-                        <ZoomOut className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        onClick={handleZoomReset}
-                        size="sm"
-                        variant="outline"
-                        className="border-[#00ff41]/50 text-[#00ff41] hover:bg-[#00ff41]/20 h-8 px-2"
-                      >
-                        <RotateCcw className="h-4 w-4 mr-1" />
-                        {Math.round(zoom * 100)}%
-                      </Button>
-                      <Button
-                        onClick={handleZoomIn}
-                        size="sm"
-                        variant="outline"
-                        className="border-[#00ff41]/50 text-[#00ff41] hover:bg-[#00ff41]/20 h-8 w-8 p-0"
-                        disabled={zoom >= 3}
-                      >
-                        <ZoomIn className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </DialogHeader>
-                <div className="overflow-auto max-h-[calc(95vh-80px)] p-4 pt-2">
-                  <div className="flex items-center justify-center min-h-[200px]">
-                    <img
-                      src={handout.mediaUrl}
-                      alt={handout.title}
-                      className="max-w-full max-h-[calc(95vh-120px)] object-contain rounded transition-transform duration-200"
-                      style={{ transform: `scale(${zoom})` }}
-                    />
-                  </div>
-                </div>
-              </DialogContent>
-            </Dialog>
+            <MediaDialog
+              open={showFullSize}
+              onOpenChange={setShowFullSize}
+              title={handout.title}
+              mediaUrl={handout.mediaUrl}
+              type="image"
+            />
           </>
         )}
         {handout.type === 'video' && handout.mediaUrl && (
@@ -804,55 +743,13 @@ const HandoutCard: React.FC<HandoutCardProps> = ({ handout }) => {
                 <Maximize2 className="h-6 w-6 text-[#00ff41]" />
               </div>
             </div>
-            <Dialog open={showFullSize} onOpenChange={handleDialogClose}>
-              <DialogContent className="max-w-[95vw] max-h-[95vh] bg-black border-[#00ff41]/50 p-0">
-                <DialogHeader className="p-4 pb-2">
-                  <div className="flex items-center justify-between">
-                    <DialogTitle className="text-[#00ff41]">{handout.title}</DialogTitle>
-                    <div className="flex gap-2">
-                      <Button
-                        onClick={handleZoomOut}
-                        size="sm"
-                        variant="outline"
-                        className="border-[#00ff41]/50 text-[#00ff41] hover:bg-[#00ff41]/20 h-8 w-8 p-0"
-                        disabled={zoom <= 0.5}
-                      >
-                        <ZoomOut className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        onClick={handleZoomReset}
-                        size="sm"
-                        variant="outline"
-                        className="border-[#00ff41]/50 text-[#00ff41] hover:bg-[#00ff41]/20 h-8 px-2"
-                      >
-                        <RotateCcw className="h-4 w-4 mr-1" />
-                        {Math.round(zoom * 100)}%
-                      </Button>
-                      <Button
-                        onClick={handleZoomIn}
-                        size="sm"
-                        variant="outline"
-                        className="border-[#00ff41]/50 text-[#00ff41] hover:bg-[#00ff41]/20 h-8 w-8 p-0"
-                        disabled={zoom >= 3}
-                      >
-                        <ZoomIn className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </DialogHeader>
-                <div className="overflow-auto max-h-[calc(95vh-80px)] p-4 pt-2">
-                  <div className="flex items-center justify-center min-h-[200px]">
-                    <video
-                      src={handout.mediaUrl}
-                      controls
-                      autoPlay
-                      className="max-w-full max-h-[calc(95vh-120px)] object-contain rounded transition-transform duration-200"
-                      style={{ transform: `scale(${zoom})` }}
-                    />
-                  </div>
-                </div>
-              </DialogContent>
-            </Dialog>
+            <MediaDialog
+              open={showFullSize}
+              onOpenChange={setShowFullSize}
+              title={handout.title}
+              mediaUrl={handout.mediaUrl}
+              type="video"
+            />
           </>
         )}
       </CardContent>

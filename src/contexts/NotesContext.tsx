@@ -2,6 +2,9 @@ import React, { createContext, useContext, useState, useCallback, useEffect } fr
 import { PlayerNote, Handout } from '@/types/notes';
 import { dbHelpers } from '@/lib/supabase';
 
+// GM mode is determined by a separate flag, not just authentication
+const GM_MODE_KEY = 'traveller_gm_mode';
+
 interface NotesContextType {
   // Player notes
   playerNotes: PlayerNote[];
@@ -81,8 +84,10 @@ export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     const loadData = async () => {
       try {
-        const savedGMMode = localStorage.getItem('traveller_authenticated');
-        if (savedGMMode) {
+        // GM mode is a separate setting from authentication
+        // It should be explicitly set by the GM, not assumed from auth status
+        const savedGMMode = localStorage.getItem(GM_MODE_KEY);
+        if (savedGMMode !== null) {
           setIsGMMode(savedGMMode === 'true');
         }
 
@@ -171,20 +176,17 @@ export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   useEffect(() => {
     try {
       const handoutsJSON = JSON.stringify(handouts);
-      const sizeKB = (handoutsJSON.length / 1024).toFixed(2);
-      console.log(`Saving ${handouts.length} handouts to localStorage (${sizeKB} KB)`);
 
       // Check for any remaining base64 data URLs (shouldn't happen, but just in case)
       const hasBase64 = handouts.some(
         h => h.mediaUrl && (h.mediaUrl.startsWith('data:image/') || h.mediaUrl.startsWith('data:video/'))
       );
 
-      if (hasBase64) {
+      if (hasBase64 && import.meta.env?.DEV) {
         console.warn('Warning: Some handouts still contain base64 data. This may cause storage issues.');
       }
 
       localStorage.setItem('traveller_handouts', handoutsJSON);
-      console.log('Handouts saved successfully to localStorage');
     } catch (error) {
       if (error instanceof DOMException && error.name === 'QuotaExceededError') {
         console.error('localStorage quota exceeded! This should not happen with Supabase Storage.');
@@ -313,12 +315,7 @@ export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       // Ensure isVisible is explicitly set (defaults to false if not provided)
       isVisible: handout.isVisible ?? false,
     };
-    console.log('Adding handout:', newHandout.title, 'isVisible:', newHandout.isVisible, 'type:', newHandout.type);
-    setHandouts(prev => {
-      const updated = [...prev, newHandout];
-      console.log('Total handouts after add:', updated.length);
-      return updated;
-    });
+    setHandouts(prev => [...prev, newHandout]);
   }, []);
 
   const updateHandout = useCallback((id: string, updates: Partial<Handout>) => {
@@ -340,19 +337,13 @@ export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, []);
 
   const toggleHandoutVisibility = useCallback((id: string) => {
-    setHandouts(prev => {
-      const handout = prev.find(h => h.id === id);
-      if (handout) {
-        console.log('Toggling visibility for:', handout.title, 'from', handout.isVisible, 'to', !handout.isVisible);
-      }
-      const updated = prev.map(h =>
+    setHandouts(prev =>
+      prev.map(h =>
         h.id === id
           ? { ...h, isVisible: !h.isVisible, updatedAt: new Date().toISOString() }
           : h
-      );
-      console.log('Handouts after toggle:', updated.map(h => ({ title: h.title, visible: h.isVisible })));
-      return updated;
-    });
+      )
+    );
   }, []);
 
   return (
