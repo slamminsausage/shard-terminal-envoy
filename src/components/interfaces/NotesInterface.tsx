@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Edit2, Trash2, Save, X, Image as ImageIcon, Video, FileText, Folder, Maximize2, ZoomIn, ZoomOut, RotateCcw, Upload } from 'lucide-react';
+import { Edit2, Trash2, Save, X, Image as ImageIcon, Video, FileText, Folder, Maximize2, ZoomIn, ZoomOut, RotateCcw, Upload, Crop } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -14,6 +14,7 @@ import { PlayerNote, Handout, NoteFolder } from '@/types/notes';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { compressImage } from '@/lib/mediaCompression';
 import { dbHelpers } from '@/lib/supabase';
+import { ThumbnailCropper } from '@/components/ui/ThumbnailCropper';
 
 const FOLDERS: { value: NoteFolder; label: string; emoji: string }[] = [
   { value: 'general', label: 'General', emoji: '📝' },
@@ -43,6 +44,8 @@ export const NotesInterface: React.FC = () => {
   const [isUploadingNewNoteThumbnail, setIsUploadingNewNoteThumbnail] = useState(false);
   const [selectedFolder, setSelectedFolder] = useState<NoteFolder | 'all'>('all');
   const [showNewNoteForm, setShowNewNoteForm] = useState(false);
+  const [newNoteCropperOpen, setNewNoteCropperOpen] = useState(false);
+  const [newNoteSelectedFile, setNewNoteSelectedFile] = useState<File | null>(null);
 
   // Only show visible handouts (admin page controls visibility)
   const visibleHandouts = handouts.filter(h => h.isVisible);
@@ -99,21 +102,33 @@ export const NotesInterface: React.FC = () => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    try {
-      setIsUploadingNewNoteThumbnail(true);
+    // Open cropper with the selected file
+    setNewNoteSelectedFile(file);
+    setNewNoteCropperOpen(true);
 
-      // Compress the image to a smaller size for thumbnails (max 400px, quality 0.8)
-      const compressedDataUrl = await compressImage(file, 400, 400, 0.8);
+    // Reset the input so the same file can be selected again
+    event.target.value = '';
+  };
 
-      // For new notes, we'll store the data URL temporarily
-      // It will be uploaded to storage when the note is saved
-      setNewNoteThumbnailUrl(compressedDataUrl);
-    } catch (error) {
-      console.error('Error processing thumbnail:', error);
-      alert('Failed to process thumbnail. Please try again.');
-    } finally {
-      setIsUploadingNewNoteThumbnail(false);
-    }
+  const handleNewNoteCropComplete = (croppedDataUrl: string) => {
+    // For new notes, we'll store the data URL temporarily
+    // It will be uploaded to storage when the note is saved
+    setNewNoteThumbnailUrl(croppedDataUrl);
+    setNewNoteSelectedFile(null);
+  };
+
+  const handleEditNewNoteThumbnail = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file) {
+        setNewNoteSelectedFile(file);
+        setNewNoteCropperOpen(true);
+      }
+    };
+    input.click();
   };
 
   const handleRemoveNewNoteThumbnail = () => {
@@ -236,20 +251,32 @@ export const NotesInterface: React.FC = () => {
                       <label className="text-xs text-[#00ff41]/70 uppercase">NPC Portrait</label>
                       <div className="flex items-center gap-2">
                         {newNoteThumbnailUrl && (
-                          <div className="relative">
+                          <div className="relative group">
                             <img
                               src={newNoteThumbnailUrl}
                               alt="NPC Thumbnail"
                               className="w-20 h-20 object-cover rounded border border-[#00ff41]/30"
                             />
-                            <Button
-                              onClick={handleRemoveNewNoteThumbnail}
-                              size="sm"
-                              variant="outline"
-                              className="absolute -top-2 -right-2 h-6 w-6 p-0 rounded-full bg-red-500 border-red-500 hover:bg-red-600"
-                            >
-                              <X className="h-3 w-3 text-white" />
-                            </Button>
+                            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1 rounded">
+                              <Button
+                                onClick={handleEditNewNoteThumbnail}
+                                size="sm"
+                                variant="outline"
+                                className="h-6 w-6 p-0 border-[#00ff41]/50 hover:bg-[#00ff41]/20"
+                                title="Crop/Edit"
+                              >
+                                <Crop className="h-3 w-3 text-[#00ff41]" />
+                              </Button>
+                              <Button
+                                onClick={handleRemoveNewNoteThumbnail}
+                                size="sm"
+                                variant="outline"
+                                className="h-6 w-6 p-0 bg-red-500/80 border-red-500 hover:bg-red-600"
+                                title="Remove"
+                              >
+                                <X className="h-3 w-3 text-white" />
+                              </Button>
+                            </div>
                           </div>
                         )}
                         <div className="flex-1">
@@ -270,6 +297,16 @@ export const NotesInterface: React.FC = () => {
                           </label>
                         </div>
                       </div>
+
+                      {/* Thumbnail Cropper Dialog for new notes */}
+                      <ThumbnailCropper
+                        open={newNoteCropperOpen}
+                        onOpenChange={setNewNoteCropperOpen}
+                        imageFile={newNoteSelectedFile}
+                        onCropComplete={handleNewNoteCropComplete}
+                        outputSize={400}
+                        title="Crop NPC Portrait"
+                      />
                     </div>
                   )}
 
@@ -394,6 +431,8 @@ const NoteCard: React.FC<NoteCardProps> = ({
   const [folder, setFolder] = useState<NoteFolder>((note.folder as NoteFolder) || 'general');
   const [thumbnailUrl, setThumbnailUrl] = useState(note.thumbnailUrl || '');
   const [isUploadingThumbnail, setIsUploadingThumbnail] = useState(false);
+  const [cropperOpen, setCropperOpen] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const folderInfo = FOLDERS.find(f => f.value === (note.folder || 'general'));
 
@@ -401,18 +440,24 @@ const NoteCard: React.FC<NoteCardProps> = ({
     const file = event.target.files?.[0];
     if (!file) return;
 
+    // Open cropper with the selected file
+    setSelectedFile(file);
+    setCropperOpen(true);
+
+    // Reset the input so the same file can be selected again
+    event.target.value = '';
+  };
+
+  const handleCropComplete = async (croppedDataUrl: string) => {
     try {
       setIsUploadingThumbnail(true);
 
-      // Compress the image to a smaller size for thumbnails (max 400px, quality 0.8)
-      const compressedDataUrl = await compressImage(file, 400, 400, 0.8);
-
       // Extract mime type from data URL
-      const mimeType = compressedDataUrl.split(';')[0].split(':')[1];
+      const mimeType = croppedDataUrl.split(';')[0].split(':')[1];
 
       // Upload to Supabase Storage
       const uploadedUrl = await dbHelpers.uploadPlayerNoteThumbnailFromDataURL(
-        compressedDataUrl,
+        croppedDataUrl,
         note.id,
         mimeType
       );
@@ -427,7 +472,22 @@ const NoteCard: React.FC<NoteCardProps> = ({
       alert('Failed to upload thumbnail. Please try again.');
     } finally {
       setIsUploadingThumbnail(false);
+      setSelectedFile(null);
     }
+  };
+
+  const handleEditThumbnail = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file) {
+        setSelectedFile(file);
+        setCropperOpen(true);
+      }
+    };
+    input.click();
   };
 
   const handleRemoveThumbnail = async () => {
@@ -481,20 +541,32 @@ const NoteCard: React.FC<NoteCardProps> = ({
               <label className="text-xs text-[#00ff41]/70 uppercase">NPC Portrait</label>
               <div className="flex items-center gap-2">
                 {thumbnailUrl && (
-                  <div className="relative">
+                  <div className="relative group">
                     <img
                       src={thumbnailUrl}
                       alt="NPC Thumbnail"
                       className="w-20 h-20 object-cover rounded border border-[#00ff41]/30"
                     />
-                    <Button
-                      onClick={handleRemoveThumbnail}
-                      size="sm"
-                      variant="outline"
-                      className="absolute -top-2 -right-2 h-6 w-6 p-0 rounded-full bg-red-500 border-red-500 hover:bg-red-600"
-                    >
-                      <X className="h-3 w-3 text-white" />
-                    </Button>
+                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1 rounded">
+                      <Button
+                        onClick={handleEditThumbnail}
+                        size="sm"
+                        variant="outline"
+                        className="h-6 w-6 p-0 border-[#00ff41]/50 hover:bg-[#00ff41]/20"
+                        title="Crop/Edit"
+                      >
+                        <Crop className="h-3 w-3 text-[#00ff41]" />
+                      </Button>
+                      <Button
+                        onClick={handleRemoveThumbnail}
+                        size="sm"
+                        variant="outline"
+                        className="h-6 w-6 p-0 bg-red-500/80 border-red-500 hover:bg-red-600"
+                        title="Remove"
+                      >
+                        <X className="h-3 w-3 text-white" />
+                      </Button>
+                    </div>
                   </div>
                 )}
                 <div className="flex-1">
@@ -515,6 +587,16 @@ const NoteCard: React.FC<NoteCardProps> = ({
                   </label>
                 </div>
               </div>
+
+              {/* Thumbnail Cropper Dialog */}
+              <ThumbnailCropper
+                open={cropperOpen}
+                onOpenChange={setCropperOpen}
+                imageFile={selectedFile}
+                onCropComplete={handleCropComplete}
+                outputSize={400}
+                title="Crop NPC Portrait"
+              />
             </div>
           )}
 

@@ -4,9 +4,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { useCampaign } from "@/contexts/CampaignContext";
 import { performSkillCheck, rollDamageExpression, getCharacteristicDM, getSkillDM } from "@/lib/dice";
-import { compressImage } from "@/lib/mediaCompression";
 import { dbHelpers } from "@/lib/supabase";
-import { Upload, X } from "lucide-react";
+import { Upload, X, Crop } from "lucide-react";
+import { ThumbnailCropper } from "@/components/ui/ThumbnailCropper";
 
 interface CharacterSheetProps {
   characterId?: string;
@@ -276,6 +276,8 @@ const CharacterSheet = ({ characterId }: CharacterSheetProps = {}) => {
   const [skills, setSkills] = useState<Record<string, SkillState>>(baseSkillState);
   const [thumbnailUrl, setThumbnailUrl] = useState<string>("");
   const [isUploadingThumbnail, setIsUploadingThumbnail] = useState(false);
+  const [cropperOpen, setCropperOpen] = useState(false);
+  const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
 
   // Load character data if editing an existing character
   useEffect(() => {
@@ -393,17 +395,23 @@ const CharacterSheet = ({ characterId }: CharacterSheetProps = {}) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
+    // Open cropper with the selected file
+    setSelectedImageFile(file);
+    setCropperOpen(true);
+
+    // Reset the input so the same file can be selected again
+    event.target.value = '';
+  };
+
+  const handleCropComplete = async (croppedDataUrl: string) => {
     try {
       setIsUploadingThumbnail(true);
 
-      // Compress the image to a smaller size for thumbnails (max 300px, quality 0.85)
-      const compressedDataUrl = await compressImage(file, 300, 300, 0.85);
-
       // If we have a character ID, upload to Supabase Storage
       if (currentCharacterId) {
-        const mimeType = compressedDataUrl.split(';')[0].split(':')[1];
+        const mimeType = croppedDataUrl.split(';')[0].split(':')[1];
         const uploadedUrl = await dbHelpers.uploadCharacterThumbnailFromDataURL(
-          compressedDataUrl,
+          croppedDataUrl,
           currentCharacterId,
           mimeType
         );
@@ -415,14 +423,30 @@ const CharacterSheet = ({ characterId }: CharacterSheetProps = {}) => {
         }
       } else {
         // For new characters, store the data URL temporarily
-        setThumbnailUrl(compressedDataUrl);
+        setThumbnailUrl(croppedDataUrl);
       }
     } catch (error) {
       console.error('Error uploading thumbnail:', error);
       alert('Failed to upload thumbnail. Please try again.');
     } finally {
       setIsUploadingThumbnail(false);
+      setSelectedImageFile(null);
     }
+  };
+
+  const handleEditThumbnail = () => {
+    // Create a file input to select a new image for cropping
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file) {
+        setSelectedImageFile(file);
+        setCropperOpen(true);
+      }
+    };
+    input.click();
   };
 
   const handleRemoveThumbnail = async () => {
@@ -725,20 +749,32 @@ const customGroups = skillDefinitions.filter(def => def.isCustomGroup);
             <label className="text-xs font-semibold uppercase tracking-wide text-primary/80 mb-2 block">Character Portrait</label>
             <div className="flex items-center gap-4">
               {thumbnailUrl && (
-                <div className="relative">
+                <div className="relative group">
                   <img
                     src={thumbnailUrl}
                     alt="Character Thumbnail"
                     className="w-24 h-24 object-cover rounded border border-primary/30"
                   />
-                  <Button
-                    onClick={handleRemoveThumbnail}
-                    size="sm"
-                    variant="outline"
-                    className="absolute -top-2 -right-2 h-6 w-6 p-0 rounded-full bg-red-500 border-red-500 hover:bg-red-600"
-                  >
-                    <X className="h-3 w-3 text-white" />
-                  </Button>
+                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1 rounded">
+                    <Button
+                      onClick={handleEditThumbnail}
+                      size="sm"
+                      variant="outline"
+                      className="h-7 w-7 p-0 border-primary/50 hover:bg-primary/20"
+                      title="Crop/Edit"
+                    >
+                      <Crop className="h-3 w-3 text-primary" />
+                    </Button>
+                    <Button
+                      onClick={handleRemoveThumbnail}
+                      size="sm"
+                      variant="outline"
+                      className="h-7 w-7 p-0 bg-red-500/80 border-red-500 hover:bg-red-600"
+                      title="Remove"
+                    >
+                      <X className="h-3 w-3 text-white" />
+                    </Button>
+                  </div>
                 </div>
               )}
               <div className="flex-1">
@@ -760,6 +796,16 @@ const customGroups = skillDefinitions.filter(def => def.isCustomGroup);
               </div>
             </div>
           </div>
+
+          {/* Thumbnail Cropper Dialog */}
+          <ThumbnailCropper
+            open={cropperOpen}
+            onOpenChange={setCropperOpen}
+            imageFile={selectedImageFile}
+            onCropComplete={handleCropComplete}
+            outputSize={300}
+            title="Crop Character Portrait"
+          />
 
           {/* Character Info Fields */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
