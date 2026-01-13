@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Heart, Shield, Swords, RefreshCw, ArrowUp, ArrowDown, User } from 'lucide-react';
+import { Plus, Trash2, Heart, Shield, Swords, RefreshCw, ArrowUp, ArrowDown, User, Dices } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -22,6 +22,22 @@ import {
 import { useCampaign } from '@/contexts/CampaignContext';
 import type { Character } from '@/types/database';
 import { cn } from '@/lib/utils';
+
+// Calculate Traveller characteristic DM
+function getCharacteristicDM(value: number): number {
+  if (value === 0) return -3;
+  if (value <= 2) return -2;
+  if (value <= 5) return -1;
+  if (value <= 8) return 0;
+  if (value <= 11) return 1;
+  if (value <= 14) return 2;
+  return 3; // 15+
+}
+
+// Roll 2d6
+function roll2d6(): number {
+  return Math.floor(Math.random() * 6) + 1 + Math.floor(Math.random() * 6) + 1;
+}
 
 interface Combatant {
   id: string;
@@ -82,6 +98,13 @@ export default function CombatInterface() {
   const [npcEnd, setNpcEnd] = useState(7);
   const [npcArmor, setNpcArmor] = useState(0);
 
+  // Initiative roll dialog
+  const [isInitiativeDialogOpen, setIsInitiativeDialogOpen] = useState(false);
+  const [pendingCharacter, setPendingCharacter] = useState<Character | null>(null);
+  const [initiativeCharacteristic, setInitiativeCharacteristic] = useState<'dex' | 'int'>('dex');
+  const [initiativeRoll, setInitiativeRoll] = useState(0);
+  const [initiativeBonus, setInitiativeBonus] = useState(0);
+
   // Sort combatants by initiative
   const sortedCombatants = [...combatants].sort((a, b) => b.initiative - a.initiative);
   const activeCombatant = sortedCombatants[currentTurnIndex];
@@ -90,21 +113,49 @@ export default function CombatInterface() {
     const character = characters.find(c => c.id === selectedCharacterId);
     if (!character) return;
 
+    // Close the add dialog and open initiative roll dialog
+    setIsAddDialogOpen(false);
+    setPendingCharacter(character);
+    setInitiativeCharacteristic('dex'); // Default to DEX
+    setInitiativeBonus(character.initiative || 0); // Use the initiative field as a bonus
+    handleRollInitiative('dex', character);
+    setIsInitiativeDialogOpen(true);
+  };
+
+  const handleRollInitiative = (characteristic: 'dex' | 'int', character: Character) => {
+    const roll = roll2d6();
+    const statValue = characteristic === 'dex'
+      ? (character.current_dexterity ?? character.dexterity)
+      : character.intellect;
+    const dm = getCharacteristicDM(statValue);
+    setInitiativeRoll(roll);
+    setInitiativeCharacteristic(characteristic);
+  };
+
+  const handleConfirmInitiative = () => {
+    if (!pendingCharacter) return;
+
+    const characteristic = initiativeCharacteristic;
+    const statValue = characteristic === 'dex'
+      ? (pendingCharacter.current_dexterity ?? pendingCharacter.dexterity)
+      : pendingCharacter.intellect;
+    const dm = getCharacteristicDM(statValue);
+    const total = initiativeRoll + dm + initiativeBonus;
+
     const newCombatant: Combatant = {
       id: Date.now().toString(),
-      name: character.name,
+      name: pendingCharacter.name,
       type: 'character',
-      characterId: character.id,
-      initiative: character.initiative || 0,
-      healthType: 'characteristics', // Characters track STR/DEX/END
-      // Use current stats if available, otherwise use base stats
-      currentStr: character.current_strength ?? character.strength,
-      maxStr: character.strength,
-      currentDex: character.current_dexterity ?? character.dexterity,
-      maxDex: character.dexterity,
-      currentEnd: character.current_endurance ?? character.endurance,
-      maxEnd: character.endurance,
-      armor: 0, // TODO: Calculate from character armor
+      characterId: pendingCharacter.id,
+      initiative: total,
+      healthType: 'characteristics',
+      currentStr: pendingCharacter.current_strength ?? pendingCharacter.strength,
+      maxStr: pendingCharacter.strength,
+      currentDex: pendingCharacter.current_dexterity ?? pendingCharacter.dexterity,
+      maxDex: pendingCharacter.dexterity,
+      currentEnd: pendingCharacter.current_endurance ?? pendingCharacter.endurance,
+      maxEnd: pendingCharacter.endurance,
+      armor: 0,
       cover: 'none',
       range: 'medium',
       actionsRemaining: 2,
@@ -116,7 +167,8 @@ export default function CombatInterface() {
     };
 
     setCombatants([...combatants, newCombatant]);
-    setIsAddDialogOpen(false);
+    setIsInitiativeDialogOpen(false);
+    setPendingCharacter(null);
     setSelectedCharacterId('');
   };
 
@@ -803,6 +855,124 @@ export default function CombatInterface() {
               disabled={addType === 'character' ? !selectedCharacterId : !npcName.trim()}
             >
               Add Combatant
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Initiative Roll Dialog */}
+      <Dialog open={isInitiativeDialogOpen} onOpenChange={setIsInitiativeDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Dices className="w-5 h-5" />
+              Roll Initiative: {pendingCharacter?.name}
+            </DialogTitle>
+            <DialogDescription>
+              Roll 2d6 + DEX or INT DM + bonuses for initiative
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            {/* Characteristic Selection */}
+            <div>
+              <Label>Use Characteristic</Label>
+              <div className="grid grid-cols-2 gap-2 mt-1">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={initiativeCharacteristic === 'dex' ? 'default' : 'outline'}
+                  onClick={() => {
+                    setInitiativeCharacteristic('dex');
+                    if (pendingCharacter) handleRollInitiative('dex', pendingCharacter);
+                  }}
+                >
+                  DEX ({pendingCharacter ? (pendingCharacter.current_dexterity ?? pendingCharacter.dexterity) : 0})
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={initiativeCharacteristic === 'int' ? 'default' : 'outline'}
+                  onClick={() => {
+                    setInitiativeCharacteristic('int');
+                    if (pendingCharacter) handleRollInitiative('int', pendingCharacter);
+                  }}
+                >
+                  INT ({pendingCharacter?.intellect || 0})
+                </Button>
+              </div>
+            </div>
+
+            {/* Roll Display */}
+            <div className="border border-primary/30 bg-card/40 rounded p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">2d6 Roll:</span>
+                <span className="text-2xl font-bold">{initiativeRoll}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">
+                  {initiativeCharacteristic.toUpperCase()} DM:
+                </span>
+                <span className="text-xl font-bold">
+                  {pendingCharacter && getCharacteristicDM(
+                    initiativeCharacteristic === 'dex'
+                      ? (pendingCharacter.current_dexterity ?? pendingCharacter.dexterity)
+                      : pendingCharacter.intellect
+                  ) >= 0 ? '+' : ''}
+                  {pendingCharacter && getCharacteristicDM(
+                    initiativeCharacteristic === 'dex'
+                      ? (pendingCharacter.current_dexterity ?? pendingCharacter.dexterity)
+                      : pendingCharacter.intellect
+                  )}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Bonus:</span>
+                <Input
+                  type="number"
+                  value={initiativeBonus}
+                  onChange={(e) => setInitiativeBonus(parseInt(e.target.value) || 0)}
+                  className="h-8 w-20 text-center"
+                />
+              </div>
+              <div className="border-t border-primary/20 pt-2 flex items-center justify-between">
+                <span className="text-sm font-semibold">Total Initiative:</span>
+                <span className="text-3xl font-bold text-primary">
+                  {pendingCharacter && (
+                    initiativeRoll +
+                    getCharacteristicDM(
+                      initiativeCharacteristic === 'dex'
+                        ? (pendingCharacter.current_dexterity ?? pendingCharacter.dexterity)
+                        : pendingCharacter.intellect
+                    ) +
+                    initiativeBonus
+                  )}
+                </span>
+              </div>
+            </div>
+
+            {/* Re-roll Button */}
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => {
+                if (pendingCharacter) handleRollInitiative(initiativeCharacteristic, pendingCharacter);
+              }}
+            >
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Re-roll Initiative
+            </Button>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setIsInitiativeDialogOpen(false);
+              setPendingCharacter(null);
+            }}>
+              Cancel
+            </Button>
+            <Button onClick={handleConfirmInitiative}>
+              Add to Combat
             </Button>
           </DialogFooter>
         </DialogContent>
