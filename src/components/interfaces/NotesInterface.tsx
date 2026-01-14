@@ -128,28 +128,28 @@ export const NotesInterface: React.FC = () => {
   };
 
   return (
-    <div className="h-full flex flex-col bg-black text-[#00ff41] font-mono">
-      <div className="border-b border-[#00ff41]/30 p-4">
-        <h1 className="text-2xl font-bold text-[#00ff41]">
+    <div className="h-full flex flex-col bg-black text-terminal-primary font-mono">
+      <div className="border-b border-terminal-primary/30 p-4">
+        <h1 className="text-2xl font-bold text-terminal-primary">
           NOTES & HANDOUTS
         </h1>
-        <p className="text-[#00ff41]/70 text-sm mt-1">
+        <p className="text-terminal-primary/70 text-sm mt-1">
           Track campaign notes and view shared handouts
         </p>
       </div>
 
       <ScrollArea className="flex-1 p-4">
         <Tabs defaultValue="notes" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 bg-black border border-[#00ff41]/30">
+          <TabsList className="grid w-full grid-cols-2 bg-black border border-terminal-primary/30">
             <TabsTrigger
               value="notes"
-              className="data-[state=active]:bg-[#00ff41]/20 data-[state=active]:text-[#00ff41]"
+              className="data-[state=active]:bg-terminal-primary/20 data-[state=active]:text-terminal-primary"
             >
               Player Notes ({playerNotes.length})
             </TabsTrigger>
             <TabsTrigger
               value="handouts"
-              className="data-[state=active]:bg-[#00ff41]/20 data-[state=active]:text-[#00ff41]"
+              className="data-[state=active]:bg-terminal-primary/20 data-[state=active]:text-terminal-primary"
             >
               Handouts ({visibleHandouts.length})
             </TabsTrigger>
@@ -164,8 +164,8 @@ export const NotesInterface: React.FC = () => {
                   size="sm"
                   variant={selectedFolder === 'all' ? 'default' : 'outline'}
                   className={selectedFolder === 'all'
-                    ? 'bg-[#00ff41]/20 text-[#00ff41] border-[#00ff41]/50'
-                    : 'border-[#00ff41]/30 text-[#00ff41]/70 hover:bg-[#00ff41]/10'}
+                    ? 'bg-terminal-primary/20 text-terminal-primary border-terminal-primary/50'
+                    : 'border-terminal-primary/30 text-terminal-primary/70 hover:bg-terminal-primary/10'}
                 >
                   All ({playerNotes.length})
                 </Button>
@@ -176,8 +176,8 @@ export const NotesInterface: React.FC = () => {
                     size="sm"
                     variant={selectedFolder === folder.value ? 'default' : 'outline'}
                     className={selectedFolder === folder.value
-                      ? 'bg-[#00ff41]/20 text-[#00ff41] border-[#00ff41]/50'
-                      : 'border-[#00ff41]/30 text-[#00ff41]/70 hover:bg-[#00ff41]/10'}
+                      ? 'bg-terminal-primary/20 text-terminal-primary border-terminal-primary/50'
+                      : 'border-terminal-primary/30 text-terminal-primary/70 hover:bg-terminal-primary/10'}
                   >
                     <span className="mr-1">{folder.emoji}</span>
                     {folder.label}
@@ -189,16 +189,16 @@ export const NotesInterface: React.FC = () => {
                 onClick={() => setShowNewNoteForm(!showNewNoteForm)}
                 variant="outline"
                 size="sm"
-                className="border-[#00ff41]/50 text-[#00ff41] hover:bg-[#00ff41]/20 whitespace-nowrap"
+                className="border-terminal-primary/50 text-terminal-primary hover:bg-terminal-primary/20 whitespace-nowrap"
               >
                 + New Note
               </Button>
             </div>
 
             {showNewNoteForm && (
-              <Card className="bg-black border-[#00ff41]/50">
+              <Card className="bg-black border-terminal-primary/50">
                 <CardHeader>
-                  <CardTitle className="text-[#00ff41]">Create New Note</CardTitle>
+                  <CardTitle className="text-terminal-primary">Create New Note</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -207,20 +207,20 @@ export const NotesInterface: React.FC = () => {
                         placeholder="Note Title"
                         value={newNoteTitle}
                         onChange={(e) => setNewNoteTitle(e.target.value)}
-                        className="bg-black border-[#00ff41]/50 text-[#00ff41]"
+                        className="bg-black border-terminal-primary/50 text-terminal-primary"
                       />
                     </div>
                     <div>
                       <Select value={newNoteFolder} onValueChange={(v) => setNewNoteFolder(v as NoteFolder)}>
-                        <SelectTrigger className="bg-black border-[#00ff41]/50 text-[#00ff41]">
+                        <SelectTrigger className="bg-black border-terminal-primary/50 text-terminal-primary">
                           <SelectValue />
                         </SelectTrigger>
-                        <SelectContent className="bg-black border-[#00ff41]/50">
+                        <SelectContent className="bg-black border-terminal-primary/50">
                           {FOLDERS.map((folder) => (
                             <SelectItem
                               key={folder.value}
                               value={folder.value}
-                              className="text-[#00ff41] focus:bg-[#00ff41]/20 focus:text-[#00ff41]"
+                              className="text-terminal-primary focus:bg-terminal-primary/20 focus:text-terminal-primary"
                             >
                               {folder.emoji} {folder.label}
                             </SelectItem>
@@ -234,30 +234,30 @@ export const NotesInterface: React.FC = () => {
                     value={newNoteContent}
                     onChange={(e) => setNewNoteContent(e.target.value)}
                     rows={6}
-                    className="bg-black border-[#00ff41]/50 text-[#00ff41] resize-none"
+                    className="bg-black border-terminal-primary/50 text-terminal-primary resize-none"
                   />
 
                   {/* Thumbnail Upload Section for NPCs */}
                   {newNoteFolder === 'npcs' && (
                     <div className="space-y-2">
-                      <label className="text-xs text-[#00ff41]/70 uppercase">NPC Portrait</label>
+                      <label className="text-xs text-terminal-primary/70 uppercase">NPC Portrait</label>
                       <div className="flex items-center gap-2">
                         {newNoteThumbnailUrl && (
                           <div className="relative group">
                             <img
                               src={newNoteThumbnailUrl}
                               alt="NPC Thumbnail"
-                              className="w-20 h-20 object-cover rounded border border-[#00ff41]/30"
+                              className="w-20 h-20 object-cover rounded border border-terminal-primary/30"
                             />
                             <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1 rounded">
                               <Button
                                 onClick={handleEditNewNoteThumbnail}
                                 size="sm"
                                 variant="outline"
-                                className="h-6 w-6 p-0 border-[#00ff41]/50 hover:bg-[#00ff41]/20"
+                                className="h-6 w-6 p-0 border-terminal-primary/50 hover:bg-terminal-primary/20"
                                 title="Crop/Edit"
                               >
-                                <Crop className="h-3 w-3 text-[#00ff41]" />
+                                <Crop className="h-3 w-3 text-terminal-primary" />
                               </Button>
                               <Button
                                 onClick={handleRemoveNewNoteThumbnail}
@@ -280,9 +280,9 @@ export const NotesInterface: React.FC = () => {
                               className="hidden"
                               disabled={isUploadingNewNoteThumbnail}
                             />
-                            <div className="border border-[#00ff41]/50 rounded p-2 text-center hover:bg-[#00ff41]/10 transition-colors">
-                              <Upload className="h-4 w-4 mx-auto mb-1 text-[#00ff41]" />
-                              <span className="text-xs text-[#00ff41]">
+                            <div className="border border-terminal-primary/50 rounded p-2 text-center hover:bg-terminal-primary/10 transition-colors">
+                              <Upload className="h-4 w-4 mx-auto mb-1 text-terminal-primary" />
+                              <span className="text-xs text-terminal-primary">
                                 {isUploadingNewNoteThumbnail ? 'Processing...' : newNoteThumbnailUrl ? 'Change Portrait' : 'Upload Portrait'}
                               </span>
                             </div>
@@ -305,7 +305,7 @@ export const NotesInterface: React.FC = () => {
                   <div className="flex gap-2">
                     <Button
                       onClick={handleAddPlayerNote}
-                      className="bg-[#00ff41]/20 text-[#00ff41] hover:bg-[#00ff41]/30"
+                      className="bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
                     >
                       <Save className="h-4 w-4 mr-2" />
                       Save Note
@@ -319,7 +319,7 @@ export const NotesInterface: React.FC = () => {
                         setNewNoteThumbnailUrl('');
                       }}
                       variant="outline"
-                      className="border-[#00ff41]/50 text-[#00ff41] hover:bg-[#00ff41]/20"
+                      className="border-terminal-primary/50 text-terminal-primary hover:bg-terminal-primary/20"
                     >
                       <X className="h-4 w-4 mr-2" />
                       Cancel
@@ -330,8 +330,8 @@ export const NotesInterface: React.FC = () => {
             )}
 
             {filteredNotes.length === 0 ? (
-              <Card className="bg-black border-[#00ff41]/30">
-                <CardContent className="p-8 text-center text-[#00ff41]/70">
+              <Card className="bg-black border-terminal-primary/30">
+                <CardContent className="p-8 text-center text-terminal-primary/70">
                   {selectedFolder === 'all'
                     ? 'No notes yet. Create your first note to get started.'
                     : `No notes in ${FOLDERS.find(f => f.value === selectedFolder)?.label} folder.`}
@@ -377,8 +377,8 @@ export const NotesInterface: React.FC = () => {
             </div>
 
             {visibleHandouts.length === 0 ? (
-              <Card className="bg-black border-[#00ff41]/30">
-                <CardContent className="p-8 text-center text-[#00ff41]/70">
+              <Card className="bg-black border-terminal-primary/30">
+                <CardContent className="p-8 text-center text-terminal-primary/70">
                   No handouts available yet. Handouts will appear here when revealed.
                 </CardContent>
               </Card>
@@ -493,24 +493,24 @@ const NoteCard: React.FC<NoteCardProps> = ({
 
   if (isEditing) {
     return (
-      <Card className="bg-black border-[#00ff41]/50">
+      <Card className="bg-black border-terminal-primary/50">
         <CardHeader>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             <Input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="bg-black border-[#00ff41]/50 text-[#00ff41] font-semibold sm:col-span-2"
+              className="bg-black border-terminal-primary/50 text-terminal-primary font-semibold sm:col-span-2"
             />
             <Select value={folder} onValueChange={(v) => setFolder(v as NoteFolder)}>
-              <SelectTrigger className="bg-black border-[#00ff41]/50 text-[#00ff41]">
+              <SelectTrigger className="bg-black border-terminal-primary/50 text-terminal-primary">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="bg-black border-[#00ff41]/50">
+              <SelectContent className="bg-black border-terminal-primary/50">
                 {FOLDERS.map((f) => (
                   <SelectItem
                     key={f.value}
                     value={f.value}
-                    className="text-[#00ff41] focus:bg-[#00ff41]/20 focus:text-[#00ff41]"
+                    className="text-terminal-primary focus:bg-terminal-primary/20 focus:text-terminal-primary"
                   >
                     {f.emoji} {f.label}
                   </SelectItem>
@@ -524,30 +524,30 @@ const NoteCard: React.FC<NoteCardProps> = ({
             value={content}
             onChange={(e) => setContent(e.target.value)}
             rows={6}
-            className="bg-black border-[#00ff41]/50 text-[#00ff41] resize-none"
+            className="bg-black border-terminal-primary/50 text-terminal-primary resize-none"
           />
 
           {/* Thumbnail Upload Section */}
           {folder === 'npcs' && (
             <div className="space-y-2">
-              <label className="text-xs text-[#00ff41]/70 uppercase">NPC Portrait</label>
+              <label className="text-xs text-terminal-primary/70 uppercase">NPC Portrait</label>
               <div className="flex items-center gap-2">
                 {thumbnailUrl && (
                   <div className="relative group">
                     <img
                       src={thumbnailUrl}
                       alt="NPC Thumbnail"
-                      className="w-20 h-20 object-cover rounded border border-[#00ff41]/30"
+                      className="w-20 h-20 object-cover rounded border border-terminal-primary/30"
                     />
                     <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1 rounded">
                       <Button
                         onClick={handleEditThumbnail}
                         size="sm"
                         variant="outline"
-                        className="h-6 w-6 p-0 border-[#00ff41]/50 hover:bg-[#00ff41]/20"
+                        className="h-6 w-6 p-0 border-terminal-primary/50 hover:bg-terminal-primary/20"
                         title="Crop/Edit"
                       >
-                        <Crop className="h-3 w-3 text-[#00ff41]" />
+                        <Crop className="h-3 w-3 text-terminal-primary" />
                       </Button>
                       <Button
                         onClick={handleRemoveThumbnail}
@@ -570,9 +570,9 @@ const NoteCard: React.FC<NoteCardProps> = ({
                       className="hidden"
                       disabled={isUploadingThumbnail}
                     />
-                    <div className="border border-[#00ff41]/50 rounded p-2 text-center hover:bg-[#00ff41]/10 transition-colors">
-                      <Upload className="h-4 w-4 mx-auto mb-1 text-[#00ff41]" />
-                      <span className="text-xs text-[#00ff41]">
+                    <div className="border border-terminal-primary/50 rounded p-2 text-center hover:bg-terminal-primary/10 transition-colors">
+                      <Upload className="h-4 w-4 mx-auto mb-1 text-terminal-primary" />
+                      <span className="text-xs text-terminal-primary">
                         {isUploadingThumbnail ? 'Uploading...' : thumbnailUrl ? 'Change Portrait' : 'Upload Portrait'}
                       </span>
                     </div>
@@ -596,7 +596,7 @@ const NoteCard: React.FC<NoteCardProps> = ({
             <Button
               onClick={() => onSave({ title, content, folder, thumbnailUrl })}
               size="sm"
-              className="bg-[#00ff41]/20 text-[#00ff41] hover:bg-[#00ff41]/30"
+              className="bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
             >
               <Save className="h-4 w-4 mr-2" />
               Save
@@ -605,7 +605,7 @@ const NoteCard: React.FC<NoteCardProps> = ({
               onClick={onCancel}
               size="sm"
               variant="outline"
-              className="border-[#00ff41]/50 text-[#00ff41] hover:bg-[#00ff41]/20"
+              className="border-terminal-primary/50 text-terminal-primary hover:bg-terminal-primary/20"
             >
               <X className="h-4 w-4 mr-2" />
               Cancel
@@ -617,23 +617,23 @@ const NoteCard: React.FC<NoteCardProps> = ({
   }
 
   return (
-    <Card className="bg-black border-[#00ff41]/30 hover:border-[#00ff41]/50 transition-colors">
+    <Card className="bg-black border-terminal-primary/30 hover:border-terminal-primary/50 transition-colors">
       <CardHeader>
         <div className="flex justify-between items-start">
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-1">
               {folderInfo && <span className="text-lg">{folderInfo.emoji}</span>}
-              <CardTitle className="text-[#00ff41]">{note.title}</CardTitle>
+              <CardTitle className="text-terminal-primary">{note.title}</CardTitle>
             </div>
-            <CardDescription className="text-[#00ff41]/70 text-xs">
+            <CardDescription className="text-terminal-primary/70 text-xs">
               {new Date(note.updatedAt).toLocaleString()}
               {folderInfo && (
-                <Badge className="ml-2 bg-[#00ff41]/10 text-[#00ff41]/70 border-[#00ff41]/30 text-xs">
+                <Badge className="ml-2 bg-terminal-primary/10 text-terminal-primary/70 border-terminal-primary/30 text-xs">
                   {folderInfo.label}
                 </Badge>
               )}
               {showCreator && (
-                <Badge className="ml-2 bg-[#00ff41]/20 text-[#00ff41] border-[#00ff41]/50 text-xs">
+                <Badge className="ml-2 bg-terminal-primary/20 text-terminal-primary border-terminal-primary/50 text-xs">
                   {note.createdBy === 'gm' ? 'GM' : 'Player'}
                 </Badge>
               )}
@@ -644,7 +644,7 @@ const NoteCard: React.FC<NoteCardProps> = ({
               onClick={onEdit}
               size="sm"
               variant="ghost"
-              className="text-[#00ff41] hover:bg-[#00ff41]/20"
+              className="text-terminal-primary hover:bg-terminal-primary/20"
             >
               <Edit2 className="h-4 w-4" />
             </Button>
@@ -659,18 +659,18 @@ const NoteCard: React.FC<NoteCardProps> = ({
           </div>
         </div>
       </CardHeader>
-      <Separator className="bg-[#00ff41]/30" />
+      <Separator className="bg-terminal-primary/30" />
       <CardContent className="pt-4">
         {note.thumbnailUrl && (
           <div className="mb-3">
             <img
               src={note.thumbnailUrl}
               alt={note.title}
-              className="w-24 h-24 object-cover rounded border border-[#00ff41]/30"
+              className="w-24 h-24 object-cover rounded border border-terminal-primary/30"
             />
           </div>
         )}
-        <p className="text-[#00ff41]/90 whitespace-pre-wrap">{note.content}</p>
+        <p className="text-terminal-primary/90 whitespace-pre-wrap">{note.content}</p>
       </CardContent>
     </Card>
   );
@@ -684,26 +684,26 @@ const HandoutCard: React.FC<HandoutCardProps> = ({ handout }) => {
   const [showFullSize, setShowFullSize] = useState(false);
 
   return (
-    <Card className="bg-black border-[#00ff41]/30 hover:border-[#00ff41]/50 transition-colors">
+    <Card className="bg-black border-terminal-primary/30 hover:border-terminal-primary/50 transition-colors">
       <CardHeader className="p-3">
         <div className="flex items-start gap-2">
-          {handout.type === 'image' && <ImageIcon className="h-4 w-4 text-[#00ff41]/70 mt-1 flex-shrink-0" />}
-          {handout.type === 'video' && <Video className="h-4 w-4 text-[#00ff41]/70 mt-1 flex-shrink-0" />}
-          {handout.type === 'text' && <FileText className="h-4 w-4 text-[#00ff41]/70 mt-1 flex-shrink-0" />}
+          {handout.type === 'image' && <ImageIcon className="h-4 w-4 text-terminal-primary/70 mt-1 flex-shrink-0" />}
+          {handout.type === 'video' && <Video className="h-4 w-4 text-terminal-primary/70 mt-1 flex-shrink-0" />}
+          {handout.type === 'text' && <FileText className="h-4 w-4 text-terminal-primary/70 mt-1 flex-shrink-0" />}
           <div className="flex-1 min-w-0">
-            <CardTitle className="text-[#00ff41] text-sm truncate">{handout.title}</CardTitle>
+            <CardTitle className="text-terminal-primary text-sm truncate">{handout.title}</CardTitle>
             {handout.description && (
-              <CardDescription className="text-[#00ff41]/70 text-xs mt-1 line-clamp-2">
+              <CardDescription className="text-terminal-primary/70 text-xs mt-1 line-clamp-2">
                 {handout.description}
               </CardDescription>
             )}
           </div>
         </div>
       </CardHeader>
-      <Separator className="bg-[#00ff41]/30" />
+      <Separator className="bg-terminal-primary/30" />
       <CardContent className="p-3">
         {handout.type === 'text' && handout.content && (
-          <p className="text-[#00ff41]/90 text-xs whitespace-pre-wrap line-clamp-4">{handout.content}</p>
+          <p className="text-terminal-primary/90 text-xs whitespace-pre-wrap line-clamp-4">{handout.content}</p>
         )}
         {handout.type === 'image' && handout.mediaUrl && (
           <>
@@ -714,10 +714,10 @@ const HandoutCard: React.FC<HandoutCardProps> = ({ handout }) => {
               <img
                 src={handout.mediaUrl}
                 alt={handout.title}
-                className="w-full h-24 object-cover rounded border border-[#00ff41]/30"
+                className="w-full h-24 object-cover rounded border border-terminal-primary/30"
               />
               <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded">
-                <Maximize2 className="h-6 w-6 text-[#00ff41]" />
+                <Maximize2 className="h-6 w-6 text-terminal-primary" />
               </div>
             </div>
             <MediaDialog
@@ -737,10 +737,10 @@ const HandoutCard: React.FC<HandoutCardProps> = ({ handout }) => {
             >
               <video
                 src={handout.mediaUrl}
-                className="w-full h-24 object-cover rounded border border-[#00ff41]/30"
+                className="w-full h-24 object-cover rounded border border-terminal-primary/30"
               />
               <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded">
-                <Maximize2 className="h-6 w-6 text-[#00ff41]" />
+                <Maximize2 className="h-6 w-6 text-terminal-primary" />
               </div>
             </div>
             <MediaDialog

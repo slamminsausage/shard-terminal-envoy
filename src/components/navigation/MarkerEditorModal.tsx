@@ -118,7 +118,7 @@ export function MarkerEditorModal({
             {marker ? "EDIT MARKER" : "CREATE MARKER"}
           </span>
           <button
-            className="text-[#446655] hover:text-primary transition-colors"
+            className="text-terminal-text-dimmer hover:text-primary transition-colors"
             onClick={onClose}
             disabled={isSavingMarker}
           >
@@ -130,7 +130,7 @@ export function MarkerEditorModal({
           <div className="space-y-4">
             {/* Marker Type */}
             <div>
-              <label className="block text-sm text-[#446655] mb-2">
+              <label className="block text-sm text-terminal-text-dimmer mb-2">
                 MARKER TYPE *
               </label>
               <select
@@ -149,7 +149,7 @@ export function MarkerEditorModal({
 
             {/* Marker Label */}
             <div>
-              <label className="block text-sm text-[#446655] mb-2">
+              <label className="block text-sm text-terminal-text-dimmer mb-2">
                 LABEL *
               </label>
               <input
@@ -167,7 +167,7 @@ export function MarkerEditorModal({
             <div className="grid grid-cols-2 gap-4">
               {/* Icon Picker */}
               <div>
-                <label className="block text-sm text-[#446655] mb-2">
+                <label className="block text-sm text-terminal-text-dimmer mb-2">
                   ICON
                 </label>
                 <div className="relative">
@@ -179,7 +179,7 @@ export function MarkerEditorModal({
                     <span className="text-2xl marker-icon-display">
                       {formData.marker_icon || selectedTypeConfig?.icon || "⭐"}
                     </span>
-                    <span className="text-xs text-[#446655]">
+                    <span className="text-xs text-terminal-text-dimmer">
                       {formData.marker_icon ? "Custom" : "Default"}
                     </span>
                   </button>
@@ -189,7 +189,7 @@ export function MarkerEditorModal({
                         <button
                           key={icon}
                           type="button"
-                          className="text-2xl hover:bg-[#1a2420] p-1 rounded transition-colors icon-picker-button"
+                          className="text-2xl hover:bg-terminal-bg-border p-1 rounded transition-colors icon-picker-button"
                           onClick={() => {
                             setFormData({ ...formData, marker_icon: icon });
                             setShowIconPicker(false);
@@ -206,7 +206,7 @@ export function MarkerEditorModal({
 
               {/* Color Picker */}
               <div>
-                <label className="block text-sm text-[#446655] mb-2">
+                <label className="block text-sm text-terminal-text-dimmer mb-2">
                   COLOR
                 </label>
                 <div className="flex gap-2">
@@ -230,7 +230,7 @@ export function MarkerEditorModal({
 
             {/* Description */}
             <div>
-              <label className="block text-sm text-[#446655] mb-2">
+              <label className="block text-sm text-terminal-text-dimmer mb-2">
                 DESCRIPTION
               </label>
               <textarea
@@ -240,30 +240,30 @@ export function MarkerEditorModal({
                 placeholder="What players see about this marker..."
                 maxLength={500}
               />
-              <div className="text-xs text-[#446655] mt-1">
+              <div className="text-xs text-terminal-text-dimmer mt-1">
                 {formData.description?.length || 0} / 500
               </div>
             </div>
 
             {/* GM Notes */}
             <div>
-              <label className="block text-sm text-[#446655] mb-2">
+              <label className="block text-sm text-terminal-text-dimmer mb-2">
                 GM NOTES
               </label>
               <textarea
-                className="terminal-input w-full min-h-[80px] resize-y font-mono text-sm border-[#ff6600]"
+                className="terminal-input w-full min-h-[80px] resize-y font-mono text-sm border-terminal-warning"
                 value={formData.gm_notes}
                 onChange={(e) => setFormData({ ...formData, gm_notes: e.target.value })}
                 placeholder="GM-only information (for future GM mode)..."
                 maxLength={500}
               />
-              <div className="text-xs text-[#ff6600] mt-1">
+              <div className="text-xs text-terminal-warning mt-1">
                 For future GM mode • {formData.gm_notes?.length || 0} / 500
               </div>
             </div>
 
             {/* Options */}
-            <div className="space-y-2 border-t border-[#1a2420] pt-4">
+            <div className="space-y-2 border-t border-terminal-bg-border pt-4">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="checkbox"
@@ -271,7 +271,7 @@ export function MarkerEditorModal({
                   checked={formData.is_active !== false}
                   onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
                 />
-                <span className="text-sm text-[#00aa00]">Active (visible on map)</span>
+                <span className="text-sm text-terminal-primary-mid">Active (visible on map)</span>
               </label>
 
               <label className="flex items-center gap-2 cursor-pointer">
@@ -283,7 +283,7 @@ export function MarkerEditorModal({
                     setFormData({ ...formData, is_visible_to_players: e.target.checked })
                   }
                 />
-                <span className="text-sm text-[#00aa00]">
+                <span className="text-sm text-terminal-primary-mid">
                   Visible to players (for future GM mode)
                 </span>
               </label>
@@ -291,7 +291,7 @@ export function MarkerEditorModal({
           </div>
 
           {/* Actions */}
-          <div className="flex justify-end gap-2 mt-6 pt-4 border-t border-[#1a2420]">
+          <div className="flex justify-end gap-2 mt-6 pt-4 border-t border-terminal-bg-border">
             <button
               type="button"
               className="terminal-btn secondary"

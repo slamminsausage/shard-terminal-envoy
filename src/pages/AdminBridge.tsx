@@ -103,7 +103,7 @@ export default function AdminBridge() {
         </button>
       </div>
       <div className="flex justify-end">
-        <span className={`text-xs font-mono px-3 py-1 rounded border ${isOnline ? "border-[#00aa55] text-[#00ff88]" : "border-[#ff4455] text-[#ff8899]"}`}>
+        <span className={`text-xs font-mono px-3 py-1 rounded border ${isOnline ? "border-terminal-primary-mid text-terminal-primary-light" : "border-terminal-danger-alt text-terminal-danger-light"}`}>
           {isOnline ? "LIVE (Supabase)" : "OFFLINE (local fallback)"}
         </span>
       </div>

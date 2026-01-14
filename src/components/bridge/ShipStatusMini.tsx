@@ -25,7 +25,7 @@ export function ShipStatusMini({ ship, linkedVehicle, alertLevel }: ShipStatusMi
   // Weapons status based on alert level
   const isWeaponsArmed = alertLevel === "combat" || alertLevel === "emergency";
   const weaponsStatus = isWeaponsArmed ? "ARMED" : "OFFLINE";
-  const weaponsColor = isWeaponsArmed ? "text-[#ff4455]" : "text-[#446655]";
+  const weaponsColor = isWeaponsArmed ? "text-terminal-danger-alt" : "text-terminal-text-dimmer";
 
   // J-Drive toggle handler
   const toggleJDrive = () => {
@@ -33,26 +33,26 @@ export function ShipStatusMini({ ship, linkedVehicle, alertLevel }: ShipStatusMi
   };
 
   const statusColor = (value: number) => {
-    if (value >= 75) return "text-[#00ff88]";
-    if (value >= 50) return "text-[#ffaa00]";
-    return "text-[#ff4455]";
+    if (value >= 75) return "text-terminal-primary-light";
+    if (value >= 50) return "text-terminal-warning-alt";
+    return "text-terminal-danger-alt";
   };
 
   return (
     <>
-      <div className="status-panel bg-[#0d1210] border border-[#1a2420] rounded overflow-hidden">
-        <div className="panel-header flex justify-between items-center px-4 py-2 bg-[#00ff8808] border-b border-[#1a2420]">
-          <span className="font-['Orbitron'] text-xs tracking-[3px] text-[#446655]">SHIP STATUS</span>
+      <div className="status-panel bg-terminal-bg-panel-alt border border-terminal-bg-border rounded overflow-hidden">
+        <div className="panel-header flex justify-between items-center px-4 py-2 bg-terminal-primary-light/5 border-b border-terminal-bg-border">
+          <span className="font-['Orbitron'] text-xs tracking-[3px] text-terminal-text-dimmer">SHIP STATUS</span>
         </div>
 
         <div className="grid grid-cols-2 gap-x-4 gap-y-2 p-3 text-xs">
           {/* Hull - Clickable to open modal */}
           <div
-            className="flex justify-between cursor-pointer hover:bg-[#1a2420] rounded px-1 -mx-1 transition-colors"
+            className="flex justify-between cursor-pointer hover:bg-terminal-bg-border rounded px-1 -mx-1 transition-colors"
             onClick={() => setShowHullModal(true)}
             title="Click to adjust hull points"
           >
-            <span className="text-[#446655]">HULL</span>
+            <span className="text-terminal-text-dimmer">HULL</span>
             <span className={`font-['Orbitron'] font-bold ${statusColor(hullPercent)}`}>
               {hullPercent}%
             </span>
@@ -60,31 +60,31 @@ export function ShipStatusMini({ ship, linkedVehicle, alertLevel }: ShipStatusMi
 
           {/* Armor (was Shields) */}
           <div className="flex justify-between">
-            <span className="text-[#446655]">ARMOR</span>
-            <span className="font-['Orbitron'] font-bold text-[#00ff88]">{armorValue}</span>
+            <span className="text-terminal-text-dimmer">ARMOR</span>
+            <span className="font-['Orbitron'] font-bold text-terminal-primary-light">{armorValue}</span>
           </div>
 
           {/* M-Drive */}
           <div className="flex justify-between">
-            <span className="text-[#446655]">M-DRIVE</span>
-            <span className="font-['Orbitron'] font-bold text-[#00ff88]">ONLINE</span>
+            <span className="text-terminal-text-dimmer">M-DRIVE</span>
+            <span className="font-['Orbitron'] font-bold text-terminal-primary-light">ONLINE</span>
           </div>
 
           {/* J-Drive - Clickable to toggle */}
           <div
-            className="flex justify-between cursor-pointer hover:bg-[#1a2420] rounded px-1 -mx-1 transition-colors"
+            className="flex justify-between cursor-pointer hover:bg-terminal-bg-border rounded px-1 -mx-1 transition-colors"
             onClick={toggleJDrive}
             title="Click to toggle J-Drive status"
           >
-            <span className="text-[#446655]">J-DRIVE</span>
-            <span className={`font-['Orbitron'] font-bold ${jDriveStatus === "ONLINE" ? "text-[#00ff88]" : "text-[#ffaa00]"}`}>
+            <span className="text-terminal-text-dimmer">J-DRIVE</span>
+            <span className={`font-['Orbitron'] font-bold ${jDriveStatus === "ONLINE" ? "text-terminal-primary-light" : "text-terminal-warning-alt"}`}>
               {jDriveStatus}
             </span>
           </div>
 
           {/* Weapons - Toggles based on alert level */}
           <div className="flex justify-between">
-            <span className="text-[#446655]">WEAPONS</span>
+            <span className="text-terminal-text-dimmer">WEAPONS</span>
             <span className={`font-['Orbitron'] font-bold ${weaponsColor}`}>
               {weaponsStatus}
             </span>
@@ -92,8 +92,8 @@ export function ShipStatusMini({ ship, linkedVehicle, alertLevel }: ShipStatusMi
 
           {/* Sensors */}
           <div className="flex justify-between">
-            <span className="text-[#446655]">SENSORS</span>
-            <span className="font-['Orbitron'] font-bold text-[#00ff88]">ACTIVE</span>
+            <span className="text-terminal-text-dimmer">SENSORS</span>
+            <span className="font-['Orbitron'] font-bold text-terminal-primary-light">ACTIVE</span>
           </div>
         </div>
       </div>

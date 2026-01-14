@@ -17,14 +17,14 @@ export function WorldInfoPanel() {
         {selectedWorld ? (
           <>
             {/* World Name & Basic Info */}
-            <div className="text-center border-b border-[#1a2420] pb-3">
+            <div className="text-center border-b border-terminal-bg-border pb-3">
               <h3 className="text-xl font-['Orbitron'] font-bold text-primary drop-shadow-[0_0_10px_rgba(0,255,0,0.4)]">
                 {selectedWorld.name}
               </h3>
-              <div className="text-[#00ccff] font-mono text-sm mt-1">
+              <div className="text-terminal-secondary font-mono text-sm mt-1">
                 {selectedWorld.uwp}
               </div>
-              <div className="text-[#446655] text-xs mt-1">
+              <div className="text-terminal-text-dimmer text-xs mt-1">
                 {selectedWorld.sector}
               </div>
             </div>
@@ -32,26 +32,26 @@ export function WorldInfoPanel() {
             {/* UWP Breakdown */}
             {uwp && (
               <div className="grid grid-cols-2 gap-2 text-xs">
-                <div className="p-2 bg-black/30 border border-[#1a2420]">
-                  <div className="text-[#446655]">STARPORT</div>
+                <div className="p-2 bg-black/30 border border-terminal-bg-border">
+                  <div className="text-terminal-text-dimmer">STARPORT</div>
                   <div className="text-primary font-bold">{uwp.starport}</div>
-                  <div className="text-[#446655] text-[10px] mt-1">
+                  <div className="text-terminal-text-dimmer text-[10px] mt-1">
                     {getStarportDescription(uwp.starport).split('.')[0]}
                   </div>
                 </div>
-                <div className="p-2 bg-black/30 border border-[#1a2420]">
-                  <div className="text-[#446655]">TECH LEVEL</div>
-                  <div className="text-[#00ccff] font-bold">TL{uwp.techLevel}</div>
+                <div className="p-2 bg-black/30 border border-terminal-bg-border">
+                  <div className="text-terminal-text-dimmer">TECH LEVEL</div>
+                  <div className="text-terminal-secondary font-bold">TL{uwp.techLevel}</div>
                 </div>
-                <div className="p-2 bg-black/30 border border-[#1a2420]">
-                  <div className="text-[#446655]">POPULATION</div>
+                <div className="p-2 bg-black/30 border border-terminal-bg-border">
+                  <div className="text-terminal-text-dimmer">POPULATION</div>
                   <div className="text-primary font-bold">
                     10^{uwp.population}
                   </div>
                 </div>
-                <div className="p-2 bg-black/30 border border-[#1a2420]">
-                  <div className="text-[#446655]">LAW LEVEL</div>
-                  <div className="text-[#ffaa00] font-bold">{uwp.lawLevel}</div>
+                <div className="p-2 bg-black/30 border border-terminal-bg-border">
+                  <div className="text-terminal-text-dimmer">LAW LEVEL</div>
+                  <div className="text-terminal-warning-alt font-bold">{uwp.lawLevel}</div>
                 </div>
               </div>
             )}
@@ -61,9 +61,9 @@ export function WorldInfoPanel() {
               <div
                 className={`p-2 border text-sm ${
                   selectedWorld.zone === "A" || selectedWorld.zone === "R"
-                    ? "border-[#ffaa00] text-[#ffaa00]"
+                    ? "border-terminal-warning-alt text-terminal-warning-alt"
                     : selectedWorld.zone === "F" || selectedWorld.zone === "X"
-                      ? "border-[#ff4455] text-[#ff4455]"
+                      ? "border-terminal-danger-alt text-terminal-danger-alt"
                       : "border-primary text-primary"
                 }`}
               >
@@ -74,15 +74,15 @@ export function WorldInfoPanel() {
             {/* Allegiance */}
             {selectedWorld.allegiance && (
               <div className="text-xs">
-                <span className="text-[#446655]">ALLEGIANCE: </span>
-                <span className="text-[#00ccff]">{selectedWorld.allegiance}</span>
+                <span className="text-terminal-text-dimmer">ALLEGIANCE: </span>
+                <span className="text-terminal-secondary">{selectedWorld.allegiance}</span>
               </div>
             )}
 
             {/* Remarks */}
             {selectedWorld.remarks && (
               <div className="text-xs">
-                <span className="text-[#446655]">REMARKS: </span>
+                <span className="text-terminal-text-dimmer">REMARKS: </span>
                 <span className="text-[#888888]">{selectedWorld.remarks}</span>
               </div>
             )}
@@ -90,45 +90,45 @@ export function WorldInfoPanel() {
         ) : (
           <>
             {/* Placeholder when no world selected */}
-            <div className="text-center border-b border-[#1a2420] pb-3">
-              <h3 className="text-xl font-['Orbitron'] font-bold text-[#446655] drop-shadow-[0_0_10px_rgba(0,255,0,0.2)]">
+            <div className="text-center border-b border-terminal-bg-border pb-3">
+              <h3 className="text-xl font-['Orbitron'] font-bold text-terminal-text-dimmer drop-shadow-[0_0_10px_rgba(0,255,0,0.2)]">
                 ????????
               </h3>
-              <div className="text-[#446655] font-mono text-sm mt-1">
+              <div className="text-terminal-text-dimmer font-mono text-sm mt-1">
                 ???????-?
               </div>
-              <div className="text-[#446655] text-xs mt-1">
+              <div className="text-terminal-text-dimmer text-xs mt-1">
                 ???? ????
               </div>
             </div>
 
             {/* UWP Breakdown Placeholder */}
             <div className="grid grid-cols-2 gap-2 text-xs">
-              <div className="p-2 bg-black/30 border border-[#1a2420]">
-                <div className="text-[#446655]">STARPORT</div>
-                <div className="text-[#446655] font-bold">?</div>
-                <div className="text-[#446655] text-[10px] mt-1">
+              <div className="p-2 bg-black/30 border border-terminal-bg-border">
+                <div className="text-terminal-text-dimmer">STARPORT</div>
+                <div className="text-terminal-text-dimmer font-bold">?</div>
+                <div className="text-terminal-text-dimmer text-[10px] mt-1">
                   Unknown
                 </div>
               </div>
-              <div className="p-2 bg-black/30 border border-[#1a2420]">
-                <div className="text-[#446655]">TECH LEVEL</div>
-                <div className="text-[#446655] font-bold">TL?</div>
+              <div className="p-2 bg-black/30 border border-terminal-bg-border">
+                <div className="text-terminal-text-dimmer">TECH LEVEL</div>
+                <div className="text-terminal-text-dimmer font-bold">TL?</div>
               </div>
-              <div className="p-2 bg-black/30 border border-[#1a2420]">
-                <div className="text-[#446655]">POPULATION</div>
-                <div className="text-[#446655] font-bold">
+              <div className="p-2 bg-black/30 border border-terminal-bg-border">
+                <div className="text-terminal-text-dimmer">POPULATION</div>
+                <div className="text-terminal-text-dimmer font-bold">
                   10^?
                 </div>
               </div>
-              <div className="p-2 bg-black/30 border border-[#1a2420]">
-                <div className="text-[#446655]">LAW LEVEL</div>
-                <div className="text-[#446655] font-bold">?</div>
+              <div className="p-2 bg-black/30 border border-terminal-bg-border">
+                <div className="text-terminal-text-dimmer">LAW LEVEL</div>
+                <div className="text-terminal-text-dimmer font-bold">?</div>
               </div>
             </div>
 
             {/* Empty state message */}
-            <div className="text-center py-4 text-[#446655] text-sm">
+            <div className="text-center py-4 text-terminal-text-dimmer text-sm">
               Click on a hex to view world information
             </div>
           </>

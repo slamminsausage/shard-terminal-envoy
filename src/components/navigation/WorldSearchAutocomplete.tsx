@@ -144,16 +144,16 @@ export function WorldSearchAutocomplete({
       case "world":
         return "text-primary";
       case "sector":
-        return "text-[#00ccff]";
+        return "text-terminal-secondary";
       case "subsector":
-        return "text-[#ffaa00]";
+        return "text-terminal-warning-alt";
     }
   };
 
   return (
     <div ref={containerRef} className={`relative ${className}`}>
       {label && (
-        <label className="text-[#446655] text-xs block mb-1">{label}</label>
+        <label className="text-terminal-text-dimmer text-xs block mb-1">{label}</label>
       )}
       <div className="relative">
         <input
@@ -168,14 +168,14 @@ export function WorldSearchAutocomplete({
         />
         {isLoading && (
           <div className="absolute right-2 top-1/2 -translate-y-1/2">
-            <Loader2 className="w-4 h-4 animate-spin text-[#446655]" />
+            <Loader2 className="w-4 h-4 animate-spin text-terminal-text-dimmer" />
           </div>
         )}
       </div>
 
       {/* Dropdown */}
       {isOpen && results.length > 0 && (
-        <div className="absolute z-50 w-full mt-1 bg-[#0a0e0c] border border-primary/30 shadow-lg shadow-primary/10 max-h-64 overflow-y-auto">
+        <div className="absolute z-50 w-full mt-1 bg-terminal-bg-darker border border-primary/30 shadow-lg shadow-primary/10 max-h-64 overflow-y-auto">
           {results.map((result, index) => (
             <button
               key={`${result.type}-${result.sector}-${result.hex}-${index}`}
@@ -192,18 +192,18 @@ export function WorldSearchAutocomplete({
               <div className="flex-1 min-w-0">
                 <div className="font-semibold truncate">{result.name}</div>
                 {result.type === "world" && (
-                  <div className="text-xs text-[#446655]">
+                  <div className="text-xs text-terminal-text-dimmer">
                     {result.sector} {result.hex}
                   </div>
                 )}
                 {result.type !== "world" && (
-                  <div className="text-xs text-[#446655]">
+                  <div className="text-xs text-terminal-text-dimmer">
                     {result.type === "sector" ? "Sector" : "Subsector"}
                   </div>
                 )}
               </div>
               {result.type === "world" && (
-                <span className="text-[#00ccff] text-xs font-mono">
+                <span className="text-terminal-secondary text-xs font-mono">
                   {result.hex}
                 </span>
               )}
@@ -214,7 +214,7 @@ export function WorldSearchAutocomplete({
 
       {/* No results message */}
       {isOpen && !isLoading && value.length >= 2 && results.length === 0 && (
-        <div className="absolute z-50 w-full mt-1 bg-[#0a0e0c] border border-primary/30 shadow-lg shadow-primary/10 p-3 text-center text-[#446655] text-sm">
+        <div className="absolute z-50 w-full mt-1 bg-terminal-bg-darker border border-primary/30 shadow-lg shadow-primary/10 p-3 text-center text-terminal-text-dimmer text-sm">
           No worlds found matching "{value}"
         </div>
       )}

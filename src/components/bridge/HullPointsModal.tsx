@@ -19,9 +19,9 @@ export function HullPointsModal({ vehicle, onClose }: HullPointsModalProps) {
   const hullPercent = maxHull > 0 ? Math.round((currentHull / maxHull) * 100) : 100;
 
   const statusColor = () => {
-    if (hullPercent >= 75) return "text-[#00ff88]";
-    if (hullPercent >= 50) return "text-[#ffaa00]";
-    return "text-[#ff4455]";
+    if (hullPercent >= 75) return "text-terminal-primary-light";
+    if (hullPercent >= 50) return "text-terminal-warning-alt";
+    return "text-terminal-danger-alt";
   };
 
   const handleAdjust = (amount: number) => {
@@ -48,13 +48,13 @@ export function HullPointsModal({ vehicle, onClose }: HullPointsModalProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80">
-      <div className="bg-[#0d1210] border border-[#1a2420] rounded-lg shadow-[0_0_32px_rgba(0,255,0,0.2)] w-full max-w-sm mx-4">
+      <div className="bg-terminal-bg-panel-alt border border-terminal-bg-border rounded-lg shadow-[0_0_32px_rgba(0,255,0,0.2)] w-full max-w-sm mx-4">
         {/* Header */}
-        <div className="flex justify-between items-center px-4 py-3 border-b border-[#1a2420] bg-[#00ff8808]">
-          <span className="font-['Orbitron'] text-sm tracking-[2px] text-[#00ff88]">HULL STATUS</span>
+        <div className="flex justify-between items-center px-4 py-3 border-b border-terminal-bg-border bg-terminal-primary-light/5">
+          <span className="font-['Orbitron'] text-sm tracking-[2px] text-terminal-primary-light">HULL STATUS</span>
           <button
             onClick={onClose}
-            className="text-[#446655] hover:text-[#00ff88] transition-colors"
+            className="text-terminal-text-dimmer hover:text-terminal-primary-light transition-colors"
           >
             ✕
           </button>
@@ -64,28 +64,28 @@ export function HullPointsModal({ vehicle, onClose }: HullPointsModalProps) {
         <div className="p-4 space-y-4">
           {/* Ship Name */}
           <div className="text-center">
-            <div className="text-[#446655] text-xs uppercase tracking-wider mb-1">Ship</div>
-            <div className="font-['Orbitron'] text-[#00ff88]">{vehicle.name}</div>
+            <div className="text-terminal-text-dimmer text-xs uppercase tracking-wider mb-1">Ship</div>
+            <div className="font-['Orbitron'] text-terminal-primary-light">{vehicle.name}</div>
           </div>
 
           {/* Hull Display */}
           <div className="text-center">
-            <div className="text-[#446655] text-xs uppercase tracking-wider mb-2">Hull Integrity</div>
+            <div className="text-terminal-text-dimmer text-xs uppercase tracking-wider mb-2">Hull Integrity</div>
             <div className={`font-['Orbitron'] text-4xl font-bold ${statusColor()}`}>
               {hullPercent}%
             </div>
-            <div className="text-[#446655] text-sm mt-1">
+            <div className="text-terminal-text-dimmer text-sm mt-1">
               {currentHull} / {maxHull} HP
             </div>
           </div>
 
           {/* Hull Progress Bar */}
-          <div className="h-3 bg-[#1a2420] rounded overflow-hidden">
+          <div className="h-3 bg-terminal-bg-border rounded overflow-hidden">
             <div
               className={`h-full transition-all duration-300 ${
-                hullPercent >= 75 ? "bg-[#00ff88]" :
-                hullPercent >= 50 ? "bg-[#ffaa00]" :
-                "bg-[#ff4455]"
+                hullPercent >= 75 ? "bg-terminal-primary-light" :
+                hullPercent >= 50 ? "bg-terminal-warning-alt" :
+                "bg-terminal-danger-alt"
               }`}
               style={{ width: `${hullPercent}%` }}
             />
@@ -97,7 +97,7 @@ export function HullPointsModal({ vehicle, onClose }: HullPointsModalProps) {
               variant="outline"
               size="sm"
               onClick={() => handleAdjust(-5)}
-              className="border-[#ff4455] text-[#ff4455] hover:bg-[#ff4455]/20"
+              className="border-terminal-danger-alt text-terminal-danger-alt hover:bg-terminal-danger-alt/20"
             >
               -5
             </Button>
@@ -105,7 +105,7 @@ export function HullPointsModal({ vehicle, onClose }: HullPointsModalProps) {
               variant="outline"
               size="sm"
               onClick={() => handleAdjust(-1)}
-              className="border-[#ff4455] text-[#ff4455] hover:bg-[#ff4455]/20"
+              className="border-terminal-danger-alt text-terminal-danger-alt hover:bg-terminal-danger-alt/20"
             >
               -1
             </Button>
@@ -113,7 +113,7 @@ export function HullPointsModal({ vehicle, onClose }: HullPointsModalProps) {
               variant="outline"
               size="sm"
               onClick={() => handleAdjust(1)}
-              className="border-[#00ff88] text-[#00ff88] hover:bg-[#00ff88]/20"
+              className="border-terminal-primary-light text-terminal-primary-light hover:bg-terminal-primary-light/20"
             >
               +1
             </Button>
@@ -121,7 +121,7 @@ export function HullPointsModal({ vehicle, onClose }: HullPointsModalProps) {
               variant="outline"
               size="sm"
               onClick={() => handleAdjust(5)}
-              className="border-[#00ff88] text-[#00ff88] hover:bg-[#00ff88]/20"
+              className="border-terminal-primary-light text-terminal-primary-light hover:bg-terminal-primary-light/20"
             >
               +5
             </Button>
@@ -129,7 +129,7 @@ export function HullPointsModal({ vehicle, onClose }: HullPointsModalProps) {
 
           {/* Direct Input */}
           <div className="flex items-center gap-2">
-            <span className="text-[#446655] text-xs uppercase">Set HP:</span>
+            <span className="text-terminal-text-dimmer text-xs uppercase">Set HP:</span>
             <Input
               type="number"
               value={currentHull}
@@ -139,9 +139,9 @@ export function HullPointsModal({ vehicle, onClose }: HullPointsModalProps) {
               }}
               min={0}
               max={maxHull}
-              className="h-8 w-20 text-center bg-[#0a0e0c] border-[#1a2420] text-[#00ff88]"
+              className="h-8 w-20 text-center bg-terminal-bg-darker border-terminal-bg-border text-terminal-primary-light"
             />
-            <span className="text-[#446655] text-xs">/ {maxHull}</span>
+            <span className="text-terminal-text-dimmer text-xs">/ {maxHull}</span>
           </div>
 
           {/* Quick Actions */}
@@ -150,7 +150,7 @@ export function HullPointsModal({ vehicle, onClose }: HullPointsModalProps) {
               variant="outline"
               size="sm"
               onClick={() => setCurrentHull(maxHull)}
-              className="flex-1 border-[#00ff88] text-[#00ff88] hover:bg-[#00ff88]/20"
+              className="flex-1 border-terminal-primary-light text-terminal-primary-light hover:bg-terminal-primary-light/20"
             >
               Full Repair
             </Button>
@@ -158,7 +158,7 @@ export function HullPointsModal({ vehicle, onClose }: HullPointsModalProps) {
               variant="outline"
               size="sm"
               onClick={() => setCurrentHull(0)}
-              className="flex-1 border-[#ff4455] text-[#ff4455] hover:bg-[#ff4455]/20"
+              className="flex-1 border-terminal-danger-alt text-terminal-danger-alt hover:bg-terminal-danger-alt/20"
             >
               Destroyed
             </Button>
@@ -166,18 +166,18 @@ export function HullPointsModal({ vehicle, onClose }: HullPointsModalProps) {
         </div>
 
         {/* Footer */}
-        <div className="flex gap-2 p-4 border-t border-[#1a2420]">
+        <div className="flex gap-2 p-4 border-t border-terminal-bg-border">
           <Button
             variant="outline"
             onClick={onClose}
-            className="flex-1 border-[#446655] text-[#446655] hover:bg-[#446655]/20"
+            className="flex-1 border-terminal-text-dimmer text-terminal-text-dimmer hover:bg-terminal-text-dimmer/20"
           >
             Cancel
           </Button>
           <Button
             onClick={handleSave}
             disabled={isSaving}
-            className="flex-1 bg-[#00ff88] text-black hover:bg-[#00cc66]"
+            className="flex-1 bg-terminal-primary-light text-black hover:bg-terminal-primary-mid"
           >
             {isSaving ? "Saving..." : "Save Changes"}
           </Button>

@@ -140,15 +140,15 @@ export function BridgeConsole() {
   };
 
   return (
-    <div className="bridge-console min-h-screen md:h-screen md:max-h-screen flex flex-col bg-[#0a0e0c] text-[#00ff88] font-mono crt-container border border-primary/30 rounded shadow-[0_0_32px_rgba(0,255,0,0.12)] overflow-hidden">
+    <div className="bridge-console min-h-screen md:h-screen md:max-h-screen flex flex-col bg-terminal-bg-darker text-terminal-primary-light font-mono crt-container border border-primary/30 rounded shadow-[0_0_32px_rgba(0,255,0,0.12)] overflow-hidden">
       {/* Header */}
-      <header className="bridge-header flex flex-col md:flex-row justify-between md:items-center gap-2 px-4 md:px-6 py-3 border-b border-[#1a2420] bg-gradient-to-b from-[#00ff8808] to-transparent">
+      <header className="bridge-header flex flex-col md:flex-row justify-between md:items-center gap-2 px-4 md:px-6 py-3 border-b border-terminal-bg-border bg-gradient-to-b from-terminal-primary-light/5 to-transparent">
         <div className="ship-identity">
-          <span className="font-['Orbitron'] font-black text-base md:text-xl tracking-[2px] md:tracking-[4px] drop-shadow-[0_0_20px_#00ff88]">
+          <span className="font-['Orbitron'] font-black text-base md:text-xl tracking-[2px] md:tracking-[4px] drop-shadow-[0_0_20px_var(--primary-light)]">
             {linkedVehicle?.name || playerShip?.name || "NO SHIP SELECTED"}
           </span>
           {(linkedVehicle?.class_type || playerShip?.shipClass) && (
-            <span className="text-[#446655] text-xs md:text-sm ml-2 md:ml-4">
+            <span className="text-terminal-text-dimmer text-xs md:text-sm ml-2 md:ml-4">
               {linkedVehicle?.class_type || playerShip?.shipClass} - {linkedVehicle?.tonnage || playerShip?.tonnage || "?"}t
             </span>
           )}
@@ -159,15 +159,15 @@ export function BridgeConsole() {
             <div
               className={`w-2 h-2 rounded-full animate-pulse ${
                 bridgeState.alertLevel === "emergency"
-                  ? "bg-[#ff4455] shadow-[0_0_8px_#ff4455]"
+                  ? "bg-terminal-danger-alt shadow-[0_0_8px_var(--danger-alt)]"
                   : bridgeState.alertLevel === "combat"
-                    ? "bg-[#ffaa00] shadow-[0_0_8px_#ffaa00]"
-                    : "bg-[#00ff88] shadow-[0_0_8px_#00ff88]"
+                    ? "bg-terminal-warning-alt shadow-[0_0_8px_var(--warning-alt)]"
+                    : "bg-terminal-primary-light shadow-[0_0_8px_var(--primary-light)]"
               }`}
             />
             <span className="uppercase">{bridgeState.alertLevel}</span>
           </div>
-          <div className="font-['Orbitron'] text-[#00ff88]">
+          <div className="font-['Orbitron'] text-terminal-primary-light">
             {new Date().toLocaleTimeString("en-US", { hour12: false })}
           </div>
         </div>
@@ -175,9 +175,9 @@ export function BridgeConsole() {
       <div className="px-3 md:px-6 pb-2 flex flex-col md:flex-row gap-2 md:gap-0 justify-between items-start md:items-center">
         {/* Ship Selector */}
         <div className="flex items-center gap-2 md:gap-3 w-full md:w-auto">
-          <span className="text-[0.6rem] md:text-xs text-[#446655] tracking-[2px] whitespace-nowrap">ACTIVE SHIP:</span>
+          <span className="text-[0.6rem] md:text-xs text-terminal-text-dimmer tracking-[2px] whitespace-nowrap">ACTIVE SHIP:</span>
           <select
-            className="bg-[#0d1210] border border-[#1a2420] px-2 md:px-3 py-1 text-[0.65rem] md:text-xs font-mono text-[#00ff88] rounded focus:outline-none focus:border-[#00ff88] transition-colors flex-1 md:flex-none"
+            className="bg-terminal-bg-panel-alt border border-terminal-bg-border px-2 md:px-3 py-1 text-[0.65rem] md:text-xs font-mono text-terminal-primary-light rounded focus:outline-none focus:border-terminal-primary-light transition-colors flex-1 md:flex-none"
             value={playerShip?.vehicleId || selectedVehicleId}
             onChange={(e) => handleShipChange(e.target.value)}
           >
@@ -191,7 +191,7 @@ export function BridgeConsole() {
               ))}
           </select>
         </div>
-        <span className={`text-[0.65rem] md:text-xs font-mono px-2 md:px-3 py-1 rounded border ${isOnline ? "border-[#00aa55] text-[#00ff88]" : "border-[#ff4455] text-[#ff8899]"}`}>
+        <span className={`text-[0.65rem] md:text-xs font-mono px-2 md:px-3 py-1 rounded border ${isOnline ? "border-terminal-primary-mid text-terminal-primary-light" : "border-terminal-danger-alt text-terminal-danger-light"}`}>
           {isOnline ? "LIVE (Supabase)" : "OFFLINE (local fallback)"}
         </span>
       </div>
@@ -209,22 +209,22 @@ export function BridgeConsole() {
           />
 
           {/* Navigation Info Bar */}
-          <div className="nav-info grid grid-cols-1 md:grid-cols-3 bg-[#0d1210] border border-[#1a2420] rounded">
-            <div className="p-2 md:p-3 text-center border-b md:border-b-0 md:border-r border-[#1a2420]">
-              <div className="text-[0.6rem] text-[#446655] tracking-[2px] mb-1">CURRENT POSITION</div>
-              <div className="font-['Orbitron'] font-bold text-sm md:text-base text-[#00ccff] drop-shadow-[0_0_10px_#00ccff] uppercase">
+          <div className="nav-info grid grid-cols-1 md:grid-cols-3 bg-terminal-bg-panel-alt border border-terminal-bg-border rounded">
+            <div className="p-2 md:p-3 text-center border-b md:border-b-0 md:border-r border-terminal-bg-border">
+              <div className="text-[0.6rem] text-terminal-text-dimmer tracking-[2px] mb-1">CURRENT POSITION</div>
+              <div className="font-['Orbitron'] font-bold text-sm md:text-base text-terminal-secondary drop-shadow-[0_0_10px_var(--secondary)] uppercase">
                 {currentPosition}
               </div>
             </div>
-            <div className="p-2 md:p-3 text-center border-b md:border-b-0 md:border-r border-[#1a2420]">
-              <div className="text-[0.6rem] text-[#446655] tracking-[2px] mb-1">DESTINATION</div>
-              <div className="font-['Orbitron'] font-bold text-sm md:text-base text-[#00ccff] drop-shadow-[0_0_10px_#00ccff] uppercase">
+            <div className="p-2 md:p-3 text-center border-b md:border-b-0 md:border-r border-terminal-bg-border">
+              <div className="text-[0.6rem] text-terminal-text-dimmer tracking-[2px] mb-1">DESTINATION</div>
+              <div className="font-['Orbitron'] font-bold text-sm md:text-base text-terminal-secondary drop-shadow-[0_0_10px_var(--secondary)] uppercase">
                 {destination || "---"}
               </div>
             </div>
             <div className="p-2 md:p-3 text-center">
-              <div className="text-[0.6rem] text-[#446655] tracking-[2px] mb-1">ETA</div>
-              <div className="font-['Orbitron'] font-bold text-sm md:text-base text-[#00ccff] drop-shadow-[0_0_10px_#00ccff]">
+              <div className="text-[0.6rem] text-terminal-text-dimmer tracking-[2px] mb-1">ETA</div>
+              <div className="font-['Orbitron'] font-bold text-sm md:text-base text-terminal-secondary drop-shadow-[0_0_10px_var(--secondary)]">
                 {eta || "---"}
               </div>
             </div>

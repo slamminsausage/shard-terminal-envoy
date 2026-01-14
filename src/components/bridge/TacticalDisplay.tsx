@@ -50,37 +50,38 @@ export function TacticalDisplay({
   };
 
   const shipIcon = (contact: Contact, cx: number, cy: number) => {
-    const color = contact.status === "friendly"
-      ? "#00ff88"
+    // Using CSS variables for colors
+    const colorVar = contact.status === "friendly"
+      ? "var(--primary-light)"
       : contact.status === "enemy"
-        ? "#ff4455"
+        ? "var(--danger-alt)"
         : contact.status === "derelict"
-          ? "#aaaaaa"
-          : "#00ccff";
+          ? "var(--neutral)"
+          : "var(--secondary)";
     const rotation = contact.facing * 60;
 
     if (contact.isPlayerShip) {
       return (
         <g transform={`translate(${cx}, ${cy}) rotate(${rotation})`}>
-          <polygon points="0,-14 10,10 0,5 -10,10" fill={color} style={{ filter: `drop-shadow(0 0 8px ${color})` }} />
+          <polygon points="0,-14 10,10 0,5 -10,10" fill={colorVar} style={{ filter: `drop-shadow(0 0 8px ${colorVar})` }} />
         </g>
       );
     }
     if (contact.status === "unknown") {
-      return <circle cx={cx} cy={cy} r={8} fill={color} style={{ filter: `drop-shadow(0 0 6px ${color})` }} />;
+      return <circle cx={cx} cy={cy} r={8} fill={colorVar} style={{ filter: `drop-shadow(0 0 6px ${colorVar})` }} />;
     }
     return (
       <g transform={`translate(${cx}, ${cy}) rotate(${rotation})`}>
-        <polygon points="0,-10 7,7 0,3 -7,7" fill={color} style={{ filter: `drop-shadow(0 0 6px ${color})` }} />
+        <polygon points="0,-10 7,7 0,3 -7,7" fill={colorVar} style={{ filter: `drop-shadow(0 0 6px ${colorVar})` }} />
       </g>
     );
   };
 
   return (
-    <div className="tactical-display flex-1 flex flex-col bg-[#0d1210] border border-[#1a2420] rounded overflow-hidden max-h-[350px] md:max-h-[600px]">
-      <div className="panel-header flex justify-between items-center px-3 md:px-4 py-2 bg-[#00ff8808] border-b border-[#1a2420]">
-        <span className="font-['Orbitron'] text-[0.6rem] md:text-xs tracking-[2px] md:tracking-[3px] text-[#446655]">NAVIGATION</span>
-        <span className="font-['Orbitron'] text-[0.6rem] md:text-xs tracking-[2px] text-[#00ff88]">TACTICAL VIEW</span>
+    <div className="tactical-display flex-1 flex flex-col bg-terminal-bg-panel-alt border border-terminal-bg-border rounded overflow-hidden max-h-[350px] md:max-h-[600px]">
+      <div className="panel-header flex justify-between items-center px-3 md:px-4 py-2 bg-terminal-primary-light/5 border-b border-terminal-bg-border">
+        <span className="font-['Orbitron'] text-[0.6rem] md:text-xs tracking-[2px] md:tracking-[3px] text-terminal-text-dimmer">NAVIGATION</span>
+        <span className="font-['Orbitron'] text-[0.6rem] md:text-xs tracking-[2px] text-terminal-primary-light">TACTICAL VIEW</span>
       </div>
 
       <div
@@ -88,22 +89,22 @@ export function TacticalDisplay({
         style={{ background: "radial-gradient(ellipse at center, rgba(0, 255, 136, 0.02) 0%, transparent 70%)" }}
       >
         <svg viewBox="0 0 500 500" className="w-full h-full max-w-full md:max-w-[500px] max-h-full md:max-h-[500px]">
-          <circle cx="250" cy="250" r="60" fill="none" stroke="#1a2420" strokeWidth="1" strokeDasharray="4 4" />
-          <circle cx="250" cy="250" r="120" fill="none" stroke="#1a2420" strokeWidth="1" strokeDasharray="4 4" />
-          <circle cx="250" cy="250" r="180" fill="none" stroke="#1a2420" strokeWidth="1" strokeDasharray="4 4" />
+          <circle cx="250" cy="250" r="60" fill="none" stroke="var(--bg-border)" strokeWidth="1" strokeDasharray="4 4" />
+          <circle cx="250" cy="250" r="120" fill="none" stroke="var(--bg-border)" strokeWidth="1" strokeDasharray="4 4" />
+          <circle cx="250" cy="250" r="180" fill="none" stroke="var(--bg-border)" strokeWidth="1" strokeDasharray="4 4" />
 
-          <text x="255" y="195" fill="#446655" fontSize="9" fontFamily="Share Tech Mono">
+          <text x="255" y="195" fill="var(--text-dimmer)" fontSize="9" fontFamily="Share Tech Mono">
             CLOSE
           </text>
-          <text x="255" y="135" fill="#446655" fontSize="9" fontFamily="Share Tech Mono">
+          <text x="255" y="135" fill="var(--text-dimmer)" fontSize="9" fontFamily="Share Tech Mono">
             SHORT
           </text>
-          <text x="255" y="75" fill="#446655" fontSize="9" fontFamily="Share Tech Mono">
+          <text x="255" y="75" fill="var(--text-dimmer)" fontSize="9" fontFamily="Share Tech Mono">
             MEDIUM
           </text>
 
-          <line x1="250" y1="50" x2="250" y2="450" stroke="#00aa55" strokeWidth="1" opacity="0.3" />
-          <line x1="50" y1="250" x2="450" y2="250" stroke="#00aa55" strokeWidth="1" opacity="0.3" />
+          <line x1="250" y1="50" x2="250" y2="450" stroke="var(--primary-mid)" strokeWidth="1" opacity="0.3" />
+          <line x1="50" y1="250" x2="450" y2="250" stroke="var(--primary-mid)" strokeWidth="1" opacity="0.3" />
 
           <g className="hex-grid" opacity="0.4">
             {hexGrid.map(({ q, r }) => {
@@ -116,7 +117,7 @@ export function TacticalDisplay({
                   key={`${q},${r}`}
                   points={getHexPoints(x, y)}
                   fill={isHovered ? "rgba(0, 255, 136, 0.1)" : "transparent"}
-                  stroke={hasShip ? "#00aa55" : "#1a2420"}
+                  stroke={hasShip ? "var(--primary-mid)" : "var(--bg-border)"}
                   strokeWidth="1"
                   className="cursor-pointer transition-all duration-150"
                   onMouseEnter={() => setHoveredHex({ q, r })}
@@ -132,7 +133,7 @@ export function TacticalDisplay({
             .map(contact => {
             const { x, y } = hexToPixel(contact.hexQ, contact.hexR);
             const isSelected = selectedContact?.id === contact.id;
-            const color = contact.status === "friendly" ? "#00ff88" : contact.status === "enemy" ? "#ff4455" : "#00ccff";
+            const colorVar = contact.status === "friendly" ? "var(--primary-light)" : contact.status === "enemy" ? "var(--danger-alt)" : "var(--secondary)";
 
             return (
               <g
@@ -149,7 +150,7 @@ export function TacticalDisplay({
                     cy={y}
                     r={20}
                     fill="none"
-                    stroke={color}
+                    stroke={colorVar}
                     strokeWidth="2"
                     strokeDasharray="4 2"
                     opacity="0.6"
@@ -160,7 +161,7 @@ export function TacticalDisplay({
 
                 {shipIcon(contact, x, y)}
 
-                <text x={x} y={y + 24} fill={color} fontSize="8" fontFamily="Share Tech Mono" textAnchor="middle">
+                <text x={x} y={y + 24} fill={colorVar} fontSize="8" fontFamily="Share Tech Mono" textAnchor="middle">
                   {contact.name}
                 </text>
               </g>
@@ -175,7 +176,7 @@ export function TacticalDisplay({
                 cy={y}
                 r={12}
                 fill="none"
-                stroke="#00ff88"
+                stroke="var(--primary-light)"
                 strokeWidth="2"
                 strokeDasharray="4 4"
                 opacity="0.8"
@@ -187,41 +188,41 @@ export function TacticalDisplay({
         </svg>
       </div>
 
-      <div className="flex justify-center gap-8 py-2 border-t border-[#1a2420] text-xs">
+      <div className="flex justify-center gap-8 py-2 border-t border-terminal-bg-border text-xs">
         <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-[#00ff88] shadow-[0_0_4px_#00ff88]" />
-          <span className="text-[#446655]">FRIENDLY</span>
+          <div className="w-2 h-2 rounded-full bg-terminal-primary-light shadow-[0_0_4px_var(--primary-light)]" />
+          <span className="text-terminal-text-dimmer">FRIENDLY</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-[#00ccff] shadow-[0_0_4px_#00ccff]" />
-          <span className="text-[#446655]">UNKNOWN</span>
+          <div className="w-2 h-2 rounded-full bg-terminal-secondary shadow-[0_0_4px_var(--secondary)]" />
+          <span className="text-terminal-text-dimmer">UNKNOWN</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-[#ff4455] shadow-[0_0_4px_#ff4455]" />
-          <span className="text-[#446655]">HOSTILE</span>
+          <div className="w-2 h-2 rounded-full bg-terminal-danger-alt shadow-[0_0_4px_var(--danger-alt)]" />
+          <span className="text-terminal-text-dimmer">HOSTILE</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-[#aaaaaa] shadow-[0_0_4px_#aaaaaa]" />
-          <span className="text-[#446655]">DERELICT</span>
+          <div className="w-2 h-2 rounded-full bg-terminal-neutral shadow-[0_0_4px_var(--neutral)]" />
+          <span className="text-terminal-text-dimmer">DERELICT</span>
         </div>
       </div>
 
       {selectedContact && (
-        <div className="px-4 py-2 border-t border-[#1a2420] bg-[#00ff8805] text-xs">
-          <span className="text-[#446655]">SELECTED: </span>
+        <div className="px-4 py-2 border-t border-terminal-bg-border bg-terminal-primary-light/5 text-xs">
+          <span className="text-terminal-text-dimmer">SELECTED: </span>
           <span
             className={`font-bold ${
               selectedContact.status === "friendly"
-                ? "text-[#00ff88]"
+                ? "text-terminal-primary-light"
                 : selectedContact.status === "enemy"
-                  ? "text-[#ff4455]"
-                  : "text-[#00ccff]"
+                  ? "text-terminal-danger-alt"
+                  : "text-terminal-secondary"
             }`}
           >
             {selectedContact.name}
           </span>
-          {selectedContact.shipClass && <span className="text-[#446655] ml-2">({selectedContact.shipClass})</span>}
-          <span className="text-[#446655] ml-4">Click a hex to move</span>
+          {selectedContact.shipClass && <span className="text-terminal-text-dimmer ml-2">({selectedContact.shipClass})</span>}
+          <span className="text-terminal-text-dimmer ml-4">Click a hex to move</span>
         </div>
       )}
     </div>

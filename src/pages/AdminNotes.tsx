@@ -94,21 +94,21 @@ export default function AdminNotes() {
   };
 
   return (
-    <div className="min-h-screen bg-black text-[#00ff41] font-mono">
-      <div className="border-b border-[#00ff41]/30 p-4">
+    <div className="min-h-screen bg-terminal-bg-dark text-terminal-primary font-mono">
+      <div className="border-b border-terminal-primary/30 p-4">
         <div className="flex items-center gap-4 mb-2">
           <Button
             onClick={() => navigate('/')}
             variant="ghost"
             size="sm"
-            className="text-[#00ff41] hover:bg-[#00ff41]/20"
+            className="text-terminal-primary hover:bg-terminal-primary/20"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Main
           </Button>
         </div>
-        <h1 className="text-2xl font-bold text-[#00ff41]">GM HANDOUT MANAGER</h1>
-        <p className="text-[#00ff41]/70 text-sm mt-1">
+        <h1 className="text-2xl font-bold text-terminal-primary">GM HANDOUT MANAGER</h1>
+        <p className="text-terminal-primary/70 text-sm mt-1">
           Create and manage handouts for your players. Control when they become visible.
         </p>
       </div>
@@ -121,7 +121,7 @@ export default function AdminNotes() {
               onClick={() => setShowNewHandoutForm(!showNewHandoutForm)}
               variant="outline"
               size="sm"
-              className="border-[#00ff41]/50 text-[#00ff41] hover:bg-[#00ff41]/20"
+              className="border-terminal-primary/50 text-terminal-primary hover:bg-terminal-primary/20"
             >
               <Upload className="h-4 w-4 mr-2" />
               Create Handout
@@ -129,24 +129,24 @@ export default function AdminNotes() {
           </div>
 
           {showNewHandoutForm && (
-            <Card className="bg-black border-[#00ff41]/50">
+            <Card className="bg-terminal-bg-dark border-terminal-primary/50">
               <CardHeader>
-                <CardTitle className="text-[#00ff41]">Create New Handout</CardTitle>
-                <CardDescription className="text-[#00ff41]/70">
+                <CardTitle className="text-terminal-primary">Create New Handout</CardTitle>
+                <CardDescription className="text-terminal-primary/70">
                   Handouts are hidden from players by default. Reveal them when ready.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <label className="text-sm text-[#00ff41]/70 mb-2 block">Handout Type</label>
+                  <label className="text-sm text-terminal-primary/70 mb-2 block">Handout Type</label>
                   <div className="flex gap-2">
                     <Button
                       type="button"
                       onClick={() => setNewHandoutType('text')}
                       variant={newHandoutType === 'text' ? 'default' : 'outline'}
                       className={newHandoutType === 'text'
-                        ? 'bg-[#00ff41]/20 text-[#00ff41] border-[#00ff41]/50'
-                        : 'border-[#00ff41]/30 text-[#00ff41]/70 hover:bg-[#00ff41]/10'}
+                        ? 'bg-terminal-primary/20 text-terminal-primary border-terminal-primary/50'
+                        : 'border-terminal-primary/30 text-terminal-primary/70 hover:bg-terminal-primary/10'}
                     >
                       <FileText className="h-4 w-4 mr-2" />
                       Text
@@ -156,8 +156,8 @@ export default function AdminNotes() {
                       onClick={() => setNewHandoutType('image')}
                       variant={newHandoutType === 'image' ? 'default' : 'outline'}
                       className={newHandoutType === 'image'
-                        ? 'bg-[#00ff41]/20 text-[#00ff41] border-[#00ff41]/50'
-                        : 'border-[#00ff41]/30 text-[#00ff41]/70 hover:bg-[#00ff41]/10'}
+                        ? 'bg-terminal-primary/20 text-terminal-primary border-terminal-primary/50'
+                        : 'border-terminal-primary/30 text-terminal-primary/70 hover:bg-terminal-primary/10'}
                     >
                       <Image className="h-4 w-4 mr-2" />
                       Image
@@ -167,8 +167,8 @@ export default function AdminNotes() {
                       onClick={() => setNewHandoutType('video')}
                       variant={newHandoutType === 'video' ? 'default' : 'outline'}
                       className={newHandoutType === 'video'
-                        ? 'bg-[#00ff41]/20 text-[#00ff41] border-[#00ff41]/50'
-                        : 'border-[#00ff41]/30 text-[#00ff41]/70 hover:bg-[#00ff41]/10'}
+                        ? 'bg-terminal-primary/20 text-terminal-primary border-terminal-primary/50'
+                        : 'border-terminal-primary/30 text-terminal-primary/70 hover:bg-terminal-primary/10'}
                     >
                       <Video className="h-4 w-4 mr-2" />
                       Video
@@ -180,7 +180,7 @@ export default function AdminNotes() {
                   placeholder="Handout Title"
                   value={newHandoutTitle}
                   onChange={(e) => setNewHandoutTitle(e.target.value)}
-                  className="bg-black border-[#00ff41]/50 text-[#00ff41]"
+                  className="bg-terminal-bg-dark border-terminal-primary/50 text-terminal-primary"
                 />
 
                 <Textarea
@@ -188,7 +188,7 @@ export default function AdminNotes() {
                   value={newHandoutDescription}
                   onChange={(e) => setNewHandoutDescription(e.target.value)}
                   rows={2}
-                  className="bg-black border-[#00ff41]/50 text-[#00ff41] resize-none"
+                  className="bg-terminal-bg-dark border-terminal-primary/50 text-terminal-primary resize-none"
                 />
 
                 {newHandoutType === 'text' ? (
@@ -197,7 +197,7 @@ export default function AdminNotes() {
                     value={newHandoutContent}
                     onChange={(e) => setNewHandoutContent(e.target.value)}
                     rows={8}
-                    className="bg-black border-[#00ff41]/50 text-[#00ff41] resize-none"
+                    className="bg-terminal-bg-dark border-terminal-primary/50 text-terminal-primary resize-none"
                   />
                 ) : (
                   <div className="space-y-2">
@@ -212,13 +212,13 @@ export default function AdminNotes() {
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
                       variant="outline"
-                      className="w-full border-[#00ff41]/50 text-[#00ff41] hover:bg-[#00ff41]/20"
+                      className="w-full border-terminal-primary/50 text-terminal-primary hover:bg-terminal-primary/20"
                     >
                       <Upload className="h-4 w-4 mr-2" />
                       Upload {newHandoutType === 'image' ? 'Image' : 'Video'}
                     </Button>
                     {newHandoutMediaUrl && (
-                      <div className="border border-[#00ff41]/30 p-2 rounded">
+                      <div className="border border-terminal-primary/30 p-2 rounded">
                         {newHandoutType === 'image' ? (
                           <img
                             src={newHandoutMediaUrl}
@@ -240,7 +240,7 @@ export default function AdminNotes() {
                 <div className="flex gap-2">
                   <Button
                     onClick={handleAddHandout}
-                    className="bg-[#00ff41]/20 text-[#00ff41] hover:bg-[#00ff41]/30"
+                    className="bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
                   >
                     <Save className="h-4 w-4 mr-2" />
                     Create Handout
@@ -258,7 +258,7 @@ export default function AdminNotes() {
                       }
                     }}
                     variant="outline"
-                    className="border-[#00ff41]/50 text-[#00ff41] hover:bg-[#00ff41]/20"
+                    className="border-terminal-primary/50 text-terminal-primary hover:bg-terminal-primary/20"
                   >
                     <X className="h-4 w-4 mr-2" />
                     Cancel
@@ -269,8 +269,8 @@ export default function AdminNotes() {
           )}
 
           {handouts.length === 0 ? (
-            <Card className="bg-black border-[#00ff41]/30">
-              <CardContent className="p-8 text-center text-[#00ff41]/70">
+            <Card className="bg-terminal-bg-dark border-terminal-primary/30">
+              <CardContent className="p-8 text-center text-terminal-primary/70">
                 No handouts yet. Create your first handout to share with players.
               </CardContent>
             </Card>
@@ -325,18 +325,18 @@ const HandoutAdminCard: React.FC<HandoutAdminCardProps> = ({
 
   if (isEditing && handout.type === 'text') {
     return (
-      <Card className="bg-black border-[#00ff41]/50">
+      <Card className="bg-terminal-bg-dark border-terminal-primary/50">
         <CardHeader>
           <Input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="bg-black border-[#00ff41]/50 text-[#00ff41] font-semibold mb-2"
+            className="bg-terminal-bg-dark border-terminal-primary/50 text-terminal-primary font-semibold mb-2"
             placeholder="Title"
           />
           <Textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            className="bg-black border-[#00ff41]/50 text-[#00ff41] text-sm resize-none"
+            className="bg-terminal-bg-dark border-terminal-primary/50 text-terminal-primary text-sm resize-none"
             rows={2}
             placeholder="Description"
           />
@@ -346,13 +346,13 @@ const HandoutAdminCard: React.FC<HandoutAdminCardProps> = ({
             value={content}
             onChange={(e) => setContent(e.target.value)}
             rows={4}
-            className="bg-black border-[#00ff41]/50 text-[#00ff41] resize-none"
+            className="bg-terminal-bg-dark border-terminal-primary/50 text-terminal-primary resize-none"
           />
           <div className="flex gap-2">
             <Button
               onClick={() => onSave({ title, description, content })}
               size="sm"
-              className="bg-[#00ff41]/20 text-[#00ff41] hover:bg-[#00ff41]/30"
+              className="bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
             >
               <Save className="h-4 w-4" />
             </Button>
@@ -360,7 +360,7 @@ const HandoutAdminCard: React.FC<HandoutAdminCardProps> = ({
               onClick={onCancel}
               size="sm"
               variant="outline"
-              className="border-[#00ff41]/50 text-[#00ff41] hover:bg-[#00ff41]/20"
+              className="border-terminal-primary/50 text-terminal-primary hover:bg-terminal-primary/20"
             >
               <X className="h-4 w-4" />
             </Button>
@@ -371,15 +371,15 @@ const HandoutAdminCard: React.FC<HandoutAdminCardProps> = ({
   }
 
   return (
-    <Card className="bg-black border-[#00ff41]/30 hover:border-[#00ff41]/50 transition-colors">
+    <Card className="bg-terminal-bg-dark border-terminal-primary/30 hover:border-terminal-primary/50 transition-colors">
       <CardHeader>
         <div className="flex justify-between items-start gap-2">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-2">
-              {handout.type === 'image' && <Image className="h-4 w-4 text-[#00ff41]/70" />}
-              {handout.type === 'video' && <Video className="h-4 w-4 text-[#00ff41]/70" />}
-              {handout.type === 'text' && <FileText className="h-4 w-4 text-[#00ff41]/70" />}
-              <CardTitle className="text-[#00ff41] text-base truncate">{handout.title}</CardTitle>
+              {handout.type === 'image' && <Image className="h-4 w-4 text-terminal-primary/70" />}
+              {handout.type === 'video' && <Video className="h-4 w-4 text-terminal-primary/70" />}
+              {handout.type === 'text' && <FileText className="h-4 w-4 text-terminal-primary/70" />}
+              <CardTitle className="text-terminal-primary text-base truncate">{handout.title}</CardTitle>
             </div>
             <Badge
               className={
@@ -396,7 +396,7 @@ const HandoutAdminCard: React.FC<HandoutAdminCardProps> = ({
               onClick={onToggleVisibility}
               size="sm"
               variant="ghost"
-              className="text-[#00ff41] hover:bg-[#00ff41]/20 h-8 w-8 p-0"
+              className="text-terminal-primary hover:bg-terminal-primary/20 h-8 w-8 p-0"
               title={handout.isVisible ? 'Hide from players' : 'Show to players'}
             >
               {handout.isVisible ? (
@@ -410,7 +410,7 @@ const HandoutAdminCard: React.FC<HandoutAdminCardProps> = ({
                 onClick={onEdit}
                 size="sm"
                 variant="ghost"
-                className="text-[#00ff41] hover:bg-[#00ff41]/20 h-8 w-8 p-0"
+                className="text-terminal-primary hover:bg-terminal-primary/20 h-8 w-8 p-0"
               >
                 <Edit2 className="h-4 w-4" />
               </Button>
@@ -425,14 +425,14 @@ const HandoutAdminCard: React.FC<HandoutAdminCardProps> = ({
             </Button>
           </div>
         </div>
-        <CardDescription className="text-[#00ff41]/70 text-xs">
+        <CardDescription className="text-terminal-primary/70 text-xs">
           {handout.description}
         </CardDescription>
       </CardHeader>
-      <Separator className="bg-[#00ff41]/30" />
+      <Separator className="bg-terminal-primary/30" />
       <CardContent className="pt-4">
         {handout.type === 'text' && (
-          <p className="text-[#00ff41]/90 text-sm line-clamp-3 whitespace-pre-wrap">
+          <p className="text-terminal-primary/90 text-sm line-clamp-3 whitespace-pre-wrap">
             {handout.content}
           </p>
         )}
@@ -445,16 +445,16 @@ const HandoutAdminCard: React.FC<HandoutAdminCardProps> = ({
               <img
                 src={handout.mediaUrl}
                 alt={handout.title}
-                className="w-full max-w-[288px] max-h-[192px] object-cover rounded border border-[#00ff41]/30 mx-auto"
+                className="w-full max-w-[288px] max-h-[192px] object-cover rounded border border-terminal-primary/30 mx-auto"
               />
               <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded">
-                <Maximize2 className="h-8 w-8 text-[#00ff41]" />
+                <Maximize2 className="h-8 w-8 text-terminal-primary" />
               </div>
             </div>
             <Dialog open={showFullSize} onOpenChange={setShowFullSize}>
-              <DialogContent className="max-w-[90vw] max-h-[90vh] bg-black border-[#00ff41]/50">
+              <DialogContent className="max-w-[90vw] max-h-[90vh] bg-terminal-bg-dark border-terminal-primary/50">
                 <DialogHeader>
-                  <DialogTitle className="text-[#00ff41]">{handout.title}</DialogTitle>
+                  <DialogTitle className="text-terminal-primary">{handout.title}</DialogTitle>
                 </DialogHeader>
                 <div className="overflow-auto max-h-[75vh]">
                   <img
@@ -475,16 +475,16 @@ const HandoutAdminCard: React.FC<HandoutAdminCardProps> = ({
             >
               <video
                 src={handout.mediaUrl}
-                className="w-full max-w-[288px] max-h-[192px] object-cover rounded border border-[#00ff41]/30 mx-auto"
+                className="w-full max-w-[288px] max-h-[192px] object-cover rounded border border-terminal-primary/30 mx-auto"
               />
               <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded">
-                <Maximize2 className="h-8 w-8 text-[#00ff41]" />
+                <Maximize2 className="h-8 w-8 text-terminal-primary" />
               </div>
             </div>
             <Dialog open={showFullSize} onOpenChange={setShowFullSize}>
-              <DialogContent className="max-w-[90vw] max-h-[90vh] bg-black border-[#00ff41]/50">
+              <DialogContent className="max-w-[90vw] max-h-[90vh] bg-terminal-bg-dark border-terminal-primary/50">
                 <DialogHeader>
-                  <DialogTitle className="text-[#00ff41]">{handout.title}</DialogTitle>
+                  <DialogTitle className="text-terminal-primary">{handout.title}</DialogTitle>
                 </DialogHeader>
                 <div className="overflow-auto max-h-[75vh]">
                   <video

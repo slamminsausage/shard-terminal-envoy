@@ -140,7 +140,7 @@ export const ThumbnailCropper: React.FC<ThumbnailCropperProps> = ({
     ctx.fillRect(cropX + cropSize, cropY, canvas.width - cropX - cropSize, cropSize);
 
     // Draw crop border
-    ctx.strokeStyle = '#00ff41';
+    ctx.strokeStyle = 'var(--primary)';
     ctx.lineWidth = 2;
 
     if (cropShape === 'circle') {
@@ -315,16 +315,16 @@ export const ThumbnailCropper: React.FC<ThumbnailCropperProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md bg-black border-[#00ff41]/50 p-0">
+      <DialogContent className="max-w-md bg-terminal-bg-dark border-terminal-primary/50 p-0">
         <DialogHeader className="p-4 pb-2">
-          <DialogTitle className="text-[#00ff41]">{title}</DialogTitle>
+          <DialogTitle className="text-terminal-primary">{title}</DialogTitle>
         </DialogHeader>
 
         <div className="px-4">
           {/* Preview Area */}
           <div
             ref={containerRef}
-            className="relative w-full aspect-square bg-black rounded border border-[#00ff41]/30 overflow-hidden cursor-move"
+            className="relative w-full aspect-square bg-terminal-bg-dark rounded border border-terminal-primary/30 overflow-hidden cursor-move"
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
@@ -339,7 +339,7 @@ export const ThumbnailCropper: React.FC<ThumbnailCropperProps> = ({
               className="w-full h-full"
             />
             {!imageElement && (
-              <div className="absolute inset-0 flex items-center justify-center text-[#00ff41]/50">
+              <div className="absolute inset-0 flex items-center justify-center text-terminal-primary/50">
                 Loading...
               </div>
             )}
@@ -352,7 +352,7 @@ export const ThumbnailCropper: React.FC<ThumbnailCropperProps> = ({
                 onClick={handleZoomOut}
                 size="sm"
                 variant="outline"
-                className="border-[#00ff41]/50 text-[#00ff41] hover:bg-[#00ff41]/20 h-8 w-8 p-0"
+                className="border-terminal-primary/50 text-terminal-primary hover:bg-terminal-primary/20 h-8 w-8 p-0"
                 disabled={zoom <= 0.5}
               >
                 <ZoomOut className="h-4 w-4" />
@@ -365,7 +365,7 @@ export const ThumbnailCropper: React.FC<ThumbnailCropperProps> = ({
                   min={0.5}
                   max={3}
                   step={0.01}
-                  className="[&_[data-state]]:bg-[#00ff41] [&_.bg-primary]:bg-[#00ff41] [&_.border-primary]:border-[#00ff41]"
+                  className="[&_[data-state]]:bg-terminal-primary [&_.bg-primary]:bg-terminal-primary [&_.border-primary]:border-terminal-primary"
                 />
               </div>
 
@@ -373,7 +373,7 @@ export const ThumbnailCropper: React.FC<ThumbnailCropperProps> = ({
                 onClick={handleZoomIn}
                 size="sm"
                 variant="outline"
-                className="border-[#00ff41]/50 text-[#00ff41] hover:bg-[#00ff41]/20 h-8 w-8 p-0"
+                className="border-terminal-primary/50 text-terminal-primary hover:bg-terminal-primary/20 h-8 w-8 p-0"
                 disabled={zoom >= 3}
               >
                 <ZoomIn className="h-4 w-4" />
@@ -383,14 +383,14 @@ export const ThumbnailCropper: React.FC<ThumbnailCropperProps> = ({
                 onClick={handleReset}
                 size="sm"
                 variant="outline"
-                className="border-[#00ff41]/50 text-[#00ff41] hover:bg-[#00ff41]/20 h-8 px-2"
+                className="border-terminal-primary/50 text-terminal-primary hover:bg-terminal-primary/20 h-8 px-2"
               >
                 <RotateCcw className="h-4 w-4 mr-1" />
                 Reset
               </Button>
             </div>
 
-            <p className="text-xs text-[#00ff41]/60 text-center">
+            <p className="text-xs text-terminal-primary/60 text-center">
               Drag to pan, scroll to zoom. Position the image within the frame.
             </p>
           </div>
@@ -400,14 +400,14 @@ export const ThumbnailCropper: React.FC<ThumbnailCropperProps> = ({
           <Button
             onClick={handleCancel}
             variant="outline"
-            className="border-[#00ff41]/50 text-[#00ff41] hover:bg-[#00ff41]/20"
+            className="border-terminal-primary/50 text-terminal-primary hover:bg-terminal-primary/20"
           >
             <X className="h-4 w-4 mr-2" />
             Cancel
           </Button>
           <Button
             onClick={handleCrop}
-            className="bg-[#00ff41]/20 text-[#00ff41] hover:bg-[#00ff41]/30"
+            className="bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
             disabled={!imageElement}
           >
             <Check className="h-4 w-4 mr-2" />

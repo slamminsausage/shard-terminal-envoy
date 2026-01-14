@@ -143,14 +143,14 @@ export function StarMapPanel() {
 
         {/* Player Location Display */}
         {playerLocation && (
-          <div className="px-4 py-2 bg-[#00ff88]/5 border-y border-primary/20">
+          <div className="px-4 py-2 bg-terminal-primary-light/5 border-y border-primary/20">
             <div className="flex items-center gap-2">
               <MapPin className="w-4 h-4 text-primary" />
-              <span className="text-xs text-[#446655]">SHIP LOCATION:</span>
+              <span className="text-xs text-terminal-text-dimmer">SHIP LOCATION:</span>
               <span className="text-primary font-bold text-sm">
                 {playerLocation.worldName || playerLocation.hex}
               </span>
-              <span className="text-[#00ccff] text-xs font-mono ml-auto">
+              <span className="text-terminal-secondary text-xs font-mono ml-auto">
                 {playerLocation.sector} {playerLocation.hex}
               </span>
             </div>
@@ -164,7 +164,7 @@ export function StarMapPanel() {
             // Key forces iframe to fully reload when sector/hex changes
             key={`${mapSector}-${mapHex}`}
             src={mapUrl}
-            className="absolute inset-0 w-full h-full border-t border-[#1a2420]"
+            className="absolute inset-0 w-full h-full border-t border-terminal-bg-border"
             title="TravellerMap"
             allow="fullscreen"
           />
@@ -172,15 +172,15 @@ export function StarMapPanel() {
 
         {/* Current Selection Display */}
         {currentLocation && (
-          <div className="px-4 pb-4 border-t border-[#1a2420] pt-3">
+          <div className="px-4 pb-4 border-t border-terminal-bg-border pt-3">
             <div className="flex items-center justify-between">
               <div>
-                <span className="text-[#446655] text-xs mr-2">SELECTED:</span>
+                <span className="text-terminal-text-dimmer text-xs mr-2">SELECTED:</span>
                 <span className="text-primary font-bold">
                   {currentLocation.worldName || currentLocation.hex}
                 </span>
               </div>
-              <span className="text-[#00ccff] text-sm font-mono">
+              <span className="text-terminal-secondary text-sm font-mono">
                 {currentLocation.sector} {currentLocation.hex}
               </span>
             </div>
@@ -189,7 +189,7 @@ export function StarMapPanel() {
 
         {/* Instructions */}
         <div className="px-4 pb-3 text-center">
-          <span className="text-xs text-[#446655]">
+          <span className="text-xs text-terminal-text-dimmer">
             Search for worlds by name, or click on the map to select a hex.
             Set your ship location to display "You Are Here" marker.
           </span>

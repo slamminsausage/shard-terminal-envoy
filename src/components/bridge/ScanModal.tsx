@@ -16,60 +16,60 @@ export function ScanModal({ onRun, onClose }: ScanModalProps) {
 
   return (
     <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-      <div className="bg-[#0d1210] border border-[#00aa55] rounded-lg w-full max-w-md shadow-[0_0_40px_rgba(0,255,136,0.2)]">
-        <div className="flex justify-between items-center px-4 py-3 bg-[#00ff8810] border-b border-[#1a2420]">
+      <div className="bg-terminal-bg-panel-alt border border-terminal-primary-mid rounded-lg w-full max-w-md shadow-[0_0_40px_rgba(0,255,136,0.2)]">
+        <div className="flex justify-between items-center px-4 py-3 bg-terminal-primary-light/10 border-b border-terminal-bg-border">
           <span className="font-['Orbitron'] text-sm tracking-[2px]">ACTIVE SCAN</span>
           <button
             onClick={onClose}
-            className="text-[#446655] hover:text-[#ff4455] transition-colors text-lg"
+            className="text-terminal-text-dimmer hover:text-terminal-danger-alt transition-colors text-lg"
             aria-label="Close"
           >
             x
           </button>
         </div>
 
-        <div className="p-4 space-y-4 text-sm text-[#88bbaa]">
+        <div className="p-4 space-y-4 text-sm text-terminal-text-muted">
           <div className="grid grid-cols-2 gap-3">
-            <label className="flex flex-col gap-1 text-xs text-[#446655]">
+            <label className="flex flex-col gap-1 text-xs text-terminal-text-dimmer">
               SKILL ROLL
               <input
                 type="number"
                 value={roll}
                 onChange={e => setRoll(Number(e.target.value))}
-                className="bg-[#0a0e0c] border border-[#1a2420] rounded px-3 py-2 text-[#00ff88] font-mono text-sm focus:outline-none focus:border-[#00aa55]"
+                className="bg-terminal-bg-darker border border-terminal-bg-border rounded px-3 py-2 text-terminal-primary-light font-mono text-sm focus:outline-none focus:border-terminal-primary-mid"
               />
             </label>
-            <label className="flex flex-col gap-1 text-xs text-[#446655]">
+            <label className="flex flex-col gap-1 text-xs text-terminal-text-dimmer">
               DIFFICULTY
               <input
                 type="number"
                 value={difficulty}
                 onChange={e => setDifficulty(Number(e.target.value))}
-                className="bg-[#0a0e0c] border border-[#1a2420] rounded px-3 py-2 text-[#00ff88] font-mono text-sm focus:outline-none focus:border-[#00aa55]"
+                className="bg-terminal-bg-darker border border-terminal-bg-border rounded px-3 py-2 text-terminal-primary-light font-mono text-sm focus:outline-none focus:border-terminal-primary-mid"
               />
             </label>
           </div>
-          <label className="flex flex-col gap-1 text-xs text-[#446655]">
+          <label className="flex flex-col gap-1 text-xs text-terminal-text-dimmer">
             NOTES (optional)
             <textarea
               value={notes}
               onChange={e => setNotes(e.target.value)}
               rows={3}
-              className="bg-[#0a0e0c] border border-[#1a2420] rounded px-3 py-2 text-[#88bbaa] font-mono text-sm focus:outline-none focus:border-[#00aa55] resize-none"
+              className="bg-terminal-bg-darker border border-terminal-bg-border rounded px-3 py-2 text-terminal-text-muted font-mono text-sm focus:outline-none focus:border-terminal-primary-mid resize-none"
             />
           </label>
         </div>
 
-        <div className="flex gap-3 p-4 border-t border-[#1a2420]">
+        <div className="flex gap-3 p-4 border-t border-terminal-bg-border">
           <button
             onClick={onClose}
-            className="flex-1 py-2.5 rounded text-xs font-mono transition-all border border-[#1a2420] text-[#446655] bg-[#00ff8808] hover:bg-[#00ff8815] hover:text-[#00ff88]"
+            className="flex-1 py-2.5 rounded text-xs font-mono transition-all border border-terminal-bg-border text-terminal-text-dimmer bg-terminal-primary-light/5 hover:bg-terminal-primary-light/10 hover:text-terminal-primary-light"
           >
             CANCEL
           </button>
           <button
             onClick={handleRun}
-            className="flex-1 py-2.5 rounded text-xs font-mono transition-all border border-[#00aa55] text-[#00ff88] bg-[#00ff8820] hover:bg-[#00ff8830] hover:shadow-[0_0_15px_rgba(0,255,136,0.3)]"
+            className="flex-1 py-2.5 rounded text-xs font-mono transition-all border border-terminal-primary-mid text-terminal-primary-light bg-terminal-primary-light/20 hover:bg-terminal-primary-light/30 hover:shadow-[0_0_15px_rgba(0,255,136,0.3)]"
           >
             RUN SCAN
           </button>
