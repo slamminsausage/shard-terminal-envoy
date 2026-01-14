@@ -4,7 +4,7 @@ import TerminalInterface from "./interfaces/TerminalInterface";
 import CrewInterface from "./interfaces/CrewInterface";
 import VehicleInterface from "./interfaces/VehicleInterface";
 import CombatInterface from "./interfaces/CombatInterface";
-import { NotesInterface } from "./interfaces/NotesInterface";
+import { CampaignInterface } from "./interfaces/CampaignInterface";
 import AppHeader from "./layout/AppHeader";
 import AppFooter from "./layout/AppFooter";
 import { BridgeConsole } from "./bridge/BridgeConsole";
@@ -29,7 +29,7 @@ export default function MainframeShell() {
     { id: "vehicles", label: "Hangar", emoji: "🛦" },
     { id: "bridge", label: "Bridge", icon: Radar },
     { id: "navigation", label: "Star Map", icon: Navigation },
-    { id: "notes", label: "Notes", icon: BookOpen },
+    { id: "campaign", label: "Campaign", icon: BookOpen },
     { id: "combat", label: "Combat", icon: Swords }
   ];
 
@@ -64,8 +64,8 @@ export default function MainframeShell() {
         {activeTab === "navigation" && (
           <JumpPlannerInterface />
         )}
-        {activeTab === "notes" && (
-          <NotesInterface />
+        {activeTab === "campaign" && (
+          <CampaignInterface />
         )}
         {activeTab === "combat" && (
           <CombatInterface />

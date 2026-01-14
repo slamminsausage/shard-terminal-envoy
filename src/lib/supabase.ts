@@ -1433,5 +1433,491 @@ export const dbHelpers = {
       console.error('Failed to delete character thumbnail:', error);
       return false;
     }
+  },
+
+  // =====================================================
+  // SESSION MANAGEMENT
+  // =====================================================
+
+  async getAllSessions() {
+    try {
+      const { data, error } = await supabase
+        .from('sessions')
+        .select('*')
+        .order('session_date', { ascending: false });
+
+      if (error) {
+        console.error('Database error:', error);
+        return [];
+      }
+      return data || [];
+    } catch (error) {
+      console.error('Failed to fetch sessions:', error);
+      return [];
+    }
+  },
+
+  async getSession(sessionId: string) {
+    try {
+      const { data, error } = await supabase
+        .from('sessions')
+        .select('*')
+        .eq('id', sessionId)
+        .single();
+
+      if (error) {
+        console.error('Database error:', error);
+        return null;
+      }
+      return data;
+    } catch (error) {
+      console.error('Failed to fetch session:', error);
+      return null;
+    }
+  },
+
+  async saveSession(sessionData: any) {
+    try {
+      if (sessionData.id) {
+        // Update existing session
+        const { data, error } = await supabase
+          .from('sessions')
+          .update(sessionData)
+          .eq('id', sessionData.id)
+          .select()
+          .single();
+
+        if (error) {
+          console.error('Database error:', error);
+          throw error;
+        }
+        return data;
+      } else {
+        // Create new session
+        const { data, error } = await supabase
+          .from('sessions')
+          .insert([sessionData])
+          .select()
+          .single();
+
+        if (error) {
+          console.error('Database error:', error);
+          throw error;
+        }
+        return data;
+      }
+    } catch (error) {
+      console.error('Failed to save session:', error);
+      throw error;
+    }
+  },
+
+  async deleteSession(sessionId: string) {
+    try {
+      const { error } = await supabase
+        .from('sessions')
+        .delete()
+        .eq('id', sessionId);
+
+      if (error) {
+        console.error('Database error:', error);
+        throw error;
+      }
+      return true;
+    } catch (error) {
+      console.error('Failed to delete session:', error);
+      throw error;
+    }
+  },
+
+  async getSessionLogEntries(sessionId: string) {
+    try {
+      const { data, error } = await supabase
+        .from('session_log_entries')
+        .select('*')
+        .eq('session_id', sessionId)
+        .order('timestamp', { ascending: true });
+
+      if (error) {
+        console.error('Database error:', error);
+        return [];
+      }
+      return data || [];
+    } catch (error) {
+      console.error('Failed to fetch session log entries:', error);
+      return [];
+    }
+  },
+
+  async saveSessionLogEntry(logEntry: any) {
+    try {
+      const { data, error } = await supabase
+        .from('session_log_entries')
+        .insert([logEntry])
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Database error:', error);
+        throw error;
+      }
+      return data;
+    } catch (error) {
+      console.error('Failed to save session log entry:', error);
+      throw error;
+    }
+  },
+
+  async getSessionRewards(sessionId: string) {
+    try {
+      const { data, error } = await supabase
+        .from('session_rewards')
+        .select('*')
+        .eq('session_id', sessionId);
+
+      if (error) {
+        console.error('Database error:', error);
+        return [];
+      }
+      return data || [];
+    } catch (error) {
+      console.error('Failed to fetch session rewards:', error);
+      return [];
+    }
+  },
+
+  async saveSessionReward(reward: any) {
+    try {
+      const { data, error } = await supabase
+        .from('session_rewards')
+        .insert([reward])
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Database error:', error);
+        throw error;
+      }
+      return data;
+    } catch (error) {
+      console.error('Failed to save session reward:', error);
+      throw error;
+    }
+  },
+
+  // =====================================================
+  // QUEST/MISSION TRACKER
+  // =====================================================
+
+  async getAllQuests() {
+    try {
+      const { data, error } = await supabase
+        .from('quests')
+        .select('*')
+        .order('date_accepted', { ascending: false });
+
+      if (error) {
+        console.error('Database error:', error);
+        return [];
+      }
+      return data || [];
+    } catch (error) {
+      console.error('Failed to fetch quests:', error);
+      return [];
+    }
+  },
+
+  async getQuest(questId: string) {
+    try {
+      const { data, error } = await supabase
+        .from('quests')
+        .select('*')
+        .eq('id', questId)
+        .single();
+
+      if (error) {
+        console.error('Database error:', error);
+        return null;
+      }
+      return data;
+    } catch (error) {
+      console.error('Failed to fetch quest:', error);
+      return null;
+    }
+  },
+
+  async saveQuest(questData: any) {
+    try {
+      if (questData.id) {
+        // Update existing quest
+        const { data, error } = await supabase
+          .from('quests')
+          .update(questData)
+          .eq('id', questData.id)
+          .select()
+          .single();
+
+        if (error) {
+          console.error('Database error:', error);
+          throw error;
+        }
+        return data;
+      } else {
+        // Create new quest
+        const { data, error } = await supabase
+          .from('quests')
+          .insert([questData])
+          .select()
+          .single();
+
+        if (error) {
+          console.error('Database error:', error);
+          throw error;
+        }
+        return data;
+      }
+    } catch (error) {
+      console.error('Failed to save quest:', error);
+      throw error;
+    }
+  },
+
+  async deleteQuest(questId: string) {
+    try {
+      const { error } = await supabase
+        .from('quests')
+        .delete()
+        .eq('id', questId);
+
+      if (error) {
+        console.error('Database error:', error);
+        throw error;
+      }
+      return true;
+    } catch (error) {
+      console.error('Failed to delete quest:', error);
+      throw error;
+    }
+  },
+
+  async getQuestObjectives(questId: string) {
+    try {
+      const { data, error } = await supabase
+        .from('quest_objectives')
+        .select('*')
+        .eq('quest_id', questId)
+        .order('order_index', { ascending: true });
+
+      if (error) {
+        console.error('Database error:', error);
+        return [];
+      }
+      return data || [];
+    } catch (error) {
+      console.error('Failed to fetch quest objectives:', error);
+      return [];
+    }
+  },
+
+  async saveQuestObjective(objective: any) {
+    try {
+      if (objective.id) {
+        // Update existing objective
+        const { data, error } = await supabase
+          .from('quest_objectives')
+          .update(objective)
+          .eq('id', objective.id)
+          .select()
+          .single();
+
+        if (error) {
+          console.error('Database error:', error);
+          throw error;
+        }
+        return data;
+      } else {
+        // Create new objective
+        const { data, error } = await supabase
+          .from('quest_objectives')
+          .insert([objective])
+          .select()
+          .single();
+
+        if (error) {
+          console.error('Database error:', error);
+          throw error;
+        }
+        return data;
+      }
+    } catch (error) {
+      console.error('Failed to save quest objective:', error);
+      throw error;
+    }
+  },
+
+  async deleteQuestObjective(objectiveId: string) {
+    try {
+      const { error } = await supabase
+        .from('quest_objectives')
+        .delete()
+        .eq('id', objectiveId);
+
+      if (error) {
+        console.error('Database error:', error);
+        throw error;
+      }
+      return true;
+    } catch (error) {
+      console.error('Failed to delete quest objective:', error);
+      throw error;
+    }
+  },
+
+  // =====================================================
+  // CALENDAR & TIME TRACKING
+  // =====================================================
+
+  async getCurrentCampaignDate() {
+    try {
+      const { data, error } = await supabase
+        .from('campaign_calendar')
+        .select('*')
+        .eq('is_current_date', true)
+        .single();
+
+      if (error && error.code !== 'PGRST116') { // PGRST116 is "no rows returned"
+        console.error('Database error:', error);
+        return null;
+      }
+      return data;
+    } catch (error) {
+      console.error('Failed to fetch current campaign date:', error);
+      return null;
+    }
+  },
+
+  async setCurrentCampaignDate(imperialDate: string, day: number, year: number) {
+    try {
+      // First, unset any existing current date
+      await supabase
+        .from('campaign_calendar')
+        .update({ is_current_date: false })
+        .eq('is_current_date', true);
+
+      // Then create or update the new current date
+      const { data, error } = await supabase
+        .from('campaign_calendar')
+        .upsert({
+          imperial_date: imperialDate,
+          day,
+          year,
+          is_current_date: true,
+          player_id: 'campaign'
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Database error:', error);
+        throw error;
+      }
+      return data;
+    } catch (error) {
+      console.error('Failed to set current campaign date:', error);
+      throw error;
+    }
+  },
+
+  async getAllCalendarEvents() {
+    try {
+      const { data, error } = await supabase
+        .from('calendar_events')
+        .select('*')
+        .order('imperial_date', { ascending: true });
+
+      if (error) {
+        console.error('Database error:', error);
+        return [];
+      }
+      return data || [];
+    } catch (error) {
+      console.error('Failed to fetch calendar events:', error);
+      return [];
+    }
+  },
+
+  async getUpcomingCalendarEvents(fromDate: string, limit: number = 10) {
+    try {
+      const { data, error } = await supabase
+        .from('calendar_events')
+        .select('*')
+        .gte('imperial_date', fromDate)
+        .eq('completed', false)
+        .order('imperial_date', { ascending: true })
+        .limit(limit);
+
+      if (error) {
+        console.error('Database error:', error);
+        return [];
+      }
+      return data || [];
+    } catch (error) {
+      console.error('Failed to fetch upcoming calendar events:', error);
+      return [];
+    }
+  },
+
+  async saveCalendarEvent(event: any) {
+    try {
+      if (event.id) {
+        // Update existing event
+        const { data, error } = await supabase
+          .from('calendar_events')
+          .update(event)
+          .eq('id', event.id)
+          .select()
+          .single();
+
+        if (error) {
+          console.error('Database error:', error);
+          throw error;
+        }
+        return data;
+      } else {
+        // Create new event
+        const { data, error } = await supabase
+          .from('calendar_events')
+          .insert([event])
+          .select()
+          .single();
+
+        if (error) {
+          console.error('Database error:', error);
+          throw error;
+        }
+        return data;
+      }
+    } catch (error) {
+      console.error('Failed to save calendar event:', error);
+      throw error;
+    }
+  },
+
+  async deleteCalendarEvent(eventId: string) {
+    try {
+      const { error } = await supabase
+        .from('calendar_events')
+        .delete()
+        .eq('id', eventId);
+
+      if (error) {
+        console.error('Database error:', error);
+        throw error;
+      }
+      return true;
+    } catch (error) {
+      console.error('Failed to delete calendar event:', error);
+      throw error;
+    }
   }
 }
