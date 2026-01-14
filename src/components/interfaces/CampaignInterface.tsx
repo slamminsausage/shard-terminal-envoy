@@ -4,28 +4,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Calendar, ListTodo, ScrollText, FileText, Image } from 'lucide-react';
 import { NotesInterface } from './NotesInterface';
 import { SessionsList } from '../sessions/SessionsList';
-
-const QuestsTab: React.FC = () => {
-  return (
-    <div className="p-4">
-      <div className="text-terminal-primary text-center py-8">
-        <h2 className="text-xl font-bold mb-2">Quest Tracker</h2>
-        <p className="text-terminal-primary/70">Coming soon...</p>
-      </div>
-    </div>
-  );
-};
-
-const CalendarTab: React.FC = () => {
-  return (
-    <div className="p-4">
-      <div className="text-terminal-primary text-center py-8">
-        <h2 className="text-xl font-bold mb-2">Imperial Calendar</h2>
-        <p className="text-terminal-primary/70">Coming soon...</p>
-      </div>
-    </div>
-  );
-};
+import { QuestBoard } from '../quests/QuestBoard';
+import { CalendarView } from '../calendar/CalendarView';
 
 export const CampaignInterface: React.FC = () => {
   const [activeSubTab, setActiveSubTab] = useState(() => {
@@ -98,11 +78,11 @@ export const CampaignInterface: React.FC = () => {
             </TabsContent>
 
             <TabsContent value="quests" className="mt-0">
-              <QuestsTab />
+              <QuestBoard />
             </TabsContent>
 
             <TabsContent value="calendar" className="mt-0">
-              <CalendarTab />
+              <CalendarView />
             </TabsContent>
 
             <TabsContent value="notes" className="mt-0">

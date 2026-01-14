@@ -1,6 +1,7 @@
 import React from "react";
-import { LucideIcon } from "lucide-react";
+import { LucideIcon, Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useCalendar } from "@/contexts/CalendarContext";
 
 type HeaderTab = {
   id: string;
@@ -24,13 +25,23 @@ export default function AppHeader({
   activeTab,
   onTabChange
 }: AppHeaderProps) {
+  const { currentDate } = useCalendar();
+
   return (
     <header className="app-shell-header">
       <div className="container mx-auto px-6 py-4">
         <div className="flex items-center justify-between gap-6">
           <div>
             <h1 className="app-shell-title">{title}</h1>
-            <p className="app-shell-subtitle">{subtitle}</p>
+            <div className="flex items-center gap-3">
+              <p className="app-shell-subtitle">{subtitle}</p>
+              {currentDate && (
+                <div className="flex items-center gap-1 text-terminal-primary/70 text-xs border border-terminal-primary/30 px-2 py-0.5 rounded">
+                  <Calendar size={12} />
+                  <span>{currentDate.formatted}</span>
+                </div>
+              )}
+            </div>
           </div>
 
           <nav className="app-shell-tabs" role="tablist" aria-label="Mainframe views">
