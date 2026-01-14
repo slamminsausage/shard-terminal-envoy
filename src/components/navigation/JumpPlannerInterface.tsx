@@ -6,18 +6,18 @@ import { CampaignNotesPanel } from "./CampaignNotesPanel";
 
 export function JumpPlannerInterface() {
   return (
-    <div className="jump-planner h-full flex flex-col bg-[#0a0e0c] text-[#00ff88] font-mono border border-primary/30 rounded shadow-[0_0_32px_rgba(0,255,0,0.12)] overflow-auto">
+    <div className="jump-planner h-full flex flex-col bg-terminal-bg-darker text-terminal-primary-light font-mono border border-primary/30 rounded shadow-[0_0_32px_rgba(0,255,0,0.12)] overflow-auto">
       {/* Header */}
-      <header className="jump-planner-header flex justify-between items-center px-6 py-3 border-b border-[#1a2420] bg-gradient-to-b from-[#00ff8808] to-transparent">
+      <header className="jump-planner-header flex justify-between items-center px-6 py-3 border-b border-terminal-bg-border bg-gradient-to-b from-terminal-primary-light/5 to-transparent">
         <div className="flex items-center gap-4">
-          <span className="font-['Orbitron'] font-black text-xl tracking-[4px] drop-shadow-[0_0_20px_#00ff88]">
+          <span className="font-['Orbitron'] font-black text-xl tracking-[4px] drop-shadow-[0_0_20px_var(--primary-light)]">
             NAVIGATION COMPUTER
           </span>
-          <span className="text-[#446655] text-sm">
+          <span className="text-terminal-text-dimmer text-sm">
             Jump Calculator & Star Map
           </span>
         </div>
-        <div className="text-sm text-[#446655]">
+        <div className="text-sm text-terminal-text-dimmer">
           TravellerMap Integration v1.0
         </div>
       </header>

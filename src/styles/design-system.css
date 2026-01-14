@@ -9,16 +9,30 @@
   --primary: #00ff00;          /* Brighter green */
   --primary-dim: #00aa00;      /* Dimmed green */
   --primary-dark: #004400;     /* Dark green for buttons */
+  --primary-light: #00ff88;    /* Light green for friendly/active states */
+  --primary-mid: #00aa55;      /* Mid green for borders/highlights */
   --secondary: #00ccff;        /* Cyan accents */
   --warning: #ff6600;          /* Orange warnings */
+  --warning-alt: #ffaa00;      /* Alternative warning yellow */
   --danger: #ff3344;           /* Red alerts */
+  --danger-alt: #ff4455;       /* Alternative danger red */
+  --danger-light: #ff8899;     /* Light danger for text */
   --focus-outline: #99ff99;    /* Accessible focus hue */
 
   /* Backgrounds - UPDATED */
   --bg-dark: #000000;          /* Pure black */
   --bg-panel: #0a0a0a;         /* Very dark panel */
+  --bg-panel-alt: #0d1210;     /* Alternative dark panel (greenish tint) */
+  --bg-darker: #0a0e0c;        /* Darker background for inputs */
+  --bg-border: #1a2420;        /* Dark border color */
   --border: #00ff00;           /* Bright green borders */
   --text-dim: #00aa00;         /* Dimmed green text */
+  --text-dimmer: #446655;      /* Very dim gray-green text */
+  --text-muted: #88bbaa;       /* Muted greenish text */
+
+  /* Neutral Colors */
+  --neutral-light: #cccccc;    /* Light gray for neutral states */
+  --neutral: #aaaaaa;          /* Gray for derelict/inactive states */
 
   /* Effects - UPDATED */
   --scanline-opacity: 0.05;    /* Slightly more visible */

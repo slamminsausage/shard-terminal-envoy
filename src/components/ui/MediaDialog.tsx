@@ -33,16 +33,16 @@ export const MediaDialog: React.FC<MediaDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-[95vw] max-h-[95vh] bg-black border-[#00ff41]/50 p-0">
+      <DialogContent className="max-w-[95vw] max-h-[95vh] bg-terminal-bg-dark border-terminal-primary/50 p-0">
         <DialogHeader className="p-4 pb-2">
           <div className="flex items-center justify-between">
-            <DialogTitle className="text-[#00ff41]">{title}</DialogTitle>
+            <DialogTitle className="text-terminal-primary">{title}</DialogTitle>
             <div className="flex gap-2">
               <Button
                 onClick={handleZoomOut}
                 size="sm"
                 variant="outline"
-                className="border-[#00ff41]/50 text-[#00ff41] hover:bg-[#00ff41]/20 h-8 w-8 p-0"
+                className="border-terminal-primary/50 text-terminal-primary hover:bg-terminal-primary/20 h-8 w-8 p-0"
                 disabled={zoom <= 0.5}
               >
                 <ZoomOut className="h-4 w-4" />
@@ -51,7 +51,7 @@ export const MediaDialog: React.FC<MediaDialogProps> = ({
                 onClick={handleZoomReset}
                 size="sm"
                 variant="outline"
-                className="border-[#00ff41]/50 text-[#00ff41] hover:bg-[#00ff41]/20 h-8 px-2"
+                className="border-terminal-primary/50 text-terminal-primary hover:bg-terminal-primary/20 h-8 px-2"
               >
                 <RotateCcw className="h-4 w-4 mr-1" />
                 {Math.round(zoom * 100)}%
@@ -60,7 +60,7 @@ export const MediaDialog: React.FC<MediaDialogProps> = ({
                 onClick={handleZoomIn}
                 size="sm"
                 variant="outline"
-                className="border-[#00ff41]/50 text-[#00ff41] hover:bg-[#00ff41]/20 h-8 w-8 p-0"
+                className="border-terminal-primary/50 text-terminal-primary hover:bg-terminal-primary/20 h-8 w-8 p-0"
                 disabled={zoom >= 3}
               >
                 <ZoomIn className="h-4 w-4" />

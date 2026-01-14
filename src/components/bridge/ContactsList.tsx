@@ -33,14 +33,14 @@ export function ContactsList({
   };
 
   return (
-    <div className="contacts-panel bg-[#0d1210] border border-[#1a2420] rounded overflow-hidden">
-      <div className="panel-header flex justify-between items-center px-4 py-2 bg-[#00ff8808] border-b border-[#1a2420]">
-        <span className="font-['Orbitron'] text-xs tracking-[3px] text-[#446655]">CONTACTS</span>
+    <div className="contacts-panel bg-terminal-bg-panel-alt border border-terminal-bg-border rounded overflow-hidden">
+      <div className="panel-header flex justify-between items-center px-4 py-2 bg-terminal-primary-light/5 border-b border-terminal-bg-border">
+        <span className="font-['Orbitron'] text-xs tracking-[3px] text-terminal-text-dimmer">CONTACTS</span>
         <div className="flex items-center gap-3">
-          <span className="text-xs text-[#00ff88]">{contacts.length} DETECTED</span>
+          <span className="text-xs text-terminal-primary-light">{contacts.length} DETECTED</span>
           <button
             onClick={onAddClick}
-            className="text-xs text-[#00ff88] hover:text-white transition-colors"
+            className="text-xs text-terminal-primary-light hover:text-white transition-colors"
           >
             + ADD
           </button>
@@ -53,17 +53,17 @@ export function ContactsList({
           .map(contact => {
           const isSelected = selectedContact?.id === contact.id;
           const statusColor = contact.status === "friendly"
-            ? "#00ff88"
+            ? "var(--primary-light)"
             : contact.status === "enemy"
-              ? "#ff4455"
+              ? "var(--danger-alt)"
               : contact.status === "derelict"
-                ? "#aaaaaa"
-                : "#00ccff";
+                ? "var(--neutral)"
+                : "var(--secondary)";
 
           return (
             <div
               key={contact.id}
-              className={`flex items-center gap-3 px-3 py-2 cursor-pointer transition-all text-xs hover:bg-[#00ff8808] ${isSelected ? "bg-[#00ff8810]" : ""}`}
+              className={`flex items-center gap-3 px-3 py-2 cursor-pointer transition-all text-xs hover:bg-terminal-primary-light/5 ${isSelected ? "bg-terminal-primary-light/10" : ""}`}
               onClick={() => onContactClick(contact)}
             >
               <div
@@ -73,15 +73,15 @@ export function ContactsList({
               <span className="flex-1 truncate" style={{ color: statusColor }}>
                 {contact.name} {contact.isHidden ? "(hidden)" : ""}
               </span>
-              <span className="text-[#446655] w-12 text-right">
+              <span className="text-terminal-text-dimmer w-12 text-right">
                 {calculateRange(contact.hexQ, contact.hexR)}
               </span>
-              <span className="text-[#446655] w-10 text-right">
+              <span className="text-terminal-text-dimmer w-10 text-right">
                 {calculateBearing(contact.hexQ, contact.hexR)}
               </span>
-              <div className="flex gap-2 text-[10px] text-[#446655]">
+              <div className="flex gap-2 text-[10px] text-terminal-text-dimmer">
                 <button
-                  className="hover:text-[#00ff88]"
+                  className="hover:text-terminal-primary-light"
                   onClick={e => {
                     e.stopPropagation();
                     onUpdateStatus(contact.id, "friendly");
@@ -90,7 +90,7 @@ export function ContactsList({
                   F
                 </button>
                 <button
-                  className="hover:text-[#00ccff]"
+                  className="hover:text-terminal-secondary"
                   onClick={e => {
                     e.stopPropagation();
                     onUpdateStatus(contact.id, "unknown");
@@ -99,7 +99,7 @@ export function ContactsList({
                   U
                 </button>
                 <button
-                  className="hover:text-[#ff4455]"
+                  className="hover:text-terminal-danger-alt"
                   onClick={e => {
                     e.stopPropagation();
                     onUpdateStatus(contact.id, "enemy");
@@ -108,7 +108,7 @@ export function ContactsList({
                   E
                 </button>
                 <button
-                  className="hover:text-[#cccccc]"
+                  className="hover:text-terminal-neutral-light"
                   onClick={e => {
                     e.stopPropagation();
                     onUpdateStatus(contact.id, "derelict");
@@ -117,7 +117,7 @@ export function ContactsList({
                   D
                 </button>
                 <button
-                  className="hover:text-[#ff4455]"
+                  className="hover:text-terminal-danger-alt"
                   onClick={e => {
                     e.stopPropagation();
                     onRemoveContact(contact.id);

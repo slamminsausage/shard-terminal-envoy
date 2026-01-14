@@ -21,7 +21,7 @@ export function AccordionPanel({
   return (
     <div className="panel accordion-panel overflow-hidden">
       <div
-        className="panel-header cursor-pointer select-none hover:bg-[#1a2420] transition-colors"
+        className="panel-header cursor-pointer select-none hover:bg-terminal-bg-border transition-colors"
         onClick={() => setIsExpanded(!isExpanded)}
       >
         <div className="flex items-center gap-2">

@@ -32,12 +32,12 @@ export function ControlPanel() {
     <div className="control-panel flex flex-col gap-3 flex-shrink-0">
       {/* Error Display */}
       {error && (
-        <div className="panel border-[#ff4455]">
+        <div className="panel border-terminal-danger-alt">
           <div className="panel-content p-3 flex justify-between items-center">
-            <span className="text-[#ff4455] text-sm">{error}</span>
+            <span className="text-terminal-danger-alt text-sm">{error}</span>
             <button
               onClick={clearError}
-              className="text-[#ff4455] hover:text-white text-xs"
+              className="text-terminal-danger-alt hover:text-white text-xs"
             >
               DISMISS
             </button>
@@ -53,7 +53,7 @@ export function ControlPanel() {
         {/* Jump Rating Selector */}
         <div className="space-y-3">
           <div className="flex items-center gap-3">
-            <label className="text-[#446655] text-xs whitespace-nowrap">
+            <label className="text-terminal-text-dimmer text-xs whitespace-nowrap">
               JUMP RATING:
             </label>
             <div className="flex gap-1">
@@ -64,7 +64,7 @@ export function ControlPanel() {
                   className={`w-8 h-8 border text-sm font-bold transition-all ${
                     jumpRating === rating
                       ? "border-primary bg-primary/20 text-primary shadow-[0_0_10px_rgba(0,255,0,0.4)]"
-                      : "border-[#1a2420] text-[#446655] hover:border-primary/50"
+                      : "border-terminal-bg-border text-terminal-text-dimmer hover:border-primary/50"
                   }`}
                 >
                   {rating}
@@ -92,7 +92,7 @@ export function ControlPanel() {
           {/* Jump Worlds List */}
           {jumpWorlds.length > 0 && (
             <div className="mt-3">
-              <div className="text-[#446655] text-xs mb-2">
+              <div className="text-terminal-text-dimmer text-xs mb-2">
                 {jumpWorlds.length} WORLDS FOUND:
               </div>
               <div className="max-h-48 overflow-y-auto space-y-1">
@@ -100,9 +100,9 @@ export function ControlPanel() {
                   const uwp = parseUWP(world.uwp);
                   const zoneClass =
                     world.zone === "A" || world.zone === "R"
-                      ? "text-[#ffaa00]"
+                      ? "text-terminal-warning-alt"
                       : world.zone === "F" || world.zone === "X"
-                        ? "text-[#ff4455]"
+                        ? "text-terminal-danger-alt"
                         : "text-primary";
 
                   return (
@@ -112,23 +112,23 @@ export function ControlPanel() {
                         selectJumpWorld(world);
                         setCurrentLocation(world.sector, world.hex);
                       }}
-                      className="w-full text-left p-2 border border-[#1a2420] hover:border-primary/50 hover:bg-primary/5 transition-all group"
+                      className="w-full text-left p-2 border border-terminal-bg-border hover:border-primary/50 hover:bg-primary/5 transition-all group"
                     >
                       <div className="flex justify-between items-start">
                         <div>
                           <span className={`font-bold ${zoneClass}`}>
                             {world.name}
                           </span>
-                          <span className="text-[#446655] text-xs ml-2">
+                          <span className="text-terminal-text-dimmer text-xs ml-2">
                             {world.hex}
                           </span>
                         </div>
-                        <span className="text-[#00ccff] text-xs font-mono">
+                        <span className="text-terminal-secondary text-xs font-mono">
                           {world.uwp}
                         </span>
                       </div>
                       {world.zone && (
-                        <div className="text-xs text-[#446655] mt-1">
+                        <div className="text-xs text-terminal-text-dimmer mt-1">
                           {getZoneDescription(world.zone)}
                         </div>
                       )}
@@ -138,7 +138,7 @@ export function ControlPanel() {
                             e.stopPropagation();
                             setRouteEndFromWorld(world);
                           }}
-                          className="text-xs text-[#00ccff] hover:text-white"
+                          className="text-xs text-terminal-secondary hover:text-white"
                         >
                           [SET AS DESTINATION]
                         </button>
@@ -193,7 +193,7 @@ export function ControlPanel() {
                 onChange={(e) => setRouteOptions({ nored: e.target.checked })}
                 className="accent-primary"
               />
-              <span className="text-[#446655]">Avoid Red Zones</span>
+              <span className="text-terminal-text-dimmer">Avoid Red Zones</span>
             </label>
             <label className="flex items-center gap-1 cursor-pointer">
               <input
@@ -202,7 +202,7 @@ export function ControlPanel() {
                 onChange={(e) => setRouteOptions({ im: e.target.checked })}
                 className="accent-primary"
               />
-              <span className="text-[#446655]">Imperium Only</span>
+              <span className="text-terminal-text-dimmer">Imperium Only</span>
             </label>
             <label className="flex items-center gap-1 cursor-pointer">
               <input
@@ -211,7 +211,7 @@ export function ControlPanel() {
                 onChange={(e) => setRouteOptions({ wild: e.target.checked })}
                 className="accent-primary"
               />
-              <span className="text-[#446655]">Allow Wilderness</span>
+              <span className="text-terminal-text-dimmer">Allow Wilderness</span>
             </label>
           </div>
 
@@ -234,7 +234,7 @@ export function ControlPanel() {
           {/* Route Results */}
           {route.length > 0 && (
             <div className="mt-3">
-              <div className="text-[#446655] text-xs mb-2">
+              <div className="text-terminal-text-dimmer text-xs mb-2">
                 ROUTE ({route.length} waypoints, {Math.max(0, route.length - 1)} jump{route.length === 2 ? '' : 's'}):
               </div>
               <div className="max-h-48 overflow-y-auto">
@@ -244,7 +244,7 @@ export function ControlPanel() {
                       key={`${leg.sector}-${leg.hex}-${idx}`}
                       className="flex items-center gap-2 text-sm p-2 border-l-2 border-primary/30 pl-3"
                     >
-                      <span className="text-[#00ccff] font-mono w-6">
+                      <span className="text-terminal-secondary font-mono w-6">
                         {idx + 1}.
                       </span>
                       <button
@@ -252,11 +252,11 @@ export function ControlPanel() {
                         className="text-left flex-1 hover:text-primary transition-colors"
                       >
                         <span className="font-bold">{leg.name}</span>
-                        <span className="text-[#446655] text-xs ml-2">
+                        <span className="text-terminal-text-dimmer text-xs ml-2">
                           {leg.hex}
                         </span>
                         {leg.uwp && (
-                          <span className="text-[#00ccff] text-xs ml-2 font-mono">
+                          <span className="text-terminal-secondary text-xs ml-2 font-mono">
                             [{leg.uwp}]
                           </span>
                         )}

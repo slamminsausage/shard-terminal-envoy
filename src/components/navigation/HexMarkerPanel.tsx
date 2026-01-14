@@ -91,9 +91,9 @@ export function HexMarkerPanel({ onEditMarker, onCreateMarker }: HexMarkerPanelP
       headerAction={currentLocation ? headerAction : undefined}
     >
       {isLoadingMarkers ? (
-        <div className="text-center py-4 text-[#446655]">Loading markers...</div>
+        <div className="text-center py-4 text-terminal-text-dimmer">Loading markers...</div>
       ) : hexMarkers.length === 0 ? (
-        <div className="text-center py-4 text-[#446655]">
+        <div className="text-center py-4 text-terminal-text-dimmer">
           No markers created yet.
           {currentLocation && (
             <button
@@ -112,7 +112,7 @@ export function HexMarkerPanel({ onEditMarker, onCreateMarker }: HexMarkerPanelP
             const isExpanded = expandedSectors.has(sector);
 
             return (
-              <div key={sector} className="border border-[#1a2420] bg-black/20">
+              <div key={sector} className="border border-terminal-bg-border bg-black/20">
                 {/* Sector Header */}
                 <button
                   onClick={() => toggleSector(sector)}
@@ -127,7 +127,7 @@ export function HexMarkerPanel({ onEditMarker, onCreateMarker }: HexMarkerPanelP
                     <span className="font-bold text-primary uppercase tracking-wider">
                       {sector}
                     </span>
-                    <span className="text-xs text-[#446655]">
+                    <span className="text-xs text-terminal-text-dimmer">
                       ({sectorMarkers.length} {sectorMarkers.length === 1 ? 'marker' : 'markers'})
                     </span>
                   </div>
@@ -135,7 +135,7 @@ export function HexMarkerPanel({ onEditMarker, onCreateMarker }: HexMarkerPanelP
 
                 {/* Sector Markers */}
                 {isExpanded && (
-                  <div className="space-y-2 p-2 border-t border-[#1a2420]">
+                  <div className="space-y-2 p-2 border-t border-terminal-bg-border">
                     {sectorMarkers.map((marker) => {
                       const config = getMarkerTypeConfig(marker.marker_type);
                       const isInactive = marker.is_active === false;
@@ -143,7 +143,7 @@ export function HexMarkerPanel({ onEditMarker, onCreateMarker }: HexMarkerPanelP
                       return (
                         <div
                           key={marker.id}
-                          className={`p-2 border border-[#1a2420] bg-black/30 transition-opacity ${
+                          className={`p-2 border border-terminal-bg-border bg-black/30 transition-opacity ${
                             isInactive ? "opacity-50" : ""
                           }`}
                         >
@@ -162,10 +162,10 @@ export function HexMarkerPanel({ onEditMarker, onCreateMarker }: HexMarkerPanelP
                                   <div className="font-semibold text-sm text-primary truncate">
                                     {marker.marker_label}
                                   </div>
-                                  <div className="text-xs text-[#446655]">
+                                  <div className="text-xs text-terminal-text-dimmer">
                                     {config.label}
                                   </div>
-                                  <div className="text-xs text-[#00ccff] font-mono mt-0.5">
+                                  <div className="text-xs text-terminal-secondary font-mono mt-0.5">
                                     {marker.hex}
                                   </div>
                                 </div>
@@ -173,7 +173,7 @@ export function HexMarkerPanel({ onEditMarker, onCreateMarker }: HexMarkerPanelP
 
                               {/* Description */}
                               {marker.description && (
-                                <div className="text-xs text-[#00aa00] mt-1 line-clamp-2">
+                                <div className="text-xs text-terminal-primary-mid mt-1 line-clamp-2">
                                   {marker.description}
                                 </div>
                               )}
@@ -192,21 +192,21 @@ export function HexMarkerPanel({ onEditMarker, onCreateMarker }: HexMarkerPanelP
                             {/* Actions */}
                             <div className="flex flex-col gap-1 flex-shrink-0">
                               <button
-                                className="p-1 hover:bg-[#1a2420] text-[#00ccff] hover:text-primary transition-colors"
+                                className="p-1 hover:bg-terminal-bg-border text-terminal-secondary hover:text-primary transition-colors"
                                 onClick={() => handleViewInfo(marker)}
                                 title="View marker details"
                               >
                                 <Info className="w-3 h-3" />
                               </button>
                               <button
-                                className="p-1 hover:bg-[#1a2420] text-[#00ccff] hover:text-primary transition-colors"
+                                className="p-1 hover:bg-terminal-bg-border text-terminal-secondary hover:text-primary transition-colors"
                                 onClick={() => onEditMarker(marker)}
                                 title="Edit marker"
                               >
                                 <Edit2 className="w-3 h-3" />
                               </button>
                               <button
-                                className="p-1 hover:bg-[#1a2420] text-[#ff4455] hover:text-[#ff6666] transition-colors"
+                                className="p-1 hover:bg-terminal-bg-border text-terminal-danger-alt hover:text-terminal-danger-light transition-colors"
                                 onClick={() => handleDelete(marker)}
                                 disabled={deletingId === marker.id}
                                 title="Delete marker"

@@ -10,6 +10,7 @@ import { NotesProvider } from "@/contexts/NotesContext";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import CRTOverlay from "@/components/ui/CRTOverlay";
 import { GlobalSearch } from "@/components/GlobalSearch";
+import { KeyboardShortcutsHelp } from "@/components/KeyboardShortcutsHelp";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import CharacterView from "./components/crew/CharacterView";
@@ -43,6 +44,7 @@ const App = () => (
             <Sonner />
             <BrowserRouter>
               <GlobalSearch />
+              <KeyboardShortcutsHelp />
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/character-view/:id" element={<CharacterViewRoute />} />

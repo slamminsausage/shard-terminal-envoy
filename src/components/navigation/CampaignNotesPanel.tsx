@@ -4,13 +4,13 @@ import type { WorldStatus } from "@/types/navigation";
 import { Loader2 } from "lucide-react";
 
 const STATUS_OPTIONS: { value: WorldStatus; label: string; color: string }[] = [
-  { value: "UNKNOWN", label: "Unknown", color: "#446655" },
-  { value: "SAFE_HAVEN", label: "Safe Haven", color: "#00ff88" },
-  { value: "ALLIED", label: "Allied", color: "#00ccff" },
+  { value: "UNKNOWN", label: "Unknown", color: "var(--text-dimmer)" },
+  { value: "SAFE_HAVEN", label: "Safe Haven", color: "var(--primary-light)" },
+  { value: "ALLIED", label: "Allied", color: "var(--secondary)" },
   { value: "NEUTRAL", label: "Neutral", color: "#888888" },
-  { value: "UNFRIENDLY", label: "Unfriendly", color: "#ffaa00" },
-  { value: "RESTRICTED", label: "Restricted", color: "#ff6600" },
-  { value: "PIRATE_BASE", label: "Pirate Base", color: "#ff4455" },
+  { value: "UNFRIENDLY", label: "Unfriendly", color: "var(--warning-alt)" },
+  { value: "RESTRICTED", label: "Restricted", color: "var(--warning)" },
+  { value: "PIRATE_BASE", label: "Pirate Base", color: "var(--danger-alt)" },
   { value: "CONTESTED", label: "Contested", color: "#ff00ff" },
 ];
 
@@ -31,7 +31,7 @@ export function CampaignNotesPanel() {
       defaultExpanded={false}
     >
       {!currentLocation ? (
-        <div className="text-center py-8 text-[#446655]">
+        <div className="text-center py-8 text-terminal-text-dimmer">
           <p>Select a hex to view or add campaign notes</p>
         </div>
       ) : isLoadingNote ? (
@@ -42,7 +42,7 @@ export function CampaignNotesPanel() {
         <div className="space-y-3">
           {/* World Status */}
           <div>
-            <label className="text-[#446655] text-xs block mb-1">
+            <label className="text-terminal-text-dimmer text-xs block mb-1">
               STATUS:
             </label>
             <select
@@ -62,7 +62,7 @@ export function CampaignNotesPanel() {
 
           {/* Tags */}
           <div>
-            <label className="text-[#446655] text-xs block mb-1">
+            <label className="text-terminal-text-dimmer text-xs block mb-1">
               TAGS (comma separated):
             </label>
             <input
@@ -76,7 +76,7 @@ export function CampaignNotesPanel() {
 
           {/* Planet Description */}
           <div>
-            <label className="text-[#446655] text-xs block mb-1">
+            <label className="text-terminal-text-dimmer text-xs block mb-1">
               PLANET DESCRIPTION:
             </label>
             <textarea
@@ -89,7 +89,7 @@ export function CampaignNotesPanel() {
 
           {/* Custom Notes */}
           <div>
-            <label className="text-[#446655] text-xs block mb-1">
+            <label className="text-terminal-text-dimmer text-xs block mb-1">
               CAMPAIGN NOTES:
             </label>
             <textarea
@@ -102,7 +102,7 @@ export function CampaignNotesPanel() {
 
           {/* Patrons */}
           <div>
-            <label className="text-[#446655] text-xs block mb-1">
+            <label className="text-terminal-text-dimmer text-xs block mb-1">
               PATRONS / CONTACTS:
             </label>
             <textarea
@@ -115,14 +115,14 @@ export function CampaignNotesPanel() {
 
           {/* GM Notes */}
           <div>
-            <label className="text-[#446655] text-xs block mb-1">
+            <label className="text-terminal-text-dimmer text-xs block mb-1">
               GM NOTES (hidden):
             </label>
             <textarea
               value={currentNote.gm_notes || ""}
               onChange={(e) => updateNote({ gm_notes: e.target.value })}
               placeholder="Secret GM information..."
-              className="terminal-input text-sm min-h-[80px] resize-y border-[#ffaa00]/30"
+              className="terminal-input text-sm min-h-[80px] resize-y border-terminal-warning-alt/30"
             />
           </div>
 
@@ -132,16 +132,16 @@ export function CampaignNotesPanel() {
               type="checkbox"
               checked={currentNote.gm_only || false}
               onChange={(e) => updateNote({ gm_only: e.target.checked })}
-              className="accent-[#ffaa00]"
+              className="accent-terminal-warning-alt"
             />
-            <span className="text-[#ffaa00] text-xs">
+            <span className="text-terminal-warning-alt text-xs">
               Entire note is GM-only
             </span>
           </label>
 
           {/* Last Visited */}
           {currentNote.last_visited && (
-            <div className="text-xs text-[#446655]">
+            <div className="text-xs text-terminal-text-dimmer">
               Last visited:{" "}
               {new Date(currentNote.last_visited).toLocaleDateString()}
             </div>
@@ -157,7 +157,7 @@ export function CampaignNotesPanel() {
           </button>
         </div>
       ) : (
-        <div className="text-center py-8 text-[#446655]">
+        <div className="text-center py-8 text-terminal-text-dimmer">
           <p>Select a world to view or add notes</p>
         </div>
       )}

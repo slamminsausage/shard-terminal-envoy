@@ -34,9 +34,10 @@ export default function AppHeader({
           </div>
 
           <nav className="app-shell-tabs" role="tablist" aria-label="Mainframe views">
-            {tabs.map((tab) => {
+            {tabs.map((tab, index) => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;
+              const shortcutNumber = index + 1;
               return (
                 <button
                   key={tab.id}
@@ -44,6 +45,7 @@ export default function AppHeader({
                   aria-selected={isActive}
                   className={cn("tab-button", isActive && "tab-button--active")}
                   onClick={() => onTabChange(tab.id)}
+                  title={`${tab.label} (Press ${shortcutNumber})`}
                 >
                   {tab.emoji ? (
                     <span className="opacity-70 text-sm leading-none" style={{ fontSize: '14px' }} aria-hidden>{tab.emoji}</span>
@@ -51,6 +53,9 @@ export default function AppHeader({
                     <Icon size={14} aria-hidden className="opacity-70" />
                   ) : null}
                   <span>{tab.label.toUpperCase()}</span>
+                  <span className="text-[10px] opacity-50 ml-1" aria-label={`Shortcut: ${shortcutNumber}`}>
+                    {shortcutNumber}
+                  </span>
                 </button>
               );
             })}

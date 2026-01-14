@@ -15,17 +15,17 @@ export function ActionBar({ alertLevel, onAlertChange, onScanClick, onHailClick,
   };
 
   return (
-    <div className="action-bar flex gap-2 p-3 bg-[#0d1210] border-t border-[#1a2420]">
+    <div className="action-bar flex gap-2 p-3 bg-terminal-bg-panel-alt border-t border-terminal-bg-border">
       <button
         onClick={cycleAlert}
-        className={`flex-1 py-2.5 px-4 rounded text-xs font-mono transition-all border bg-[#00ff8808] hover:bg-[#00ff8815] ${
+        className={`flex-1 py-2.5 px-4 rounded text-xs font-mono transition-all border bg-terminal-primary-light/5 hover:bg-terminal-primary-light/10 ${
           alertLevel === "emergency"
-            ? "border-[#ff4455] text-[#ff4455]"
+            ? "border-terminal-danger-alt text-terminal-danger-alt"
             : alertLevel === "combat"
-              ? "border-[#ffaa00] text-[#ffaa00]"
+              ? "border-terminal-warning-alt text-terminal-warning-alt"
               : alertLevel === "elevated"
-                ? "border-[#ffaa00] text-[#ffaa00]"
-                : "border-[#1a2420] text-[#446655] hover:text-[#00ff88] hover:border-[#00aa55]"
+                ? "border-terminal-warning-alt text-terminal-warning-alt"
+                : "border-terminal-bg-border text-terminal-text-dimmer hover:text-terminal-primary-light hover:border-terminal-primary-mid"
         }`}
       >
         ALERT: {alertLevel.toUpperCase()}
@@ -33,14 +33,14 @@ export function ActionBar({ alertLevel, onAlertChange, onScanClick, onHailClick,
 
       <button
         onClick={onScanClick}
-        className="flex-1 py-2.5 px-4 rounded text-xs font-mono transition-all border border-[#1a2420] text-[#446655] bg-[#00ff8808] hover:bg-[#00ff8815] hover:text-[#00ff88] hover:border-[#00aa55]"
+        className="flex-1 py-2.5 px-4 rounded text-xs font-mono transition-all border border-terminal-bg-border text-terminal-text-dimmer bg-terminal-primary-light/5 hover:bg-terminal-primary-light/10 hover:text-terminal-primary-light hover:border-terminal-primary-mid"
       >
         SCAN
       </button>
 
       <button
         onClick={onHailClick}
-        className="flex-1 py-2.5 px-4 rounded text-xs font-mono transition-all border border-[#1a2420] text-[#446655] bg-[#00ff8808] hover:bg-[#00ff8815] hover:text-[#00ff88] hover:border-[#00aa55]"
+        className="flex-1 py-2.5 px-4 rounded text-xs font-mono transition-all border border-terminal-bg-border text-terminal-text-dimmer bg-terminal-primary-light/5 hover:bg-terminal-primary-light/10 hover:text-terminal-primary-light hover:border-terminal-primary-mid"
       >
         HAIL
       </button>
@@ -48,7 +48,7 @@ export function ActionBar({ alertLevel, onAlertChange, onScanClick, onHailClick,
       {onDamageCalcClick && (
         <button
           onClick={onDamageCalcClick}
-          className="flex-1 py-2.5 px-4 rounded text-xs font-mono transition-all border border-[#1a2420] text-[#446655] bg-[#00ff8808] hover:bg-[#00ff8815] hover:text-[#00ff88] hover:border-[#00aa55]"
+          className="flex-1 py-2.5 px-4 rounded text-xs font-mono transition-all border border-terminal-bg-border text-terminal-text-dimmer bg-terminal-primary-light/5 hover:bg-terminal-primary-light/10 hover:text-terminal-primary-light hover:border-terminal-primary-mid"
         >
           DMG CALC
         </button>
