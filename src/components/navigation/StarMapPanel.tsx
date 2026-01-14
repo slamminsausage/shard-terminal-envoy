@@ -2,8 +2,9 @@ import { useRef, useEffect, useState } from "react";
 import { useJumpPlanner } from "@/contexts/JumpPlannerContext";
 import { generateMapUrl, padHex, getSectorFullName, type WorldSearchResult } from "@/lib/travellerMapApi";
 import { WorldSearchAutocomplete } from "./WorldSearchAutocomplete";
-import { MapPin, Navigation, Info } from "lucide-react";
+import { MapPin, Navigation, Info, ZoomIn, ZoomOut, Maximize2 } from "lucide-react";
 import { StarMapLegendModal } from "./StarMapLegendModal";
+import { usePinchZoom } from "@/hooks/usePinchZoom";
 
 export function StarMapPanel() {
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -20,6 +21,12 @@ export function StarMapPanel() {
   const [searchValue, setSearchValue] = useState("");
   const [hexInput, setHexInput] = useState(mapHex);
   const [isLegendOpen, setIsLegendOpen] = useState(false);
+
+  // Pinch zoom for mobile touch gestures
+  const { ref: zoomRef, transform, resetZoom, style: zoomStyle } = usePinchZoom<HTMLDivElement>({
+    minScale: 1,
+    maxScale: 4
+  });
 
   // Update hex input when map location changes
   useEffect(() => {
@@ -157,17 +164,31 @@ export function StarMapPanel() {
           </div>
         )}
 
-        {/* Map Iframe */}
-        <div className="flex-1 relative min-h-[320px] min-w-0">
-          <iframe
-            ref={iframeRef}
-            // Key forces iframe to fully reload when sector/hex changes
-            key={`${mapSector}-${mapHex}`}
-            src={mapUrl}
-            className="absolute inset-0 w-full h-full border-t border-terminal-bg-border"
-            title="TravellerMap"
-            allow="fullscreen"
-          />
+        {/* Map Iframe with Pinch Zoom */}
+        <div ref={zoomRef} className="flex-1 relative min-h-[320px] min-w-0 overflow-hidden touch-none">
+          <div style={zoomStyle} className="absolute inset-0">
+            <iframe
+              ref={iframeRef}
+              // Key forces iframe to fully reload when sector/hex changes
+              key={`${mapSector}-${mapHex}`}
+              src={mapUrl}
+              className="absolute inset-0 w-full h-full border-t border-terminal-bg-border"
+              title="TravellerMap"
+              allow="fullscreen"
+              style={{ pointerEvents: transform.scale > 1 ? 'auto' : 'auto' }}
+            />
+          </div>
+
+          {/* Zoom Controls (Mobile-friendly) */}
+          {transform.scale > 1 && (
+            <button
+              onClick={resetZoom}
+              className="absolute top-2 right-2 z-10 p-2 bg-terminal-bg-panel border border-terminal-primary-mid rounded text-terminal-primary-light hover:bg-terminal-primary-light/10 transition-colors shadow-lg"
+              title="Reset zoom"
+            >
+              <Maximize2 className="w-4 h-4" />
+            </button>
+          )}
         </div>
 
         {/* Current Selection Display */}
