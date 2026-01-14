@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { Plus, Trash2, Heart, Shield, Swords, RefreshCw, ArrowUp, ArrowDown, User, Dices } from 'lucide-react';
+import { Plus, Trash2, Heart, Shield, Swords, RefreshCw, ArrowUp, ArrowDown, User, Dices, GripVertical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -71,9 +71,13 @@ export default function CombatInterface() {
   // Ref for debouncing auto-save
   const saveTimeoutRef = useRef<number | null>(null);
 
-  // Sort combatants by initiative (memoized to prevent unnecessary re-sorts)
+  // Drag and drop state
+  const [draggedCombatantId, setDraggedCombatantId] = useState<string | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+
+  // Sort combatants by turn order (memoized to prevent unnecessary re-sorts)
   const sortedCombatants = useMemo(() => {
-    return [...combatants].sort((a, b) => b.initiative - a.initiative);
+    return [...combatants].sort((a, b) => a.turnOrder - b.turnOrder);
   }, [combatants]);
 
   const activeCombatant = sortedCombatants[currentTurnIndex];
@@ -96,7 +100,12 @@ export default function CombatInterface() {
       }
 
       if (data) {
-        setCombatants(data.combatants || []);
+        // Ensure all combatants have a turnOrder field (for backward compatibility)
+        const combatantsWithTurnOrder = (data.combatants || []).map((c: Combatant) => ({
+          ...c,
+          turnOrder: c.turnOrder ?? c.initiative, // Initialize to initiative if missing
+        }));
+        setCombatants(combatantsWithTurnOrder);
         setCurrentRound(data.current_round);
         setCurrentTurnIndex(data.current_turn_index);
       }
@@ -221,6 +230,7 @@ export default function CombatInterface() {
       type: 'character',
       characterId: pendingCharacter.id,
       initiative: total,
+      turnOrder: total, // Initialize turnOrder to initiative value
       healthType: 'characteristics',
       currentStr: pendingCharacter.current_strength ?? pendingCharacter.strength,
       maxStr: pendingCharacter.strength,
@@ -253,6 +263,7 @@ export default function CombatInterface() {
       name: npcName,
       type: 'npc',
       initiative: npcInitiative,
+      turnOrder: npcInitiative, // Initialize turnOrder to initiative value
       healthType: npcHealthType,
       // Set appropriate health values based on type
       ...(npcHealthType === 'hits' ? {
@@ -298,24 +309,24 @@ export default function CombatInterface() {
   const handleNextTurn = () => {
     if (sortedCombatants.length === 0) return;
 
-    // Move the current combatant (at currentTurnIndex) to the end
-    const currentCombatantId = sortedCombatants[currentTurnIndex].id;
-
-    // Create a new array with the current combatant moved to the end
-    const reorderedCombatants = [...sortedCombatants];
-    const [current] = reorderedCombatants.splice(currentTurnIndex, 1);
-    reorderedCombatants.push(current);
-
-    // Update the combatants array to match the new order
-    // We need to update the actual combatants array, not the sorted one
-    const newCombatants = reorderedCombatants.map(sc =>
-      combatants.find(c => c.id === sc.id)!
-    );
-
     // Check if we've completed a full round (when index would wrap to 0)
-    if (currentTurnIndex === sortedCombatants.length - 1) {
+    const isLastCombatant = currentTurnIndex === sortedCombatants.length - 1;
+
+    // Move current combatant to the end by setting their turnOrder higher than everyone else's
+    const currentCombatant = sortedCombatants[currentTurnIndex];
+    const maxTurnOrder = Math.max(...sortedCombatants.map(c => c.turnOrder));
+
+    const newCombatants = combatants.map(c => {
+      if (c.id === currentCombatant.id) {
+        // Move current to end
+        return { ...c, turnOrder: maxTurnOrder + 1 };
+      }
+      return c;
+    });
+
+    if (isLastCombatant) {
+      // Round completed - increment round and reset action economy
       setCurrentRound(currentRound + 1);
-      // Reset all action economy
       setCombatants(newCombatants.map(c => ({
         ...c,
         actionsRemaining: 2,
@@ -324,8 +335,8 @@ export default function CombatInterface() {
       })));
       setCurrentTurnIndex(0);
     } else {
+      // Keep the same turn index (the next combatant will now be at the current index)
       setCombatants(newCombatants);
-      // Keep index the same since we removed the current one
       setCurrentTurnIndex(currentTurnIndex);
     }
   };
@@ -333,20 +344,25 @@ export default function CombatInterface() {
   const handlePreviousTurn = () => {
     if (sortedCombatants.length === 0) return;
 
-    // Move the last combatant to the current position
-    const reorderedCombatants = [...sortedCombatants];
-    const last = reorderedCombatants.pop()!;
-    reorderedCombatants.splice(currentTurnIndex, 0, last);
+    // If at the start of the round, go back to previous round
+    const isFirstCombatant = currentTurnIndex === 0;
 
-    // Update the combatants array to match the new order
-    const newCombatants = reorderedCombatants.map(sc =>
-      combatants.find(c => c.id === sc.id)!
-    );
-
-    // If going back from the first position, go to previous round
-    if (currentTurnIndex === 0 && currentRound > 1) {
+    if (isFirstCombatant && currentRound > 1) {
       setCurrentRound(currentRound - 1);
     }
+
+    // Move the last combatant to the current position by setting their turnOrder lower
+    const lastCombatant = sortedCombatants[sortedCombatants.length - 1];
+    const currentCombatant = sortedCombatants[currentTurnIndex];
+    const minTurnOrder = Math.min(...sortedCombatants.map(c => c.turnOrder));
+
+    const newCombatants = combatants.map(c => {
+      if (c.id === lastCombatant.id) {
+        // Move last combatant to before current (lower turnOrder value)
+        return { ...c, turnOrder: minTurnOrder - 1 };
+      }
+      return c;
+    });
 
     setCombatants(newCombatants);
     setCurrentTurnIndex(currentTurnIndex);
@@ -356,6 +372,81 @@ export default function CombatInterface() {
     setCombatants(combatants.map(c =>
       c.id === id ? { ...c, ...updates } : c
     ));
+  };
+
+  // Drag and drop handlers
+  const handleDragStart = (e: React.DragEvent, combatantId: string) => {
+    setDraggedCombatantId(combatantId);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDragOverIndex(index);
+  };
+
+  const handleDragLeave = () => {
+    setDragOverIndex(null);
+  };
+
+  const handleDrop = (e: React.DragEvent, dropIndex: number) => {
+    e.preventDefault();
+    if (!draggedCombatantId) return;
+
+    const draggedIndex = sortedCombatants.findIndex(c => c.id === draggedCombatantId);
+    if (draggedIndex === -1 || draggedIndex === dropIndex) {
+      setDraggedCombatantId(null);
+      setDragOverIndex(null);
+      return;
+    }
+
+    // Reorder by adjusting turnOrder values
+    const newCombatants = [...combatants];
+    const draggedCombatant = sortedCombatants[draggedIndex];
+    const targetCombatant = sortedCombatants[dropIndex];
+
+    // Calculate new turnOrder for dragged combatant
+    let newTurnOrder: number;
+    if (dropIndex === 0) {
+      // Moving to first position
+      newTurnOrder = targetCombatant.turnOrder - 1;
+    } else if (dropIndex === sortedCombatants.length - 1) {
+      // Moving to last position
+      newTurnOrder = targetCombatant.turnOrder + 1;
+    } else if (draggedIndex < dropIndex) {
+      // Moving down - place between target and next
+      const nextCombatant = sortedCombatants[dropIndex + 1];
+      newTurnOrder = (targetCombatant.turnOrder + nextCombatant.turnOrder) / 2;
+    } else {
+      // Moving up - place between previous and target
+      const prevCombatant = sortedCombatants[dropIndex - 1];
+      newTurnOrder = (prevCombatant.turnOrder + targetCombatant.turnOrder) / 2;
+    }
+
+    // Update the dragged combatant's turnOrder
+    const updatedCombatants = newCombatants.map(c =>
+      c.id === draggedCombatantId ? { ...c, turnOrder: newTurnOrder } : c
+    );
+
+    setCombatants(updatedCombatants);
+    setDraggedCombatantId(null);
+    setDragOverIndex(null);
+
+    // Adjust currentTurnIndex if needed
+    const newSorted = [...updatedCombatants].sort((a, b) => a.turnOrder - b.turnOrder);
+    const activeId = sortedCombatants[currentTurnIndex]?.id;
+    if (activeId) {
+      const newActiveIndex = newSorted.findIndex(c => c.id === activeId);
+      if (newActiveIndex !== -1 && newActiveIndex !== currentTurnIndex) {
+        setCurrentTurnIndex(newActiveIndex);
+      }
+    }
+  };
+
+  const handleDragEnd = () => {
+    setDraggedCombatantId(null);
+    setDragOverIndex(null);
   };
 
   // Sync character stats back to character sheet
@@ -539,19 +630,30 @@ export default function CombatInterface() {
           <div className="grid gap-4">
             {sortedCombatants.map((combatant, index) => {
               const isCurrentTurn = index === currentTurnIndex;
+              const isDragging = draggedCombatantId === combatant.id;
+              const isDragOver = dragOverIndex === index;
 
               return (
                 <Card
                   key={combatant.id}
+                  draggable
+                  onDragStart={(e) => handleDragStart(e, combatant.id)}
+                  onDragOver={(e) => handleDragOver(e, index)}
+                  onDragLeave={handleDragLeave}
+                  onDrop={(e) => handleDrop(e, index)}
+                  onDragEnd={handleDragEnd}
                   className={cn(
-                    "transition-all",
+                    "transition-all cursor-move",
                     isCurrentTurn && "ring-2 ring-primary shadow-lg",
-                    combatant.isDowned && "opacity-60"
+                    combatant.isDowned && "opacity-60",
+                    isDragging && "opacity-50",
+                    isDragOver && "ring-2 ring-blue-400 scale-105"
                   )}
                 >
                   <CardHeader className="pb-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
+                        <GripVertical className="w-5 h-5 text-muted-foreground cursor-grab active:cursor-grabbing flex-shrink-0" />
                         <div className="flex flex-col items-center justify-center w-12 h-12 rounded-full bg-primary/20 border-2 border-primary">
                           <div className="text-xs text-muted-foreground">Init</div>
                           <div className="text-lg font-bold">{combatant.initiative}</div>
