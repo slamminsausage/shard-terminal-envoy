@@ -26,7 +26,11 @@ const FOLDERS: { value: NoteFolder; label: string; emoji: string }[] = [
   { value: 'other', label: 'Other', emoji: '📦' },
 ];
 
-export const NotesInterface: React.FC = () => {
+interface NotesInterfaceProps {
+  defaultTab?: 'notes' | 'handouts';
+}
+
+export const NotesInterface: React.FC<NotesInterfaceProps> = ({ defaultTab = 'notes' }) => {
   const {
     playerNotes,
     addPlayerNote,
@@ -139,7 +143,7 @@ export const NotesInterface: React.FC = () => {
       </div>
 
       <ScrollArea className="flex-1 p-4">
-        <Tabs defaultValue="notes" className="w-full">
+        <Tabs defaultValue={defaultTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2 bg-black border border-terminal-primary/30">
             <TabsTrigger
               value="notes"
