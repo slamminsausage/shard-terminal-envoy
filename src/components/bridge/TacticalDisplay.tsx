@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { Contact } from "@/lib/bridge/bridgeTypes";
+import { usePinchZoom } from "@/hooks/usePinchZoom";
 
 interface TacticalDisplayProps {
   contacts: Contact[];
@@ -17,6 +18,10 @@ export function TacticalDisplay({
   showHidden = false
 }: TacticalDisplayProps) {
   const [hoveredHex, setHoveredHex] = useState<{ q: number; r: number } | null>(null);
+  const { ref, style: zoomStyle, transform } = usePinchZoom<HTMLDivElement>({
+    minScale: 0.5,
+    maxScale: 3
+  });
 
   const hexToPixel = (q: number, r: number, size = 30) => {
     const x = size * (1.5 * q);
@@ -85,10 +90,11 @@ export function TacticalDisplay({
       </div>
 
       <div
-        className="flex-1 flex items-center justify-center p-2 md:p-4 overflow-hidden"
+        ref={ref}
+        className="flex-1 flex items-center justify-center p-2 md:p-4 overflow-hidden touch-none"
         style={{ background: "radial-gradient(ellipse at center, rgba(0, 255, 136, 0.02) 0%, transparent 70%)" }}
       >
-        <svg viewBox="0 0 500 500" className="w-full h-full max-w-full md:max-w-[500px] max-h-full md:max-h-[500px]">
+        <svg viewBox="0 0 500 500" className="w-full h-full max-w-full md:max-w-[500px] max-h-full md:max-h-[500px]" style={zoomStyle}>
           <circle cx="250" cy="250" r="60" fill="none" stroke="var(--bg-border)" strokeWidth="1" strokeDasharray="4 4" />
           <circle cx="250" cy="250" r="120" fill="none" stroke="var(--bg-border)" strokeWidth="1" strokeDasharray="4 4" />
           <circle cx="250" cy="250" r="180" fill="none" stroke="var(--bg-border)" strokeWidth="1" strokeDasharray="4 4" />
