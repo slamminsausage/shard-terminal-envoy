@@ -41,8 +41,8 @@ const App = () => (
             <CRTOverlay />
             <Toaster />
             <Sonner />
-            <GlobalSearch />
             <BrowserRouter>
+              <GlobalSearch />
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/character-view/:id" element={<CharacterViewRoute />} />
