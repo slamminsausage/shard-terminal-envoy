@@ -162,6 +162,7 @@ export interface Combatant {
 
   // Initiative
   initiative: number;
+  turnOrder: number; // Separate turn order for dynamic reordering
 
   // Health - flexible system for Traveller
   healthType: 'characteristics' | 'hits';
