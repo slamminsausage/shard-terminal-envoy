@@ -41,10 +41,10 @@ export function GlobalSearch() {
   const { characters, vehicles } = useCampaign();
   const navigate = useNavigate();
 
-  // Listen for Ctrl+K / Cmd+K
+  // Listen for Ctrl+K / Cmd+K and Ctrl+F / Cmd+F
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
-      if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
+      if ((e.key === 'k' || e.key === 'f') && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
         setOpen((open) => !open);
       }

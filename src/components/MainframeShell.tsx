@@ -9,6 +9,7 @@ import AppHeader from "./layout/AppHeader";
 import AppFooter from "./layout/AppFooter";
 import { BridgeConsole } from "./bridge/BridgeConsole";
 import { JumpPlannerInterface } from "./navigation/JumpPlannerInterface";
+import { useTabNavigationShortcuts } from "@/hooks/useKeyboardShortcuts";
 
 export default function MainframeShell() {
   const [activeTab, setActiveTab] = useState(() => {
@@ -31,6 +32,10 @@ export default function MainframeShell() {
     { id: "notes", label: "Notes", icon: BookOpen },
     { id: "combat", label: "Combat", icon: Swords }
   ];
+
+  // Enable keyboard shortcuts for tab navigation (1-7)
+  const tabIds = tabs.map(tab => tab.id);
+  useTabNavigationShortcuts(setActiveTab, tabIds);
 
   return (
     <div className="min-h-screen bg-background">
