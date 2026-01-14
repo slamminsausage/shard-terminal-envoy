@@ -75,6 +75,9 @@ export default function CombatInterface() {
   const [draggedCombatantId, setDraggedCombatantId] = useState<string | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
+  // Track the combatant who started the current round for round detection
+  const [roundStartCombatantId, setRoundStartCombatantId] = useState<string | null>(null);
+
   // Sort combatants by turn order (memoized to prevent unnecessary re-sorts)
   const sortedCombatants = useMemo(() => {
     return [...combatants].sort((a, b) => a.turnOrder - b.turnOrder);
@@ -108,6 +111,12 @@ export default function CombatInterface() {
         setCombatants(combatantsWithTurnOrder);
         setCurrentRound(data.current_round);
         setCurrentTurnIndex(data.current_turn_index);
+
+        // Initialize round start combatant (the first combatant in turn order)
+        if (combatantsWithTurnOrder.length > 0) {
+          const sorted = [...combatantsWithTurnOrder].sort((a, b) => a.turnOrder - b.turnOrder);
+          setRoundStartCombatantId(sorted[0]?.id || null);
+        }
       }
     } catch (error) {
       console.error('Error loading combat:', error);
@@ -309,11 +318,17 @@ export default function CombatInterface() {
   const handleNextTurn = () => {
     if (sortedCombatants.length === 0) return;
 
-    // Check if we've completed a full round (when index would wrap to 0)
-    const isLastCombatant = currentTurnIndex === sortedCombatants.length - 1;
+    // The active combatant is always at index 0
+    const currentCombatant = sortedCombatants[0];
+
+    // Check if this is the first turn of combat (round start combatant not yet set)
+    const isFirstTurn = !roundStartCombatantId;
+
+    // Check if we've completed a full round
+    // This happens when we're back to the combatant who started the round
+    const isCompletingRound = !isFirstTurn && currentCombatant.id === roundStartCombatantId;
 
     // Move current combatant to the end by setting their turnOrder higher than everyone else's
-    const currentCombatant = sortedCombatants[currentTurnIndex];
     const maxTurnOrder = Math.max(...sortedCombatants.map(c => c.turnOrder));
 
     const newCombatants = combatants.map(c => {
@@ -324,7 +339,7 @@ export default function CombatInterface() {
       return c;
     });
 
-    if (isLastCombatant) {
+    if (isCompletingRound) {
       // Round completed - increment round and reset action economy
       setCurrentRound(currentRound + 1);
       setCombatants(newCombatants.map(c => ({
@@ -333,39 +348,48 @@ export default function CombatInterface() {
         reactionsRemaining: 1,
         hasMovedThisRound: false
       })));
-      setCurrentTurnIndex(0);
+      // Set the new combatant at index 0 as the round start
+      const newSorted = [...newCombatants].sort((a, b) => a.turnOrder - b.turnOrder);
+      setRoundStartCombatantId(newSorted[0]?.id || null);
     } else {
-      // Keep the same turn index (the next combatant will now be at the current index)
+      // Just move to next turn
       setCombatants(newCombatants);
-      setCurrentTurnIndex(currentTurnIndex);
+
+      // If this was the first turn, set the round start combatant
+      if (isFirstTurn) {
+        // The combatant we just moved should be tracked as the round starter
+        setRoundStartCombatantId(currentCombatant.id);
+      }
     }
+
+    // Always keep the active turn at index 0
+    setCurrentTurnIndex(0);
   };
 
   const handlePreviousTurn = () => {
     if (sortedCombatants.length === 0) return;
 
-    // If at the start of the round, go back to previous round
-    const isFirstCombatant = currentTurnIndex === 0;
-
-    if (isFirstCombatant && currentRound > 1) {
-      setCurrentRound(currentRound - 1);
-    }
-
-    // Move the last combatant to the current position by setting their turnOrder lower
+    // Move the last combatant to the front by setting their turnOrder lower
     const lastCombatant = sortedCombatants[sortedCombatants.length - 1];
-    const currentCombatant = sortedCombatants[currentTurnIndex];
     const minTurnOrder = Math.min(...sortedCombatants.map(c => c.turnOrder));
 
     const newCombatants = combatants.map(c => {
       if (c.id === lastCombatant.id) {
-        // Move last combatant to before current (lower turnOrder value)
+        // Move last combatant to front (lower turnOrder value)
         return { ...c, turnOrder: minTurnOrder - 1 };
       }
       return c;
     });
 
+    // Check if we're going back to the round start combatant (going back a round)
+    if (lastCombatant.id === roundStartCombatantId && currentRound > 1) {
+      setCurrentRound(currentRound - 1);
+    }
+
     setCombatants(newCombatants);
-    setCurrentTurnIndex(currentTurnIndex);
+
+    // Always keep the active turn at index 0
+    setCurrentTurnIndex(0);
   };
 
   const handleUpdateCombatant = (id: string, updates: Partial<Combatant>) => {
@@ -433,15 +457,8 @@ export default function CombatInterface() {
     setDraggedCombatantId(null);
     setDragOverIndex(null);
 
-    // Adjust currentTurnIndex if needed
-    const newSorted = [...updatedCombatants].sort((a, b) => a.turnOrder - b.turnOrder);
-    const activeId = sortedCombatants[currentTurnIndex]?.id;
-    if (activeId) {
-      const newActiveIndex = newSorted.findIndex(c => c.id === activeId);
-      if (newActiveIndex !== -1 && newActiveIndex !== currentTurnIndex) {
-        setCurrentTurnIndex(newActiveIndex);
-      }
-    }
+    // The top combatant (index 0) is always considered active
+    setCurrentTurnIndex(0);
   };
 
   const handleDragEnd = () => {
@@ -554,6 +571,7 @@ export default function CombatInterface() {
     setCombatants([]);
     setCurrentRound(1);
     setCurrentTurnIndex(0);
+    setRoundStartCombatantId(null);
     await deleteCombat(); // Remove from database
   };
 
