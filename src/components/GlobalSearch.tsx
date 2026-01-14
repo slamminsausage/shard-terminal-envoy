@@ -24,7 +24,7 @@ import {
   Terminal as TerminalIcon,
   Search,
 } from 'lucide-react';
-import { terminals } from '@/lib/terminals';
+import { TERMINALS } from '@/lib/terminals';
 
 interface SearchResult {
   id: string;
@@ -110,24 +110,23 @@ export function GlobalSearch() {
   });
 
   // Search terminals
-  terminals.forEach((terminal) => {
+  TERMINALS.forEach((terminal) => {
     const matchesSearch =
       searchQuery === '' ||
       terminal.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      terminal.accessCode.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      terminal.location?.toLowerCase().includes(searchQuery.toLowerCase());
+      terminal.code.toLowerCase().includes(searchQuery.toLowerCase());
 
     if (matchesSearch) {
       results.push({
-        id: `terminal-${terminal.accessCode}`,
+        id: `terminal-${terminal.code}`,
         title: terminal.name,
-        subtitle: `Terminal - ${terminal.location || 'Unknown Location'}`,
+        subtitle: `Terminal - Access Code: ${terminal.code}`,
         type: 'terminal',
         icon: <TerminalIcon className="h-4 w-4" />,
         action: () => {
           navigate('/');
           setTimeout(() => {
-            window.location.hash = `terminal-${terminal.accessCode}`;
+            window.location.hash = `terminal-${terminal.code}`;
           }, 100);
           setOpen(false);
         },
