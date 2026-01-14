@@ -1905,7 +1905,7 @@ export const dbHelpers = {
 
   async deleteCalendarEvent(eventId: string) {
     try {
-      const { error } = await supabase
+      const { error} = await supabase
         .from('calendar_events')
         .delete()
         .eq('id', eventId);
@@ -1917,6 +1917,538 @@ export const dbHelpers = {
       return true;
     } catch (error) {
       console.error('Failed to delete calendar event:', error);
+      throw error;
+    }
+  },
+
+  // ========== Inventory Management ==========
+
+  async getAllInventoryItems(ownerId?: string, ownerType?: string) {
+    try {
+      let query = supabase
+        .from('inventory_items')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (ownerId && ownerType) {
+        query = query.eq('owner_id', ownerId).eq('owner_type', ownerType);
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        console.error('Database error:', error);
+        throw error;
+      }
+      return data || [];
+    } catch (error) {
+      console.error('Failed to get inventory items:', error);
+      throw error;
+    }
+  },
+
+  async getInventoryItem(itemId: string) {
+    try {
+      const { data, error } = await supabase
+        .from('inventory_items')
+        .select('*')
+        .eq('id', itemId)
+        .single();
+
+      if (error) {
+        console.error('Database error:', error);
+        throw error;
+      }
+      return data;
+    } catch (error) {
+      console.error('Failed to get inventory item:', error);
+      throw error;
+    }
+  },
+
+  async saveInventoryItem(item: any) {
+    try {
+      if (item.id) {
+        // Update existing item
+        const { data, error } = await supabase
+          .from('inventory_items')
+          .update(item)
+          .eq('id', item.id)
+          .select()
+          .single();
+
+        if (error) {
+          console.error('Database error:', error);
+          throw error;
+        }
+        return data;
+      } else {
+        // Create new item
+        const { data, error } = await supabase
+          .from('inventory_items')
+          .insert([item])
+          .select()
+          .single();
+
+        if (error) {
+          console.error('Database error:', error);
+          throw error;
+        }
+        return data;
+      }
+    } catch (error) {
+      console.error('Failed to save inventory item:', error);
+      throw error;
+    }
+  },
+
+  async deleteInventoryItem(itemId: string) {
+    try {
+      const { error } = await supabase
+        .from('inventory_items')
+        .delete()
+        .eq('id', itemId);
+
+      if (error) {
+        console.error('Database error:', error);
+        throw error;
+      }
+      return true;
+    } catch (error) {
+      console.error('Failed to delete inventory item:', error);
+      throw error;
+    }
+  },
+
+  async transferInventoryItem(itemId: string, newOwnerId: string, newOwnerType: string) {
+    try {
+      const { data, error } = await supabase
+        .from('inventory_items')
+        .update({ owner_id: newOwnerId, owner_type: newOwnerType })
+        .eq('id', itemId)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Database error:', error);
+        throw error;
+      }
+      return data;
+    } catch (error) {
+      console.error('Failed to transfer inventory item:', error);
+      throw error;
+    }
+  },
+
+  async getAllItemTemplates() {
+    try {
+      const { data, error } = await supabase
+        .from('item_templates')
+        .select('*')
+        .order('name', { ascending: true });
+
+      if (error) {
+        console.error('Database error:', error);
+        throw error;
+      }
+      return data || [];
+    } catch (error) {
+      console.error('Failed to get item templates:', error);
+      throw error;
+    }
+  },
+
+  async saveItemTemplate(template: any) {
+    try {
+      if (template.id) {
+        // Update existing template
+        const { data, error } = await supabase
+          .from('item_templates')
+          .update(template)
+          .eq('id', template.id)
+          .select()
+          .single();
+
+        if (error) {
+          console.error('Database error:', error);
+          throw error;
+        }
+        return data;
+      } else {
+        // Create new template
+        const { data, error } = await supabase
+          .from('item_templates')
+          .insert([template])
+          .select()
+          .single();
+
+        if (error) {
+          console.error('Database error:', error);
+          throw error;
+        }
+        return data;
+      }
+    } catch (error) {
+      console.error('Failed to save item template:', error);
+      throw error;
+    }
+  },
+
+  async deleteItemTemplate(templateId: string) {
+    try {
+      const { error } = await supabase
+        .from('item_templates')
+        .delete()
+        .eq('id', templateId);
+
+      if (error) {
+        console.error('Database error:', error);
+        throw error;
+      }
+      return true;
+    } catch (error) {
+      console.error('Failed to delete item template:', error);
+      throw error;
+    }
+  },
+
+  // ========== Finance Management ==========
+
+  async getAllTransactions(characterId?: string) {
+    try {
+      let query = supabase
+        .from('transactions')
+        .select('*')
+        .order('transaction_date', { ascending: false });
+
+      if (characterId) {
+        query = query.eq('character_id', characterId);
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        console.error('Database error:', error);
+        throw error;
+      }
+      return data || [];
+    } catch (error) {
+      console.error('Failed to get transactions:', error);
+      throw error;
+    }
+  },
+
+  async saveTransaction(transaction: any) {
+    try {
+      const { data, error } = await supabase
+        .from('transactions')
+        .insert([transaction])
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Database error:', error);
+        throw error;
+      }
+      return data;
+    } catch (error) {
+      console.error('Failed to save transaction:', error);
+      throw error;
+    }
+  },
+
+  async getPartyFunds() {
+    try {
+      const { data, error } = await supabase
+        .from('party_funds')
+        .select('*')
+        .eq('player_id', 'campaign')
+        .maybeSingle();
+
+      if (error) {
+        console.error('Database error:', error);
+        throw error;
+      }
+      return data;
+    } catch (error) {
+      console.error('Failed to get party funds:', error);
+      throw error;
+    }
+  },
+
+  async updatePartyFunds(balance: number) {
+    try {
+      const existing = await this.getPartyFunds();
+
+      if (existing) {
+        const { data, error } = await supabase
+          .from('party_funds')
+          .update({ balance, updated_at: new Date().toISOString() })
+          .eq('id', existing.id)
+          .select()
+          .single();
+
+        if (error) throw error;
+        return data;
+      } else {
+        const { data, error } = await supabase
+          .from('party_funds')
+          .insert([{ player_id: 'campaign', balance }])
+          .select()
+          .single();
+
+        if (error) throw error;
+        return data;
+      }
+    } catch (error) {
+      console.error('Failed to update party funds:', error);
+      throw error;
+    }
+  },
+
+  async getAllRecurringExpenses() {
+    try {
+      const { data, error } = await supabase
+        .from('recurring_expenses')
+        .select('*')
+        .order('name', { ascending: true });
+
+      if (error) {
+        console.error('Database error:', error);
+        throw error;
+      }
+      return data || [];
+    } catch (error) {
+      console.error('Failed to get recurring expenses:', error);
+      throw error;
+    }
+  },
+
+  async saveRecurringExpense(expense: any) {
+    try {
+      if (expense.id) {
+        const { data, error } = await supabase
+          .from('recurring_expenses')
+          .update(expense)
+          .eq('id', expense.id)
+          .select()
+          .single();
+
+        if (error) throw error;
+        return data;
+      } else {
+        const { data, error } = await supabase
+          .from('recurring_expenses')
+          .insert([expense])
+          .select()
+          .single();
+
+        if (error) throw error;
+        return data;
+      }
+    } catch (error) {
+      console.error('Failed to save recurring expense:', error);
+      throw error;
+    }
+  },
+
+  async deleteRecurringExpense(expenseId: string) {
+    try {
+      const { error } = await supabase
+        .from('recurring_expenses')
+        .delete()
+        .eq('id', expenseId);
+
+      if (error) throw error;
+      return true;
+    } catch (error) {
+      console.error('Failed to delete recurring expense:', error);
+      throw error;
+    }
+  },
+
+  // ========== Trade System ==========
+
+  async getAllTradeGoods(vehicleId?: string) {
+    try {
+      let query = supabase
+        .from('trade_goods')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (vehicleId) {
+        query = query.eq('vehicle_id', vehicleId);
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        console.error('Database error:', error);
+        throw error;
+      }
+      return data || [];
+    } catch (error) {
+      console.error('Failed to get trade goods:', error);
+      throw error;
+    }
+  },
+
+  async saveTradeGood(tradeGood: any) {
+    try {
+      if (tradeGood.id) {
+        const { data, error } = await supabase
+          .from('trade_goods')
+          .update(tradeGood)
+          .eq('id', tradeGood.id)
+          .select()
+          .single();
+
+        if (error) throw error;
+        return data;
+      } else {
+        const { data, error } = await supabase
+          .from('trade_goods')
+          .insert([tradeGood])
+          .select()
+          .single();
+
+        if (error) throw error;
+        return data;
+      }
+    } catch (error) {
+      console.error('Failed to save trade good:', error);
+      throw error;
+    }
+  },
+
+  async deleteTradeGood(tradeGoodId: string) {
+    try {
+      const { error } = await supabase
+        .from('trade_goods')
+        .delete()
+        .eq('id', tradeGoodId);
+
+      if (error) throw error;
+      return true;
+    } catch (error) {
+      console.error('Failed to delete trade good:', error);
+      throw error;
+    }
+  },
+
+  async getAllTradeMarketRolls() {
+    try {
+      const { data, error } = await supabase
+        .from('trade_market_rolls')
+        .select('*')
+        .order('roll_date', { ascending: false });
+
+      if (error) {
+        console.error('Database error:', error);
+        throw error;
+      }
+      return data || [];
+    } catch (error) {
+      console.error('Failed to get trade market rolls:', error);
+      throw error;
+    }
+  },
+
+  async saveTradeMarketRoll(marketRoll: any) {
+    try {
+      const { data, error } = await supabase
+        .from('trade_market_rolls')
+        .insert([marketRoll])
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Failed to save trade market roll:', error);
+      throw error;
+    }
+  },
+
+  // ========== Ship Combat ==========
+
+  async getShipCombatState(encounterId: string) {
+    try {
+      const { data, error } = await supabase
+        .from('ship_combat_state')
+        .select('*')
+        .eq('encounter_id', encounterId);
+
+      if (error) {
+        console.error('Database error:', error);
+        throw error;
+      }
+      return data || [];
+    } catch (error) {
+      console.error('Failed to get ship combat state:', error);
+      throw error;
+    }
+  },
+
+  async saveShipCombatState(state: any) {
+    try {
+      if (state.id) {
+        const { data, error } = await supabase
+          .from('ship_combat_state')
+          .update(state)
+          .eq('id', state.id)
+          .select()
+          .single();
+
+        if (error) throw error;
+        return data;
+      } else {
+        const { data, error } = await supabase
+          .from('ship_combat_state')
+          .insert([state])
+          .select()
+          .single();
+
+        if (error) throw error;
+        return data;
+      }
+    } catch (error) {
+      console.error('Failed to save ship combat state:', error);
+      throw error;
+    }
+  },
+
+  async getShipCombatActions(encounterId: string) {
+    try {
+      const { data, error } = await supabase
+        .from('ship_combat_actions')
+        .select('*')
+        .eq('encounter_id', encounterId)
+        .order('timestamp', { ascending: true });
+
+      if (error) {
+        console.error('Database error:', error);
+        throw error;
+      }
+      return data || [];
+    } catch (error) {
+      console.error('Failed to get ship combat actions:', error);
+      throw error;
+    }
+  },
+
+  async saveShipCombatAction(action: any) {
+    try {
+      const { data, error } = await supabase
+        .from('ship_combat_actions')
+        .insert([action])
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Failed to save ship combat action:', error);
       throw error;
     }
   }
