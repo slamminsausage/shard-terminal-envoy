@@ -93,16 +93,6 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
     vehiclesRef.current = vehicles;
   }, [vehicles]);
 
-  // Check authentication on mount and whenever it changes
-  useEffect(() => {
-    const isAuth = checkAuthentication();
-    setIsAuthenticated(isAuth);
-
-    // Always try to refresh data for view components, regardless of auth state
-    // This allows character/vehicle view tabs to work even without shared localStorage
-    refreshData();
-  }, [refreshData]);
-
   const checkAuthentication = (): boolean => {
     const isAuth = isValidSession();
     setIsAuthenticated(isAuth);
@@ -183,6 +173,16 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
       setIsLoading(false);
     }
   }, []);
+
+  // Check authentication on mount and whenever it changes
+  useEffect(() => {
+    const isAuth = checkAuthentication();
+    setIsAuthenticated(isAuth);
+
+    // Always try to refresh data for view components, regardless of auth state
+    // This allows character/vehicle view tabs to work even without shared localStorage
+    refreshData();
+  }, [refreshData]);
 
   const saveCharacter = async (characterData: Partial<Character>): Promise<Character | null> => {
     try {

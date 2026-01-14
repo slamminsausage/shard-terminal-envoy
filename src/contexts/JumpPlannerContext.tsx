@@ -166,16 +166,6 @@ export function JumpPlannerProvider({ children }: { children: React.ReactNode })
   const [state, setState] = useState<JumpPlannerState>(initialState);
   const initialLoadComplete = useRef(false);
 
-  // Load all notes on mount
-  useEffect(() => {
-    loadAllNotes();
-  }, [loadAllNotes]);
-
-  // Load all markers on mount
-  useEffect(() => {
-    loadAllMarkers();
-  }, [loadAllMarkers]);
-
   // Load player location from Supabase (with localStorage fallback) on mount
   useEffect(() => {
     async function loadPlayerLocation() {
@@ -542,6 +532,16 @@ export function JumpPlannerProvider({ children }: { children: React.ReactNode })
       setState((prev) => ({ ...prev, isLoadingMarkers: false }));
     }
   }, []);
+
+  // Load all notes on mount (must be after loadAllNotes is defined)
+  useEffect(() => {
+    loadAllNotes();
+  }, [loadAllNotes]);
+
+  // Load all markers on mount (must be after loadAllMarkers is defined)
+  useEffect(() => {
+    loadAllMarkers();
+  }, [loadAllMarkers]);
 
   const loadMarkersForHex = useCallback(async (sector: string, hex: string) => {
     const paddedHex = padHex(hex);
