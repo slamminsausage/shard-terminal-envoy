@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import type {
   AlertLevel,
@@ -150,6 +150,9 @@ export function useBridgeState() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Track mount status to prevent state updates after unmount
+  const isMountedRef = useRef(true);
+
   // Type assertion for Supabase client to work with dynamic table names
   const sb = supabase;
 
@@ -252,15 +255,24 @@ export function useBridgeState() {
   }, [sb]);
 
   useEffect(() => {
+    isMountedRef.current = true;
+
     const init = async () => {
+      if (!isMountedRef.current) return;
       setLoading(true);
       const stateRow = await loadBridgeState();
+      if (!isMountedRef.current) return;
       if (stateRow?.id) {
         await Promise.all([loadContacts(stateRow.id), loadMessages(stateRow.id), loadScans(stateRow.id)]);
       }
+      if (!isMountedRef.current) return;
       setLoading(false);
     };
     void init();
+
+    return () => {
+      isMountedRef.current = false;
+    };
   }, [loadBridgeState, loadContacts, loadMessages, loadScans]);
 
   // Fallback polling every 5s to keep state fresh when realtime is unavailable

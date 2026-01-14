@@ -9,6 +9,7 @@ import {
   getSectorFullName,
 } from "@/lib/travellerMapApi";
 import { dbHelpers } from "@/lib/supabase";
+import { toast } from "sonner";
 import type {
   JumpWorld,
   RouteLeg,
@@ -168,14 +169,12 @@ export function JumpPlannerProvider({ children }: { children: React.ReactNode })
   // Load all notes on mount
   useEffect(() => {
     loadAllNotes();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [loadAllNotes]);
 
   // Load all markers on mount
   useEffect(() => {
     loadAllMarkers();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [loadAllMarkers]);
 
   // Load player location from Supabase (with localStorage fallback) on mount
   useEffect(() => {
@@ -488,6 +487,7 @@ export function JumpPlannerProvider({ children }: { children: React.ReactNode })
       setState((prev) => ({ ...prev, allNotes: notes }));
     } catch (error) {
       console.error("Failed to load all notes:", error);
+      toast.error("Failed to load world notes. Check your connection.");
     }
   }, []);
 
@@ -538,6 +538,7 @@ export function JumpPlannerProvider({ children }: { children: React.ReactNode })
       }));
     } catch (error) {
       console.error("Failed to load all markers:", error);
+      toast.error("Failed to load hex markers. Check your connection.");
       setState((prev) => ({ ...prev, isLoadingMarkers: false }));
     }
   }, []);
@@ -582,8 +583,7 @@ export function JumpPlannerProvider({ children }: { children: React.ReactNode })
       }));
       throw error;
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [loadMarkersForHex, loadAllMarkers]);
 
   const deleteMarker = useCallback(async (id: string) => {
     try {

@@ -171,17 +171,23 @@ export default function RiftjawTerminal({ onBack }: RiftjawTerminalProps) {
   const typingQueueRef = useRef([]);
   const isTypingRef = useRef(false);
   const timeoutIdsRef = useRef<number[]>([]);
+  const isMountedRef = useRef(true);
 
   // Initialize audio
   useEffect(() => {
+    isMountedRef.current = true;
     audioManager.preloadSounds();
     audioManager.playAmbient('terminal-hum');
 
     return () => {
+      isMountedRef.current = false;
       audioManager.stopAmbient();
       // Clean up all timeouts on unmount
       timeoutIdsRef.current.forEach(id => clearTimeout(id));
       timeoutIdsRef.current = [];
+      // Clear typing queue
+      typingQueueRef.current = [];
+      isTypingRef.current = false;
     };
   }, []);
 
@@ -203,29 +209,45 @@ export default function RiftjawTerminal({ onBack }: RiftjawTerminalProps) {
   };
 
   const processQueue = async () => {
-    // Guard against concurrent execution
-    if (isTypingRef.current || typingQueueRef.current.length === 0) return;
+    // Guard against concurrent execution or unmounted component
+    if (!isMountedRef.current || isTypingRef.current || typingQueueRef.current.length === 0) return;
 
     isTypingRef.current = true;
     const { text, callback } = typingQueueRef.current.shift();
 
     // Type the message character by character
     for (let i = 0; i < text.length; i++) {
+      if (!isMountedRef.current) {
+        isTypingRef.current = false;
+        return;
+      }
       setCinematicText(prev => prev + text[i]);
-      await new Promise(resolve => setTimeout(resolve, 30));
+      await new Promise(resolve => {
+        const id = window.setTimeout(resolve, 30);
+        timeoutIdsRef.current.push(id);
+      });
     }
 
+    if (!isMountedRef.current) {
+      isTypingRef.current = false;
+      return;
+    }
     setCinematicText(prev => prev + "\n");
 
     if (callback) {
-      await new Promise(resolve => setTimeout(resolve, 500));
-      callback();
+      await new Promise(resolve => {
+        const id = window.setTimeout(resolve, 500);
+        timeoutIdsRef.current.push(id);
+      });
+      if (isMountedRef.current) {
+        callback();
+      }
     }
 
     isTypingRef.current = false;
 
     // Process next message in queue if any
-    if (typingQueueRef.current.length > 0) {
+    if (isMountedRef.current && typingQueueRef.current.length > 0) {
       processQueue();
     }
   };
@@ -241,6 +263,7 @@ export default function RiftjawTerminal({ onBack }: RiftjawTerminalProps) {
     for (let i = 0; i < cinematicSequence.length; i++) {
       const msg = cinematicSequence[i];
       const timeoutId = window.setTimeout(() => {
+        if (!isMountedRef.current) return;
         if (msg.warning) {
           audioManager.playEffect('warning-beep', 0.3);
         }
@@ -251,6 +274,7 @@ export default function RiftjawTerminal({ onBack }: RiftjawTerminalProps) {
 
     // Environmental effects
     const envTimeoutId = window.setTimeout(() => {
+      if (!isMountedRef.current) return;
       setEnvironmentalEffects(true);
       audioManager.playEffect('glitch-sound', 0.5);
 
@@ -259,10 +283,13 @@ export default function RiftjawTerminal({ onBack }: RiftjawTerminalProps) {
 
       // Floor shudder effect
       const shudder1 = window.setTimeout(() => {
+        if (!isMountedRef.current) return;
         document.body.style.transform = 'translateY(2px)';
         const shudder2 = window.setTimeout(() => {
+          if (!isMountedRef.current) return;
           document.body.style.transform = 'translateY(-2px)';
           const shudder3 = window.setTimeout(() => {
+            if (!isMountedRef.current) return;
             document.body.style.transform = 'translateY(0)';
           }, 100);
           timeoutIdsRef.current.push(shudder3);
@@ -275,6 +302,7 @@ export default function RiftjawTerminal({ onBack }: RiftjawTerminalProps) {
 
     // Blue circuits activation
     const blueCircuitsId = window.setTimeout(() => {
+      if (!isMountedRef.current) return;
       setBlueCircuits(true);
       audioManager.playEffect('data-corruption', 0.4);
     }, 10000);
@@ -282,6 +310,7 @@ export default function RiftjawTerminal({ onBack }: RiftjawTerminalProps) {
 
     // System initialization
     const systemInitId = window.setTimeout(() => {
+      if (!isMountedRef.current) return;
       setCinematicText("");
       setSystemInit(true);
       audioManager.playAmbient('static-hum');
@@ -292,8 +321,10 @@ export default function RiftjawTerminal({ onBack }: RiftjawTerminalProps) {
       for (let i = 0; i < systemInitSequence.length; i++) {
         const msg = systemInitSequence[i];
         const msgTimeoutId = window.setTimeout(() => {
+          if (!isMountedRef.current) return;
           queueMessage(msg.text, i === systemInitSequence.length - 1 ? () => {
             const finalId = window.setTimeout(() => {
+              if (!isMountedRef.current) return;
               setCinematicActive(false);
               setShowFinalArchive(true);
             }, 2000);

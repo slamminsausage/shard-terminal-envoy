@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Plus, Trash2, Heart, Shield, Swords, RefreshCw, ArrowUp, ArrowDown, User, Dices } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -68,8 +68,14 @@ export default function CombatInterface() {
   const [useManualInitiative, setUseManualInitiative] = useState(false);
   const [manualInitiative, setManualInitiative] = useState(0);
 
-  // Sort combatants by initiative
-  const sortedCombatants = [...combatants].sort((a, b) => b.initiative - a.initiative);
+  // Ref for debouncing auto-save
+  const saveTimeoutRef = useRef<number | null>(null);
+
+  // Sort combatants by initiative (memoized to prevent unnecessary re-sorts)
+  const sortedCombatants = useMemo(() => {
+    return [...combatants].sort((a, b) => b.initiative - a.initiative);
+  }, [combatants]);
+
   const activeCombatant = sortedCombatants[currentTurnIndex];
 
   // Player ID for database queries (matches CampaignContext)
@@ -145,11 +151,27 @@ export default function CombatInterface() {
     loadCombat();
   }, []);
 
-  // Auto-save combat whenever it changes
+  // Auto-save combat whenever it changes (debounced to prevent race conditions)
   useEffect(() => {
-    if (combatants.length > 0) {
-      saveCombat();
+    // Clear any pending save
+    if (saveTimeoutRef.current !== null) {
+      clearTimeout(saveTimeoutRef.current);
     }
+
+    // Debounce the save by 500ms
+    if (combatants.length > 0) {
+      saveTimeoutRef.current = window.setTimeout(() => {
+        saveCombat();
+        saveTimeoutRef.current = null;
+      }, 500);
+    }
+
+    // Cleanup timeout on unmount
+    return () => {
+      if (saveTimeoutRef.current !== null) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
   }, [combatants, currentRound, currentTurnIndex, saveCombat]);
 
   const handleAddCharacter = () => {
