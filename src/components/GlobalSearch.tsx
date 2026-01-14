@@ -3,7 +3,7 @@
  * Allows searching across all campaign data
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   CommandDialog,
   CommandEmpty,
@@ -54,11 +54,12 @@ export function GlobalSearch() {
     return () => document.removeEventListener('keydown', down);
   }, []);
 
-  // Build search results
-  const results: SearchResult[] = [];
+  // Build search results (memoized for performance)
+  const results = useMemo(() => {
+    const results: SearchResult[] = [];
 
-  // Search characters
-  characters.forEach((char) => {
+    // Search characters
+    characters.forEach((char) => {
     const matchesSearch =
       searchQuery === '' ||
       char.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -134,8 +135,11 @@ export function GlobalSearch() {
     }
   });
 
+    return results;
+  }, [characters, vehicles, searchQuery, navigate]);
+
   // Quick navigation commands
-  const quickNav = [
+  const quickNav = useMemo(() => [
     {
       id: 'nav-crew',
       title: 'Crew',
@@ -220,12 +224,12 @@ export function GlobalSearch() {
         setOpen(false);
       },
     },
-  ];
+  ], [navigate]);
 
-  // Group results by type
-  const characterResults = results.filter((r) => r.type === 'character');
-  const vehicleResults = results.filter((r) => r.type === 'vehicle');
-  const terminalResults = results.filter((r) => r.type === 'terminal');
+  // Group results by type (memoized)
+  const characterResults = useMemo(() => results.filter((r) => r.type === 'character'), [results]);
+  const vehicleResults = useMemo(() => results.filter((r) => r.type === 'vehicle'), [results]);
+  const terminalResults = useMemo(() => results.filter((r) => r.type === 'terminal'), [results]);
 
   return (
     <CommandDialog open={open} onOpenChange={setOpen}>
