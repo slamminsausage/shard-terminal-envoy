@@ -9,6 +9,7 @@ import { JumpPlannerProvider } from "@/contexts/JumpPlannerContext";
 import { NotesProvider } from "@/contexts/NotesContext";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import CRTOverlay from "@/components/ui/CRTOverlay";
+import { GlobalSearch } from "@/components/GlobalSearch";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import CharacterView from "./components/crew/CharacterView";
@@ -40,6 +41,7 @@ const App = () => (
             <CRTOverlay />
             <Toaster />
             <Sonner />
+            <GlobalSearch />
             <BrowserRouter>
               <Routes>
                 <Route path="/" element={<Index />} />

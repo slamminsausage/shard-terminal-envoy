@@ -2,9 +2,17 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { WorldNote, HexMarker } from "@/types/navigation";
 import type { Character, Vehicle } from "@/types/database";
+import type { PlayerNote } from "@/types/notes";
+import type { Json } from "@/integrations/supabase/types";
 
 // Re-export for convenience
 export { supabase };
+
+// Database error interface for better type safety
+interface DatabaseError extends Error {
+  code?: string;
+  status?: number;
+}
 
 const isDev = import.meta.env?.DEV ?? false;
 const supabaseDisabled =
@@ -464,14 +472,15 @@ export const dbHelpers = {
         .insert([{ terminal_code: terminalCode }])
 
       // Ignore unique constraint violations (23505 is PostgreSQL code, 409 is HTTP status for conflicts)
-      if (error && error.code !== '23505' && (error as any).status !== 409) {
+      if (error && error.code !== '23505' && (error as DatabaseError).status !== 409) {
         console.error('Database error:', error)
         throw error
       }
       return true
-    } catch (error: any) {
+    } catch (error) {
+      const dbError = error as DatabaseError;
       // Also catch and ignore duplicate key errors that bubble up as exceptions
-      if (error?.code === '23505' || error?.status === 409 || error?.message?.includes('duplicate')) {
+      if (dbError?.code === '23505' || dbError?.status === 409 || dbError?.message?.includes('duplicate')) {
         return true; // Terminal already unlocked, this is fine
       }
       console.error('Failed to add unlocked terminal:', error)
@@ -698,7 +707,7 @@ export const dbHelpers = {
         .from('game_settings')
         .upsert({
           setting_key: key,
-          setting_value: value as any,
+          setting_value: value as Json,
           updated_at: now,
         }, {
           onConflict: 'setting_key',
@@ -1120,12 +1129,12 @@ export const dbHelpers = {
     }
   },
 
-  async savePlayerNote(note: any) {
+  async savePlayerNote(note: PlayerNote): Promise<PlayerNote> {
     if (supabaseDisabled) {
       try {
         const raw = localStorage.getItem('traveller_player_notes');
-        const notes = raw ? JSON.parse(raw) : [];
-        const existingIndex = notes.findIndex((n: any) => n.id === note.id);
+        const notes: PlayerNote[] = raw ? JSON.parse(raw) : [];
+        const existingIndex = notes.findIndex((n) => n.id === note.id);
 
         if (existingIndex >= 0) {
           notes[existingIndex] = note;
@@ -1198,12 +1207,12 @@ export const dbHelpers = {
     }
   },
 
-  async deletePlayerNote(noteId: string) {
+  async deletePlayerNote(noteId: string): Promise<boolean> {
     if (supabaseDisabled) {
       try {
         const raw = localStorage.getItem('traveller_player_notes');
-        const notes = raw ? JSON.parse(raw) : [];
-        const filtered = notes.filter((n: any) => n.id !== noteId);
+        const notes: PlayerNote[] = raw ? JSON.parse(raw) : [];
+        const filtered = notes.filter((n) => n.id !== noteId);
         localStorage.setItem('traveller_player_notes', JSON.stringify(filtered));
         return true;
       } catch (error) {

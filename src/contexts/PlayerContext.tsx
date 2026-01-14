@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { Player, Character, Vehicle } from '@/types/database';
 import { useToast } from '@/hooks/use-toast';
 import { fetchWithTimeout } from '@/lib/fetchWithTimeout';
@@ -74,8 +74,7 @@ export const PlayerProvider: React.FC<PlayerProviderProps> = ({ children }) => {
       setCharacters([]);
       setVehicles([]);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentPlayer]);
+  }, [currentPlayer, refreshData]);
 
   const validateAccessCode = async (code: string): Promise<boolean> => {
     setIsLoading(true);
@@ -146,7 +145,7 @@ export const PlayerProvider: React.FC<PlayerProviderProps> = ({ children }) => {
     });
   };
 
-  const refreshData = async () => {
+  const refreshData = useCallback(async () => {
     if (!currentPlayer) return;
 
     setIsLoading(true);
@@ -186,7 +185,7 @@ export const PlayerProvider: React.FC<PlayerProviderProps> = ({ children }) => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [currentPlayer, toast]);
 
   const saveCharacter = async (characterData: Partial<Character>): Promise<Character | null> => {
     if (!currentPlayer) return null;

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback, ReactNode } from 'react';
 import { Character, Vehicle } from '@/types/database';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from "@/integrations/supabase/client";
@@ -101,8 +101,7 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
     // Always try to refresh data for view components, regardless of auth state
     // This allows character/vehicle view tabs to work even without shared localStorage
     refreshData();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [refreshData]);
 
   const checkAuthentication = (): boolean => {
     const isAuth = isValidSession();
@@ -123,7 +122,7 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
     });
   };
 
-  const refreshData = async () => {
+  const refreshData = useCallback(async () => {
     setIsLoading(true);
     try {
       // Fetch all characters
@@ -150,6 +149,11 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
           usedLocalCharacters = true;
         } catch (e) {
           console.error('Failed to parse saved characters:', e);
+          toast({
+            title: "Data Error",
+            description: "Failed to load saved characters. Using defaults instead.",
+            variant: "destructive",
+          });
         }
       }
 
@@ -160,6 +164,11 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
           usedLocalVehicles = true;
         } catch (e) {
           console.error('Failed to parse saved vehicles:', e);
+          toast({
+            title: "Data Error",
+            description: "Failed to load saved vehicles. Using defaults instead.",
+            variant: "destructive",
+          });
         }
       }
 
@@ -173,7 +182,7 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
   const saveCharacter = async (characterData: Partial<Character>): Promise<Character | null> => {
     try {
