@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useCampaign } from "@/contexts/CampaignContext";
@@ -14,6 +14,11 @@ export function HullPointsModal({ vehicle, onClose }: HullPointsModalProps) {
 
   const [currentHull, setCurrentHull] = useState(vehicle.hull_current ?? vehicle.hull ?? 0);
   const [isSaving, setIsSaving] = useState(false);
+
+  // Sync local state when vehicle prop changes (e.g., when updated from VehicleSheet)
+  useEffect(() => {
+    setCurrentHull(vehicle.hull_current ?? vehicle.hull ?? 0);
+  }, [vehicle.hull_current, vehicle.hull]);
 
   const maxHull = vehicle.hull ?? 0;
   const hullPercent = maxHull > 0 ? Math.round((currentHull / maxHull) * 100) : 100;

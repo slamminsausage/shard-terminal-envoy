@@ -9,6 +9,7 @@ import { Upload, X, Crop } from "lucide-react";
 import { ThumbnailCropper } from "@/components/ui/ThumbnailCropper";
 import { InventoryList } from "@/components/inventory/InventoryList";
 import { EncumbranceTracker } from "@/components/inventory/EncumbranceTracker";
+import type { InventoryItem } from "@/types/inventory";
 
 interface CharacterSheetProps {
   characterId?: string;
@@ -465,6 +466,68 @@ const CharacterSheet = ({ characterId }: CharacterSheetProps = {}) => {
       setThumbnailUrl('');
     } catch (error) {
       console.error('Error removing thumbnail:', error);
+    }
+  };
+
+  // Handle adding inventory items to character sheet
+  const handleAddItemToSheet = (item: InventoryItem) => {
+    if (item.item_type === 'weapon') {
+      // Map InventoryItem to WeaponRow
+      const weaponRow: WeaponRow = {
+        weapon: item.name || "",
+        accuracy: "", // Can be filled in manually
+        range: "", // Can be filled in manually
+        damage: item.description?.match(/\d+d\d+/)?.[0] || "", // Try to extract damage from description
+        kg: item.weight_kg?.toString() || "",
+        magazine: "", // Can be filled in manually
+        traits: item.notes || ""
+      };
+
+      // Find first empty slot or add to end
+      const emptyIndex = weapons.findIndex(w => !w.weapon);
+      if (emptyIndex !== -1) {
+        const newWeapons = [...weapons];
+        newWeapons[emptyIndex] = weaponRow;
+        setWeapons(newWeapons);
+      } else {
+        setWeapons([...weapons, weaponRow]);
+      }
+    } else if (item.item_type === 'armor') {
+      // Map InventoryItem to ArmourRow
+      const armorRow: ArmourRow = {
+        type: item.name || "",
+        rad: "", // Can be filled in manually
+        protection: item.description?.match(/\d+/)?.[0] || "", // Try to extract protection value
+        kg: item.weight_kg?.toString() || "",
+        options: item.notes || "",
+        total: ""
+      };
+
+      // Find first empty slot or add to end
+      const emptyIndex = armourRows.findIndex(a => !a.type);
+      if (emptyIndex !== -1) {
+        const newArmor = [...armourRows];
+        newArmor[emptyIndex] = armorRow;
+        setArmourRows(newArmor);
+      } else {
+        setArmourRows([...armourRows, armorRow]);
+      }
+    } else if (item.item_type === 'equipment') {
+      // Map InventoryItem to EquipmentRow
+      const equipmentRow: EquipmentRow = {
+        item: item.name || "",
+        mass: item.weight_kg?.toString() || ""
+      };
+
+      // Find first empty slot or add to end
+      const emptyIndex = equipment.findIndex(e => !e.item);
+      if (emptyIndex !== -1) {
+        const newEquipment = [...equipment];
+        newEquipment[emptyIndex] = equipmentRow;
+        setEquipment(newEquipment);
+      } else {
+        setEquipment([...equipment, equipmentRow]);
+      }
     }
   };
 
@@ -1084,6 +1147,7 @@ const customGroups = skillDefinitions.filter(def => def.isCustomGroup);
             <InventoryList
               ownerId={characterId}
               ownerType="character"
+              onAddToSheet={handleAddItemToSheet}
             />
           </div>
         </section>
