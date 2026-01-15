@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Package, Trash2, ArrowRightLeft, Search } from 'lucide-react';
+import { Plus, Package, Trash2, ArrowRightLeft, Search, FileText } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 
 interface InventoryListProps {
@@ -14,6 +14,7 @@ interface InventoryListProps {
   ownerType?: 'character' | 'vehicle' | 'storage';
   showActions?: boolean;
   onTransferItem?: (item: InventoryItem) => void;
+  onAddToSheet?: (item: InventoryItem) => void;
 }
 
 export const InventoryList: React.FC<InventoryListProps> = ({
@@ -21,6 +22,7 @@ export const InventoryList: React.FC<InventoryListProps> = ({
   ownerType,
   showActions = true,
   onTransferItem,
+  onAddToSheet,
 }) => {
   const { items, getAllItems, deleteItem, isLoading } = useInventory();
   const [searchQuery, setSearchQuery] = useState('');
@@ -207,12 +209,24 @@ export const InventoryList: React.FC<InventoryListProps> = ({
 
                     {showActions && (
                       <div className="flex gap-1">
+                        {onAddToSheet && (item.item_type === 'weapon' || item.item_type === 'armor' || item.item_type === 'equipment') && (
+                          <Button
+                            onClick={() => onAddToSheet(item)}
+                            variant="ghost"
+                            size="sm"
+                            className="text-terminal-primary hover:bg-terminal-primary/20"
+                            title="Add to Character Sheet"
+                          >
+                            <FileText className="h-4 w-4" />
+                          </Button>
+                        )}
                         {onTransferItem && (
                           <Button
                             onClick={() => onTransferItem(item)}
                             variant="ghost"
                             size="sm"
                             className="text-terminal-primary hover:bg-terminal-primary/20"
+                            title="Transfer Item"
                           >
                             <ArrowRightLeft className="h-4 w-4" />
                           </Button>
@@ -222,6 +236,7 @@ export const InventoryList: React.FC<InventoryListProps> = ({
                           variant="ghost"
                           size="sm"
                           className="text-red-400 hover:bg-red-500/20 hover:text-red-300"
+                          title="Delete Item"
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
