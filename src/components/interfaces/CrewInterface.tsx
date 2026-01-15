@@ -1,14 +1,20 @@
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { typeTextWithSound } from '@/lib/typing';
 import CharacterSheet from "@/components/crew/CharacterSheet";
+import { CharacterGenerator } from "@/components/character-gen/CharacterGenerator";
+import { TradeInterface } from "@/components/trade/TradeInterface";
+import { FinanceInterface } from "@/components/finance/FinanceInterface";
 import { useCampaign } from "@/contexts/CampaignContext";
+import { Users, UserPlus, Package, DollarSign } from 'lucide-react';
 
 export default function CrewInterface() {
   const [displayText, setDisplayText] = useState("");
   const [activeCrewMember, setActiveCrewMember] = useState<string | null>(null);
   const [showCharacterSheet, setShowCharacterSheet] = useState(false);
+  const [activeTab, setActiveTab] = useState("crew");
   const { createNewCharacter, characters, vehicles, deleteCharacter } = useCampaign();
   const [characterToDelete, setCharacterToDelete] = useState<string | null>(null);
 
@@ -63,16 +69,50 @@ export default function CrewInterface() {
   return (
     <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
       <div className="flex justify-between items-center mb-4 sm:mb-6">
-        <h2 className="text-base sm:text-xl font-['Orbitron'] tracking-[0.15em] sm:tracking-[0.2em] text-primary drop-shadow-[0_0_10px_rgba(0,255,0,0.4)]">CREW MANAGEMENT SYSTEM</h2>
+        <h2 className="text-base sm:text-xl font-['Orbitron'] tracking-[0.15em] sm:tracking-[0.2em] text-primary drop-shadow-[0_0_10px_rgba(0,255,0,0.4)]">CREW & OPERATIONS</h2>
       </div>
 
-      <div className="panel">
-        <div className="panel-content">
-          <div className="terminal terminal-flicker h-[200px] overflow-auto mb-4 border border-primary/30 rounded">
-            <div className="font-mono text-xs sm:text-sm whitespace-pre-wrap p-3 sm:p-4 text-primary">
-              {displayText}
-            </div>
-          </div>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-4 bg-black border border-terminal-primary/30 mb-4">
+          <TabsTrigger
+            value="crew"
+            className="data-[state=active]:bg-terminal-primary/20 data-[state=active]:text-terminal-primary flex items-center gap-2"
+          >
+            <Users className="h-4 w-4" />
+            <span className="hidden sm:inline">Crew</span>
+          </TabsTrigger>
+          <TabsTrigger
+            value="chargen"
+            className="data-[state=active]:bg-terminal-primary/20 data-[state=active]:text-terminal-primary flex items-center gap-2"
+          >
+            <UserPlus className="h-4 w-4" />
+            <span className="hidden sm:inline">Char Gen</span>
+          </TabsTrigger>
+          <TabsTrigger
+            value="trade"
+            className="data-[state=active]:bg-terminal-primary/20 data-[state=active]:text-terminal-primary flex items-center gap-2"
+          >
+            <Package className="h-4 w-4" />
+            <span className="hidden sm:inline">Trade</span>
+          </TabsTrigger>
+          <TabsTrigger
+            value="finance"
+            className="data-[state=active]:bg-terminal-primary/20 data-[state=active]:text-terminal-primary flex items-center gap-2"
+          >
+            <DollarSign className="h-4 w-4" />
+            <span className="hidden sm:inline">Finance</span>
+          </TabsTrigger>
+        </TabsList>
+
+        {/* Crew Management Tab */}
+        <TabsContent value="crew">
+          <div className="panel">
+            <div className="panel-content">
+              <div className="terminal terminal-flicker h-[200px] overflow-auto mb-4 border border-primary/30 rounded">
+                <div className="font-mono text-xs sm:text-sm whitespace-pre-wrap p-3 sm:p-4 text-primary">
+                  {displayText}
+                </div>
+              </div>
 
           <div className="space-y-4 mt-4">
               <div className="panel">
@@ -168,9 +208,26 @@ export default function CrewInterface() {
                   </button>
                 </div>
               </div>
+            </div>
           </div>
         </div>
-      </div>
-    </div>
-  );
+      </TabsContent>
+
+      {/* Character Generator Tab */}
+      <TabsContent value="chargen">
+        <CharacterGenerator />
+      </TabsContent>
+
+      {/* Trade System Tab */}
+      <TabsContent value="trade">
+        <TradeInterface />
+      </TabsContent>
+
+      {/* Finance Tab */}
+      <TabsContent value="finance">
+        <FinanceInterface />
+      </TabsContent>
+    </Tabs>
+  </div>
+);
 }

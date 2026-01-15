@@ -7,6 +7,8 @@ import { performSkillCheck, rollDamageExpression, getCharacteristicDM, getSkillD
 import { dbHelpers } from "@/lib/supabase";
 import { Upload, X, Crop } from "lucide-react";
 import { ThumbnailCropper } from "@/components/ui/ThumbnailCropper";
+import { InventoryList } from "@/components/inventory/InventoryList";
+import { EncumbranceTracker } from "@/components/inventory/EncumbranceTracker";
 
 interface CharacterSheetProps {
   characterId?: string;
@@ -1064,6 +1066,28 @@ const customGroups = skillDefinitions.filter(def => def.isCustomGroup);
           />
         </div>
       </section>
+
+      {/* Inventory Management Section */}
+      {characterId && (
+        <section className="panel">
+          <div className="panel-header">
+            <span className="panel-title">INVENTORY MANAGEMENT</span>
+          </div>
+          <div className="panel-content">
+            <div className="mb-4">
+              <EncumbranceTracker
+                ownerId={characterId}
+                ownerType="character"
+                strengthScore={parseInt(characteristics.strength?.current || "7")}
+              />
+            </div>
+            <InventoryList
+              ownerId={characterId}
+              ownerType="character"
+            />
+          </div>
+        </section>
+      )}
 
       <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="panel">

@@ -11,6 +11,7 @@ import { MessageComposer } from "./MessageComposer";
 import { AddContactModal } from "./AddContactModal";
 import { ScanModal } from "./ScanModal";
 import { DamageCalculator } from "./DamageCalculator";
+import { ShipCombatTracker } from "@/components/combat/ShipCombatTracker";
 import type { BridgeMessage, Contact, NewContact } from "@/lib/bridge/bridgeTypes";
 
 export function BridgeConsole() {
@@ -44,6 +45,7 @@ export function BridgeConsole() {
   const [selectedMessage, setSelectedMessage] = useState<BridgeMessage | null>(null);
   const [showScan, setShowScan] = useState(false);
   const [showDamageCalc, setShowDamageCalc] = useState(false);
+  const [showShipCombat, setShowShipCombat] = useState(false);
   const [selectedVehicleId, setSelectedVehicleId] = useState<string>("");
 
   const playerShip = contacts.find(c => c.isPlayerShip);
@@ -268,6 +270,7 @@ export function BridgeConsole() {
         onScanClick={() => setShowScan(true)}
         onHailClick={() => setShowMessageComposer(true)}
         onDamageCalcClick={() => setShowDamageCalc(true)}
+        onShipCombatClick={() => setShowShipCombat(true)}
       />
 
       {showMessageComposer && (
@@ -303,6 +306,20 @@ export function BridgeConsole() {
             // TODO: Apply damage to selected contact
           }}
         />
+      )}
+
+      {showShipCombat && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="relative w-full max-w-6xl max-h-[90vh] overflow-hidden rounded-lg border border-terminal-primary/50 shadow-[0_0_32px_rgba(0,255,0,0.2)]">
+            <button
+              onClick={() => setShowShipCombat(false)}
+              className="absolute top-4 right-4 z-10 px-4 py-2 bg-terminal-bg-panel-alt border border-terminal-primary/50 text-terminal-primary hover:bg-terminal-primary/10 rounded text-xs font-mono"
+            >
+              CLOSE
+            </button>
+            <ShipCombatTracker />
+          </div>
+        </div>
       )}
     </div>
   );
