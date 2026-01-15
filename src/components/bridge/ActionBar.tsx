@@ -4,9 +4,10 @@ interface ActionBarProps {
   onScanClick: () => void;
   onHailClick: () => void;
   onDamageCalcClick?: () => void;
+  onShipCombatClick?: () => void;
 }
 
-export function ActionBar({ alertLevel, onAlertChange, onScanClick, onHailClick, onDamageCalcClick }: ActionBarProps) {
+export function ActionBar({ alertLevel, onAlertChange, onScanClick, onHailClick, onDamageCalcClick, onShipCombatClick }: ActionBarProps) {
   const cycleAlert = () => {
     const levels: Array<"normal" | "elevated" | "combat" | "emergency"> = ["normal", "elevated", "combat", "emergency"];
     const currentIndex = levels.indexOf(alertLevel);
@@ -51,6 +52,15 @@ export function ActionBar({ alertLevel, onAlertChange, onScanClick, onHailClick,
           className="flex-1 py-2.5 px-4 rounded text-xs font-mono transition-all border border-terminal-bg-border text-terminal-text-dimmer bg-terminal-primary-light/5 hover:bg-terminal-primary-light/10 hover:text-terminal-primary-light hover:border-terminal-primary-mid"
         >
           DMG CALC
+        </button>
+      )}
+
+      {onShipCombatClick && (
+        <button
+          onClick={onShipCombatClick}
+          className="flex-1 py-2.5 px-4 rounded text-xs font-mono transition-all border border-terminal-warning-alt text-terminal-warning-alt bg-terminal-warning-alt/5 hover:bg-terminal-warning-alt/10 hover:text-terminal-warning-light hover:border-terminal-warning-light"
+        >
+          COMBAT
         </button>
       )}
     </div>
