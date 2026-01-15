@@ -210,23 +210,24 @@ export default function CrewInterface() {
               </div>
             </div>
           </div>
-        </TabsContent>
+        </div>
+      </TabsContent>
 
-        {/* Character Generator Tab */}
-        <TabsContent value="chargen">
-          <CharacterGenerator />
-        </TabsContent>
+      {/* Character Generator Tab */}
+      <TabsContent value="chargen">
+        <CharacterGenerator />
+      </TabsContent>
 
-        {/* Trade System Tab */}
-        <TabsContent value="trade">
-          <TradeInterface />
-        </TabsContent>
+      {/* Trade System Tab */}
+      <TabsContent value="trade">
+        <TradeInterface />
+      </TabsContent>
 
-        {/* Finance Tab */}
-        <TabsContent value="finance">
-          <FinanceInterface />
-        </TabsContent>
-      </Tabs>
-    </div>
-  );
+      {/* Finance Tab */}
+      <TabsContent value="finance">
+        <FinanceInterface />
+      </TabsContent>
+    </Tabs>
+  </div>
+);
 }
