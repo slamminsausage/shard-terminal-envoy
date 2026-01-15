@@ -10,6 +10,9 @@ import { NotesProvider } from "@/contexts/NotesContext";
 import { SessionProvider } from "@/contexts/SessionContext";
 import { QuestProvider } from "@/contexts/QuestContext";
 import { CalendarProvider } from "@/contexts/CalendarContext";
+import { InventoryProvider } from "@/contexts/InventoryContext";
+import { FinanceProvider } from "@/contexts/FinanceContext";
+import { TradeProvider } from "@/contexts/TradeContext";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import CRTOverlay from "@/components/ui/CRTOverlay";
 import { GlobalSearch } from "@/components/GlobalSearch";
@@ -42,9 +45,12 @@ const App = () => (
           <SessionProvider>
             <QuestProvider>
               <CalendarProvider>
-                <JumpPlannerProvider>
-                  <NotesProvider>
-                    <BridgeProvider>
+                <InventoryProvider>
+                  <FinanceProvider>
+                    <TradeProvider>
+                      <JumpPlannerProvider>
+                        <NotesProvider>
+                          <BridgeProvider>
             <CRTOverlay />
             <Toaster />
             <Sonner />
@@ -61,9 +67,12 @@ const App = () => (
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>
-                    </BridgeProvider>
-                  </NotesProvider>
-                </JumpPlannerProvider>
+                          </BridgeProvider>
+                        </NotesProvider>
+                      </JumpPlannerProvider>
+                    </TradeProvider>
+                  </FinanceProvider>
+                </InventoryProvider>
               </CalendarProvider>
             </QuestProvider>
           </SessionProvider>
