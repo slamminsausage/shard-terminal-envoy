@@ -64,7 +64,7 @@ export interface CareerDefinition {
 
 export const CAREER_UNIVERSITY: CareerDefinition = {
   name: 'University',
-  description: 'Higher education to gain advanced knowledge and skills. Choose one Level 0 and one Level 1 skill from the list when you enter.',
+  description: 'Higher education to gain advanced knowledge and skills. Choose one Level 0 and one Level 1 skill from the list when you enter. Increase EDU by +1 immediately.',
   qualification: 'EDU 6+',
   qualificationTarget: 6,
   qualificationStat: 'education',
@@ -83,7 +83,8 @@ export const CAREER_UNIVERSITY: CareerDefinition = {
   ],
   skillTables: {
     personalDevelopment: [],
-    serviceSkills: ['Admin', 'Advocate', 'Animals', 'Art', 'Astrogation', 'Electronics', 'Engineer', 'Language', 'Medic', 'Navigation', 'Profession', 'Science'],
+    serviceSkills: [], // No service skills - University uses manual selection
+    advancedEducation: ['Admin', 'Advocate', 'Animals', 'Art', 'Astrogation', 'Electronics', 'Engineer', 'Language', 'Medic', 'Navigation', 'Profession', 'Science'],
     specialist: {
       'Student': [],
     },
@@ -99,7 +100,7 @@ export const CAREER_UNIVERSITY: CareerDefinition = {
     "Failed to graduate. Gain no benefits from University.",
   ],
   eventTable: [
-    "Graduated successfully. Increase both chosen skills by one level and increase EDU by +1.",
+    "Graduated successfully. Increase both chosen skills by one level and increase EDU by an additional +1. Receive DM+1 (DM+2 with Honours on 10+) to qualify for: Agent, Army, Citizen (corporate), Entertainer (journalist), Marines, Navy, Scholar, Scouts. Allows Commission Roll (DM+0, or DM+2 with Honours) before first military career.",
   ],
 };
 
@@ -109,8 +110,8 @@ export const CAREER_UNIVERSITY: CareerDefinition = {
 
 export const CAREER_MILITARY_ACADEMY: CareerDefinition = {
   name: 'Military Academy',
-  description: 'Train at a military academy. Must choose Army, Navy, or Marines and gain all their Service Skills at Level 0.',
-  qualification: 'Special', // Depends on chosen service
+  description: 'Train at a military academy. Must choose Army, Navy, or Marines and gain all their Service Skills at Level 0 immediately.',
+  qualification: 'Special', // Army: END 7+, Marines: END 8+, Navy: INT 8+
   qualificationTarget: 7, // Army: END 7+, Marines: END 8+, Navy: INT 8+
   qualificationStat: 'endurance', // Default, varies by service
   isPreCareer: true,
@@ -159,10 +160,10 @@ export const CAREER_MILITARY_ACADEMY: CareerDefinition = {
     ],
   },
   mishapTable: [
-    "Failed to graduate but gain automatic entry to your chosen service.",
+    "Failed to graduate but gain automatic entry to your chosen service (if roll was not 2 or less). No commission roll in first term.",
   ],
   eventTable: [
-    "Graduated successfully. Increase EDU by +1.",
+    "Graduated successfully. Increase EDU by +1. If entering the same military career: Select any three Service Skills and increase them to Level 1. If graduated with Honours (11+): Increase SOC by +1. Allows Commission Roll (DM+2, or Automatic Pass with Honours) before first military career.",
   ],
 };
 
