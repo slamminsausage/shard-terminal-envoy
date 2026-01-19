@@ -202,6 +202,9 @@ export const CharacterGenerator: React.FC = () => {
   const [graduatedWithHonours, setGraduatedWithHonours] = useState(false);
   const [needsCommissionRoll, setNeedsCommissionRoll] = useState(false);
   const [commissionRollDM, setCommissionRollDM] = useState(0);
+  const [graduationRollLog, setGraduationRollLog] = useState<string>('');
+  const [survivalRollLog, setSurvivalRollLog] = useState<string>('');
+  const [advancementRollLog, setAdvancementRollLog] = useState<string>('');
 
   // Get available careers based on current term number
   const getAvailableCareers = (): CareerDefinition[] => {
@@ -514,6 +517,9 @@ export const CharacterGenerator: React.FC = () => {
     setTermAdvanced(null);
     setTermEventRoll(null);
     setTermSkillsGained([]);
+    setGraduationRollLog('');
+    setSurvivalRollLog('');
+    setAdvancementRollLog('');
 
     const newAge = 18 + newTermNumber * 4;
     setCharacterData(prev => ({
@@ -549,6 +555,11 @@ export const CharacterGenerator: React.FC = () => {
     const survived = total >= assignment.survivalTarget;
 
     setTermSurvived(survived);
+
+    // Set survival/graduation roll log for regular careers
+    if (!isPreCareer) {
+      setSurvivalRollLog(`Survival Roll: ${roll} + ${dm} = ${total} (need ${assignment.survivalTarget}+)`);
+    }
 
     if (!survived) {
       // For pre-careers, handle graduation failure differently
@@ -632,6 +643,10 @@ export const CharacterGenerator: React.FC = () => {
         let benefitNotes: string[] = [];
         const honoursAchieved = selectedCareer.preCareerType === 'university' ? total >= 10 : total >= 11;
         setGraduatedWithHonours(honoursAchieved);
+
+        // Set graduation roll log for display
+        const honoursTarget = selectedCareer.preCareerType === 'university' ? 10 : 11;
+        setGraduationRollLog(`Graduation Roll: ${roll} + ${dm} = ${total} (need ${assignment.survivalTarget}+, honours on ${honoursTarget}+) ${honoursAchieved ? '✓ WITH HONOURS' : ''}`);
 
         if (selectedCareer.preCareerType === 'university') {
           // University graduation: Both chosen skills +1, EDU +1 (additional)
@@ -730,6 +745,7 @@ export const CharacterGenerator: React.FC = () => {
     const advanced = total >= assignment.advancementTarget;
 
     setTermAdvanced(advanced);
+    setAdvancementRollLog(`Advancement Roll: ${roll} + ${dm} = ${total} (need ${assignment.advancementTarget}+)`);
 
     const ranks = isCommissioned && selectedCareer.ranks.officer
       ? selectedCareer.ranks.officer
@@ -1768,9 +1784,21 @@ export const CharacterGenerator: React.FC = () => {
                   <div className="space-y-2">
                     {selectedCareer?.isPreCareer ? (
                       <>
+                        {graduationRollLog && (
+                          <div className="bg-terminal-primary/5 border border-terminal-primary/30 rounded p-3">
+                            <p className="text-xs text-terminal-primary/80 font-mono">{graduationRollLog}</p>
+                          </div>
+                        )}
                         <Alert className="bg-green-500/10 border-green-500/50">
                           <AlertDescription className="text-green-400">
-                            ✓ Graduated successfully! {termSkillsGained.length > 0 && termSkillsGained.join(', ')}
+                            ✓ Graduated successfully!
+                            {termSkillsGained.length > 0 && (
+                              <div className="mt-2 space-y-1">
+                                {termSkillsGained.map((skill, idx) => (
+                                  <div key={idx}>• {skill}</div>
+                                ))}
+                              </div>
+                            )}
                           </AlertDescription>
                         </Alert>
                         <Button
@@ -1783,6 +1811,11 @@ export const CharacterGenerator: React.FC = () => {
                       </>
                     ) : (
                       <>
+                        {survivalRollLog && (
+                          <div className="bg-terminal-primary/5 border border-terminal-primary/30 rounded p-3">
+                            <p className="text-xs text-terminal-primary/80 font-mono">{survivalRollLog}</p>
+                          </div>
+                        )}
                         <Alert className="bg-green-500/10 border-green-500/50">
                           <AlertDescription className="text-green-400">
                             ✓ Survival check passed! Now roll for advancement.
@@ -1802,6 +1835,11 @@ export const CharacterGenerator: React.FC = () => {
 
                 {isInTerm && termSurvived === true && termAdvanced !== null && termEventRoll === null && (
                   <div className="space-y-2">
+                    {advancementRollLog && (
+                      <div className="bg-terminal-primary/5 border border-terminal-primary/30 rounded p-3">
+                        <p className="text-xs text-terminal-primary/80 font-mono">{advancementRollLog}</p>
+                      </div>
+                    )}
                     {termAdvanced ? (
                       <Alert className="bg-green-500/10 border-green-500/50">
                         <AlertDescription className="text-green-400">
