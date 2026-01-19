@@ -296,6 +296,8 @@ export const CharacterGenerator: React.FC = () => {
 
   const [characteristicRolls, setCharacteristicRolls] = useState<number[]>([]);
   const [hasRolled, setHasRolled] = useState(false);
+  const [selectedRollIndex, setSelectedRollIndex] = useState<number | null>(null);
+  const [assignmentMode, setAssignmentMode] = useState<'auto' | 'manual'>('auto');
   const [backgroundSkillsRemaining, setBackgroundSkillsRemaining] = useState(0);
   const [selectedCareer, setSelectedCareer] = useState<CareerDefinition | null>(null);
   const [selectedAssignment, setSelectedAssignment] = useState<number>(0);
@@ -335,6 +337,76 @@ export const CharacterGenerator: React.FC = () => {
     }
     setCharacteristicRolls(rolls);
     setHasRolled(true);
+    setAssignmentMode('auto');
+  };
+
+  const rollForManualAssignment = () => {
+    const rolls: number[] = [];
+    for (let i = 0; i < 6; i++) {
+      rolls.push(rollDice(2, 6));
+    }
+    setCharacteristicRolls(rolls);
+    setHasRolled(true);
+    setAssignmentMode('manual');
+  };
+
+  const rollSingleCharacteristic = (key: keyof Omit<Characteristics, 'psionics'>) => {
+    const roll = rollDice(2, 6);
+    setCharacterData(prev => ({
+      ...prev,
+      characteristics: {
+        ...prev.characteristics,
+        [key]: { total: roll, current: roll },
+      },
+    }));
+
+    // Recalculate background skills if education changed
+    if (key === 'education') {
+      const eduDM = getDM(roll);
+      setBackgroundSkillsRemaining(Math.max(0, eduDM + 3));
+    }
+  };
+
+  const manuallySetCharacteristic = (key: keyof Omit<Characteristics, 'psionics'>, value: number) => {
+    setCharacterData(prev => ({
+      ...prev,
+      characteristics: {
+        ...prev.characteristics,
+        [key]: { total: value, current: value },
+      },
+    }));
+
+    // Recalculate background skills if education changed
+    if (key === 'education') {
+      const eduDM = getDM(value);
+      setBackgroundSkillsRemaining(Math.max(0, eduDM + 3));
+    }
+  };
+
+  const assignRollToCharacteristic = (key: keyof Omit<Characteristics, 'psionics'>) => {
+    if (selectedRollIndex === null || !characteristicRolls[selectedRollIndex]) return;
+
+    const rollValue = characteristicRolls[selectedRollIndex];
+
+    setCharacterData(prev => ({
+      ...prev,
+      characteristics: {
+        ...prev.characteristics,
+        [key]: { total: rollValue, current: rollValue },
+      },
+    }));
+
+    // Remove the used roll
+    setCharacteristicRolls(prev => prev.filter((_, idx) => idx !== selectedRollIndex));
+    setSelectedRollIndex(null);
+
+    // Check if all rolls are assigned
+    if (characteristicRolls.length === 1) {
+      // Last roll assigned, calculate background skills
+      const eduValue = key === 'education' ? rollValue : characterData.characteristics.education.total;
+      const eduDM = getDM(eduValue);
+      setBackgroundSkillsRemaining(Math.max(0, eduDM + 3));
+    }
   };
 
   const assignRolls = () => {
@@ -363,6 +435,8 @@ export const CharacterGenerator: React.FC = () => {
   const rerollCharacteristics = () => {
     setCharacteristicRolls([]);
     setHasRolled(false);
+    setSelectedRollIndex(null);
+    setAssignmentMode('auto');
     setCharacterData(prev => ({
       ...prev,
       characteristics: createEmptyCharacteristics(),
@@ -833,7 +907,7 @@ export const CharacterGenerator: React.FC = () => {
             <Card className="bg-black border-terminal-primary/50">
               <CardHeader>
                 <div className="flex justify-between items-center">
-                  <CardTitle className="text-terminal-primary">Roll Characteristics</CardTitle>
+                  <CardTitle className="text-terminal-primary">Characteristics</CardTitle>
                   <div className="flex gap-2">
                     {hasRolled && (
                       <Button
@@ -842,16 +916,7 @@ export const CharacterGenerator: React.FC = () => {
                         size="sm"
                       >
                         <RefreshCw className="h-4 w-4 mr-2" />
-                        Reroll All
-                      </Button>
-                    )}
-                    {!hasRolled && (
-                      <Button
-                        onClick={rollAllCharacteristics}
-                        className="bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
-                      >
-                        <Dices className="h-4 w-4 mr-2" />
-                        Roll 2D6 (x6)
+                        Reset
                       </Button>
                     )}
                   </div>
@@ -859,16 +924,47 @@ export const CharacterGenerator: React.FC = () => {
               </CardHeader>
               <CardContent className="space-y-4">
                 {!hasRolled ? (
-                  <Alert className="bg-terminal-primary/5 border-terminal-primary/30">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription className="text-terminal-primary/80">
-                      Click "Roll 2D6" to generate your six characteristic scores. In Traveller 2E, you roll 2D6 six times and assign them in order to STR, DEX, END, INT, EDU, and SOC.
-                    </AlertDescription>
-                  </Alert>
-                ) : (
+                  <>
+                    <Alert className="bg-terminal-primary/5 border-terminal-primary/30">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription className="text-terminal-primary/80">
+                        Choose how to generate your characteristics: Auto-assign (traditional), Manual (pick where each roll goes), or roll individually.
+                      </AlertDescription>
+                    </Alert>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <Button
+                        onClick={rollAllCharacteristics}
+                        className="bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30 h-20 flex-col"
+                      >
+                        <Dices className="h-5 w-5 mb-1" />
+                        <span className="font-bold">Auto-Assign</span>
+                        <span className="text-xs">Roll 6, assign in order</span>
+                      </Button>
+
+                      <Button
+                        onClick={rollForManualAssignment}
+                        className="bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30 h-20 flex-col"
+                      >
+                        <Dices className="h-5 w-5 mb-1" />
+                        <span className="font-bold">Manual Assign</span>
+                        <span className="text-xs">Roll 6, pick placement</span>
+                      </Button>
+
+                      <Button
+                        onClick={() => setHasRolled(true)}
+                        className="bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30 h-20 flex-col"
+                      >
+                        <Dices className="h-5 w-5 mb-1" />
+                        <span className="font-bold">Roll Individually</span>
+                        <span className="text-xs">Roll each stat separately</span>
+                      </Button>
+                    </div>
+                  </>
+                ) : assignmentMode === 'auto' && characteristicRolls.length > 0 ? (
                   <>
                     <div className="bg-terminal-primary/5 border border-terminal-primary/30 rounded p-4">
-                      <h3 className="text-sm font-bold text-terminal-primary uppercase mb-3">Your Rolls</h3>
+                      <h3 className="text-sm font-bold text-terminal-primary uppercase mb-3">Your Rolls (Auto-Assign)</h3>
                       <div className="grid grid-cols-6 gap-2">
                         {characteristicRolls.map((roll, idx) => (
                           <div key={idx} className="text-center p-2 border border-terminal-primary/30 rounded">
@@ -906,6 +1002,123 @@ export const CharacterGenerator: React.FC = () => {
                       </div>
                     )}
                   </>
+                ) : assignmentMode === 'manual' && characteristicRolls.length > 0 ? (
+                  <>
+                    <div className="bg-terminal-primary/5 border border-terminal-primary/30 rounded p-4">
+                      <h3 className="text-sm font-bold text-terminal-primary uppercase mb-3">
+                        Your Rolls - Click a roll, then click a characteristic
+                      </h3>
+                      <div className="grid grid-cols-6 gap-2">
+                        {characteristicRolls.map((roll, idx) => (
+                          <button
+                            key={idx}
+                            onClick={() => setSelectedRollIndex(idx)}
+                            className={`text-center p-2 border rounded transition-colors ${
+                              selectedRollIndex === idx
+                                ? 'border-terminal-primary bg-terminal-primary/20'
+                                : 'border-terminal-primary/30 hover:border-terminal-primary/50'
+                            }`}
+                          >
+                            <div className="text-2xl font-bold text-terminal-primary">{roll}</div>
+                            <div className="text-xs text-terminal-primary/60">DM: {getDMDisplay(roll)}</div>
+                          </button>
+                        ))}
+                      </div>
+                      {selectedRollIndex !== null && (
+                        <p className="text-xs text-terminal-primary/70 mt-2">
+                          Selected roll: {characteristicRolls[selectedRollIndex]} - Click a characteristic below to assign
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                      {(['strength', 'dexterity', 'endurance', 'intellect', 'education', 'social'] as const).map((key) => {
+                        const hasValue = characterData.characteristics[key].total > 0;
+                        return (
+                          <button
+                            key={key}
+                            onClick={() => assignRollToCharacteristic(key)}
+                            disabled={!selectedRollIndex && selectedRollIndex !== 0}
+                            className={`border rounded p-3 text-left transition-colors ${
+                              hasValue
+                                ? 'border-terminal-primary bg-terminal-primary/10'
+                                : selectedRollIndex !== null
+                                ? 'border-terminal-primary/50 hover:border-terminal-primary bg-card/40'
+                                : 'border-terminal-primary/30 bg-card/20 opacity-50'
+                            }`}
+                          >
+                            <div className="text-xs font-semibold uppercase tracking-wide text-terminal-primary">
+                              {key}
+                            </div>
+                            <div className="text-2xl font-bold text-terminal-primary mt-1">
+                              {hasValue ? characterData.characteristics[key].total : '?'}
+                            </div>
+                            {hasValue && (
+                              <div className="text-xs text-terminal-primary/60">
+                                DM: {getDMDisplay(characterData.characteristics[key].total)}
+                              </div>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {characteristicRolls.length === 0 && (
+                      <Alert className="bg-green-500/10 border-green-500/50">
+                        <AlertDescription className="text-green-400">
+                          ✓ All characteristics assigned!
+                        </AlertDescription>
+                      </Alert>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <Alert className="bg-terminal-primary/5 border-terminal-primary/30">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription className="text-terminal-primary/80">
+                        Roll each characteristic individually, or manually type values. Click the dice icon to roll 2D6.
+                      </AlertDescription>
+                    </Alert>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {(['strength', 'dexterity', 'endurance', 'intellect', 'education', 'social'] as const).map((key) => (
+                        <div key={key} className="border border-terminal-primary/30 bg-card/40 rounded p-4">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="text-sm font-semibold uppercase tracking-wide text-terminal-primary">
+                              {key}
+                            </div>
+                            <Button
+                              onClick={() => rollSingleCharacteristic(key)}
+                              size="sm"
+                              variant="outline"
+                              className="border-terminal-primary/50 text-terminal-primary hover:bg-terminal-primary/20 h-7"
+                            >
+                              <Dices className="h-3 w-3" />
+                            </Button>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <Input
+                              type="number"
+                              min="1"
+                              max="18"
+                              value={characterData.characteristics[key].total || ''}
+                              onChange={(e) => {
+                                const val = parseInt(e.target.value) || 0;
+                                if (val >= 0 && val <= 18) {
+                                  manuallySetCharacteristic(key, val);
+                                }
+                              }}
+                              className="bg-black border-terminal-primary/50 text-terminal-primary text-2xl font-bold h-12 w-20 text-center"
+                              placeholder="0"
+                            />
+                            <div className="text-xs text-terminal-primary/60">
+                              DM: {getDMDisplay(characterData.characteristics[key].total)}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </>
                 )}
 
                 <div className="flex gap-2">
@@ -918,7 +1131,11 @@ export const CharacterGenerator: React.FC = () => {
                   </Button>
                   <Button
                     onClick={() => setStep(3)}
-                    disabled={backgroundSkillsRemaining === 0 && !hasRolled}
+                    disabled={
+                      assignmentMode === 'manual'
+                        ? characteristicRolls.length > 0
+                        : (backgroundSkillsRemaining === 0 && characterData.characteristics.education.total === 0)
+                    }
                     className="flex-1 bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
                   >
                     Continue to Background Skills
