@@ -1420,7 +1420,13 @@ export const CharacterGenerator: React.FC = () => {
                     }`}
                     onClick={() => {
                       setSelectedCareer(career);
-                      resetQualification();
+                      // Don't reset if they have automatic entry to this career
+                      if (preCareerFailedService !== career.name) {
+                        resetQualification();
+                      } else {
+                        // Automatically qualify them since they have automatic entry
+                        setTimeout(() => attemptQualification(), 0);
+                      }
                     }}
                   >
                     <CardContent className="p-4">
@@ -1723,14 +1729,14 @@ export const CharacterGenerator: React.FC = () => {
                     <Alert className="bg-red-500/10 border-red-500/50">
                       <AlertDescription className="text-red-400">
                         {selectedCareer?.isPreCareer
-                          ? '✗ Failed to graduate. You may continue to another career or muster out.'
+                          ? '✗ Failed to graduate. You may attempt to qualify for any career (except another pre-career this term).'
                           : '✗ Survival check failed! You suffer a mishap and must leave this career.'}
                       </AlertDescription>
                     </Alert>
                     {preCareerFailedService && (
                       <Alert className="bg-blue-500/10 border-blue-500/50">
                         <AlertDescription className="text-blue-400">
-                          ℹ You have automatic entry to {preCareerFailedService}!
+                          ℹ You have automatic entry to {preCareerFailedService} (no qualification roll needed)!
                         </AlertDescription>
                       </Alert>
                     )}
@@ -1742,10 +1748,11 @@ export const CharacterGenerator: React.FC = () => {
                           setSelectedCareer(null);
                           setQualificationPassed(null);
                           setPreCareerGraduated(false);
+                          setStep(4); // Go back to career selection
                         }}
                         className="flex-1 bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
                       >
-                        Choose New Career
+                        Back to Career Selection
                       </Button>
                       <Button
                         onClick={musterOut}
