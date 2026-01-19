@@ -59,6 +59,45 @@ export interface CareerDefinition {
 }
 
 // ============================================================================
+// PRE-CAREER EVENTS TABLE (2D6)
+// ============================================================================
+
+export const PRE_CAREER_EVENTS = [
+  // Result 2
+  "You are approached by an underground psionic group who sense potential in you. You may test your PSI and attempt to enter the Psion career in any subsequent term, but whether you accept or refuse their approaches, you gain them as an Enemy.",
+
+  // Result 3
+  "A deep tragedy occurs. You fail to graduate and gain no benefits from this Pre-Career. You must leave this term and may not attempt another Pre-Career. However, you may choose to gain a Contact.",
+
+  // Result 4
+  "A supposedly harmless prank goes horribly wrong. Roll SOC 8+. If you succeed, gain one of Deception 1, Persuade 1, or a Contact. If you fail, you are arrested and imprisoned and must enter the Prisoner career in your next term.",
+
+  // Result 5
+  "Taking advantage of youth, you party as much as you study. Gain Carouse 1.",
+
+  // Result 6
+  "You join a tightly knit group of fellow students who become lifelong friends. Gain D3 Allies on graduation.",
+
+  // Result 7
+  "Life Event. Roll on the Life Events table (see page 50).",
+
+  // Result 8
+  "You become involved in a political movement. Roll SOC 8+. If you succeed, you become one of its leaders and gain an Ally within the movement. If you fail, you are duped by the movement and gain a Rival instead. Either way, you gain one of Admin 1, Advocate 1, Diplomat 1, or Persuade 1.",
+
+  // Result 9
+  "You develop a life-long interest in a hobby or other area of study. Gain any skill of your choice, but not one you already have, at level 0.",
+
+  // Result 10
+  "Your time in education allows you to make a breakthrough in an established field of knowledge or study. If you succeed at a skill check of any non-combat skill you already have at level 1+ (with a difficulty of 9+), you may increase it by one level.",
+
+  // Result 11
+  "You are caught up in a widely unpopular and desperate draft to fight in an off-world war. You may flee to become a Drifter but gain an Enemy among those who sent you the draft notice. Otherwise, you are drafted – gain a +2 DM to the Draft roll but your draft will be for a military career (Navy, Army or Marines) only. If your SOC is 9+, you can ignore this result entirely.",
+
+  // Result 12
+  "You gain wide recognition for your efforts, promoting your organisation or being particularly helpful within society. Gain a +1 DM to SOC (to a maximum of 12).",
+];
+
+// ============================================================================
 // PRE-CAREER: UNIVERSITY
 // ============================================================================
 
@@ -99,9 +138,7 @@ export const CAREER_UNIVERSITY: CareerDefinition = {
   mishapTable: [
     "Failed to graduate. Gain no benefits from University.",
   ],
-  eventTable: [
-    "Graduated successfully. Increase both chosen skills by one level and increase EDU by an additional +1. Receive DM+1 (DM+2 with Honours on 10+) to qualify for: Agent, Army, Citizen (corporate), Entertainer (journalist), Marines, Navy, Scholar, Scouts. Allows Commission Roll (DM+0, or DM+2 with Honours) before first military career.",
-  ],
+  eventTable: PRE_CAREER_EVENTS,
 };
 
 // ============================================================================
@@ -162,9 +199,7 @@ export const CAREER_MILITARY_ACADEMY: CareerDefinition = {
   mishapTable: [
     "Failed to graduate but gain automatic entry to your chosen service (if roll was not 2 or less). No commission roll in first term.",
   ],
-  eventTable: [
-    "Graduated successfully. Increase EDU by +1. If entering the same military career: Select any three Service Skills and increase them to Level 1. If graduated with Honours (11+): Increase SOC by +1. Allows Commission Roll (DM+2, or Automatic Pass with Honours) before first military career.",
-  ],
+  eventTable: PRE_CAREER_EVENTS,
 };
 
 // ============================================================================
