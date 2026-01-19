@@ -7,25 +7,12 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dices, User, Briefcase, Award, Save, ArrowRight, AlertCircle, RefreshCw } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useCampaign } from '@/contexts/CampaignContext';
+import { ALL_CAREERS, BACKGROUND_SKILLS } from './careersData';
+import type { CareerDefinition, Characteristics } from './careersData';
 
 // ============================================================================
-// TYPE DEFINITIONS
+// TYPE DEFINITIONS (Component-specific)
 // ============================================================================
-
-interface CharacteristicValue {
-  total: number;
-  current: number;
-}
-
-interface Characteristics {
-  strength: CharacteristicValue;
-  dexterity: CharacteristicValue;
-  endurance: CharacteristicValue;
-  intellect: CharacteristicValue;
-  education: CharacteristicValue;
-  social: CharacteristicValue;
-  psionics: CharacteristicValue;
-}
 
 interface SkillState {
   proficient: boolean;
@@ -47,37 +34,12 @@ interface TermRecord {
   event: string;
   skillsGained: string[];
   mishap?: string;
+  isCommissioned?: boolean;
 }
 
-interface Assignment {
-  name: string;
-  description: string;
-  survivalStat: keyof Omit<Characteristics, 'psionics'>;
-  survivalTarget: number;
-  advancementStat: keyof Omit<Characteristics, 'psionics'>;
-  advancementTarget: number;
-}
-
-interface CareerDefinition {
-  name: string;
-  description: string;
-  qualification: string;
-  qualificationTarget: number;
-  qualificationStat: keyof Omit<Characteristics, 'psionics'>;
-  assignments: Assignment[];
-  skillTables: {
-    personalDevelopment: string[];
-    serviceSkills: string[];
-    advancedEducation?: string[];
-    specialist: { [assignmentName: string]: string[] };
-  };
-  ranks: {
-    title: string;
-    skillBonus?: string;
-    bonusStat?: keyof Omit<Characteristics, 'psionics'>;
-  }[];
-  mishapTable: string[];
-  eventTable: string[];
+interface CharacteristicValue {
+  total: number;
+  current: number;
 }
 
 interface CharacterData {
@@ -113,93 +75,11 @@ interface CharacterData {
   // Other
   notes: string;
   lifepath_log: TermRecord[];
+
+  // Pre-career tracking
+  hasCompletedPreCareer?: boolean;
+  totalCareerTerms?: number; // Track total terms across all careers
 }
-
-// ============================================================================
-// CONSTANTS AND CAREER DATA
-// ============================================================================
-
-const CAREER_AGENT: CareerDefinition = {
-  name: 'Agent',
-  description: 'Law enforcement agencies, corporate operatives, spies and others who work in the shadows.',
-  qualification: 'INT 6+',
-  qualificationTarget: 6,
-  qualificationStat: 'intellect',
-  assignments: [
-    {
-      name: 'Law Enforcement',
-      description: 'You are a police officer or detective.',
-      survivalStat: 'endurance',
-      survivalTarget: 6,
-      advancementStat: 'intellect',
-      advancementTarget: 6,
-    },
-    {
-      name: 'Intelligence',
-      description: 'You work as a spy or saboteur.',
-      survivalStat: 'intellect',
-      survivalTarget: 7,
-      advancementStat: 'intellect',
-      advancementTarget: 5,
-    },
-    {
-      name: 'Corporate',
-      description: 'You work for a corporation, spying on rival organisations.',
-      survivalStat: 'intellect',
-      survivalTarget: 5,
-      advancementStat: 'intellect',
-      advancementTarget: 7,
-    },
-  ],
-  skillTables: {
-    personalDevelopment: ['Gun Combat', 'Dexterity +1', 'Endurance +1', 'Melee', 'Intellect +1', 'Athletics'],
-    serviceSkills: ['Streetwise', 'Drive', 'Investigate', 'Flyer', 'Recon', 'Gun Combat'],
-    advancedEducation: ['Advocate', 'Language', 'Explosives', 'Medic', 'Vacc Suit', 'Electronics'],
-    specialist: {
-      'Law Enforcement': ['Investigate', 'Recon', 'Streetwise', 'Stealth', 'Melee', 'Advocate'],
-      'Intelligence': ['Investigate', 'Recon', 'Deception', 'Stealth', 'Persuade', 'Carouse'],
-      'Corporate': ['Investigate', 'Electronics', 'Stealth', 'Carouse', 'Deception', 'Streetwise'],
-    },
-  },
-  ranks: [
-    { title: 'Rookie' },
-    { title: 'Corporal', skillBonus: 'Streetwise' },
-    { title: 'Sergeant' },
-    { title: 'Detective' },
-    { title: 'Lieutenant', skillBonus: 'Investigate' },
-    { title: 'Chief', skillBonus: 'Admin' },
-    { title: 'Commissioner', bonusStat: 'social' },
-  ],
-  mishapTable: [
-    'Severely injured. Roll twice on the Injury table and take the lower result.',
-    'A criminal or other figure under investigation offers you a deal. Accept and you leave this career with a +4 DM to your next Qualification roll but gain a Rival. Refuse and you must roll twice on the Injury table and take the lower result.',
-    'An investigation goes critically wrong or leads to the bottom of a conspiracy. Roll Advocate 8+. If you succeed, you may continue in this career. If you fail, you must leave this career.',
-    'You learn something you should not know. Gain an Enemy and then roll twice on the Injury table (take both results).',
-    'Your work ends up coming home with you and someone gets hurt. Gain an Enemy.',
-    'Injured. Roll on the Injury table.',
-  ],
-  eventTable: [
-    'Disaster! Roll on the Mishap table but you are not ejected from this career.',
-    'You are given advanced training in a specialist field. Roll Education 8+ to gain any one skill of your choice at level 1.',
-    'You go undercover to investigate an enemy. Roll Deception 8+. If you succeed, roll immediately on any Specialist skill table for this career and gain one level in any skill you roll. If you fail, roll immediately on the Mishap table.',
-    'You complete a mission for your superiors and are suitably rewarded. Gain DM+1 to any one Benefit roll from this career.',
-    'You establish a network of contacts. Gain D3 Contacts.',
-    'You are given specialist training in vehicles. Gain one of Drive 1, Flyer 1, Pilot 1 or Gunner 1.',
-    'You are betrayed by a peer or colleague. Gain a Rival.',
-    'You complete a mission that goes extremely well. You gain an extra Benefit roll from this career.',
-    'You spend much of your time dealing with stakeholders and superiors. Gain one of Advocate 1, Admin 1, Persuade 1 or Diplomat 1.',
-    'You go above and beyond the call of duty. Gain an Ally and DM+2 to your next Advancement check.',
-  ],
-};
-
-const BACKGROUND_SKILLS = [
-  'Admin', 'Animals', 'Art', 'Athletics', 'Carouse', 'Drive', 'Electronics',
-  'Flyer', 'Language', 'Mechanic', 'Medic', 'Profession', 'Science', 'Seafarer',
-  'Streetwise', 'Survival', 'Vacc Suit'
-];
-
-// Available careers (for now just Agent, will add more later)
-const CAREERS: CareerDefinition[] = [CAREER_AGENT];
 
 // ============================================================================
 // HELPER FUNCTIONS
@@ -292,10 +172,14 @@ export const CharacterGenerator: React.FC = () => {
     debt: 0,
     notes: '',
     lifepath_log: [],
+    hasCompletedPreCareer: false,
+    totalCareerTerms: 0,
   });
 
   const [characteristicRolls, setCharacteristicRolls] = useState<number[]>([]);
   const [hasRolled, setHasRolled] = useState(false);
+  const [selectedRollIndex, setSelectedRollIndex] = useState<number | null>(null);
+  const [assignmentMode, setAssignmentMode] = useState<'auto' | 'manual'>('auto');
   const [backgroundSkillsRemaining, setBackgroundSkillsRemaining] = useState(0);
   const [selectedCareer, setSelectedCareer] = useState<CareerDefinition | null>(null);
   const [selectedAssignment, setSelectedAssignment] = useState<number>(0);
@@ -307,6 +191,45 @@ export const CharacterGenerator: React.FC = () => {
   const [termAdvanced, setTermAdvanced] = useState<boolean | null>(null);
   const [termEventRoll, setTermEventRoll] = useState<number | null>(null);
   const [termSkillsGained, setTermSkillsGained] = useState<string[]>([]);
+  const [isCommissioned, setIsCommissioned] = useState(false);
+
+  // Get available careers based on current term number
+  const getAvailableCareers = (): CareerDefinition[] => {
+    const totalTerms = characterData.totalCareerTerms || 0;
+
+    return ALL_CAREERS.filter(career => {
+      // Pre-careers are only available for first 3 terms
+      if (career.isPreCareer) {
+        // Can't take pre-career if already completed one
+        if (characterData.hasCompletedPreCareer) return false;
+        // Only available for terms 1-3
+        return totalTerms < 3;
+      }
+      // Regular careers always available
+      return true;
+    });
+  };
+
+  // Get qualification DM for pre-careers based on term number
+  const getPreCareerDM = (career: CareerDefinition): number => {
+    if (!career.isPreCareer) return 0;
+
+    const totalTerms = characterData.totalCareerTerms || 0;
+
+    if (career.preCareerType === 'university') {
+      // University: Term 1: +0, Term 2: -1, Term 3: -2
+      if (totalTerms === 0) return 0;
+      if (totalTerms === 1) return -1;
+      if (totalTerms === 2) return -2;
+    } else if (career.preCareerType === 'military_academy') {
+      // Military Academy: Term 1: +0, Term 2: -2, Term 3: -4
+      if (totalTerms === 0) return 0;
+      if (totalTerms === 1) return -2;
+      if (totalTerms === 2) return -4;
+    }
+
+    return 0;
+  };
 
   // ============================================================================
   // STEP 1: BASIC INFO
@@ -335,6 +258,76 @@ export const CharacterGenerator: React.FC = () => {
     }
     setCharacteristicRolls(rolls);
     setHasRolled(true);
+    setAssignmentMode('auto');
+  };
+
+  const rollForManualAssignment = () => {
+    const rolls: number[] = [];
+    for (let i = 0; i < 6; i++) {
+      rolls.push(rollDice(2, 6));
+    }
+    setCharacteristicRolls(rolls);
+    setHasRolled(true);
+    setAssignmentMode('manual');
+  };
+
+  const rollSingleCharacteristic = (key: keyof Omit<Characteristics, 'psionics'>) => {
+    const roll = rollDice(2, 6);
+    setCharacterData(prev => ({
+      ...prev,
+      characteristics: {
+        ...prev.characteristics,
+        [key]: { total: roll, current: roll },
+      },
+    }));
+
+    // Recalculate background skills if education changed
+    if (key === 'education') {
+      const eduDM = getDM(roll);
+      setBackgroundSkillsRemaining(Math.max(0, eduDM + 3));
+    }
+  };
+
+  const manuallySetCharacteristic = (key: keyof Omit<Characteristics, 'psionics'>, value: number) => {
+    setCharacterData(prev => ({
+      ...prev,
+      characteristics: {
+        ...prev.characteristics,
+        [key]: { total: value, current: value },
+      },
+    }));
+
+    // Recalculate background skills if education changed
+    if (key === 'education') {
+      const eduDM = getDM(value);
+      setBackgroundSkillsRemaining(Math.max(0, eduDM + 3));
+    }
+  };
+
+  const assignRollToCharacteristic = (key: keyof Omit<Characteristics, 'psionics'>) => {
+    if (selectedRollIndex === null || !characteristicRolls[selectedRollIndex]) return;
+
+    const rollValue = characteristicRolls[selectedRollIndex];
+
+    setCharacterData(prev => ({
+      ...prev,
+      characteristics: {
+        ...prev.characteristics,
+        [key]: { total: rollValue, current: rollValue },
+      },
+    }));
+
+    // Remove the used roll
+    setCharacteristicRolls(prev => prev.filter((_, idx) => idx !== selectedRollIndex));
+    setSelectedRollIndex(null);
+
+    // Check if all rolls are assigned
+    if (characteristicRolls.length === 1) {
+      // Last roll assigned, calculate background skills
+      const eduValue = key === 'education' ? rollValue : characterData.characteristics.education.total;
+      const eduDM = getDM(eduValue);
+      setBackgroundSkillsRemaining(Math.max(0, eduDM + 3));
+    }
   };
 
   const assignRolls = () => {
@@ -363,6 +356,8 @@ export const CharacterGenerator: React.FC = () => {
   const rerollCharacteristics = () => {
     setCharacteristicRolls([]);
     setHasRolled(false);
+    setSelectedRollIndex(null);
+    setAssignmentMode('auto');
     setCharacterData(prev => ({
       ...prev,
       characteristics: createEmptyCharacteristics(),
@@ -396,19 +391,33 @@ export const CharacterGenerator: React.FC = () => {
     if (!selectedCareer) return;
 
     const charValue = characterData.characteristics[selectedCareer.qualificationStat].total;
-    const dm = getDM(charValue);
+    let dm = getDM(charValue);
+
+    // Apply pre-career DM based on term number
+    const preCareerDM = getPreCareerDM(selectedCareer);
+    dm += preCareerDM;
+
+    // Apply SOC bonus for University
+    if (selectedCareer.preCareerType === 'university' && characterData.characteristics.social.total >= 9) {
+      dm += 1;
+    }
+
     const roll = rollDice(2, 6);
     const total = roll + dm;
     const passed = total >= selectedCareer.qualificationTarget;
 
     setQualificationPassed(passed);
-    setQualificationRollLog(`Roll: ${roll} + DM ${dm} = ${total} (need ${selectedCareer.qualificationTarget}+)`);
+    const dmBreakdown = preCareerDM !== 0
+      ? `Roll: ${roll} + Char DM ${getDM(charValue)} + Term DM ${preCareerDM} = ${total} (need ${selectedCareer.qualificationTarget}+)`
+      : `Roll: ${roll} + DM ${dm} = ${total} (need ${selectedCareer.qualificationTarget}+)`;
+    setQualificationRollLog(dmBreakdown);
 
     if (passed) {
       setCharacterData(prev => ({
         ...prev,
         career: selectedCareer.name,
         notes: prev.notes + `\nQualified for ${selectedCareer.name}: ${roll} + ${dm} = ${total}`,
+        totalCareerTerms: (prev.totalCareerTerms || 0) + (selectedCareer.isPreCareer ? 0 : 0), // Pre-careers don't increment yet
       }));
     }
   };
@@ -490,9 +499,13 @@ export const CharacterGenerator: React.FC = () => {
 
     setTermAdvanced(advanced);
 
-    if (advanced && characterData.rank < selectedCareer.ranks.length - 1) {
+    const ranks = isCommissioned && selectedCareer.ranks.officer
+      ? selectedCareer.ranks.officer
+      : selectedCareer.ranks.enlisted;
+
+    if (advanced && characterData.rank < ranks.length - 1) {
       const newRank = characterData.rank + 1;
-      const rankData = selectedCareer.ranks[newRank];
+      const rankData = ranks[newRank];
 
       setCharacterData(prev => ({
         ...prev,
@@ -600,6 +613,10 @@ export const CharacterGenerator: React.FC = () => {
       ? selectedCareer.eventTable[Math.min(termEventRoll - 2, selectedCareer.eventTable.length - 1)]
       : 'No event this term';
 
+    const ranks = isCommissioned && selectedCareer.ranks.officer
+      ? selectedCareer.ranks.officer
+      : selectedCareer.ranks.enlisted;
+
     const termRecord: TermRecord = {
       termNumber: currentTerm,
       career: selectedCareer.name,
@@ -610,19 +627,22 @@ export const CharacterGenerator: React.FC = () => {
       advancementRoll: termAdvanced ? 'Advanced' : 'Did not advance',
       advanced: termAdvanced || false,
       rank: characterData.rank,
-      rankTitle: selectedCareer.ranks[characterData.rank]?.title || `Rank ${characterData.rank}`,
+      rankTitle: ranks[characterData.rank]?.title || `Rank ${characterData.rank}`,
       event,
       skillsGained: termSkillsGained,
+      isCommissioned,
     };
 
     setCharacterData(prev => ({
       ...prev,
       lifepath_log: [...prev.lifepath_log, termRecord],
       terms_served: currentTerm,
+      totalCareerTerms: (prev.totalCareerTerms || 0) + 1,
+      hasCompletedPreCareer: selectedCareer.isPreCareer ? true : prev.hasCompletedPreCareer,
     }));
 
-    // Apply basic training on first term
-    if (currentTerm === 1) {
+    // Apply basic training on first term (not for pre-careers)
+    if (currentTerm === 1 && !selectedCareer.isPreCareer) {
       selectedCareer.skillTables.serviceSkills.forEach(skillName => {
         const skillKey = normalizeSkillName(skillName);
         setCharacterData(prev => ({
@@ -678,6 +698,10 @@ export const CharacterGenerator: React.FC = () => {
 
   const handleSaveCharacter = async () => {
     try {
+      const ranks = selectedCareer && isCommissioned && selectedCareer.ranks.officer
+        ? selectedCareer.ranks.officer
+        : selectedCareer?.ranks.enlisted;
+
       const finalCharacterData = {
         name: characterData.name,
         species: characterData.species,
@@ -688,7 +712,7 @@ export const CharacterGenerator: React.FC = () => {
         species_traits: '',
         notes: characterData.notes,
         career: characterData.career,
-        rank: selectedCareer?.ranks[characterData.rank]?.title || '',
+        rank: ranks?.[characterData.rank]?.title || '',
         strength: characterData.characteristics.strength.total,
         dexterity: characterData.characteristics.dexterity.total,
         endurance: characterData.characteristics.endurance.total,
@@ -833,7 +857,7 @@ export const CharacterGenerator: React.FC = () => {
             <Card className="bg-black border-terminal-primary/50">
               <CardHeader>
                 <div className="flex justify-between items-center">
-                  <CardTitle className="text-terminal-primary">Roll Characteristics</CardTitle>
+                  <CardTitle className="text-terminal-primary">Characteristics</CardTitle>
                   <div className="flex gap-2">
                     {hasRolled && (
                       <Button
@@ -842,16 +866,7 @@ export const CharacterGenerator: React.FC = () => {
                         size="sm"
                       >
                         <RefreshCw className="h-4 w-4 mr-2" />
-                        Reroll All
-                      </Button>
-                    )}
-                    {!hasRolled && (
-                      <Button
-                        onClick={rollAllCharacteristics}
-                        className="bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
-                      >
-                        <Dices className="h-4 w-4 mr-2" />
-                        Roll 2D6 (x6)
+                        Reset
                       </Button>
                     )}
                   </div>
@@ -859,16 +874,47 @@ export const CharacterGenerator: React.FC = () => {
               </CardHeader>
               <CardContent className="space-y-4">
                 {!hasRolled ? (
-                  <Alert className="bg-terminal-primary/5 border-terminal-primary/30">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription className="text-terminal-primary/80">
-                      Click "Roll 2D6" to generate your six characteristic scores. In Traveller 2E, you roll 2D6 six times and assign them in order to STR, DEX, END, INT, EDU, and SOC.
-                    </AlertDescription>
-                  </Alert>
-                ) : (
+                  <>
+                    <Alert className="bg-terminal-primary/5 border-terminal-primary/30">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription className="text-terminal-primary/80">
+                        Choose how to generate your characteristics: Auto-assign (traditional), Manual (pick where each roll goes), or roll individually.
+                      </AlertDescription>
+                    </Alert>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <Button
+                        onClick={rollAllCharacteristics}
+                        className="bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30 h-20 flex-col"
+                      >
+                        <Dices className="h-5 w-5 mb-1" />
+                        <span className="font-bold">Auto-Assign</span>
+                        <span className="text-xs">Roll 6, assign in order</span>
+                      </Button>
+
+                      <Button
+                        onClick={rollForManualAssignment}
+                        className="bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30 h-20 flex-col"
+                      >
+                        <Dices className="h-5 w-5 mb-1" />
+                        <span className="font-bold">Manual Assign</span>
+                        <span className="text-xs">Roll 6, pick placement</span>
+                      </Button>
+
+                      <Button
+                        onClick={() => setHasRolled(true)}
+                        className="bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30 h-20 flex-col"
+                      >
+                        <Dices className="h-5 w-5 mb-1" />
+                        <span className="font-bold">Roll Individually</span>
+                        <span className="text-xs">Roll each stat separately</span>
+                      </Button>
+                    </div>
+                  </>
+                ) : assignmentMode === 'auto' && characteristicRolls.length > 0 ? (
                   <>
                     <div className="bg-terminal-primary/5 border border-terminal-primary/30 rounded p-4">
-                      <h3 className="text-sm font-bold text-terminal-primary uppercase mb-3">Your Rolls</h3>
+                      <h3 className="text-sm font-bold text-terminal-primary uppercase mb-3">Your Rolls (Auto-Assign)</h3>
                       <div className="grid grid-cols-6 gap-2">
                         {characteristicRolls.map((roll, idx) => (
                           <div key={idx} className="text-center p-2 border border-terminal-primary/30 rounded">
@@ -906,6 +952,123 @@ export const CharacterGenerator: React.FC = () => {
                       </div>
                     )}
                   </>
+                ) : assignmentMode === 'manual' && characteristicRolls.length > 0 ? (
+                  <>
+                    <div className="bg-terminal-primary/5 border border-terminal-primary/30 rounded p-4">
+                      <h3 className="text-sm font-bold text-terminal-primary uppercase mb-3">
+                        Your Rolls - Click a roll, then click a characteristic
+                      </h3>
+                      <div className="grid grid-cols-6 gap-2">
+                        {characteristicRolls.map((roll, idx) => (
+                          <button
+                            key={idx}
+                            onClick={() => setSelectedRollIndex(idx)}
+                            className={`text-center p-2 border rounded transition-colors ${
+                              selectedRollIndex === idx
+                                ? 'border-terminal-primary bg-terminal-primary/20'
+                                : 'border-terminal-primary/30 hover:border-terminal-primary/50'
+                            }`}
+                          >
+                            <div className="text-2xl font-bold text-terminal-primary">{roll}</div>
+                            <div className="text-xs text-terminal-primary/60">DM: {getDMDisplay(roll)}</div>
+                          </button>
+                        ))}
+                      </div>
+                      {selectedRollIndex !== null && (
+                        <p className="text-xs text-terminal-primary/70 mt-2">
+                          Selected roll: {characteristicRolls[selectedRollIndex]} - Click a characteristic below to assign
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                      {(['strength', 'dexterity', 'endurance', 'intellect', 'education', 'social'] as const).map((key) => {
+                        const hasValue = characterData.characteristics[key].total > 0;
+                        return (
+                          <button
+                            key={key}
+                            onClick={() => assignRollToCharacteristic(key)}
+                            disabled={!selectedRollIndex && selectedRollIndex !== 0}
+                            className={`border rounded p-3 text-left transition-colors ${
+                              hasValue
+                                ? 'border-terminal-primary bg-terminal-primary/10'
+                                : selectedRollIndex !== null
+                                ? 'border-terminal-primary/50 hover:border-terminal-primary bg-card/40'
+                                : 'border-terminal-primary/30 bg-card/20 opacity-50'
+                            }`}
+                          >
+                            <div className="text-xs font-semibold uppercase tracking-wide text-terminal-primary">
+                              {key}
+                            </div>
+                            <div className="text-2xl font-bold text-terminal-primary mt-1">
+                              {hasValue ? characterData.characteristics[key].total : '?'}
+                            </div>
+                            {hasValue && (
+                              <div className="text-xs text-terminal-primary/60">
+                                DM: {getDMDisplay(characterData.characteristics[key].total)}
+                              </div>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {characteristicRolls.length === 0 && (
+                      <Alert className="bg-green-500/10 border-green-500/50">
+                        <AlertDescription className="text-green-400">
+                          ✓ All characteristics assigned!
+                        </AlertDescription>
+                      </Alert>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <Alert className="bg-terminal-primary/5 border-terminal-primary/30">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription className="text-terminal-primary/80">
+                        Roll each characteristic individually, or manually type values. Click the dice icon to roll 2D6.
+                      </AlertDescription>
+                    </Alert>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {(['strength', 'dexterity', 'endurance', 'intellect', 'education', 'social'] as const).map((key) => (
+                        <div key={key} className="border border-terminal-primary/30 bg-card/40 rounded p-4">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="text-sm font-semibold uppercase tracking-wide text-terminal-primary">
+                              {key}
+                            </div>
+                            <Button
+                              onClick={() => rollSingleCharacteristic(key)}
+                              size="sm"
+                              variant="outline"
+                              className="border-terminal-primary/50 text-terminal-primary hover:bg-terminal-primary/20 h-7"
+                            >
+                              <Dices className="h-3 w-3" />
+                            </Button>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <Input
+                              type="number"
+                              min="1"
+                              max="18"
+                              value={characterData.characteristics[key].total || ''}
+                              onChange={(e) => {
+                                const val = parseInt(e.target.value) || 0;
+                                if (val >= 0 && val <= 18) {
+                                  manuallySetCharacteristic(key, val);
+                                }
+                              }}
+                              className="bg-black border-terminal-primary/50 text-terminal-primary text-2xl font-bold h-12 w-20 text-center"
+                              placeholder="0"
+                            />
+                            <div className="text-xs text-terminal-primary/60">
+                              DM: {getDMDisplay(characterData.characteristics[key].total)}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </>
                 )}
 
                 <div className="flex gap-2">
@@ -918,7 +1081,11 @@ export const CharacterGenerator: React.FC = () => {
                   </Button>
                   <Button
                     onClick={() => setStep(3)}
-                    disabled={backgroundSkillsRemaining === 0 && !hasRolled}
+                    disabled={
+                      assignmentMode === 'manual'
+                        ? characteristicRolls.length > 0
+                        : (backgroundSkillsRemaining === 0 && characterData.characteristics.education.total === 0)
+                    }
                     className="flex-1 bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
                   >
                     Continue to Background Skills
@@ -995,7 +1162,7 @@ export const CharacterGenerator: React.FC = () => {
               </CardHeader>
               <CardContent className="space-y-4">
                 {/* Career Cards */}
-                {CAREERS.map(career => (
+                {getAvailableCareers().map(career => (
                   <Card
                     key={career.name}
                     className={`cursor-pointer transition-colors ${
