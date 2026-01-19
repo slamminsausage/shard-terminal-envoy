@@ -499,9 +499,13 @@ export const CharacterGenerator: React.FC = () => {
 
     setTermAdvanced(advanced);
 
-    if (advanced && characterData.rank < selectedCareer.ranks.length - 1) {
+    const ranks = isCommissioned && selectedCareer.ranks.officer
+      ? selectedCareer.ranks.officer
+      : selectedCareer.ranks.enlisted;
+
+    if (advanced && characterData.rank < ranks.length - 1) {
       const newRank = characterData.rank + 1;
-      const rankData = selectedCareer.ranks[newRank];
+      const rankData = ranks[newRank];
 
       setCharacterData(prev => ({
         ...prev,
@@ -694,6 +698,10 @@ export const CharacterGenerator: React.FC = () => {
 
   const handleSaveCharacter = async () => {
     try {
+      const ranks = selectedCareer && isCommissioned && selectedCareer.ranks.officer
+        ? selectedCareer.ranks.officer
+        : selectedCareer?.ranks.enlisted;
+
       const finalCharacterData = {
         name: characterData.name,
         species: characterData.species,
@@ -704,7 +712,7 @@ export const CharacterGenerator: React.FC = () => {
         species_traits: '',
         notes: characterData.notes,
         career: characterData.career,
-        rank: selectedCareer?.ranks[characterData.rank]?.title || '',
+        rank: ranks?.[characterData.rank]?.title || '',
         strength: characterData.characteristics.strength.total,
         dexterity: characterData.characteristics.dexterity.total,
         endurance: characterData.characteristics.endurance.total,
