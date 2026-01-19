@@ -172,6 +172,8 @@ export const CharacterGenerator: React.FC = () => {
     debt: 0,
     notes: '',
     lifepath_log: [],
+    hasCompletedPreCareer: false,
+    totalCareerTerms: 0,
   });
 
   const [characteristicRolls, setCharacteristicRolls] = useState<number[]>([]);
@@ -189,6 +191,45 @@ export const CharacterGenerator: React.FC = () => {
   const [termAdvanced, setTermAdvanced] = useState<boolean | null>(null);
   const [termEventRoll, setTermEventRoll] = useState<number | null>(null);
   const [termSkillsGained, setTermSkillsGained] = useState<string[]>([]);
+  const [isCommissioned, setIsCommissioned] = useState(false);
+
+  // Get available careers based on current term number
+  const getAvailableCareers = (): CareerDefinition[] => {
+    const totalTerms = characterData.totalCareerTerms || 0;
+
+    return ALL_CAREERS.filter(career => {
+      // Pre-careers are only available for first 3 terms
+      if (career.isPreCareer) {
+        // Can't take pre-career if already completed one
+        if (characterData.hasCompletedPreCareer) return false;
+        // Only available for terms 1-3
+        return totalTerms < 3;
+      }
+      // Regular careers always available
+      return true;
+    });
+  };
+
+  // Get qualification DM for pre-careers based on term number
+  const getPreCareerDM = (career: CareerDefinition): number => {
+    if (!career.isPreCareer) return 0;
+
+    const totalTerms = characterData.totalCareerTerms || 0;
+
+    if (career.preCareerType === 'university') {
+      // University: Term 1: +0, Term 2: -1, Term 3: -2
+      if (totalTerms === 0) return 0;
+      if (totalTerms === 1) return -1;
+      if (totalTerms === 2) return -2;
+    } else if (career.preCareerType === 'military_academy') {
+      // Military Academy: Term 1: +0, Term 2: -2, Term 3: -4
+      if (totalTerms === 0) return 0;
+      if (totalTerms === 1) return -2;
+      if (totalTerms === 2) return -4;
+    }
+
+    return 0;
+  };
 
   // ============================================================================
   // STEP 1: BASIC INFO
@@ -350,19 +391,33 @@ export const CharacterGenerator: React.FC = () => {
     if (!selectedCareer) return;
 
     const charValue = characterData.characteristics[selectedCareer.qualificationStat].total;
-    const dm = getDM(charValue);
+    let dm = getDM(charValue);
+
+    // Apply pre-career DM based on term number
+    const preCareerDM = getPreCareerDM(selectedCareer);
+    dm += preCareerDM;
+
+    // Apply SOC bonus for University
+    if (selectedCareer.preCareerType === 'university' && characterData.characteristics.social.total >= 9) {
+      dm += 1;
+    }
+
     const roll = rollDice(2, 6);
     const total = roll + dm;
     const passed = total >= selectedCareer.qualificationTarget;
 
     setQualificationPassed(passed);
-    setQualificationRollLog(`Roll: ${roll} + DM ${dm} = ${total} (need ${selectedCareer.qualificationTarget}+)`);
+    const dmBreakdown = preCareerDM !== 0
+      ? `Roll: ${roll} + Char DM ${getDM(charValue)} + Term DM ${preCareerDM} = ${total} (need ${selectedCareer.qualificationTarget}+)`
+      : `Roll: ${roll} + DM ${dm} = ${total} (need ${selectedCareer.qualificationTarget}+)`;
+    setQualificationRollLog(dmBreakdown);
 
     if (passed) {
       setCharacterData(prev => ({
         ...prev,
         career: selectedCareer.name,
         notes: prev.notes + `\nQualified for ${selectedCareer.name}: ${roll} + ${dm} = ${total}`,
+        totalCareerTerms: (prev.totalCareerTerms || 0) + (selectedCareer.isPreCareer ? 0 : 0), // Pre-careers don't increment yet
       }));
     }
   };
@@ -554,6 +609,10 @@ export const CharacterGenerator: React.FC = () => {
       ? selectedCareer.eventTable[Math.min(termEventRoll - 2, selectedCareer.eventTable.length - 1)]
       : 'No event this term';
 
+    const ranks = isCommissioned && selectedCareer.ranks.officer
+      ? selectedCareer.ranks.officer
+      : selectedCareer.ranks.enlisted;
+
     const termRecord: TermRecord = {
       termNumber: currentTerm,
       career: selectedCareer.name,
@@ -564,19 +623,22 @@ export const CharacterGenerator: React.FC = () => {
       advancementRoll: termAdvanced ? 'Advanced' : 'Did not advance',
       advanced: termAdvanced || false,
       rank: characterData.rank,
-      rankTitle: selectedCareer.ranks[characterData.rank]?.title || `Rank ${characterData.rank}`,
+      rankTitle: ranks[characterData.rank]?.title || `Rank ${characterData.rank}`,
       event,
       skillsGained: termSkillsGained,
+      isCommissioned,
     };
 
     setCharacterData(prev => ({
       ...prev,
       lifepath_log: [...prev.lifepath_log, termRecord],
       terms_served: currentTerm,
+      totalCareerTerms: (prev.totalCareerTerms || 0) + 1,
+      hasCompletedPreCareer: selectedCareer.isPreCareer ? true : prev.hasCompletedPreCareer,
     }));
 
-    // Apply basic training on first term
-    if (currentTerm === 1) {
+    // Apply basic training on first term (not for pre-careers)
+    if (currentTerm === 1 && !selectedCareer.isPreCareer) {
       selectedCareer.skillTables.serviceSkills.forEach(skillName => {
         const skillKey = normalizeSkillName(skillName);
         setCharacterData(prev => ({
@@ -1092,7 +1154,7 @@ export const CharacterGenerator: React.FC = () => {
               </CardHeader>
               <CardContent className="space-y-4">
                 {/* Career Cards */}
-                {CAREERS.map(career => (
+                {getAvailableCareers().map(career => (
                   <Card
                     key={career.name}
                     className={`cursor-pointer transition-colors ${
