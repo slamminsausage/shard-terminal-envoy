@@ -7,25 +7,12 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dices, User, Briefcase, Award, Save, ArrowRight, AlertCircle, RefreshCw } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useCampaign } from '@/contexts/CampaignContext';
+import { ALL_CAREERS, BACKGROUND_SKILLS } from './careersData';
+import type { CareerDefinition, Characteristics } from './careersData';
 
 // ============================================================================
-// TYPE DEFINITIONS
+// TYPE DEFINITIONS (Component-specific)
 // ============================================================================
-
-interface CharacteristicValue {
-  total: number;
-  current: number;
-}
-
-interface Characteristics {
-  strength: CharacteristicValue;
-  dexterity: CharacteristicValue;
-  endurance: CharacteristicValue;
-  intellect: CharacteristicValue;
-  education: CharacteristicValue;
-  social: CharacteristicValue;
-  psionics: CharacteristicValue;
-}
 
 interface SkillState {
   proficient: boolean;
@@ -47,37 +34,12 @@ interface TermRecord {
   event: string;
   skillsGained: string[];
   mishap?: string;
+  isCommissioned?: boolean;
 }
 
-interface Assignment {
-  name: string;
-  description: string;
-  survivalStat: keyof Omit<Characteristics, 'psionics'>;
-  survivalTarget: number;
-  advancementStat: keyof Omit<Characteristics, 'psionics'>;
-  advancementTarget: number;
-}
-
-interface CareerDefinition {
-  name: string;
-  description: string;
-  qualification: string;
-  qualificationTarget: number;
-  qualificationStat: keyof Omit<Characteristics, 'psionics'>;
-  assignments: Assignment[];
-  skillTables: {
-    personalDevelopment: string[];
-    serviceSkills: string[];
-    advancedEducation?: string[];
-    specialist: { [assignmentName: string]: string[] };
-  };
-  ranks: {
-    title: string;
-    skillBonus?: string;
-    bonusStat?: keyof Omit<Characteristics, 'psionics'>;
-  }[];
-  mishapTable: string[];
-  eventTable: string[];
+interface CharacteristicValue {
+  total: number;
+  current: number;
 }
 
 interface CharacterData {
@@ -113,93 +75,11 @@ interface CharacterData {
   // Other
   notes: string;
   lifepath_log: TermRecord[];
+
+  // Pre-career tracking
+  hasCompletedPreCareer?: boolean;
+  totalCareerTerms?: number; // Track total terms across all careers
 }
-
-// ============================================================================
-// CONSTANTS AND CAREER DATA
-// ============================================================================
-
-const CAREER_AGENT: CareerDefinition = {
-  name: 'Agent',
-  description: 'Law enforcement agencies, corporate operatives, spies and others who work in the shadows.',
-  qualification: 'INT 6+',
-  qualificationTarget: 6,
-  qualificationStat: 'intellect',
-  assignments: [
-    {
-      name: 'Law Enforcement',
-      description: 'You are a police officer or detective.',
-      survivalStat: 'endurance',
-      survivalTarget: 6,
-      advancementStat: 'intellect',
-      advancementTarget: 6,
-    },
-    {
-      name: 'Intelligence',
-      description: 'You work as a spy or saboteur.',
-      survivalStat: 'intellect',
-      survivalTarget: 7,
-      advancementStat: 'intellect',
-      advancementTarget: 5,
-    },
-    {
-      name: 'Corporate',
-      description: 'You work for a corporation, spying on rival organisations.',
-      survivalStat: 'intellect',
-      survivalTarget: 5,
-      advancementStat: 'intellect',
-      advancementTarget: 7,
-    },
-  ],
-  skillTables: {
-    personalDevelopment: ['Gun Combat', 'Dexterity +1', 'Endurance +1', 'Melee', 'Intellect +1', 'Athletics'],
-    serviceSkills: ['Streetwise', 'Drive', 'Investigate', 'Flyer', 'Recon', 'Gun Combat'],
-    advancedEducation: ['Advocate', 'Language', 'Explosives', 'Medic', 'Vacc Suit', 'Electronics'],
-    specialist: {
-      'Law Enforcement': ['Investigate', 'Recon', 'Streetwise', 'Stealth', 'Melee', 'Advocate'],
-      'Intelligence': ['Investigate', 'Recon', 'Deception', 'Stealth', 'Persuade', 'Carouse'],
-      'Corporate': ['Investigate', 'Electronics', 'Stealth', 'Carouse', 'Deception', 'Streetwise'],
-    },
-  },
-  ranks: [
-    { title: 'Rookie' },
-    { title: 'Corporal', skillBonus: 'Streetwise' },
-    { title: 'Sergeant' },
-    { title: 'Detective' },
-    { title: 'Lieutenant', skillBonus: 'Investigate' },
-    { title: 'Chief', skillBonus: 'Admin' },
-    { title: 'Commissioner', bonusStat: 'social' },
-  ],
-  mishapTable: [
-    'Severely injured. Roll twice on the Injury table and take the lower result.',
-    'A criminal or other figure under investigation offers you a deal. Accept and you leave this career with a +4 DM to your next Qualification roll but gain a Rival. Refuse and you must roll twice on the Injury table and take the lower result.',
-    'An investigation goes critically wrong or leads to the bottom of a conspiracy. Roll Advocate 8+. If you succeed, you may continue in this career. If you fail, you must leave this career.',
-    'You learn something you should not know. Gain an Enemy and then roll twice on the Injury table (take both results).',
-    'Your work ends up coming home with you and someone gets hurt. Gain an Enemy.',
-    'Injured. Roll on the Injury table.',
-  ],
-  eventTable: [
-    'Disaster! Roll on the Mishap table but you are not ejected from this career.',
-    'You are given advanced training in a specialist field. Roll Education 8+ to gain any one skill of your choice at level 1.',
-    'You go undercover to investigate an enemy. Roll Deception 8+. If you succeed, roll immediately on any Specialist skill table for this career and gain one level in any skill you roll. If you fail, roll immediately on the Mishap table.',
-    'You complete a mission for your superiors and are suitably rewarded. Gain DM+1 to any one Benefit roll from this career.',
-    'You establish a network of contacts. Gain D3 Contacts.',
-    'You are given specialist training in vehicles. Gain one of Drive 1, Flyer 1, Pilot 1 or Gunner 1.',
-    'You are betrayed by a peer or colleague. Gain a Rival.',
-    'You complete a mission that goes extremely well. You gain an extra Benefit roll from this career.',
-    'You spend much of your time dealing with stakeholders and superiors. Gain one of Advocate 1, Admin 1, Persuade 1 or Diplomat 1.',
-    'You go above and beyond the call of duty. Gain an Ally and DM+2 to your next Advancement check.',
-  ],
-};
-
-const BACKGROUND_SKILLS = [
-  'Admin', 'Animals', 'Art', 'Athletics', 'Carouse', 'Drive', 'Electronics',
-  'Flyer', 'Language', 'Mechanic', 'Medic', 'Profession', 'Science', 'Seafarer',
-  'Streetwise', 'Survival', 'Vacc Suit'
-];
-
-// Available careers (for now just Agent, will add more later)
-const CAREERS: CareerDefinition[] = [CAREER_AGENT];
 
 // ============================================================================
 // HELPER FUNCTIONS
