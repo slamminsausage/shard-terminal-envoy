@@ -192,6 +192,8 @@ export const CharacterGenerator: React.FC = () => {
   const [termEventRoll, setTermEventRoll] = useState<number | null>(null);
   const [termSkillsGained, setTermSkillsGained] = useState<string[]>([]);
   const [isCommissioned, setIsCommissioned] = useState(false);
+  const [preCareerGraduated, setPreCareerGraduated] = useState<boolean>(false);
+  const [preCareerFailedService, setPreCareerFailedService] = useState<string | null>(null); // For Military Academy auto-entry
 
   // Get available careers based on current term number
   const getAvailableCareers = (): CareerDefinition[] => {
@@ -390,6 +392,19 @@ export const CharacterGenerator: React.FC = () => {
   const attemptQualification = () => {
     if (!selectedCareer) return;
 
+    // Check for automatic entry from failed Military Academy
+    if (preCareerFailedService && selectedCareer.name === preCareerFailedService) {
+      setQualificationPassed(true);
+      setQualificationRollLog(`Automatic entry from Military Academy graduation failure.`);
+      setCharacterData(prev => ({
+        ...prev,
+        career: selectedCareer.name,
+        notes: prev.notes + `\nAutomatic entry to ${selectedCareer.name} (Military Academy)`,
+      }));
+      setPreCareerFailedService(null); // Clear the automatic entry flag
+      return;
+    }
+
     const charValue = characterData.characteristics[selectedCareer.qualificationStat].total;
     let dm = getDM(charValue);
 
@@ -452,7 +467,23 @@ export const CharacterGenerator: React.FC = () => {
 
     const assignment = selectedCareer.assignments[selectedAssignment];
     const charValue = characterData.characteristics[assignment.survivalStat].total;
-    const dm = getDM(charValue);
+    let dm = getDM(charValue);
+
+    // For pre-careers, this is actually a GRADUATION check
+    const isPreCareer = selectedCareer.isPreCareer || false;
+
+    // Add special DMs for Military Academy graduation
+    if (isPreCareer && selectedCareer.preCareerType === 'military_academy') {
+      // DM+1 if END 8+
+      if (characterData.characteristics.endurance.total >= 8) {
+        dm += 1;
+      }
+      // DM+1 if SOC 8+
+      if (characterData.characteristics.social.total >= 8) {
+        dm += 1;
+      }
+    }
+
     const roll = rollDice(2, 6);
     const total = roll + dm;
     const survived = total >= assignment.survivalTarget;
@@ -460,30 +491,141 @@ export const CharacterGenerator: React.FC = () => {
     setTermSurvived(survived);
 
     if (!survived) {
-      // Mishap - roll on mishap table
-      const mishapRoll = rollDice(1, 6);
-      const mishap = selectedCareer.mishapTable[mishapRoll - 1] || 'Injured. Roll on the Injury table.';
+      // For pre-careers, handle graduation failure differently
+      if (isPreCareer) {
+        const ranks = selectedCareer.ranks.enlisted;
+        let mishap = selectedCareer.mishapTable[0] || 'Failed to graduate.';
+        let event = `FAILED GRADUATION: ${mishap}`;
 
-      const termRecord: TermRecord = {
-        termNumber: currentTerm,
-        career: selectedCareer.name,
-        assignment: assignment.name,
-        age: characterData.age,
-        survivalRoll: `${roll} + ${dm} = ${total} (need ${assignment.survivalTarget}+)`,
-        survived: false,
-        advanced: false,
-        rank: characterData.rank,
-        rankTitle: selectedCareer.ranks[characterData.rank]?.title || 'Rank 0',
-        event: `MISHAP: ${mishap}`,
-        skillsGained: [],
-        mishap,
-      };
+        // Military Academy: if roll wasn't 2 or less, gain automatic entry to tied service
+        if (selectedCareer.preCareerType === 'military_academy' && roll > 2) {
+          // Extract service type from assignment name
+          const assignmentName = assignment.name.toLowerCase();
+          if (assignmentName.includes('army')) {
+            setPreCareerFailedService('Army');
+            event += ' (Gained automatic entry to Army)';
+          } else if (assignmentName.includes('marine')) {
+            setPreCareerFailedService('Marines');
+            event += ' (Gained automatic entry to Marines)';
+          } else if (assignmentName.includes('navy')) {
+            setPreCareerFailedService('Navy');
+            event += ' (Gained automatic entry to Navy)';
+          }
+        }
 
-      setCharacterData(prev => ({
-        ...prev,
-        lifepath_log: [...prev.lifepath_log, termRecord],
-        terms_served: currentTerm,
-      }));
+        const termRecord: TermRecord = {
+          termNumber: currentTerm,
+          career: selectedCareer.name,
+          assignment: assignment.name,
+          age: characterData.age,
+          survivalRoll: `${roll} + ${dm} = ${total} (need ${assignment.survivalTarget}+) - Graduation Roll`,
+          survived: false,
+          advanced: false,
+          rank: characterData.rank,
+          rankTitle: ranks[characterData.rank]?.title || 'Student',
+          event,
+          skillsGained: [],
+          mishap,
+        };
+
+        setCharacterData(prev => ({
+          ...prev,
+          lifepath_log: [...prev.lifepath_log, termRecord],
+          terms_served: currentTerm,
+        }));
+      } else {
+        // Regular career mishap
+        const mishapRoll = rollDice(1, 6);
+        const mishap = selectedCareer.mishapTable[mishapRoll - 1] || 'Injured. Roll on the Injury table.';
+
+        const ranks = isCommissioned && selectedCareer.ranks.officer
+          ? selectedCareer.ranks.officer
+          : selectedCareer.ranks.enlisted;
+
+        const termRecord: TermRecord = {
+          termNumber: currentTerm,
+          career: selectedCareer.name,
+          assignment: assignment.name,
+          age: characterData.age,
+          survivalRoll: `${roll} + ${dm} = ${total} (need ${assignment.survivalTarget}+)`,
+          survived: false,
+          advanced: false,
+          rank: characterData.rank,
+          rankTitle: ranks[characterData.rank]?.title || 'Rank 0',
+          event: `MISHAP: ${mishap}`,
+          skillsGained: [],
+          mishap,
+        };
+
+        setCharacterData(prev => ({
+          ...prev,
+          lifepath_log: [...prev.lifepath_log, termRecord],
+          terms_served: currentTerm,
+        }));
+      }
+    } else {
+      // Graduation/survival success
+      if (isPreCareer) {
+        setPreCareerGraduated(true);
+
+        // Apply graduation benefits immediately
+        let benefitNotes: string[] = [];
+
+        if (selectedCareer.preCareerType === 'university') {
+          // University graduation: EDU +1
+          setCharacterData(prev => ({
+            ...prev,
+            characteristics: {
+              ...prev.characteristics,
+              education: {
+                total: prev.characteristics.education.total + 1,
+                current: prev.characteristics.education.current + 1,
+              },
+            },
+          }));
+          benefitNotes.push('EDU +1 (University Graduation)');
+
+          // Check for honours (roll >= 10)
+          if (total >= 10) {
+            benefitNotes.push('Graduated with Honours!');
+            // Honours gives additional benefits for qualification rolls
+          }
+        } else if (selectedCareer.preCareerType === 'military_academy') {
+          // Military Academy graduation: EDU +1
+          setCharacterData(prev => ({
+            ...prev,
+            characteristics: {
+              ...prev.characteristics,
+              education: {
+                total: prev.characteristics.education.total + 1,
+                current: prev.characteristics.education.current + 1,
+              },
+            },
+          }));
+          benefitNotes.push('EDU +1 (Military Academy Graduation)');
+
+          // Check for honours (roll >= 11)
+          if (total >= 11) {
+            setCharacterData(prev => ({
+              ...prev,
+              characteristics: {
+                ...prev.characteristics,
+                social: {
+                  total: prev.characteristics.social.total + 1,
+                  current: prev.characteristics.social.current + 1,
+                },
+              },
+            }));
+            benefitNotes.push('Graduated with Honours! SOC +1');
+          }
+        }
+
+        setTermSkillsGained(benefitNotes);
+
+        // For pre-careers, set termAdvanced to true so the flow continues correctly
+        // (graduation IS advancement for pre-careers)
+        setTermAdvanced(true);
+      }
     }
   };
 
@@ -617,14 +759,16 @@ export const CharacterGenerator: React.FC = () => {
       ? selectedCareer.ranks.officer
       : selectedCareer.ranks.enlisted;
 
+    const isPreCareer = selectedCareer.isPreCareer || false;
+
     const termRecord: TermRecord = {
       termNumber: currentTerm,
       career: selectedCareer.name,
       assignment: assignment.name,
       age: characterData.age,
-      survivalRoll: 'Passed',
+      survivalRoll: isPreCareer ? 'Graduated' : 'Passed',
       survived: true,
-      advancementRoll: termAdvanced ? 'Advanced' : 'Did not advance',
+      advancementRoll: isPreCareer ? 'Graduated' : (termAdvanced ? 'Advanced' : 'Did not advance'),
       advanced: termAdvanced || false,
       rank: characterData.rank,
       rankTitle: ranks[characterData.rank]?.title || `Rank ${characterData.rank}`,
@@ -638,11 +782,25 @@ export const CharacterGenerator: React.FC = () => {
       lifepath_log: [...prev.lifepath_log, termRecord],
       terms_served: currentTerm,
       totalCareerTerms: (prev.totalCareerTerms || 0) + 1,
-      hasCompletedPreCareer: selectedCareer.isPreCareer ? true : prev.hasCompletedPreCareer,
+      hasCompletedPreCareer: (isPreCareer && termSurvived) ? true : prev.hasCompletedPreCareer,
     }));
 
     // Apply basic training on first term (not for pre-careers)
-    if (currentTerm === 1 && !selectedCareer.isPreCareer) {
+    if (currentTerm === 1 && !isPreCareer) {
+      selectedCareer.skillTables.serviceSkills.forEach(skillName => {
+        const skillKey = normalizeSkillName(skillName);
+        setCharacterData(prev => ({
+          ...prev,
+          skills: {
+            ...prev.skills,
+            [skillKey]: { proficient: true, value: '0' },
+          },
+        }));
+      });
+    }
+
+    // For Military Academy, apply all Service Skills at Level 0 at entry (first term)
+    if (isPreCareer && selectedCareer.preCareerType === 'military_academy' && currentTerm === 1) {
       selectedCareer.skillTables.serviceSkills.forEach(skillName => {
         const skillKey = normalizeSkillName(skillName);
         setCharacterData(prev => ({
@@ -1206,8 +1364,11 @@ export const CharacterGenerator: React.FC = () => {
                             <h4 className="font-bold text-terminal-primary text-sm">{assignment.name}</h4>
                             <p className="text-xs text-terminal-primary/70 mb-1">{assignment.description}</p>
                             <div className="text-xs text-terminal-primary/60">
-                              Survival: {assignment.survivalStat.toUpperCase()} {assignment.survivalTarget}+ |
-                              Advancement: {assignment.advancementStat.toUpperCase()} {assignment.advancementTarget}+
+                              {selectedCareer?.isPreCareer ? (
+                                `Graduation: ${assignment.survivalStat.toUpperCase()} ${assignment.survivalTarget}+`
+                              ) : (
+                                `Survival: ${assignment.survivalStat.toUpperCase()} ${assignment.survivalTarget}+ | Advancement: ${assignment.advancementStat.toUpperCase()} ${assignment.advancementTarget}+`
+                              )}
                             </div>
                           </CardContent>
                         </Card>
@@ -1314,7 +1475,9 @@ export const CharacterGenerator: React.FC = () => {
                     <Alert className="bg-terminal-primary/5 border-terminal-primary/30">
                       <AlertCircle className="h-4 w-4" />
                       <AlertDescription className="text-terminal-primary/80">
-                        Roll for survival. If you fail, you suffer a mishap and must leave the career.
+                        {selectedCareer?.isPreCareer
+                          ? 'Roll for graduation. If you fail, you do not receive graduation benefits but may continue to another career.'
+                          : 'Roll for survival. If you fail, you suffer a mishap and must leave the career.'}
                       </AlertDescription>
                     </Alert>
                     <Button
@@ -1322,7 +1485,7 @@ export const CharacterGenerator: React.FC = () => {
                       className="w-full bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
                     >
                       <Dices className="h-4 w-4 mr-2" />
-                      Roll Survival Check
+                      {selectedCareer?.isPreCareer ? 'Roll Graduation Check' : 'Roll Survival Check'}
                     </Button>
                   </div>
                 )}
@@ -1331,32 +1494,74 @@ export const CharacterGenerator: React.FC = () => {
                   <div className="space-y-2">
                     <Alert className="bg-red-500/10 border-red-500/50">
                       <AlertDescription className="text-red-400">
-                        ✗ Survival check failed! You must muster out of this career.
+                        {selectedCareer?.isPreCareer
+                          ? '✗ Failed to graduate. You may continue to another career or muster out.'
+                          : '✗ Survival check failed! You suffer a mishap and must leave this career.'}
                       </AlertDescription>
                     </Alert>
-                    <Button
-                      onClick={musterOut}
-                      className="w-full bg-red-500/20 text-red-400 hover:bg-red-500/30 border border-red-500/50"
-                    >
-                      Muster Out
-                    </Button>
+                    {preCareerFailedService && (
+                      <Alert className="bg-blue-500/10 border-blue-500/50">
+                        <AlertDescription className="text-blue-400">
+                          ℹ You have automatic entry to {preCareerFailedService}!
+                        </AlertDescription>
+                      </Alert>
+                    )}
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={() => {
+                          setIsInTerm(false);
+                          setTermSurvived(null);
+                          setSelectedCareer(null);
+                          setQualificationPassed(null);
+                          setPreCareerGraduated(false);
+                        }}
+                        className="flex-1 bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
+                      >
+                        Choose New Career
+                      </Button>
+                      <Button
+                        onClick={musterOut}
+                        className="flex-1 bg-red-500/20 text-red-400 hover:bg-red-500/30 border border-red-500/50"
+                      >
+                        Muster Out
+                      </Button>
+                    </div>
                   </div>
                 )}
 
                 {isInTerm && termSurvived === true && termAdvanced === null && (
                   <div className="space-y-2">
-                    <Alert className="bg-green-500/10 border-green-500/50">
-                      <AlertDescription className="text-green-400">
-                        ✓ Survival check passed! Now roll for advancement.
-                      </AlertDescription>
-                    </Alert>
-                    <Button
-                      onClick={runAdvancementCheck}
-                      className="w-full bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
-                    >
-                      <Dices className="h-4 w-4 mr-2" />
-                      Roll Advancement Check
-                    </Button>
+                    {selectedCareer?.isPreCareer ? (
+                      <>
+                        <Alert className="bg-green-500/10 border-green-500/50">
+                          <AlertDescription className="text-green-400">
+                            ✓ Graduated successfully! {termSkillsGained.length > 0 && termSkillsGained.join(', ')}
+                          </AlertDescription>
+                        </Alert>
+                        <Button
+                          onClick={rollEvent}
+                          className="w-full bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
+                        >
+                          <Dices className="h-4 w-4 mr-2" />
+                          Continue (Select Skills)
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <Alert className="bg-green-500/10 border-green-500/50">
+                          <AlertDescription className="text-green-400">
+                            ✓ Survival check passed! Now roll for advancement.
+                          </AlertDescription>
+                        </Alert>
+                        <Button
+                          onClick={runAdvancementCheck}
+                          className="w-full bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
+                        >
+                          <Dices className="h-4 w-4 mr-2" />
+                          Roll Advancement Check
+                        </Button>
+                      </>
+                    )}
                   </div>
                 )}
 
