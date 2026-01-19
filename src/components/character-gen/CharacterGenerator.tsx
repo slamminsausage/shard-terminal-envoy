@@ -194,6 +194,14 @@ export const CharacterGenerator: React.FC = () => {
   const [isCommissioned, setIsCommissioned] = useState(false);
   const [preCareerGraduated, setPreCareerGraduated] = useState<boolean>(false);
   const [preCareerFailedService, setPreCareerFailedService] = useState<string | null>(null); // For Military Academy auto-entry
+  const [universitySkillLevel0, setUniversitySkillLevel0] = useState<string | null>(null);
+  const [universitySkillLevel1, setUniversitySkillLevel1] = useState<string | null>(null);
+  const [militaryAcademyService, setMilitaryAcademyService] = useState<string | null>(null); // 'Army', 'Navy', or 'Marines'
+  const [showMishapTable, setShowMishapTable] = useState(false);
+  const [showEventTable, setShowEventTable] = useState(false);
+  const [graduatedWithHonours, setGraduatedWithHonours] = useState(false);
+  const [needsCommissionRoll, setNeedsCommissionRoll] = useState(false);
+  const [commissionRollDM, setCommissionRollDM] = useState(0);
 
   // Get available careers based on current term number
   const getAvailableCareers = (): CareerDefinition[] => {
@@ -443,6 +451,58 @@ export const CharacterGenerator: React.FC = () => {
   };
 
   // ============================================================================
+  // PRE-CAREER ENTRY BENEFITS
+  // ============================================================================
+
+  const applyPreCareerEntryBenefits = () => {
+    if (!selectedCareer) return;
+
+    if (selectedCareer.preCareerType === 'university' && universitySkillLevel0 && universitySkillLevel1) {
+      // Apply University entry benefits
+      const skill0Key = normalizeSkillName(universitySkillLevel0);
+      const skill1Key = normalizeSkillName(universitySkillLevel1);
+
+      setCharacterData(prev => ({
+        ...prev,
+        // Apply EDU +1
+        characteristics: {
+          ...prev.characteristics,
+          education: {
+            total: prev.characteristics.education.total + 1,
+            current: prev.characteristics.education.current + 1,
+          },
+        },
+        // Apply skills
+        skills: {
+          ...prev.skills,
+          [skill0Key]: { proficient: true, value: '0' },
+          [skill1Key]: { proficient: true, value: '1' },
+        },
+        notes: prev.notes + `\nUniversity Entry: ${universitySkillLevel0} 0, ${universitySkillLevel1} 1, EDU +1`,
+      }));
+    } else if (selectedCareer.preCareerType === 'military_academy' && militaryAcademyService) {
+      // Apply Military Academy entry benefits - get all Service Skills at Level 0
+      const serviceCareer = ALL_CAREERS.find(c => c.name === militaryAcademyService);
+      if (serviceCareer) {
+        const newSkills: Record<string, SkillState> = {};
+        serviceCareer.skillTables.serviceSkills.forEach(skillName => {
+          const skillKey = normalizeSkillName(skillName);
+          newSkills[skillKey] = { proficient: true, value: '0' };
+        });
+
+        setCharacterData(prev => ({
+          ...prev,
+          skills: {
+            ...prev.skills,
+            ...newSkills,
+          },
+          notes: prev.notes + `\nMilitary Academy Entry (${militaryAcademyService}): All Service Skills at Level 0`,
+        }));
+      }
+    }
+  };
+
+  // ============================================================================
   // STEP 5: TERM MANAGEMENT
   // ============================================================================
 
@@ -570,28 +630,52 @@ export const CharacterGenerator: React.FC = () => {
 
         // Apply graduation benefits immediately
         let benefitNotes: string[] = [];
+        const honoursAchieved = selectedCareer.preCareerType === 'university' ? total >= 10 : total >= 11;
+        setGraduatedWithHonours(honoursAchieved);
 
         if (selectedCareer.preCareerType === 'university') {
-          // University graduation: EDU +1
-          setCharacterData(prev => ({
-            ...prev,
-            characteristics: {
-              ...prev.characteristics,
-              education: {
-                total: prev.characteristics.education.total + 1,
-                current: prev.characteristics.education.current + 1,
-              },
-            },
-          }));
-          benefitNotes.push('EDU +1 (University Graduation)');
+          // University graduation: Both chosen skills +1, EDU +1 (additional)
+          if (universitySkillLevel0 && universitySkillLevel1) {
+            const skill0Key = normalizeSkillName(universitySkillLevel0);
+            const skill1Key = normalizeSkillName(universitySkillLevel1);
 
-          // Check for honours (roll >= 10)
-          if (total >= 10) {
-            benefitNotes.push('Graduated with Honours!');
-            // Honours gives additional benefits for qualification rolls
+            setCharacterData(prev => {
+              const currentSkill0 = parseInt(prev.skills[skill0Key]?.value || '0');
+              const currentSkill1 = parseInt(prev.skills[skill1Key]?.value || '0');
+
+              return {
+                ...prev,
+                characteristics: {
+                  ...prev.characteristics,
+                  education: {
+                    total: prev.characteristics.education.total + 1,
+                    current: prev.characteristics.education.current + 1,
+                  },
+                },
+                skills: {
+                  ...prev.skills,
+                  [skill0Key]: { proficient: true, value: String(currentSkill0 + 1) },
+                  [skill1Key]: { proficient: true, value: String(currentSkill1 + 1) },
+                },
+              };
+            });
+
+            benefitNotes.push(`${universitySkillLevel0} +1`);
+            benefitNotes.push(`${universitySkillLevel1} +1`);
+            benefitNotes.push('EDU +1 (additional)');
           }
+
+          // Check for honours
+          if (honoursAchieved) {
+            benefitNotes.push('Graduated with Honours!');
+            setCommissionRollDM(2); // DM+2 for commission rolls
+          } else {
+            setCommissionRollDM(0); // DM+0 for commission rolls
+          }
+
+          setNeedsCommissionRoll(true);
         } else if (selectedCareer.preCareerType === 'military_academy') {
-          // Military Academy graduation: EDU +1
+          // Military Academy graduation: EDU +1, select 3 Service Skills to increase to Level 1
           setCharacterData(prev => ({
             ...prev,
             characteristics: {
@@ -602,10 +686,10 @@ export const CharacterGenerator: React.FC = () => {
               },
             },
           }));
-          benefitNotes.push('EDU +1 (Military Academy Graduation)');
+          benefitNotes.push('EDU +1');
 
           // Check for honours (roll >= 11)
-          if (total >= 11) {
+          if (honoursAchieved) {
             setCharacterData(prev => ({
               ...prev,
               characteristics: {
@@ -617,7 +701,13 @@ export const CharacterGenerator: React.FC = () => {
               },
             }));
             benefitNotes.push('Graduated with Honours! SOC +1');
+            setCommissionRollDM(-999); // Automatic pass
+          } else {
+            setCommissionRollDM(2); // DM+2 for commission rolls
           }
+
+          benefitNotes.push('Select 3 Service Skills to increase to Level 1');
+          setNeedsCommissionRoll(true);
         }
 
         setTermSkillsGained(benefitNotes);
@@ -1392,11 +1482,107 @@ export const CharacterGenerator: React.FC = () => {
                     )}
 
                     {qualificationPassed === true && (
-                      <Alert className="bg-green-500/10 border-green-500/50">
-                        <AlertDescription className="text-green-400">
-                          ✓ Qualification successful! You may enter this career.
-                        </AlertDescription>
-                      </Alert>
+                      <>
+                        <Alert className="bg-green-500/10 border-green-500/50">
+                          <AlertDescription className="text-green-400">
+                            ✓ Qualification successful! You may enter this career.
+                          </AlertDescription>
+                        </Alert>
+
+                        {/* UNIVERSITY SKILL SELECTION */}
+                        {selectedCareer?.preCareerType === 'university' && (
+                          <div className="bg-terminal-primary/5 border border-terminal-primary/30 rounded p-4 space-y-3">
+                            <h4 className="text-sm font-bold text-terminal-primary">Select Your University Skills</h4>
+                            <p className="text-xs text-terminal-primary/70">
+                              Choose one skill at Level 0 and one skill at Level 1. You will also gain EDU +1 immediately upon entry.
+                            </p>
+
+                            <div className="space-y-2">
+                              <label className="text-xs text-terminal-primary/70">Level 0 Skill:</label>
+                              <select
+                                value={universitySkillLevel0 || ''}
+                                onChange={(e) => setUniversitySkillLevel0(e.target.value || null)}
+                                className="w-full bg-black border border-terminal-primary/50 text-terminal-primary p-2 rounded text-sm"
+                              >
+                                <option value="">-- Select Level 0 Skill --</option>
+                                {selectedCareer.skillTables.advancedEducation?.map(skill => (
+                                  <option key={skill} value={skill}>{skill}</option>
+                                ))}
+                              </select>
+                            </div>
+
+                            <div className="space-y-2">
+                              <label className="text-xs text-terminal-primary/70">Level 1 Skill:</label>
+                              <select
+                                value={universitySkillLevel1 || ''}
+                                onChange={(e) => setUniversitySkillLevel1(e.target.value || null)}
+                                className="w-full bg-black border border-terminal-primary/50 text-terminal-primary p-2 rounded text-sm"
+                              >
+                                <option value="">-- Select Level 1 Skill --</option>
+                                {selectedCareer.skillTables.advancedEducation?.map(skill => (
+                                  <option key={skill} value={skill}>{skill}</option>
+                                ))}
+                              </select>
+                            </div>
+
+                            {universitySkillLevel0 && universitySkillLevel1 && (
+                              <Alert className="bg-blue-500/10 border-blue-500/50">
+                                <AlertDescription className="text-blue-400 text-xs">
+                                  Upon entry: {universitySkillLevel0} 0, {universitySkillLevel1} 1, EDU +1
+                                </AlertDescription>
+                              </Alert>
+                            )}
+                          </div>
+                        )}
+
+                        {/* MILITARY ACADEMY SERVICE SELECTION */}
+                        {selectedCareer?.preCareerType === 'military_academy' && (
+                          <div className="bg-terminal-primary/5 border border-terminal-primary/30 rounded p-4 space-y-3">
+                            <h4 className="text-sm font-bold text-terminal-primary">Select Your Military Service</h4>
+                            <p className="text-xs text-terminal-primary/70">
+                              Choose which military branch you are training for. You will gain all their Service Skills at Level 0 immediately upon entry.
+                            </p>
+
+                            <div className="space-y-2">
+                              {[
+                                { name: 'Army', req: 'END 7+', stat: 'endurance', target: 7 },
+                                { name: 'Marines', req: 'END 8+', stat: 'endurance', target: 8 },
+                                { name: 'Navy', req: 'INT 8+', stat: 'intellect', target: 8 }
+                              ].map(service => (
+                                <Card
+                                  key={service.name}
+                                  className={`cursor-pointer ${
+                                    militaryAcademyService === service.name
+                                      ? 'bg-terminal-primary/20 border-terminal-primary'
+                                      : 'bg-black border-terminal-primary/30 hover:border-terminal-primary/50'
+                                  }`}
+                                  onClick={() => setMilitaryAcademyService(service.name)}
+                                >
+                                  <CardContent className="p-3">
+                                    <div className="flex justify-between items-center">
+                                      <div>
+                                        <h5 className="font-bold text-terminal-primary text-sm">{service.name} Cadet</h5>
+                                        <p className="text-xs text-terminal-primary/60">Required: {service.req}</p>
+                                      </div>
+                                      {militaryAcademyService === service.name && (
+                                        <span className="text-terminal-primary">✓</span>
+                                      )}
+                                    </div>
+                                  </CardContent>
+                                </Card>
+                              ))}
+                            </div>
+
+                            {militaryAcademyService && (
+                              <Alert className="bg-blue-500/10 border-blue-500/50">
+                                <AlertDescription className="text-blue-400 text-xs">
+                                  Upon entry: All {militaryAcademyService} Service Skills at Level 0
+                                </AlertDescription>
+                              </Alert>
+                            )}
+                          </div>
+                        )}
+                      </>
                     )}
 
                     {qualificationPassed === false && (
@@ -1420,8 +1606,15 @@ export const CharacterGenerator: React.FC = () => {
                     Back
                   </Button>
                   <Button
-                    onClick={() => setStep(5)}
-                    disabled={!qualificationPassed}
+                    onClick={() => {
+                      applyPreCareerEntryBenefits();
+                      setStep(5);
+                    }}
+                    disabled={
+                      !qualificationPassed ||
+                      (selectedCareer?.preCareerType === 'university' && (!universitySkillLevel0 || !universitySkillLevel1)) ||
+                      (selectedCareer?.preCareerType === 'military_academy' && !militaryAcademyService)
+                    }
                     className="flex-1 bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
                   >
                     Begin Career
@@ -1461,6 +1654,25 @@ export const CharacterGenerator: React.FC = () => {
                   </div>
                 </div>
 
+                {/* SKILLS SUMMARY */}
+                <div className="bg-terminal-primary/5 border border-terminal-primary/30 rounded p-4">
+                  <h3 className="text-sm font-bold text-terminal-primary mb-2">Acquired Skills</h3>
+                  <div className="grid grid-cols-2 gap-2 text-xs text-terminal-primary/80">
+                    {Object.entries(characterData.skills)
+                      .filter(([_, skill]) => skill.proficient || parseInt(skill.value) > 0)
+                      .sort((a, b) => parseInt(b[1].value) - parseInt(a[1].value))
+                      .map(([skillName, skill]) => (
+                        <div key={skillName} className="flex justify-between">
+                          <span className="capitalize">{skillName.replace(/_/g, ' ')}</span>
+                          <span className="text-terminal-primary">{skill.value}</span>
+                        </div>
+                      ))}
+                    {Object.entries(characterData.skills).filter(([_, skill]) => skill.proficient || parseInt(skill.value) > 0).length === 0 && (
+                      <div className="text-terminal-primary/50 col-span-2">No skills acquired yet</div>
+                    )}
+                  </div>
+                </div>
+
                 {!isInTerm && termSurvived !== false && (
                   <Button
                     onClick={startNewTerm}
@@ -1480,6 +1692,22 @@ export const CharacterGenerator: React.FC = () => {
                           : 'Roll for survival. If you fail, you suffer a mishap and must leave the career.'}
                       </AlertDescription>
                     </Alert>
+
+                    {/* MISHAP TABLE */}
+                    {selectedCareer && (
+                      <div className="bg-black border border-terminal-primary/30 rounded p-3">
+                        <h4 className="text-xs font-bold text-red-400 mb-2">Potential Mishaps (1D6):</h4>
+                        <div className="space-y-1 text-xs text-terminal-primary/70">
+                          {selectedCareer.mishapTable.map((mishap, idx) => (
+                            <div key={idx} className="flex gap-2">
+                              <span className="text-terminal-primary/50">{idx + 1}.</span>
+                              <span>{mishap}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
                     <Button
                       onClick={runSurvivalCheck}
                       className="w-full bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
@@ -1580,6 +1808,22 @@ export const CharacterGenerator: React.FC = () => {
                         </AlertDescription>
                       </Alert>
                     )}
+
+                    {/* EVENT TABLE */}
+                    {selectedCareer && (
+                      <div className="bg-black border border-terminal-primary/30 rounded p-3">
+                        <h4 className="text-xs font-bold text-blue-400 mb-2">Possible Events (2D6):</h4>
+                        <div className="space-y-1 text-xs text-terminal-primary/70">
+                          {selectedCareer.eventTable.map((event, idx) => (
+                            <div key={idx} className="flex gap-2">
+                              <span className="text-terminal-primary/50">{idx + 2}.</span>
+                              <span>{event}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
                     <Button
                       onClick={rollEvent}
                       className="w-full bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
