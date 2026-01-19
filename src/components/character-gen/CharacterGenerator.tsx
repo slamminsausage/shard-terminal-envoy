@@ -194,6 +194,14 @@ export const CharacterGenerator: React.FC = () => {
   const [isCommissioned, setIsCommissioned] = useState(false);
   const [preCareerGraduated, setPreCareerGraduated] = useState<boolean>(false);
   const [preCareerFailedService, setPreCareerFailedService] = useState<string | null>(null); // For Military Academy auto-entry
+  const [universitySkillLevel0, setUniversitySkillLevel0] = useState<string | null>(null);
+  const [universitySkillLevel1, setUniversitySkillLevel1] = useState<string | null>(null);
+  const [militaryAcademyService, setMilitaryAcademyService] = useState<string | null>(null); // 'Army', 'Navy', or 'Marines'
+  const [showMishapTable, setShowMishapTable] = useState(false);
+  const [showEventTable, setShowEventTable] = useState(false);
+  const [graduatedWithHonours, setGraduatedWithHonours] = useState(false);
+  const [needsCommissionRoll, setNeedsCommissionRoll] = useState(false);
+  const [commissionRollDM, setCommissionRollDM] = useState(0);
 
   // Get available careers based on current term number
   const getAvailableCareers = (): CareerDefinition[] => {
@@ -1461,6 +1469,25 @@ export const CharacterGenerator: React.FC = () => {
                   </div>
                 </div>
 
+                {/* SKILLS SUMMARY */}
+                <div className="bg-terminal-primary/5 border border-terminal-primary/30 rounded p-4">
+                  <h3 className="text-sm font-bold text-terminal-primary mb-2">Acquired Skills</h3>
+                  <div className="grid grid-cols-2 gap-2 text-xs text-terminal-primary/80">
+                    {Object.entries(characterData.skills)
+                      .filter(([_, skill]) => skill.proficient || parseInt(skill.value) > 0)
+                      .sort((a, b) => parseInt(b[1].value) - parseInt(a[1].value))
+                      .map(([skillName, skill]) => (
+                        <div key={skillName} className="flex justify-between">
+                          <span className="capitalize">{skillName.replace(/_/g, ' ')}</span>
+                          <span className="text-terminal-primary">{skill.value}</span>
+                        </div>
+                      ))}
+                    {Object.entries(characterData.skills).filter(([_, skill]) => skill.proficient || parseInt(skill.value) > 0).length === 0 && (
+                      <div className="text-terminal-primary/50 col-span-2">No skills acquired yet</div>
+                    )}
+                  </div>
+                </div>
+
                 {!isInTerm && termSurvived !== false && (
                   <Button
                     onClick={startNewTerm}
@@ -1480,6 +1507,22 @@ export const CharacterGenerator: React.FC = () => {
                           : 'Roll for survival. If you fail, you suffer a mishap and must leave the career.'}
                       </AlertDescription>
                     </Alert>
+
+                    {/* MISHAP TABLE */}
+                    {selectedCareer && (
+                      <div className="bg-black border border-terminal-primary/30 rounded p-3">
+                        <h4 className="text-xs font-bold text-red-400 mb-2">Potential Mishaps (1D6):</h4>
+                        <div className="space-y-1 text-xs text-terminal-primary/70">
+                          {selectedCareer.mishapTable.map((mishap, idx) => (
+                            <div key={idx} className="flex gap-2">
+                              <span className="text-terminal-primary/50">{idx + 1}.</span>
+                              <span>{mishap}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
                     <Button
                       onClick={runSurvivalCheck}
                       className="w-full bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
@@ -1580,6 +1623,22 @@ export const CharacterGenerator: React.FC = () => {
                         </AlertDescription>
                       </Alert>
                     )}
+
+                    {/* EVENT TABLE */}
+                    {selectedCareer && (
+                      <div className="bg-black border border-terminal-primary/30 rounded p-3">
+                        <h4 className="text-xs font-bold text-blue-400 mb-2">Possible Events (2D6):</h4>
+                        <div className="space-y-1 text-xs text-terminal-primary/70">
+                          {selectedCareer.eventTable.map((event, idx) => (
+                            <div key={idx} className="flex gap-2">
+                              <span className="text-terminal-primary/50">{idx + 2}.</span>
+                              <span>{event}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
                     <Button
                       onClick={rollEvent}
                       className="w-full bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
