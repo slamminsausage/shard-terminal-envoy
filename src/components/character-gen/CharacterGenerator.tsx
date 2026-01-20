@@ -1028,6 +1028,42 @@ export const CharacterGenerator: React.FC = () => {
     setEventOutcomeApplied(true);
   };
 
+  // ============================================================================
+  // SKILL LIMITS ENFORCEMENT
+  // ============================================================================
+
+  const getTotalSkillLevels = (skills: Record<string, SkillState>): number => {
+    return Object.values(skills).reduce((total, skill) => {
+      return total + (parseInt(skill.value) || 0);
+    }, 0);
+  };
+
+  const getMaxSkillLevels = (): number => {
+    const int = characterData.characteristics.intellect.total;
+    const edu = characterData.characteristics.education.total;
+    return 3 * (int + edu);
+  };
+
+  const canIncreaseSkill = (skillKey: string, currentSkills: Record<string, SkillState>): { allowed: boolean; reason?: string } => {
+    const currentSkill = currentSkills[skillKey];
+    const currentValue = currentSkill ? parseInt(currentSkill.value) || 0 : 0;
+
+    // Check individual skill limit (max level 4)
+    if (currentValue >= 4) {
+      return { allowed: false, reason: 'Skill is already at maximum level 4' };
+    }
+
+    // Check total skill levels limit (3× INT+EDU)
+    const totalSkillLevels = getTotalSkillLevels(currentSkills);
+    const maxSkillLevels = getMaxSkillLevels();
+
+    if (totalSkillLevels >= maxSkillLevels) {
+      return { allowed: false, reason: `Total skill levels (${totalSkillLevels}) would exceed maximum (${maxSkillLevels} = 3×(INT+EDU))` };
+    }
+
+    return { allowed: true };
+  };
+
   const applySkillGain = (skillName: string) => {
     const parsed = parseSkillGain(skillName);
 
@@ -1045,9 +1081,18 @@ export const CharacterGenerator: React.FC = () => {
         },
       }));
     } else {
-      // Add or increase skill
+      // Add or increase skill - check limits first
       const skillKey = normalizeSkillName(parsed.skill);
+
       setCharacterData(prev => {
+        const limitCheck = canIncreaseSkill(skillKey, prev.skills);
+
+        if (!limitCheck.allowed) {
+          console.warn(`Cannot increase ${parsed.skill}: ${limitCheck.reason}`);
+          // Still return prev without changes, but we could show a warning to the user
+          return prev;
+        }
+
         const currentSkill = prev.skills[skillKey];
         const currentValue = currentSkill ? parseInt(currentSkill.value) || 0 : 0;
 
