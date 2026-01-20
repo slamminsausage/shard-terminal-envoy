@@ -8,6 +8,9 @@ export * from './types';
 // Export constants
 export * from './constants';
 
+// Export skills reference
+export * from './skills';
+
 // Import all careers
 import { CAREER_UNIVERSITY } from './pre-careers/university';
 import { CAREER_MILITARY_ACADEMY } from './pre-careers/militaryAcademy';
