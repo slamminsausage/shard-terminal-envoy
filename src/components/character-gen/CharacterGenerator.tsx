@@ -9,6 +9,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useCampaign } from '@/contexts/CampaignContext';
 import { ALL_CAREERS, BACKGROUND_SKILLS } from './careers';
 import type { CareerDefinition, Characteristics, StructuredEvent, EventOutcome } from './careers';
+import { rollDraft, type DraftResult } from './tables/draft';
 
 // ============================================================================
 // TYPE DEFINITIONS (Component-specific)
@@ -211,6 +212,10 @@ export const CharacterGenerator: React.FC = () => {
   const [eventRollResult, setEventRollResult] = useState<{roll: number, dm: number, total: number} | null>(null);
   const [eventResolved, setEventResolved] = useState<boolean>(false);
   const [eventOutcomeApplied, setEventOutcomeApplied] = useState<boolean>(false);
+
+  // Draft system state
+  const [hasUsedDraft, setHasUsedDraft] = useState(false);
+  const [draftRolled, setDraftRolled] = useState(false);
 
   // Get available careers based on current term number
   const getAvailableCareers = (): CareerDefinition[] => {
@@ -457,6 +462,51 @@ export const CharacterGenerator: React.FC = () => {
   const resetQualification = () => {
     setQualificationPassed(null);
     setQualificationRollLog('');
+    setDraftRolled(false);
+  };
+
+  // ============================================================================
+  // DRAFT SYSTEM
+  // ============================================================================
+
+  const enterDraft = () => {
+    if (hasUsedDraft) {
+      alert('You have already used your draft. You must become a Drifter.');
+      return;
+    }
+
+    const draftResult: DraftResult = rollDraft();
+    setHasUsedDraft(true);
+    setDraftRolled(true);
+
+    // Find the career
+    const career = ALL_CAREERS.find(c => c.name === draftResult.careerName);
+    if (!career) {
+      console.error(`Draft career not found: ${draftResult.careerName}`);
+      return;
+    }
+
+    // Set the career
+    setSelectedCareer(career);
+
+    // Set the assignment (specific or first one if "any")
+    if (draftResult.assignmentName) {
+      const assignmentIndex = career.assignments.findIndex(a => a.name === draftResult.assignmentName);
+      setSelectedAssignment(assignmentIndex >= 0 ? assignmentIndex : 0);
+      setQualificationRollLog(`Drafted into ${career.name} (${draftResult.assignmentName}). Automatically qualified.`);
+    } else {
+      setSelectedAssignment(0);
+      setQualificationRollLog(`Drafted into ${career.name}. Automatically qualified. Choose your assignment.`);
+    }
+
+    // Automatically pass qualification
+    setQualificationPassed(true);
+
+    setCharacterData(prev => ({
+      ...prev,
+      career: career.name,
+      notes: prev.notes + `\nDrafted into ${career.name}`,
+    }));
   };
 
   // ============================================================================
@@ -1715,14 +1765,41 @@ export const CharacterGenerator: React.FC = () => {
                       </>
                     )}
 
-                    {qualificationPassed === false && (
-                      <Alert className="bg-red-500/10 border-red-500/50">
-                        <AlertDescription className="text-red-400">
-                          ✗ Qualification failed. You must enter the Draft or become a Drifter.
-                          <br />
-                          <span className="text-xs">(For now, you can reroll by clicking the career again)</span>
-                        </AlertDescription>
-                      </Alert>
+                    {qualificationPassed === false && !draftRolled && (
+                      <div className="space-y-3">
+                        <Alert className="bg-red-500/10 border-red-500/50">
+                          <AlertDescription className="text-red-400">
+                            ✗ Qualification failed. You must enter the Draft or become a Drifter.
+                          </AlertDescription>
+                        </Alert>
+
+                        <div className="grid grid-cols-2 gap-2">
+                          <Button
+                            onClick={enterDraft}
+                            disabled={hasUsedDraft}
+                            className="bg-yellow-600/20 text-yellow-400 hover:bg-yellow-600/30 border border-yellow-600/50"
+                          >
+                            <Dices className="h-4 w-4 mr-2" />
+                            Enter Draft
+                          </Button>
+                          <Button
+                            onClick={() => {
+                              alert('Drifter career not yet implemented. Coming soon!');
+                            }}
+                            className="bg-gray-600/20 text-gray-400 hover:bg-gray-600/30 border border-gray-600/50"
+                          >
+                            Become Drifter
+                          </Button>
+                        </div>
+
+                        {hasUsedDraft && (
+                          <Alert className="bg-yellow-500/10 border-yellow-500/50">
+                            <AlertDescription className="text-yellow-400 text-xs">
+                              You have already used your draft. You must become a Drifter if you fail qualification again.
+                            </AlertDescription>
+                          </Alert>
+                        )}
+                      </div>
                     )}
                   </>
                 )}
