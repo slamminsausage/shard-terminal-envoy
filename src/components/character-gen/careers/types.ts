@@ -87,7 +87,7 @@ export interface EventEffects {
   benefitDM?: number;          // DM to benefit rolls
 
   // Redirect to another table
-  rollOnTable?: 'life_events' | 'injury' | 'aging';
+  rollOnTable?: 'life_events' | 'injury' | 'aging' | 'unusual_events';
 
   // Display message
   message?: string;
@@ -187,7 +187,7 @@ export interface GameEvent {
       }
     | {
         type: 'table_redirect';
-        table: 'life_events' | 'injury' | 'aging' | 'draft';
+        table: 'life_events' | 'injury' | 'aging' | 'draft' | 'unusual_events';
         displayText: string;
       }
     | {

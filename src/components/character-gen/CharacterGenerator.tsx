@@ -10,9 +10,9 @@ import { useCampaign } from '@/contexts/CampaignContext';
 import { ALL_CAREERS, BACKGROUND_SKILLS, getPreCareerEvent } from './careers';
 import type { CareerDefinition, Characteristics, StructuredEvent, EventOutcome, GameEvent, EventEffects } from './careers';
 import { isGameEvent } from './careers';
-import { rollDraft, type DraftResult } from './tables/draft';
+import { rollDraft, type DraftResult, getLifeEvent, getInjury, getUnusualEvent } from './tables';
 import { EventHandler } from './EventHandler';
-import { rollDiceExpression } from './eventProcessor';
+import { rollDiceExpression, rollDice as rollDiceUtil } from './eventProcessor';
 
 // ============================================================================
 // TYPE DEFINITIONS (Component-specific)
@@ -227,6 +227,11 @@ export const CharacterGenerator: React.FC = () => {
   // New GameEvent system state
   const [currentGameEvent, setCurrentGameEvent] = useState<GameEvent | null>(null);
   const [gameEventCompleted, setGameEventCompleted] = useState<boolean>(false);
+
+  // Table redirect state - for handling nested table rolls (Life Events -> Injury, etc.)
+  const [redirectedEvent, setRedirectedEvent] = useState<GameEvent | null>(null);
+  const [redirectTableRoll, setRedirectTableRoll] = useState<number | null>(null);
+  const [redirectTableName, setRedirectTableName] = useState<string | null>(null);
 
   // Draft system state
   const [hasUsedDraft, setHasUsedDraft] = useState(false);
@@ -1173,11 +1178,73 @@ export const CharacterGenerator: React.FC = () => {
   };
 
   // Handler for table redirects (Life Events, Injury, etc.)
-  const handleTableRedirect = (table: 'life_events' | 'injury' | 'aging' | 'draft') => {
-    // For now, just mark as resolved and note the redirect
-    setTermSkillsGained(prev => [...prev, `Roll on ${table.replace('_', ' ')} table (not yet implemented)`]);
-    setGameEventCompleted(true);
-    setEventResolved(true);
+  const handleTableRedirect = (table: 'life_events' | 'injury' | 'aging' | 'draft' | 'unusual_events') => {
+    let roll: number;
+    let event: GameEvent | null = null;
+    let tableName = '';
+
+    switch (table) {
+      case 'life_events':
+        roll = rollDiceUtil(2, 6); // 2D6
+        event = getLifeEvent(roll);
+        tableName = 'Life Events';
+        break;
+      case 'injury':
+        roll = rollDiceUtil(1, 6); // 1D6
+        event = getInjury(roll);
+        tableName = 'Injury';
+        break;
+      case 'unusual_events':
+        roll = rollDiceUtil(1, 6); // 1D6
+        event = getUnusualEvent(roll);
+        tableName = 'Unusual Events';
+        break;
+      case 'aging':
+        // Aging table not yet implemented
+        setTermSkillsGained(prev => [...prev, 'Roll on Aging table (not yet implemented)']);
+        setGameEventCompleted(true);
+        setEventResolved(true);
+        return;
+      case 'draft':
+        // Draft is handled separately
+        setTermSkillsGained(prev => [...prev, 'Roll on Draft table (use draft system)']);
+        setGameEventCompleted(true);
+        setEventResolved(true);
+        return;
+      default:
+        setGameEventCompleted(true);
+        setEventResolved(true);
+        return;
+    }
+
+    if (event) {
+      setRedirectedEvent(event);
+      setRedirectTableRoll(roll);
+      setRedirectTableName(tableName);
+      // Don't mark as completed yet - the redirected event needs to be processed
+    }
+  };
+
+  // Handler for when a redirected event completes
+  const handleRedirectedEventComplete = (effects: EventEffects | undefined, messages: string[]) => {
+    // Apply effects from the redirected event
+    handleGameEventComplete(effects, messages);
+
+    // Clear the redirect state
+    setRedirectedEvent(null);
+    setRedirectTableRoll(null);
+    setRedirectTableName(null);
+  };
+
+  // Handler for nested table redirects (e.g., Life Events -> Injury -> ...)
+  const handleNestedTableRedirect = (table: 'life_events' | 'injury' | 'aging' | 'draft' | 'unusual_events') => {
+    // Complete the current redirected event first
+    setRedirectedEvent(null);
+    setRedirectTableRoll(null);
+    setRedirectTableName(null);
+
+    // Then handle the new redirect
+    handleTableRedirect(table);
   };
 
   // ============================================================================
@@ -2370,8 +2437,26 @@ export const CharacterGenerator: React.FC = () => {
 
                 {isInTerm && termEventRoll !== null && (
                   <div className="space-y-2">
+                    {/* Redirected Event (from table redirect like Life Events -> Injury) */}
+                    {redirectedEvent && (
+                      <div className="space-y-2">
+                        <Alert className="bg-blue-500/10 border-blue-500/50">
+                          <AlertDescription className="text-blue-400">
+                            <strong>{redirectTableName} (rolled {redirectTableRoll}):</strong>
+                          </AlertDescription>
+                        </Alert>
+                        <EventHandler
+                          event={redirectedEvent}
+                          characteristics={characterData.characteristics}
+                          skills={characterData.skills}
+                          onComplete={handleRedirectedEventComplete}
+                          onTableRedirect={handleNestedTableRedirect}
+                        />
+                      </div>
+                    )}
+
                     {/* New GameEvent System */}
-                    {currentGameEvent && !gameEventCompleted && (
+                    {currentGameEvent && !gameEventCompleted && !redirectedEvent && (
                       <div className="space-y-2">
                         <div className="bg-terminal-primary/5 border border-terminal-primary/30 rounded p-2 mb-2">
                           <p className="text-xs text-terminal-primary/60">Event Roll: {termEventRoll}</p>
