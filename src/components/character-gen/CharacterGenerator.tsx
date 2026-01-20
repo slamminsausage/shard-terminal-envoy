@@ -7,8 +7,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dices, User, Briefcase, Award, Save, ArrowRight, AlertCircle, RefreshCw } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useCampaign } from '@/contexts/CampaignContext';
-import { ALL_CAREERS, BACKGROUND_SKILLS } from './careersData';
-import type { CareerDefinition, Characteristics, StructuredEvent, EventOutcome } from './careersData';
+import { ALL_CAREERS, BACKGROUND_SKILLS } from './careers';
+import type { CareerDefinition, Characteristics, StructuredEvent, EventOutcome } from './careers';
 
 // ============================================================================
 // TYPE DEFINITIONS (Component-specific)
