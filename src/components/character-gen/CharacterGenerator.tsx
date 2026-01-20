@@ -217,6 +217,10 @@ export const CharacterGenerator: React.FC = () => {
   const [hasUsedDraft, setHasUsedDraft] = useState(false);
   const [draftRolled, setDraftRolled] = useState(false);
 
+  // Basic Training state
+  const [basicTrainingApplied, setBasicTrainingApplied] = useState(false);
+  const [basicTrainingSkillSelected, setBasicTrainingSkillSelected] = useState<string | null>(null);
+
   // Get available careers based on current term number
   const getAvailableCareers = (): CareerDefinition[] => {
     const totalTerms = characterData.totalCareerTerms || 0;
@@ -463,6 +467,8 @@ export const CharacterGenerator: React.FC = () => {
     setQualificationPassed(null);
     setQualificationRollLog('');
     setDraftRolled(false);
+    setBasicTrainingApplied(false);
+    setBasicTrainingSkillSelected(null);
   };
 
   // ============================================================================
@@ -507,6 +513,69 @@ export const CharacterGenerator: React.FC = () => {
       career: career.name,
       notes: prev.notes + `\nDrafted into ${career.name}`,
     }));
+  };
+
+  // ============================================================================
+  // BASIC TRAINING SYSTEM
+  // ============================================================================
+
+  const applyBasicTraining = () => {
+    if (!selectedCareer || basicTrainingApplied) return;
+
+    const totalTerms = characterData.totalCareerTerms || 0;
+    const isFirstCareer = totalTerms === 0;
+
+    // Determine which skills to use (Service Skills for most, Assignment Skills for Citizen/Drifter)
+    const useAssignmentSkills = selectedCareer.name === 'Citizen' || selectedCareer.name === 'Drifter';
+    let skillList: string[];
+
+    if (useAssignmentSkills) {
+      // Use assignment skills
+      const assignmentName = selectedCareer.assignments[selectedAssignment].name;
+      skillList = selectedCareer.skillTables.specialist[assignmentName] || [];
+    } else {
+      // Use service skills
+      skillList = selectedCareer.skillTables.serviceSkills;
+    }
+
+    if (isFirstCareer) {
+      // First career: gain all service/assignment skills at level 0
+      skillList.forEach(skill => {
+        const skillKey = normalizeSkillName(skill);
+        setCharacterData(prev => ({
+          ...prev,
+          skills: {
+            ...prev.skills,
+            [skillKey]: { proficient: true, value: '0' },
+          },
+        }));
+      });
+
+      setCharacterData(prev => ({
+        ...prev,
+        notes: prev.notes + `\nBasic Training (${selectedCareer.name}): All ${useAssignmentSkills ? 'assignment' : 'service'} skills at level 0`,
+      }));
+
+      setBasicTrainingApplied(true);
+    }
+    // For subsequent careers, we'll show a UI to pick one skill (handled in render)
+  };
+
+  const selectBasicTrainingSkill = (skillName: string) => {
+    if (!selectedCareer || basicTrainingApplied) return;
+
+    const skillKey = normalizeSkillName(skillName);
+    setCharacterData(prev => ({
+      ...prev,
+      skills: {
+        ...prev.skills,
+        [skillKey]: { proficient: true, value: '0' },
+      },
+      notes: prev.notes + `\nBasic Training (${selectedCareer.name}): ${skillName} at level 0`,
+    }));
+
+    setBasicTrainingSkillSelected(skillName);
+    setBasicTrainingApplied(true);
   };
 
   // ============================================================================
@@ -586,6 +655,16 @@ export const CharacterGenerator: React.FC = () => {
       ...prev,
       age: newAge,
     }));
+
+    // Apply basic training (first career: all skills, later: need to choose one)
+    const totalTerms = characterData.totalCareerTerms || 0;
+    const isFirstCareer = totalTerms === 0;
+
+    if (isFirstCareer && !basicTrainingApplied) {
+      // Automatically apply all skills for first career
+      applyBasicTraining();
+    }
+    // For subsequent careers, UI will show skill selection (handled in render)
   };
 
   const runSurvivalCheck = () => {
@@ -1889,7 +1968,34 @@ export const CharacterGenerator: React.FC = () => {
                   </Button>
                 )}
 
-                {isInTerm && termSurvived === null && (
+                {/* BASIC TRAINING SKILL SELECTION (for subsequent careers) */}
+                {isInTerm && termSurvived === null && !basicTrainingApplied && (characterData.totalCareerTerms || 0) > 0 && (
+                  <div className="space-y-2">
+                    <Alert className="bg-blue-500/10 border-blue-500/50">
+                      <AlertDescription className="text-blue-400">
+                        <strong>Basic Training:</strong> Choose one {selectedCareer?.name === 'Citizen' || selectedCareer?.name === 'Drifter' ? 'assignment' : 'service'} skill to gain at level 0.
+                      </AlertDescription>
+                    </Alert>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      {(selectedCareer?.name === 'Citizen' || selectedCareer?.name === 'Drifter'
+                        ? selectedCareer.skillTables.specialist[selectedCareer.assignments[selectedAssignment].name] || []
+                        : selectedCareer?.skillTables.serviceSkills || []
+                      ).map((skill) => (
+                        <Button
+                          key={skill}
+                          onClick={() => selectBasicTrainingSkill(skill)}
+                          variant="outline"
+                          className="border-terminal-primary/50 text-terminal-primary hover:bg-terminal-primary/20"
+                        >
+                          {skill}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {isInTerm && termSurvived === null && basicTrainingApplied && (
                   <div className="space-y-2">
                     <Alert className="bg-terminal-primary/5 border-terminal-primary/30">
                       <AlertCircle className="h-4 w-4" />
