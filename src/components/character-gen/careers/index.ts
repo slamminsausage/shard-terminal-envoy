@@ -11,6 +11,9 @@ export * from './constants';
 // Export skills reference
 export * from './skills';
 
+// Export pre-career events (new GameEvent format)
+export { PRE_CAREER_EVENTS, getPreCareerEvent } from './pre-careers/preCareerEvents';
+
 // Import all careers
 import { CAREER_UNIVERSITY } from './pre-careers/university';
 import { CAREER_MILITARY_ACADEMY } from './pre-careers/militaryAcademy';
