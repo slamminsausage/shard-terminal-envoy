@@ -32,6 +32,46 @@ export interface Rank {
   bonusStat?: keyof Omit<Characteristics, 'psionics'>;
 }
 
+export interface EventOutcome {
+  skills?: string[]; // Array of skill choices
+  skillLevel?: number; // Level to set skills to
+  chooseSkillCount?: number; // How many skills to choose from the array
+  characteristic?: { stat: keyof Omit<Characteristics, 'psionics'>, modifier: number };
+  allies?: number;
+  enemies?: number;
+  rivals?: number;
+  contacts?: number;
+  forceCareer?: string; // Force entry to specific career next term
+  allowCareer?: string; // Allow entry to specific career
+  message?: string; // Additional message to display
+}
+
+export interface StructuredEvent {
+  description: string;
+  requiresRoll?: {
+    characteristic: keyof Omit<Characteristics, 'psionics'>;
+    target: number;
+    displayText: string;
+  };
+  requiresSkillCheck?: {
+    minSkillLevel: number;
+    target: number;
+    displayText: string;
+  };
+  requiresChoice?: {
+    options: string[];
+    displayText: string;
+  };
+  successOutcome?: EventOutcome;
+  failureOutcome?: EventOutcome;
+  automaticOutcome?: EventOutcome;
+  conditionalAvoidance?: {
+    characteristic: keyof Omit<Characteristics, 'psionics'>;
+    target: number;
+    displayText: string;
+  };
+}
+
 export interface CareerDefinition {
   name: string;
   description: string;
@@ -54,7 +94,7 @@ export interface CareerDefinition {
     officer?: Rank[]; // For military careers
   };
   mishapTable: string[];
-  eventTable: string[];
+  eventTable: string[] | StructuredEvent[];
   commissionTarget?: number; // For military careers
 }
 
@@ -62,39 +102,148 @@ export interface CareerDefinition {
 // PRE-CAREER EVENTS TABLE (2D6)
 // ============================================================================
 
-export const PRE_CAREER_EVENTS = [
+export const PRE_CAREER_EVENTS: StructuredEvent[] = [
   // Result 2
-  "You are approached by an underground psionic group who sense potential in you. You may test your PSI and attempt to enter the Psion career in any subsequent term, but whether you accept or refuse their approaches, you gain them as an Enemy.",
+  {
+    description: "You are approached by an underground psionic group who sense potential in you. You may test your PSI and attempt to enter the Psion career in any subsequent term, but whether you accept or refuse their approaches, you gain them as an Enemy.",
+    automaticOutcome: {
+      enemies: 1,
+      allowCareer: 'Psion',
+      message: 'You may test your PSI and attempt to enter the Psion career in any subsequent term.'
+    }
+  },
 
   // Result 3
-  "A deep tragedy occurs. You fail to graduate and gain no benefits from this Pre-Career. You must leave this term and may not attempt another Pre-Career. However, you may choose to gain a Contact.",
+  {
+    description: "A deep tragedy occurs. You fail to graduate and gain no benefits from this Pre-Career. You must leave this term and may not attempt another Pre-Career.",
+    requiresChoice: {
+      options: ['Gain a Contact', 'No Contact'],
+      displayText: 'You may choose to gain a Contact.'
+    },
+    automaticOutcome: {
+      message: 'You fail to graduate and gain no benefits from this Pre-Career. You must leave this term and may not attempt another Pre-Career.'
+    }
+  },
 
   // Result 4
-  "A supposedly harmless prank goes horribly wrong. Roll SOC 8+. If you succeed, gain one of Deception 1, Persuade 1, or a Contact. If you fail, you are arrested and imprisoned and must enter the Prisoner career in your next term.",
+  {
+    description: "A supposedly harmless prank goes horribly wrong.",
+    requiresRoll: {
+      characteristic: 'social',
+      target: 8,
+      displayText: 'Roll SOC 8+ to avoid arrest'
+    },
+    successOutcome: {
+      skills: ['Deception', 'Persuade', 'Contact'],
+      chooseSkillCount: 1,
+      skillLevel: 1,
+      message: 'You talk your way out of trouble.'
+    },
+    failureOutcome: {
+      forceCareer: 'Prisoner',
+      message: 'You are arrested and imprisoned. You must enter the Prisoner career in your next term.'
+    }
+  },
 
   // Result 5
-  "Taking advantage of youth, you party as much as you study. Gain Carouse 1.",
+  {
+    description: "Taking advantage of youth, you party as much as you study.",
+    automaticOutcome: {
+      skills: ['Carouse'],
+      skillLevel: 1
+    }
+  },
 
   // Result 6
-  "You join a tightly knit group of fellow students who become lifelong friends. Gain D3 Allies on graduation.",
+  {
+    description: "You join a tightly knit group of fellow students who become lifelong friends.",
+    automaticOutcome: {
+      allies: 3, // Will need to roll D3 in implementation
+      message: 'Gain D3 Allies on graduation.'
+    }
+  },
 
   // Result 7
-  "Life Event. Roll on the Life Events table (see page 50).",
+  {
+    description: "Life Event. Roll on the Life Events table (see page 50).",
+    automaticOutcome: {
+      message: 'Roll on the Life Events table.'
+    }
+  },
 
   // Result 8
-  "You become involved in a political movement. Roll SOC 8+. If you succeed, you become one of its leaders and gain an Ally within the movement. If you fail, you are duped by the movement and gain a Rival instead. Either way, you gain one of Admin 1, Advocate 1, Diplomat 1, or Persuade 1.",
+  {
+    description: "You become involved in a political movement.",
+    requiresRoll: {
+      characteristic: 'social',
+      target: 8,
+      displayText: 'Roll SOC 8+ to become a leader'
+    },
+    successOutcome: {
+      allies: 1,
+      skills: ['Admin', 'Advocate', 'Diplomat', 'Persuade'],
+      chooseSkillCount: 1,
+      skillLevel: 1,
+      message: 'You become one of its leaders and gain an Ally within the movement.'
+    },
+    failureOutcome: {
+      rivals: 1,
+      skills: ['Admin', 'Advocate', 'Diplomat', 'Persuade'],
+      chooseSkillCount: 1,
+      skillLevel: 1,
+      message: 'You are duped by the movement and gain a Rival instead.'
+    }
+  },
 
   // Result 9
-  "You develop a life-long interest in a hobby or other area of study. Gain any skill of your choice, but not one you already have, at level 0.",
+  {
+    description: "You develop a life-long interest in a hobby or other area of study.",
+    automaticOutcome: {
+      message: 'Gain any skill of your choice, but not one you already have, at level 0.'
+    }
+  },
 
   // Result 10
-  "Your time in education allows you to make a breakthrough in an established field of knowledge or study. If you succeed at a skill check of any non-combat skill you already have at level 1+ (with a difficulty of 9+), you may increase it by one level.",
+  {
+    description: "Your time in education allows you to make a breakthrough in an established field of knowledge or study.",
+    requiresSkillCheck: {
+      minSkillLevel: 1,
+      target: 9,
+      displayText: 'Choose a non-combat skill you have at level 1+ and roll 9+ to increase it'
+    },
+    successOutcome: {
+      message: 'You successfully make a breakthrough! The chosen skill increases by one level.'
+    },
+    failureOutcome: {
+      message: 'Your research does not yield the breakthrough you hoped for.'
+    }
+  },
 
   // Result 11
-  "You are caught up in a widely unpopular and desperate draft to fight in an off-world war. You may flee to become a Drifter but gain an Enemy among those who sent you the draft notice. Otherwise, you are drafted – gain a +2 DM to the Draft roll but your draft will be for a military career (Navy, Army or Marines) only. If your SOC is 9+, you can ignore this result entirely.",
+  {
+    description: "You are caught up in a widely unpopular and desperate draft to fight in an off-world war.",
+    conditionalAvoidance: {
+      characteristic: 'social',
+      target: 9,
+      displayText: 'If your SOC is 9+, you can avoid this entirely'
+    },
+    requiresChoice: {
+      options: ['Flee to Drifter (gain Enemy)', 'Accept Draft (+2 DM, military only)'],
+      displayText: 'Choose your response to the draft'
+    },
+    automaticOutcome: {
+      message: 'You may flee to become a Drifter but gain an Enemy, or be drafted with +2 DM (military careers only).'
+    }
+  },
 
   // Result 12
-  "You gain wide recognition for your efforts, promoting your organisation or being particularly helpful within society. Gain a +1 DM to SOC (to a maximum of 12).",
+  {
+    description: "You gain wide recognition for your efforts, promoting your organisation or being particularly helpful within society.",
+    automaticOutcome: {
+      characteristic: { stat: 'social', modifier: 1 },
+      message: 'Gain +1 DM to SOC (to a maximum of 12).'
+    }
+  },
 ];
 
 // ============================================================================

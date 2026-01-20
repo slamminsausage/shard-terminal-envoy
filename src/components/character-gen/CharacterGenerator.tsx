@@ -8,7 +8,7 @@ import { Dices, User, Briefcase, Award, Save, ArrowRight, AlertCircle, RefreshCw
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useCampaign } from '@/contexts/CampaignContext';
 import { ALL_CAREERS, BACKGROUND_SKILLS } from './careersData';
-import type { CareerDefinition, Characteristics } from './careersData';
+import type { CareerDefinition, Characteristics, StructuredEvent, EventOutcome } from './careersData';
 
 // ============================================================================
 // TYPE DEFINITIONS (Component-specific)
@@ -205,6 +205,12 @@ export const CharacterGenerator: React.FC = () => {
   const [graduationRollLog, setGraduationRollLog] = useState<string>('');
   const [survivalRollLog, setSurvivalRollLog] = useState<string>('');
   const [advancementRollLog, setAdvancementRollLog] = useState<string>('');
+
+  // Event handling state
+  const [currentEvent, setCurrentEvent] = useState<StructuredEvent | null>(null);
+  const [eventRollResult, setEventRollResult] = useState<{roll: number, dm: number, total: number} | null>(null);
+  const [eventResolved, setEventResolved] = useState<boolean>(false);
+  const [eventOutcomeApplied, setEventOutcomeApplied] = useState<boolean>(false);
 
   // Get available careers based on current term number
   const getAvailableCareers = (): CareerDefinition[] => {
@@ -520,6 +526,10 @@ export const CharacterGenerator: React.FC = () => {
     setGraduationRollLog('');
     setSurvivalRollLog('');
     setAdvancementRollLog('');
+    setCurrentEvent(null);
+    setEventRollResult(null);
+    setEventResolved(false);
+    setEventOutcomeApplied(false);
 
     const newAge = 18 + newTermNumber * 4;
     setCharacterData(prev => ({
@@ -789,6 +799,104 @@ export const CharacterGenerator: React.FC = () => {
 
     const roll = rollDice(2, 6);
     setTermEventRoll(roll);
+
+    // Check if this is a structured event
+    const eventIndex = Math.min(roll - 2, selectedCareer.eventTable.length - 1);
+    const event = selectedCareer.eventTable[eventIndex];
+
+    if (typeof event === 'object' && 'description' in event) {
+      // It's a structured event
+      setCurrentEvent(event as StructuredEvent);
+      setEventResolved(false);
+      setEventOutcomeApplied(false);
+      setEventRollResult(null);
+    } else {
+      // Old style string event - auto-resolve
+      setCurrentEvent(null);
+      setEventResolved(true);
+      setEventOutcomeApplied(true);
+    }
+  };
+
+  const rollEventCheck = (characteristic: keyof Omit<Characteristics, 'psionics'>, target: number) => {
+    const stat = characterData.characteristics[characteristic];
+    const dm = calculateDM(stat.total);
+    const roll = rollDice(2, 6);
+    const total = roll + dm;
+
+    setEventRollResult({ roll, dm, total });
+
+    return total >= target;
+  };
+
+  const applyEventOutcome = (outcome: EventOutcome | undefined, skillChoice?: string) => {
+    if (!outcome) return;
+
+    // Apply skills
+    if (outcome.skills && skillChoice) {
+      const skillLevel = outcome.skillLevel || 1;
+
+      if (skillChoice === 'Contact') {
+        // Handle contact as a special case - we'll just add it to the log for now
+        setTermSkillsGained(prev => [...prev, 'Contact (event)']);
+      } else {
+        const skillKey = normalizeSkillName(skillChoice);
+        setCharacterData(prev => {
+          const currentSkill = prev.skills[skillKey];
+          const currentValue = currentSkill ? parseInt(currentSkill.value) || 0 : 0;
+
+          return {
+            ...prev,
+            skills: {
+              ...prev.skills,
+              [skillKey]: {
+                proficient: true,
+                value: Math.max(currentValue, skillLevel).toString(),
+              },
+            },
+          };
+        });
+        setTermSkillsGained(prev => [...prev, `${skillChoice} ${skillLevel} (event)`]);
+      }
+    }
+
+    // Apply characteristic changes
+    if (outcome.characteristic) {
+      const { stat, modifier } = outcome.characteristic;
+      setCharacterData(prev => {
+        const currentValue = prev.characteristics[stat].total;
+        const newValue = Math.min(currentValue + modifier, stat === 'social' ? 12 : 15);
+
+        return {
+          ...prev,
+          characteristics: {
+            ...prev.characteristics,
+            [stat]: {
+              ...prev.characteristics[stat],
+              total: newValue,
+              current: newValue,
+            },
+          },
+        };
+      });
+      setTermSkillsGained(prev => [...prev, `${stat.toUpperCase()} +${modifier} (event)`]);
+    }
+
+    // Log allies, enemies, rivals, contacts
+    if (outcome.allies) {
+      setTermSkillsGained(prev => [...prev, `${outcome.allies} Allies (event)`]);
+    }
+    if (outcome.enemies) {
+      setTermSkillsGained(prev => [...prev, `${outcome.enemies} Enemies (event)`]);
+    }
+    if (outcome.rivals) {
+      setTermSkillsGained(prev => [...prev, `${outcome.rivals} Rivals (event)`]);
+    }
+    if (outcome.contacts) {
+      setTermSkillsGained(prev => [...prev, `${outcome.contacts} Contacts (event)`]);
+    }
+
+    setEventOutcomeApplied(true);
   };
 
   const applySkillGain = (skillName: string) => {
@@ -1884,63 +1992,225 @@ export const CharacterGenerator: React.FC = () => {
                     <Alert className="bg-terminal-primary/5 border-terminal-primary/30">
                       <AlertDescription className="text-terminal-primary/80">
                         <strong>Event (rolled {termEventRoll}):</strong><br />
-                        {selectedCareer?.eventTable[Math.min(termEventRoll - 2, selectedCareer.eventTable.length - 1)] || 'No special event'}
+                        {currentEvent ? currentEvent.description : (selectedCareer?.eventTable[Math.min(termEventRoll - 2, selectedCareer.eventTable.length - 1)] as string || 'No special event')}
                       </AlertDescription>
                     </Alert>
 
-                    <div className="space-y-2">
-                      <h4 className="text-sm font-bold text-terminal-primary uppercase">Gain Skills This Term</h4>
-                      <div className="grid grid-cols-2 gap-2">
-                        <Button
-                          onClick={() => gainSkillFromTable('personal')}
-                          variant="outline"
-                          className="border-terminal-primary/50 text-terminal-primary hover:bg-terminal-primary/20"
-                        >
-                          Personal Development
-                        </Button>
-                        <Button
-                          onClick={() => gainSkillFromTable('service')}
-                          variant="outline"
-                          className="border-terminal-primary/50 text-terminal-primary hover:bg-terminal-primary/20"
-                        >
-                          Service Skills
-                        </Button>
-                        {selectedCareer?.skillTables.advancedEducation && characterData.characteristics.education.total >= 8 && (
+                    {/* Structured Event Handling */}
+                    {currentEvent && !eventResolved && (
+                      <div className="space-y-2">
+                        {/* Check if event has conditional avoidance (like SOC 9+ to ignore) */}
+                        {currentEvent.conditionalAvoidance && characterData.characteristics[currentEvent.conditionalAvoidance.characteristic].total >= currentEvent.conditionalAvoidance.target && (
+                          <Alert className="bg-green-500/10 border-green-500/50">
+                            <AlertDescription className="text-green-400">
+                              ✓ {currentEvent.conditionalAvoidance.displayText} - You can avoid this event!
+                            </AlertDescription>
+                          </Alert>
+                        )}
+
+                        {/* Characteristic Roll Required */}
+                        {currentEvent.requiresRoll && !eventRollResult && (
+                          <div className="space-y-2">
+                            <p className="text-sm text-terminal-primary/80">{currentEvent.requiresRoll.displayText}</p>
+                            <Button
+                              onClick={() => {
+                                const success = rollEventCheck(currentEvent.requiresRoll!.characteristic, currentEvent.requiresRoll!.target);
+                                // Auto-apply if no skill choice needed
+                                if (success && currentEvent.successOutcome && !currentEvent.successOutcome.skills) {
+                                  applyEventOutcome(currentEvent.successOutcome);
+                                  setEventResolved(true);
+                                } else if (!success && currentEvent.failureOutcome && !currentEvent.failureOutcome.skills) {
+                                  applyEventOutcome(currentEvent.failureOutcome);
+                                  setEventResolved(true);
+                                } else if (success && !currentEvent.successOutcome?.skills) {
+                                  setEventResolved(true);
+                                } else if (!success && !currentEvent.failureOutcome?.skills) {
+                                  setEventResolved(true);
+                                }
+                              }}
+                              className="w-full bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
+                            >
+                              <Dices className="h-4 w-4 mr-2" />
+                              Roll {currentEvent.requiresRoll.characteristic.toUpperCase()} {currentEvent.requiresRoll.target}+
+                            </Button>
+                          </div>
+                        )}
+
+                        {/* Show Roll Result */}
+                        {eventRollResult && currentEvent.requiresRoll && (
+                          <div className="space-y-2">
+                            <div className="bg-terminal-primary/5 border border-terminal-primary/30 rounded p-3">
+                              <p className="text-xs text-terminal-primary/80 font-mono">
+                                Roll: {eventRollResult.roll} + {eventRollResult.dm} = {eventRollResult.total}
+                                (need {currentEvent.requiresRoll.target}+)
+                                {eventRollResult.total >= currentEvent.requiresRoll.target ? ' ✓ SUCCESS' : ' ✗ FAILED'}
+                              </p>
+                            </div>
+
+                            {/* Show skill choice if needed */}
+                            {!eventOutcomeApplied && eventRollResult.total >= currentEvent.requiresRoll.target && currentEvent.successOutcome?.skills && (
+                              <div className="space-y-2">
+                                <p className="text-sm text-terminal-primary">
+                                  {currentEvent.successOutcome.message || 'Choose a skill:'}
+                                </p>
+                                <div className="grid grid-cols-2 gap-2">
+                                  {currentEvent.successOutcome.skills.map((skill) => (
+                                    <Button
+                                      key={skill}
+                                      onClick={() => {
+                                        applyEventOutcome(currentEvent.successOutcome, skill);
+                                        setEventResolved(true);
+                                      }}
+                                      variant="outline"
+                                      className="border-terminal-primary/50 text-terminal-primary hover:bg-terminal-primary/20"
+                                    >
+                                      {skill}
+                                    </Button>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {!eventOutcomeApplied && eventRollResult.total < currentEvent.requiresRoll.target && currentEvent.failureOutcome?.skills && (
+                              <div className="space-y-2">
+                                <p className="text-sm text-terminal-primary">
+                                  {currentEvent.failureOutcome.message || 'Choose a skill:'}
+                                </p>
+                                <div className="grid grid-cols-2 gap-2">
+                                  {currentEvent.failureOutcome.skills.map((skill) => (
+                                    <Button
+                                      key={skill}
+                                      onClick={() => {
+                                        applyEventOutcome(currentEvent.failureOutcome, skill);
+                                        setEventResolved(true);
+                                      }}
+                                      variant="outline"
+                                      className="border-terminal-primary/50 text-terminal-primary hover:bg-terminal-primary/20"
+                                    >
+                                      {skill}
+                                    </Button>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {!eventOutcomeApplied && eventRollResult.total < currentEvent.requiresRoll.target && currentEvent.failureOutcome?.message && !currentEvent.failureOutcome.skills && (
+                              <Alert className="bg-red-500/10 border-red-500/50">
+                                <AlertDescription className="text-red-400">
+                                  {currentEvent.failureOutcome.message}
+                                </AlertDescription>
+                              </Alert>
+                            )}
+
+                            {eventOutcomeApplied && !eventResolved && (
+                              <Button
+                                onClick={() => setEventResolved(true)}
+                                className="w-full bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
+                              >
+                                Continue
+                              </Button>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Automatic outcome (no roll required) */}
+                        {!currentEvent.requiresRoll && !currentEvent.requiresSkillCheck && !currentEvent.requiresChoice && !eventOutcomeApplied && (
                           <Button
-                            onClick={() => gainSkillFromTable('advanced')}
+                            onClick={() => {
+                              applyEventOutcome(currentEvent.automaticOutcome);
+                              setEventResolved(true);
+                            }}
+                            className="w-full bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
+                          >
+                            Apply Event Outcome
+                          </Button>
+                        )}
+
+                        {/* Choice required */}
+                        {currentEvent.requiresChoice && !eventOutcomeApplied && (
+                          <div className="space-y-2">
+                            <p className="text-sm text-terminal-primary/80">{currentEvent.requiresChoice.displayText}</p>
+                            <div className="grid grid-cols-1 gap-2">
+                              {currentEvent.requiresChoice.options.map((option) => (
+                                <Button
+                                  key={option}
+                                  onClick={() => {
+                                    // Handle specific choices
+                                    if (option === 'Gain a Contact') {
+                                      applyEventOutcome({ contacts: 1 });
+                                    }
+                                    setEventResolved(true);
+                                  }}
+                                  variant="outline"
+                                  className="border-terminal-primary/50 text-terminal-primary hover:bg-terminal-primary/20"
+                                >
+                                  {option}
+                                </Button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Skill Gain Tables (only show when event is resolved or it's a simple string event) */}
+                    {(!currentEvent || eventResolved) && (
+                      <div className="space-y-2">
+                        <h4 className="text-sm font-bold text-terminal-primary uppercase">Gain Skills This Term</h4>
+                        <div className="grid grid-cols-2 gap-2">
+                          <Button
+                            onClick={() => gainSkillFromTable('personal')}
                             variant="outline"
                             className="border-terminal-primary/50 text-terminal-primary hover:bg-terminal-primary/20"
                           >
-                            Advanced Education
+                            Personal Development
                           </Button>
-                        )}
-                        <Button
-                          onClick={() => gainSkillFromTable('specialist')}
-                          variant="outline"
-                          className="border-terminal-primary/50 text-terminal-primary hover:bg-terminal-primary/20"
-                        >
-                          Specialist ({selectedCareer?.assignments[selectedAssignment].name})
-                        </Button>
-                      </div>
-
-                      {termSkillsGained.length > 0 && (
-                        <div className="bg-terminal-primary/5 border border-terminal-primary/30 rounded p-3">
-                          <h5 className="text-xs font-bold text-terminal-primary uppercase mb-2">Skills Gained This Term:</h5>
-                          <ul className="text-xs text-terminal-primary/80 space-y-1">
-                            {termSkillsGained.map((skill, idx) => (
-                              <li key={idx}>• {skill}</li>
-                            ))}
-                          </ul>
+                          <Button
+                            onClick={() => gainSkillFromTable('service')}
+                            variant="outline"
+                            className="border-terminal-primary/50 text-terminal-primary hover:bg-terminal-primary/20"
+                          >
+                            Service Skills
+                          </Button>
+                          {selectedCareer?.skillTables.advancedEducation && characterData.characteristics.education.total >= 8 && (
+                            <Button
+                              onClick={() => gainSkillFromTable('advanced')}
+                              variant="outline"
+                              className="border-terminal-primary/50 text-terminal-primary hover:bg-terminal-primary/20"
+                            >
+                              Advanced Education
+                            </Button>
+                          )}
+                          <Button
+                            onClick={() => gainSkillFromTable('specialist')}
+                            variant="outline"
+                            className="border-terminal-primary/50 text-terminal-primary hover:bg-terminal-primary/20"
+                          >
+                            Specialist ({selectedCareer?.assignments[selectedAssignment].name})
+                          </Button>
                         </div>
-                      )}
-                    </div>
 
-                    <Button
-                      onClick={completeTerm}
-                      className="w-full bg-green-500/20 text-green-400 hover:bg-green-500/30 border border-green-500/50"
-                    >
-                      Complete Term {currentTerm}
-                    </Button>
+                        {termSkillsGained.length > 0 && (
+                          <div className="bg-terminal-primary/5 border border-terminal-primary/30 rounded p-3">
+                            <h5 className="text-xs font-bold text-terminal-primary uppercase mb-2">Skills Gained This Term:</h5>
+                            <ul className="text-xs text-terminal-primary/80 space-y-1">
+                              {termSkillsGained.map((skill, idx) => (
+                                <li key={idx}>• {skill}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {(!currentEvent || eventResolved) && (
+                      <Button
+                        onClick={completeTerm}
+                        className="w-full bg-green-500/20 text-green-400 hover:bg-green-500/30 border border-green-500/50"
+                      >
+                        Complete Term {currentTerm}
+                      </Button>
+                    )}
                   </div>
                 )}
 
