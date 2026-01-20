@@ -24,7 +24,7 @@ interface EventHandlerProps {
   characteristics: Characteristics;
   skills: Record<string, { proficient: boolean; value: string }>;
   onComplete: (effects: EventEffects | undefined, messages: string[]) => void;
-  onTableRedirect?: (table: 'life_events' | 'injury' | 'aging' | 'draft') => void;
+  onTableRedirect?: (table: 'life_events' | 'injury' | 'aging' | 'draft' | 'unusual_events') => void;
 }
 
 // ============================================================================
