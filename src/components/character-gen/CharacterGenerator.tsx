@@ -9,6 +9,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useCampaign } from '@/contexts/CampaignContext';
 import { ALL_CAREERS, BACKGROUND_SKILLS } from './careers';
 import type { CareerDefinition, Characteristics, StructuredEvent, EventOutcome } from './careers';
+import { rollDraft, type DraftResult } from './tables/draft';
 
 // ============================================================================
 // TYPE DEFINITIONS (Component-specific)
@@ -211,6 +212,14 @@ export const CharacterGenerator: React.FC = () => {
   const [eventRollResult, setEventRollResult] = useState<{roll: number, dm: number, total: number} | null>(null);
   const [eventResolved, setEventResolved] = useState<boolean>(false);
   const [eventOutcomeApplied, setEventOutcomeApplied] = useState<boolean>(false);
+
+  // Draft system state
+  const [hasUsedDraft, setHasUsedDraft] = useState(false);
+  const [draftRolled, setDraftRolled] = useState(false);
+
+  // Basic Training state
+  const [basicTrainingApplied, setBasicTrainingApplied] = useState(false);
+  const [basicTrainingSkillSelected, setBasicTrainingSkillSelected] = useState<string | null>(null);
 
   // Get available careers based on current term number
   const getAvailableCareers = (): CareerDefinition[] => {
@@ -457,6 +466,116 @@ export const CharacterGenerator: React.FC = () => {
   const resetQualification = () => {
     setQualificationPassed(null);
     setQualificationRollLog('');
+    setDraftRolled(false);
+    setBasicTrainingApplied(false);
+    setBasicTrainingSkillSelected(null);
+  };
+
+  // ============================================================================
+  // DRAFT SYSTEM
+  // ============================================================================
+
+  const enterDraft = () => {
+    if (hasUsedDraft) {
+      alert('You have already used your draft. You must become a Drifter.');
+      return;
+    }
+
+    const draftResult: DraftResult = rollDraft();
+    setHasUsedDraft(true);
+    setDraftRolled(true);
+
+    // Find the career
+    const career = ALL_CAREERS.find(c => c.name === draftResult.careerName);
+    if (!career) {
+      console.error(`Draft career not found: ${draftResult.careerName}`);
+      return;
+    }
+
+    // Set the career
+    setSelectedCareer(career);
+
+    // Set the assignment (specific or first one if "any")
+    if (draftResult.assignmentName) {
+      const assignmentIndex = career.assignments.findIndex(a => a.name === draftResult.assignmentName);
+      setSelectedAssignment(assignmentIndex >= 0 ? assignmentIndex : 0);
+      setQualificationRollLog(`Drafted into ${career.name} (${draftResult.assignmentName}). Automatically qualified.`);
+    } else {
+      setSelectedAssignment(0);
+      setQualificationRollLog(`Drafted into ${career.name}. Automatically qualified. Choose your assignment.`);
+    }
+
+    // Automatically pass qualification
+    setQualificationPassed(true);
+
+    setCharacterData(prev => ({
+      ...prev,
+      career: career.name,
+      notes: prev.notes + `\nDrafted into ${career.name}`,
+    }));
+  };
+
+  // ============================================================================
+  // BASIC TRAINING SYSTEM
+  // ============================================================================
+
+  const applyBasicTraining = () => {
+    if (!selectedCareer || basicTrainingApplied) return;
+
+    const totalTerms = characterData.totalCareerTerms || 0;
+    const isFirstCareer = totalTerms === 0;
+
+    // Determine which skills to use (Service Skills for most, Assignment Skills for Citizen/Drifter)
+    const useAssignmentSkills = selectedCareer.name === 'Citizen' || selectedCareer.name === 'Drifter';
+    let skillList: string[];
+
+    if (useAssignmentSkills) {
+      // Use assignment skills
+      const assignmentName = selectedCareer.assignments[selectedAssignment].name;
+      skillList = selectedCareer.skillTables.specialist[assignmentName] || [];
+    } else {
+      // Use service skills
+      skillList = selectedCareer.skillTables.serviceSkills;
+    }
+
+    if (isFirstCareer) {
+      // First career: gain all service/assignment skills at level 0
+      skillList.forEach(skill => {
+        const skillKey = normalizeSkillName(skill);
+        setCharacterData(prev => ({
+          ...prev,
+          skills: {
+            ...prev.skills,
+            [skillKey]: { proficient: true, value: '0' },
+          },
+        }));
+      });
+
+      setCharacterData(prev => ({
+        ...prev,
+        notes: prev.notes + `\nBasic Training (${selectedCareer.name}): All ${useAssignmentSkills ? 'assignment' : 'service'} skills at level 0`,
+      }));
+
+      setBasicTrainingApplied(true);
+    }
+    // For subsequent careers, we'll show a UI to pick one skill (handled in render)
+  };
+
+  const selectBasicTrainingSkill = (skillName: string) => {
+    if (!selectedCareer || basicTrainingApplied) return;
+
+    const skillKey = normalizeSkillName(skillName);
+    setCharacterData(prev => ({
+      ...prev,
+      skills: {
+        ...prev.skills,
+        [skillKey]: { proficient: true, value: '0' },
+      },
+      notes: prev.notes + `\nBasic Training (${selectedCareer.name}): ${skillName} at level 0`,
+    }));
+
+    setBasicTrainingSkillSelected(skillName);
+    setBasicTrainingApplied(true);
   };
 
   // ============================================================================
@@ -536,6 +655,16 @@ export const CharacterGenerator: React.FC = () => {
       ...prev,
       age: newAge,
     }));
+
+    // Apply basic training (first career: all skills, later: need to choose one)
+    const totalTerms = characterData.totalCareerTerms || 0;
+    const isFirstCareer = totalTerms === 0;
+
+    if (isFirstCareer && !basicTrainingApplied) {
+      // Automatically apply all skills for first career
+      applyBasicTraining();
+    }
+    // For subsequent careers, UI will show skill selection (handled in render)
   };
 
   const runSurvivalCheck = () => {
@@ -899,6 +1028,42 @@ export const CharacterGenerator: React.FC = () => {
     setEventOutcomeApplied(true);
   };
 
+  // ============================================================================
+  // SKILL LIMITS ENFORCEMENT
+  // ============================================================================
+
+  const getTotalSkillLevels = (skills: Record<string, SkillState>): number => {
+    return Object.values(skills).reduce((total, skill) => {
+      return total + (parseInt(skill.value) || 0);
+    }, 0);
+  };
+
+  const getMaxSkillLevels = (): number => {
+    const int = characterData.characteristics.intellect.total;
+    const edu = characterData.characteristics.education.total;
+    return 3 * (int + edu);
+  };
+
+  const canIncreaseSkill = (skillKey: string, currentSkills: Record<string, SkillState>): { allowed: boolean; reason?: string } => {
+    const currentSkill = currentSkills[skillKey];
+    const currentValue = currentSkill ? parseInt(currentSkill.value) || 0 : 0;
+
+    // Check individual skill limit (max level 4)
+    if (currentValue >= 4) {
+      return { allowed: false, reason: 'Skill is already at maximum level 4' };
+    }
+
+    // Check total skill levels limit (3× INT+EDU)
+    const totalSkillLevels = getTotalSkillLevels(currentSkills);
+    const maxSkillLevels = getMaxSkillLevels();
+
+    if (totalSkillLevels >= maxSkillLevels) {
+      return { allowed: false, reason: `Total skill levels (${totalSkillLevels}) would exceed maximum (${maxSkillLevels} = 3×(INT+EDU))` };
+    }
+
+    return { allowed: true };
+  };
+
   const applySkillGain = (skillName: string) => {
     const parsed = parseSkillGain(skillName);
 
@@ -916,9 +1081,18 @@ export const CharacterGenerator: React.FC = () => {
         },
       }));
     } else {
-      // Add or increase skill
+      // Add or increase skill - check limits first
       const skillKey = normalizeSkillName(parsed.skill);
+
       setCharacterData(prev => {
+        const limitCheck = canIncreaseSkill(skillKey, prev.skills);
+
+        if (!limitCheck.allowed) {
+          console.warn(`Cannot increase ${parsed.skill}: ${limitCheck.reason}`);
+          // Still return prev without changes, but we could show a warning to the user
+          return prev;
+        }
+
         const currentSkill = prev.skills[skillKey];
         const currentValue = currentSkill ? parseInt(currentSkill.value) || 0 : 0;
 
@@ -1715,14 +1889,41 @@ export const CharacterGenerator: React.FC = () => {
                       </>
                     )}
 
-                    {qualificationPassed === false && (
-                      <Alert className="bg-red-500/10 border-red-500/50">
-                        <AlertDescription className="text-red-400">
-                          ✗ Qualification failed. You must enter the Draft or become a Drifter.
-                          <br />
-                          <span className="text-xs">(For now, you can reroll by clicking the career again)</span>
-                        </AlertDescription>
-                      </Alert>
+                    {qualificationPassed === false && !draftRolled && (
+                      <div className="space-y-3">
+                        <Alert className="bg-red-500/10 border-red-500/50">
+                          <AlertDescription className="text-red-400">
+                            ✗ Qualification failed. You must enter the Draft or become a Drifter.
+                          </AlertDescription>
+                        </Alert>
+
+                        <div className="grid grid-cols-2 gap-2">
+                          <Button
+                            onClick={enterDraft}
+                            disabled={hasUsedDraft}
+                            className="bg-yellow-600/20 text-yellow-400 hover:bg-yellow-600/30 border border-yellow-600/50"
+                          >
+                            <Dices className="h-4 w-4 mr-2" />
+                            Enter Draft
+                          </Button>
+                          <Button
+                            onClick={() => {
+                              alert('Drifter career not yet implemented. Coming soon!');
+                            }}
+                            className="bg-gray-600/20 text-gray-400 hover:bg-gray-600/30 border border-gray-600/50"
+                          >
+                            Become Drifter
+                          </Button>
+                        </div>
+
+                        {hasUsedDraft && (
+                          <Alert className="bg-yellow-500/10 border-yellow-500/50">
+                            <AlertDescription className="text-yellow-400 text-xs">
+                              You have already used your draft. You must become a Drifter if you fail qualification again.
+                            </AlertDescription>
+                          </Alert>
+                        )}
+                      </div>
                     )}
                   </>
                 )}
@@ -1812,7 +2013,34 @@ export const CharacterGenerator: React.FC = () => {
                   </Button>
                 )}
 
-                {isInTerm && termSurvived === null && (
+                {/* BASIC TRAINING SKILL SELECTION (for subsequent careers) */}
+                {isInTerm && termSurvived === null && !basicTrainingApplied && (characterData.totalCareerTerms || 0) > 0 && (
+                  <div className="space-y-2">
+                    <Alert className="bg-blue-500/10 border-blue-500/50">
+                      <AlertDescription className="text-blue-400">
+                        <strong>Basic Training:</strong> Choose one {selectedCareer?.name === 'Citizen' || selectedCareer?.name === 'Drifter' ? 'assignment' : 'service'} skill to gain at level 0.
+                      </AlertDescription>
+                    </Alert>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      {(selectedCareer?.name === 'Citizen' || selectedCareer?.name === 'Drifter'
+                        ? selectedCareer.skillTables.specialist[selectedCareer.assignments[selectedAssignment].name] || []
+                        : selectedCareer?.skillTables.serviceSkills || []
+                      ).map((skill) => (
+                        <Button
+                          key={skill}
+                          onClick={() => selectBasicTrainingSkill(skill)}
+                          variant="outline"
+                          className="border-terminal-primary/50 text-terminal-primary hover:bg-terminal-primary/20"
+                        >
+                          {skill}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {isInTerm && termSurvived === null && basicTrainingApplied && (
                   <div className="space-y-2">
                     <Alert className="bg-terminal-primary/5 border-terminal-primary/30">
                       <AlertCircle className="h-4 w-4" />
