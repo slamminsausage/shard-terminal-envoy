@@ -146,6 +146,14 @@ const parseSkillGain = (skillText: string): { skill: string; isStat: boolean; st
   return { skill: skillText, isStat: false };
 };
 
+// Helper to get event description text (handles both string and StructuredEvent)
+const getEventDescription = (event: string | StructuredEvent): string => {
+  if (typeof event === 'string') {
+    return event;
+  }
+  return event.description;
+};
+
 // ============================================================================
 // MAIN COMPONENT
 // ============================================================================
@@ -949,7 +957,7 @@ export const CharacterGenerator: React.FC = () => {
 
   const rollEventCheck = (characteristic: keyof Omit<Characteristics, 'psionics'>, target: number) => {
     const stat = characterData.characteristics[characteristic];
-    const dm = calculateDM(stat.total);
+    const dm = getDM(stat.total);
     const roll = rollDice(2, 6);
     const total = roll + dm;
 
@@ -1139,9 +1147,10 @@ export const CharacterGenerator: React.FC = () => {
     if (!selectedCareer || !termSurvived) return;
 
     const assignment = selectedCareer.assignments[selectedAssignment];
-    const event = termEventRoll !== null
+    const eventData = termEventRoll !== null
       ? selectedCareer.eventTable[Math.min(termEventRoll - 2, selectedCareer.eventTable.length - 1)]
-      : 'No event this term';
+      : null;
+    const event = eventData ? getEventDescription(eventData) : 'No event this term';
 
     const ranks = isCommissioned && selectedCareer.ranks.officer
       ? selectedCareer.ranks.officer
@@ -2198,7 +2207,7 @@ export const CharacterGenerator: React.FC = () => {
                           {selectedCareer.eventTable.map((event, idx) => (
                             <div key={idx} className="flex gap-2">
                               <span className="text-terminal-primary/50">{idx + 2}.</span>
-                              <span>{event}</span>
+                              <span>{getEventDescription(event)}</span>
                             </div>
                           ))}
                         </div>
@@ -2220,7 +2229,7 @@ export const CharacterGenerator: React.FC = () => {
                     <Alert className="bg-terminal-primary/5 border-terminal-primary/30">
                       <AlertDescription className="text-terminal-primary/80">
                         <strong>Event (rolled {termEventRoll}):</strong><br />
-                        {currentEvent ? currentEvent.description : (selectedCareer?.eventTable[Math.min(termEventRoll - 2, selectedCareer.eventTable.length - 1)] as string || 'No special event')}
+                        {currentEvent ? currentEvent.description : (selectedCareer ? getEventDescription(selectedCareer.eventTable[Math.min(termEventRoll - 2, selectedCareer.eventTable.length - 1)]) : 'No special event')}
                       </AlertDescription>
                     </Alert>
 
