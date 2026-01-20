@@ -157,6 +157,26 @@ const getEventDescription = (event: string | StructuredEvent): string => {
   return event.description;
 };
 
+// Helper to get rank title for a career
+const getRankTitle = (
+  career: CareerDefinition | null,
+  rank: number,
+  isCommissioned: boolean
+): string => {
+  if (!career) return `Rank ${rank}`;
+
+  // For pre-careers, always use enlisted ranks (Student/Cadet)
+  if (career.isPreCareer) {
+    return career.ranks.enlisted[0]?.title || 'Student';
+  }
+
+  const ranks = isCommissioned && career.ranks.officer
+    ? career.ranks.officer
+    : career.ranks.enlisted;
+
+  return ranks[rank]?.title || `Rank ${rank}`;
+};
+
 // ============================================================================
 // MAIN COMPONENT
 // ============================================================================
@@ -886,9 +906,8 @@ export const CharacterGenerator: React.FC = () => {
 
         setTermSkillsGained(benefitNotes);
 
-        // For pre-careers, set termAdvanced to true so the flow continues correctly
-        // (graduation IS advancement for pre-careers)
-        setTermAdvanced(true);
+        // For pre-careers, DON'T set termAdvanced - use a different flow
+        // Pre-careers skip advancement and go straight to events after graduation
       }
     }
   };
@@ -2194,7 +2213,11 @@ export const CharacterGenerator: React.FC = () => {
                       <span className="text-terminal-primary/60">Assignment:</span> {selectedCareer?.assignments[selectedAssignment].name}
                     </div>
                     <div>
-                      <span className="text-terminal-primary/60">Rank:</span> {selectedCareer?.ranks[characterData.rank]?.title || 'Rank 0'}
+                      <span className="text-terminal-primary/60">Rank:</span> {selectedCareer?.isPreCareer
+                        ? selectedCareer.ranks.enlisted[0]?.title || 'Student'
+                        : (isCommissioned && selectedCareer?.ranks.officer
+                            ? selectedCareer.ranks.officer[characterData.rank]?.title
+                            : selectedCareer?.ranks.enlisted[characterData.rank]?.title) || `Rank ${characterData.rank}`}
                     </div>
                     <div>
                       <span className="text-terminal-primary/60">Age:</span> {characterData.age}
@@ -2340,29 +2363,55 @@ export const CharacterGenerator: React.FC = () => {
                   <div className="space-y-2">
                     {selectedCareer?.isPreCareer ? (
                       <>
+                        {/* Graduation Roll Result */}
                         {graduationRollLog && (
                           <div className="bg-terminal-primary/5 border border-terminal-primary/30 rounded p-3">
                             <p className="text-xs text-terminal-primary/80 font-mono">{graduationRollLog}</p>
                           </div>
                         )}
-                        <Alert className="bg-green-500/10 border-green-500/50">
-                          <AlertDescription className="text-green-400">
-                            ✓ Graduated successfully!
-                            {termSkillsGained.length > 0 && (
-                              <div className="mt-2 space-y-1">
-                                {termSkillsGained.map((skill, idx) => (
-                                  <div key={idx}>• {skill}</div>
-                                ))}
+
+                        {/* Graduation Success Message */}
+                        <Alert className={graduatedWithHonours ? "bg-yellow-500/10 border-yellow-500/50" : "bg-green-500/10 border-green-500/50"}>
+                          <AlertDescription className={graduatedWithHonours ? "text-yellow-400" : "text-green-400"}>
+                            {graduatedWithHonours ? (
+                              <div className="flex items-center gap-2">
+                                <span className="text-lg">🎓</span>
+                                <span className="font-bold">Graduated with Honours!</span>
                               </div>
+                            ) : (
+                              <span>✓ Graduated successfully!</span>
                             )}
                           </AlertDescription>
                         </Alert>
+
+                        {/* Graduation Benefits */}
+                        {termSkillsGained.length > 0 && (
+                          <div className="bg-terminal-primary/5 border border-terminal-primary/30 rounded p-3">
+                            <h4 className="text-xs font-bold text-terminal-primary uppercase mb-2">Graduation Benefits:</h4>
+                            <div className="space-y-1">
+                              {termSkillsGained.map((benefit, idx) => (
+                                <div key={idx} className="text-sm text-terminal-primary/80">• {benefit}</div>
+                              ))}
+                            </div>
+                            {selectedCareer.preCareerType === 'university' && (
+                              <div className="mt-2 pt-2 border-t border-terminal-primary/20 text-xs text-terminal-primary/60">
+                                DM+{graduatedWithHonours ? '2' : '1'} to qualify for: Agent, Army, Citizen (corporate), Entertainer (journalist), Marines, Navy, Scholar, Scouts
+                              </div>
+                            )}
+                            {selectedCareer.preCareerType === 'military_academy' && (
+                              <div className="mt-2 pt-2 border-t border-terminal-primary/20 text-xs text-terminal-primary/60">
+                                Automatic entry to {militaryAcademyService || 'military career'} • DM+2 on first commission roll{graduatedWithHonours ? ' (auto-pass with honours)' : ''}
+                              </div>
+                            )}
+                          </div>
+                        )}
+
                         <Button
                           onClick={rollEvent}
                           className="w-full bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
                         >
                           <Dices className="h-4 w-4 mr-2" />
-                          Continue (Select Skills)
+                          Roll Event (2D6)
                         </Button>
                       </>
                     ) : (
@@ -2399,7 +2448,9 @@ export const CharacterGenerator: React.FC = () => {
                     {termAdvanced ? (
                       <Alert className="bg-green-500/10 border-green-500/50">
                         <AlertDescription className="text-green-400">
-                          ✓ Advanced to {selectedCareer?.ranks[characterData.rank]?.title || `Rank ${characterData.rank}`}!
+                          ✓ Advanced to {(isCommissioned && selectedCareer?.ranks.officer
+                              ? selectedCareer.ranks.officer[characterData.rank]?.title
+                              : selectedCareer?.ranks.enlisted[characterData.rank]?.title) || `Rank ${characterData.rank}`}!
                         </AlertDescription>
                       </Alert>
                     ) : (
@@ -2776,7 +2827,11 @@ export const CharacterGenerator: React.FC = () => {
                     {characterData.name || 'Unnamed Character'}
                   </h2>
                   <p className="text-terminal-primary/70">
-                    {characterData.career} • {selectedCareer?.ranks[characterData.rank]?.title || 'Rank 0'} • Age {characterData.age} • {characterData.terms_served} Terms
+                    {characterData.career} • {selectedCareer?.isPreCareer
+                      ? selectedCareer.ranks.enlisted[0]?.title || 'Student'
+                      : (isCommissioned && selectedCareer?.ranks.officer
+                          ? selectedCareer.ranks.officer[characterData.rank]?.title
+                          : selectedCareer?.ranks.enlisted[characterData.rank]?.title) || `Rank ${characterData.rank}`} • Age {characterData.age} • {characterData.terms_served} Terms
                   </p>
                 </div>
 
