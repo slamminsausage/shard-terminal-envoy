@@ -1477,6 +1477,63 @@ export const CharacterGenerator: React.FC = () => {
     startNewTerm();
   };
 
+  const selectNextCareerFromPreCareer = () => {
+    // Store pre-career info before resetting
+    const completedPreCareer = selectedCareer;
+    const wasHonours = graduatedWithHonours;
+
+    // Reset career selection state but keep character data
+    setSelectedCareer(null);
+    setSelectedAssignment('');
+    setQualificationRoll(null);
+    setIsInTerm(false);
+    setCurrentTerm(0);
+    setTermSurvived(null);
+    setTermAdvanced(null);
+    setTermEventRoll(null);
+    setTermSkillsGained([]);
+    setIsCommissioned(false);
+    setPreCareerGraduated(false);
+    setGraduatedWithHonours(false);
+    setGraduationRollLog('');
+    setSurvivalRollLog('');
+    setAdvancementRollLog('');
+    setCurrentEvent(null);
+    setEventRollResult(null);
+    setEventResolved(false);
+    setEventOutcomeApplied(false);
+    setCurrentGameEvent(null);
+    setGameEventCompleted(false);
+    setRedirectedEvent(null);
+    setRedirectTableRoll(null);
+    setRedirectTableName(null);
+
+    // Store bonuses in character notes for reference
+    if (completedPreCareer?.preCareerType === 'university') {
+      const dmBonus = wasHonours ? 2 : 1;
+      setCharacterData(prev => ({
+        ...prev,
+        notes: prev.notes + `\nUniversity Graduate${wasHonours ? ' (Honours)' : ''}: DM+${dmBonus} to qualify for Agent, Army, Citizen (Corporate), Entertainer (Journalist), Marines, Navy, Scholar, Scouts`,
+      }));
+    } else if (completedPreCareer?.preCareerType === 'military_academy') {
+      const academyBranch = completedPreCareer.name.replace('Military Academy ', '').replace('(', '').replace(')', '');
+      if (wasHonours) {
+        setCharacterData(prev => ({
+          ...prev,
+          notes: prev.notes + `\nMilitary Academy Graduate (Honours): Automatic entry to ${academyBranch} at Rank O1, automatic commission`,
+        }));
+      } else {
+        setCharacterData(prev => ({
+          ...prev,
+          notes: prev.notes + `\nMilitary Academy Graduate: Automatic entry to ${academyBranch}, DM+2 on commission roll`,
+        }));
+      }
+    }
+
+    // Go back to career selection
+    setStep(4);
+  };
+
   // ============================================================================
   // STEP 6: SAVE CHARACTER
   // ============================================================================
@@ -2691,8 +2748,8 @@ export const CharacterGenerator: React.FC = () => {
                       </>
                     )}
 
-                    {/* Skill Gain Tables (only show when event is resolved or it's a simple string event) */}
-                    {((!currentGameEvent || gameEventCompleted) && (!currentEvent || eventResolved)) && (
+                    {/* Skill Gain Tables (only show for regular careers when event is resolved) */}
+                    {!selectedCareer?.isPreCareer && ((!currentGameEvent || gameEventCompleted) && (!currentEvent || eventResolved)) && (
                       <div className="space-y-2">
                         <h4 className="text-sm font-bold text-terminal-primary uppercase">Gain Skills This Term</h4>
                         <div className="grid grid-cols-2 gap-2">
@@ -2741,7 +2798,23 @@ export const CharacterGenerator: React.FC = () => {
                       </div>
                     )}
 
-                    {(!currentEvent || eventResolved) && (
+                    {/* Pre-career: Show skills gained summary and complete button */}
+                    {selectedCareer?.isPreCareer && ((!currentGameEvent || gameEventCompleted) && (!currentEvent || eventResolved)) && (
+                      <div className="space-y-2">
+                        {termSkillsGained.length > 0 && (
+                          <div className="bg-terminal-primary/5 border border-terminal-primary/30 rounded p-3">
+                            <h5 className="text-xs font-bold text-terminal-primary uppercase mb-2">Summary:</h5>
+                            <ul className="text-xs text-terminal-primary/80 space-y-1">
+                              {termSkillsGained.map((skill, idx) => (
+                                <li key={idx}>• {skill}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {((!currentGameEvent || gameEventCompleted) && (!currentEvent || eventResolved)) && (
                       <Button
                         onClick={completeTerm}
                         className="w-full bg-green-500/20 text-green-400 hover:bg-green-500/30 border border-green-500/50"
@@ -2753,21 +2826,55 @@ export const CharacterGenerator: React.FC = () => {
                 )}
 
                 {!isInTerm && currentTerm > 0 && termSurvived !== false && (
-                  <div className="flex gap-2">
-                    <Button
-                      onClick={continueCareer}
-                      variant="outline"
-                      className="flex-1 border-terminal-primary/50 text-terminal-primary hover:bg-terminal-primary/20"
-                    >
-                      Continue Career (Another Term)
-                    </Button>
-                    <Button
-                      onClick={musterOut}
-                      className="flex-1 bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
-                    >
-                      Muster Out & Finish
-                    </Button>
-                  </div>
+                  selectedCareer?.isPreCareer ? (
+                    // Pre-career completed: show career selection option
+                    <div className="space-y-3">
+                      <Alert className="bg-blue-500/10 border-blue-500/50">
+                        <AlertDescription className="text-blue-400">
+                          <strong>Pre-Career Complete!</strong>
+                          <p className="mt-1 text-sm">
+                            {selectedCareer.preCareerType === 'university' ? (
+                              <>
+                                You have graduated from University{graduatedWithHonours ? ' with Honours' : ''}.
+                                You receive DM+{graduatedWithHonours ? '2' : '1'} to qualify for: Agent, Army, Citizen (Corporate), Entertainer (Journalist), Marines, Navy, Scholar, or Scouts.
+                              </>
+                            ) : (
+                              <>
+                                You have graduated from Military Academy{graduatedWithHonours ? ' with Honours' : ''}.
+                                {graduatedWithHonours
+                                  ? ` You automatically enter your designated branch at Rank O1 with a commission.`
+                                  : ` You automatically enter your designated branch with DM+2 on your first commission roll.`
+                                }
+                              </>
+                            )}
+                          </p>
+                        </AlertDescription>
+                      </Alert>
+                      <Button
+                        onClick={selectNextCareerFromPreCareer}
+                        className="w-full bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30 border border-terminal-primary/50"
+                      >
+                        Select Your Career
+                      </Button>
+                    </div>
+                  ) : (
+                    // Regular career: show continue or muster out
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={continueCareer}
+                        variant="outline"
+                        className="flex-1 border-terminal-primary/50 text-terminal-primary hover:bg-terminal-primary/20"
+                      >
+                        Continue Career (Another Term)
+                      </Button>
+                      <Button
+                        onClick={musterOut}
+                        className="flex-1 bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
+                      >
+                        Muster Out & Finish
+                      </Button>
+                    </div>
+                  )
                 )}
 
                 {characterData.lifepath_log.length > 0 && (
