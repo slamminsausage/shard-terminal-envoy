@@ -13,6 +13,7 @@ import { isGameEvent } from './careers';
 import { rollDraft, type DraftResult, getLifeEvent, getInjury, getUnusualEvent } from './tables';
 import { EventHandler } from './EventHandler';
 import { rollDiceExpression, rollDice as rollDiceUtil } from './eventProcessor';
+import { SpecialtySelector, needsSpecialtySelection, getBaseSkillName } from './SpecialtySelector';
 
 // ============================================================================
 // TYPE DEFINITIONS (Component-specific)
@@ -279,6 +280,10 @@ export const CharacterGenerator: React.FC = () => {
   // Basic Training state
   const [basicTrainingApplied, setBasicTrainingApplied] = useState(false);
   const [basicTrainingSkillSelected, setBasicTrainingSkillSelected] = useState<string | null>(null);
+
+  // Specialty selection state - for skills with specialties that need user choice
+  const [pendingSpecialtySkill, setPendingSpecialtySkill] = useState<string | null>(null);
+  const [pendingSpecialtySource, setPendingSpecialtySource] = useState<string>(''); // For logging purposes
 
   // Get available careers based on current term number
   const getAvailableCareers = (): CareerDefinition[] => {
@@ -720,6 +725,8 @@ export const CharacterGenerator: React.FC = () => {
     setEventRollResult(null);
     setEventResolved(false);
     setEventOutcomeApplied(false);
+    setPendingSpecialtySkill(null);
+    setPendingSpecialtySource('');
 
     const newAge = 18 + newTermNumber * 4;
     setCharacterData(prev => ({
@@ -968,9 +975,14 @@ export const CharacterGenerator: React.FC = () => {
 
       // Apply rank bonus if any
       if (rankData.skillBonus) {
-        const skillKey = normalizeSkillName(rankData.skillBonus);
-        applySkillGain(rankData.skillBonus);
-        setTermSkillsGained(prev => [...prev, `${rankData.skillBonus} (rank bonus)`]);
+        if (needsSpecialtySelection(rankData.skillBonus)) {
+          // Queue for specialty selection
+          applySkillGain(rankData.skillBonus, 'Rank Bonus');
+        } else {
+          // Apply directly
+          applySkillGain(rankData.skillBonus, 'Rank Bonus');
+          setTermSkillsGained(prev => [...prev, `${rankData.skillBonus} (Rank Bonus)`]);
+        }
       }
 
       if (rankData.bonusStat) {
@@ -1330,7 +1342,7 @@ export const CharacterGenerator: React.FC = () => {
     return { allowed: true };
   };
 
-  const applySkillGain = (skillName: string) => {
+  const applySkillGain = (skillName: string, source: string = '') => {
     const parsed = parseSkillGain(skillName);
 
     if (parsed.isStat && parsed.stat) {
@@ -1347,6 +1359,14 @@ export const CharacterGenerator: React.FC = () => {
         },
       }));
     } else {
+      // Check if this skill needs specialty selection
+      if (needsSpecialtySelection(parsed.skill)) {
+        // Queue this skill for specialty selection
+        setPendingSpecialtySkill(getBaseSkillName(parsed.skill));
+        setPendingSpecialtySource(source);
+        return; // Don't apply yet - wait for specialty selection
+      }
+
       // Add or increase skill - check limits first
       const skillKey = normalizeSkillName(parsed.skill);
 
@@ -1376,20 +1396,63 @@ export const CharacterGenerator: React.FC = () => {
     }
   };
 
+  // Handler for when a specialty is selected from the SpecialtySelector
+  const handleSpecialtySelected = (fullSkillName: string) => {
+    const source = pendingSpecialtySource;
+    setPendingSpecialtySkill(null);
+    setPendingSpecialtySource('');
+
+    // Now apply the skill with the specific specialty
+    const skillKey = normalizeSkillName(fullSkillName);
+
+    setCharacterData(prev => {
+      const limitCheck = canIncreaseSkill(skillKey, prev.skills);
+
+      if (!limitCheck.allowed) {
+        console.warn(`Cannot increase ${fullSkillName}: ${limitCheck.reason}`);
+        return prev;
+      }
+
+      const currentSkill = prev.skills[skillKey];
+      const currentValue = currentSkill ? parseInt(currentSkill.value) || 0 : 0;
+
+      return {
+        ...prev,
+        skills: {
+          ...prev.skills,
+          [skillKey]: {
+            proficient: true,
+            value: (currentValue + 1).toString(),
+          },
+        },
+      };
+    });
+
+    // Add to term skills gained log
+    if (source) {
+      setTermSkillsGained(prev => [...prev, `${fullSkillName} (${source})`]);
+    }
+  };
+
   const gainSkillFromTable = (tableName: string) => {
     if (!selectedCareer) return;
 
     let table: string[] = [];
+    let tableDisplayName = tableName;
 
     if (tableName === 'personal') {
       table = selectedCareer.skillTables.personalDevelopment;
+      tableDisplayName = 'Personal Development';
     } else if (tableName === 'service') {
       table = selectedCareer.skillTables.serviceSkills;
+      tableDisplayName = 'Service Skills';
     } else if (tableName === 'advanced' && selectedCareer.skillTables.advancedEducation) {
       table = selectedCareer.skillTables.advancedEducation;
+      tableDisplayName = 'Advanced Education';
     } else if (tableName === 'specialist') {
       const assignmentName = selectedCareer.assignments[selectedAssignment].name;
       table = selectedCareer.skillTables.specialist[assignmentName] || [];
+      tableDisplayName = `Specialist (${assignmentName})`;
     }
 
     if (table.length === 0) return;
@@ -1397,8 +1460,15 @@ export const CharacterGenerator: React.FC = () => {
     const roll = rollDice(1, 6);
     const skillName = table[roll - 1];
 
-    applySkillGain(skillName);
-    setTermSkillsGained(prev => [...prev, `${skillName} (${tableName})`]);
+    // Check if skill needs specialty selection
+    if (needsSpecialtySelection(skillName)) {
+      // Queue for specialty selection - source will be used when specialty is selected
+      applySkillGain(skillName, tableDisplayName);
+    } else {
+      // Apply directly and log immediately
+      applySkillGain(skillName, tableDisplayName);
+      setTermSkillsGained(prev => [...prev, `${skillName} (${tableDisplayName})`]);
+    }
   };
 
   const completeTerm = () => {
@@ -1533,6 +1603,8 @@ export const CharacterGenerator: React.FC = () => {
     setRedirectedEvent(null);
     setRedirectTableRoll(null);
     setRedirectTableName(null);
+    setPendingSpecialtySkill(null);
+    setPendingSpecialtySource('');
 
     // Store bonuses in character notes for reference
     if (completedPreCareer?.preCareerType === 'university') {
@@ -2772,8 +2844,18 @@ export const CharacterGenerator: React.FC = () => {
                       </>
                     )}
 
-                    {/* Skill Gain Tables (only show for regular careers when event is resolved) */}
-                    {!selectedCareer?.isPreCareer && ((!currentGameEvent || gameEventCompleted) && (!currentEvent || eventResolved)) && (
+                    {/* Specialty Selection (shown when a skill with specialties was rolled) */}
+                    {pendingSpecialtySkill && (
+                      <SpecialtySelector
+                        baseSkill={pendingSpecialtySkill}
+                        currentSkills={characterData.skills}
+                        onSelect={handleSpecialtySelected}
+                        title={`Choose ${pendingSpecialtySkill} Specialization${pendingSpecialtySource ? ` (${pendingSpecialtySource})` : ''}`}
+                      />
+                    )}
+
+                    {/* Skill Gain Tables (only show for regular careers when event is resolved and no pending specialty) */}
+                    {!selectedCareer?.isPreCareer && !pendingSpecialtySkill && ((!currentGameEvent || gameEventCompleted) && (!currentEvent || eventResolved)) && (
                       <div className="space-y-2">
                         <h4 className="text-sm font-bold text-terminal-primary uppercase">Gain Skills This Term</h4>
                         <div className="grid grid-cols-2 gap-2">
@@ -2838,7 +2920,7 @@ export const CharacterGenerator: React.FC = () => {
                       </div>
                     )}
 
-                    {((!currentGameEvent || gameEventCompleted) && (!currentEvent || eventResolved)) && (
+                    {((!currentGameEvent || gameEventCompleted) && (!currentEvent || eventResolved) && !pendingSpecialtySkill) && (
                       <Button
                         onClick={completeTerm}
                         className="w-full bg-green-500/20 text-green-400 hover:bg-green-500/30 border border-green-500/50"
