@@ -252,6 +252,9 @@ export const CharacterGenerator: React.FC = () => {
   const [universityPendingSpecialty, setUniversityPendingSpecialty] = useState<0 | 1 | null>(null);
   const [universityBaseSkillSelected, setUniversityBaseSkillSelected] = useState<string | null>(null);
   const [militaryAcademyService, setMilitaryAcademyService] = useState<string | null>(null); // 'Army', 'Navy', or 'Marines'
+  // Military Academy graduation skill selection (select 3 service skills to increase to level 1)
+  const [academyGradSkillsSelected, setAcademyGradSkillsSelected] = useState<string[]>([]);
+  const [academyGradPendingSpecialty, setAcademyGradPendingSpecialty] = useState<string | null>(null);
   const [showMishapTable, setShowMishapTable] = useState(false);
   const [showEventTable, setShowEventTable] = useState(false);
   const [graduatedWithHonours, setGraduatedWithHonours] = useState(false);
@@ -764,6 +767,73 @@ export const CharacterGenerator: React.FC = () => {
   };
 
   // ============================================================================
+  // MILITARY ACADEMY GRADUATION SKILL HANDLERS
+  // ============================================================================
+
+  // Get the service skills for the selected military academy branch
+  const getAcademyServiceSkills = (): string[] => {
+    if (!militaryAcademyService) return [];
+    const serviceCareer = ALL_CAREERS.find(c => c.name === militaryAcademyService);
+    return serviceCareer?.skillTables.serviceSkills || [];
+  };
+
+  // Handle selecting a skill for Military Academy graduation (level 1 increase)
+  const handleAcademyGradSkillSelect = (skillName: string) => {
+    // Check if already selected 3 skills
+    if (academyGradSkillsSelected.length >= 3) return;
+    // Check if this skill is already selected
+    if (academyGradSkillsSelected.some(s => s === skillName || s.startsWith(skillName + ' ('))) return;
+
+    // Check if skill needs specialty selection
+    if (needsSpecialtySelection(skillName)) {
+      setAcademyGradPendingSpecialty(skillName);
+    } else {
+      // Add directly
+      setAcademyGradSkillsSelected(prev => [...prev, skillName]);
+    }
+  };
+
+  // Handle specialty selection for academy graduation skill
+  const handleAcademyGradSpecialtySelected = (fullSkillName: string) => {
+    setAcademyGradSkillsSelected(prev => [...prev, fullSkillName]);
+    setAcademyGradPendingSpecialty(null);
+  };
+
+  // Cancel academy graduation specialty selection
+  const cancelAcademyGradSpecialtySelection = () => {
+    setAcademyGradPendingSpecialty(null);
+  };
+
+  // Remove a selected academy graduation skill
+  const removeAcademyGradSkill = (skillName: string) => {
+    setAcademyGradSkillsSelected(prev => prev.filter(s => s !== skillName));
+  };
+
+  // Apply the selected academy graduation skills (increase to level 1)
+  const applyAcademyGradSkills = () => {
+    if (academyGradSkillsSelected.length !== 3) return;
+
+    academyGradSkillsSelected.forEach(skillName => {
+      const skillKey = normalizeSkillName(skillName);
+      setCharacterData(prev => {
+        const currentValue = parseInt(prev.skills[skillKey]?.value || '0');
+        return {
+          ...prev,
+          skills: {
+            ...prev.skills,
+            [skillKey]: { proficient: true, value: String(Math.max(currentValue, 1)) },
+          },
+        };
+      });
+    });
+
+    setTermSkillsGained(prev => [
+      ...prev.filter(s => s !== 'Select 3 Service Skills to increase to Level 1'),
+      ...academyGradSkillsSelected.map(s => `${s} 1 (Academy Graduation)`)
+    ]);
+  };
+
+  // ============================================================================
   // STEP 5: TERM MANAGEMENT
   // ============================================================================
 
@@ -788,6 +858,9 @@ export const CharacterGenerator: React.FC = () => {
     setTermSkillSelected(false);
     setExpandedSkillTable(null);
     setSkillTableRollResult(null);
+    // Reset academy graduation skill selection state
+    setAcademyGradSkillsSelected([]);
+    setAcademyGradPendingSpecialty(null);
 
     const newAge = 18 + newTermNumber * 4;
     setCharacterData(prev => ({
@@ -1715,6 +1788,8 @@ export const CharacterGenerator: React.FC = () => {
     setUniversityBaseSkillSelected(null);
     // Reset military academy state
     setMilitaryAcademyService(null);
+    setAcademyGradSkillsSelected([]);
+    setAcademyGradPendingSpecialty(null);
 
     // Store bonuses in character notes for reference
     if (completedPreCareer?.preCareerType === 'university') {
@@ -3244,10 +3319,97 @@ export const CharacterGenerator: React.FC = () => {
                             </ul>
                           </div>
                         )}
+
+                        {/* Military Academy Graduation: Select 3 Service Skills */}
+                        {selectedCareer?.preCareerType === 'military_academy' && termSurvived && !pendingSpecialtySkill && (
+                          <div className="bg-terminal-primary/5 border border-terminal-primary/30 rounded p-4 space-y-3">
+                            <h4 className="text-sm font-bold text-terminal-primary">
+                              Select 3 Service Skills to Increase to Level 1
+                            </h4>
+                            <p className="text-xs text-terminal-primary/70">
+                              Choose 3 skills from the {militaryAcademyService} service skills to increase to level 1.
+                              ({academyGradSkillsSelected.length}/3 selected)
+                            </p>
+
+                            {/* Pending Specialty Selection */}
+                            {academyGradPendingSpecialty && (
+                              <SpecialtySelector
+                                baseSkill={academyGradPendingSpecialty}
+                                currentSkills={characterData.skills}
+                                onSelect={handleAcademyGradSpecialtySelected}
+                                onCancel={cancelAcademyGradSpecialtySelection}
+                                title={`Choose ${academyGradPendingSpecialty} Specialization`}
+                              />
+                            )}
+
+                            {/* Selected Skills */}
+                            {academyGradSkillsSelected.length > 0 && !academyGradPendingSpecialty && (
+                              <div className="space-y-1">
+                                <p className="text-xs text-terminal-primary/60 uppercase font-semibold">Selected:</p>
+                                {academyGradSkillsSelected.map((skill, idx) => (
+                                  <div key={idx} className="flex items-center gap-2">
+                                    <div className="flex-1 bg-green-500/10 border border-green-500/50 text-green-400 p-2 rounded text-sm">
+                                      {skill} → Level 1
+                                    </div>
+                                    <Button
+                                      onClick={() => removeAcademyGradSkill(skill)}
+                                      variant="outline"
+                                      size="sm"
+                                      className="border-red-500/50 text-red-400 hover:bg-red-500/20"
+                                    >
+                                      Remove
+                                    </Button>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+
+                            {/* Available Skills to Select */}
+                            {academyGradSkillsSelected.length < 3 && !academyGradPendingSpecialty && (
+                              <div className="space-y-2">
+                                <p className="text-xs text-terminal-primary/60 uppercase font-semibold">
+                                  Available Skills:
+                                </p>
+                                <div className="grid grid-cols-2 gap-2">
+                                  {getAcademyServiceSkills().map((skill) => {
+                                    const isSelected = academyGradSkillsSelected.some(
+                                      s => s === skill || s.startsWith(skill + ' (')
+                                    );
+                                    return (
+                                      <Button
+                                        key={skill}
+                                        onClick={() => handleAcademyGradSkillSelect(skill)}
+                                        disabled={isSelected}
+                                        variant="outline"
+                                        className={`border-terminal-primary/50 text-terminal-primary hover:bg-terminal-primary/20 ${
+                                          isSelected ? 'opacity-50' : ''
+                                        }`}
+                                      >
+                                        {skill}{needsSpecialtySelection(skill) ? ' *' : ''}
+                                      </Button>
+                                    );
+                                  })}
+                                </div>
+                                <p className="text-xs text-terminal-primary/50">* Skills marked with asterisk have specializations</p>
+                              </div>
+                            )}
+
+                            {/* Apply Skills Button */}
+                            {academyGradSkillsSelected.length === 3 && !academyGradPendingSpecialty && (
+                              <Button
+                                onClick={applyAcademyGradSkills}
+                                className="w-full bg-green-500/20 text-green-400 hover:bg-green-500/30 border border-green-500/50"
+                              >
+                                Apply Selected Skills
+                              </Button>
+                            )}
+                          </div>
+                        )}
                       </div>
                     )}
 
-                    {((!currentGameEvent || gameEventCompleted) && (!currentEvent || eventResolved) && !pendingSpecialtySkill) && (
+                    {((!currentGameEvent || gameEventCompleted) && (!currentEvent || eventResolved) && !pendingSpecialtySkill &&
+                      !(selectedCareer?.preCareerType === 'military_academy' && termSurvived && academyGradSkillsSelected.length < 3)) && (
                       <Button
                         onClick={completeTerm}
                         className="w-full bg-green-500/20 text-green-400 hover:bg-green-500/30 border border-green-500/50"
