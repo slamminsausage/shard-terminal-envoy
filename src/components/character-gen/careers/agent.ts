@@ -2,7 +2,233 @@
 // CAREER: AGENT
 // ============================================================================
 
-import type { CareerDefinition } from './types';
+import type { CareerDefinition, GameEvent } from './types';
+
+// Agent Events (2D, results 2-12 map to indices 0-10)
+const AGENT_EVENTS: GameEvent[] = [
+  // Roll 2 - Disaster
+  {
+    id: 'agent-event-2',
+    description: 'Disaster! Roll on the Mishap table but you are not ejected from this career.',
+    resolution: {
+      type: 'table_redirect',
+      table: 'injury',
+      displayText: 'Roll on the Injury table to determine the severity of the disaster.',
+    },
+  },
+
+  // Roll 3 - Dangerous investigation
+  {
+    id: 'agent-event-3',
+    description: 'An investigation takes on a dangerous turn.',
+    resolution: {
+      type: 'skill_roll',
+      skillRequirement: {
+        minLevel: 0,
+        specificSkills: ['investigate', 'streetwise'],
+      },
+      target: 8,
+      displayText: 'Roll Investigate 8+ or Streetwise 8+. Success grants a skill; failure means rolling on the Mishap table.',
+      outcomes: [
+        {
+          condition: { type: 'success' },
+          effects: {
+            skills: { choices: ['Deception', 'Jack-of-all-Trades', 'Persuade', 'Tactics'], level: 1 },
+            message: 'You navigate the dangerous investigation successfully.',
+          },
+        },
+        {
+          condition: { type: 'failure' },
+          effects: {
+            rollOnTable: 'injury',
+            message: 'The investigation goes badly wrong. Roll on the Injury table.',
+          },
+        },
+      ],
+    },
+  },
+
+  // Roll 4 - Mission complete
+  {
+    id: 'agent-event-4',
+    description: 'You complete a mission for your superiors and are suitably rewarded.',
+    resolution: {
+      type: 'automatic',
+      effects: {
+        benefitDM: 1,
+        message: 'Your successful mission is rewarded. Gain DM+1 to any one Benefit roll from this career.',
+      },
+    },
+  },
+
+  // Roll 5 - Network of contacts
+  {
+    id: 'agent-event-5',
+    description: 'You establish a network of contacts.',
+    resolution: {
+      type: 'automatic',
+      effects: {
+        contacts: 'D3',
+        message: 'Your work helps you build a network of useful contacts.',
+      },
+    },
+  },
+
+  // Roll 6 - Advanced training
+  {
+    id: 'agent-event-6',
+    description: 'You are given advanced training in a specialist field.',
+    resolution: {
+      type: 'characteristic_roll',
+      stat: 'education',
+      target: 8,
+      displayText: 'Roll EDU 8+ to increase any skill you already have by one level.',
+      outcomes: [
+        {
+          condition: { type: 'success' },
+          effects: {
+            skills: { anySkill: true, level: 1, requireExisting: true },
+            message: 'Training complete! Increase any skill you already have by one level.',
+          },
+        },
+        {
+          condition: { type: 'failure' },
+          effects: {
+            message: 'The training proves too difficult for you to master.',
+          },
+        },
+      ],
+    },
+  },
+
+  // Roll 7 - Life Event
+  {
+    id: 'agent-event-7',
+    description: 'Life Event. Roll on the Life Events table.',
+    resolution: {
+      type: 'table_redirect',
+      table: 'life_events',
+      displayText: 'Something significant happens in your personal life.',
+    },
+  },
+
+  // Roll 8 - Undercover operation
+  {
+    id: 'agent-event-8',
+    description: 'You go undercover to investigate an enemy.',
+    resolution: {
+      type: 'characteristic_roll',
+      stat: 'intellect',
+      target: 8,
+      displayText: 'Roll Deception 8+ (using INT as modifier). Success means you infiltrate successfully; failure is dangerous.',
+      outcomes: [
+        {
+          condition: { type: 'success' },
+          effects: {
+            skills: { choices: ['Streetwise', 'Deception', 'Carouse', 'Gambler'], level: 1 },
+            message: 'Your undercover work is successful! You learn the ways of the criminal underworld.',
+          },
+        },
+        {
+          condition: { type: 'failure' },
+          effects: {
+            rollOnTable: 'injury',
+            message: 'Your cover is blown! Roll on the Injury table.',
+          },
+        },
+      ],
+    },
+  },
+
+  // Roll 9 - Above and beyond
+  {
+    id: 'agent-event-9',
+    description: 'You go above and beyond the call of duty.',
+    resolution: {
+      type: 'automatic',
+      effects: {
+        message: 'Your dedication is noticed. Gain DM+2 to your next advancement roll.',
+      },
+    },
+  },
+
+  // Roll 10 - Vehicle training
+  {
+    id: 'agent-event-10',
+    description: 'You are given specialist training in vehicles.',
+    resolution: {
+      type: 'choice',
+      displayText: 'Choose a vehicle skill to gain at level 1:',
+      options: [
+        {
+          id: 'drive',
+          label: 'Drive 1',
+          description: 'Ground vehicles',
+          effects: {
+            skills: { choices: ['Drive'], level: 1 },
+            message: 'You are trained in advanced ground vehicle operation.',
+          },
+        },
+        {
+          id: 'flyer',
+          label: 'Flyer 1',
+          description: 'Atmospheric craft',
+          effects: {
+            skills: { choices: ['Flyer'], level: 1 },
+            message: 'You learn to pilot atmospheric craft.',
+          },
+        },
+        {
+          id: 'pilot',
+          label: 'Pilot 1',
+          description: 'Spacecraft',
+          effects: {
+            skills: { choices: ['Pilot'], level: 1 },
+            message: 'You are trained in spacecraft piloting.',
+          },
+        },
+        {
+          id: 'gunner',
+          label: 'Gunner 1',
+          description: 'Vehicle weapons',
+          effects: {
+            skills: { choices: ['Gunner'], level: 1 },
+            message: 'You learn to operate vehicle weapon systems.',
+          },
+        },
+      ],
+    },
+  },
+
+  // Roll 11 - Senior agent mentor
+  {
+    id: 'agent-event-11',
+    description: 'You are befriended by a senior agent.',
+    resolution: {
+      type: 'choice',
+      displayText: 'Choose your benefit from this mentorship:',
+      options: [
+        {
+          id: 'investigate',
+          label: 'Increase Investigate',
+          description: 'Learn advanced investigation techniques',
+          effects: {
+            skills: { choices: ['Investigate'], level: 1 },
+            message: 'Your mentor teaches you advanced investigation techniques.',
+          },
+        },
+        {
+          id: 'advancement',
+          label: 'DM+4 to Advancement',
+          description: 'Your mentor puts in a good word',
+          effects: {
+            message: 'Your mentor\'s recommendation gives you DM+4 to an advancement roll.',
+          },
+        },
+      ],
+    },
+  },
+];
 
 export const CAREER_AGENT: CareerDefinition = {
   name: 'Agent',
@@ -65,16 +291,5 @@ export const CAREER_AGENT: CareerDefinition = {
     "Your work ends up coming home with you and someone gets hurt. Gain an Enemy.",
     "Injured. Roll on the Injury table.",
   ],
-  eventTable: [
-    "Disaster! Roll on the Mishap table but you are not ejected from this career.",
-    "An investigation takes on a dangerous turn. Roll Investigate 8+ or Streetwise 8+. If you fail, roll on the Mishap table. If you succeed, increase one of these skills by one level: Deception, Jack-of-all-Trades, Persuade or Tactics.",
-    "You complete a mission for your superiors and are suitably rewarded. Gain DM+1 to any one Benefit roll from this career.",
-    "You establish a network of contacts. Gain D3 Contacts.",
-    "You are given advanced training in a specialist field. Roll EDU 8+ to increase any one skill you already have by one level.",
-    "Life Event. Roll on the Life Events table.",
-    "You go undercover to investigate an enemy. Roll Deception 8+. If you succeed, roll immediately on the Rogue or Citizen Events table and make one roll on any Specialist skill table for that career. If you fail, roll immediately on the Rogue or Citizen Mishap table.",
-    "You go above and beyond the call of duty. Gain DM+2 to your next advancement roll.",
-    "You are given specialist training in vehicles. Gain one of Drive 1, Flyer 1, Pilot 1 or Gunner 1.",
-    "You are befriended by a senior agent. Either increase Investigate by one level or DM+4 to an advancement roll thanks to their aid.",
-  ],
+  eventTable: AGENT_EVENTS,
 };

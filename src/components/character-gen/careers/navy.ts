@@ -2,7 +2,234 @@
 // CAREER: NAVY
 // ============================================================================
 
-import type { CareerDefinition } from './types';
+import type { CareerDefinition, GameEvent } from './types';
+
+// Navy Events (2D, results 2-12 map to indices 0-10)
+const NAVY_EVENTS: GameEvent[] = [
+  // Roll 2 - Disaster
+  {
+    id: 'navy-event-2',
+    description: 'Disaster! Roll on the Mishap table but you are not ejected from this career.',
+    resolution: {
+      type: 'table_redirect',
+      table: 'injury',
+      displayText: 'Roll on the Injury table to determine the severity of the disaster.',
+    },
+  },
+
+  // Roll 3 - Far patrol
+  {
+    id: 'navy-event-3',
+    description: 'You are assigned to a patrol far from the naval bases.',
+    resolution: {
+      type: 'choice',
+      displayText: 'Increase one of these skills by one level:',
+      options: [
+        {
+          id: 'sensors',
+          label: 'Sensors 1',
+          description: 'Electronic sensor operations',
+          effects: {
+            skills: { choices: ['Electronics (Sensors)'], level: 1 },
+            message: 'Long-range patrol sharpened your sensor skills.',
+          },
+        },
+        {
+          id: 'survival',
+          label: 'Survival 1',
+          description: 'Survival techniques',
+          effects: {
+            skills: { choices: ['Survival'], level: 1 },
+            message: 'Extended patrols taught you to make do with limited resources.',
+          },
+        },
+        {
+          id: 'recon',
+          label: 'Recon 1',
+          description: 'Reconnaissance',
+          effects: {
+            skills: { choices: ['Recon'], level: 1 },
+            message: 'Patrol duty improved your reconnaissance abilities.',
+          },
+        },
+        {
+          id: 'pilot',
+          label: 'Pilot 1',
+          description: 'Piloting spacecraft',
+          effects: {
+            skills: { choices: ['Pilot'], level: 1 },
+            message: 'Extended space operations refined your piloting skills.',
+          },
+        },
+      ],
+    },
+  },
+
+  // Roll 4 - Important duty station
+  {
+    id: 'navy-event-4',
+    description: 'You are assigned to an important duty station.',
+    resolution: {
+      type: 'automatic',
+      effects: {
+        message: 'Your important posting earns you recognition. Gain DM+1 to advancement rolls this term.',
+      },
+    },
+  },
+
+  // Roll 5 - Specialist training
+  {
+    id: 'navy-event-5',
+    description: 'You receive specialist training.',
+    resolution: {
+      type: 'automatic',
+      effects: {
+        skills: { anySkill: true, level: 1, requireExisting: true },
+        message: 'Your specialist training pays off. Gain one level in any skill you already have.',
+      },
+    },
+  },
+
+  // Roll 6 - Save a comrade
+  {
+    id: 'navy-event-6',
+    description: 'You save a comrade in battle.',
+    resolution: {
+      type: 'automatic',
+      effects: {
+        allies: 1,
+        message: 'Your bravery earns you a loyal friend. Gain an Ally and DM+2 to your next advancement roll.',
+      },
+    },
+  },
+
+  // Roll 7 - Life Event
+  {
+    id: 'navy-event-7',
+    description: 'Life Event. Roll on the Life Events table.',
+    resolution: {
+      type: 'table_redirect',
+      table: 'life_events',
+      displayText: 'Something significant happens in your personal life.',
+    },
+  },
+
+  // Roll 8 - Advanced training
+  {
+    id: 'navy-event-8',
+    description: 'You are given advanced training in a specialist field.',
+    resolution: {
+      type: 'characteristic_roll',
+      stat: 'education',
+      target: 8,
+      displayText: 'Roll EDU 8+ to successfully complete the training.',
+      outcomes: [
+        {
+          condition: { type: 'success' },
+          effects: {
+            skills: { anySkill: true, level: 1, requireExisting: true },
+            message: 'Training complete! Increase any skill you already have by one level.',
+          },
+        },
+        {
+          condition: { type: 'failure' },
+          effects: {
+            message: 'The training proves too difficult for you to master.',
+          },
+        },
+      ],
+    },
+  },
+
+  // Roll 9 - Special assignment
+  {
+    id: 'navy-event-9',
+    description: 'You are given a special assignment.',
+    resolution: {
+      type: 'automatic',
+      effects: {
+        benefitDM: 1,
+        message: 'Your special assignment is rewarded. Gain DM+1 to any one Benefit roll.',
+      },
+    },
+  },
+
+  // Roll 10 - Renowned commander
+  {
+    id: 'navy-event-10',
+    description: 'You are assigned to a ship with an experienced, renowned commander.',
+    resolution: {
+      type: 'choice',
+      displayText: 'Learn from the commander. Choose a skill to gain at level 1:',
+      options: [
+        {
+          id: 'leadership',
+          label: 'Leadership 1',
+          description: 'Command and leadership',
+          effects: {
+            skills: { choices: ['Leadership'], level: 1 },
+            message: 'You learn valuable leadership lessons from the renowned commander.',
+          },
+        },
+        {
+          id: 'tactics',
+          label: 'Tactics 1',
+          description: 'Naval tactics',
+          effects: {
+            skills: { choices: ['Tactics'], level: 1 },
+            message: 'The commander\'s tactical expertise rubs off on you.',
+          },
+        },
+        {
+          id: 'pilot',
+          label: 'Pilot 1',
+          description: 'Piloting skills',
+          effects: {
+            skills: { choices: ['Pilot'], level: 1 },
+            message: 'You pick up advanced piloting techniques.',
+          },
+        },
+        {
+          id: 'gunner',
+          label: 'Gunner 1',
+          description: 'Weapons systems',
+          effects: {
+            skills: { choices: ['Gunner'], level: 1 },
+            message: 'You gain experience with ship weapons systems.',
+          },
+        },
+      ],
+    },
+  },
+
+  // Roll 11 - Exceptional bravery
+  {
+    id: 'navy-event-11',
+    description: 'You show exceptional bravery during combat.',
+    resolution: {
+      type: 'choice',
+      displayText: 'Your bravery is recognized:',
+      options: [
+        {
+          id: 'promotion',
+          label: 'Automatic Promotion',
+          description: 'You are automatically promoted',
+          effects: {
+            message: 'Your exceptional bravery earns you an automatic promotion!',
+          },
+        },
+        {
+          id: 'advancement',
+          label: 'DM+4 to Advancement',
+          description: 'Gain a significant advantage on advancement',
+          effects: {
+            message: 'Your bravery is noted in your service record. Gain DM+4 to your next advancement roll.',
+          },
+        },
+      ],
+    },
+  },
+];
 
 export const CAREER_NAVY: CareerDefinition = {
   name: 'Navy',
@@ -76,16 +303,5 @@ export const CAREER_NAVY: CareerDefinition = {
     "You are tormented by or quarrel with an officer. Gain that officer as a Rival as they force you out.",
     "Injured. Roll on the Injury table.",
   ],
-  eventTable: [
-    "Disaster! Roll on the Mishap table but you are not ejected from this career.",
-    "You are assigned to a patrol far from the naval bases. Increase any one of these skills by one level: Sensors, Survival, Recon, or Pilot.",
-    "You are assigned to an important duty station. Gain DM+1 to advancement rolls this term.",
-    "You receive specialist training. Gain one level in any skill you already have.",
-    "You save a comrade in battle. Gain an Ally and DM+2 to your next advancement roll.",
-    "Life Event. Roll on the Life Events table.",
-    "You are given advanced training in a specialist field. Roll EDU 8+ to increase any one skill you already have by one level.",
-    "You are given a special assignment. Gain DM+1 to any one Benefit roll.",
-    "You are assigned to a ship with an experienced, renowned commander. Gain one of Leadership 1, Tactics 1, Pilot 1, or Gunner 1.",
-    "You show exceptional bravery during combat. Automatically promoted or gain DM+4 to your next advancement roll.",
-  ],
+  eventTable: NAVY_EVENTS,
 };
