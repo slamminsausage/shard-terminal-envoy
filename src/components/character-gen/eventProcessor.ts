@@ -118,7 +118,20 @@ export class EventProcessor {
       ? this.characteristics[event.avoidance.stat].total >= event.avoidance.target
       : false;
 
-    const initialPhase = this.determineInitialPhase(event, canAvoid);
+    let initialPhase = this.determineInitialPhase(event, canAvoid);
+
+    // For automatic events, set the appliedEffects from the resolution
+    let appliedEffects: EventEffects | undefined;
+    if (event.resolution.type === 'automatic') {
+      appliedEffects = event.resolution.effects;
+
+      // If the automatic event requires skill selection, route to appropriate phase
+      if (appliedEffects?.skills?.anySkill && initialPhase === 'apply_effects') {
+        initialPhase = 'select_any_skill';
+      } else if (appliedEffects?.skills?.choices && appliedEffects.skills.choices.length > 1 && initialPhase === 'apply_effects') {
+        initialPhase = 'select_skill_gain';
+      }
+    }
 
     return {
       event,
@@ -126,6 +139,7 @@ export class EventProcessor {
       canAvoid,
       avoided: false,
       completed: false,
+      appliedEffects,
     };
   }
 
