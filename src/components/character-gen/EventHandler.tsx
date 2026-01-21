@@ -6,7 +6,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Card, CardContent } from '@/components/ui/card';
-import { Dices, Check, X, ChevronRight } from 'lucide-react';
+import { Dices, Check, X, ChevronRight, ChevronDown, ChevronUp } from 'lucide-react';
 import type { GameEvent, EventEffects, Characteristics, EventChoice } from './careers/types';
 import {
   EventProcessor,
@@ -14,6 +14,7 @@ import {
   rollDiceExpression,
   getDM,
 } from './eventProcessor';
+import { ALL_SKILLS, SKILLS_WITH_SPECIALTIES, SKILLS_WITHOUT_SPECIALTIES } from './careers/skills';
 
 // ============================================================================
 // PROPS
@@ -42,10 +43,16 @@ export function EventHandler({
   const [state, setState] = useState<EventState>(() => processor.initializeEvent(event));
   const [messages, setMessages] = useState<string[]>([]);
 
+  // State for any-skill selection flow
+  const [anySkillPendingSpecialty, setAnySkillPendingSpecialty] = useState<string | null>(null);
+  const [expandedSkillCategory, setExpandedSkillCategory] = useState<string | null>(null);
+
   // Reset when event changes
   useEffect(() => {
     setState(processor.initializeEvent(event));
     setMessages([]);
+    setAnySkillPendingSpecialty(null);
+    setExpandedSkillCategory(null);
   }, [event, processor]);
 
   // Add message helper
@@ -407,6 +414,31 @@ export function EventHandler({
     );
   };
 
+  // Handle selecting a skill that needs specialty
+  const handleAnySkillWithSpecialty = (skillName: string) => {
+    setAnySkillPendingSpecialty(skillName);
+  };
+
+  // Handle selecting a specialty for the pending skill
+  const handleAnySkillSpecialtySelected = (specialty: string) => {
+    if (!anySkillPendingSpecialty) return;
+    const fullSkillName = `${anySkillPendingSpecialty} (${specialty})`;
+    handleSelectSkillGain(fullSkillName);
+    setAnySkillPendingSpecialty(null);
+    setExpandedSkillCategory(null);
+  };
+
+  // Handle selecting a skill without specialty
+  const handleAnySkillSelected = (skillName: string) => {
+    handleSelectSkillGain(skillName);
+    setExpandedSkillCategory(null);
+  };
+
+  // Cancel specialty selection
+  const cancelAnySkillSpecialtySelection = () => {
+    setAnySkillPendingSpecialty(null);
+  };
+
   const renderSkillGainSelection = () => {
     if (state.phase !== 'select_skill_gain' && state.phase !== 'select_any_skill') return null;
     if (!state.appliedEffects?.skills) return null;
@@ -414,22 +446,120 @@ export function EventHandler({
     const { anySkill, choices, exclude, level } = state.appliedEffects.skills;
 
     if (anySkill) {
-      // TODO: Render full skill list for selection
-      // For now, show a message
+      const excludeNormalized = (exclude || []).map(s => s.toLowerCase());
+
+      // If pending specialty selection, show specialty options
+      if (anySkillPendingSpecialty) {
+        const specialties = SKILLS_WITH_SPECIALTIES[anySkillPendingSpecialty] || [];
+        return (
+          <div className="space-y-2">
+            <p className="text-sm text-terminal-primary/80">
+              Select a specialty for {anySkillPendingSpecialty}:
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              {specialties.map(specialty => (
+                <Button
+                  key={specialty}
+                  onClick={() => handleAnySkillSpecialtySelected(specialty)}
+                  variant="outline"
+                  className="border-terminal-primary/50 text-terminal-primary hover:bg-terminal-primary/20"
+                  size="sm"
+                >
+                  {specialty}
+                </Button>
+              ))}
+            </div>
+            <Button
+              onClick={cancelAnySkillSpecialtySelection}
+              variant="outline"
+              className="w-full mt-2 border-terminal-primary/30 text-terminal-primary/60 hover:bg-terminal-primary/10"
+              size="sm"
+            >
+              ← Back to skill list
+            </Button>
+          </div>
+        );
+      }
+
+      // Show skill categories
+      const skillsWithSpecialties = Object.keys(SKILLS_WITH_SPECIALTIES)
+        .filter(s => !excludeNormalized.includes(s.toLowerCase()))
+        .sort();
+      const skillsWithoutSpecialties = SKILLS_WITHOUT_SPECIALTIES
+        .filter(s => !excludeNormalized.includes(s.toLowerCase()))
+        .sort();
+
       return (
-        <div className="space-y-2">
+        <div className="space-y-3">
           <Alert className="bg-blue-500/10 border-blue-500/50">
             <AlertDescription className="text-blue-400">
-              Choose any skill{exclude?.length ? ` (except ${exclude.join(', ')})` : ''} at level {level ?? 1}.
-              <p className="text-xs mt-1">(Full skill selector coming soon - for now, this will be noted in your log)</p>
+              Choose any skill{exclude?.length ? ` (except ${exclude.join(', ')})` : ''} at level {level ?? 0}.
             </AlertDescription>
           </Alert>
-          <Button
-            onClick={handleComplete}
-            className="w-full bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
-          >
-            Continue
-          </Button>
+
+          {/* Skills without specialties */}
+          <div className="space-y-1">
+            <Button
+              onClick={() => setExpandedSkillCategory(expandedSkillCategory === 'basic' ? null : 'basic')}
+              variant="outline"
+              className="w-full justify-between border-terminal-primary/50 text-terminal-primary hover:bg-terminal-primary/20"
+              size="sm"
+            >
+              <span>Basic Skills ({skillsWithoutSpecialties.length})</span>
+              {expandedSkillCategory === 'basic' ? (
+                <ChevronUp className="h-4 w-4" />
+              ) : (
+                <ChevronDown className="h-4 w-4" />
+              )}
+            </Button>
+            {expandedSkillCategory === 'basic' && (
+              <div className="grid grid-cols-2 gap-1 mt-2 max-h-48 overflow-y-auto p-1">
+                {skillsWithoutSpecialties.map(skill => (
+                  <Button
+                    key={skill}
+                    onClick={() => handleAnySkillSelected(skill)}
+                    variant="outline"
+                    className="border-terminal-primary/30 text-terminal-primary hover:bg-terminal-primary/20 text-xs py-1"
+                    size="sm"
+                  >
+                    {skill}
+                  </Button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Skills with specialties */}
+          <div className="space-y-1">
+            <Button
+              onClick={() => setExpandedSkillCategory(expandedSkillCategory === 'specialty' ? null : 'specialty')}
+              variant="outline"
+              className="w-full justify-between border-terminal-primary/50 text-terminal-primary hover:bg-terminal-primary/20"
+              size="sm"
+            >
+              <span>Skills with Specialties ({skillsWithSpecialties.length})</span>
+              {expandedSkillCategory === 'specialty' ? (
+                <ChevronUp className="h-4 w-4" />
+              ) : (
+                <ChevronDown className="h-4 w-4" />
+              )}
+            </Button>
+            {expandedSkillCategory === 'specialty' && (
+              <div className="grid grid-cols-2 gap-1 mt-2 max-h-48 overflow-y-auto p-1">
+                {skillsWithSpecialties.map(skill => (
+                  <Button
+                    key={skill}
+                    onClick={() => handleAnySkillWithSpecialty(skill)}
+                    variant="outline"
+                    className="border-terminal-primary/30 text-terminal-primary hover:bg-terminal-primary/20 text-xs py-1"
+                    size="sm"
+                  >
+                    {skill} *
+                  </Button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       );
     }
