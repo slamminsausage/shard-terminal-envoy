@@ -157,11 +157,33 @@ const getEventDescription = (event: string | StructuredEvent): string => {
   return event.description;
 };
 
+// Helper to get the appropriate rank array for a career
+const getRanksForCareer = (
+  career: CareerDefinition | null,
+  isCommissioned: boolean,
+  assignmentName?: string
+): import('./careers/types').Rank[] => {
+  if (!career) return [];
+
+  // Check for assignment-specific ranks (e.g., Drifter)
+  if (career.ranks.byAssignment && assignmentName && career.ranks.byAssignment[assignmentName]) {
+    return career.ranks.byAssignment[assignmentName];
+  }
+
+  // Fall back to officer ranks if commissioned, or enlisted ranks
+  if (isCommissioned && career.ranks.officer) {
+    return career.ranks.officer;
+  }
+
+  return career.ranks.enlisted;
+};
+
 // Helper to get rank title for a career
 const getRankTitle = (
   career: CareerDefinition | null,
   rank: number,
-  isCommissioned: boolean
+  isCommissioned: boolean,
+  assignmentName?: string
 ): string => {
   if (!career) return `Rank ${rank}`;
 
@@ -170,10 +192,7 @@ const getRankTitle = (
     return career.ranks.enlisted[0]?.title || 'Student';
   }
 
-  const ranks = isCommissioned && career.ranks.officer
-    ? career.ranks.officer
-    : career.ranks.enlisted;
-
+  const ranks = getRanksForCareer(career, isCommissioned, assignmentName);
   return ranks[rank]?.title || `Rank ${rank}`;
 };
 
@@ -468,6 +487,18 @@ export const CharacterGenerator: React.FC = () => {
         notes: prev.notes + `\nAutomatic entry to ${selectedCareer.name} (Military Academy)`,
       }));
       setPreCareerFailedService(null); // Clear the automatic entry flag
+      return;
+    }
+
+    // Check for automatic qualification (e.g., Drifter)
+    if (selectedCareer.automaticQualification) {
+      setQualificationPassed(true);
+      setQualificationRollLog('Automatic qualification - no roll required.');
+      setCharacterData(prev => ({
+        ...prev,
+        career: selectedCareer.name,
+        notes: prev.notes + `\nEntered ${selectedCareer.name} (automatic qualification)`,
+      }));
       return;
     }
 
@@ -788,9 +819,7 @@ export const CharacterGenerator: React.FC = () => {
         const mishapRoll = rollDice(1, 6);
         const mishap = selectedCareer.mishapTable[mishapRoll - 1] || 'Injured. Roll on the Injury table.';
 
-        const ranks = isCommissioned && selectedCareer.ranks.officer
-          ? selectedCareer.ranks.officer
-          : selectedCareer.ranks.enlisted;
+        const ranks = getRanksForCareer(selectedCareer, isCommissioned, assignment.name);
 
         const termRecord: TermRecord = {
           termNumber: currentTerm,
@@ -925,9 +954,8 @@ export const CharacterGenerator: React.FC = () => {
     setTermAdvanced(advanced);
     setAdvancementRollLog(`Advancement Roll: ${roll} + ${dm} = ${total} (need ${assignment.advancementTarget}+)`);
 
-    const ranks = isCommissioned && selectedCareer.ranks.officer
-      ? selectedCareer.ranks.officer
-      : selectedCareer.ranks.enlisted;
+    const assignmentName = selectedCareer.assignments[selectedAssignment]?.name;
+    const ranks = getRanksForCareer(selectedCareer, isCommissioned, assignmentName);
 
     if (advanced && characterData.rank < ranks.length - 1) {
       const newRank = characterData.rank + 1;
@@ -1382,9 +1410,7 @@ export const CharacterGenerator: React.FC = () => {
       : null;
     const event = eventData ? getEventDescription(eventData) : 'No event this term';
 
-    const ranks = isCommissioned && selectedCareer.ranks.officer
-      ? selectedCareer.ranks.officer
-      : selectedCareer.ranks.enlisted;
+    const ranks = getRanksForCareer(selectedCareer, isCommissioned, assignment.name);
 
     const isPreCareer = selectedCareer.isPreCareer || false;
 
@@ -1540,9 +1566,8 @@ export const CharacterGenerator: React.FC = () => {
 
   const handleSaveCharacter = async () => {
     try {
-      const ranks = selectedCareer && isCommissioned && selectedCareer.ranks.officer
-        ? selectedCareer.ranks.officer
-        : selectedCareer?.ranks.enlisted;
+      const assignmentName = selectedCareer?.assignments[selectedAssignment]?.name;
+      const rankTitle = getRankTitle(selectedCareer, characterData.rank, isCommissioned, assignmentName);
 
       const finalCharacterData = {
         name: characterData.name,
@@ -1554,7 +1579,7 @@ export const CharacterGenerator: React.FC = () => {
         species_traits: '',
         notes: characterData.notes,
         career: characterData.career,
-        rank: ranks?.[characterData.rank]?.title || '',
+        rank: rankTitle,
         strength: characterData.characteristics.strength.total,
         dexterity: characterData.characteristics.dexterity.total,
         endurance: characterData.characteristics.endurance.total,
@@ -2270,11 +2295,12 @@ export const CharacterGenerator: React.FC = () => {
                       <span className="text-terminal-primary/60">Assignment:</span> {selectedCareer?.assignments[selectedAssignment].name}
                     </div>
                     <div>
-                      <span className="text-terminal-primary/60">Rank:</span> {selectedCareer?.isPreCareer
-                        ? selectedCareer.ranks.enlisted[0]?.title || 'Student'
-                        : (isCommissioned && selectedCareer?.ranks.officer
-                            ? selectedCareer.ranks.officer[characterData.rank]?.title
-                            : selectedCareer?.ranks.enlisted[characterData.rank]?.title) || `Rank ${characterData.rank}`}
+                      <span className="text-terminal-primary/60">Rank:</span> {getRankTitle(
+                        selectedCareer,
+                        characterData.rank,
+                        isCommissioned,
+                        selectedCareer?.assignments[selectedAssignment]?.name
+                      )}
                     </div>
                     <div>
                       <span className="text-terminal-primary/60">Age:</span> {characterData.age}
@@ -2505,9 +2531,7 @@ export const CharacterGenerator: React.FC = () => {
                     {termAdvanced ? (
                       <Alert className="bg-green-500/10 border-green-500/50">
                         <AlertDescription className="text-green-400">
-                          ✓ Advanced to {(isCommissioned && selectedCareer?.ranks.officer
-                              ? selectedCareer.ranks.officer[characterData.rank]?.title
-                              : selectedCareer?.ranks.enlisted[characterData.rank]?.title) || `Rank ${characterData.rank}`}!
+                          ✓ Advanced to {getRankTitle(selectedCareer, characterData.rank, isCommissioned, selectedCareer?.assignments[selectedAssignment]?.name)}!
                         </AlertDescription>
                       </Alert>
                     ) : (
@@ -2934,11 +2958,7 @@ export const CharacterGenerator: React.FC = () => {
                     {characterData.name || 'Unnamed Character'}
                   </h2>
                   <p className="text-terminal-primary/70">
-                    {characterData.career} • {selectedCareer?.isPreCareer
-                      ? selectedCareer.ranks.enlisted[0]?.title || 'Student'
-                      : (isCommissioned && selectedCareer?.ranks.officer
-                          ? selectedCareer.ranks.officer[characterData.rank]?.title
-                          : selectedCareer?.ranks.enlisted[characterData.rank]?.title) || `Rank ${characterData.rank}`} • Age {characterData.age} • {characterData.terms_served} Terms
+                    {characterData.career} • {getRankTitle(selectedCareer, characterData.rank, isCommissioned, selectedCareer?.assignments[selectedAssignment]?.name)} • Age {characterData.age} • {characterData.terms_served} Terms
                   </p>
                 </div>
 

@@ -253,6 +253,9 @@ export interface CareerDefinition {
   qualification: string;
   qualificationTarget: number;
   qualificationStat: CharacteristicName;
+  // Special career flags
+  automaticQualification?: boolean;  // For Drifter - no qualification roll needed
+  usesAssignmentSkillsForBasicTraining?: boolean;  // For Citizen/Drifter - use assignment skills instead of service skills
   isPreCareer?: boolean;
   preCareerType?: 'university' | 'military_academy';
   maxTerms?: number;
@@ -267,6 +270,8 @@ export interface CareerDefinition {
   ranks: {
     enlisted: Rank[];
     officer?: Rank[];
+    // For careers like Drifter with different ranks per assignment
+    byAssignment?: { [assignmentName: string]: Rank[] };
   };
   // Mishap table - can be strings or full GameEvents
   mishapTable: (string | GameEvent)[];

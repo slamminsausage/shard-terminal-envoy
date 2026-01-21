@@ -19,6 +19,7 @@ import { CAREER_UNIVERSITY } from './pre-careers/university';
 import { CAREER_MILITARY_ACADEMY } from './pre-careers/militaryAcademy';
 import { CAREER_AGENT } from './agent';
 import { CAREER_ARMY } from './army';
+import { CAREER_DRIFTER } from './drifter';
 import { CAREER_MARINES } from './marines';
 import { CAREER_NAVY } from './navy';
 import { CAREER_SCOUT } from './scout';
@@ -28,6 +29,7 @@ export { CAREER_UNIVERSITY } from './pre-careers/university';
 export { CAREER_MILITARY_ACADEMY } from './pre-careers/militaryAcademy';
 export { CAREER_AGENT } from './agent';
 export { CAREER_ARMY } from './army';
+export { CAREER_DRIFTER } from './drifter';
 export { CAREER_MARINES } from './marines';
 export { CAREER_NAVY } from './navy';
 export { CAREER_SCOUT } from './scout';
@@ -38,6 +40,7 @@ export const ALL_CAREERS = [
   CAREER_MILITARY_ACADEMY,
   CAREER_AGENT,
   CAREER_ARMY,
+  CAREER_DRIFTER,
   CAREER_MARINES,
   CAREER_NAVY,
   CAREER_SCOUT,
