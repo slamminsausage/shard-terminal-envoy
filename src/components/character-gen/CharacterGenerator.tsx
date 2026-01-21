@@ -13,6 +13,7 @@ import { isGameEvent } from './careers';
 import { rollDraft, type DraftResult, getLifeEvent, getInjury, getUnusualEvent } from './tables';
 import { EventHandler } from './EventHandler';
 import { rollDiceExpression, rollDice as rollDiceUtil } from './eventProcessor';
+import { SpecialtySelector, needsSpecialtySelection, getBaseSkillName } from './SpecialtySelector';
 
 // ============================================================================
 // TYPE DEFINITIONS (Component-specific)
@@ -157,11 +158,33 @@ const getEventDescription = (event: string | StructuredEvent): string => {
   return event.description;
 };
 
+// Helper to get the appropriate rank array for a career
+const getRanksForCareer = (
+  career: CareerDefinition | null,
+  isCommissioned: boolean,
+  assignmentName?: string
+): import('./careers/types').Rank[] => {
+  if (!career) return [];
+
+  // Check for assignment-specific ranks (e.g., Drifter)
+  if (career.ranks.byAssignment && assignmentName && career.ranks.byAssignment[assignmentName]) {
+    return career.ranks.byAssignment[assignmentName];
+  }
+
+  // Fall back to officer ranks if commissioned, or enlisted ranks
+  if (isCommissioned && career.ranks.officer) {
+    return career.ranks.officer;
+  }
+
+  return career.ranks.enlisted;
+};
+
 // Helper to get rank title for a career
 const getRankTitle = (
   career: CareerDefinition | null,
   rank: number,
-  isCommissioned: boolean
+  isCommissioned: boolean,
+  assignmentName?: string
 ): string => {
   if (!career) return `Rank ${rank}`;
 
@@ -170,10 +193,7 @@ const getRankTitle = (
     return career.ranks.enlisted[0]?.title || 'Student';
   }
 
-  const ranks = isCommissioned && career.ranks.officer
-    ? career.ranks.officer
-    : career.ranks.enlisted;
-
+  const ranks = getRanksForCareer(career, isCommissioned, assignmentName);
   return ranks[rank]?.title || `Rank ${rank}`;
 };
 
@@ -260,6 +280,10 @@ export const CharacterGenerator: React.FC = () => {
   // Basic Training state
   const [basicTrainingApplied, setBasicTrainingApplied] = useState(false);
   const [basicTrainingSkillSelected, setBasicTrainingSkillSelected] = useState<string | null>(null);
+
+  // Specialty selection state - for skills with specialties that need user choice
+  const [pendingSpecialtySkill, setPendingSpecialtySkill] = useState<string | null>(null);
+  const [pendingSpecialtySource, setPendingSpecialtySource] = useState<string>(''); // For logging purposes
 
   // Get available careers based on current term number
   const getAvailableCareers = (): CareerDefinition[] => {
@@ -468,6 +492,18 @@ export const CharacterGenerator: React.FC = () => {
         notes: prev.notes + `\nAutomatic entry to ${selectedCareer.name} (Military Academy)`,
       }));
       setPreCareerFailedService(null); // Clear the automatic entry flag
+      return;
+    }
+
+    // Check for automatic qualification (e.g., Drifter)
+    if (selectedCareer.automaticQualification) {
+      setQualificationPassed(true);
+      setQualificationRollLog('Automatic qualification - no roll required.');
+      setCharacterData(prev => ({
+        ...prev,
+        career: selectedCareer.name,
+        notes: prev.notes + `\nEntered ${selectedCareer.name} (automatic qualification)`,
+      }));
       return;
     }
 
@@ -689,6 +725,8 @@ export const CharacterGenerator: React.FC = () => {
     setEventRollResult(null);
     setEventResolved(false);
     setEventOutcomeApplied(false);
+    setPendingSpecialtySkill(null);
+    setPendingSpecialtySource('');
 
     const newAge = 18 + newTermNumber * 4;
     setCharacterData(prev => ({
@@ -788,9 +826,7 @@ export const CharacterGenerator: React.FC = () => {
         const mishapRoll = rollDice(1, 6);
         const mishap = selectedCareer.mishapTable[mishapRoll - 1] || 'Injured. Roll on the Injury table.';
 
-        const ranks = isCommissioned && selectedCareer.ranks.officer
-          ? selectedCareer.ranks.officer
-          : selectedCareer.ranks.enlisted;
+        const ranks = getRanksForCareer(selectedCareer, isCommissioned, assignment.name);
 
         const termRecord: TermRecord = {
           termNumber: currentTerm,
@@ -925,9 +961,8 @@ export const CharacterGenerator: React.FC = () => {
     setTermAdvanced(advanced);
     setAdvancementRollLog(`Advancement Roll: ${roll} + ${dm} = ${total} (need ${assignment.advancementTarget}+)`);
 
-    const ranks = isCommissioned && selectedCareer.ranks.officer
-      ? selectedCareer.ranks.officer
-      : selectedCareer.ranks.enlisted;
+    const assignmentName = selectedCareer.assignments[selectedAssignment]?.name;
+    const ranks = getRanksForCareer(selectedCareer, isCommissioned, assignmentName);
 
     if (advanced && characterData.rank < ranks.length - 1) {
       const newRank = characterData.rank + 1;
@@ -940,9 +975,14 @@ export const CharacterGenerator: React.FC = () => {
 
       // Apply rank bonus if any
       if (rankData.skillBonus) {
-        const skillKey = normalizeSkillName(rankData.skillBonus);
-        applySkillGain(rankData.skillBonus);
-        setTermSkillsGained(prev => [...prev, `${rankData.skillBonus} (rank bonus)`]);
+        if (needsSpecialtySelection(rankData.skillBonus)) {
+          // Queue for specialty selection
+          applySkillGain(rankData.skillBonus, 'Rank Bonus');
+        } else {
+          // Apply directly
+          applySkillGain(rankData.skillBonus, 'Rank Bonus');
+          setTermSkillsGained(prev => [...prev, `${rankData.skillBonus} (Rank Bonus)`]);
+        }
       }
 
       if (rankData.bonusStat) {
@@ -1302,7 +1342,7 @@ export const CharacterGenerator: React.FC = () => {
     return { allowed: true };
   };
 
-  const applySkillGain = (skillName: string) => {
+  const applySkillGain = (skillName: string, source: string = '') => {
     const parsed = parseSkillGain(skillName);
 
     if (parsed.isStat && parsed.stat) {
@@ -1319,6 +1359,14 @@ export const CharacterGenerator: React.FC = () => {
         },
       }));
     } else {
+      // Check if this skill needs specialty selection
+      if (needsSpecialtySelection(parsed.skill)) {
+        // Queue this skill for specialty selection
+        setPendingSpecialtySkill(getBaseSkillName(parsed.skill));
+        setPendingSpecialtySource(source);
+        return; // Don't apply yet - wait for specialty selection
+      }
+
       // Add or increase skill - check limits first
       const skillKey = normalizeSkillName(parsed.skill);
 
@@ -1348,20 +1396,63 @@ export const CharacterGenerator: React.FC = () => {
     }
   };
 
+  // Handler for when a specialty is selected from the SpecialtySelector
+  const handleSpecialtySelected = (fullSkillName: string) => {
+    const source = pendingSpecialtySource;
+    setPendingSpecialtySkill(null);
+    setPendingSpecialtySource('');
+
+    // Now apply the skill with the specific specialty
+    const skillKey = normalizeSkillName(fullSkillName);
+
+    setCharacterData(prev => {
+      const limitCheck = canIncreaseSkill(skillKey, prev.skills);
+
+      if (!limitCheck.allowed) {
+        console.warn(`Cannot increase ${fullSkillName}: ${limitCheck.reason}`);
+        return prev;
+      }
+
+      const currentSkill = prev.skills[skillKey];
+      const currentValue = currentSkill ? parseInt(currentSkill.value) || 0 : 0;
+
+      return {
+        ...prev,
+        skills: {
+          ...prev.skills,
+          [skillKey]: {
+            proficient: true,
+            value: (currentValue + 1).toString(),
+          },
+        },
+      };
+    });
+
+    // Add to term skills gained log
+    if (source) {
+      setTermSkillsGained(prev => [...prev, `${fullSkillName} (${source})`]);
+    }
+  };
+
   const gainSkillFromTable = (tableName: string) => {
     if (!selectedCareer) return;
 
     let table: string[] = [];
+    let tableDisplayName = tableName;
 
     if (tableName === 'personal') {
       table = selectedCareer.skillTables.personalDevelopment;
+      tableDisplayName = 'Personal Development';
     } else if (tableName === 'service') {
       table = selectedCareer.skillTables.serviceSkills;
+      tableDisplayName = 'Service Skills';
     } else if (tableName === 'advanced' && selectedCareer.skillTables.advancedEducation) {
       table = selectedCareer.skillTables.advancedEducation;
+      tableDisplayName = 'Advanced Education';
     } else if (tableName === 'specialist') {
       const assignmentName = selectedCareer.assignments[selectedAssignment].name;
       table = selectedCareer.skillTables.specialist[assignmentName] || [];
+      tableDisplayName = `Specialist (${assignmentName})`;
     }
 
     if (table.length === 0) return;
@@ -1369,8 +1460,15 @@ export const CharacterGenerator: React.FC = () => {
     const roll = rollDice(1, 6);
     const skillName = table[roll - 1];
 
-    applySkillGain(skillName);
-    setTermSkillsGained(prev => [...prev, `${skillName} (${tableName})`]);
+    // Check if skill needs specialty selection
+    if (needsSpecialtySelection(skillName)) {
+      // Queue for specialty selection - source will be used when specialty is selected
+      applySkillGain(skillName, tableDisplayName);
+    } else {
+      // Apply directly and log immediately
+      applySkillGain(skillName, tableDisplayName);
+      setTermSkillsGained(prev => [...prev, `${skillName} (${tableDisplayName})`]);
+    }
   };
 
   const completeTerm = () => {
@@ -1382,9 +1480,7 @@ export const CharacterGenerator: React.FC = () => {
       : null;
     const event = eventData ? getEventDescription(eventData) : 'No event this term';
 
-    const ranks = isCommissioned && selectedCareer.ranks.officer
-      ? selectedCareer.ranks.officer
-      : selectedCareer.ranks.enlisted;
+    const ranks = getRanksForCareer(selectedCareer, isCommissioned, assignment.name);
 
     const isPreCareer = selectedCareer.isPreCareer || false;
 
@@ -1507,6 +1603,8 @@ export const CharacterGenerator: React.FC = () => {
     setRedirectedEvent(null);
     setRedirectTableRoll(null);
     setRedirectTableName(null);
+    setPendingSpecialtySkill(null);
+    setPendingSpecialtySource('');
 
     // Store bonuses in character notes for reference
     if (completedPreCareer?.preCareerType === 'university') {
@@ -1540,9 +1638,8 @@ export const CharacterGenerator: React.FC = () => {
 
   const handleSaveCharacter = async () => {
     try {
-      const ranks = selectedCareer && isCommissioned && selectedCareer.ranks.officer
-        ? selectedCareer.ranks.officer
-        : selectedCareer?.ranks.enlisted;
+      const assignmentName = selectedCareer?.assignments[selectedAssignment]?.name;
+      const rankTitle = getRankTitle(selectedCareer, characterData.rank, isCommissioned, assignmentName);
 
       const finalCharacterData = {
         name: characterData.name,
@@ -1554,7 +1651,7 @@ export const CharacterGenerator: React.FC = () => {
         species_traits: '',
         notes: characterData.notes,
         career: characterData.career,
-        rank: ranks?.[characterData.rank]?.title || '',
+        rank: rankTitle,
         strength: characterData.characteristics.strength.total,
         dexterity: characterData.characteristics.dexterity.total,
         endurance: characterData.characteristics.endurance.total,
@@ -2270,11 +2367,12 @@ export const CharacterGenerator: React.FC = () => {
                       <span className="text-terminal-primary/60">Assignment:</span> {selectedCareer?.assignments[selectedAssignment].name}
                     </div>
                     <div>
-                      <span className="text-terminal-primary/60">Rank:</span> {selectedCareer?.isPreCareer
-                        ? selectedCareer.ranks.enlisted[0]?.title || 'Student'
-                        : (isCommissioned && selectedCareer?.ranks.officer
-                            ? selectedCareer.ranks.officer[characterData.rank]?.title
-                            : selectedCareer?.ranks.enlisted[characterData.rank]?.title) || `Rank ${characterData.rank}`}
+                      <span className="text-terminal-primary/60">Rank:</span> {getRankTitle(
+                        selectedCareer,
+                        characterData.rank,
+                        isCommissioned,
+                        selectedCareer?.assignments[selectedAssignment]?.name
+                      )}
                     </div>
                     <div>
                       <span className="text-terminal-primary/60">Age:</span> {characterData.age}
@@ -2505,9 +2603,7 @@ export const CharacterGenerator: React.FC = () => {
                     {termAdvanced ? (
                       <Alert className="bg-green-500/10 border-green-500/50">
                         <AlertDescription className="text-green-400">
-                          ✓ Advanced to {(isCommissioned && selectedCareer?.ranks.officer
-                              ? selectedCareer.ranks.officer[characterData.rank]?.title
-                              : selectedCareer?.ranks.enlisted[characterData.rank]?.title) || `Rank ${characterData.rank}`}!
+                          ✓ Advanced to {getRankTitle(selectedCareer, characterData.rank, isCommissioned, selectedCareer?.assignments[selectedAssignment]?.name)}!
                         </AlertDescription>
                       </Alert>
                     ) : (
@@ -2748,8 +2844,18 @@ export const CharacterGenerator: React.FC = () => {
                       </>
                     )}
 
-                    {/* Skill Gain Tables (only show for regular careers when event is resolved) */}
-                    {!selectedCareer?.isPreCareer && ((!currentGameEvent || gameEventCompleted) && (!currentEvent || eventResolved)) && (
+                    {/* Specialty Selection (shown when a skill with specialties was rolled) */}
+                    {pendingSpecialtySkill && (
+                      <SpecialtySelector
+                        baseSkill={pendingSpecialtySkill}
+                        currentSkills={characterData.skills}
+                        onSelect={handleSpecialtySelected}
+                        title={`Choose ${pendingSpecialtySkill} Specialization${pendingSpecialtySource ? ` (${pendingSpecialtySource})` : ''}`}
+                      />
+                    )}
+
+                    {/* Skill Gain Tables (only show for regular careers when event is resolved and no pending specialty) */}
+                    {!selectedCareer?.isPreCareer && !pendingSpecialtySkill && ((!currentGameEvent || gameEventCompleted) && (!currentEvent || eventResolved)) && (
                       <div className="space-y-2">
                         <h4 className="text-sm font-bold text-terminal-primary uppercase">Gain Skills This Term</h4>
                         <div className="grid grid-cols-2 gap-2">
@@ -2814,7 +2920,7 @@ export const CharacterGenerator: React.FC = () => {
                       </div>
                     )}
 
-                    {((!currentGameEvent || gameEventCompleted) && (!currentEvent || eventResolved)) && (
+                    {((!currentGameEvent || gameEventCompleted) && (!currentEvent || eventResolved) && !pendingSpecialtySkill) && (
                       <Button
                         onClick={completeTerm}
                         className="w-full bg-green-500/20 text-green-400 hover:bg-green-500/30 border border-green-500/50"
@@ -2934,11 +3040,7 @@ export const CharacterGenerator: React.FC = () => {
                     {characterData.name || 'Unnamed Character'}
                   </h2>
                   <p className="text-terminal-primary/70">
-                    {characterData.career} • {selectedCareer?.isPreCareer
-                      ? selectedCareer.ranks.enlisted[0]?.title || 'Student'
-                      : (isCommissioned && selectedCareer?.ranks.officer
-                          ? selectedCareer.ranks.officer[characterData.rank]?.title
-                          : selectedCareer?.ranks.enlisted[characterData.rank]?.title) || `Rank ${characterData.rank}`} • Age {characterData.age} • {characterData.terms_served} Terms
+                    {characterData.career} • {getRankTitle(selectedCareer, characterData.rank, isCommissioned, selectedCareer?.assignments[selectedAssignment]?.name)} • Age {characterData.age} • {characterData.terms_served} Terms
                   </p>
                 </div>
 
