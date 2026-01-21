@@ -248,6 +248,9 @@ export const CharacterGenerator: React.FC = () => {
   const [preCareerFailedService, setPreCareerFailedService] = useState<string | null>(null); // For Military Academy auto-entry
   const [universitySkillLevel0, setUniversitySkillLevel0] = useState<string | null>(null);
   const [universitySkillLevel1, setUniversitySkillLevel1] = useState<string | null>(null);
+  // Pending specialty selection for university skills (0 = level 0 skill, 1 = level 1 skill)
+  const [universityPendingSpecialty, setUniversityPendingSpecialty] = useState<0 | 1 | null>(null);
+  const [universityBaseSkillSelected, setUniversityBaseSkillSelected] = useState<string | null>(null);
   const [militaryAcademyService, setMilitaryAcademyService] = useState<string | null>(null); // 'Army', 'Navy', or 'Marines'
   const [showMishapTable, setShowMishapTable] = useState(false);
   const [showEventTable, setShowEventTable] = useState(false);
@@ -709,6 +712,55 @@ export const CharacterGenerator: React.FC = () => {
         }));
       }
     }
+  };
+
+  // ============================================================================
+  // UNIVERSITY SKILL SELECTION HANDLERS
+  // ============================================================================
+
+  // Handle when a base skill is selected from the University dropdown
+  const handleUniversitySkillSelect = (skillName: string, level: 0 | 1) => {
+    if (!skillName) {
+      // Clear the selection
+      if (level === 0) {
+        setUniversitySkillLevel0(null);
+      } else {
+        setUniversitySkillLevel1(null);
+      }
+      return;
+    }
+
+    // Check if skill needs specialty selection
+    if (needsSpecialtySelection(skillName)) {
+      // Store the base skill and show specialty selector
+      setUniversityBaseSkillSelected(skillName);
+      setUniversityPendingSpecialty(level);
+    } else {
+      // Skill doesn't need specialty, set directly
+      if (level === 0) {
+        setUniversitySkillLevel0(skillName);
+      } else {
+        setUniversitySkillLevel1(skillName);
+      }
+    }
+  };
+
+  // Handle when a specialty is selected for a University skill
+  const handleUniversitySpecialtySelected = (fullSkillName: string) => {
+    if (universityPendingSpecialty === 0) {
+      setUniversitySkillLevel0(fullSkillName);
+    } else if (universityPendingSpecialty === 1) {
+      setUniversitySkillLevel1(fullSkillName);
+    }
+    // Clear pending state
+    setUniversityPendingSpecialty(null);
+    setUniversityBaseSkillSelected(null);
+  };
+
+  // Cancel specialty selection and clear the base skill
+  const cancelUniversitySpecialtySelection = () => {
+    setUniversityPendingSpecialty(null);
+    setUniversityBaseSkillSelected(null);
   };
 
   // ============================================================================
@@ -1656,6 +1708,13 @@ export const CharacterGenerator: React.FC = () => {
     // Reset basic training state for new career
     setBasicTrainingApplied(false);
     setBasicTrainingSkillSelected(null);
+    // Reset university skill selection state
+    setUniversitySkillLevel0(null);
+    setUniversitySkillLevel1(null);
+    setUniversityPendingSpecialty(null);
+    setUniversityBaseSkillSelected(null);
+    // Reset military academy state
+    setMilitaryAcademyService(null);
 
     // Store bonuses in character notes for reference
     if (completedPreCareer?.preCareerType === 'university') {
@@ -2245,33 +2304,95 @@ export const CharacterGenerator: React.FC = () => {
                               Choose one skill at Level 0 and one skill at Level 1. You will also gain EDU +1 immediately upon entry.
                             </p>
 
+                            {/* Level 0 Skill Selection */}
                             <div className="space-y-2">
                               <label className="text-xs text-terminal-primary/70">Level 0 Skill:</label>
-                              <select
-                                value={universitySkillLevel0 || ''}
-                                onChange={(e) => setUniversitySkillLevel0(e.target.value || null)}
-                                className="w-full bg-black border border-terminal-primary/50 text-terminal-primary p-2 rounded text-sm"
-                              >
-                                <option value="">-- Select Level 0 Skill --</option>
-                                {selectedCareer.skillTables.advancedEducation?.map(skill => (
-                                  <option key={skill} value={skill}>{skill}</option>
-                                ))}
-                              </select>
+                              {universityPendingSpecialty === 0 && universityBaseSkillSelected ? (
+                                // Show specialty selector for Level 0 skill
+                                <SpecialtySelector
+                                  baseSkill={universityBaseSkillSelected}
+                                  currentSkills={characterData.skills}
+                                  onSelect={handleUniversitySpecialtySelected}
+                                  onCancel={cancelUniversitySpecialtySelection}
+                                  title={`Choose ${universityBaseSkillSelected} Specialization (Level 0)`}
+                                />
+                              ) : universitySkillLevel0 ? (
+                                // Show selected skill with option to change
+                                <div className="flex items-center gap-2">
+                                  <div className="flex-1 bg-green-500/10 border border-green-500/50 text-green-400 p-2 rounded text-sm">
+                                    {universitySkillLevel0}
+                                  </div>
+                                  <Button
+                                    onClick={() => setUniversitySkillLevel0(null)}
+                                    variant="outline"
+                                    size="sm"
+                                    className="border-terminal-primary/50 text-terminal-primary hover:bg-terminal-primary/20"
+                                  >
+                                    Change
+                                  </Button>
+                                </div>
+                              ) : (
+                                // Show dropdown for base skill selection
+                                <select
+                                  value=""
+                                  onChange={(e) => handleUniversitySkillSelect(e.target.value, 0)}
+                                  className="w-full bg-black border border-terminal-primary/50 text-terminal-primary p-2 rounded text-sm"
+                                >
+                                  <option value="">-- Select Level 0 Skill --</option>
+                                  {selectedCareer.skillTables.advancedEducation?.map(skill => (
+                                    <option key={skill} value={skill}>
+                                      {skill}{needsSpecialtySelection(skill) ? ' *' : ''}
+                                    </option>
+                                  ))}
+                                </select>
+                              )}
                             </div>
 
+                            {/* Level 1 Skill Selection */}
                             <div className="space-y-2">
                               <label className="text-xs text-terminal-primary/70">Level 1 Skill:</label>
-                              <select
-                                value={universitySkillLevel1 || ''}
-                                onChange={(e) => setUniversitySkillLevel1(e.target.value || null)}
-                                className="w-full bg-black border border-terminal-primary/50 text-terminal-primary p-2 rounded text-sm"
-                              >
-                                <option value="">-- Select Level 1 Skill --</option>
-                                {selectedCareer.skillTables.advancedEducation?.map(skill => (
-                                  <option key={skill} value={skill}>{skill}</option>
-                                ))}
-                              </select>
+                              {universityPendingSpecialty === 1 && universityBaseSkillSelected ? (
+                                // Show specialty selector for Level 1 skill
+                                <SpecialtySelector
+                                  baseSkill={universityBaseSkillSelected}
+                                  currentSkills={characterData.skills}
+                                  onSelect={handleUniversitySpecialtySelected}
+                                  onCancel={cancelUniversitySpecialtySelection}
+                                  title={`Choose ${universityBaseSkillSelected} Specialization (Level 1)`}
+                                />
+                              ) : universitySkillLevel1 ? (
+                                // Show selected skill with option to change
+                                <div className="flex items-center gap-2">
+                                  <div className="flex-1 bg-green-500/10 border border-green-500/50 text-green-400 p-2 rounded text-sm">
+                                    {universitySkillLevel1}
+                                  </div>
+                                  <Button
+                                    onClick={() => setUniversitySkillLevel1(null)}
+                                    variant="outline"
+                                    size="sm"
+                                    className="border-terminal-primary/50 text-terminal-primary hover:bg-terminal-primary/20"
+                                  >
+                                    Change
+                                  </Button>
+                                </div>
+                              ) : (
+                                // Show dropdown for base skill selection
+                                <select
+                                  value=""
+                                  onChange={(e) => handleUniversitySkillSelect(e.target.value, 1)}
+                                  className="w-full bg-black border border-terminal-primary/50 text-terminal-primary p-2 rounded text-sm"
+                                >
+                                  <option value="">-- Select Level 1 Skill --</option>
+                                  {selectedCareer.skillTables.advancedEducation?.map(skill => (
+                                    <option key={skill} value={skill}>
+                                      {skill}{needsSpecialtySelection(skill) ? ' *' : ''}
+                                    </option>
+                                  ))}
+                                </select>
+                              )}
                             </div>
+
+                            <p className="text-xs text-terminal-primary/50">* Skills marked with asterisk have specializations</p>
 
                             {universitySkillLevel0 && universitySkillLevel1 && (
                               <Alert className="bg-blue-500/10 border-blue-500/50">
