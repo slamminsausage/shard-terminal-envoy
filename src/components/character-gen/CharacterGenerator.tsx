@@ -3409,7 +3409,8 @@ export const CharacterGenerator: React.FC = () => {
                     )}
 
                     {((!currentGameEvent || gameEventCompleted) && (!currentEvent || eventResolved) && !pendingSpecialtySkill &&
-                      !(selectedCareer?.preCareerType === 'military_academy' && termSurvived && academyGradSkillsSelected.length < 3)) && (
+                      !(selectedCareer?.preCareerType === 'military_academy' && termSurvived && academyGradSkillsSelected.length < 3) &&
+                      (selectedCareer?.isPreCareer || termSkillSelected)) && (
                       <Button
                         onClick={completeTerm}
                         className="w-full bg-green-500/20 text-green-400 hover:bg-green-500/30 border border-green-500/50"
