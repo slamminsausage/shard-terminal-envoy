@@ -733,13 +733,14 @@ export const CharacterGenerator: React.FC = () => {
       return;
     }
 
-    // Check if skill needs specialty selection
-    if (needsSpecialtySelection(skillName)) {
+    // Level 0 skills don't require specialty selection - just get the base skill
+    // Only level 1+ skills require choosing a specialty
+    if (level >= 1 && needsSpecialtySelection(skillName)) {
       // Store the base skill and show specialty selector
       setUniversityBaseSkillSelected(skillName);
       setUniversityPendingSpecialty(level);
     } else {
-      // Skill doesn't need specialty, set directly
+      // Skill doesn't need specialty (or is level 0), set directly
       if (level === 0) {
         setUniversitySkillLevel0(skillName);
       } else {

@@ -549,12 +549,20 @@ export function EventHandler({
                 {skillsWithSpecialties.map(skill => (
                   <Button
                     key={skill}
-                    onClick={() => handleAnySkillWithSpecialty(skill)}
+                    onClick={() => {
+                      // Level 0 skills don't require specialty selection
+                      // Only level 1+ skills need to choose a specialty
+                      if ((level ?? 0) >= 1) {
+                        handleAnySkillWithSpecialty(skill);
+                      } else {
+                        handleAnySkillSelected(skill);
+                      }
+                    }}
                     variant="outline"
                     className="border-terminal-primary/30 text-terminal-primary hover:bg-terminal-primary/20 text-xs py-1"
                     size="sm"
                   >
-                    {skill} *
+                    {skill}{(level ?? 0) >= 1 ? ' *' : ''}
                   </Button>
                 ))}
               </div>
