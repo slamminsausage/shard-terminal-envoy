@@ -154,12 +154,20 @@ const parseSkillGain = (skillText: string): { skill: string; isStat: boolean; st
   return { skill: skillText, isStat: false };
 };
 
-// Helper to get event description text (handles both string and StructuredEvent)
-const getEventDescription = (event: string | StructuredEvent): string => {
+// Helper to get event description text (handles string, StructuredEvent, and GameEvent)
+const getEventDescription = (event: string | StructuredEvent | GameEvent): string => {
   if (typeof event === 'string') {
     return event;
   }
   return event.description;
+};
+
+// Helper to get mishap description text (handles both string and GameEvent)
+const getMishapDescription = (mishap: string | GameEvent): string => {
+  if (typeof mishap === 'string') {
+    return mishap;
+  }
+  return mishap.description;
 };
 
 // Helper to get the appropriate rank array for a career
@@ -622,6 +630,31 @@ export const CharacterGenerator: React.FC = () => {
     }));
   };
 
+  const becomeDrifter = () => {
+    // Find the Drifter career
+    const drifterCareer = ALL_CAREERS.find(c => c.name === 'Drifter');
+    if (!drifterCareer) {
+      console.error('Drifter career not found');
+      return;
+    }
+
+    // Set the career
+    setSelectedCareer(drifterCareer);
+
+    // Default to first assignment, user can change it
+    setSelectedAssignment(0);
+    setQualificationRollLog('Became a Drifter. Automatic qualification - no roll required. Choose your assignment.');
+
+    // Automatically pass qualification (Drifter has automatic qualification)
+    setQualificationPassed(true);
+
+    setCharacterData(prev => ({
+      ...prev,
+      career: drifterCareer.name,
+      notes: prev.notes + '\nBecame a Drifter (failed career qualification)',
+    }));
+  };
+
   // ============================================================================
   // BASIC TRAINING SYSTEM
   // ============================================================================
@@ -937,7 +970,8 @@ export const CharacterGenerator: React.FC = () => {
       // For pre-careers, handle graduation failure differently
       if (isPreCareer) {
         const ranks = selectedCareer.ranks.enlisted;
-        let mishap = selectedCareer.mishapTable[0] || 'Failed to graduate.';
+        const mishapEntry = selectedCareer.mishapTable[0];
+        const mishap = mishapEntry ? getMishapDescription(mishapEntry) : 'Failed to graduate.';
         let event = `FAILED GRADUATION: ${mishap}`;
 
         // Military Academy: if roll wasn't 2 or less, gain automatic entry to tied service
@@ -979,7 +1013,8 @@ export const CharacterGenerator: React.FC = () => {
       } else {
         // Regular career mishap
         const mishapRoll = rollDice(1, 6);
-        const mishap = selectedCareer.mishapTable[mishapRoll - 1] || 'Injured. Roll on the Injury table.';
+        const mishapEntry = selectedCareer.mishapTable[mishapRoll - 1];
+        const mishap = mishapEntry ? getMishapDescription(mishapEntry) : 'Injured. Roll on the Injury table.';
 
         const ranks = getRanksForCareer(selectedCareer, isCommissioned, assignment.name);
 
@@ -2592,10 +2627,8 @@ export const CharacterGenerator: React.FC = () => {
                             Enter Draft
                           </Button>
                           <Button
-                            onClick={() => {
-                              alert('Drifter career not yet implemented. Coming soon!');
-                            }}
-                            className="bg-gray-600/20 text-gray-400 hover:bg-gray-600/30 border border-gray-600/50"
+                            onClick={becomeDrifter}
+                            className="bg-orange-600/20 text-orange-400 hover:bg-orange-600/30 border border-orange-600/50"
                           >
                             Become Drifter
                           </Button>
@@ -2694,7 +2727,8 @@ export const CharacterGenerator: React.FC = () => {
                   </div>
                 </div>
 
-                {!isInTerm && termSurvived !== false && (
+                {/* Start Term button - only for regular careers OR pre-careers before first term */}
+                {!isInTerm && termSurvived !== false && (!selectedCareer?.isPreCareer || currentTerm === 0) && (
                   <Button
                     onClick={startNewTerm}
                     className="w-full bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
@@ -2749,7 +2783,7 @@ export const CharacterGenerator: React.FC = () => {
                           {selectedCareer.mishapTable.map((mishap, idx) => (
                             <div key={idx} className="flex gap-2">
                               <span className="text-terminal-primary/50">{idx + 1}.</span>
-                              <span>{mishap}</span>
+                              <span>{getMishapDescription(mishap)}</span>
                             </div>
                           ))}
                         </div>
@@ -3468,20 +3502,20 @@ export const CharacterGenerator: React.FC = () => {
 
                 {!isInTerm && currentTerm > 0 && termSurvived !== false && (
                   selectedCareer?.isPreCareer ? (
-                    // Pre-career completed: show career selection option
+                    // Pre-career term completed: show options based on whether they can continue
                     <div className="space-y-3">
                       <Alert className="bg-blue-500/10 border-blue-500/50">
                         <AlertDescription className="text-blue-400">
-                          <strong>Pre-Career Complete!</strong>
+                          <strong>Term {currentTerm} Complete!</strong>
                           <p className="mt-1 text-sm">
                             {selectedCareer.preCareerType === 'university' ? (
                               <>
-                                You have graduated from University{graduatedWithHonours ? ' with Honours' : ''}.
+                                You have completed Term {currentTerm} at University{graduatedWithHonours ? ' with Honours' : ''}.
                                 You receive DM+{graduatedWithHonours ? '2' : '1'} to qualify for: Agent, Army, Citizen (Corporate), Entertainer (Journalist), Marines, Navy, Scholar, or Scouts.
                               </>
                             ) : (
                               <>
-                                You have graduated from Military Academy{graduatedWithHonours ? ' with Honours' : ''}.
+                                You have completed Term {currentTerm} at Military Academy{graduatedWithHonours ? ' with Honours' : ''}.
                                 {graduatedWithHonours
                                   ? ` You automatically enter your designated branch at Rank O1 with a commission.`
                                   : ` You automatically enter your designated branch with DM+2 on your first commission roll.`
@@ -3489,14 +3523,35 @@ export const CharacterGenerator: React.FC = () => {
                               </>
                             )}
                           </p>
+                          {currentTerm < (selectedCareer.maxTerms || 3) && (
+                            <p className="mt-2 text-xs text-blue-400/80">
+                              You may continue for another term (max {selectedCareer.maxTerms || 3} terms) or proceed to career selection.
+                            </p>
+                          )}
+                          {currentTerm >= (selectedCareer.maxTerms || 3) && (
+                            <p className="mt-2 text-xs text-yellow-400">
+                              You have reached the maximum number of terms ({selectedCareer.maxTerms || 3}). You must now select a career.
+                            </p>
+                          )}
                         </AlertDescription>
                       </Alert>
-                      <Button
-                        onClick={selectNextCareerFromPreCareer}
-                        className="w-full bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30 border border-terminal-primary/50"
-                      >
-                        Select Your Career
-                      </Button>
+                      <div className="flex gap-2">
+                        {currentTerm < (selectedCareer.maxTerms || 3) && (
+                          <Button
+                            onClick={startNewTerm}
+                            variant="outline"
+                            className="flex-1 border-terminal-primary/50 text-terminal-primary hover:bg-terminal-primary/20"
+                          >
+                            Continue Another Term
+                          </Button>
+                        )}
+                        <Button
+                          onClick={selectNextCareerFromPreCareer}
+                          className="flex-1 bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30 border border-terminal-primary/50"
+                        >
+                          Select Your Career
+                        </Button>
+                      </div>
                     </div>
                   ) : (
                     // Regular career: show continue or muster out
