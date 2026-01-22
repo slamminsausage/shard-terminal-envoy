@@ -154,12 +154,20 @@ const parseSkillGain = (skillText: string): { skill: string; isStat: boolean; st
   return { skill: skillText, isStat: false };
 };
 
-// Helper to get event description text (handles both string and StructuredEvent)
-const getEventDescription = (event: string | StructuredEvent): string => {
+// Helper to get event description text (handles string, StructuredEvent, and GameEvent)
+const getEventDescription = (event: string | StructuredEvent | GameEvent): string => {
   if (typeof event === 'string') {
     return event;
   }
   return event.description;
+};
+
+// Helper to get mishap description text (handles both string and GameEvent)
+const getMishapDescription = (mishap: string | GameEvent): string => {
+  if (typeof mishap === 'string') {
+    return mishap;
+  }
+  return mishap.description;
 };
 
 // Helper to get the appropriate rank array for a career
@@ -622,6 +630,31 @@ export const CharacterGenerator: React.FC = () => {
     }));
   };
 
+  const becomeDrifter = () => {
+    // Find the Drifter career
+    const drifterCareer = ALL_CAREERS.find(c => c.name === 'Drifter');
+    if (!drifterCareer) {
+      console.error('Drifter career not found');
+      return;
+    }
+
+    // Set the career
+    setSelectedCareer(drifterCareer);
+
+    // Default to first assignment, user can change it
+    setSelectedAssignment(0);
+    setQualificationRollLog('Became a Drifter. Automatic qualification - no roll required. Choose your assignment.');
+
+    // Automatically pass qualification (Drifter has automatic qualification)
+    setQualificationPassed(true);
+
+    setCharacterData(prev => ({
+      ...prev,
+      career: drifterCareer.name,
+      notes: prev.notes + '\nBecame a Drifter (failed career qualification)',
+    }));
+  };
+
   // ============================================================================
   // BASIC TRAINING SYSTEM
   // ============================================================================
@@ -937,7 +970,8 @@ export const CharacterGenerator: React.FC = () => {
       // For pre-careers, handle graduation failure differently
       if (isPreCareer) {
         const ranks = selectedCareer.ranks.enlisted;
-        let mishap = selectedCareer.mishapTable[0] || 'Failed to graduate.';
+        const mishapEntry = selectedCareer.mishapTable[0];
+        const mishap = mishapEntry ? getMishapDescription(mishapEntry) : 'Failed to graduate.';
         let event = `FAILED GRADUATION: ${mishap}`;
 
         // Military Academy: if roll wasn't 2 or less, gain automatic entry to tied service
@@ -979,7 +1013,8 @@ export const CharacterGenerator: React.FC = () => {
       } else {
         // Regular career mishap
         const mishapRoll = rollDice(1, 6);
-        const mishap = selectedCareer.mishapTable[mishapRoll - 1] || 'Injured. Roll on the Injury table.';
+        const mishapEntry = selectedCareer.mishapTable[mishapRoll - 1];
+        const mishap = mishapEntry ? getMishapDescription(mishapEntry) : 'Injured. Roll on the Injury table.';
 
         const ranks = getRanksForCareer(selectedCareer, isCommissioned, assignment.name);
 
@@ -2592,10 +2627,8 @@ export const CharacterGenerator: React.FC = () => {
                             Enter Draft
                           </Button>
                           <Button
-                            onClick={() => {
-                              alert('Drifter career not yet implemented. Coming soon!');
-                            }}
-                            className="bg-gray-600/20 text-gray-400 hover:bg-gray-600/30 border border-gray-600/50"
+                            onClick={becomeDrifter}
+                            className="bg-orange-600/20 text-orange-400 hover:bg-orange-600/30 border border-orange-600/50"
                           >
                             Become Drifter
                           </Button>
@@ -2750,7 +2783,7 @@ export const CharacterGenerator: React.FC = () => {
                           {selectedCareer.mishapTable.map((mishap, idx) => (
                             <div key={idx} className="flex gap-2">
                               <span className="text-terminal-primary/50">{idx + 1}.</span>
-                              <span>{mishap}</span>
+                              <span>{getMishapDescription(mishap)}</span>
                             </div>
                           ))}
                         </div>
