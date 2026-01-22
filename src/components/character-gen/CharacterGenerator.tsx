@@ -84,6 +84,10 @@ interface CharacterData {
   // Pre-career tracking
   hasCompletedPreCareer?: boolean;
   totalCareerTerms?: number; // Track total terms across all careers
+
+  // Pre-career graduation bonuses for qualification rolls
+  preCareerQualificationDM?: number; // DM bonus (+1 graduate, +2 honours)
+  preCareerType?: 'university' | 'military_academy'; // Type of pre-career completed
 }
 
 // ============================================================================
@@ -226,6 +230,8 @@ export const CharacterGenerator: React.FC = () => {
     lifepath_log: [],
     hasCompletedPreCareer: false,
     totalCareerTerms: 0,
+    preCareerQualificationDM: 0,
+    preCareerType: undefined,
   });
 
   const [characteristicRolls, setCharacteristicRolls] = useState<number[]>([]);
@@ -520,14 +526,30 @@ export const CharacterGenerator: React.FC = () => {
 
     const charValue = characterData.characteristics[selectedCareer.qualificationStat].total;
     let dm = getDM(charValue);
+    let dmDetails: string[] = [`Char DM ${getDM(charValue)}`];
 
-    // Apply pre-career DM based on term number
+    // Apply pre-career DM based on term number (for pre-career re-entry)
     const preCareerDM = getPreCareerDM(selectedCareer);
-    dm += preCareerDM;
+    if (preCareerDM !== 0) {
+      dm += preCareerDM;
+      dmDetails.push(`Term DM ${preCareerDM}`);
+    }
 
-    // Apply SOC bonus for University
+    // Apply SOC bonus for University entry
     if (selectedCareer.preCareerType === 'university' && characterData.characteristics.social.total >= 9) {
       dm += 1;
+      dmDetails.push('SOC 9+ DM +1');
+    }
+
+    // Apply pre-career graduation DM for eligible careers
+    // University graduates: +1 (or +2 for honours) to Agent, Army, Citizen, Entertainer, Marines, Navy, Scholar, Scout
+    const universityEligibleCareers = ['Agent', 'Army', 'Citizen', 'Entertainer', 'Marines', 'Navy', 'Scholar', 'Scout'];
+    if (characterData.preCareerQualificationDM && characterData.preCareerQualificationDM > 0 &&
+        characterData.preCareerType === 'university' &&
+        universityEligibleCareers.includes(selectedCareer.name)) {
+      dm += characterData.preCareerQualificationDM;
+      const honoursText = characterData.preCareerQualificationDM >= 2 ? 'Honours ' : '';
+      dmDetails.push(`University ${honoursText}Graduate DM +${characterData.preCareerQualificationDM}`);
     }
 
     const roll = rollDice(2, 6);
@@ -535,9 +557,7 @@ export const CharacterGenerator: React.FC = () => {
     const passed = total >= selectedCareer.qualificationTarget;
 
     setQualificationPassed(passed);
-    const dmBreakdown = preCareerDM !== 0
-      ? `Roll: ${roll} + Char DM ${getDM(charValue)} + Term DM ${preCareerDM} = ${total} (need ${selectedCareer.qualificationTarget}+)`
-      : `Roll: ${roll} + DM ${dm} = ${total} (need ${selectedCareer.qualificationTarget}+)`;
+    const dmBreakdown = `Roll: ${roll} + ${dmDetails.join(' + ')} = ${total} (need ${selectedCareer.qualificationTarget}+)`;
     setQualificationRollLog(dmBreakdown);
 
     if (passed) {
@@ -1075,6 +1095,14 @@ export const CharacterGenerator: React.FC = () => {
           setNeedsCommissionRoll(true);
         }
 
+        // Store the pre-career qualification DM bonus for future career qualification rolls
+        const qualificationDM = honoursAchieved ? 2 : 1;
+        setCharacterData(prev => ({
+          ...prev,
+          preCareerQualificationDM: qualificationDM,
+          preCareerType: selectedCareer.preCareerType as 'university' | 'military_academy',
+        }));
+
         setTermSkillsGained(benefitNotes);
 
         // For pre-careers, DON'T set termAdvanced - use a different flow
@@ -1356,6 +1384,20 @@ export const CharacterGenerator: React.FC = () => {
       }
       if (effects.allowCareer) {
         setTermSkillsGained(prev => [...prev, `${effects.allowCareer} career unlocked`]);
+      }
+
+      // Handle table redirects (e.g., rollOnTable: 'injury')
+      if (effects.rollOnTable) {
+        // Add any messages first
+        messages.forEach(msg => {
+          if (msg && !termSkillsGained.includes(msg)) {
+            setTermSkillsGained(prev => [...prev, msg]);
+          }
+        });
+
+        // Trigger the table redirect
+        handleTableRedirect(effects.rollOnTable as 'life_events' | 'injury' | 'aging' | 'draft' | 'unusual_events');
+        return; // Don't mark event as completed yet - wait for redirected table
       }
     }
 
