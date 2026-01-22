@@ -319,6 +319,41 @@ export function EventHandler({
     );
   };
 
+  // Helper to render compact effects for choice previews
+  const renderCompactEffects = (effects: EventEffects | undefined) => {
+    if (!effects) return null;
+    const items: string[] = [];
+
+    if (effects.skills?.choices) {
+      items.push(`${effects.skills.choices.join('/')} ${effects.skills.level ?? 1}`);
+    }
+    if (effects.skills?.anySkill) {
+      items.push(`Any skill ${effects.skills.level ?? 0}`);
+    }
+    if (effects.characteristics) {
+      effects.characteristics.forEach(c => {
+        items.push(`${c.stat.toUpperCase().slice(0, 3)} ${c.modifier >= 0 ? '+' : ''}${c.modifier}`);
+      });
+    }
+    if (effects.allies) items.push(`+${effects.allies} Ally`);
+    if (effects.enemies) items.push(`+${effects.enemies} Enemy`);
+    if (effects.rivals) items.push(`+${effects.rivals} Rival`);
+    if (effects.contacts) items.push(`+${effects.contacts} Contact`);
+    if (effects.benefitDM) items.push(`Benefit DM+${effects.benefitDM}`);
+    if (effects.advancementDM) items.push(`Adv DM+${effects.advancementDM}`);
+    if (effects.autoPromotion) items.push('Auto Promotion');
+    if (effects.rollOnTable) items.push(`Roll ${effects.rollOnTable}`);
+
+    if (items.length === 0) return null;
+    return (
+      <div className="text-xs text-cyan-400/80 mt-1 flex flex-wrap gap-1">
+        {items.map((item, i) => (
+          <span key={i} className="bg-cyan-500/10 px-1.5 py-0.5 rounded">{item}</span>
+        ))}
+      </div>
+    );
+  };
+
   const renderChoices = () => {
     if (state.phase !== 'awaiting_choice' || event.resolution.type !== 'choice') return null;
 
@@ -342,6 +377,12 @@ export function EventHandler({
                   <h4 className="font-bold text-terminal-primary text-sm">{choice.label}</h4>
                   {choice.description && (
                     <p className="text-xs text-terminal-primary/70 mt-1">{choice.description}</p>
+                  )}
+                  {renderCompactEffects(choice.effects)}
+                  {choice.subRoll && (
+                    <p className="text-xs text-yellow-400/80 mt-1">
+                      → Roll {choice.subRoll.dice}D{choice.subRoll.sides || 6} to determine outcome
+                    </p>
                   )}
                   {choice.requiresStat && !available && (
                     <p className="text-xs text-red-400 mt-1">
@@ -549,12 +590,20 @@ export function EventHandler({
                 {skillsWithSpecialties.map(skill => (
                   <Button
                     key={skill}
-                    onClick={() => handleAnySkillWithSpecialty(skill)}
+                    onClick={() => {
+                      // Level 0 skills don't require specialty selection
+                      // Only level 1+ skills need to choose a specialty
+                      if ((level ?? 0) >= 1) {
+                        handleAnySkillWithSpecialty(skill);
+                      } else {
+                        handleAnySkillSelected(skill);
+                      }
+                    }}
                     variant="outline"
                     className="border-terminal-primary/30 text-terminal-primary hover:bg-terminal-primary/20 text-xs py-1"
                     size="sm"
                   >
-                    {skill} *
+                    {skill}{(level ?? 0) >= 1 ? ' *' : ''}
                   </Button>
                 ))}
               </div>
@@ -588,63 +637,120 @@ export function EventHandler({
     return null;
   };
 
+  // Helper to render effects summary box
+  const renderEffectsSummary = (effects: EventEffects | undefined, showHeader: boolean = true) => {
+    if (!effects) return null;
+
+    // Check if there are any effects to display
+    const hasEffects = effects.skills || effects.characteristics ||
+      effects.allies || effects.enemies || effects.rivals || effects.contacts ||
+      effects.forceCareer || effects.failGraduation || effects.benefitDM ||
+      effects.advancementDM || effects.autoPromotion || effects.rollOnTable ||
+      effects.extraBenefit || effects.qualificationDM;
+
+    if (!hasEffects) return null;
+
+    return (
+      <div className="bg-terminal-primary/5 border border-terminal-primary/30 rounded p-3 space-y-1">
+        {showHeader && <h4 className="text-xs font-bold text-terminal-primary uppercase mb-2">Effects:</h4>}
+
+        {/* Skills */}
+        {effects.skills?.choices && (
+          <div className="text-xs text-cyan-400">
+            ⚔ Skill: {effects.skills.choices.join(', ')} at level {effects.skills.level ?? 1}
+          </div>
+        )}
+        {effects.skills?.anySkill && (
+          <div className="text-xs text-cyan-400">
+            ⚔ Choose any skill at level {effects.skills.level ?? 0}
+            {effects.skills.requireExisting && ' (must already have)'}
+          </div>
+        )}
+
+        {/* Characteristics */}
+        {effects.characteristics?.map((c, i) => (
+          <div key={i} className="text-xs text-purple-400">
+            📊 {c.stat.toUpperCase()} {c.modifier >= 0 ? '+' : ''}{c.modifier}
+          </div>
+        ))}
+
+        {/* Social connections */}
+        {effects.allies && (
+          <div className="text-xs text-green-400">
+            👤 +{typeof effects.allies === 'number' ? effects.allies : effects.allies} Allies
+          </div>
+        )}
+        {effects.enemies && (
+          <div className="text-xs text-red-400">
+            ⚠ +{typeof effects.enemies === 'number' ? effects.enemies : effects.enemies} Enemies
+          </div>
+        )}
+        {effects.rivals && (
+          <div className="text-xs text-yellow-400">
+            ⚡ +{typeof effects.rivals === 'number' ? effects.rivals : effects.rivals} Rivals
+          </div>
+        )}
+        {effects.contacts && (
+          <div className="text-xs text-blue-400">
+            📞 +{typeof effects.contacts === 'number' ? effects.contacts : effects.contacts} Contacts
+          </div>
+        )}
+
+        {/* Benefits and advancement */}
+        {effects.benefitDM && (
+          <div className="text-xs text-green-400">
+            💰 DM+{effects.benefitDM} to a Benefit roll
+          </div>
+        )}
+        {effects.advancementDM && (
+          <div className="text-xs text-blue-400">
+            📈 DM+{effects.advancementDM} to next advancement roll
+          </div>
+        )}
+        {effects.qualificationDM && (
+          <div className="text-xs text-blue-400">
+            🎯 DM+{effects.qualificationDM} to next qualification roll
+          </div>
+        )}
+        {effects.autoPromotion && (
+          <div className="text-xs text-green-400">
+            ⬆ Automatic promotion this term
+          </div>
+        )}
+        {effects.extraBenefit && (
+          <div className="text-xs text-green-400">
+            🎁 Extra Benefit roll
+          </div>
+        )}
+
+        {/* Table rolls */}
+        {effects.rollOnTable && (
+          <div className="text-xs text-orange-400">
+            🎲 Roll on {effects.rollOnTable === 'injury' ? 'Injury' : effects.rollOnTable} table
+          </div>
+        )}
+
+        {/* Career effects */}
+        {effects.forceCareer && (
+          <div className="text-xs text-orange-400">
+            ⚠ Must enter: {effects.forceCareer} next term
+          </div>
+        )}
+        {effects.failGraduation && (
+          <div className="text-xs text-red-400">
+            ✗ Failed to graduate
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const renderApplyEffects = () => {
     if (state.phase !== 'apply_effects') return null;
 
-    // Show summary of effects to be applied
-    const effects = state.appliedEffects;
-
     return (
       <div className="space-y-2">
-        {effects && (
-          <div className="bg-terminal-primary/5 border border-terminal-primary/30 rounded p-3 space-y-1">
-            <h4 className="text-xs font-bold text-terminal-primary uppercase mb-2">Effects:</h4>
-
-            {effects.skills?.choices && (
-              <div className="text-xs text-terminal-primary/80">
-                Skill: {effects.skills.choices.join(', ')} {effects.skills.level ?? 1}
-              </div>
-            )}
-
-            {effects.characteristics?.map((c, i) => (
-              <div key={i} className="text-xs text-terminal-primary/80">
-                {c.stat.toUpperCase()} {c.modifier >= 0 ? '+' : ''}{c.modifier}
-              </div>
-            ))}
-
-            {effects.allies && (
-              <div className="text-xs text-green-400">
-                +{typeof effects.allies === 'number' ? effects.allies : effects.allies} Allies
-              </div>
-            )}
-            {effects.enemies && (
-              <div className="text-xs text-red-400">
-                +{typeof effects.enemies === 'number' ? effects.enemies : effects.enemies} Enemies
-              </div>
-            )}
-            {effects.rivals && (
-              <div className="text-xs text-yellow-400">
-                +{typeof effects.rivals === 'number' ? effects.rivals : effects.rivals} Rivals
-              </div>
-            )}
-            {effects.contacts && (
-              <div className="text-xs text-blue-400">
-                +{typeof effects.contacts === 'number' ? effects.contacts : effects.contacts} Contacts
-              </div>
-            )}
-
-            {effects.forceCareer && (
-              <div className="text-xs text-orange-400">
-                Must enter: {effects.forceCareer}
-              </div>
-            )}
-            {effects.failGraduation && (
-              <div className="text-xs text-red-400">
-                Failed to graduate
-              </div>
-            )}
-          </div>
-        )}
+        {renderEffectsSummary(state.appliedEffects)}
 
         {event.resolution.type === 'table_redirect' && (
           <Alert className="bg-blue-500/10 border-blue-500/50">
