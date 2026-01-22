@@ -545,7 +545,7 @@ export const CharacterGenerator: React.FC = () => {
         ...prev,
         career: selectedCareer.name,
         notes: prev.notes + `\nQualified for ${selectedCareer.name}: ${roll} + ${dm} = ${total}`,
-        totalCareerTerms: (prev.totalCareerTerms || 0) + (selectedCareer.isPreCareer ? 0 : 0), // Pre-careers don't increment yet
+        // Note: totalCareerTerms is incremented in completeTerm(), not here
       }));
     }
   };
@@ -1673,7 +1673,9 @@ export const CharacterGenerator: React.FC = () => {
       ...prev,
       lifepath_log: [...prev.lifepath_log, termRecord],
       terms_served: currentTerm,
-      totalCareerTerms: (prev.totalCareerTerms || 0) + 1,
+      // Pre-career terms don't count toward totalCareerTerms - this counter is used
+      // to determine first career (all basic training skills) vs subsequent careers (pick one skill)
+      totalCareerTerms: (prev.totalCareerTerms || 0) + (isPreCareer ? 0 : 1),
       hasCompletedPreCareer: (isPreCareer && termSurvived) ? true : prev.hasCompletedPreCareer,
     }));
 
