@@ -179,6 +179,31 @@ export function EventHandler({
     );
   };
 
+  // Show message when avoidance exists but character doesn't meet the requirement
+  const renderAvoidanceUnavailable = () => {
+    // Only show if event has avoidance, character can't avoid, and we're past the avoidance check
+    if (!event.avoidance || state.canAvoid || state.phase === 'show_avoidance' || state.phase === 'completed') {
+      return null;
+    }
+
+    const charValue = characteristics[event.avoidance.stat].total;
+    const statName = event.avoidance.stat.toUpperCase();
+
+    return (
+      <Alert className="bg-yellow-500/10 border-yellow-500/50">
+        <X className="h-4 w-4 text-yellow-400" />
+        <AlertDescription className="text-yellow-400">
+          <p className="text-sm">
+            <strong>Avoidance not available:</strong> {event.avoidance.displayText}
+          </p>
+          <p className="text-xs mt-1 text-yellow-400/80">
+            Your {statName} is {charValue}, but you need {statName} {event.avoidance.target}+ to avoid this event.
+          </p>
+        </AlertDescription>
+      </Alert>
+    );
+  };
+
   const renderSkillSelection = () => {
     if (state.phase !== 'select_skill') return null;
 
@@ -804,6 +829,7 @@ export function EventHandler({
 
       {/* Phase-specific UI */}
       {renderAvoidance()}
+      {renderAvoidanceUnavailable()}
       {renderSkillSelection()}
       {renderRollButton()}
       {renderRollResult()}
