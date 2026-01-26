@@ -4,7 +4,25 @@
 // often have large amounts of ready money.
 // ============================================================================
 
-import type { CareerDefinition, GameEvent } from './types';
+import type { CareerDefinition, GameEvent, BenefitTableRow } from './types';
+
+// Noble Benefits Table (1D, results 1-7)
+const NOBLE_BENEFITS: BenefitTableRow[] = [
+  // Roll 1
+  { cash: 10000, benefit: { options: [{ type: 'ship_shares', shares: 1 }] } },
+  // Roll 2
+  { cash: 10000, benefit: { options: [{ type: 'ship_shares', shares: 2 }] } },
+  // Roll 3
+  { cash: 50000, benefit: { options: [{ type: 'item', itemType: 'blade' }] } },
+  // Roll 4
+  { cash: 50000, benefit: { options: [{ type: 'characteristic', stat: 'social', amount: 1 }] } },
+  // Roll 5
+  { cash: 100000, benefit: { options: [{ type: 'tas_membership' }] } },
+  // Roll 6 - Yacht
+  { cash: 100000, benefit: { options: [{ type: 'ship', shipType: 'Yacht' }] } },
+  // Roll 7 - SOC +1 and Yacht (gain both)
+  { cash: 200000, benefit: { options: [{ type: 'characteristic', stat: 'social', amount: 1 }, { type: 'ship', shipType: 'Yacht' }], isChoice: false } },
+];
 
 // ============================================================================
 // NOBLE MISHAPS (1D6)
@@ -511,4 +529,5 @@ export const CAREER_NOBLE: CareerDefinition = {
   },
   mishapTable: NOBLE_MISHAPS,
   eventTable: NOBLE_EVENTS,
+  benefitsTable: NOBLE_BENEFITS,
 };

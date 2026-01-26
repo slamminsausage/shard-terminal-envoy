@@ -4,7 +4,25 @@
 // stars without obvious purpose or direction.
 // ============================================================================
 
-import type { CareerDefinition, GameEvent } from './types';
+import type { CareerDefinition, GameEvent, BenefitTableRow } from './types';
+
+// Drifter Benefits Table (1D, results 1-7)
+const DRIFTER_BENEFITS: BenefitTableRow[] = [
+  // Roll 1 - No cash
+  { cash: null, benefit: { options: [{ type: 'contact' }] } },
+  // Roll 2 - No cash
+  { cash: null, benefit: { options: [{ type: 'item', itemType: 'weapon' }] } },
+  // Roll 3
+  { cash: 1000, benefit: { options: [{ type: 'ally' }] } },
+  // Roll 4
+  { cash: 2000, benefit: { options: [{ type: 'item', itemType: 'weapon' }] } },
+  // Roll 5
+  { cash: 3000, benefit: { options: [{ type: 'characteristic', stat: 'education', amount: 1 }] } },
+  // Roll 6
+  { cash: 4000, benefit: { options: [{ type: 'ship_shares', shares: 1 }] } },
+  // Roll 7
+  { cash: 8000, benefit: { options: [{ type: 'ship_shares', shares: 2 }] } },
+];
 
 // ============================================================================
 // DRIFTER MISHAPS (1D6)
@@ -427,4 +445,5 @@ export const CAREER_DRIFTER: CareerDefinition = {
   },
   mishapTable: DRIFTER_MISHAPS,
   eventTable: DRIFTER_EVENTS,
+  benefitsTable: DRIFTER_BENEFITS,
 };

@@ -4,7 +4,25 @@
 // attaining goals.
 // ============================================================================
 
-import type { CareerDefinition, GameEvent } from './types';
+import type { CareerDefinition, GameEvent, BenefitTableRow } from './types';
+
+// Rogue Benefits Table (1D, results 1-7)
+const ROGUE_BENEFITS: BenefitTableRow[] = [
+  // Roll 1 - No cash
+  { cash: null, benefit: { options: [{ type: 'ship_shares', shares: 1 }] } },
+  // Roll 2 - No cash
+  { cash: null, benefit: { options: [{ type: 'item', itemType: 'weapon' }] } },
+  // Roll 3
+  { cash: 10000, benefit: { options: [{ type: 'characteristic', stat: 'intellect', amount: 1 }] } },
+  // Roll 4 - 1D Ship Shares
+  { cash: 10000, benefit: { options: [{ type: 'ship_shares', shares: '1D' }] } },
+  // Roll 5
+  { cash: 50000, benefit: { options: [{ type: 'item', itemType: 'armour' }] } },
+  // Roll 6
+  { cash: 100000, benefit: { options: [{ type: 'characteristic', stat: 'dexterity', amount: 1 }] } },
+  // Roll 7 - 2D Ship Shares
+  { cash: 100000, benefit: { options: [{ type: 'ship_shares', shares: '2D' }] } },
+];
 
 // ============================================================================
 // ROGUE MISHAPS (1D6)
@@ -432,4 +450,5 @@ export const CAREER_ROGUE: CareerDefinition = {
   },
   mishapTable: ROGUE_MISHAPS,
   eventTable: ROGUE_EVENTS,
+  benefitsTable: ROGUE_BENEFITS,
 };

@@ -2,7 +2,25 @@
 // CAREER: ARMY
 // ============================================================================
 
-import type { CareerDefinition, GameEvent } from './types';
+import type { CareerDefinition, GameEvent, BenefitTableRow } from './types';
+
+// Army Benefits Table (1D, results 1-7)
+const ARMY_BENEFITS: BenefitTableRow[] = [
+  // Roll 1
+  { cash: 2000, benefit: { options: [{ type: 'item', itemType: 'cybernetic_implant' }] } },
+  // Roll 2
+  { cash: 5000, benefit: { options: [{ type: 'characteristic', stat: 'intellect', amount: 1 }] } },
+  // Roll 3
+  { cash: 10000, benefit: { options: [{ type: 'characteristic', stat: 'education', amount: 1 }] } },
+  // Roll 4
+  { cash: 10000, benefit: { options: [{ type: 'item', itemType: 'weapon' }] } },
+  // Roll 5
+  { cash: 10000, benefit: { options: [{ type: 'item', itemType: 'armour' }] } },
+  // Roll 6 - END +1 or Cybernetic Implant
+  { cash: 20000, benefit: { options: [{ type: 'characteristic', stat: 'endurance', amount: 1 }, { type: 'item', itemType: 'cybernetic_implant' }], isChoice: true } },
+  // Roll 7
+  { cash: 30000, benefit: { options: [{ type: 'characteristic', stat: 'social', amount: 1 }] } },
+];
 
 // Army Events (2D, results 2-12 map to indices 0-10)
 const ARMY_EVENTS: GameEvent[] = [
@@ -354,4 +372,5 @@ export const CAREER_ARMY: CareerDefinition = {
     "Injured. Roll on the Injury table.",
   ],
   eventTable: ARMY_EVENTS,
+  benefitsTable: ARMY_BENEFITS,
 };
