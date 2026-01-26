@@ -10,7 +10,7 @@ import { useCampaign } from '@/contexts/CampaignContext';
 import { ALL_CAREERS, BACKGROUND_SKILLS, getPreCareerEvent } from './careers';
 import type { CareerDefinition, Characteristics, StructuredEvent, EventOutcome, GameEvent, EventEffects } from './careers';
 import { isGameEvent } from './careers';
-import { rollDraft, type DraftResult, getLifeEvent, getInjury, getUnusualEvent } from './tables';
+import { rollDraft, type DraftResult, getLifeEvent, getInjury, getUnusualEvent, rollAging, applyAgingEffects, type AgingRollResult } from './tables';
 import { EventHandler } from './EventHandler';
 import { rollDiceExpression, rollDice as rollDiceUtil } from './eventProcessor';
 import { SpecialtySelector, needsSpecialtySelection, getBaseSkillName } from './SpecialtySelector';
@@ -384,6 +384,10 @@ export const CharacterGenerator: React.FC = () => {
 
   // Mustering out state
   const [isMusteringOut, setIsMusteringOut] = useState(false);
+
+  // Aging state
+  const [agingResult, setAgingResult] = useState<AgingRollResult | null>(null);
+  const [agingPending, setAgingPending] = useState(false);
 
   // Get available careers based on current term number
   const getAvailableCareers = (): CareerDefinition[] => {
@@ -1886,6 +1890,29 @@ export const CharacterGenerator: React.FC = () => {
           },
         }));
       });
+    }
+
+    // Check for aging (starting at term 5 / age 38)
+    // Total terms is based on lifepath_log length which now includes the current term
+    const totalTermsAfterThis = characterData.lifepath_log.length + 1;
+    if (totalTermsAfterThis >= 5) {
+      const agingRollResult = rollAging(totalTermsAfterThis, characterData.characteristics);
+      if (agingRollResult) {
+        setAgingResult(agingRollResult);
+        setAgingPending(true);
+
+        // If aging roll failed, apply the effects immediately to characteristics
+        if (!agingRollResult.passed) {
+          const newCharacteristics = applyAgingEffects(
+            characterData.characteristics,
+            agingRollResult.effects.effects
+          );
+          setCharacterData(prev => ({
+            ...prev,
+            characteristics: newCharacteristics,
+          }));
+        }
+      }
     }
 
     setIsInTerm(false);
@@ -3815,6 +3842,34 @@ export const CharacterGenerator: React.FC = () => {
                       </Button>
                     </div>
                   )
+                )}
+
+                {/* Aging Result Alert */}
+                {agingPending && agingResult && (
+                  <Alert className={agingResult.passed ? "bg-green-500/10 border-green-500/50" : agingResult.crisisCheck?.isCrisis ? "bg-red-500/10 border-red-500/50" : "bg-yellow-500/10 border-yellow-500/50"}>
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription className={agingResult.passed ? "text-green-400" : agingResult.crisisCheck?.isCrisis ? "text-red-400" : "text-yellow-400"}>
+                      <div className="font-bold mb-1">Aging Roll (Term {agingResult.termNumber})</div>
+                      <div className="text-sm mb-2">{agingResult.message}</div>
+                      {!agingResult.passed && agingResult.effects.effects.length > 0 && (
+                        <div className="text-xs text-terminal-primary/70">
+                          Effects: {agingResult.effects.effects.map((e, i) => `${e.stat.toUpperCase()} ${e.modifier}`).join(', ')}
+                        </div>
+                      )}
+                      {agingResult.crisisCheck?.isCrisis && (
+                        <div className="mt-2 text-xs text-red-400 font-bold">
+                          {agingResult.crisisCheck.message}
+                        </div>
+                      )}
+                      <Button
+                        onClick={() => setAgingPending(false)}
+                        size="sm"
+                        className="mt-2 bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
+                      >
+                        Acknowledge
+                      </Button>
+                    </AlertDescription>
+                  </Alert>
                 )}
 
                 {characterData.lifepath_log.length > 0 && (
