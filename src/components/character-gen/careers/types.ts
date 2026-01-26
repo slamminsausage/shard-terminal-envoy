@@ -312,6 +312,8 @@ export interface CareerDefinition {
   // Prisoner career flags
   isPrisonerCareer?: boolean;       // Cannot enter voluntarily, uses parole system
   usesParoleThreshold?: boolean;    // Uses parole threshold instead of normal advancement for leaving
+  // Psion career flags
+  requiresPsiTesting?: boolean;     // Must have PSI characteristic tested before qualification
   noAnagathics?: boolean;           // Cannot use anagathics in this career
   assignments: Assignment[];
   skillTables: {

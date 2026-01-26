@@ -4,10 +4,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Dices, User, Briefcase, Award, Save, ArrowRight, AlertCircle, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react';
+import { Dices, User, Briefcase, Award, Save, ArrowRight, AlertCircle, RefreshCw, ChevronDown, ChevronUp, Star } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useCampaign } from '@/contexts/CampaignContext';
-import { ALL_CAREERS, BACKGROUND_SKILLS, getPreCareerEvent, CAREER_PRISONER, rollInitialParoleThreshold } from './careers';
+import { ALL_CAREERS, BACKGROUND_SKILLS, getPreCareerEvent, CAREER_PRISONER, rollInitialParoleThreshold, CAREER_PSION, performPsiTesting, PSIONIC_TALENTS, type PsiTestResult } from './careers';
 import type { CareerDefinition, Characteristics, StructuredEvent, EventOutcome, GameEvent, EventEffects } from './careers';
 import { isGameEvent } from './careers';
 import { rollDraft, type DraftResult, getLifeEvent, getInjury, getUnusualEvent, rollAging, applyAgingEffects, type AgingRollResult } from './tables';
@@ -121,6 +121,10 @@ interface CharacterData {
   paroleThreshold?: number;       // Current parole threshold (starts at 1D+2)
   forcedCareer?: string;          // Career that must be taken next term
   prisonerSurvivalDM?: number;    // DM to survival rolls from gang membership, etc.
+
+  // Psionic tracking
+  psiTested?: boolean;            // Whether PSI has been tested
+  psiTalents?: string[];          // Acquired psionic talents
 }
 
 // ============================================================================
@@ -316,7 +320,14 @@ export const CharacterGenerator: React.FC = () => {
     paroleThreshold: undefined,
     forcedCareer: undefined,
     prisonerSurvivalDM: 0,
+    // Psionic tracking
+    psiTested: false,
+    psiTalents: [],
   });
+
+  // Psionic testing state
+  const [psiTestResult, setPsiTestResult] = useState<PsiTestResult | null>(null);
+  const [showPsiTesting, setShowPsiTesting] = useState(false);
 
   const [characteristicRolls, setCharacteristicRolls] = useState<number[]>([]);
   const [hasRolled, setHasRolled] = useState(false);
@@ -421,6 +432,11 @@ export const CharacterGenerator: React.FC = () => {
         if (characterData.hasCompletedPreCareer) return false;
         // Only available for terms 1-3
         return totalTerms < 3;
+      }
+      // Psion career requires PSI testing and PSI > 0
+      if (career.requiresPsiTesting) {
+        if (!characterData.psiTested) return false;
+        if ((characterData.characteristics.psionics?.total || 0) === 0) return false;
       }
       // Regular careers always available
       return true;
@@ -778,6 +794,31 @@ export const CharacterGenerator: React.FC = () => {
       forcedCareer: undefined, // Clear the forced career flag
       notes: prev.notes + `\nSentenced to prison (Parole Threshold: ${parole})`,
     }));
+  };
+
+  // Perform PSI testing
+  const performPsiTest = () => {
+    // Test for all five talents
+    const result = performPsiTesting(characterData.age, [...PSIONIC_TALENTS]);
+    setPsiTestResult(result);
+
+    // Update character with PSI value and acquired talents
+    const acquiredTalents = result.talentsTested
+      .filter(t => t.acquired)
+      .map(t => t.talent);
+
+    setCharacterData(prev => ({
+      ...prev,
+      characteristics: {
+        ...prev.characteristics,
+        psionics: { total: result.psiValue, current: result.psiValue },
+      },
+      psiTested: true,
+      psiTalents: acquiredTalents,
+      notes: prev.notes + `\n${result.message}`,
+    }));
+
+    setShowPsiTesting(false);
   };
 
   // ============================================================================
@@ -2701,6 +2742,41 @@ export const CharacterGenerator: React.FC = () => {
                       {characterData.forcedCareer === 'Prisoner' && ' You have been sentenced to prison.'}
                     </AlertDescription>
                   </Alert>
+                )}
+
+                {/* PSI Testing Section */}
+                {!characterData.forcedCareer && (
+                  <div className="bg-purple-500/10 border border-purple-500/30 rounded p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h4 className="text-purple-400 font-bold">Psionic Testing</h4>
+                        <p className="text-xs text-purple-300/70">
+                          {characterData.psiTested
+                            ? `PSI: ${characterData.characteristics.psionics?.total || 0}${(characterData.psiTalents?.length || 0) > 0 ? ` | Talents: ${characterData.psiTalents?.join(', ')}` : ' | No talents acquired'}`
+                            : 'Test for psionic potential to unlock the Psion career.'}
+                        </p>
+                      </div>
+                      {!characterData.psiTested && (
+                        <Button
+                          onClick={performPsiTest}
+                          className="bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 border border-purple-500/50"
+                        >
+                          <Star className="h-4 w-4 mr-2" />
+                          Test PSI
+                        </Button>
+                      )}
+                    </div>
+                    {psiTestResult && (
+                      <div className="mt-3 text-xs text-purple-300/80 border-t border-purple-500/30 pt-2">
+                        <div className="font-bold mb-1">Test Results:</div>
+                        {psiTestResult.talentsTested.map((t, i) => (
+                          <div key={t.talent} className={t.acquired ? 'text-green-400' : 'text-red-400/70'}>
+                            {t.talent}: Roll {t.roll} vs {t.targetNumber} - {t.acquired ? 'ACQUIRED' : 'Failed'}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 )}
 
                 {/* Career Cards */}
