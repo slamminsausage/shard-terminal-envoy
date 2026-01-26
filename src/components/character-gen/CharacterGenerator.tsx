@@ -42,6 +42,18 @@ interface TermRecord {
   isCommissioned?: boolean;
 }
 
+// Track each career served for mustering out benefits
+interface CareerRecord {
+  careerName: string;
+  assignment: string;
+  termsServed: number;
+  highestRank: number;
+  isCommissioned: boolean;
+  benefitDM: number;         // Accumulated benefit DM from events in this career
+  extraBenefitRolls: number; // Extra benefit rolls from events
+  isPreCareer: boolean;      // Pre-careers don't get benefits
+}
+
 interface CharacteristicValue {
   total: number;
   current: number;
@@ -88,6 +100,21 @@ interface CharacterData {
   // Pre-career graduation bonuses for qualification rolls
   preCareerQualificationDM?: number; // DM bonus (+1 graduate, +2 honours)
   preCareerType?: 'university' | 'military_academy'; // Type of pre-career completed
+
+  // Career history for benefit rolls
+  careerHistory: CareerRecord[];
+
+  // Benefit tracking
+  shipShares: number;
+  tasMembership: boolean;
+  ships: string[];           // Ships owned (e.g., "Free Trader", "Scout Ship")
+  cashBenefitRollsUsed: number;  // Track against max 3 cash rolls total
+
+  // Connections (structured)
+  allies: number;
+  contacts: number;
+  rivals: number;
+  enemies: number;
 }
 
 // ============================================================================
@@ -115,6 +142,33 @@ const getDM = (value: number): number => {
 const getDMDisplay = (value: number): string => {
   const dm = getDM(value);
   return dm >= 0 ? `+${dm}` : dm.toString();
+};
+
+/**
+ * Calculate the number of benefit rolls for a career based on terms and rank.
+ * Rules:
+ * - 1 benefit roll per term served in that career
+ * - Rank bonus: Rank 1-2: +1 roll, Rank 3-4: +2 rolls, Rank 5-6: +3 rolls
+ * - Rank 5-6 also grants DM+1 to ALL benefit rolls
+ */
+const calculateBenefitRolls = (termsServed: number, highestRank: number, extraRolls: number = 0): { rolls: number; rankDM: number } => {
+  let rolls = termsServed;
+  let rankDM = 0;
+
+  // Rank bonus for benefit rolls
+  if (highestRank >= 5) {
+    rolls += 3;
+    rankDM = 1; // Rank 5-6 grants DM+1 to all benefit rolls
+  } else if (highestRank >= 3) {
+    rolls += 2;
+  } else if (highestRank >= 1) {
+    rolls += 1;
+  }
+
+  // Add extra benefit rolls from events
+  rolls += extraRolls;
+
+  return { rolls, rankDM };
 };
 
 const createEmptyCharacteristics = (): Characteristics => ({
@@ -240,6 +294,18 @@ export const CharacterGenerator: React.FC = () => {
     totalCareerTerms: 0,
     preCareerQualificationDM: 0,
     preCareerType: undefined,
+    // Career history for benefits
+    careerHistory: [],
+    // Benefit tracking
+    shipShares: 0,
+    tasMembership: false,
+    ships: [],
+    cashBenefitRollsUsed: 0,
+    // Connections
+    allies: 0,
+    contacts: 0,
+    rivals: 0,
+    enemies: 0,
   });
 
   const [characteristicRolls, setCharacteristicRolls] = useState<number[]>([]);
@@ -313,6 +379,7 @@ export const CharacterGenerator: React.FC = () => {
   // Event DM bonuses state - track bonuses granted by events for next roll
   const [eventAdvancementDM, setEventAdvancementDM] = useState<number>(0);
   const [eventBenefitDM, setEventBenefitDM] = useState<number>(0);
+  const [extraBenefitRolls, setExtraBenefitRolls] = useState<number>(0);
 
   // Get available careers based on current term number
   const getAvailableCareers = (): CareerDefinition[] => {
@@ -1446,6 +1513,10 @@ export const CharacterGenerator: React.FC = () => {
         setEventBenefitDM(prev => prev + effects.benefitDM!);
         setTermSkillsGained(prev => [...prev, `DM+${effects.benefitDM} to a Benefit roll`]);
       }
+      if (effects.extraBenefit) {
+        setExtraBenefitRolls(prev => prev + 1);
+        setTermSkillsGained(prev => [...prev, 'Extra Benefit roll']);
+      }
 
       // Handle table redirects (e.g., rollOnTable: 'injury')
       if (effects.rollOnTable) {
@@ -1816,28 +1887,61 @@ export const CharacterGenerator: React.FC = () => {
   const musterOut = () => {
     if (!selectedCareer) return;
 
-    // Calculate mustering out benefits
-    const benefitRolls = Math.min(characterData.terms_served, 7);
+    // Save current career to history first
+    const assignmentName = selectedCareer.assignments[selectedAssignment]?.name || '';
+    const currentCareerRecord: CareerRecord = {
+      careerName: selectedCareer.name,
+      assignment: assignmentName,
+      termsServed: currentTerm,
+      highestRank: characterData.rank,
+      isCommissioned: isCommissioned,
+      benefitDM: eventBenefitDM,
+      extraBenefitRolls: extraBenefitRolls,
+      isPreCareer: selectedCareer.isPreCareer || false,
+    };
+
+    // Get all career records (previous + current)
+    const allCareers = [...characterData.careerHistory, currentCareerRecord];
+
+    // Calculate benefit rolls and pension for each career
+    let totalBenefitRolls = 0;
+    let totalPension = 0;
+
+    // Military careers that qualify for pension: Army, Marines, Navy, Agent (Law Enforcement)
+    const pensionCareers = ['Army', 'Marines', 'Navy', 'Agent'];
+
+    allCareers.forEach(career => {
+      // Pre-careers don't get benefits
+      if (career.isPreCareer) return;
+
+      const { rolls } = calculateBenefitRolls(career.termsServed, career.highestRank, career.extraBenefitRolls);
+      totalBenefitRolls += rolls;
+
+      // Calculate pension for qualifying careers (5+ terms)
+      if (pensionCareers.includes(career.careerName) && career.termsServed >= 5) {
+        // Cr2000 per term served starting at term 5
+        totalPension += career.termsServed * 2000;
+      }
+    });
+
+    // TODO: For now, calculate cash using old simplified method
+    // In Phase 1c, this will be replaced with actual benefit roll UI
     let totalCash = 0;
-
-    // Simplified cash table
     const cashValues = [1000, 5000, 10000, 10000, 50000, 100000];
+    const cashRolls = Math.min(totalBenefitRolls, 3); // Max 3 cash rolls
 
-    for (let i = 0; i < benefitRolls; i++) {
+    for (let i = 0; i < cashRolls; i++) {
       const roll = rollDice(1, 6);
       totalCash += cashValues[Math.min(roll - 1, 5)];
     }
 
-    // Add pension if 5+ terms
-    const pension = characterData.terms_served >= 5
-      ? (characterData.terms_served - 4) * 2000
-      : 0;
-
     setCharacterData(prev => ({
       ...prev,
+      careerHistory: allCareers,
       cash_on_hand: totalCash,
       credits: totalCash,
-      pension,
+      pension: totalPension,
+      cashBenefitRollsUsed: cashRolls,
     }));
 
     setStep(6); // Go to review
@@ -1845,6 +1949,85 @@ export const CharacterGenerator: React.FC = () => {
 
   const continueCareer = () => {
     startNewTerm();
+  };
+
+  // Save current career to history when switching careers (not mustering out)
+  const saveCurrentCareerToHistory = () => {
+    if (!selectedCareer || currentTerm === 0) return;
+
+    const assignmentName = selectedCareer.assignments[selectedAssignment]?.name || '';
+
+    const careerRecord: CareerRecord = {
+      careerName: selectedCareer.name,
+      assignment: assignmentName,
+      termsServed: currentTerm,
+      highestRank: characterData.rank,
+      isCommissioned: isCommissioned,
+      benefitDM: eventBenefitDM,
+      extraBenefitRolls: extraBenefitRolls,
+      isPreCareer: selectedCareer.isPreCareer || false,
+    };
+
+    setCharacterData(prev => ({
+      ...prev,
+      careerHistory: [...prev.careerHistory, careerRecord],
+    }));
+
+    // Reset benefit tracking for new career
+    setEventBenefitDM(0);
+    setExtraBenefitRolls(0);
+  };
+
+  // Switch to a new career after leaving current one (after mishap, etc.)
+  const switchToNewCareer = () => {
+    // Save current career to history (unless it's a pre-career, which don't get benefits)
+    saveCurrentCareerToHistory();
+
+    // Reset career selection state
+    setSelectedCareer(null);
+    setSelectedAssignment(0);
+    setQualificationRollLog('');
+    setQualificationPassed(null);
+    setIsInTerm(false);
+    setCurrentTerm(0);
+    setTermSurvived(null);
+    setTermAdvanced(null);
+    setTermEventRoll(null);
+    setTermSkillsGained([]);
+    setIsCommissioned(false);
+    setPreCareerGraduated(false);
+    setGraduatedWithHonours(false);
+    setGraduationRollLog('');
+    setSurvivalRollLog('');
+    setAdvancementRollLog('');
+    setCurrentEvent(null);
+    setEventRollResult(null);
+    setEventResolved(false);
+    setEventOutcomeApplied(false);
+    setCurrentGameEvent(null);
+    setGameEventCompleted(false);
+    setRedirectedEvent(null);
+    setRedirectTableRoll(null);
+    setRedirectTableName(null);
+    setPendingSpecialtySkill(null);
+    setPendingSpecialtySource('');
+    setTermSkillSelected(false);
+    setExpandedSkillTable(null);
+    setSkillTableRollResult(null);
+    setBasicTrainingApplied(false);
+    setBasicTrainingSkillSelected(null);
+    setUniversitySkillLevel0(null);
+    setUniversitySkillLevel1(null);
+    setUniversityPendingSpecialty(null);
+    setUniversityBaseSkillSelected(null);
+    setMilitaryAcademyService(null);
+    setAcademyGradSkillsSelected([]);
+    setAcademyGradPendingSpecialty(null);
+    // Reset event advancement DM for new career
+    setEventAdvancementDM(0);
+
+    // Go back to career selection
+    setStep(4);
   };
 
   const selectNextCareerFromPreCareer = () => {
@@ -2844,14 +3027,7 @@ export const CharacterGenerator: React.FC = () => {
                     )}
                     <div className="flex gap-2">
                       <Button
-                        onClick={() => {
-                          setIsInTerm(false);
-                          setTermSurvived(null);
-                          setSelectedCareer(null);
-                          setQualificationPassed(null);
-                          setPreCareerGraduated(false);
-                          setStep(4); // Go back to career selection
-                        }}
+                        onClick={switchToNewCareer}
                         className="flex-1 bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
                       >
                         Back to Career Selection
