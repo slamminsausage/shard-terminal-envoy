@@ -987,7 +987,10 @@ export const CharacterGenerator: React.FC = () => {
     setAcademyGradSkillsSelected([]);
     setAcademyGradPendingSpecialty(null);
 
-    const newAge = 18 + newTermNumber * 4;
+    // Calculate age based on TOTAL terms completed across all careers
+    // lifepath_log contains one entry per completed term
+    const totalTermsCompleted = characterData.lifepath_log.length;
+    const newAge = 18 + (totalTermsCompleted + 1) * 4;
     setCharacterData(prev => ({
       ...prev,
       age: newAge,
@@ -1983,6 +1986,14 @@ export const CharacterGenerator: React.FC = () => {
     // Save current career to history (unless it's a pre-career, which don't get benefits)
     saveCurrentCareerToHistory();
 
+    // Reset rank and terms_served for the new career (but keep age and other stats)
+    setCharacterData(prev => ({
+      ...prev,
+      rank: 0,
+      terms_served: 0,
+      career: '', // Clear current career name
+    }));
+
     // Reset career selection state
     setSelectedCareer(null);
     setSelectedAssignment(0);
@@ -2034,6 +2045,17 @@ export const CharacterGenerator: React.FC = () => {
     // Store pre-career info before resetting
     const completedPreCareer = selectedCareer;
     const wasHonours = graduatedWithHonours;
+
+    // Save pre-career to history (they don't get benefits but track for completeness)
+    saveCurrentCareerToHistory();
+
+    // Reset rank and terms_served for the new career
+    setCharacterData(prev => ({
+      ...prev,
+      rank: 0,
+      terms_served: 0,
+      career: '',
+    }));
 
     // Reset career selection state but keep character data
     setSelectedCareer(null);
