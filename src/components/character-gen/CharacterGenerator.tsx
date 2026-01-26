@@ -14,6 +14,7 @@ import { rollDraft, type DraftResult, getLifeEvent, getInjury, getUnusualEvent }
 import { EventHandler } from './EventHandler';
 import { rollDiceExpression, rollDice as rollDiceUtil } from './eventProcessor';
 import { SpecialtySelector, needsSpecialtySelection, getBaseSkillName } from './SpecialtySelector';
+import { MusteringOut } from './MusteringOut';
 
 // ============================================================================
 // TYPE DEFINITIONS (Component-specific)
@@ -380,6 +381,9 @@ export const CharacterGenerator: React.FC = () => {
   const [eventAdvancementDM, setEventAdvancementDM] = useState<number>(0);
   const [eventBenefitDM, setEventBenefitDM] = useState<number>(0);
   const [extraBenefitRolls, setExtraBenefitRolls] = useState<number>(0);
+
+  // Mustering out state
+  const [isMusteringOut, setIsMusteringOut] = useState(false);
 
   // Get available careers based on current term number
   const getAvailableCareers = (): CareerDefinition[] => {
@@ -1903,50 +1907,53 @@ export const CharacterGenerator: React.FC = () => {
       isPreCareer: selectedCareer.isPreCareer || false,
     };
 
-    // Get all career records (previous + current)
-    const allCareers = [...characterData.careerHistory, currentCareerRecord];
+    // Add current career to history
+    setCharacterData(prev => ({
+      ...prev,
+      careerHistory: [...prev.careerHistory, currentCareerRecord],
+    }));
 
-    // Calculate benefit rolls and pension for each career
-    let totalBenefitRolls = 0;
+    // Show mustering out UI
+    setIsMusteringOut(true);
+  };
+
+  // Handle completion of mustering out process
+  const handleMusteringOutComplete = (results: {
+    cash: number;
+    shipShares: number;
+    tasMembership: boolean;
+    ships: string[];
+    characteristics: typeof characterData.characteristics;
+    allies: number;
+    contacts: number;
+    equipment: string[];
+    benefitLog: any[];
+  }) => {
+    // Calculate pension for qualifying careers
     let totalPension = 0;
-
-    // Military careers that qualify for pension: Army, Marines, Navy, Agent (Law Enforcement)
     const pensionCareers = ['Army', 'Marines', 'Navy', 'Agent'];
 
-    allCareers.forEach(career => {
-      // Pre-careers don't get benefits
-      if (career.isPreCareer) return;
-
-      const { rolls } = calculateBenefitRolls(career.termsServed, career.highestRank, career.extraBenefitRolls);
-      totalBenefitRolls += rolls;
-
-      // Calculate pension for qualifying careers (5+ terms)
-      if (pensionCareers.includes(career.careerName) && career.termsServed >= 5) {
-        // Cr2000 per term served starting at term 5
+    characterData.careerHistory.forEach(career => {
+      if (!career.isPreCareer && pensionCareers.includes(career.careerName) && career.termsServed >= 5) {
         totalPension += career.termsServed * 2000;
       }
     });
 
-    // TODO: For now, calculate cash using old simplified method
-    // In Phase 1c, this will be replaced with actual benefit roll UI
-    let totalCash = 0;
-    const cashValues = [1000, 5000, 10000, 10000, 50000, 100000];
-    const cashRolls = Math.min(totalBenefitRolls, 3); // Max 3 cash rolls
-
-    for (let i = 0; i < cashRolls; i++) {
-      const roll = rollDice(1, 6);
-      totalCash += cashValues[Math.min(roll - 1, 5)];
-    }
-
     setCharacterData(prev => ({
       ...prev,
-      careerHistory: allCareers,
-      cash_on_hand: totalCash,
-      credits: totalCash,
+      cash_on_hand: results.cash,
+      credits: results.cash,
       pension: totalPension,
-      cashBenefitRollsUsed: cashRolls,
+      shipShares: results.shipShares,
+      tasMembership: results.tasMembership,
+      ships: results.ships,
+      characteristics: results.characteristics,
+      allies: prev.allies + results.allies,
+      contacts: prev.contacts + results.contacts,
+      equipment: [...prev.equipment, ...results.equipment],
     }));
 
+    setIsMusteringOut(false);
     setStep(6); // Go to review
   };
 
@@ -2914,6 +2921,19 @@ export const CharacterGenerator: React.FC = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
+                {isMusteringOut ? (
+                  <MusteringOut
+                    careerHistory={characterData.careerHistory}
+                    currentCash={characterData.cash_on_hand}
+                    currentShipShares={characterData.shipShares}
+                    hasTasMembership={characterData.tasMembership}
+                    ships={characterData.ships}
+                    gamblerSkillLevel={parseInt(characterData.skills['Gambler']?.value || '0') || 0}
+                    characteristics={characterData.characteristics}
+                    onComplete={handleMusteringOutComplete}
+                  />
+                ) : (
+                <>
                 <div className="bg-terminal-primary/5 border border-terminal-primary/30 rounded p-4">
                   <div className="grid grid-cols-2 gap-4 text-sm text-terminal-primary/80">
                     <div>
@@ -3838,6 +3858,8 @@ export const CharacterGenerator: React.FC = () => {
                     Back
                   </Button>
                 </div>
+                </>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
