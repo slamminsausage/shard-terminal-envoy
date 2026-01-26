@@ -79,12 +79,20 @@ export interface EventEffects {
   canTestPsi?: boolean;        // Can test PSI score
   draftModifier?: number;      // DM to draft rolls
 
+  // Prisoner career effects
+  paroleThresholdChange?: number;    // Modify parole threshold (+/-)
+  leaveCareer?: boolean;             // Successfully leave the prisoner career (escape)
+  rerollParoleThreshold?: boolean;   // Re-roll parole threshold (transfer)
+  survivalDM?: number;               // DM to survival rolls in this career
+  loseBenefits?: boolean;            // Lose all benefit rolls from this career
+
   // Injury/medical
   rollOnInjuryTable?: boolean;
   injurySeverity?: 'light' | 'standard' | 'severe';
 
   // Benefit modifications
   benefitDM?: number;          // DM to benefit rolls
+  extraBenefit?: boolean;      // Gain an extra benefit roll
 
   // Redirect to another table
   rollOnTable?: 'life_events' | 'injury' | 'aging' | 'unusual_events';
@@ -301,6 +309,12 @@ export interface CareerDefinition {
   isPreCareer?: boolean;
   preCareerType?: 'university' | 'military_academy';
   maxTerms?: number;
+  // Prisoner career flags
+  isPrisonerCareer?: boolean;       // Cannot enter voluntarily, uses parole system
+  usesParoleThreshold?: boolean;    // Uses parole threshold instead of normal advancement for leaving
+  // Psion career flags
+  requiresPsiTesting?: boolean;     // Must have PSI characteristic tested before qualification
+  noAnagathics?: boolean;           // Cannot use anagathics in this career
   assignments: Assignment[];
   skillTables: {
     personalDevelopment: string[];

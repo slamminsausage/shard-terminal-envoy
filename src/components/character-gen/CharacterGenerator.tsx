@@ -4,16 +4,17 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Dices, User, Briefcase, Award, Save, ArrowRight, AlertCircle, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react';
+import { Dices, User, Briefcase, Award, Save, ArrowRight, AlertCircle, RefreshCw, ChevronDown, ChevronUp, Star } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useCampaign } from '@/contexts/CampaignContext';
-import { ALL_CAREERS, BACKGROUND_SKILLS, getPreCareerEvent } from './careers';
+import { ALL_CAREERS, BACKGROUND_SKILLS, getPreCareerEvent, CAREER_PRISONER, rollInitialParoleThreshold, CAREER_PSION, performPsiTesting, PSIONIC_TALENTS, type PsiTestResult } from './careers';
 import type { CareerDefinition, Characteristics, StructuredEvent, EventOutcome, GameEvent, EventEffects } from './careers';
 import { isGameEvent } from './careers';
-import { rollDraft, type DraftResult, getLifeEvent, getInjury, getUnusualEvent } from './tables';
+import { rollDraft, type DraftResult, getLifeEvent, getInjury, getUnusualEvent, rollAging, applyAgingEffects, type AgingRollResult } from './tables';
 import { EventHandler } from './EventHandler';
 import { rollDiceExpression, rollDice as rollDiceUtil } from './eventProcessor';
 import { SpecialtySelector, needsSpecialtySelection, getBaseSkillName } from './SpecialtySelector';
+import { MusteringOut } from './MusteringOut';
 
 // ============================================================================
 // TYPE DEFINITIONS (Component-specific)
@@ -115,6 +116,15 @@ interface CharacterData {
   contacts: number;
   rivals: number;
   enemies: number;
+
+  // Prisoner career tracking
+  paroleThreshold?: number;       // Current parole threshold (starts at 1D+2)
+  forcedCareer?: string;          // Career that must be taken next term
+  prisonerSurvivalDM?: number;    // DM to survival rolls from gang membership, etc.
+
+  // Psionic tracking
+  psiTested?: boolean;            // Whether PSI has been tested
+  psiTalents?: string[];          // Acquired psionic talents
 }
 
 // ============================================================================
@@ -306,7 +316,18 @@ export const CharacterGenerator: React.FC = () => {
     contacts: 0,
     rivals: 0,
     enemies: 0,
+    // Prisoner tracking
+    paroleThreshold: undefined,
+    forcedCareer: undefined,
+    prisonerSurvivalDM: 0,
+    // Psionic tracking
+    psiTested: false,
+    psiTalents: [],
   });
+
+  // Psionic testing state
+  const [psiTestResult, setPsiTestResult] = useState<PsiTestResult | null>(null);
+  const [showPsiTesting, setShowPsiTesting] = useState(false);
 
   const [characteristicRolls, setCharacteristicRolls] = useState<number[]>([]);
   const [hasRolled, setHasRolled] = useState(false);
@@ -381,9 +402,28 @@ export const CharacterGenerator: React.FC = () => {
   const [eventBenefitDM, setEventBenefitDM] = useState<number>(0);
   const [extraBenefitRolls, setExtraBenefitRolls] = useState<number>(0);
 
+  // Mustering out state
+  const [isMusteringOut, setIsMusteringOut] = useState(false);
+
+  // Aging state
+  const [agingResult, setAgingResult] = useState<AgingRollResult | null>(null);
+  const [agingPending, setAgingPending] = useState(false);
+
   // Get available careers based on current term number
   const getAvailableCareers = (): CareerDefinition[] => {
     const totalTerms = characterData.totalCareerTerms || 0;
+
+    // If character has a forced career (e.g., arrested -> Prisoner), only that career is available
+    if (characterData.forcedCareer) {
+      if (characterData.forcedCareer === 'Prisoner') {
+        return [CAREER_PRISONER];
+      }
+      // For other forced careers, find in ALL_CAREERS
+      const forcedCareer = ALL_CAREERS.find(c => c.name === characterData.forcedCareer);
+      if (forcedCareer) {
+        return [forcedCareer];
+      }
+    }
 
     return ALL_CAREERS.filter(career => {
       // Pre-careers are only available for first 3 terms
@@ -392,6 +432,11 @@ export const CharacterGenerator: React.FC = () => {
         if (characterData.hasCompletedPreCareer) return false;
         // Only available for terms 1-3
         return totalTerms < 3;
+      }
+      // Psion career requires PSI testing and PSI > 0
+      if (career.requiresPsiTesting) {
+        if (!characterData.psiTested) return false;
+        if ((characterData.characteristics.psionics?.total || 0) === 0) return false;
       }
       // Regular careers always available
       return true;
@@ -726,6 +771,56 @@ export const CharacterGenerator: React.FC = () => {
     }));
   };
 
+  // Enter prisoner career (forced entry only)
+  const becomePrisoner = () => {
+    // Set the career
+    setSelectedCareer(CAREER_PRISONER);
+
+    // Default to first assignment (Inmate)
+    setSelectedAssignment(0);
+
+    // Roll initial parole threshold (1D+2, max 12)
+    const parole = rollInitialParoleThreshold();
+
+    setQualificationRollLog(`Sentenced to prison. Initial Parole Threshold: ${parole}. Choose your assignment.`);
+
+    // Automatically pass qualification (Prisoner has automatic entry when forced)
+    setQualificationPassed(true);
+
+    setCharacterData(prev => ({
+      ...prev,
+      career: 'Prisoner',
+      paroleThreshold: parole,
+      forcedCareer: undefined, // Clear the forced career flag
+      notes: prev.notes + `\nSentenced to prison (Parole Threshold: ${parole})`,
+    }));
+  };
+
+  // Perform PSI testing
+  const performPsiTest = () => {
+    // Test for all five talents
+    const result = performPsiTesting(characterData.age, [...PSIONIC_TALENTS]);
+    setPsiTestResult(result);
+
+    // Update character with PSI value and acquired talents
+    const acquiredTalents = result.talentsTested
+      .filter(t => t.acquired)
+      .map(t => t.talent);
+
+    setCharacterData(prev => ({
+      ...prev,
+      characteristics: {
+        ...prev.characteristics,
+        psionics: { total: result.psiValue, current: result.psiValue },
+      },
+      psiTested: true,
+      psiTalents: acquiredTalents,
+      notes: prev.notes + `\n${result.message}`,
+    }));
+
+    setShowPsiTesting(false);
+  };
+
   // ============================================================================
   // BASIC TRAINING SYSTEM
   // ============================================================================
@@ -987,7 +1082,10 @@ export const CharacterGenerator: React.FC = () => {
     setAcademyGradSkillsSelected([]);
     setAcademyGradPendingSpecialty(null);
 
-    const newAge = 18 + newTermNumber * 4;
+    // Calculate age based on TOTAL terms completed across all careers
+    // lifepath_log contains one entry per completed term
+    const totalTermsCompleted = characterData.lifepath_log.length;
+    const newAge = 18 + (totalTermsCompleted + 1) * 4;
     setCharacterData(prev => ({
       ...prev,
       age: newAge,
@@ -1237,7 +1335,23 @@ export const CharacterGenerator: React.FC = () => {
     if (eventAdvancementDM > 0) {
       dmBreakdown = `${charDM} + ${eventAdvancementDM} (event bonus)`;
     }
-    setAdvancementRollLog(`Advancement Roll: ${roll} + ${dmBreakdown} = ${total} (need ${assignment.advancementTarget}+)`);
+
+    // Prisoner career: check for parole
+    if (selectedCareer.isPrisonerCareer && characterData.paroleThreshold !== undefined) {
+      const paroleReleased = total > characterData.paroleThreshold;
+      setAdvancementRollLog(`Advancement/Parole Roll: ${roll} + ${dmBreakdown} = ${total} vs Parole Threshold ${characterData.paroleThreshold}. ${paroleReleased ? 'RELEASED FROM PRISON!' : 'Still incarcerated.'}`);
+
+      if (paroleReleased) {
+        // Released from prison - force career switch after this term
+        setCharacterData(prev => ({
+          ...prev,
+          paroleThreshold: undefined, // Clear parole threshold
+          notes: prev.notes + '\nReleased from prison on parole.',
+        }));
+      }
+    } else {
+      setAdvancementRollLog(`Advancement Roll: ${roll} + ${dmBreakdown} = ${total} (need ${assignment.advancementTarget}+)`);
+    }
 
     // Reset the event advancement DM after using it
     setEventAdvancementDM(0);
@@ -1881,6 +1995,29 @@ export const CharacterGenerator: React.FC = () => {
       });
     }
 
+    // Check for aging (starting at term 5 / age 38)
+    // Total terms is based on lifepath_log length which now includes the current term
+    const totalTermsAfterThis = characterData.lifepath_log.length + 1;
+    if (totalTermsAfterThis >= 5) {
+      const agingRollResult = rollAging(totalTermsAfterThis, characterData.characteristics);
+      if (agingRollResult) {
+        setAgingResult(agingRollResult);
+        setAgingPending(true);
+
+        // If aging roll failed, apply the effects immediately to characteristics
+        if (!agingRollResult.passed) {
+          const newCharacteristics = applyAgingEffects(
+            characterData.characteristics,
+            agingRollResult.effects.effects
+          );
+          setCharacterData(prev => ({
+            ...prev,
+            characteristics: newCharacteristics,
+          }));
+        }
+      }
+    }
+
     setIsInTerm(false);
   };
 
@@ -1900,50 +2037,53 @@ export const CharacterGenerator: React.FC = () => {
       isPreCareer: selectedCareer.isPreCareer || false,
     };
 
-    // Get all career records (previous + current)
-    const allCareers = [...characterData.careerHistory, currentCareerRecord];
+    // Add current career to history
+    setCharacterData(prev => ({
+      ...prev,
+      careerHistory: [...prev.careerHistory, currentCareerRecord],
+    }));
 
-    // Calculate benefit rolls and pension for each career
-    let totalBenefitRolls = 0;
+    // Show mustering out UI
+    setIsMusteringOut(true);
+  };
+
+  // Handle completion of mustering out process
+  const handleMusteringOutComplete = (results: {
+    cash: number;
+    shipShares: number;
+    tasMembership: boolean;
+    ships: string[];
+    characteristics: typeof characterData.characteristics;
+    allies: number;
+    contacts: number;
+    equipment: string[];
+    benefitLog: any[];
+  }) => {
+    // Calculate pension for qualifying careers
     let totalPension = 0;
-
-    // Military careers that qualify for pension: Army, Marines, Navy, Agent (Law Enforcement)
     const pensionCareers = ['Army', 'Marines', 'Navy', 'Agent'];
 
-    allCareers.forEach(career => {
-      // Pre-careers don't get benefits
-      if (career.isPreCareer) return;
-
-      const { rolls } = calculateBenefitRolls(career.termsServed, career.highestRank, career.extraBenefitRolls);
-      totalBenefitRolls += rolls;
-
-      // Calculate pension for qualifying careers (5+ terms)
-      if (pensionCareers.includes(career.careerName) && career.termsServed >= 5) {
-        // Cr2000 per term served starting at term 5
+    characterData.careerHistory.forEach(career => {
+      if (!career.isPreCareer && pensionCareers.includes(career.careerName) && career.termsServed >= 5) {
         totalPension += career.termsServed * 2000;
       }
     });
 
-    // TODO: For now, calculate cash using old simplified method
-    // In Phase 1c, this will be replaced with actual benefit roll UI
-    let totalCash = 0;
-    const cashValues = [1000, 5000, 10000, 10000, 50000, 100000];
-    const cashRolls = Math.min(totalBenefitRolls, 3); // Max 3 cash rolls
-
-    for (let i = 0; i < cashRolls; i++) {
-      const roll = rollDice(1, 6);
-      totalCash += cashValues[Math.min(roll - 1, 5)];
-    }
-
     setCharacterData(prev => ({
       ...prev,
-      careerHistory: allCareers,
-      cash_on_hand: totalCash,
-      credits: totalCash,
+      cash_on_hand: results.cash,
+      credits: results.cash,
       pension: totalPension,
-      cashBenefitRollsUsed: cashRolls,
+      shipShares: results.shipShares,
+      tasMembership: results.tasMembership,
+      ships: results.ships,
+      characteristics: results.characteristics,
+      allies: prev.allies + results.allies,
+      contacts: prev.contacts + results.contacts,
+      equipment: [...prev.equipment, ...results.equipment],
     }));
 
+    setIsMusteringOut(false);
     setStep(6); // Go to review
   };
 
@@ -1982,6 +2122,14 @@ export const CharacterGenerator: React.FC = () => {
   const switchToNewCareer = () => {
     // Save current career to history (unless it's a pre-career, which don't get benefits)
     saveCurrentCareerToHistory();
+
+    // Reset rank and terms_served for the new career (but keep age and other stats)
+    setCharacterData(prev => ({
+      ...prev,
+      rank: 0,
+      terms_served: 0,
+      career: '', // Clear current career name
+    }));
 
     // Reset career selection state
     setSelectedCareer(null);
@@ -2034,6 +2182,17 @@ export const CharacterGenerator: React.FC = () => {
     // Store pre-career info before resetting
     const completedPreCareer = selectedCareer;
     const wasHonours = graduatedWithHonours;
+
+    // Save pre-career to history (they don't get benefits but track for completeness)
+    saveCurrentCareerToHistory();
+
+    // Reset rank and terms_served for the new career
+    setCharacterData(prev => ({
+      ...prev,
+      rank: 0,
+      terms_served: 0,
+      career: '',
+    }));
 
     // Reset career selection state but keep character data
     setSelectedCareer(null);
@@ -2574,6 +2733,52 @@ export const CharacterGenerator: React.FC = () => {
                 <CardTitle className="text-terminal-primary">Choose Your Career</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
+                {/* Forced Career Alert */}
+                {characterData.forcedCareer && (
+                  <Alert className="bg-red-500/10 border-red-500/50">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription className="text-red-400">
+                      <strong>FORCED ENTRY:</strong> You must enter the {characterData.forcedCareer} career.
+                      {characterData.forcedCareer === 'Prisoner' && ' You have been sentenced to prison.'}
+                    </AlertDescription>
+                  </Alert>
+                )}
+
+                {/* PSI Testing Section */}
+                {!characterData.forcedCareer && (
+                  <div className="bg-purple-500/10 border border-purple-500/30 rounded p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h4 className="text-purple-400 font-bold">Psionic Testing</h4>
+                        <p className="text-xs text-purple-300/70">
+                          {characterData.psiTested
+                            ? `PSI: ${characterData.characteristics.psionics?.total || 0}${(characterData.psiTalents?.length || 0) > 0 ? ` | Talents: ${characterData.psiTalents?.join(', ')}` : ' | No talents acquired'}`
+                            : 'Test for psionic potential to unlock the Psion career.'}
+                        </p>
+                      </div>
+                      {!characterData.psiTested && (
+                        <Button
+                          onClick={performPsiTest}
+                          className="bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 border border-purple-500/50"
+                        >
+                          <Star className="h-4 w-4 mr-2" />
+                          Test PSI
+                        </Button>
+                      )}
+                    </div>
+                    {psiTestResult && (
+                      <div className="mt-3 text-xs text-purple-300/80 border-t border-purple-500/30 pt-2">
+                        <div className="font-bold mb-1">Test Results:</div>
+                        {psiTestResult.talentsTested.map((t, i) => (
+                          <div key={t.talent} className={t.acquired ? 'text-green-400' : 'text-red-400/70'}>
+                            {t.talent}: Roll {t.roll} vs {t.targetNumber} - {t.acquired ? 'ACQUIRED' : 'Failed'}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {/* Career Cards */}
                 {getAvailableCareers().map(career => (
                   <Card
@@ -2584,6 +2789,12 @@ export const CharacterGenerator: React.FC = () => {
                         : 'bg-black border-terminal-primary/30 hover:border-terminal-primary/50'
                     }`}
                     onClick={() => {
+                      // Handle Prisoner career specially (forced entry, automatic qualification)
+                      if (career.isPrisonerCareer) {
+                        becomePrisoner();
+                        return;
+                      }
+
                       setSelectedCareer(career);
                       // Don't reset if they have automatic entry to this career
                       if (preCareerFailedService !== career.name) {
@@ -2892,6 +3103,19 @@ export const CharacterGenerator: React.FC = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
+                {isMusteringOut ? (
+                  <MusteringOut
+                    careerHistory={characterData.careerHistory}
+                    currentCash={characterData.cash_on_hand}
+                    currentShipShares={characterData.shipShares}
+                    hasTasMembership={characterData.tasMembership}
+                    ships={characterData.ships}
+                    gamblerSkillLevel={parseInt(characterData.skills['Gambler']?.value || '0') || 0}
+                    characteristics={characterData.characteristics}
+                    onComplete={handleMusteringOutComplete}
+                  />
+                ) : (
+                <>
                 <div className="bg-terminal-primary/5 border border-terminal-primary/30 rounded p-4">
                   <div className="grid grid-cols-2 gap-4 text-sm text-terminal-primary/80">
                     <div>
@@ -2914,6 +3138,14 @@ export const CharacterGenerator: React.FC = () => {
                     <div>
                       <span className="text-terminal-primary/60">Terms Served:</span> {characterData.terms_served}
                     </div>
+                    {/* Show Parole Threshold for Prisoner career */}
+                    {selectedCareer?.isPrisonerCareer && characterData.paroleThreshold !== undefined && (
+                      <div className="col-span-2 mt-2 p-2 bg-red-500/10 border border-red-500/30 rounded">
+                        <span className="text-red-400 font-bold">Parole Threshold:</span>{' '}
+                        <span className="text-red-300">{characterData.paroleThreshold}</span>
+                        <span className="text-red-400/70 text-xs ml-2">(advancement roll must exceed this to be released)</span>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -3775,6 +4007,34 @@ export const CharacterGenerator: React.FC = () => {
                   )
                 )}
 
+                {/* Aging Result Alert */}
+                {agingPending && agingResult && (
+                  <Alert className={agingResult.passed ? "bg-green-500/10 border-green-500/50" : agingResult.crisisCheck?.isCrisis ? "bg-red-500/10 border-red-500/50" : "bg-yellow-500/10 border-yellow-500/50"}>
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription className={agingResult.passed ? "text-green-400" : agingResult.crisisCheck?.isCrisis ? "text-red-400" : "text-yellow-400"}>
+                      <div className="font-bold mb-1">Aging Roll (Term {agingResult.termNumber})</div>
+                      <div className="text-sm mb-2">{agingResult.message}</div>
+                      {!agingResult.passed && agingResult.effects.effects.length > 0 && (
+                        <div className="text-xs text-terminal-primary/70">
+                          Effects: {agingResult.effects.effects.map((e, i) => `${e.stat.toUpperCase()} ${e.modifier}`).join(', ')}
+                        </div>
+                      )}
+                      {agingResult.crisisCheck?.isCrisis && (
+                        <div className="mt-2 text-xs text-red-400 font-bold">
+                          {agingResult.crisisCheck.message}
+                        </div>
+                      )}
+                      <Button
+                        onClick={() => setAgingPending(false)}
+                        size="sm"
+                        className="mt-2 bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
+                      >
+                        Acknowledge
+                      </Button>
+                    </AlertDescription>
+                  </Alert>
+                )}
+
                 {characterData.lifepath_log.length > 0 && (
                   <div className="border border-terminal-primary/30 rounded p-4 max-h-80 overflow-y-auto">
                     <h3 className="text-sm font-bold text-terminal-primary uppercase mb-2">Lifepath Log</h3>
@@ -3816,6 +4076,8 @@ export const CharacterGenerator: React.FC = () => {
                     Back
                   </Button>
                 </div>
+                </>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
