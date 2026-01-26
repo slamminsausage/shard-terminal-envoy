@@ -7,7 +7,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dices, User, Briefcase, Award, Save, ArrowRight, AlertCircle, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useCampaign } from '@/contexts/CampaignContext';
-import { ALL_CAREERS, BACKGROUND_SKILLS, getPreCareerEvent } from './careers';
+import { ALL_CAREERS, BACKGROUND_SKILLS, getPreCareerEvent, CAREER_PRISONER, rollInitialParoleThreshold } from './careers';
 import type { CareerDefinition, Characteristics, StructuredEvent, EventOutcome, GameEvent, EventEffects } from './careers';
 import { isGameEvent } from './careers';
 import { rollDraft, type DraftResult, getLifeEvent, getInjury, getUnusualEvent, rollAging, applyAgingEffects, type AgingRollResult } from './tables';
@@ -116,6 +116,11 @@ interface CharacterData {
   contacts: number;
   rivals: number;
   enemies: number;
+
+  // Prisoner career tracking
+  paroleThreshold?: number;       // Current parole threshold (starts at 1D+2)
+  forcedCareer?: string;          // Career that must be taken next term
+  prisonerSurvivalDM?: number;    // DM to survival rolls from gang membership, etc.
 }
 
 // ============================================================================
@@ -307,6 +312,10 @@ export const CharacterGenerator: React.FC = () => {
     contacts: 0,
     rivals: 0,
     enemies: 0,
+    // Prisoner tracking
+    paroleThreshold: undefined,
+    forcedCareer: undefined,
+    prisonerSurvivalDM: 0,
   });
 
   const [characteristicRolls, setCharacteristicRolls] = useState<number[]>([]);
@@ -392,6 +401,18 @@ export const CharacterGenerator: React.FC = () => {
   // Get available careers based on current term number
   const getAvailableCareers = (): CareerDefinition[] => {
     const totalTerms = characterData.totalCareerTerms || 0;
+
+    // If character has a forced career (e.g., arrested -> Prisoner), only that career is available
+    if (characterData.forcedCareer) {
+      if (characterData.forcedCareer === 'Prisoner') {
+        return [CAREER_PRISONER];
+      }
+      // For other forced careers, find in ALL_CAREERS
+      const forcedCareer = ALL_CAREERS.find(c => c.name === characterData.forcedCareer);
+      if (forcedCareer) {
+        return [forcedCareer];
+      }
+    }
 
     return ALL_CAREERS.filter(career => {
       // Pre-careers are only available for first 3 terms
@@ -731,6 +752,31 @@ export const CharacterGenerator: React.FC = () => {
       ...prev,
       career: drifterCareer.name,
       notes: prev.notes + '\nBecame a Drifter (failed career qualification)',
+    }));
+  };
+
+  // Enter prisoner career (forced entry only)
+  const becomePrisoner = () => {
+    // Set the career
+    setSelectedCareer(CAREER_PRISONER);
+
+    // Default to first assignment (Inmate)
+    setSelectedAssignment(0);
+
+    // Roll initial parole threshold (1D+2, max 12)
+    const parole = rollInitialParoleThreshold();
+
+    setQualificationRollLog(`Sentenced to prison. Initial Parole Threshold: ${parole}. Choose your assignment.`);
+
+    // Automatically pass qualification (Prisoner has automatic entry when forced)
+    setQualificationPassed(true);
+
+    setCharacterData(prev => ({
+      ...prev,
+      career: 'Prisoner',
+      paroleThreshold: parole,
+      forcedCareer: undefined, // Clear the forced career flag
+      notes: prev.notes + `\nSentenced to prison (Parole Threshold: ${parole})`,
     }));
   };
 
@@ -1248,7 +1294,23 @@ export const CharacterGenerator: React.FC = () => {
     if (eventAdvancementDM > 0) {
       dmBreakdown = `${charDM} + ${eventAdvancementDM} (event bonus)`;
     }
-    setAdvancementRollLog(`Advancement Roll: ${roll} + ${dmBreakdown} = ${total} (need ${assignment.advancementTarget}+)`);
+
+    // Prisoner career: check for parole
+    if (selectedCareer.isPrisonerCareer && characterData.paroleThreshold !== undefined) {
+      const paroleReleased = total > characterData.paroleThreshold;
+      setAdvancementRollLog(`Advancement/Parole Roll: ${roll} + ${dmBreakdown} = ${total} vs Parole Threshold ${characterData.paroleThreshold}. ${paroleReleased ? 'RELEASED FROM PRISON!' : 'Still incarcerated.'}`);
+
+      if (paroleReleased) {
+        // Released from prison - force career switch after this term
+        setCharacterData(prev => ({
+          ...prev,
+          paroleThreshold: undefined, // Clear parole threshold
+          notes: prev.notes + '\nReleased from prison on parole.',
+        }));
+      }
+    } else {
+      setAdvancementRollLog(`Advancement Roll: ${roll} + ${dmBreakdown} = ${total} (need ${assignment.advancementTarget}+)`);
+    }
 
     // Reset the event advancement DM after using it
     setEventAdvancementDM(0);
@@ -2630,6 +2692,17 @@ export const CharacterGenerator: React.FC = () => {
                 <CardTitle className="text-terminal-primary">Choose Your Career</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
+                {/* Forced Career Alert */}
+                {characterData.forcedCareer && (
+                  <Alert className="bg-red-500/10 border-red-500/50">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription className="text-red-400">
+                      <strong>FORCED ENTRY:</strong> You must enter the {characterData.forcedCareer} career.
+                      {characterData.forcedCareer === 'Prisoner' && ' You have been sentenced to prison.'}
+                    </AlertDescription>
+                  </Alert>
+                )}
+
                 {/* Career Cards */}
                 {getAvailableCareers().map(career => (
                   <Card
@@ -2640,6 +2713,12 @@ export const CharacterGenerator: React.FC = () => {
                         : 'bg-black border-terminal-primary/30 hover:border-terminal-primary/50'
                     }`}
                     onClick={() => {
+                      // Handle Prisoner career specially (forced entry, automatic qualification)
+                      if (career.isPrisonerCareer) {
+                        becomePrisoner();
+                        return;
+                      }
+
                       setSelectedCareer(career);
                       // Don't reset if they have automatic entry to this career
                       if (preCareerFailedService !== career.name) {
@@ -2983,6 +3062,14 @@ export const CharacterGenerator: React.FC = () => {
                     <div>
                       <span className="text-terminal-primary/60">Terms Served:</span> {characterData.terms_served}
                     </div>
+                    {/* Show Parole Threshold for Prisoner career */}
+                    {selectedCareer?.isPrisonerCareer && characterData.paroleThreshold !== undefined && (
+                      <div className="col-span-2 mt-2 p-2 bg-red-500/10 border border-red-500/30 rounded">
+                        <span className="text-red-400 font-bold">Parole Threshold:</span>{' '}
+                        <span className="text-red-300">{characterData.paroleThreshold}</span>
+                        <span className="text-red-400/70 text-xs ml-2">(advancement roll must exceed this to be released)</span>
+                      </div>
+                    )}
                   </div>
                 </div>
 

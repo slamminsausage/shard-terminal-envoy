@@ -29,6 +29,7 @@ import { CAREER_NOBLE } from './noble';
 import { CAREER_ROGUE } from './rogue';
 import { CAREER_SCHOLAR } from './scholar';
 import { CAREER_SCOUT } from './scout';
+import { CAREER_PRISONER, PRISON_EVENTS_SUBTABLE, getPrisonSubEvent, rollInitialParoleThreshold } from './prisoner';
 
 // Export individual careers
 export { CAREER_UNIVERSITY } from './pre-careers/university';
@@ -45,8 +46,10 @@ export { CAREER_NOBLE } from './noble';
 export { CAREER_ROGUE } from './rogue';
 export { CAREER_SCHOLAR } from './scholar';
 export { CAREER_SCOUT } from './scout';
+// Prisoner is a special career - cannot be selected voluntarily
+export { CAREER_PRISONER, PRISON_EVENTS_SUBTABLE, getPrisonSubEvent, rollInitialParoleThreshold } from './prisoner';
 
-// Export all careers array
+// Export all careers array (does NOT include Prisoner - it can only be entered via force)
 export const ALL_CAREERS = [
   CAREER_UNIVERSITY,
   CAREER_MILITARY_ACADEMY,
