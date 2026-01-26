@@ -310,6 +310,10 @@ export const CharacterGenerator: React.FC = () => {
   const [expandedSkillTable, setExpandedSkillTable] = useState<string | null>(null);
   const [skillTableRollResult, setSkillTableRollResult] = useState<number | null>(null);
 
+  // Event DM bonuses state - track bonuses granted by events for next roll
+  const [eventAdvancementDM, setEventAdvancementDM] = useState<number>(0);
+  const [eventBenefitDM, setEventBenefitDM] = useState<number>(0);
+
   // Get available careers based on current term number
   const getAvailableCareers = (): CareerDefinition[] => {
     const totalTerms = characterData.totalCareerTerms || 0;
@@ -1151,13 +1155,25 @@ export const CharacterGenerator: React.FC = () => {
 
     const assignment = selectedCareer.assignments[selectedAssignment];
     const charValue = characterData.characteristics[assignment.advancementStat].total;
-    const dm = getDM(charValue);
+    const charDM = getDM(charValue);
     const roll = rollDice(2, 6);
-    const total = roll + dm;
+
+    // Include event advancement DM bonus if any
+    const totalDM = charDM + eventAdvancementDM;
+    const total = roll + totalDM;
     const advanced = total >= assignment.advancementTarget;
 
     setTermAdvanced(advanced);
-    setAdvancementRollLog(`Advancement Roll: ${roll} + ${dm} = ${total} (need ${assignment.advancementTarget}+)`);
+
+    // Build the roll log with details
+    let dmBreakdown = `${charDM}`;
+    if (eventAdvancementDM > 0) {
+      dmBreakdown = `${charDM} + ${eventAdvancementDM} (event bonus)`;
+    }
+    setAdvancementRollLog(`Advancement Roll: ${roll} + ${dmBreakdown} = ${total} (need ${assignment.advancementTarget}+)`);
+
+    // Reset the event advancement DM after using it
+    setEventAdvancementDM(0);
 
     const assignmentName = selectedCareer.assignments[selectedAssignment]?.name;
     const ranks = getRanksForCareer(selectedCareer, isCommissioned, assignmentName);
@@ -1419,6 +1435,16 @@ export const CharacterGenerator: React.FC = () => {
       }
       if (effects.allowCareer) {
         setTermSkillsGained(prev => [...prev, `${effects.allowCareer} career unlocked`]);
+      }
+
+      // Handle DM bonuses for future rolls
+      if (effects.advancementDM) {
+        setEventAdvancementDM(prev => prev + effects.advancementDM!);
+        setTermSkillsGained(prev => [...prev, `DM+${effects.advancementDM} to next advancement roll`]);
+      }
+      if (effects.benefitDM) {
+        setEventBenefitDM(prev => prev + effects.benefitDM!);
+        setTermSkillsGained(prev => [...prev, `DM+${effects.benefitDM} to a Benefit roll`]);
       }
 
       // Handle table redirects (e.g., rollOnTable: 'injury')

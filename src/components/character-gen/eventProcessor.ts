@@ -267,10 +267,9 @@ export class EventProcessor {
 
     const { target, outcomes } = state.event.resolution;
 
-    // Get skill level as DM
-    const skillKey = state.selectedSkill.toLowerCase().replace(/\s+/g, '-');
-    const skillData = this.skills[skillKey];
-    const skillLevel = skillData ? parseInt(skillData.value) || 0 : 0;
+    // Get skill level as DM (returns -3 for untrained skills)
+    const skillLevel = this.getSkillLevel(state.selectedSkill);
+    const isUntrained = skillLevel === -3;
 
     const naturalRoll = rollDice(2, 6);
     const total = naturalRoll + skillLevel;
@@ -279,9 +278,10 @@ export class EventProcessor {
     const outcome = this.findMatchingOutcome(outcomes, naturalRoll, total, target);
 
     // For skill rolls, success might increase the skill used
+    // But don't auto-increase untrained skills
     let effects = outcome?.effects;
-    if (success && effects) {
-      // Add skill increase to effects
+    if (success && effects && !isUntrained) {
+      // Add skill increase to effects (only for trained skills)
       effects = {
         ...effects,
         skills: {
@@ -493,6 +493,7 @@ export class EventProcessor {
 
   /**
    * Get available skills for skill roll
+   * Returns all skills from specificSkills, including those the character doesn't have (for untrained attempts at -3)
    */
   getAvailableSkillsForRoll(state: EventState): string[] {
     if (state.event.resolution.type !== 'skill_roll') {
@@ -502,23 +503,59 @@ export class EventProcessor {
     const req = state.event.resolution.skillRequirement;
     const availableSkills: string[] = [];
 
-    for (const [skillKey, skillData] of Object.entries(this.skills)) {
-      const level = parseInt(skillData.value) || 0;
+    // If there are specific skills required, include all of them (even untrained)
+    if (req?.specificSkills) {
+      for (const skillName of req.specificSkills) {
+        const skillKey = skillName.toLowerCase().replace(/\s+/g, '-');
+        const skillData = this.skills[skillKey];
+        const level = skillData ? parseInt(skillData.value) || 0 : -1; // -1 for untrained
 
-      if (req?.minLevel && level < req.minLevel) {
-        continue;
+        // Skip if there's a minimum level requirement that untrained can't meet
+        // (usually minLevel is for trained skills only, untrained can still attempt at -3)
+        if (req?.minLevel && req.minLevel > 0 && level < req.minLevel) {
+          continue;
+        }
+
+        // Add the skill name as-is from the requirement (for display)
+        if (!availableSkills.includes(skillName)) {
+          availableSkills.push(skillName);
+        }
       }
+    } else {
+      // No specific skills required - use character's existing skills
+      for (const [skillKey, skillData] of Object.entries(this.skills)) {
+        const level = parseInt(skillData.value) || 0;
 
-      if (req?.specificSkills && !req.specificSkills.includes(skillKey)) {
-        continue;
+        if (req?.minLevel && level < req.minLevel) {
+          continue;
+        }
+
+        availableSkills.push(skillKey);
       }
-
-      // TODO: category filtering (combat vs non-combat)
-
-      availableSkills.push(skillKey);
     }
 
     return availableSkills;
+  }
+
+  /**
+   * Check if character has a skill (for determining untrained penalty)
+   */
+  hasSkill(skillName: string): boolean {
+    const skillKey = skillName.toLowerCase().replace(/\s+/g, '-');
+    const skillData = this.skills[skillKey];
+    return skillData !== undefined && (parseInt(skillData.value) || 0) >= 0;
+  }
+
+  /**
+   * Get skill level (returns -3 for untrained skills)
+   */
+  getSkillLevel(skillName: string): number {
+    const skillKey = skillName.toLowerCase().replace(/\s+/g, '-');
+    const skillData = this.skills[skillKey];
+    if (!skillData) {
+      return -3; // Untrained penalty
+    }
+    return parseInt(skillData.value) || 0;
   }
 
   /**

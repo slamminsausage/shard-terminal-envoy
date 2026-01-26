@@ -231,21 +231,26 @@ export function EventHandler({
         <p className="text-sm text-terminal-primary/80">
           {event.resolution.type === 'skill_roll' && event.resolution.displayText}
         </p>
-        <p className="text-xs text-terminal-primary/60">Select a skill to roll:</p>
+        <p className="text-xs text-terminal-primary/60">Select a skill to roll (untrained skills roll at -3):</p>
         <div className="grid grid-cols-2 gap-2">
           {availableSkills.map(skill => {
-            const skillData = skills[skill];
-            const level = skillData ? parseInt(skillData.value) || 0 : 0;
+            // Normalize skill name for lookup
+            const skillKey = skill.toLowerCase().replace(/\s+/g, '-');
+            const skillData = skills[skillKey];
+            const level = skillData ? parseInt(skillData.value) || 0 : -3;
+            const isUntrained = level === -3;
             return (
               <Button
                 key={skill}
                 onClick={() => handleSelectSkillForRoll(skill)}
                 variant="outline"
-                className="border-terminal-primary/50 text-terminal-primary hover:bg-terminal-primary/20 justify-between"
+                className={`border-terminal-primary/50 text-terminal-primary hover:bg-terminal-primary/20 justify-between ${isUntrained ? 'border-yellow-500/50' : ''}`}
                 size="sm"
               >
                 <span className="capitalize">{skill.replace(/-/g, ' ')}</span>
-                <span className="text-terminal-primary/60">{level}</span>
+                <span className={isUntrained ? 'text-yellow-400' : 'text-terminal-primary/60'}>
+                  {isUntrained ? '-3 (untrained)' : level}
+                </span>
               </Button>
             );
           })}
@@ -284,21 +289,24 @@ export function EventHandler({
 
     if (isSkillRoll && state.selectedSkill) {
       const { target, displayText } = event.resolution;
-      const skillData = skills[state.selectedSkill];
-      const level = skillData ? parseInt(skillData.value) || 0 : 0;
+      // Normalize skill name for lookup
+      const skillKey = state.selectedSkill.toLowerCase().replace(/\s+/g, '-');
+      const skillData = skills[skillKey];
+      const level = skillData ? parseInt(skillData.value) || 0 : -3;
+      const isUntrained = level === -3;
 
       return (
         <div className="space-y-2">
           <p className="text-sm text-terminal-primary/80">{displayText}</p>
-          <div className="text-xs text-terminal-primary/60">
-            <span className="capitalize">{state.selectedSkill.replace(/-/g, ' ')}</span> {level} vs Target {target}+
+          <div className={`text-xs ${isUntrained ? 'text-yellow-400' : 'text-terminal-primary/60'}`}>
+            <span className="capitalize">{state.selectedSkill.replace(/-/g, ' ')}</span> {level}{isUntrained ? ' (untrained)' : ''} vs Target {target}+
           </div>
           <Button
             onClick={handleSkillRoll}
             className="w-full bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
           >
             <Dices className="h-4 w-4 mr-2" />
-            Roll 2D6 + Skill
+            Roll 2D6 {level >= 0 ? `+ ${level}` : `${level}`}
           </Button>
         </div>
       );
