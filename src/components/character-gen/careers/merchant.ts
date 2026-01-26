@@ -4,7 +4,25 @@
 // passengers between worlds, or brokers who negotiate deals.
 // ============================================================================
 
-import type { CareerDefinition, GameEvent } from './types';
+import type { CareerDefinition, GameEvent, BenefitTableRow } from './types';
+
+// Merchant Benefits Table (1D, results 1-7)
+const MERCHANT_BENEFITS: BenefitTableRow[] = [
+  // Roll 1
+  { cash: 1000, benefit: { options: [{ type: 'item', itemType: 'blade' }] } },
+  // Roll 2
+  { cash: 5000, benefit: { options: [{ type: 'characteristic', stat: 'intellect', amount: 1 }] } },
+  // Roll 3
+  { cash: 10000, benefit: { options: [{ type: 'characteristic', stat: 'education', amount: 1 }] } },
+  // Roll 4
+  { cash: 20000, benefit: { options: [{ type: 'item', itemType: 'gun' }] } },
+  // Roll 5
+  { cash: 20000, benefit: { options: [{ type: 'ship_shares', shares: 1 }] } },
+  // Roll 6 - Free Trader ship
+  { cash: 40000, benefit: { options: [{ type: 'ship', shipType: 'Free Trader' }] } },
+  // Roll 7 - Free Trader ship
+  { cash: 40000, benefit: { options: [{ type: 'ship', shipType: 'Free Trader' }] } },
+];
 
 // ============================================================================
 // MERCHANT MISHAPS (1D6)
@@ -439,4 +457,5 @@ export const CAREER_MERCHANT: CareerDefinition = {
   },
   mishapTable: MERCHANT_MISHAPS,
   eventTable: MERCHANT_EVENTS,
+  benefitsTable: MERCHANT_BENEFITS,
 };

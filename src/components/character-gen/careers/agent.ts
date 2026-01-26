@@ -2,7 +2,25 @@
 // CAREER: AGENT
 // ============================================================================
 
-import type { CareerDefinition, GameEvent } from './types';
+import type { CareerDefinition, GameEvent, BenefitTableRow } from './types';
+
+// Agent Benefits Table (1D, results 1-7)
+const AGENT_BENEFITS: BenefitTableRow[] = [
+  // Roll 1
+  { cash: 1000, benefit: { options: [{ type: 'item', itemType: 'scientific_equipment' }] } },
+  // Roll 2
+  { cash: 2000, benefit: { options: [{ type: 'characteristic', stat: 'intellect', amount: 1 }] } },
+  // Roll 3
+  { cash: 5000, benefit: { options: [{ type: 'ship_shares', shares: 1 }] } },
+  // Roll 4
+  { cash: 7500, benefit: { options: [{ type: 'item', itemType: 'weapon' }] } },
+  // Roll 5
+  { cash: 10000, benefit: { options: [{ type: 'item', itemType: 'cybernetic_implant' }] } },
+  // Roll 6 - SOC +1 or Cybernetic Implant
+  { cash: 25000, benefit: { options: [{ type: 'characteristic', stat: 'social', amount: 1 }, { type: 'item', itemType: 'cybernetic_implant' }], isChoice: true } },
+  // Roll 7
+  { cash: 50000, benefit: { options: [{ type: 'tas_membership' }] } },
+];
 
 // Agent Events (2D, results 2-12 map to indices 0-10)
 const AGENT_EVENTS: GameEvent[] = [
@@ -292,4 +310,5 @@ export const CAREER_AGENT: CareerDefinition = {
     "Injured. Roll on the Injury table.",
   ],
   eventTable: AGENT_EVENTS,
+  benefitsTable: AGENT_BENEFITS,
 };

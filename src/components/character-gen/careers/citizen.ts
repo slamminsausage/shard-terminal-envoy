@@ -4,7 +4,25 @@
 // industry, or those who are making a new life on an untamed planet.
 // ============================================================================
 
-import type { CareerDefinition, GameEvent } from './types';
+import type { CareerDefinition, GameEvent, BenefitTableRow } from './types';
+
+// Citizen Benefits Table (1D, results 1-7)
+const CITIZEN_BENEFITS: BenefitTableRow[] = [
+  // Roll 1
+  { cash: 2000, benefit: { options: [{ type: 'ship_shares', shares: 1 }] } },
+  // Roll 2
+  { cash: 5000, benefit: { options: [{ type: 'ally' }] } },
+  // Roll 3
+  { cash: 10000, benefit: { options: [{ type: 'characteristic', stat: 'intellect', amount: 1 }] } },
+  // Roll 4
+  { cash: 10000, benefit: { options: [{ type: 'item', itemType: 'gun' }] } },
+  // Roll 5
+  { cash: 10000, benefit: { options: [{ type: 'characteristic', stat: 'education', amount: 1 }] } },
+  // Roll 6
+  { cash: 50000, benefit: { options: [{ type: 'ship_shares', shares: 2 }] } },
+  // Roll 7
+  { cash: 100000, benefit: { options: [{ type: 'tas_membership' }] } },
+];
 
 // ============================================================================
 // CITIZEN MISHAPS (1D6)
@@ -482,4 +500,5 @@ export const CAREER_CITIZEN: CareerDefinition = {
   },
   mishapTable: CITIZEN_MISHAPS,
   eventTable: CITIZEN_EVENTS,
+  benefitsTable: CITIZEN_BENEFITS,
 };

@@ -2,7 +2,25 @@
 // CAREER: NAVY
 // ============================================================================
 
-import type { CareerDefinition, GameEvent } from './types';
+import type { CareerDefinition, GameEvent, BenefitTableRow } from './types';
+
+// Navy Benefits Table (1D, results 1-7)
+const NAVY_BENEFITS: BenefitTableRow[] = [
+  // Roll 1 - Personal Vehicle or Ship Share
+  { cash: 1000, benefit: { options: [{ type: 'vehicle', vehicleType: 'Personal Vehicle' }, { type: 'ship_shares', shares: 1 }], isChoice: true } },
+  // Roll 2
+  { cash: 5000, benefit: { options: [{ type: 'characteristic', stat: 'intellect', amount: 1 }] } },
+  // Roll 3 - EDU +1 or Two Ship Shares
+  { cash: 5000, benefit: { options: [{ type: 'characteristic', stat: 'education', amount: 1 }, { type: 'ship_shares', shares: 2 }], isChoice: true } },
+  // Roll 4
+  { cash: 10000, benefit: { options: [{ type: 'item', itemType: 'weapon' }] } },
+  // Roll 5
+  { cash: 20000, benefit: { options: [{ type: 'tas_membership' }] } },
+  // Roll 6 - Ship's Boat or Two Ship Shares
+  { cash: 50000, benefit: { options: [{ type: 'ship', shipType: "Ship's Boat" }, { type: 'ship_shares', shares: 2 }], isChoice: true } },
+  // Roll 7
+  { cash: 50000, benefit: { options: [{ type: 'characteristic', stat: 'social', amount: 2 }] } },
+];
 
 // Navy Events (2D, results 2-12 map to indices 0-10)
 const NAVY_EVENTS: GameEvent[] = [
@@ -304,4 +322,5 @@ export const CAREER_NAVY: CareerDefinition = {
     "Injured. Roll on the Injury table.",
   ],
   eventTable: NAVY_EVENTS,
+  benefitsTable: NAVY_BENEFITS,
 };

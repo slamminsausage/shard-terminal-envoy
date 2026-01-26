@@ -2,7 +2,25 @@
 // CAREER: SCOUT
 // ============================================================================
 
-import type { CareerDefinition, GameEvent } from './types';
+import type { CareerDefinition, GameEvent, BenefitTableRow } from './types';
+
+// Scout Benefits Table (1D, results 1-7)
+const SCOUT_BENEFITS: BenefitTableRow[] = [
+  // Roll 1
+  { cash: 20000, benefit: { options: [{ type: 'ship_shares', shares: 1 }] } },
+  // Roll 2
+  { cash: 20000, benefit: { options: [{ type: 'characteristic', stat: 'intellect', amount: 1 }] } },
+  // Roll 3
+  { cash: 30000, benefit: { options: [{ type: 'characteristic', stat: 'education', amount: 1 }] } },
+  // Roll 4
+  { cash: 30000, benefit: { options: [{ type: 'item', itemType: 'weapon' }] } },
+  // Roll 5
+  { cash: 50000, benefit: { options: [{ type: 'item', itemType: 'weapon' }] } },
+  // Roll 6 - Scout Ship
+  { cash: 50000, benefit: { options: [{ type: 'ship', shipType: 'Scout Ship' }] } },
+  // Roll 7 - Scout Ship
+  { cash: 50000, benefit: { options: [{ type: 'ship', shipType: 'Scout Ship' }] } },
+];
 
 // Scout Events (2D, results 2-12 map to indices 0-10)
 const SCOUT_EVENTS: GameEvent[] = [
@@ -369,4 +387,5 @@ export const CAREER_SCOUT: CareerDefinition = {
     "Injured. Roll on the Injury table.",
   ],
   eventTable: SCOUT_EVENTS,
+  benefitsTable: SCOUT_BENEFITS,
 };

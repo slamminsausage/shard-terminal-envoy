@@ -2,7 +2,25 @@
 // CAREER: MARINES
 // ============================================================================
 
-import type { CareerDefinition, GameEvent } from './types';
+import type { CareerDefinition, GameEvent, BenefitTableRow } from './types';
+
+// Marine Benefits Table (1D, results 1-7)
+const MARINES_BENEFITS: BenefitTableRow[] = [
+  // Roll 1
+  { cash: 2000, benefit: { options: [{ type: 'item', itemType: 'armour' }] } },
+  // Roll 2
+  { cash: 5000, benefit: { options: [{ type: 'characteristic', stat: 'intellect', amount: 1 }] } },
+  // Roll 3
+  { cash: 5000, benefit: { options: [{ type: 'characteristic', stat: 'education', amount: 1 }] } },
+  // Roll 4
+  { cash: 10000, benefit: { options: [{ type: 'item', itemType: 'weapon' }] } },
+  // Roll 5
+  { cash: 20000, benefit: { options: [{ type: 'tas_membership' }] } },
+  // Roll 6 - Armour or END +1
+  { cash: 30000, benefit: { options: [{ type: 'item', itemType: 'armour' }, { type: 'characteristic', stat: 'endurance', amount: 1 }], isChoice: true } },
+  // Roll 7
+  { cash: 40000, benefit: { options: [{ type: 'characteristic', stat: 'social', amount: 2 }] } },
+];
 
 // Marines Events (2D, results 2-12 map to indices 0-10)
 const MARINES_EVENTS: GameEvent[] = [
@@ -390,4 +408,5 @@ export const CAREER_MARINES: CareerDefinition = {
     "Injured. Roll on the Injury table.",
   ],
   eventTable: MARINES_EVENTS,
+  benefitsTable: MARINES_BENEFITS,
 };

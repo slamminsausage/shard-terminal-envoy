@@ -5,7 +5,25 @@
 // or who practise medicine.
 // ============================================================================
 
-import type { CareerDefinition, GameEvent } from './types';
+import type { CareerDefinition, GameEvent, BenefitTableRow } from './types';
+
+// Scholar Benefits Table (1D, results 1-7)
+const SCHOLAR_BENEFITS: BenefitTableRow[] = [
+  // Roll 1
+  { cash: 5000, benefit: { options: [{ type: 'characteristic', stat: 'intellect', amount: 1 }] } },
+  // Roll 2
+  { cash: 10000, benefit: { options: [{ type: 'characteristic', stat: 'education', amount: 1 }] } },
+  // Roll 3
+  { cash: 20000, benefit: { options: [{ type: 'ship_shares', shares: 2 }] } },
+  // Roll 4
+  { cash: 30000, benefit: { options: [{ type: 'characteristic', stat: 'social', amount: 1 }] } },
+  // Roll 5
+  { cash: 40000, benefit: { options: [{ type: 'item', itemType: 'scientific_equipment' }] } },
+  // Roll 6 - Lab Ship
+  { cash: 60000, benefit: { options: [{ type: 'ship', shipType: 'Lab Ship' }] } },
+  // Roll 7 - Lab Ship
+  { cash: 100000, benefit: { options: [{ type: 'ship', shipType: 'Lab Ship' }] } },
+];
 
 // ============================================================================
 // SCHOLAR MISHAPS (1D6)
@@ -474,4 +492,5 @@ export const CAREER_SCHOLAR: CareerDefinition = {
   },
   mishapTable: SCHOLAR_MISHAPS,
   eventTable: SCHOLAR_EVENTS,
+  benefitsTable: SCHOLAR_BENEFITS,
 };

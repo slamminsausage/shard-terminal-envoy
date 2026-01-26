@@ -244,6 +244,48 @@ export interface StructuredEvent {
 }
 
 // ============================================================================
+// BENEFIT TABLES
+// ============================================================================
+
+/**
+ * A single benefit option (characteristic boost, skill, item, etc.)
+ */
+export interface BenefitOption {
+  type: 'characteristic' | 'skill' | 'item' | 'ship_shares' | 'ship' | 'vehicle' | 'ally' | 'contact' | 'tas_membership';
+  // For characteristic boosts
+  stat?: CharacteristicName | 'psionics';
+  amount?: number;  // +1, +2, etc.
+  // For skills
+  skill?: string;
+  // For items
+  itemType?: 'weapon' | 'blade' | 'gun' | 'armour' | 'scientific_equipment' | 'cybernetic_implant' | 'combat_implant';
+  // For ship shares (can be fixed number or dice roll)
+  shares?: number | '1D' | '2D';
+  // For ships
+  shipType?: string;  // 'Free Trader', 'Scout Ship', 'Lab Ship', 'Yacht', "Ship's Boat"
+  // For vehicles
+  vehicleType?: string;
+}
+
+/**
+ * A benefit entry - can be a single benefit or multiple options
+ */
+export interface BenefitEntry {
+  // The benefit option(s) available
+  options: BenefitOption[];
+  // If true, player chooses ONE option. If false/undefined, player gets ALL options.
+  isChoice?: boolean;
+}
+
+/**
+ * A row in the benefits table (1D roll result)
+ */
+export interface BenefitTableRow {
+  cash: number | null;  // Cash amount, or null for no cash
+  benefit: BenefitEntry;
+}
+
+// ============================================================================
 // CAREER DEFINITION
 // ============================================================================
 
@@ -278,6 +320,8 @@ export interface CareerDefinition {
   // Event table - can be strings, legacy StructuredEvent, or new GameEvent
   eventTable: (string | StructuredEvent | GameEvent)[];
   commissionTarget?: number;
+  // Benefits table - 7 rows for 1D roll results 1-7
+  benefitsTable?: BenefitTableRow[];
 }
 
 // ============================================================================

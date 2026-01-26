@@ -3,7 +3,25 @@
 // Individuals involved with the media, whether as reporters, artists, or celebrities.
 // ============================================================================
 
-import type { CareerDefinition, GameEvent } from './types';
+import type { CareerDefinition, GameEvent, BenefitTableRow } from './types';
+
+// Entertainer Benefits Table (1D, results 1-7)
+const ENTERTAINER_BENEFITS: BenefitTableRow[] = [
+  // Roll 1 - No cash
+  { cash: null, benefit: { options: [{ type: 'contact' }] } },
+  // Roll 2 - No cash
+  { cash: null, benefit: { options: [{ type: 'characteristic', stat: 'social', amount: 1 }] } },
+  // Roll 3
+  { cash: 10000, benefit: { options: [{ type: 'contact' }] } },
+  // Roll 4
+  { cash: 10000, benefit: { options: [{ type: 'characteristic', stat: 'social', amount: 1 }] } },
+  // Roll 5
+  { cash: 40000, benefit: { options: [{ type: 'characteristic', stat: 'intellect', amount: 1 }] } },
+  // Roll 6
+  { cash: 40000, benefit: { options: [{ type: 'ship_shares', shares: 2 }] } },
+  // Roll 7 - SOC +1 and EDU +1 (gain both)
+  { cash: 80000, benefit: { options: [{ type: 'characteristic', stat: 'social', amount: 1 }, { type: 'characteristic', stat: 'education', amount: 1 }], isChoice: false } },
+];
 
 // ============================================================================
 // ENTERTAINER MISHAPS (1D6)
@@ -405,4 +423,5 @@ export const CAREER_ENTERTAINER: CareerDefinition = {
   },
   mishapTable: ENTERTAINER_MISHAPS,
   eventTable: ENTERTAINER_EVENTS,
+  benefitsTable: ENTERTAINER_BENEFITS,
 };
