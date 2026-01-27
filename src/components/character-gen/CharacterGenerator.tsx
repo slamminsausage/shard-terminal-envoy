@@ -409,6 +409,12 @@ export const CharacterGenerator: React.FC = () => {
   const [agingResult, setAgingResult] = useState<AgingRollResult | null>(null);
   const [agingPending, setAgingPending] = useState(false);
 
+  // Assignment switching state
+  const [isSwitchingAssignment, setIsSwitchingAssignment] = useState(false);
+  const [switchAssignmentTarget, setSwitchAssignmentTarget] = useState<number | null>(null);
+  const [switchAssignmentRollLog, setSwitchAssignmentRollLog] = useState<string>('');
+  const [switchAssignmentResult, setSwitchAssignmentResult] = useState<'success' | 'failure' | null>(null);
+
   // Get available careers based on current term number
   const getAvailableCareers = (): CareerDefinition[] => {
     const totalTerms = characterData.totalCareerTerms || 0;
@@ -1081,6 +1087,11 @@ export const CharacterGenerator: React.FC = () => {
     // Reset academy graduation skill selection state
     setAcademyGradSkillsSelected([]);
     setAcademyGradPendingSpecialty(null);
+    // Reset assignment switching state
+    setIsSwitchingAssignment(false);
+    setSwitchAssignmentTarget(null);
+    setSwitchAssignmentRollLog('');
+    setSwitchAssignmentResult(null);
 
     // Calculate age based on TOTAL terms completed across all careers
     // lifepath_log contains one entry per completed term
@@ -2087,8 +2098,155 @@ export const CharacterGenerator: React.FC = () => {
     setStep(6); // Go to review
   };
 
-  const continueCareer = () => {
-    startNewTerm();
+  // Careers where assignment changes are treated as staying in the same career
+  // (just need a qualification roll, keep rank on success)
+  const SIMPLE_ASSIGNMENT_CHANGE_CAREERS = ['Army', 'Marines', 'Navy', 'Noble', 'Rogue', 'Scholar', 'Scout'];
+
+  // Careers where assignment changes are treated as entirely new careers
+  // (must leave current career, benefit rolls, qualification roll, rank 0 on success)
+  const NEW_CAREER_ASSIGNMENT_CHANGE_CAREERS = ['Agent', 'Citizen', 'Entertainer', 'Merchant'];
+
+  const canSwitchAssignment = (): boolean => {
+    if (!selectedCareer) return false;
+    if (selectedCareer.isPreCareer) return false;
+    if (selectedCareer.assignments.length <= 1) return false;
+    const careerName = selectedCareer.name;
+    return SIMPLE_ASSIGNMENT_CHANGE_CAREERS.includes(careerName) ||
+           NEW_CAREER_ASSIGNMENT_CHANGE_CAREERS.includes(careerName);
+  };
+
+  const isSimpleAssignmentChange = (): boolean => {
+    if (!selectedCareer) return false;
+    return SIMPLE_ASSIGNMENT_CHANGE_CAREERS.includes(selectedCareer.name);
+  };
+
+  const startSwitchAssignment = () => {
+    setIsSwitchingAssignment(true);
+    setSwitchAssignmentTarget(null);
+    setSwitchAssignmentRollLog('');
+    setSwitchAssignmentResult(null);
+  };
+
+  const rollSwitchAssignment = (newAssignmentIndex: number) => {
+    if (!selectedCareer) return;
+
+    setSwitchAssignmentTarget(newAssignmentIndex);
+
+    // Make a qualification roll for the new assignment
+    const charValue = characterData.characteristics[selectedCareer.qualificationStat].total;
+    const dm = getDM(charValue);
+    const roll = rollDice(2, 6);
+    const total = roll + dm;
+    const passed = total >= selectedCareer.qualificationTarget;
+    const newAssignment = selectedCareer.assignments[newAssignmentIndex];
+
+    setSwitchAssignmentRollLog(
+      `Qualification Roll for ${newAssignment.name}: ${roll} + ${dm} (${selectedCareer.qualificationStat.toUpperCase()} DM) = ${total} (need ${selectedCareer.qualificationTarget}+)`
+    );
+
+    if (passed) {
+      setSwitchAssignmentResult('success');
+
+      if (isSimpleAssignmentChange()) {
+        // Simple change: keep rank, just switch assignment
+        setSelectedAssignment(newAssignmentIndex);
+        setCharacterData(prev => ({
+          ...prev,
+          career: `${selectedCareer.name} (${newAssignment.name})`,
+        }));
+      } else {
+        // New career style: save current career history, reset rank to 0
+        saveCurrentCareerToHistory();
+        setSelectedAssignment(newAssignmentIndex);
+        setCharacterData(prev => ({
+          ...prev,
+          rank: 0,
+          terms_served: 0,
+          career: `${selectedCareer.name} (${newAssignment.name})`,
+        }));
+        setCurrentTerm(0);
+        setIsCommissioned(false);
+      }
+    } else {
+      setSwitchAssignmentResult('failure');
+
+      if (isSimpleAssignmentChange()) {
+        // Simple change failure: continue with same assignment, no penalty
+        // Nothing to change
+      } else {
+        // New career style failure: must enter draft or become Drifter
+        // We'll let the user choose after acknowledging the failure
+      }
+    }
+  };
+
+  const confirmSwitchAssignment = () => {
+    setIsSwitchingAssignment(false);
+    setSwitchAssignmentTarget(null);
+    setSwitchAssignmentRollLog('');
+    setSwitchAssignmentResult(null);
+    // Player continues in their career (same or new assignment depending on result)
+  };
+
+  const handleFailedNewCareerAssignmentSwitch = (choice: 'draft' | 'drifter') => {
+    // Save current career to history first
+    saveCurrentCareerToHistory();
+
+    // Reset assignment switching state
+    setIsSwitchingAssignment(false);
+    setSwitchAssignmentTarget(null);
+    setSwitchAssignmentRollLog('');
+    setSwitchAssignmentResult(null);
+
+    // Reset career state for new career
+    setCurrentTerm(0);
+    setIsInTerm(false);
+    setTermSurvived(null);
+    setTermAdvanced(null);
+    setTermEventRoll(null);
+    setTermSkillsGained([]);
+    setIsCommissioned(false);
+    setBasicTrainingApplied(false);
+    setBasicTrainingSkillSelected(null);
+
+    if (choice === 'drifter') {
+      // Enter Drifter career
+      const drifterCareer = ALL_CAREERS.find(c => c.name === 'Drifter');
+      if (drifterCareer) {
+        setSelectedCareer(drifterCareer);
+        setSelectedAssignment(0);
+        setCharacterData(prev => ({
+          ...prev,
+          rank: 0,
+          terms_served: 0,
+          career: `Drifter (${drifterCareer.assignments[0].name})`,
+        }));
+        setQualificationPassed(true);
+        setQualificationRollLog('Entered Drifter (no qualification needed)');
+      }
+    } else {
+      // Enter the draft
+      const draftResult = rollDraft();
+      const draftCareer = ALL_CAREERS.find(c => c.name === draftResult.careerName);
+      if (draftCareer) {
+        setSelectedCareer(draftCareer);
+        // Find the assignment index
+        const assignmentIdx = draftResult.assignmentName
+          ? draftCareer.assignments.findIndex(a => a.name === draftResult.assignmentName)
+          : 0;
+        setSelectedAssignment(assignmentIdx >= 0 ? assignmentIdx : 0);
+        const assignmentLabel = draftResult.assignmentName || draftCareer.assignments[0]?.name || '';
+        setCharacterData(prev => ({
+          ...prev,
+          rank: 0,
+          terms_served: 0,
+          career: `${draftResult.careerName} (${assignmentLabel})`,
+        }));
+        setQualificationPassed(true);
+        setQualificationRollLog(`Drafted into ${draftResult.careerName}${assignmentLabel ? ` (${assignmentLabel})` : ''}. Automatically qualified.`);
+        setHasUsedDraft(true);
+      }
+    }
   };
 
   // Save current career to history when switching careers (not mustering out)
@@ -2173,6 +2331,11 @@ export const CharacterGenerator: React.FC = () => {
     setAcademyGradPendingSpecialty(null);
     // Reset event advancement DM for new career
     setEventAdvancementDM(0);
+    // Reset assignment switching state
+    setIsSwitchingAssignment(false);
+    setSwitchAssignmentTarget(null);
+    setSwitchAssignmentRollLog('');
+    setSwitchAssignmentResult(null);
 
     // Go back to career selection
     setStep(4);
@@ -3168,13 +3331,13 @@ export const CharacterGenerator: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Start Term button - only for regular careers OR pre-careers before first term */}
-                {!isInTerm && termSurvived !== false && (!selectedCareer?.isPreCareer || currentTerm === 0) && (
+                {/* Start Term button - only for the first term of any career (term 0) */}
+                {!isInTerm && currentTerm === 0 && termSurvived !== false && (
                   <Button
                     onClick={startNewTerm}
                     className="w-full bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
                   >
-                    Start Term {currentTerm + 1}
+                    Start Term 1
                   </Button>
                 )}
 
@@ -3938,31 +4101,48 @@ export const CharacterGenerator: React.FC = () => {
                   selectedCareer?.isPreCareer ? (
                     // Pre-career term completed: show options based on whether they can continue
                     <div className="space-y-3">
-                      <Alert className="bg-blue-500/10 border-blue-500/50">
-                        <AlertDescription className="text-blue-400">
+                      <Alert className={preCareerGraduated ? "bg-green-500/10 border-green-500/50" : "bg-blue-500/10 border-blue-500/50"}>
+                        <AlertDescription className={preCareerGraduated ? "text-green-400" : "text-blue-400"}>
                           <strong>Term {currentTerm} Complete!</strong>
                           <p className="mt-1 text-sm">
-                            {selectedCareer.preCareerType === 'university' ? (
-                              <>
-                                You have completed Term {currentTerm} at University{graduatedWithHonours ? ' with Honours' : ''}.
-                                You receive DM+{graduatedWithHonours ? '2' : '1'} to qualify for: Agent, Army, Citizen (Corporate), Entertainer (Journalist), Marines, Navy, Scholar, or Scouts.
-                              </>
+                            {preCareerGraduated ? (
+                              // Graduated - must select a career
+                              selectedCareer.preCareerType === 'university' ? (
+                                <>
+                                  You have graduated from University{graduatedWithHonours ? ' with Honours' : ''}!
+                                  You receive DM+{graduatedWithHonours ? '2' : '1'} to qualify for: Agent, Army, Citizen (Corporate), Entertainer (Journalist), Marines, Navy, Scholar, or Scouts.
+                                </>
+                              ) : (
+                                <>
+                                  You have graduated from Military Academy{graduatedWithHonours ? ' with Honours' : ''}!
+                                  {graduatedWithHonours
+                                    ? ` You automatically enter your designated branch at Rank O1 with a commission.`
+                                    : ` You automatically enter your designated branch with DM+2 on your first commission roll.`
+                                  }
+                                </>
+                              )
                             ) : (
-                              <>
-                                You have completed Term {currentTerm} at Military Academy{graduatedWithHonours ? ' with Honours' : ''}.
-                                {graduatedWithHonours
-                                  ? ` You automatically enter your designated branch at Rank O1 with a commission.`
-                                  : ` You automatically enter your designated branch with DM+2 on your first commission roll.`
-                                }
-                              </>
+                              // Did not graduate this term
+                              selectedCareer.preCareerType === 'university' ? (
+                                <>
+                                  You have completed Term {currentTerm} at University but did not graduate yet.
+                                </>
+                              ) : (
+                                <>
+                                  You have completed Term {currentTerm} at Military Academy but did not graduate yet.
+                                </>
+                              )
                             )}
                           </p>
-                          {currentTerm < (selectedCareer.maxTerms || 3) && (
+                          {preCareerGraduated ? (
+                            <p className="mt-2 text-xs text-yellow-400">
+                              You have graduated and must now select a career.
+                            </p>
+                          ) : currentTerm < (selectedCareer.maxTerms || 3) ? (
                             <p className="mt-2 text-xs text-blue-400/80">
                               You may continue for another term (max {selectedCareer.maxTerms || 3} terms) or proceed to career selection.
                             </p>
-                          )}
-                          {currentTerm >= (selectedCareer.maxTerms || 3) && (
+                          ) : (
                             <p className="mt-2 text-xs text-yellow-400">
                               You have reached the maximum number of terms ({selectedCareer.maxTerms || 3}). You must now select a career.
                             </p>
@@ -3970,11 +4150,21 @@ export const CharacterGenerator: React.FC = () => {
                         </AlertDescription>
                       </Alert>
                       <div className="flex gap-2">
-                        {currentTerm < (selectedCareer.maxTerms || 3) && (
+                        {/* Continue button: only if NOT graduated AND under max terms */}
+                        {!preCareerGraduated && currentTerm < (selectedCareer.maxTerms || 3) ? (
                           <Button
                             onClick={startNewTerm}
                             variant="outline"
                             className="flex-1 border-terminal-primary/50 text-terminal-primary hover:bg-terminal-primary/20"
+                          >
+                            Continue Another Term
+                          </Button>
+                        ) : !preCareerGraduated ? null : (
+                          // Grayed out button to show they can't continue
+                          <Button
+                            disabled
+                            variant="outline"
+                            className="flex-1 border-terminal-primary/20 text-terminal-primary/30 cursor-not-allowed"
                           >
                             Continue Another Term
                           </Button>
@@ -3987,22 +4177,153 @@ export const CharacterGenerator: React.FC = () => {
                         </Button>
                       </div>
                     </div>
+                  ) : !isSwitchingAssignment ? (
+                    // Regular career: show start next term, switch career, switch assignment, or muster out
+                    <div className="space-y-2">
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={startNewTerm}
+                          className="flex-1 bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30 border border-terminal-primary/50"
+                        >
+                          Start Term {currentTerm + 1}
+                        </Button>
+                        <Button
+                          onClick={musterOut}
+                          className="flex-1 bg-red-500/20 text-red-400 hover:bg-red-500/30 border border-red-500/50"
+                        >
+                          Muster Out
+                        </Button>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={switchToNewCareer}
+                          variant="outline"
+                          className="flex-1 border-terminal-primary/50 text-terminal-primary hover:bg-terminal-primary/20"
+                        >
+                          Switch Career
+                        </Button>
+                        {canSwitchAssignment() && (
+                          <Button
+                            onClick={startSwitchAssignment}
+                            variant="outline"
+                            className="flex-1 border-blue-500/50 text-blue-400 hover:bg-blue-500/20"
+                          >
+                            Switch Assignment
+                          </Button>
+                        )}
+                      </div>
+                    </div>
                   ) : (
-                    // Regular career: show continue or muster out
-                    <div className="flex gap-2">
-                      <Button
-                        onClick={continueCareer}
-                        variant="outline"
-                        className="flex-1 border-terminal-primary/50 text-terminal-primary hover:bg-terminal-primary/20"
-                      >
-                        Continue Career (Another Term)
-                      </Button>
-                      <Button
-                        onClick={musterOut}
-                        className="flex-1 bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
-                      >
-                        Muster Out & Finish
-                      </Button>
+                    // Assignment switching UI
+                    <div className="space-y-3">
+                      <Alert className="bg-blue-500/10 border-blue-500/50">
+                        <AlertDescription className="text-blue-400">
+                          <strong>Switch Assignment</strong>
+                          {isSimpleAssignmentChange() ? (
+                            <p className="mt-1 text-xs">
+                              Select a new assignment. A qualification roll is required. If unsuccessful, you continue with your current assignment without penalty. If successful, you adopt the new assignment and retain your rank.
+                            </p>
+                          ) : (
+                            <p className="mt-1 text-xs">
+                              Changing assignments in {selectedCareer?.name} is treated as entering a new career. You will leave your current career (benefit rolls as normal), and must pass a qualification roll. If you fail, you must enter the Draft or become a Drifter. If successful, you start at Rank 0.
+                            </p>
+                          )}
+                        </AlertDescription>
+                      </Alert>
+
+                      {switchAssignmentResult === null && (
+                        <div className="space-y-2">
+                          <p className="text-xs text-terminal-primary/70">Select new assignment:</p>
+                          <div className="grid grid-cols-1 gap-2">
+                            {selectedCareer?.assignments.map((assignment, idx) => (
+                              <Button
+                                key={idx}
+                                onClick={() => rollSwitchAssignment(idx)}
+                                disabled={idx === selectedAssignment}
+                                variant="outline"
+                                className={`border-terminal-primary/50 text-terminal-primary hover:bg-terminal-primary/20 ${
+                                  idx === selectedAssignment ? 'opacity-40 cursor-not-allowed' : ''
+                                }`}
+                              >
+                                {assignment.name}
+                                {idx === selectedAssignment ? ' (current)' : ''}
+                                <span className="ml-2 text-xs text-terminal-primary/50">
+                                  Survival: {assignment.survivalStat.toUpperCase()} {assignment.survivalTarget}+ | Advancement: {assignment.advancementStat.toUpperCase()} {assignment.advancementTarget}+
+                                </span>
+                              </Button>
+                            ))}
+                          </div>
+                          <Button
+                            onClick={() => {
+                              setIsSwitchingAssignment(false);
+                              setSwitchAssignmentTarget(null);
+                              setSwitchAssignmentRollLog('');
+                              setSwitchAssignmentResult(null);
+                            }}
+                            variant="outline"
+                            className="w-full border-terminal-primary/30 text-terminal-primary/60 hover:bg-terminal-primary/10"
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      )}
+
+                      {switchAssignmentResult !== null && (
+                        <div className="space-y-2">
+                          <div className="bg-terminal-primary/5 border border-terminal-primary/30 rounded p-3">
+                            <p className="text-xs text-terminal-primary/80 font-mono">{switchAssignmentRollLog}</p>
+                          </div>
+
+                          {switchAssignmentResult === 'success' ? (
+                            <Alert className="bg-green-500/10 border-green-500/50">
+                              <AlertDescription className="text-green-400">
+                                Assignment change successful! You are now assigned to{' '}
+                                {selectedCareer?.assignments[switchAssignmentTarget!]?.name}.
+                                {isSimpleAssignmentChange()
+                                  ? ' You retain your current rank.'
+                                  : ' You start at Rank 0 in your new assignment.'}
+                              </AlertDescription>
+                            </Alert>
+                          ) : (
+                            <Alert className={isSimpleAssignmentChange() ? "bg-yellow-500/10 border-yellow-500/50" : "bg-red-500/10 border-red-500/50"}>
+                              <AlertDescription className={isSimpleAssignmentChange() ? "text-yellow-400" : "text-red-400"}>
+                                {isSimpleAssignmentChange()
+                                  ? 'Qualification roll failed. You continue with your current assignment without penalty.'
+                                  : 'Qualification roll failed! You must enter the Draft or become a Drifter.'}
+                              </AlertDescription>
+                            </Alert>
+                          )}
+
+                          {/* Action buttons after roll result */}
+                          {switchAssignmentResult === 'success' || isSimpleAssignmentChange() ? (
+                            <Button
+                              onClick={confirmSwitchAssignment}
+                              className="w-full bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
+                            >
+                              Continue
+                            </Button>
+                          ) : (
+                            // Failed new-career-style assignment change: draft or drifter
+                            <div className="flex gap-2">
+                              {!hasUsedDraft && (
+                                <Button
+                                  onClick={() => handleFailedNewCareerAssignmentSwitch('draft')}
+                                  className="flex-1 bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
+                                >
+                                  Enter the Draft
+                                </Button>
+                              )}
+                              <Button
+                                onClick={() => handleFailedNewCareerAssignmentSwitch('drifter')}
+                                variant="outline"
+                                className="flex-1 border-terminal-primary/50 text-terminal-primary hover:bg-terminal-primary/20"
+                              >
+                                Become a Drifter
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   )
                 )}
