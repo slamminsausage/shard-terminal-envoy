@@ -400,12 +400,112 @@ export const CAREER_MARINES: CareerDefinition = {
     ],
   },
   mishapTable: [
-    "Severely injured in action. Roll twice on the Injury table and take the lower result.",
-    "A mission goes disastrously wrong due to your commander's error or incompetence, but you survive. Gain them as an Enemy and leave the service.",
-    "You are taken prisoner during an operation. Gain Survival 1 or Deception 1, but also gain your captors as an Enemy.",
-    "You are assigned to a black ops mission that goes against your conscience. Either carry it out (keep the Benefit roll from this term but gain an Enemy) or refuse and be ejected from the service.",
-    "You are blamed for an accident that kills several comrades. Gain them as Enemy and leave the service.",
-    "Injured. Roll on the Injury table.",
+    // Mishap 1: Severely injured
+    {
+      id: 'marines-mishap-1',
+      description: 'Severely injured in action. Roll on the Injury table.',
+      resolution: {
+        type: 'automatic' as const,
+        effects: {
+          rollOnTable: 'injury' as const,
+          message: 'You are severely injured in action.',
+        },
+      },
+    },
+    // Mishap 2: Commander's error
+    {
+      id: 'marines-mishap-2',
+      description: 'A mission goes disastrously wrong due to your commander\'s error or incompetence, but you survive. Gain them as an Enemy and leave the service.',
+      resolution: {
+        type: 'automatic' as const,
+        effects: {
+          enemies: 1,
+          message: 'A mission goes disastrously wrong due to your commander\'s error. You gain them as an Enemy.',
+        },
+      },
+    },
+    // Mishap 3: Taken prisoner
+    {
+      id: 'marines-mishap-3',
+      description: 'You are taken prisoner during an operation. Gain Survival 1 or Deception 1, but also gain your captors as an Enemy.',
+      resolution: {
+        type: 'choice' as const,
+        choices: [
+          {
+            id: 'survival',
+            label: 'Gain Survival',
+            description: 'Increase Survival by one level.',
+            effects: {
+              skills: { choices: ['Survival'], level: 1 },
+              enemies: 1,
+              message: 'You survive captivity and gain Survival, but gain your captors as an Enemy.',
+            },
+          },
+          {
+            id: 'deception',
+            label: 'Gain Deception',
+            description: 'Increase Deception by one level.',
+            effects: {
+              skills: { choices: ['Deception'], level: 1 },
+              enemies: 1,
+              message: 'You escape captivity through guile and gain Deception, but gain your captors as an Enemy.',
+            },
+          },
+        ],
+      },
+    },
+    // Mishap 4: Black ops mission
+    {
+      id: 'marines-mishap-4',
+      description: 'You are assigned to a black ops mission that goes against your conscience. Either carry it out or refuse.',
+      resolution: {
+        type: 'choice' as const,
+        choices: [
+          {
+            id: 'carry_out',
+            label: 'Carry It Out',
+            description: 'Keep the Benefit roll from this term but gain an Enemy.',
+            effects: {
+              enemies: 1,
+              extraBenefit: true,
+              message: 'You carry out the mission. You keep your Benefit roll but gain an Enemy.',
+            },
+          },
+          {
+            id: 'refuse',
+            label: 'Refuse',
+            description: 'Ejected from the service.',
+            effects: {
+              message: 'You refuse the mission and are ejected from the service.',
+            },
+          },
+        ],
+      },
+    },
+    // Mishap 5: Blamed for accident
+    {
+      id: 'marines-mishap-5',
+      description: 'You are blamed for an accident that kills several comrades. Gain an Enemy and leave the service.',
+      resolution: {
+        type: 'automatic' as const,
+        effects: {
+          enemies: 1,
+          message: 'You are blamed for an accident that kills several comrades. You gain an Enemy.',
+        },
+      },
+    },
+    // Mishap 6: Injured
+    {
+      id: 'marines-mishap-6',
+      description: 'Injured. Roll on the Injury table.',
+      resolution: {
+        type: 'automatic' as const,
+        effects: {
+          rollOnTable: 'injury' as const,
+          message: 'You are injured. Roll on the Injury table.',
+        },
+      },
+    },
   ],
   eventTable: MARINES_EVENTS,
   benefitsTable: MARINES_BENEFITS,

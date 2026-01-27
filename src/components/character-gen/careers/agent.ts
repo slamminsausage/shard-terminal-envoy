@@ -302,12 +302,112 @@ export const CAREER_AGENT: CareerDefinition = {
     ],
   },
   mishapTable: [
-    "Severely injured. Roll twice on the Injury table and take the lower result.",
-    "A criminal or other figure under investigation offers you a deal. Accept and you leave this career with a +4 DM to your next Qualification roll but gain a Rival. Refuse and you must roll twice on the Injury table and take the lower result.",
-    "An investigation goes critically wrong or leads to the bottom of a conspiracy. Roll Advocate 8+. If you succeed, you may continue in this career. If you fail, you must leave this career.",
-    "You learn something you should not know. Gain an Enemy and then roll twice on the Injury table (take both results).",
-    "Your work ends up coming home with you and someone gets hurt. Gain an Enemy.",
-    "Injured. Roll on the Injury table.",
+    // Mishap 1: Severely injured
+    {
+      id: 'agent-mishap-1',
+      description: 'Severely injured. Roll on the Injury table.',
+      resolution: {
+        type: 'automatic' as const,
+        effects: {
+          rollOnTable: 'injury' as const,
+          message: 'You are severely injured in the line of duty.',
+        },
+      },
+    },
+    // Mishap 2: Deal from criminal
+    {
+      id: 'agent-mishap-2',
+      description: 'A criminal or other figure under investigation offers you a deal. Accept and you leave this career with a +4 DM to your next Qualification roll but gain a Rival. Refuse and you must roll on the Injury table.',
+      resolution: {
+        type: 'choice' as const,
+        choices: [
+          {
+            id: 'accept',
+            label: 'Accept the Deal',
+            description: 'Leave career with DM+4 to next Qualification roll, but gain a Rival.',
+            effects: {
+              rivals: 1,
+              message: 'You accept the deal. DM+4 to your next Qualification roll, but you gain a Rival.',
+            },
+          },
+          {
+            id: 'refuse',
+            label: 'Refuse the Deal',
+            description: 'Roll on the Injury table.',
+            effects: {
+              rollOnTable: 'injury' as const,
+              message: 'You refuse the deal and suffer the consequences.',
+            },
+          },
+        ],
+      },
+    },
+    // Mishap 3: Investigation gone wrong - Roll Advocate 8+
+    {
+      id: 'agent-mishap-3',
+      description: 'An investigation goes critically wrong or leads to the bottom of a conspiracy. Roll Advocate 8+. If you succeed, you may continue in this career. If you fail, you must leave this career.',
+      resolution: {
+        type: 'skill_roll' as const,
+        skillRequirement: {
+          minLevel: 0,
+          specificSkills: ['Advocate'],
+        },
+        target: 8,
+        displayText: 'Roll Advocate 8+ to navigate the conspiracy.',
+        outcomes: [
+          {
+            condition: { type: 'success' as const },
+            effects: {
+              continueInCareer: true,
+              message: 'You successfully navigate the conspiracy and may continue in this career.',
+            },
+          },
+          {
+            condition: { type: 'failure' as const },
+            effects: {
+              message: 'The investigation falls apart. You must leave this career.',
+            },
+          },
+        ],
+      },
+    },
+    // Mishap 4: Learned something dangerous
+    {
+      id: 'agent-mishap-4',
+      description: 'You learn something you should not know. Gain an Enemy and roll on the Injury table.',
+      resolution: {
+        type: 'automatic' as const,
+        effects: {
+          enemies: 1,
+          rollOnTable: 'injury' as const,
+          message: 'You learn something you should not know. You gain an Enemy.',
+        },
+      },
+    },
+    // Mishap 5: Work comes home
+    {
+      id: 'agent-mishap-5',
+      description: 'Your work ends up coming home with you and someone gets hurt. Gain an Enemy.',
+      resolution: {
+        type: 'automatic' as const,
+        effects: {
+          enemies: 1,
+          message: 'Your work ends up coming home with you and someone gets hurt. You gain an Enemy.',
+        },
+      },
+    },
+    // Mishap 6: Injured
+    {
+      id: 'agent-mishap-6',
+      description: 'Injured. Roll on the Injury table.',
+      resolution: {
+        type: 'automatic' as const,
+        effects: {
+          rollOnTable: 'injury' as const,
+          message: 'You are injured. Roll on the Injury table.',
+        },
+      },
+    },
   ],
   eventTable: AGENT_EVENTS,
   benefitsTable: AGENT_BENEFITS,

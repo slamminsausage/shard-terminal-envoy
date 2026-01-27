@@ -78,6 +78,7 @@ export interface EventEffects {
   failGraduation?: boolean;    // Fail to graduate (pre-careers)
   canTestPsi?: boolean;        // Can test PSI score
   draftModifier?: number;      // DM to draft rolls
+  continueInCareer?: boolean;  // May continue in career despite mishap (overrides forced exit)
 
   // Prisoner career effects
   paroleThresholdChange?: number;    // Modify parole threshold (+/-)
