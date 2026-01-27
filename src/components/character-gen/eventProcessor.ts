@@ -11,6 +11,7 @@ import type {
   CharacteristicName,
   Characteristics,
 } from './careers/types';
+import { normalizeSkillName, parseSkillString } from './careers/skills';
 
 // ============================================================================
 // DICE UTILITIES
@@ -506,9 +507,8 @@ export class EventProcessor {
     // If there are specific skills required, include all of them (even untrained)
     if (req?.specificSkills) {
       for (const skillName of req.specificSkills) {
-        const skillKey = skillName.toLowerCase().replace(/\s+/g, '-');
-        const skillData = this.skills[skillKey];
-        const level = skillData ? parseInt(skillData.value) || 0 : -1; // -1 for untrained
+        // Use getSkillLevel which handles specialty lookups correctly
+        const level = this.getSkillLevel(skillName);
 
         // Skip if there's a minimum level requirement that untrained can't meet
         // (usually minLevel is for trained skills only, untrained can still attempt at -3)
@@ -538,24 +538,45 @@ export class EventProcessor {
   }
 
   /**
-   * Check if character has a skill (for determining untrained penalty)
+   * Check if character has a skill (for determining untrained penalty).
+   * Handles specialty skills - e.g. if character has "gun-combat-energy",
+   * hasSkill("Gun Combat") returns true.
    */
   hasSkill(skillName: string): boolean {
-    const skillKey = skillName.toLowerCase().replace(/\s+/g, '-');
-    const skillData = this.skills[skillKey];
-    return skillData !== undefined && (parseInt(skillData.value) || 0) >= 0;
+    return this.getSkillLevel(skillName) > -3;
   }
 
   /**
-   * Get skill level (returns -3 for untrained skills)
+   * Get skill level (returns -3 for untrained skills).
+   * For base skills like "Gun Combat", also checks for any specialty
+   * (e.g. "gun-combat-energy") and returns the best level found.
+   * For specialty skills like "Gun Combat (Energy)", uses normalizeSkillName
+   * to produce the correct storage key.
    */
   getSkillLevel(skillName: string): number {
-    const skillKey = skillName.toLowerCase().replace(/\s+/g, '-');
-    const skillData = this.skills[skillKey];
-    if (!skillData) {
-      return -3; // Untrained penalty
+    const normalizedKey = normalizeSkillName(skillName);
+    const directMatch = this.skills[normalizedKey];
+    if (directMatch) {
+      return parseInt(directMatch.value) || 0;
     }
-    return parseInt(skillData.value) || 0;
+
+    // If this is a base skill name (no specialty), check for any specialty matches
+    const { specialty } = parseSkillString(skillName);
+    if (!specialty) {
+      const baseKey = normalizedKey;
+      let bestLevel = -3;
+      for (const [key, data] of Object.entries(this.skills)) {
+        if (key.startsWith(baseKey + '-') || key === baseKey) {
+          const level = parseInt(data.value) || 0;
+          if (level > bestLevel) {
+            bestLevel = level;
+          }
+        }
+      }
+      if (bestLevel > -3) return bestLevel;
+    }
+
+    return -3; // Untrained penalty
   }
 
   /**

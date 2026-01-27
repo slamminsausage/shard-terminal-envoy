@@ -125,6 +125,7 @@ interface CharacterData {
   // Psionic tracking
   psiTested?: boolean;            // Whether PSI has been tested
   psiTalents?: string[];          // Acquired psionic talents
+  canTestPsi?: boolean;           // Whether character has been granted PSI testing (event-gated)
 }
 
 // ============================================================================
@@ -323,6 +324,7 @@ export const CharacterGenerator: React.FC = () => {
     // Psionic tracking
     psiTested: false,
     psiTalents: [],
+    canTestPsi: false,
   });
 
   // Psionic testing state
@@ -1623,6 +1625,7 @@ export const CharacterGenerator: React.FC = () => {
         setTermSkillsGained(prev => [...prev, 'Failed to graduate']);
       }
       if (effects.canTestPsi) {
+        setCharacterData(prev => ({ ...prev, canTestPsi: true }));
         setTermSkillsGained(prev => [...prev, 'May test PSI in future']);
       }
       if (effects.allowCareer) {
@@ -2907,8 +2910,8 @@ export const CharacterGenerator: React.FC = () => {
                   </Alert>
                 )}
 
-                {/* PSI Testing Section */}
-                {!characterData.forcedCareer && (
+                {/* PSI Testing Section - only shown if character has been granted PSI testing via event */}
+                {!characterData.forcedCareer && characterData.canTestPsi && (
                   <div className="bg-purple-500/10 border border-purple-500/30 rounded p-4">
                     <div className="flex items-center justify-between">
                       <div>
@@ -2916,7 +2919,7 @@ export const CharacterGenerator: React.FC = () => {
                         <p className="text-xs text-purple-300/70">
                           {characterData.psiTested
                             ? `PSI: ${characterData.characteristics.psionics?.total || 0}${(characterData.psiTalents?.length || 0) > 0 ? ` | Talents: ${characterData.psiTalents?.join(', ')}` : ' | No talents acquired'}`
-                            : 'Test for psionic potential to unlock the Psion career.'}
+                            : 'You have been granted psionic testing. Test for psionic potential to unlock the Psion career.'}
                         </p>
                       </div>
                       {!characterData.psiTested && (
@@ -3262,7 +3265,12 @@ export const CharacterGenerator: React.FC = () => {
             <Card className="bg-black border-terminal-primary/50">
               <CardHeader>
                 <CardTitle className="text-terminal-primary">
-                  Career Terms - {isInTerm ? `Term ${currentTerm} in Progress` : `Completed ${currentTerm} Terms`}
+                  Career Terms - {isInTerm ? `Term ${currentTerm} in Progress` : currentTerm > 0 ? `Completed ${currentTerm} ${currentTerm === 1 ? 'Term' : 'Terms'} in Career` : 'Ready to Begin'}
+                  {(characterData.lifepath_log.length > 0 || (characterData.totalCareerTerms || 0) > 0) && (
+                    <span className="text-terminal-primary/50 text-sm font-normal ml-2">
+                      ({characterData.lifepath_log.length} total {characterData.lifepath_log.length === 1 ? 'term' : 'terms'} served)
+                    </span>
+                  )}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -3299,7 +3307,10 @@ export const CharacterGenerator: React.FC = () => {
                       <span className="text-terminal-primary/60">Age:</span> {characterData.age}
                     </div>
                     <div>
-                      <span className="text-terminal-primary/60">Terms Served:</span> {characterData.terms_served}
+                      <span className="text-terminal-primary/60">Terms in Career:</span> {currentTerm}
+                    </div>
+                    <div>
+                      <span className="text-terminal-primary/60">Total Terms:</span> {characterData.lifepath_log.length}
                     </div>
                     {/* Show Parole Threshold for Prisoner career */}
                     {selectedCareer?.isPrisonerCareer && characterData.paroleThreshold !== undefined && (
@@ -4415,7 +4426,7 @@ export const CharacterGenerator: React.FC = () => {
                     {characterData.name || 'Unnamed Character'}
                   </h2>
                   <p className="text-terminal-primary/70">
-                    {characterData.career} • {getRankTitle(selectedCareer, characterData.rank, isCommissioned, selectedCareer?.assignments[selectedAssignment]?.name)} • Age {characterData.age} • {characterData.terms_served} Terms
+                    {characterData.career} • {getRankTitle(selectedCareer, characterData.rank, isCommissioned, selectedCareer?.assignments[selectedAssignment]?.name)} • Age {characterData.age} • Term {currentTerm} in Career • {characterData.lifepath_log.length} Total Terms
                   </p>
                 </div>
 
