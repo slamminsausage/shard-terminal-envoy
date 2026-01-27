@@ -14,7 +14,7 @@ import {
   rollDiceExpression,
   getDM,
 } from './eventProcessor';
-import { ALL_SKILLS, SKILLS_WITH_SPECIALTIES, SKILLS_WITHOUT_SPECIALTIES } from './careers/skills';
+import { ALL_SKILLS, SKILLS_WITH_SPECIALTIES, SKILLS_WITHOUT_SPECIALTIES, normalizeSkillName, parseSkillString } from './careers/skills';
 
 // ============================================================================
 // PROPS
@@ -59,6 +59,38 @@ export function EventHandler({
   const addMessage = useCallback((msg: string) => {
     setMessages(prev => [...prev, msg]);
   }, []);
+
+  /**
+   * Look up a skill level properly, handling specialty skills.
+   * For a base skill like "Gun Combat", checks for exact match first,
+   * then looks for any specialty (e.g. "gun-combat-energy") and returns the best level.
+   * For a specialty like "Gun Combat (Energy)", uses normalizeSkillName for proper key format.
+   */
+  const getSkillLevel = (skillName: string): number => {
+    const normalizedKey = normalizeSkillName(skillName);
+    const directMatch = skills[normalizedKey];
+    if (directMatch) {
+      return parseInt(directMatch.value) || 0;
+    }
+
+    // If this is a base skill name (no specialty), check for any specialty matches
+    const { specialty } = parseSkillString(skillName);
+    if (!specialty) {
+      const baseKey = normalizedKey; // e.g. "gun-combat"
+      let bestLevel = -3;
+      for (const [key, data] of Object.entries(skills)) {
+        if (key.startsWith(baseKey + '-') || key === baseKey) {
+          const level = parseInt(data.value) || 0;
+          if (level > bestLevel) {
+            bestLevel = level;
+          }
+        }
+      }
+      if (bestLevel > -3) return bestLevel;
+    }
+
+    return -3; // Untrained
+  };
 
   // Handle avoidance choice
   const handleUseAvoidance = () => {
@@ -234,10 +266,8 @@ export function EventHandler({
         <p className="text-xs text-terminal-primary/60">Select a skill to roll (untrained skills roll at -3):</p>
         <div className="grid grid-cols-2 gap-2">
           {availableSkills.map(skill => {
-            // Normalize skill name for lookup
-            const skillKey = skill.toLowerCase().replace(/\s+/g, '-');
-            const skillData = skills[skillKey];
-            const level = skillData ? parseInt(skillData.value) || 0 : -3;
+            // Use proper skill lookup that handles specialties
+            const level = getSkillLevel(skill);
             const isUntrained = level === -3;
             return (
               <Button
@@ -289,10 +319,8 @@ export function EventHandler({
 
     if (isSkillRoll && state.selectedSkill) {
       const { target, displayText } = event.resolution;
-      // Normalize skill name for lookup
-      const skillKey = state.selectedSkill.toLowerCase().replace(/\s+/g, '-');
-      const skillData = skills[skillKey];
-      const level = skillData ? parseInt(skillData.value) || 0 : -3;
+      // Use proper skill lookup that handles specialties
+      const level = getSkillLevel(state.selectedSkill);
       const isUntrained = level === -3;
 
       return (
