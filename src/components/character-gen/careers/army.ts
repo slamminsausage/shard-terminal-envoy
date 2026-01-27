@@ -364,12 +364,113 @@ export const CAREER_ARMY: CareerDefinition = {
     ],
   },
   mishapTable: [
-    "Severely injured in action (same as result of 2 on Injury table). Alternatively, roll twice on the Injury table and take the lower result.",
-    "Your unit is slaughtered in a disastrous battle, for which you blame your commander. Gain them as an Enemy as they have you removed from the service.",
-    "Sent to a very unpleasant region to battle against guerrilla fighters and rebels. Discharged due to stress, injury, or government cover-up. Increase Recon or Survival by one level, but also gain the rebels as an Enemy.",
-    "Discover your commanding officer is engaged in illegal activity (e.g., weapon smuggling). You can join their ring (gain them as an Ally before being discharged, but keep your Benefit roll from this term) or co-operate with the military police (discharged anyway, but keep your Benefit roll from this term).",
-    "Tormented by or quarrel with an officer or fellow soldier. Gain that officer as a Rival as they drive you out of the service.",
-    "Injured. Roll on the Injury table.",
+    // Mishap 1: Severely injured
+    {
+      id: 'army-mishap-1',
+      description: 'Severely injured in action. Roll on the Injury table.',
+      resolution: {
+        type: 'automatic' as const,
+        effects: {
+          rollOnTable: 'injury' as const,
+          message: 'You are severely injured in action.',
+        },
+      },
+    },
+    // Mishap 2: Unit slaughtered
+    {
+      id: 'army-mishap-2',
+      description: 'Your unit is slaughtered in a disastrous battle, for which you blame your commander. Gain them as an Enemy as they have you removed from the service.',
+      resolution: {
+        type: 'automatic' as const,
+        effects: {
+          enemies: 1,
+          message: 'Your unit is slaughtered in a disastrous battle. You blame your commander and gain them as an Enemy.',
+        },
+      },
+    },
+    // Mishap 3: Guerrilla fighters
+    {
+      id: 'army-mishap-3',
+      description: 'Sent to a very unpleasant region to battle against guerrilla fighters and rebels. Discharged due to stress, injury, or government cover-up. Gain a level in Recon or Survival but also gain the rebels as an Enemy.',
+      resolution: {
+        type: 'choice' as const,
+        choices: [
+          {
+            id: 'recon',
+            label: 'Gain Recon',
+            description: 'Increase Recon by one level.',
+            effects: {
+              skills: { choices: ['Recon'], level: 1 },
+              enemies: 1,
+              message: 'You gain Recon from your experience fighting guerrillas, but gain the rebels as an Enemy.',
+            },
+          },
+          {
+            id: 'survival',
+            label: 'Gain Survival',
+            description: 'Increase Survival by one level.',
+            effects: {
+              skills: { choices: ['Survival'], level: 1 },
+              enemies: 1,
+              message: 'You gain Survival from your experience fighting guerrillas, but gain the rebels as an Enemy.',
+            },
+          },
+        ],
+      },
+    },
+    // Mishap 4: CO illegal activity
+    {
+      id: 'army-mishap-4',
+      description: 'Discover your commanding officer is engaged in illegal activity. You can join their ring or co-operate with the military police.',
+      resolution: {
+        type: 'choice' as const,
+        choices: [
+          {
+            id: 'join',
+            label: 'Join the Ring',
+            description: 'Gain your CO as an Ally. Keep your Benefit roll from this term.',
+            effects: {
+              allies: 1,
+              extraBenefit: true,
+              message: 'You join the ring and gain your CO as an Ally. You keep your Benefit roll from this term.',
+            },
+          },
+          {
+            id: 'report',
+            label: 'Co-operate with Military Police',
+            description: 'Discharged. Keep your Benefit roll from this term.',
+            effects: {
+              extraBenefit: true,
+              message: 'You co-operate with the military police. You are discharged but keep your Benefit roll from this term.',
+            },
+          },
+        ],
+      },
+    },
+    // Mishap 5: Quarrel with officer
+    {
+      id: 'army-mishap-5',
+      description: 'Tormented by or quarrel with an officer or fellow soldier. Gain that officer as a Rival as they drive you out of the service.',
+      resolution: {
+        type: 'automatic' as const,
+        effects: {
+          rivals: 1,
+          message: 'You quarrel with an officer or fellow soldier. You gain them as a Rival as they drive you out of the service.',
+        },
+      },
+    },
+    // Mishap 6: Injured
+    {
+      id: 'army-mishap-6',
+      description: 'Injured. Roll on the Injury table.',
+      resolution: {
+        type: 'automatic' as const,
+        effects: {
+          rollOnTable: 'injury' as const,
+          message: 'You are injured. Roll on the Injury table.',
+        },
+      },
+    },
   ],
   eventTable: ARMY_EVENTS,
   benefitsTable: ARMY_BENEFITS,

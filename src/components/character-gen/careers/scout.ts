@@ -379,12 +379,105 @@ export const CAREER_SCOUT: CareerDefinition = {
     ],
   },
   mishapTable: [
-    "Severely injured in action. Roll twice on the Injury table and take the lower result.",
-    "Your ship is damaged and you have to hitch-hike your way back across the stars. Gain one Contact and one level in Streetwise, Persuade, or Deception.",
-    "You inadvertently cause a conflict between the Imperium and a Minor Race. Gain a Rival and lose this Benefit roll.",
-    "You have a bad reaction to jump space. Leave this career.",
-    "Your ship is destroyed through your actions. Gain an Enemy. If you were on a mission of your own, you keep the Benefit roll for this term.",
-    "Injured. Roll on the Injury table.",
+    // Mishap 1: Severely injured
+    {
+      id: 'scout-mishap-1',
+      description: 'Severely injured in action. Roll on the Injury table.',
+      resolution: {
+        type: 'automatic' as const,
+        effects: {
+          rollOnTable: 'injury' as const,
+          message: 'You are severely injured in action.',
+        },
+      },
+    },
+    // Mishap 2: Ship damaged, hitch-hike back
+    {
+      id: 'scout-mishap-2',
+      description: 'Your ship is damaged and you have to hitch-hike your way back across the stars. Gain one Contact and one level in Streetwise, Persuade, or Deception.',
+      resolution: {
+        type: 'choice' as const,
+        choices: [
+          {
+            id: 'streetwise',
+            label: 'Gain Streetwise',
+            description: 'Increase Streetwise by one level.',
+            effects: {
+              skills: { choices: ['Streetwise'], level: 1 },
+              contacts: 1,
+              message: 'You hitch-hike back across the stars and gain Streetwise and a Contact.',
+            },
+          },
+          {
+            id: 'persuade',
+            label: 'Gain Persuade',
+            description: 'Increase Persuade by one level.',
+            effects: {
+              skills: { choices: ['Persuade'], level: 1 },
+              contacts: 1,
+              message: 'You hitch-hike back across the stars and gain Persuade and a Contact.',
+            },
+          },
+          {
+            id: 'deception',
+            label: 'Gain Deception',
+            description: 'Increase Deception by one level.',
+            effects: {
+              skills: { choices: ['Deception'], level: 1 },
+              contacts: 1,
+              message: 'You hitch-hike back across the stars and gain Deception and a Contact.',
+            },
+          },
+        ],
+      },
+    },
+    // Mishap 3: Conflict with Minor Race
+    {
+      id: 'scout-mishap-3',
+      description: 'You inadvertently cause a conflict between the Imperium and a Minor Race. Gain a Rival and lose this Benefit roll.',
+      resolution: {
+        type: 'automatic' as const,
+        effects: {
+          rivals: 1,
+          message: 'You inadvertently cause a conflict between the Imperium and a Minor Race. Gain a Rival.',
+        },
+      },
+    },
+    // Mishap 4: Bad reaction to jump space
+    {
+      id: 'scout-mishap-4',
+      description: 'You have a bad reaction to jump space. Leave this career.',
+      resolution: {
+        type: 'automatic' as const,
+        effects: {
+          message: 'You have a bad reaction to jump space and must leave this career.',
+        },
+      },
+    },
+    // Mishap 5: Ship destroyed
+    {
+      id: 'scout-mishap-5',
+      description: 'Your ship is destroyed through your actions. Gain an Enemy.',
+      resolution: {
+        type: 'automatic' as const,
+        effects: {
+          enemies: 1,
+          message: 'Your ship is destroyed through your actions. You gain an Enemy.',
+        },
+      },
+    },
+    // Mishap 6: Injured
+    {
+      id: 'scout-mishap-6',
+      description: 'Injured. Roll on the Injury table.',
+      resolution: {
+        type: 'automatic' as const,
+        effects: {
+          rollOnTable: 'injury' as const,
+          message: 'You are injured. Roll on the Injury table.',
+        },
+      },
+    },
   ],
   eventTable: SCOUT_EVENTS,
   benefitsTable: SCOUT_BENEFITS,

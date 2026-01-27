@@ -314,12 +314,120 @@ export const CAREER_NAVY: CareerDefinition = {
     ],
   },
   mishapTable: [
-    "Severely injured in action. Roll twice on the Injury table and take the lower result.",
-    "You are placed in the frozen watch (cryogenically stored on board ship) and revived improperly. Reduce STR, DEX, or END by 1.",
-    "During a battle, defeat or victory depends on your actions. You failed. Gain an Enemy and leave the service.",
-    "You are court martialed for an offence. You may keep the Benefit roll from this term but leave the service. If the court martial was unjust, gain an Enemy. Otherwise, the decision was fair.",
-    "You are tormented by or quarrel with an officer. Gain that officer as a Rival as they force you out.",
-    "Injured. Roll on the Injury table.",
+    // Mishap 1: Severely injured
+    {
+      id: 'navy-mishap-1',
+      description: 'Severely injured in action. Roll on the Injury table.',
+      resolution: {
+        type: 'automatic' as const,
+        effects: {
+          rollOnTable: 'injury' as const,
+          message: 'You are severely injured in action.',
+        },
+      },
+    },
+    // Mishap 2: Frozen watch
+    {
+      id: 'navy-mishap-2',
+      description: 'You are placed in the frozen watch and revived improperly. Reduce STR, DEX, or END by 1.',
+      resolution: {
+        type: 'choice' as const,
+        choices: [
+          {
+            id: 'str',
+            label: 'Reduce STR',
+            description: 'Reduce Strength by 1.',
+            effects: {
+              characteristics: [{ stat: 'strength' as const, modifier: -1 }],
+              message: 'Improper revival from frozen watch reduces your Strength by 1.',
+            },
+          },
+          {
+            id: 'dex',
+            label: 'Reduce DEX',
+            description: 'Reduce Dexterity by 1.',
+            effects: {
+              characteristics: [{ stat: 'dexterity' as const, modifier: -1 }],
+              message: 'Improper revival from frozen watch reduces your Dexterity by 1.',
+            },
+          },
+          {
+            id: 'end',
+            label: 'Reduce END',
+            description: 'Reduce Endurance by 1.',
+            effects: {
+              characteristics: [{ stat: 'endurance' as const, modifier: -1 }],
+              message: 'Improper revival from frozen watch reduces your Endurance by 1.',
+            },
+          },
+        ],
+      },
+    },
+    // Mishap 3: Battle failure
+    {
+      id: 'navy-mishap-3',
+      description: 'During a battle, defeat or victory depends on your actions. You failed. Gain an Enemy and leave the service.',
+      resolution: {
+        type: 'automatic' as const,
+        effects: {
+          enemies: 1,
+          message: 'You failed during a critical battle. You gain an Enemy and must leave the service.',
+        },
+      },
+    },
+    // Mishap 4: Court martialed
+    {
+      id: 'navy-mishap-4',
+      description: 'You are court martialed for an offence. You may keep the Benefit roll from this term. Was the court martial unjust?',
+      resolution: {
+        type: 'choice' as const,
+        choices: [
+          {
+            id: 'unjust',
+            label: 'Court Martial Was Unjust',
+            description: 'Keep your Benefit roll and gain an Enemy.',
+            effects: {
+              enemies: 1,
+              extraBenefit: true,
+              message: 'The court martial was unjust. You keep your Benefit roll but gain an Enemy.',
+            },
+          },
+          {
+            id: 'fair',
+            label: 'Decision Was Fair',
+            description: 'Keep your Benefit roll.',
+            effects: {
+              extraBenefit: true,
+              message: 'The court martial decision was fair. You keep your Benefit roll and leave the service.',
+            },
+          },
+        ],
+      },
+    },
+    // Mishap 5: Quarrel with officer
+    {
+      id: 'navy-mishap-5',
+      description: 'You are tormented by or quarrel with an officer. Gain that officer as a Rival as they force you out.',
+      resolution: {
+        type: 'automatic' as const,
+        effects: {
+          rivals: 1,
+          message: 'You quarrel with an officer. You gain them as a Rival as they force you out.',
+        },
+      },
+    },
+    // Mishap 6: Injured
+    {
+      id: 'navy-mishap-6',
+      description: 'Injured. Roll on the Injury table.',
+      resolution: {
+        type: 'automatic' as const,
+        effects: {
+          rollOnTable: 'injury' as const,
+          message: 'You are injured. Roll on the Injury table.',
+        },
+      },
+    },
   ],
   eventTable: NAVY_EVENTS,
   benefitsTable: NAVY_BENEFITS,

@@ -407,6 +407,10 @@ export const CharacterGenerator: React.FC = () => {
   // Mustering out state
   const [isMusteringOut, setIsMusteringOut] = useState(false);
 
+  // Mishap GameEvent state - for mishaps that require player interaction (rolls, choices)
+  const [pendingMishapGameEvent, setPendingMishapGameEvent] = useState<GameEvent | null>(null);
+  const [mishapRollNumber, setMishapRollNumber] = useState<number | null>(null);
+
   // Aging state
   const [agingResult, setAgingResult] = useState<AgingRollResult | null>(null);
   const [agingPending, setAgingPending] = useState(false);
@@ -1094,6 +1098,9 @@ export const CharacterGenerator: React.FC = () => {
     setSwitchAssignmentTarget(null);
     setSwitchAssignmentRollLog('');
     setSwitchAssignmentResult(null);
+    // Reset mishap GameEvent state
+    setPendingMishapGameEvent(null);
+    setMishapRollNumber(null);
 
     // Calculate age based on TOTAL terms completed across all careers
     // lifepath_log contains one entry per completed term
@@ -1196,30 +1203,39 @@ export const CharacterGenerator: React.FC = () => {
         // Regular career mishap
         const mishapRoll = rollDice(1, 6);
         const mishapEntry = selectedCareer.mishapTable[mishapRoll - 1];
-        const mishap = mishapEntry ? getMishapDescription(mishapEntry) : 'Injured. Roll on the Injury table.';
+        setMishapRollNumber(mishapRoll);
 
-        const ranks = getRanksForCareer(selectedCareer, isCommissioned, assignment.name);
+        // Check if this mishap is a GameEvent (has rolls/choices)
+        if (mishapEntry && typeof mishapEntry === 'object' && 'resolution' in mishapEntry) {
+          // GameEvent mishap - needs player interaction through EventHandler
+          setPendingMishapGameEvent(mishapEntry as GameEvent);
+          // Don't log the term yet - wait for GameEvent resolution
+        } else {
+          // Simple string mishap - log immediately
+          const mishap = mishapEntry ? getMishapDescription(mishapEntry) : 'Injured. Roll on the Injury table.';
+          const ranks = getRanksForCareer(selectedCareer, isCommissioned, assignment.name);
 
-        const termRecord: TermRecord = {
-          termNumber: currentTerm,
-          career: selectedCareer.name,
-          assignment: assignment.name,
-          age: characterData.age,
-          survivalRoll: `${roll} + ${dm} = ${total} (need ${assignment.survivalTarget}+)`,
-          survived: false,
-          advanced: false,
-          rank: characterData.rank,
-          rankTitle: ranks[characterData.rank]?.title || 'Rank 0',
-          event: `MISHAP: ${mishap}`,
-          skillsGained: [],
-          mishap,
-        };
+          const termRecord: TermRecord = {
+            termNumber: currentTerm,
+            career: selectedCareer.name,
+            assignment: assignment.name,
+            age: characterData.age,
+            survivalRoll: `${roll} + ${dm} = ${total} (need ${assignment.survivalTarget}+)`,
+            survived: false,
+            advanced: false,
+            rank: characterData.rank,
+            rankTitle: ranks[characterData.rank]?.title || 'Rank 0',
+            event: `MISHAP: ${mishap}`,
+            skillsGained: [],
+            mishap,
+          };
 
-        setCharacterData(prev => ({
-          ...prev,
-          lifepath_log: [...prev.lifepath_log, termRecord],
-          terms_served: currentTerm,
-        }));
+          setCharacterData(prev => ({
+            ...prev,
+            lifepath_log: [...prev.lifepath_log, termRecord],
+            terms_served: currentTerm,
+          }));
+        }
       }
     } else {
       // Graduation/survival success
@@ -1671,6 +1687,137 @@ export const CharacterGenerator: React.FC = () => {
         setTermSkillsGained(prev => [...prev, msg]);
       }
     });
+  };
+
+  // Handler for mishap GameEvent completion
+  const handleMishapGameEventComplete = (effects: EventEffects | undefined, messages: string[]) => {
+    if (!selectedCareer) return;
+
+    const assignment = selectedCareer.assignments[selectedAssignment];
+    const ranks = getRanksForCareer(selectedCareer, isCommissioned, assignment.name);
+    const mishapDescription = pendingMishapGameEvent?.description || 'Mishap';
+
+    // Check if the mishap outcome allows continuing in career
+    const canContinue = effects?.continueInCareer === true;
+
+    // Apply effects from the mishap (same logic as handleGameEventComplete)
+    if (effects) {
+      if (effects.skills?.choices) {
+        const level = effects.skills.level ?? 1;
+        effects.skills.choices.forEach(skillName => {
+          const skillKey = normalizeSkillName(skillName);
+          setCharacterData(prev => {
+            const currentSkill = prev.skills[skillKey];
+            const currentValue = currentSkill ? parseInt(currentSkill.value) || 0 : 0;
+            const newValue = level === 0 ? Math.max(currentValue, 0) : Math.max(currentValue, level);
+            return {
+              ...prev,
+              skills: {
+                ...prev.skills,
+                [skillKey]: { proficient: true, value: newValue.toString() },
+              },
+            };
+          });
+        });
+      }
+
+      if (effects.characteristics) {
+        effects.characteristics.forEach(change => {
+          setCharacterData(prev => {
+            const currentValue = prev.characteristics[change.stat].total;
+            const newValue = change.max
+              ? Math.min(currentValue + change.modifier, change.max)
+              : currentValue + change.modifier;
+            return {
+              ...prev,
+              characteristics: {
+                ...prev.characteristics,
+                [change.stat]: {
+                  ...prev.characteristics[change.stat],
+                  total: newValue,
+                  current: newValue,
+                },
+              },
+            };
+          });
+        });
+      }
+
+      if (effects.allies) {
+        const count = rollDiceExpression(effects.allies);
+        if (count > 0) {
+          setCharacterData(prev => ({ ...prev, allies: prev.allies + count }));
+        }
+      }
+      if (effects.enemies) {
+        const count = rollDiceExpression(effects.enemies);
+        if (count > 0) {
+          setCharacterData(prev => ({ ...prev, enemies: prev.enemies + count }));
+        }
+      }
+      if (effects.rivals) {
+        const count = rollDiceExpression(effects.rivals);
+        if (count > 0) {
+          setCharacterData(prev => ({ ...prev, rivals: prev.rivals + count }));
+        }
+      }
+      if (effects.contacts) {
+        const count = rollDiceExpression(effects.contacts);
+        if (count > 0) {
+          setCharacterData(prev => ({ ...prev, contacts: prev.contacts + count }));
+        }
+      }
+
+      if (effects.extraBenefit) {
+        setExtraBenefitRolls(prev => prev + 1);
+      }
+      if (effects.benefitDM) {
+        setEventBenefitDM(prev => prev + effects.benefitDM!);
+      }
+
+      // Handle table redirects from mishap (e.g., roll on injury)
+      if (effects.rollOnTable) {
+        handleTableRedirect(effects.rollOnTable as 'life_events' | 'injury' | 'aging' | 'draft' | 'unusual_events');
+      }
+    }
+
+    if (canContinue) {
+      // Character may continue in career - override the survival failure
+      setTermSurvived(true);
+      setPendingMishapGameEvent(null);
+      setMishapRollNumber(null);
+      // Note: the term will still need to go through the normal event/skill flow
+      // Re-set to allow event roll
+      setTermEventRoll(null);
+    } else {
+      // Normal mishap - character must leave career
+      // Build the skills/effects summary from messages
+      const skillsGained = messages.filter(m => m && m.length > 0);
+
+      const termRecord: TermRecord = {
+        termNumber: currentTerm,
+        career: selectedCareer.name,
+        assignment: assignment.name,
+        age: characterData.age,
+        survivalRoll: survivalRollLog,
+        survived: false,
+        advanced: false,
+        rank: characterData.rank,
+        rankTitle: ranks[characterData.rank]?.title || 'Rank 0',
+        event: `MISHAP: ${mishapDescription}`,
+        skillsGained,
+        mishap: mishapDescription,
+      };
+
+      setCharacterData(prev => ({
+        ...prev,
+        lifepath_log: [...prev.lifepath_log, termRecord],
+        terms_served: currentTerm,
+      }));
+
+      setPendingMishapGameEvent(null);
+      setMishapRollNumber(null);
+    }
   };
 
   // Handler for table redirects (Life Events, Injury, etc.)
@@ -2200,6 +2347,9 @@ export const CharacterGenerator: React.FC = () => {
     setSwitchAssignmentTarget(null);
     setSwitchAssignmentRollLog('');
     setSwitchAssignmentResult(null);
+    // Reset mishap GameEvent state
+    setPendingMishapGameEvent(null);
+    setMishapRollNumber(null);
 
     // Reset career state for new career
     setCurrentTerm(0);
@@ -2339,6 +2489,9 @@ export const CharacterGenerator: React.FC = () => {
     setSwitchAssignmentTarget(null);
     setSwitchAssignmentRollLog('');
     setSwitchAssignmentResult(null);
+    // Reset mishap GameEvent state
+    setPendingMishapGameEvent(null);
+    setMishapRollNumber(null);
 
     // Go back to career selection
     setStep(4);
@@ -3421,30 +3574,59 @@ export const CharacterGenerator: React.FC = () => {
                       <AlertDescription className="text-red-400">
                         {selectedCareer?.isPreCareer
                           ? '✗ Failed to graduate. You may attempt to qualify for any career (except another pre-career this term).'
-                          : '✗ Survival check failed! You suffer a mishap and must leave this career.'}
+                          : '✗ Survival check failed! You suffer a mishap.'}
                       </AlertDescription>
                     </Alert>
-                    {preCareerFailedService && (
-                      <Alert className="bg-blue-500/10 border-blue-500/50">
-                        <AlertDescription className="text-blue-400">
-                          ℹ You have automatic entry to {preCareerFailedService} (no qualification roll needed)!
-                        </AlertDescription>
-                      </Alert>
+                    {survivalRollLog && (
+                      <div className="bg-terminal-primary/5 border border-terminal-primary/30 rounded p-2">
+                        <p className="text-xs text-terminal-primary/60 font-mono">{survivalRollLog}</p>
+                      </div>
                     )}
-                    <div className="flex gap-2">
-                      <Button
-                        onClick={switchToNewCareer}
-                        className="flex-1 bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
-                      >
-                        Back to Career Selection
-                      </Button>
-                      <Button
-                        onClick={musterOut}
-                        className="flex-1 bg-red-500/20 text-red-400 hover:bg-red-500/30 border border-red-500/50"
-                      >
-                        Muster Out
-                      </Button>
-                    </div>
+
+                    {/* Pending Mishap GameEvent - requires player interaction */}
+                    {pendingMishapGameEvent && (
+                      <div className="space-y-2">
+                        <Alert className="bg-yellow-500/10 border-yellow-500/50">
+                          <AlertDescription className="text-yellow-400">
+                            <strong>Mishap {mishapRollNumber}:</strong> {pendingMishapGameEvent.description}
+                          </AlertDescription>
+                        </Alert>
+                        <EventHandler
+                          event={pendingMishapGameEvent}
+                          characteristics={characterData.characteristics}
+                          skills={characterData.skills}
+                          onComplete={handleMishapGameEventComplete}
+                          onTableRedirect={handleTableRedirect}
+                        />
+                      </div>
+                    )}
+
+                    {/* Simple string mishap or already-resolved mishap - show exit options */}
+                    {!pendingMishapGameEvent && (
+                      <>
+                        {preCareerFailedService && (
+                          <Alert className="bg-blue-500/10 border-blue-500/50">
+                            <AlertDescription className="text-blue-400">
+                              ℹ You have automatic entry to {preCareerFailedService} (no qualification roll needed)!
+                            </AlertDescription>
+                          </Alert>
+                        )}
+                        <div className="flex gap-2">
+                          <Button
+                            onClick={switchToNewCareer}
+                            className="flex-1 bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
+                          >
+                            Back to Career Selection
+                          </Button>
+                          <Button
+                            onClick={musterOut}
+                            className="flex-1 bg-red-500/20 text-red-400 hover:bg-red-500/30 border border-red-500/50"
+                          >
+                            Muster Out
+                          </Button>
+                        </div>
+                      </>
+                    )}
                   </div>
                 )}
 
