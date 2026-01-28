@@ -6,7 +6,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Card, CardContent } from '@/components/ui/card';
-import { Dices, Check, X, ChevronRight, ChevronDown, ChevronUp } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Dices, Check, X, ChevronRight, ChevronDown, ChevronUp, Edit3 } from 'lucide-react';
 import type { GameEvent, EventEffects, Characteristics, EventChoice } from './careers/types';
 import {
   EventProcessor,
@@ -26,6 +27,7 @@ interface EventHandlerProps {
   skills: Record<string, { proficient: boolean; value: string }>;
   onComplete: (effects: EventEffects | undefined, messages: string[]) => void;
   onTableRedirect?: (table: 'life_events' | 'injury' | 'aging' | 'draft' | 'unusual_events') => void;
+  useManualDice?: boolean; // When true, show manual dice entry instead of auto-roll buttons
 }
 
 // ============================================================================
@@ -38,6 +40,7 @@ export function EventHandler({
   skills,
   onComplete,
   onTableRedirect,
+  useManualDice = false,
 }: EventHandlerProps) {
   const [processor] = useState(() => new EventProcessor(characteristics, skills));
   const [state, setState] = useState<EventState>(() => processor.initializeEvent(event));
@@ -47,12 +50,16 @@ export function EventHandler({
   const [anySkillPendingSpecialty, setAnySkillPendingSpecialty] = useState<string | null>(null);
   const [expandedSkillCategory, setExpandedSkillCategory] = useState<string | null>(null);
 
+  // State for manual dice entry
+  const [manualDiceValue, setManualDiceValue] = useState<string>('');
+
   // Reset when event changes
   useEffect(() => {
     setState(processor.initializeEvent(event));
     setMessages([]);
     setAnySkillPendingSpecialty(null);
     setExpandedSkillCategory(null);
+    setManualDiceValue('');
   }, [event, processor]);
 
   // Add message helper
@@ -111,18 +118,20 @@ export function EventHandler({
   };
 
   // Handle characteristic roll
-  const handleCharacteristicRoll = () => {
-    const newState = processor.performCharacteristicRoll(state);
+  const handleCharacteristicRoll = (manualRoll?: number) => {
+    const newState = processor.performCharacteristicRoll(state, manualRoll);
     setState(newState);
+    setManualDiceValue('');
     if (newState.appliedEffects?.message) {
       addMessage(newState.appliedEffects.message);
     }
   };
 
   // Handle skill roll
-  const handleSkillRoll = () => {
-    const newState = processor.performSkillRoll(state);
+  const handleSkillRoll = (manualRoll?: number) => {
+    const newState = processor.performSkillRoll(state, manualRoll);
     setState(newState);
+    setManualDiceValue('');
     if (newState.appliedEffects?.message) {
       addMessage(newState.appliedEffects.message);
     }
@@ -138,9 +147,10 @@ export function EventHandler({
   };
 
   // Handle sub-roll
-  const handleSubRoll = () => {
-    const newState = processor.performSubRoll(state);
+  const handleSubRoll = (manualRoll?: number) => {
+    const newState = processor.performSubRoll(state, manualRoll);
     setState(newState);
+    setManualDiceValue('');
     if (newState.subRollResult?.outcome.effects.message) {
       addMessage(newState.subRollResult.outcome.effects.message);
     }
@@ -295,6 +305,34 @@ export function EventHandler({
     const isCharRoll = event.resolution.type === 'characteristic_roll';
     const isSkillRoll = event.resolution.type === 'skill_roll';
 
+    // Helper to render the manual dice input
+    const renderManualInput = (diceCount: number, diceSides: number, onSubmit: (value: number) => void) => (
+      <div className="flex gap-2">
+        <Input
+          type="number"
+          min={diceCount}
+          max={diceCount * diceSides}
+          value={manualDiceValue}
+          onChange={(e) => setManualDiceValue(e.target.value)}
+          placeholder={`Enter ${diceCount}D${diceSides} result (${diceCount}-${diceCount * diceSides})`}
+          className="bg-black border-terminal-primary/50 text-terminal-primary placeholder:text-terminal-primary/40"
+        />
+        <Button
+          onClick={() => {
+            const val = parseInt(manualDiceValue);
+            if (!isNaN(val) && val >= diceCount && val <= diceCount * diceSides) {
+              onSubmit(val);
+            }
+          }}
+          disabled={!manualDiceValue || isNaN(parseInt(manualDiceValue)) || parseInt(manualDiceValue) < diceCount || parseInt(manualDiceValue) > diceCount * diceSides}
+          className="bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
+        >
+          <Edit3 className="h-4 w-4 mr-2" />
+          Submit
+        </Button>
+      </div>
+    );
+
     if (isCharRoll) {
       const { stat, target, displayText } = event.resolution;
       const charValue = characteristics[stat].total;
@@ -306,13 +344,20 @@ export function EventHandler({
           <div className="text-xs text-terminal-primary/60">
             {stat.toUpperCase()} {charValue} (DM {dm >= 0 ? '+' : ''}{dm}) vs Target {target}+
           </div>
-          <Button
-            onClick={handleCharacteristicRoll}
-            className="w-full bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
-          >
-            <Dices className="h-4 w-4 mr-2" />
-            Roll 2D6 + {stat.toUpperCase()}
-          </Button>
+          {useManualDice ? (
+            <>
+              <p className="text-xs text-blue-400">Enter your 2D6 roll result (DM will be applied automatically):</p>
+              {renderManualInput(2, 6, (val) => handleCharacteristicRoll(val))}
+            </>
+          ) : (
+            <Button
+              onClick={() => handleCharacteristicRoll()}
+              className="w-full bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
+            >
+              <Dices className="h-4 w-4 mr-2" />
+              Roll 2D6 + {stat.toUpperCase()}
+            </Button>
+          )}
         </div>
       );
     }
@@ -329,13 +374,20 @@ export function EventHandler({
           <div className={`text-xs ${isUntrained ? 'text-yellow-400' : 'text-terminal-primary/60'}`}>
             <span className="capitalize">{state.selectedSkill.replace(/-/g, ' ')}</span> {level}{isUntrained ? ' (untrained)' : ''} vs Target {target}+
           </div>
-          <Button
-            onClick={handleSkillRoll}
-            className="w-full bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
-          >
-            <Dices className="h-4 w-4 mr-2" />
-            Roll 2D6 {level >= 0 ? `+ ${level}` : `${level}`}
-          </Button>
+          {useManualDice ? (
+            <>
+              <p className="text-xs text-blue-400">Enter your 2D6 roll result (skill modifier will be applied automatically):</p>
+              {renderManualInput(2, 6, (val) => handleSkillRoll(val))}
+            </>
+          ) : (
+            <Button
+              onClick={() => handleSkillRoll()}
+              className="w-full bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
+            >
+              <Dices className="h-4 w-4 mr-2" />
+              Roll 2D6 {level >= 0 ? `+ ${level}` : `${level}`}
+            </Button>
+          )}
         </div>
       );
     }
@@ -467,6 +519,9 @@ export function EventHandler({
 
     if (!subRoll) return null;
 
+    const diceCount = subRoll.dice;
+    const diceSides = subRoll.sides || 6;
+
     return (
       <div className="space-y-2">
         <p className="text-sm text-terminal-primary/80">
@@ -480,13 +535,43 @@ export function EventHandler({
             </div>
           ))}
         </div>
-        <Button
-          onClick={handleSubRoll}
-          className="w-full bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
-        >
-          <Dices className="h-4 w-4 mr-2" />
-          Roll {subRoll.dice}D{subRoll.sides || 6}
-        </Button>
+        {useManualDice ? (
+          <>
+            <p className="text-xs text-blue-400">Enter your {diceCount}D{diceSides} roll result:</p>
+            <div className="flex gap-2">
+              <Input
+                type="number"
+                min={diceCount}
+                max={diceCount * diceSides}
+                value={manualDiceValue}
+                onChange={(e) => setManualDiceValue(e.target.value)}
+                placeholder={`Enter ${diceCount}D${diceSides} result (${diceCount}-${diceCount * diceSides})`}
+                className="bg-black border-terminal-primary/50 text-terminal-primary placeholder:text-terminal-primary/40"
+              />
+              <Button
+                onClick={() => {
+                  const val = parseInt(manualDiceValue);
+                  if (!isNaN(val) && val >= diceCount && val <= diceCount * diceSides) {
+                    handleSubRoll(val);
+                  }
+                }}
+                disabled={!manualDiceValue || isNaN(parseInt(manualDiceValue)) || parseInt(manualDiceValue) < diceCount || parseInt(manualDiceValue) > diceCount * diceSides}
+                className="bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
+              >
+                <Edit3 className="h-4 w-4 mr-2" />
+                Submit
+              </Button>
+            </div>
+          </>
+        ) : (
+          <Button
+            onClick={() => handleSubRoll()}
+            className="w-full bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
+          >
+            <Dices className="h-4 w-4 mr-2" />
+            Roll {diceCount}D{diceSides}
+          </Button>
+        )}
       </div>
     );
   };

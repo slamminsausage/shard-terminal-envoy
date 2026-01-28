@@ -234,8 +234,9 @@ export class EventProcessor {
 
   /**
    * Perform a characteristic roll
+   * @param manualRoll Optional manual dice result (2D6 total) - if provided, uses this instead of rolling
    */
-  performCharacteristicRoll(state: EventState): EventState {
+  performCharacteristicRoll(state: EventState, manualRoll?: number): EventState {
     if (state.event.resolution.type !== 'characteristic_roll') {
       return state;
     }
@@ -243,7 +244,7 @@ export class EventProcessor {
     const { stat, target, outcomes } = state.event.resolution;
     const charValue = this.characteristics[stat].total;
     const dm = getDM(charValue);
-    const naturalRoll = rollDice(2, 6);
+    const naturalRoll = manualRoll ?? rollDice(2, 6);
     const total = naturalRoll + dm;
     const success = total >= target;
 
@@ -260,8 +261,9 @@ export class EventProcessor {
 
   /**
    * Perform a skill roll
+   * @param manualRoll Optional manual dice result (2D6 total) - if provided, uses this instead of rolling
    */
-  performSkillRoll(state: EventState): EventState {
+  performSkillRoll(state: EventState, manualRoll?: number): EventState {
     if (state.event.resolution.type !== 'skill_roll' || !state.selectedSkill) {
       return state;
     }
@@ -272,7 +274,7 @@ export class EventProcessor {
     const skillLevel = this.getSkillLevel(state.selectedSkill);
     const isUntrained = skillLevel === -3;
 
-    const naturalRoll = rollDice(2, 6);
+    const naturalRoll = manualRoll ?? rollDice(2, 6);
     const total = naturalRoll + skillLevel;
     const success = total >= target;
 
@@ -372,8 +374,9 @@ export class EventProcessor {
 
   /**
    * Perform a sub-roll
+   * @param manualRoll Optional manual dice result - if provided, uses this instead of rolling
    */
-  performSubRoll(state: EventState): EventState {
+  performSubRoll(state: EventState, manualRoll?: number): EventState {
     const subRoll = state.selectedChoice?.subRoll ||
       (state.event.resolution.type === 'sub_roll' ? state.event.resolution.subRoll : undefined);
 
@@ -381,7 +384,7 @@ export class EventProcessor {
       return state;
     }
 
-    const roll = rollDice(subRoll.dice, subRoll.sides || 6);
+    const roll = manualRoll ?? rollDice(subRoll.dice, subRoll.sides || 6);
     const outcome = subRoll.outcomes.find(o => roll >= o.min && roll <= o.max);
 
     if (!outcome) {
