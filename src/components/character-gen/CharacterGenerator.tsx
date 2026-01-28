@@ -15,6 +15,7 @@ import { EventHandler } from './EventHandler';
 import { rollDiceExpression, rollDice as rollDiceUtil } from './eventProcessor';
 import { SpecialtySelector, needsSpecialtySelection, getBaseSkillName } from './SpecialtySelector';
 import { MusteringOut } from './MusteringOut';
+import { RACES, getRaceById, applyRaceModifiers, type Race, type RaceTrait } from './races';
 
 // ============================================================================
 // TYPE DEFINITIONS (Component-specific)
@@ -63,7 +64,9 @@ interface CharacteristicValue {
 interface CharacterData {
   // Header info
   name: string;
-  species: string;
+  species: string;       // Race name (Human, Aslan, Vargr, Bwap)
+  raceId: string;        // Race ID for lookups
+  raceTraits: RaceTrait[]; // Stored race traits
   homeworld: string;
   age: number;
 
@@ -126,6 +129,10 @@ interface CharacterData {
   psiTested?: boolean;            // Whether PSI has been tested
   psiTalents?: string[];          // Acquired psionic talents
   canTestPsi?: boolean;           // Whether character has been granted PSI testing (event-gated)
+
+  // Event-granted career effects
+  eventQualificationDM?: number;  // DM bonus to next qualification roll from events
+  allowedCareers?: string[];      // Careers unlocked by events (bypass qualification)
 }
 
 // ============================================================================
@@ -284,6 +291,8 @@ export const CharacterGenerator: React.FC = () => {
   const [characterData, setCharacterData] = useState<CharacterData>({
     name: '',
     species: 'Human',
+    raceId: 'human',
+    raceTraits: [],
     homeworld: '',
     age: 18,
     characteristics: createEmptyCharacteristics(),
@@ -325,6 +334,9 @@ export const CharacterGenerator: React.FC = () => {
     psiTested: false,
     psiTalents: [],
     canTestPsi: false,
+    // Event-granted career effects
+    eventQualificationDM: 0,
+    allowedCareers: [],
   });
 
   // Psionic testing state
@@ -334,6 +346,7 @@ export const CharacterGenerator: React.FC = () => {
   const [characteristicRolls, setCharacteristicRolls] = useState<number[]>([]);
   const [hasRolled, setHasRolled] = useState(false);
   const [selectedRollIndex, setSelectedRollIndex] = useState<number | null>(null);
+  const [selectedRace, setSelectedRace] = useState<Race>(RACES[0]); // Default to Human
   const [assignmentMode, setAssignmentMode] = useState<'auto' | 'manual'>('auto');
   const [backgroundSkillsRemaining, setBackgroundSkillsRemaining] = useState(0);
   const [selectedCareer, setSelectedCareer] = useState<CareerDefinition | null>(null);
@@ -558,23 +571,45 @@ export const CharacterGenerator: React.FC = () => {
 
     const rollValue = characteristicRolls[selectedRollIndex];
 
-    setCharacterData(prev => ({
-      ...prev,
-      characteristics: {
+    // Check if this is the last roll being assigned
+    const isLastRoll = characteristicRolls.length === 1;
+
+    setCharacterData(prev => {
+      // Build new characteristics with this roll
+      let newChars = {
         ...prev.characteristics,
         [key]: { total: rollValue, current: rollValue },
-      },
-    }));
+      };
+
+      // If this is the last roll, apply race modifiers
+      if (isLastRoll) {
+        newChars = applyRaceModifiers(newChars, selectedRace);
+      }
+
+      return {
+        ...prev,
+        characteristics: newChars,
+        // Update race info if this is the last roll
+        ...(isLastRoll ? {
+          species: selectedRace.name,
+          raceId: selectedRace.id,
+          raceTraits: selectedRace.traits,
+        } : {}),
+      };
+    });
 
     // Remove the used roll
     setCharacteristicRolls(prev => prev.filter((_, idx) => idx !== selectedRollIndex));
     setSelectedRollIndex(null);
 
     // Check if all rolls are assigned
-    if (characteristicRolls.length === 1) {
-      // Last roll assigned, calculate background skills
-      const eduValue = key === 'education' ? rollValue : characterData.characteristics.education.total;
-      const eduDM = getDM(eduValue);
+    if (isLastRoll) {
+      // Last roll assigned, calculate background skills (accounting for race modifier)
+      const raceModifier = selectedRace.characteristicModifiers.find(m => m.stat === 'education')?.modifier || 0;
+      const finalEduValue = key === 'education'
+        ? Math.max(1, rollValue + raceModifier)
+        : Math.max(1, characterData.characteristics.education.total + raceModifier);
+      const eduDM = getDM(finalEduValue);
       setBackgroundSkillsRemaining(Math.max(0, eduDM + 3));
     }
   };
@@ -582,7 +617,7 @@ export const CharacterGenerator: React.FC = () => {
   const assignRolls = () => {
     if (characteristicRolls.length !== 6) return;
 
-    const newChars = createEmptyCharacteristics();
+    let newChars = createEmptyCharacteristics();
     const charKeys: Array<keyof Omit<Characteristics, 'psionics'>> = [
       'strength', 'dexterity', 'endurance', 'intellect', 'education', 'social'
     ];
@@ -592,12 +627,18 @@ export const CharacterGenerator: React.FC = () => {
       newChars[key] = { total: roll, current: roll };
     });
 
+    // Apply race modifiers (cannot go below 1)
+    newChars = applyRaceModifiers(newChars, selectedRace);
+
     setCharacterData(prev => ({
       ...prev,
       characteristics: newChars,
+      species: selectedRace.name,
+      raceId: selectedRace.id,
+      raceTraits: selectedRace.traits,
     }));
 
-    // Calculate background skills (EDU DM + 3)
+    // Calculate background skills (EDU DM + 3) - use post-modifier education
     const eduDM = getDM(newChars.education.total);
     setBackgroundSkillsRemaining(Math.max(0, eduDM + 3));
   };
@@ -612,6 +653,33 @@ export const CharacterGenerator: React.FC = () => {
       characteristics: createEmptyCharacteristics(),
     }));
     setBackgroundSkillsRemaining(0);
+  };
+
+  // Finalize characteristics with race modifiers (for individual/manual roll modes)
+  const finalizeCharacteristicsWithRace = () => {
+    // Check if race modifiers already applied (species already set to non-human)
+    if (characterData.raceId === selectedRace.id && characterData.species === selectedRace.name) {
+      // Already finalized, just proceed
+      setStep(3);
+      return;
+    }
+
+    // Apply race modifiers to current characteristics
+    const newChars = applyRaceModifiers(characterData.characteristics, selectedRace);
+
+    setCharacterData(prev => ({
+      ...prev,
+      characteristics: newChars,
+      species: selectedRace.name,
+      raceId: selectedRace.id,
+      raceTraits: selectedRace.traits,
+    }));
+
+    // Recalculate background skills with race-modified education
+    const eduDM = getDM(newChars.education.total);
+    setBackgroundSkillsRemaining(Math.max(0, eduDM + 3));
+
+    setStep(3);
   };
 
   // ============================================================================
@@ -664,6 +732,20 @@ export const CharacterGenerator: React.FC = () => {
       return;
     }
 
+    // Check for event-granted career unlock (bypass qualification)
+    if (characterData.allowedCareers?.includes(selectedCareer.name)) {
+      setQualificationPassed(true);
+      setQualificationRollLog('Career unlocked by event - automatic qualification.');
+      setCharacterData(prev => ({
+        ...prev,
+        career: selectedCareer.name,
+        notes: prev.notes + `\nEntered ${selectedCareer.name} (unlocked by event)`,
+        // Remove the career from allowed list (one-time use)
+        allowedCareers: prev.allowedCareers?.filter(c => c !== selectedCareer.name) || [],
+      }));
+      return;
+    }
+
     const charValue = characterData.characteristics[selectedCareer.qualificationStat].total;
     let dm = getDM(charValue);
     let dmDetails: string[] = [`Char DM ${getDM(charValue)}`];
@@ -692,6 +774,12 @@ export const CharacterGenerator: React.FC = () => {
       dmDetails.push(`University ${honoursText}Graduate DM +${characterData.preCareerQualificationDM}`);
     }
 
+    // Apply event-granted qualification DM
+    if (characterData.eventQualificationDM && characterData.eventQualificationDM > 0) {
+      dm += characterData.eventQualificationDM;
+      dmDetails.push(`Event DM +${characterData.eventQualificationDM}`);
+    }
+
     const roll = rollDice(2, 6);
     const total = roll + dm;
     const passed = total >= selectedCareer.qualificationTarget;
@@ -705,7 +793,14 @@ export const CharacterGenerator: React.FC = () => {
         ...prev,
         career: selectedCareer.name,
         notes: prev.notes + `\nQualified for ${selectedCareer.name}: ${roll} + ${dm} = ${total}`,
+        eventQualificationDM: 0, // Reset after using
         // Note: totalCareerTerms is incremented in completeTerm(), not here
+      }));
+    } else {
+      // Reset eventQualificationDM even on failure (it's a one-time bonus)
+      setCharacterData(prev => ({
+        ...prev,
+        eventQualificationDM: 0,
       }));
     }
   };
@@ -1636,8 +1731,8 @@ export const CharacterGenerator: React.FC = () => {
 
       // Handle career effects
       if (effects.forceCareer) {
+        setCharacterData(prev => ({ ...prev, forcedCareer: effects.forceCareer }));
         setTermSkillsGained(prev => [...prev, `Must enter ${effects.forceCareer} next term`]);
-        // TODO: Store this for enforcement in career selection
       }
       if (effects.failGraduation) {
         setPreCareerGraduated(false);
@@ -1649,7 +1744,18 @@ export const CharacterGenerator: React.FC = () => {
         setTermSkillsGained(prev => [...prev, 'May test PSI in future']);
       }
       if (effects.allowCareer) {
+        setCharacterData(prev => ({
+          ...prev,
+          allowedCareers: [...(prev.allowedCareers || []), effects.allowCareer!],
+        }));
         setTermSkillsGained(prev => [...prev, `${effects.allowCareer} career unlocked`]);
+      }
+      if (effects.qualificationDM) {
+        setCharacterData(prev => ({
+          ...prev,
+          eventQualificationDM: (prev.eventQualificationDM || 0) + effects.qualificationDM!,
+        }));
+        setTermSkillsGained(prev => [...prev, `DM+${effects.qualificationDM} to next qualification roll`]);
       }
 
       // Handle DM bonuses for future rolls
@@ -2770,10 +2876,65 @@ export const CharacterGenerator: React.FC = () => {
               <CardContent className="space-y-4">
                 {!hasRolled ? (
                   <>
+                    {/* Race Selection */}
+                    <div className="bg-terminal-primary/5 border border-terminal-primary/30 rounded p-4">
+                      <h3 className="text-sm font-bold text-terminal-primary uppercase mb-3">Select Race</h3>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3">
+                        {RACES.map(race => (
+                          <Button
+                            key={race.id}
+                            onClick={() => setSelectedRace(race)}
+                            variant={selectedRace.id === race.id ? 'default' : 'outline'}
+                            className={selectedRace.id === race.id
+                              ? 'bg-terminal-primary text-black hover:bg-terminal-primary/80'
+                              : 'border-terminal-primary/50 text-terminal-primary hover:bg-terminal-primary/20'
+                            }
+                            size="sm"
+                          >
+                            {race.name}
+                          </Button>
+                        ))}
+                      </div>
+                      {selectedRace.id !== 'human' && (
+                        <div className="space-y-2 text-sm">
+                          <p className="text-terminal-primary/80">{selectedRace.description}</p>
+                          {selectedRace.characteristicModifiers.length > 0 && (
+                            <div className="flex gap-2 flex-wrap">
+                              <span className="text-terminal-primary/60">Modifiers:</span>
+                              {selectedRace.characteristicModifiers.map((mod, idx) => (
+                                <span
+                                  key={idx}
+                                  className={mod.modifier >= 0 ? 'text-green-400' : 'text-red-400'}
+                                >
+                                  {mod.stat.toUpperCase().slice(0, 3)} {mod.modifier >= 0 ? '+' : ''}{mod.modifier}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                          {selectedRace.traits.length > 0 && (
+                            <div className="space-y-1">
+                              <span className="text-terminal-primary/60">Traits:</span>
+                              {selectedRace.traits.map((trait, idx) => (
+                                <div key={idx} className="ml-2 text-xs">
+                                  <span className="text-cyan-400 font-bold">{trait.name}:</span>{' '}
+                                  <span className="text-terminal-primary/70">{trait.description}</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
                     <Alert className="bg-terminal-primary/5 border-terminal-primary/30">
                       <AlertCircle className="h-4 w-4" />
                       <AlertDescription className="text-terminal-primary/80">
                         Choose how to generate your characteristics: Auto-assign (traditional), Manual (pick where each roll goes), or roll individually.
+                        {selectedRace.characteristicModifiers.length > 0 && (
+                          <span className="block mt-1 text-cyan-400">
+                            Race modifiers will be applied after rolling.
+                          </span>
+                        )}
                       </AlertDescription>
                     </Alert>
 
@@ -2821,12 +2982,43 @@ export const CharacterGenerator: React.FC = () => {
                     </div>
 
                     {backgroundSkillsRemaining === 0 && (
-                      <Button
-                        onClick={assignRolls}
-                        className="w-full bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
-                      >
-                        Assign Rolls in Order (STR, DEX, END, INT, EDU, SOC)
-                      </Button>
+                      <>
+                        {/* Show preview of stats with race modifiers */}
+                        {selectedRace.characteristicModifiers.length > 0 && (
+                          <div className="bg-cyan-500/10 border border-cyan-500/30 rounded p-3">
+                            <h4 className="text-xs font-bold text-cyan-400 uppercase mb-2">
+                              With {selectedRace.name} Modifiers:
+                            </h4>
+                            <div className="grid grid-cols-6 gap-2 text-center text-sm">
+                              {(['strength', 'dexterity', 'endurance', 'intellect', 'education', 'social'] as const).map((stat, idx) => {
+                                const baseRoll = characteristicRolls[idx];
+                                const modifier = selectedRace.characteristicModifiers.find(m => m.stat === stat)?.modifier || 0;
+                                const finalValue = Math.max(1, baseRoll + modifier);
+                                return (
+                                  <div key={stat}>
+                                    <div className="text-terminal-primary/60 text-xs uppercase">{stat.slice(0, 3)}</div>
+                                    <div className="text-terminal-primary">
+                                      {baseRoll}
+                                      {modifier !== 0 && (
+                                        <span className={modifier > 0 ? 'text-green-400' : 'text-red-400'}>
+                                          {modifier > 0 ? '+' : ''}{modifier}
+                                        </span>
+                                      )}
+                                      {modifier !== 0 && <span className="text-cyan-400"> = {finalValue}</span>}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+                        <Button
+                          onClick={assignRolls}
+                          className="w-full bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
+                        >
+                          Assign Rolls in Order (STR, DEX, END, INT, EDU, SOC)
+                        </Button>
+                      </>
                     )}
 
                     {backgroundSkillsRemaining > 0 && (
@@ -2975,7 +3167,7 @@ export const CharacterGenerator: React.FC = () => {
                     Back
                   </Button>
                   <Button
-                    onClick={() => setStep(3)}
+                    onClick={finalizeCharacteristicsWithRace}
                     disabled={
                       assignmentMode === 'manual'
                         ? characteristicRolls.length > 0

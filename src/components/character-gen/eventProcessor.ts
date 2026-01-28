@@ -33,13 +33,15 @@ export function rollDiceExpression(expr: number | 'D3' | 'D6'): number {
 }
 
 export function getDM(value: number): number {
-  if (value <= 0) return -3;
-  if (value <= 2) return -2;
-  if (value <= 5) return -1;
-  if (value <= 8) return 0;
-  if (value <= 11) return 1;
-  if (value <= 14) return 2;
-  return 3;
+  // Traveller 2E DM table:
+  // 0: -3, 1-2: -2, 3-5: -1, 6-8: 0, 9-11: +1, 12-14: +2, 15+: +3
+  if (value >= 15) return 3;
+  if (value >= 12) return 2;
+  if (value >= 9) return 1;
+  if (value >= 6) return 0;
+  if (value >= 3) return -1;
+  if (value >= 1) return -2;
+  return -3;
 }
 
 // ============================================================================
