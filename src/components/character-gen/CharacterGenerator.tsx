@@ -421,6 +421,10 @@ export const CharacterGenerator: React.FC = () => {
   const [switchAssignmentRollLog, setSwitchAssignmentRollLog] = useState<string>('');
   const [switchAssignmentResult, setSwitchAssignmentResult] = useState<'success' | 'failure' | null>(null);
 
+  // Manual dice mode state - for users who prefer rolling physical dice
+  const [useManualDice, setUseManualDice] = useState(false);
+  const [manualDiceValue, setManualDiceValue] = useState<string>('');
+
   // Get available careers based on current term number
   const getAvailableCareers = (): CareerDefinition[] => {
     const totalTerms = characterData.totalCareerTerms || 0;
@@ -1122,7 +1126,7 @@ export const CharacterGenerator: React.FC = () => {
     // For subsequent careers, UI will show skill selection (handled in render)
   };
 
-  const runSurvivalCheck = () => {
+  const runSurvivalCheck = (manualRoll?: number) => {
     if (!selectedCareer || termSurvived !== null) return;
 
     const assignment = selectedCareer.assignments[selectedAssignment];
@@ -1144,7 +1148,7 @@ export const CharacterGenerator: React.FC = () => {
       }
     }
 
-    const roll = rollDice(2, 6);
+    const roll = manualRoll ?? rollDice(2, 6);
     const total = roll + dm;
     const survived = total >= assignment.survivalTarget;
 
@@ -1344,13 +1348,13 @@ export const CharacterGenerator: React.FC = () => {
     }
   };
 
-  const runAdvancementCheck = () => {
+  const runAdvancementCheck = (manualRoll?: number) => {
     if (!selectedCareer || !termSurvived || termAdvanced !== null) return;
 
     const assignment = selectedCareer.assignments[selectedAssignment];
     const charValue = characterData.characteristics[assignment.advancementStat].total;
     const charDM = getDM(charValue);
-    const roll = rollDice(2, 6);
+    const roll = manualRoll ?? rollDice(2, 6);
 
     // Include event advancement DM bonus if any
     const totalDM = charDM + eventAdvancementDM;
@@ -1426,10 +1430,10 @@ export const CharacterGenerator: React.FC = () => {
     }
   };
 
-  const rollEvent = () => {
+  const rollEvent = (manualRoll?: number) => {
     if (!selectedCareer || !termSurvived || termEventRoll !== null) return;
 
-    const roll = rollDice(2, 6);
+    const roll = manualRoll ?? rollDice(2, 6);
     setTermEventRoll(roll);
 
     // Check if this is a pre-career (use new GameEvent system)
@@ -3440,6 +3444,22 @@ export const CharacterGenerator: React.FC = () => {
                   />
                 ) : (
                 <>
+                {/* Manual Dice Toggle */}
+                <div className="flex items-center justify-end gap-2 mb-2">
+                  <label className="text-xs text-terminal-primary/60 cursor-pointer flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={useManualDice}
+                      onChange={(e) => {
+                        setUseManualDice(e.target.checked);
+                        setManualDiceValue('');
+                      }}
+                      className="accent-terminal-primary"
+                    />
+                    <span>Manual Dice Entry (use physical dice)</span>
+                  </label>
+                </div>
+
                 <div className="bg-terminal-primary/5 border border-terminal-primary/30 rounded p-4">
                   <div className="grid grid-cols-2 gap-4 text-sm text-terminal-primary/80">
                     <div>
@@ -3474,6 +3494,50 @@ export const CharacterGenerator: React.FC = () => {
                       </div>
                     )}
                   </div>
+                </div>
+
+                {/* CURRENT CHARACTERISTICS */}
+                <div className="bg-terminal-primary/5 border border-terminal-primary/30 rounded p-4">
+                  <h3 className="text-sm font-bold text-terminal-primary mb-2">Current Characteristics</h3>
+                  <div className="grid grid-cols-6 gap-2 text-center">
+                    {(['strength', 'dexterity', 'endurance', 'intellect', 'education', 'social'] as const).map((stat) => {
+                      const value = characterData.characteristics[stat].total;
+                      const dm = getDM(value);
+                      const isLow = value <= 2;
+                      const isCritical = value <= 0;
+                      return (
+                        <div
+                          key={stat}
+                          className={`p-2 rounded border ${
+                            isCritical
+                              ? 'bg-red-500/20 border-red-500/50'
+                              : isLow
+                              ? 'bg-yellow-500/10 border-yellow-500/50'
+                              : 'bg-terminal-primary/10 border-terminal-primary/30'
+                          }`}
+                        >
+                          <div className={`text-xs font-bold uppercase ${isCritical ? 'text-red-400' : isLow ? 'text-yellow-400' : 'text-terminal-primary/60'}`}>
+                            {stat.slice(0, 3)}
+                          </div>
+                          <div className={`text-lg font-bold ${isCritical ? 'text-red-400' : isLow ? 'text-yellow-400' : 'text-terminal-primary'}`}>
+                            {value}
+                          </div>
+                          <div className={`text-xs ${isCritical ? 'text-red-400/70' : isLow ? 'text-yellow-400/70' : 'text-terminal-primary/50'}`}>
+                            DM {dm >= 0 ? '+' : ''}{dm}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {characterData.characteristics.psionics && characterData.characteristics.psionics.total > 0 && (
+                    <div className="mt-2 p-2 rounded border bg-purple-500/10 border-purple-500/50 text-center">
+                      <span className="text-xs font-bold text-purple-400 uppercase">PSI</span>
+                      <span className="text-lg font-bold text-purple-400 ml-2">{characterData.characteristics.psionics.total}</span>
+                      <span className="text-xs text-purple-400/70 ml-2">
+                        (DM {getDM(characterData.characteristics.psionics.total) >= 0 ? '+' : ''}{getDM(characterData.characteristics.psionics.total)})
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 {/* SKILLS SUMMARY */}
@@ -3558,13 +3622,43 @@ export const CharacterGenerator: React.FC = () => {
                       </div>
                     )}
 
-                    <Button
-                      onClick={runSurvivalCheck}
-                      className="w-full bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
-                    >
-                      <Dices className="h-4 w-4 mr-2" />
-                      {selectedCareer?.isPreCareer ? 'Roll Graduation Check' : 'Roll Survival Check'}
-                    </Button>
+                    {useManualDice ? (
+                      <div className="space-y-2">
+                        <p className="text-xs text-blue-400">Enter your 2D6 roll result (DM will be applied automatically):</p>
+                        <div className="flex gap-2">
+                          <Input
+                            type="number"
+                            min={2}
+                            max={12}
+                            value={manualDiceValue}
+                            onChange={(e) => setManualDiceValue(e.target.value)}
+                            placeholder="Enter 2D6 result (2-12)"
+                            className="bg-black border-terminal-primary/50 text-terminal-primary placeholder:text-terminal-primary/40"
+                          />
+                          <Button
+                            onClick={() => {
+                              const val = parseInt(manualDiceValue);
+                              if (!isNaN(val) && val >= 2 && val <= 12) {
+                                runSurvivalCheck(val);
+                                setManualDiceValue('');
+                              }
+                            }}
+                            disabled={!manualDiceValue || isNaN(parseInt(manualDiceValue)) || parseInt(manualDiceValue) < 2 || parseInt(manualDiceValue) > 12}
+                            className="bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
+                          >
+                            Submit {selectedCareer?.isPreCareer ? 'Graduation' : 'Survival'} Roll
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <Button
+                        onClick={() => runSurvivalCheck()}
+                        className="w-full bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
+                      >
+                        <Dices className="h-4 w-4 mr-2" />
+                        {selectedCareer?.isPreCareer ? 'Roll Graduation Check' : 'Roll Survival Check'}
+                      </Button>
+                    )}
                   </div>
                 )}
 
@@ -3597,6 +3691,7 @@ export const CharacterGenerator: React.FC = () => {
                           skills={characterData.skills}
                           onComplete={handleMishapGameEventComplete}
                           onTableRedirect={handleTableRedirect}
+                          useManualDice={useManualDice}
                         />
                       </div>
                     )}
@@ -3677,13 +3772,43 @@ export const CharacterGenerator: React.FC = () => {
                           </div>
                         )}
 
-                        <Button
-                          onClick={rollEvent}
-                          className="w-full bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
-                        >
-                          <Dices className="h-4 w-4 mr-2" />
-                          Roll Event (2D6)
-                        </Button>
+                        {useManualDice ? (
+                          <div className="space-y-2">
+                            <p className="text-xs text-blue-400">Enter your 2D6 roll result for the event table:</p>
+                            <div className="flex gap-2">
+                              <Input
+                                type="number"
+                                min={2}
+                                max={12}
+                                value={manualDiceValue}
+                                onChange={(e) => setManualDiceValue(e.target.value)}
+                                placeholder="Enter 2D6 result (2-12)"
+                                className="bg-black border-terminal-primary/50 text-terminal-primary placeholder:text-terminal-primary/40"
+                              />
+                              <Button
+                                onClick={() => {
+                                  const val = parseInt(manualDiceValue);
+                                  if (!isNaN(val) && val >= 2 && val <= 12) {
+                                    rollEvent(val);
+                                    setManualDiceValue('');
+                                  }
+                                }}
+                                disabled={!manualDiceValue || isNaN(parseInt(manualDiceValue)) || parseInt(manualDiceValue) < 2 || parseInt(manualDiceValue) > 12}
+                                className="bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
+                              >
+                                Submit Event Roll
+                              </Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <Button
+                            onClick={() => rollEvent()}
+                            className="w-full bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
+                          >
+                            <Dices className="h-4 w-4 mr-2" />
+                            Roll Event (2D6)
+                          </Button>
+                        )}
                       </>
                     ) : (
                       <>
@@ -3697,13 +3822,43 @@ export const CharacterGenerator: React.FC = () => {
                             ✓ Survival check passed! Now roll for advancement.
                           </AlertDescription>
                         </Alert>
-                        <Button
-                          onClick={runAdvancementCheck}
-                          className="w-full bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
-                        >
-                          <Dices className="h-4 w-4 mr-2" />
-                          Roll Advancement Check
-                        </Button>
+                        {useManualDice ? (
+                          <div className="space-y-2">
+                            <p className="text-xs text-blue-400">Enter your 2D6 roll result (DM will be applied automatically):</p>
+                            <div className="flex gap-2">
+                              <Input
+                                type="number"
+                                min={2}
+                                max={12}
+                                value={manualDiceValue}
+                                onChange={(e) => setManualDiceValue(e.target.value)}
+                                placeholder="Enter 2D6 result (2-12)"
+                                className="bg-black border-terminal-primary/50 text-terminal-primary placeholder:text-terminal-primary/40"
+                              />
+                              <Button
+                                onClick={() => {
+                                  const val = parseInt(manualDiceValue);
+                                  if (!isNaN(val) && val >= 2 && val <= 12) {
+                                    runAdvancementCheck(val);
+                                    setManualDiceValue('');
+                                  }
+                                }}
+                                disabled={!manualDiceValue || isNaN(parseInt(manualDiceValue)) || parseInt(manualDiceValue) < 2 || parseInt(manualDiceValue) > 12}
+                                className="bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
+                              >
+                                Submit Advancement Roll
+                              </Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <Button
+                            onClick={() => runAdvancementCheck()}
+                            className="w-full bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
+                          >
+                            <Dices className="h-4 w-4 mr-2" />
+                            Roll Advancement Check
+                          </Button>
+                        )}
                       </>
                     )}
                   </div>
@@ -3745,13 +3900,43 @@ export const CharacterGenerator: React.FC = () => {
                       </div>
                     )}
 
-                    <Button
-                      onClick={rollEvent}
-                      className="w-full bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
-                    >
-                      <Dices className="h-4 w-4 mr-2" />
-                      Roll Event (2D6)
-                    </Button>
+                    {useManualDice ? (
+                      <div className="space-y-2">
+                        <p className="text-xs text-blue-400">Enter your 2D6 roll result for the event table:</p>
+                        <div className="flex gap-2">
+                          <Input
+                            type="number"
+                            min={2}
+                            max={12}
+                            value={manualDiceValue}
+                            onChange={(e) => setManualDiceValue(e.target.value)}
+                            placeholder="Enter 2D6 result (2-12)"
+                            className="bg-black border-terminal-primary/50 text-terminal-primary placeholder:text-terminal-primary/40"
+                          />
+                          <Button
+                            onClick={() => {
+                              const val = parseInt(manualDiceValue);
+                              if (!isNaN(val) && val >= 2 && val <= 12) {
+                                rollEvent(val);
+                                setManualDiceValue('');
+                              }
+                            }}
+                            disabled={!manualDiceValue || isNaN(parseInt(manualDiceValue)) || parseInt(manualDiceValue) < 2 || parseInt(manualDiceValue) > 12}
+                            className="bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
+                          >
+                            Submit Event Roll
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <Button
+                        onClick={() => rollEvent()}
+                        className="w-full bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
+                      >
+                        <Dices className="h-4 w-4 mr-2" />
+                        Roll Event (2D6)
+                      </Button>
+                    )}
                   </div>
                 )}
 
@@ -3771,6 +3956,7 @@ export const CharacterGenerator: React.FC = () => {
                           skills={characterData.skills}
                           onComplete={handleRedirectedEventComplete}
                           onTableRedirect={handleNestedTableRedirect}
+                          useManualDice={useManualDice}
                         />
                       </div>
                     )}
@@ -3787,6 +3973,7 @@ export const CharacterGenerator: React.FC = () => {
                           skills={characterData.skills}
                           onComplete={handleGameEventComplete}
                           onTableRedirect={handleTableRedirect}
+                          useManualDice={useManualDice}
                         />
                       </div>
                     )}

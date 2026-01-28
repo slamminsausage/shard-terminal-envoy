@@ -23,7 +23,7 @@ export const INJURY_TABLE: GameEvent[] = [
           description: 'STR reduced by 1D6, DEX and END reduced by 2 each',
           effects: {
             characteristics: [
-              { stat: 'strength', modifier: -3 }, // Average of 1D6, will be replaced by actual roll
+              // Only the two minor stats - STR reduction comes from sub-roll
               { stat: 'dexterity', modifier: -2 },
               { stat: 'endurance', modifier: -2 },
             ],
@@ -47,8 +47,8 @@ export const INJURY_TABLE: GameEvent[] = [
           description: 'DEX reduced by 1D6, STR and END reduced by 2 each',
           effects: {
             characteristics: [
+              // Only the two minor stats - DEX reduction comes from sub-roll
               { stat: 'strength', modifier: -2 },
-              { stat: 'dexterity', modifier: -3 }, // Will be replaced by sub-roll
               { stat: 'endurance', modifier: -2 },
             ],
             message: 'You were nearly killed. Your body bears the scars.',
@@ -71,9 +71,9 @@ export const INJURY_TABLE: GameEvent[] = [
           description: 'END reduced by 1D6, STR and DEX reduced by 2 each',
           effects: {
             characteristics: [
+              // Only the two minor stats - END reduction comes from sub-roll
               { stat: 'strength', modifier: -2 },
               { stat: 'dexterity', modifier: -2 },
-              { stat: 'endurance', modifier: -3 }, // Will be replaced by sub-roll
             ],
             message: 'You were nearly killed. Your body bears the scars.',
           },
