@@ -3836,11 +3836,11 @@ export const CharacterGenerator: React.FC = () => {
                     </Alert>
 
                     {/* MISHAP TABLE */}
-                    {selectedCareer && (
+                    {selectedCareer && selectedCareer.mishapTable && (
                       <div className="bg-black border border-terminal-primary/30 rounded p-3">
                         <h4 className="text-xs font-bold text-red-400 mb-2">Potential Mishaps (1D6):</h4>
                         <div className="space-y-1 text-xs text-terminal-primary/70">
-                          {selectedCareer.mishapTable.map((mishap, idx) => (
+                          {(selectedCareer.mishapTable || []).map((mishap, idx) => (
                             <div key={idx} className="flex gap-2">
                               <span className="text-terminal-primary/50">{idx + 1}.</span>
                               <span>{getMishapDescription(mishap)}</span>
@@ -4114,11 +4114,11 @@ export const CharacterGenerator: React.FC = () => {
                     )}
 
                     {/* EVENT TABLE */}
-                    {selectedCareer && (
+                    {selectedCareer && selectedCareer.eventTable && (
                       <div className="bg-black border border-terminal-primary/30 rounded p-3">
                         <h4 className="text-xs font-bold text-blue-400 mb-2">Possible Events (2D6):</h4>
                         <div className="space-y-1 text-xs text-terminal-primary/70">
-                          {selectedCareer.eventTable.map((event, idx) => (
+                          {(selectedCareer.eventTable || []).map((event, idx) => (
                             <div key={idx} className="flex gap-2">
                               <span className="text-terminal-primary/50">{idx + 2}.</span>
                               <span>{getEventDescription(event)}</span>
@@ -5044,11 +5044,11 @@ export const CharacterGenerator: React.FC = () => {
                 </div>
 
                 {/* Race Traits */}
-                {characterData.raceTraits && characterData.raceTraits.length > 0 && (
+                {(characterData.raceTraits?.length || 0) > 0 && (
                   <div>
                     <h3 className="text-sm font-bold text-terminal-primary uppercase mb-2">Racial Traits</h3>
                     <div className="space-y-2">
-                      {characterData.raceTraits.map((trait, idx) => (
+                      {(characterData.raceTraits || []).map((trait, idx) => (
                         <div key={idx} className="bg-cyan-500/10 border border-cyan-500/30 rounded p-2">
                           <span className="text-cyan-400 font-bold">{trait.name}:</span>{' '}
                           <span className="text-terminal-primary/80 text-sm">{trait.description}</span>
@@ -5104,11 +5104,11 @@ export const CharacterGenerator: React.FC = () => {
                 </div>
 
                 {/* Psionic Talents */}
-                {characterData.psiTalents && characterData.psiTalents.length > 0 && (
+                {(characterData.psiTalents?.length || 0) > 0 && (
                   <div>
                     <h3 className="text-sm font-bold text-purple-400 uppercase mb-2">Psionic Talents</h3>
                     <div className="flex flex-wrap gap-2">
-                      {characterData.psiTalents.map((talent, idx) => (
+                      {(characterData.psiTalents || []).map((talent, idx) => (
                         <div key={idx} className="bg-purple-500/10 border border-purple-500/30 rounded px-3 py-1">
                           <span className="text-purple-400">{talent}</span>
                         </div>
@@ -5121,7 +5121,7 @@ export const CharacterGenerator: React.FC = () => {
                 <div>
                   <h3 className="text-sm font-bold text-terminal-primary uppercase mb-2">Career History</h3>
                   <div className="space-y-2">
-                    {characterData.careerHistory.filter(c => !c.isPreCareer).length === 0 ? (
+                    {(!characterData.careerHistory || characterData.careerHistory.filter(c => !c.isPreCareer).length === 0) ? (
                       <span className="text-terminal-primary/50 text-sm">No career history</span>
                     ) : (
                       characterData.careerHistory.map((career, idx) => (
@@ -5177,11 +5177,11 @@ export const CharacterGenerator: React.FC = () => {
                 </div>
 
                 {/* Ships & Memberships */}
-                {(characterData.ships.length > 0 || characterData.tasMembership) && (
+                {((characterData.ships?.length || 0) > 0 || characterData.tasMembership) && (
                   <div>
                     <h3 className="text-sm font-bold text-terminal-primary uppercase mb-2">Ships & Memberships</h3>
                     <div className="space-y-2">
-                      {characterData.ships.map((ship, idx) => (
+                      {(characterData.ships || []).map((ship, idx) => (
                         <div key={idx} className="bg-yellow-500/10 border border-yellow-500/30 rounded p-2">
                           <span className="text-yellow-400 font-bold">🚀 {ship}</span>
                         </div>
@@ -5230,15 +5230,15 @@ export const CharacterGenerator: React.FC = () => {
                 )}
 
                 {/* Equipment */}
-                {(characterData.weapons.length > 0 || characterData.armor.length > 0 || characterData.equipment.length > 0 || characterData.augments.length > 0) && (
+                {((characterData.weapons?.length || 0) > 0 || (characterData.armor?.length || 0) > 0 || (characterData.equipment?.length || 0) > 0 || (characterData.augments?.length || 0) > 0) && (
                   <div>
                     <h3 className="text-sm font-bold text-terminal-primary uppercase mb-2">Equipment & Possessions</h3>
                     <div className="space-y-2">
-                      {characterData.weapons.length > 0 && (
+                      {(characterData.weapons?.length || 0) > 0 && (
                         <div className="bg-red-500/5 border border-red-500/30 rounded p-2">
                           <span className="text-red-400 text-xs uppercase font-bold">Weapons:</span>
                           <div className="flex flex-wrap gap-1 mt-1">
-                            {characterData.weapons.map((weapon, idx) => (
+                            {(characterData.weapons || []).map((weapon, idx) => (
                               <span key={idx} className="bg-red-500/10 text-red-400 text-sm px-2 py-0.5 rounded">
                                 {typeof weapon === 'string' ? weapon : weapon.name || 'Unknown Weapon'}
                               </span>
@@ -5246,11 +5246,11 @@ export const CharacterGenerator: React.FC = () => {
                           </div>
                         </div>
                       )}
-                      {characterData.armor.length > 0 && (
+                      {(characterData.armor?.length || 0) > 0 && (
                         <div className="bg-blue-500/5 border border-blue-500/30 rounded p-2">
                           <span className="text-blue-400 text-xs uppercase font-bold">Armor:</span>
                           <div className="flex flex-wrap gap-1 mt-1">
-                            {characterData.armor.map((armor, idx) => (
+                            {(characterData.armor || []).map((armor, idx) => (
                               <span key={idx} className="bg-blue-500/10 text-blue-400 text-sm px-2 py-0.5 rounded">
                                 {typeof armor === 'string' ? armor : armor.name || 'Unknown Armor'}
                               </span>
@@ -5258,11 +5258,11 @@ export const CharacterGenerator: React.FC = () => {
                           </div>
                         </div>
                       )}
-                      {characterData.equipment.length > 0 && (
+                      {(characterData.equipment?.length || 0) > 0 && (
                         <div className="bg-terminal-primary/5 border border-terminal-primary/30 rounded p-2">
                           <span className="text-terminal-primary text-xs uppercase font-bold">Equipment:</span>
                           <div className="flex flex-wrap gap-1 mt-1">
-                            {characterData.equipment.map((item, idx) => (
+                            {(characterData.equipment || []).map((item, idx) => (
                               <span key={idx} className="bg-terminal-primary/10 text-terminal-primary text-sm px-2 py-0.5 rounded">
                                 {typeof item === 'string' ? item : item.name || 'Unknown Item'}
                               </span>
@@ -5270,11 +5270,11 @@ export const CharacterGenerator: React.FC = () => {
                           </div>
                         </div>
                       )}
-                      {characterData.augments.length > 0 && (
+                      {(characterData.augments?.length || 0) > 0 && (
                         <div className="bg-purple-500/5 border border-purple-500/30 rounded p-2">
                           <span className="text-purple-400 text-xs uppercase font-bold">Augments:</span>
                           <div className="flex flex-wrap gap-1 mt-1">
-                            {characterData.augments.map((aug, idx) => (
+                            {(characterData.augments || []).map((aug, idx) => (
                               <span key={idx} className="bg-purple-500/10 text-purple-400 text-sm px-2 py-0.5 rounded">
                                 {typeof aug === 'string' ? aug : aug.name || 'Unknown Augment'}
                               </span>
@@ -5287,13 +5287,13 @@ export const CharacterGenerator: React.FC = () => {
                 )}
 
                 {/* Lifepath Log - Collapsible */}
-                {characterData.lifepath_log.length > 0 && (
+                {(characterData.lifepath_log?.length || 0) > 0 && (
                   <div>
                     <h3 className="text-sm font-bold text-terminal-primary uppercase mb-2">
-                      Lifepath Log ({characterData.lifepath_log.length} Terms)
+                      Lifepath Log ({characterData.lifepath_log?.length || 0} Terms)
                     </h3>
                     <div className="space-y-2 max-h-64 overflow-y-auto">
-                      {characterData.lifepath_log.map((term, idx) => (
+                      {(characterData.lifepath_log || []).map((term, idx) => (
                         <div key={idx} className="bg-terminal-primary/5 border border-terminal-primary/30 rounded p-2 text-sm">
                           <div className="flex justify-between items-start mb-1">
                             <span className="font-bold text-terminal-primary">
