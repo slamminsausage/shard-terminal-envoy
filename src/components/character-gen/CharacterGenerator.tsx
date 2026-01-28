@@ -1718,28 +1718,32 @@ export const CharacterGenerator: React.FC = () => {
         });
       }
 
-      // Apply social connections (resolve dice expressions)
+      // Apply social connections (resolve dice expressions) and update characterData
       if (effects.allies) {
         const count = rollDiceExpression(effects.allies);
         if (count > 0) {
+          setCharacterData(prev => ({ ...prev, allies: prev.allies + count }));
           setTermSkillsGained(prev => [...prev, `${count} Allies (event)`]);
         }
       }
       if (effects.enemies) {
         const count = rollDiceExpression(effects.enemies);
         if (count > 0) {
+          setCharacterData(prev => ({ ...prev, enemies: prev.enemies + count }));
           setTermSkillsGained(prev => [...prev, `${count} Enemies (event)`]);
         }
       }
       if (effects.rivals) {
         const count = rollDiceExpression(effects.rivals);
         if (count > 0) {
+          setCharacterData(prev => ({ ...prev, rivals: prev.rivals + count }));
           setTermSkillsGained(prev => [...prev, `${count} Rivals (event)`]);
         }
       }
       if (effects.contacts) {
         const count = rollDiceExpression(effects.contacts);
         if (count > 0) {
+          setCharacterData(prev => ({ ...prev, contacts: prev.contacts + count }));
           setTermSkillsGained(prev => [...prev, `${count} Contacts (event)`]);
         }
       }
@@ -1903,6 +1907,7 @@ export const CharacterGenerator: React.FC = () => {
       // Handle table redirects from mishap (e.g., roll on injury)
       if (effects.rollOnTable) {
         handleTableRedirect(effects.rollOnTable as 'life_events' | 'injury' | 'aging' | 'draft' | 'unusual_events');
+        return; // Don't complete mishap yet - wait for redirected table to complete
       }
     }
 
@@ -2013,6 +2018,51 @@ export const CharacterGenerator: React.FC = () => {
 
     // Then handle the new redirect
     handleTableRedirect(table);
+  };
+
+  // Handler for when a redirected event from a MISHAP completes (e.g., injury from mishap)
+  const handleMishapRedirectedEventComplete = (effects: EventEffects | undefined, messages: string[]) => {
+    if (!selectedCareer) return;
+
+    // Apply effects from the redirected event (injury, etc.)
+    handleGameEventComplete(effects, messages);
+
+    // Clear the redirect state
+    setRedirectedEvent(null);
+    setRedirectTableRoll(null);
+    setRedirectTableName(null);
+
+    // Now finalize the mishap
+    const assignment = selectedCareer.assignments[selectedAssignment];
+    const ranks = getRanksForCareer(selectedCareer, isCommissioned, assignment.name);
+    const mishapDescription = pendingMishapGameEvent?.description || 'Mishap';
+
+    // Build the skills/effects summary from messages
+    const skillsGained = messages.filter(m => m && m.length > 0);
+
+    const termRecord: TermRecord = {
+      termNumber: currentTerm,
+      career: selectedCareer.name,
+      assignment: assignment.name,
+      age: characterData.age,
+      survivalRoll: survivalRollLog,
+      survived: false,
+      advanced: false,
+      rank: characterData.rank,
+      rankTitle: ranks[characterData.rank]?.title || 'Rank 0',
+      event: `MISHAP: ${mishapDescription}`,
+      skillsGained,
+      mishap: mishapDescription,
+    };
+
+    setCharacterData(prev => ({
+      ...prev,
+      lifepath_log: [...prev.lifepath_log, termRecord],
+      terms_served: currentTerm,
+    }));
+
+    setPendingMishapGameEvent(null);
+    setMishapRollNumber(null);
   };
 
   // ============================================================================
@@ -3906,7 +3956,7 @@ export const CharacterGenerator: React.FC = () => {
                     )}
 
                     {/* Pending Mishap GameEvent - requires player interaction */}
-                    {pendingMishapGameEvent && (
+                    {pendingMishapGameEvent && !redirectedEvent && (
                       <div className="space-y-2">
                         <Alert className="bg-yellow-500/10 border-yellow-500/50">
                           <AlertDescription className="text-yellow-400">
@@ -3919,6 +3969,30 @@ export const CharacterGenerator: React.FC = () => {
                           skills={characterData.skills}
                           onComplete={handleMishapGameEventComplete}
                           onTableRedirect={handleTableRedirect}
+                          useManualDice={useManualDice}
+                        />
+                      </div>
+                    )}
+
+                    {/* Redirected Event from Mishap (e.g., roll on injury table) */}
+                    {pendingMishapGameEvent && redirectedEvent && (
+                      <div className="space-y-2">
+                        <Alert className="bg-yellow-500/10 border-yellow-500/50">
+                          <AlertDescription className="text-yellow-400">
+                            <strong>Mishap {mishapRollNumber}:</strong> {pendingMishapGameEvent.description}
+                          </AlertDescription>
+                        </Alert>
+                        <Alert className="bg-blue-500/10 border-blue-500/50">
+                          <AlertDescription className="text-blue-400">
+                            <strong>{redirectTableName} (rolled {redirectTableRoll}):</strong>
+                          </AlertDescription>
+                        </Alert>
+                        <EventHandler
+                          event={redirectedEvent}
+                          characteristics={characterData.characteristics}
+                          skills={characterData.skills}
+                          onComplete={handleMishapRedirectedEventComplete}
+                          onTableRedirect={handleNestedTableRedirect}
                           useManualDice={useManualDice}
                         />
                       </div>
