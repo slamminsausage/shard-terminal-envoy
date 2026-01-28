@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dices, User, Briefcase, Award, Save, ArrowRight, AlertCircle, RefreshCw, ChevronDown, ChevronUp, Star } from 'lucide-react';
@@ -503,6 +504,20 @@ export const CharacterGenerator: React.FC = () => {
 
   const handleSpeciesChange = (species: string) => {
     setCharacterData(prev => ({ ...prev, species }));
+  };
+
+  // Handle race selection from dropdown - updates both selectedRace and characterData
+  const handleRaceSelection = (raceId: string) => {
+    const race = RACES.find(r => r.id === raceId);
+    if (race) {
+      setSelectedRace(race);
+      setCharacterData(prev => ({
+        ...prev,
+        species: race.name,
+        raceId: race.id,
+        raceTraits: race.traits,
+      }));
+    }
   };
 
   const handleHomeworldChange = (homeworld: string) => {
@@ -2810,14 +2825,62 @@ export const CharacterGenerator: React.FC = () => {
 
                 <div>
                   <label className="text-xs text-terminal-primary/70 uppercase mb-1 block">
-                    Species
+                    Race
                   </label>
-                  <Input
-                    placeholder="Human"
-                    value={characterData.species}
-                    onChange={(e) => handleSpeciesChange(e.target.value)}
-                    className="bg-black border-terminal-primary/50 text-terminal-primary"
-                  />
+                  <Select value={selectedRace.id} onValueChange={handleRaceSelection}>
+                    <SelectTrigger className="bg-black border-terminal-primary/50 text-terminal-primary">
+                      <SelectValue placeholder="Select a race" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-black border-terminal-primary/50">
+                      {RACES.map(race => (
+                        <SelectItem
+                          key={race.id}
+                          value={race.id}
+                          className="text-terminal-primary hover:bg-terminal-primary/20 focus:bg-terminal-primary/20 focus:text-terminal-primary"
+                        >
+                          {race.name}
+                          {race.characteristicModifiers.length > 0 && (
+                            <span className="ml-2 text-terminal-primary/60">
+                              ({race.characteristicModifiers.map((m, i) =>
+                                `${m.stat.slice(0, 3).toUpperCase()} ${m.modifier >= 0 ? '+' : ''}${m.modifier}`
+                              ).join(', ')})
+                            </span>
+                          )}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  {/* Race Details Display */}
+                  {selectedRace.id !== 'human' && (
+                    <div className="mt-3 bg-terminal-primary/5 border border-terminal-primary/30 rounded p-3 space-y-2">
+                      <p className="text-sm text-terminal-primary/80">{selectedRace.description}</p>
+                      {selectedRace.characteristicModifiers.length > 0 && (
+                        <div className="flex gap-2 flex-wrap">
+                          <span className="text-xs text-terminal-primary/60">Stat Modifiers:</span>
+                          {selectedRace.characteristicModifiers.map((mod, idx) => (
+                            <span
+                              key={idx}
+                              className={`text-xs ${mod.modifier >= 0 ? 'text-green-400' : 'text-red-400'}`}
+                            >
+                              {mod.stat.toUpperCase().slice(0, 3)} {mod.modifier >= 0 ? '+' : ''}{mod.modifier}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                      {selectedRace.traits.length > 0 && (
+                        <div className="space-y-1">
+                          <span className="text-xs text-terminal-primary/60">Racial Traits:</span>
+                          {selectedRace.traits.map((trait, idx) => (
+                            <div key={idx} className="ml-2 text-xs">
+                              <span className="text-cyan-400 font-bold">{trait.name}:</span>{' '}
+                              <span className="text-terminal-primary/70">{trait.description}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <div>
@@ -2876,55 +2939,28 @@ export const CharacterGenerator: React.FC = () => {
               <CardContent className="space-y-4">
                 {!hasRolled ? (
                   <>
-                    {/* Race Selection */}
-                    <div className="bg-terminal-primary/5 border border-terminal-primary/30 rounded p-4">
-                      <h3 className="text-sm font-bold text-terminal-primary uppercase mb-3">Select Race</h3>
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3">
-                        {RACES.map(race => (
-                          <Button
-                            key={race.id}
-                            onClick={() => setSelectedRace(race)}
-                            variant={selectedRace.id === race.id ? 'default' : 'outline'}
-                            className={selectedRace.id === race.id
-                              ? 'bg-terminal-primary text-black hover:bg-terminal-primary/80'
-                              : 'border-terminal-primary/50 text-terminal-primary hover:bg-terminal-primary/20'
-                            }
-                            size="sm"
-                          >
-                            {race.name}
-                          </Button>
-                        ))}
-                      </div>
-                      {selectedRace.id !== 'human' && (
-                        <div className="space-y-2 text-sm">
-                          <p className="text-terminal-primary/80">{selectedRace.description}</p>
-                          {selectedRace.characteristicModifiers.length > 0 && (
-                            <div className="flex gap-2 flex-wrap">
-                              <span className="text-terminal-primary/60">Modifiers:</span>
-                              {selectedRace.characteristicModifiers.map((mod, idx) => (
-                                <span
-                                  key={idx}
-                                  className={mod.modifier >= 0 ? 'text-green-400' : 'text-red-400'}
-                                >
-                                  {mod.stat.toUpperCase().slice(0, 3)} {mod.modifier >= 0 ? '+' : ''}{mod.modifier}
-                                </span>
-                              ))}
-                            </div>
-                          )}
-                          {selectedRace.traits.length > 0 && (
-                            <div className="space-y-1">
-                              <span className="text-terminal-primary/60">Traits:</span>
-                              {selectedRace.traits.map((trait, idx) => (
-                                <div key={idx} className="ml-2 text-xs">
-                                  <span className="text-cyan-400 font-bold">{trait.name}:</span>{' '}
-                                  <span className="text-terminal-primary/70">{trait.description}</span>
-                                </div>
-                              ))}
-                            </div>
-                          )}
+                    {/* Selected Race Display (read-only) */}
+                    {selectedRace.id !== 'human' && (
+                      <div className="bg-cyan-500/10 border border-cyan-500/30 rounded p-3">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-xs font-bold text-cyan-400 uppercase">Race:</span>
+                          <span className="text-terminal-primary font-bold">{selectedRace.name}</span>
                         </div>
-                      )}
-                    </div>
+                        {selectedRace.characteristicModifiers.length > 0 && (
+                          <div className="flex gap-2 flex-wrap text-xs">
+                            <span className="text-terminal-primary/60">Modifiers applied after rolling:</span>
+                            {selectedRace.characteristicModifiers.map((mod, idx) => (
+                              <span
+                                key={idx}
+                                className={mod.modifier >= 0 ? 'text-green-400' : 'text-red-400'}
+                              >
+                                {mod.stat.toUpperCase().slice(0, 3)} {mod.modifier >= 0 ? '+' : ''}{mod.modifier}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
 
                     <Alert className="bg-terminal-primary/5 border-terminal-primary/30">
                       <AlertCircle className="h-4 w-4" />
@@ -4981,58 +5017,327 @@ export const CharacterGenerator: React.FC = () => {
               <CardHeader>
                 <CardTitle className="text-terminal-primary">Character Summary</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <h2 className="text-2xl font-bold text-terminal-primary mb-1">
+              <CardContent className="space-y-6">
+                {/* Header Info */}
+                <div className="border-b border-terminal-primary/30 pb-4">
+                  <h2 className="text-2xl font-bold text-terminal-primary mb-2">
                     {characterData.name || 'Unnamed Character'}
                   </h2>
-                  <p className="text-terminal-primary/70">
-                    {characterData.career} • {getRankTitle(selectedCareer, characterData.rank, isCommissioned, selectedCareer?.assignments[selectedAssignment]?.name)} • Age {characterData.age} • Term {currentTerm} in Career • {characterData.lifepath_log.length} Total Terms
-                  </p>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
+                    <div>
+                      <span className="text-terminal-primary/60">Race:</span>{' '}
+                      <span className="text-terminal-primary">{characterData.species || 'Human'}</span>
+                    </div>
+                    <div>
+                      <span className="text-terminal-primary/60">Homeworld:</span>{' '}
+                      <span className="text-terminal-primary">{characterData.homeworld || 'Unknown'}</span>
+                    </div>
+                    <div>
+                      <span className="text-terminal-primary/60">Age:</span>{' '}
+                      <span className="text-terminal-primary">{characterData.age}</span>
+                    </div>
+                    <div>
+                      <span className="text-terminal-primary/60">Total Terms:</span>{' '}
+                      <span className="text-terminal-primary">{characterData.lifepath_log.length}</span>
+                    </div>
+                  </div>
                 </div>
 
+                {/* Race Traits */}
+                {characterData.raceTraits && characterData.raceTraits.length > 0 && (
+                  <div>
+                    <h3 className="text-sm font-bold text-terminal-primary uppercase mb-2">Racial Traits</h3>
+                    <div className="space-y-2">
+                      {characterData.raceTraits.map((trait, idx) => (
+                        <div key={idx} className="bg-cyan-500/10 border border-cyan-500/30 rounded p-2">
+                          <span className="text-cyan-400 font-bold">{trait.name}:</span>{' '}
+                          <span className="text-terminal-primary/80 text-sm">{trait.description}</span>
+                          {trait.weapon && (
+                            <div className="text-xs text-terminal-primary/60 mt-1">
+                              Natural Weapon: {trait.weapon.name} ({trait.weapon.damage})
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Characteristics */}
                 <div>
                   <h3 className="text-sm font-bold text-terminal-primary uppercase mb-2">Characteristics</h3>
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
                     {(['strength', 'dexterity', 'endurance', 'intellect', 'education', 'social'] as const).map((key) => (
-                      <div key={key} className="bg-terminal-primary/5 border border-terminal-primary/30 rounded p-2">
+                      <div key={key} className="bg-terminal-primary/5 border border-terminal-primary/30 rounded p-2 text-center">
                         <div className="text-xs text-terminal-primary/60 uppercase">{key.slice(0, 3)}</div>
-                        <div className="text-lg font-bold text-terminal-primary">{characterData.characteristics[key].total}</div>
+                        <div className="text-xl font-bold text-terminal-primary">{characterData.characteristics[key].total}</div>
                         <div className="text-xs text-terminal-primary/60">DM: {getDMDisplay(characterData.characteristics[key].total)}</div>
                       </div>
                     ))}
                   </div>
-                </div>
-
-                <div>
-                  <h3 className="text-sm font-bold text-terminal-primary uppercase mb-2">Skills</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {Object.entries(characterData.skills)
-                      .filter(([_, state]) => state.proficient && parseInt(state.value) > 0)
-                      .sort((a, b) => parseInt(b[1].value) - parseInt(a[1].value))
-                      .map(([skill, state]) => (
-                        <div key={skill} className="bg-terminal-primary/10 border border-terminal-primary/30 rounded px-3 py-1">
-                          <span className="text-terminal-primary">{skill.replace(/_/g, ' ')}</span>
-                          <span className="text-terminal-primary/70 ml-1">-{state.value}</span>
-                        </div>
-                      ))}
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-terminal-primary/5 border border-terminal-primary/30 rounded p-3">
-                    <div className="text-sm text-terminal-primary/70">Cash on Hand</div>
-                    <div className="text-xl font-bold text-terminal-primary">{characterData.cash_on_hand.toLocaleString()} Cr</div>
-                  </div>
-                  {characterData.pension > 0 && (
-                    <div className="bg-terminal-primary/5 border border-terminal-primary/30 rounded p-3">
-                      <div className="text-sm text-terminal-primary/70">Annual Pension</div>
-                      <div className="text-xl font-bold text-terminal-primary">{characterData.pension.toLocaleString()} Cr/year</div>
+                  {characterData.characteristics.psionics && characterData.characteristics.psionics.total > 0 && (
+                    <div className="mt-2 bg-purple-500/10 border border-purple-500/30 rounded p-2 text-center">
+                      <div className="text-xs text-purple-400 uppercase">PSI</div>
+                      <div className="text-xl font-bold text-purple-400">{characterData.characteristics.psionics.total}</div>
+                      <div className="text-xs text-purple-400/60">DM: {getDMDisplay(characterData.characteristics.psionics.total)}</div>
                     </div>
                   )}
                 </div>
 
-                <div className="flex gap-2">
+                {/* Skills */}
+                <div>
+                  <h3 className="text-sm font-bold text-terminal-primary uppercase mb-2">Skills</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {Object.entries(characterData.skills)
+                      .filter(([_, state]) => state.proficient && parseInt(state.value) >= 0)
+                      .sort((a, b) => parseInt(b[1].value) - parseInt(a[1].value))
+                      .map(([skill, state]) => (
+                        <div key={skill} className="bg-terminal-primary/10 border border-terminal-primary/30 rounded px-3 py-1">
+                          <span className="text-terminal-primary">{skill.replace(/_/g, ' ')}</span>
+                          <span className="text-terminal-primary/70 ml-1">{state.value}</span>
+                        </div>
+                      ))}
+                    {Object.entries(characterData.skills).filter(([_, state]) => state.proficient && parseInt(state.value) >= 0).length === 0 && (
+                      <span className="text-terminal-primary/50 text-sm">No skills acquired</span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Psionic Talents */}
+                {characterData.psiTalents && characterData.psiTalents.length > 0 && (
+                  <div>
+                    <h3 className="text-sm font-bold text-purple-400 uppercase mb-2">Psionic Talents</h3>
+                    <div className="flex flex-wrap gap-2">
+                      {characterData.psiTalents.map((talent, idx) => (
+                        <div key={idx} className="bg-purple-500/10 border border-purple-500/30 rounded px-3 py-1">
+                          <span className="text-purple-400">{talent}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Career History */}
+                <div>
+                  <h3 className="text-sm font-bold text-terminal-primary uppercase mb-2">Career History</h3>
+                  <div className="space-y-2">
+                    {characterData.careerHistory.filter(c => !c.isPreCareer).length === 0 ? (
+                      <span className="text-terminal-primary/50 text-sm">No career history</span>
+                    ) : (
+                      characterData.careerHistory.map((career, idx) => (
+                        <div key={idx} className={`border rounded p-2 ${career.isPreCareer ? 'bg-blue-500/10 border-blue-500/30' : 'bg-terminal-primary/5 border-terminal-primary/30'}`}>
+                          <div className="flex justify-between items-center">
+                            <div>
+                              <span className={`font-bold ${career.isPreCareer ? 'text-blue-400' : 'text-terminal-primary'}`}>
+                                {career.careerName}
+                              </span>
+                              {career.assignment && (
+                                <span className="text-terminal-primary/60 ml-2">({career.assignment})</span>
+                              )}
+                            </div>
+                            <div className="text-sm text-terminal-primary/70">
+                              {career.termsServed} term{career.termsServed !== 1 ? 's' : ''}
+                              {career.highestRank > 0 && ` • Rank ${career.highestRank}`}
+                              {career.isCommissioned && ' (Officer)'}
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+
+                {/* Finances */}
+                <div>
+                  <h3 className="text-sm font-bold text-terminal-primary uppercase mb-2">Finances</h3>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                    <div className="bg-terminal-primary/5 border border-terminal-primary/30 rounded p-2">
+                      <div className="text-xs text-terminal-primary/60">Cash on Hand</div>
+                      <div className="text-lg font-bold text-terminal-primary">{characterData.cash_on_hand.toLocaleString()} Cr</div>
+                    </div>
+                    {characterData.pension > 0 && (
+                      <div className="bg-terminal-primary/5 border border-terminal-primary/30 rounded p-2">
+                        <div className="text-xs text-terminal-primary/60">Annual Pension</div>
+                        <div className="text-lg font-bold text-terminal-primary">{characterData.pension.toLocaleString()} Cr</div>
+                      </div>
+                    )}
+                    {characterData.debt > 0 && (
+                      <div className="bg-red-500/10 border border-red-500/30 rounded p-2">
+                        <div className="text-xs text-red-400/60">Debt</div>
+                        <div className="text-lg font-bold text-red-400">{characterData.debt.toLocaleString()} Cr</div>
+                      </div>
+                    )}
+                    {characterData.shipShares > 0 && (
+                      <div className="bg-yellow-500/10 border border-yellow-500/30 rounded p-2">
+                        <div className="text-xs text-yellow-400/60">Ship Shares</div>
+                        <div className="text-lg font-bold text-yellow-400">{characterData.shipShares}</div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Ships & Memberships */}
+                {(characterData.ships.length > 0 || characterData.tasMembership) && (
+                  <div>
+                    <h3 className="text-sm font-bold text-terminal-primary uppercase mb-2">Ships & Memberships</h3>
+                    <div className="space-y-2">
+                      {characterData.ships.map((ship, idx) => (
+                        <div key={idx} className="bg-yellow-500/10 border border-yellow-500/30 rounded p-2">
+                          <span className="text-yellow-400 font-bold">🚀 {ship}</span>
+                        </div>
+                      ))}
+                      {characterData.tasMembership && (
+                        <div className="bg-blue-500/10 border border-blue-500/30 rounded p-2">
+                          <span className="text-blue-400 font-bold">✦ TAS Membership</span>
+                          <span className="text-blue-400/70 text-sm ml-2">- Travellers' Aid Society</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Connections */}
+                {(characterData.allies > 0 || characterData.contacts > 0 || characterData.rivals > 0 || characterData.enemies > 0) && (
+                  <div>
+                    <h3 className="text-sm font-bold text-terminal-primary uppercase mb-2">Connections</h3>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                      {characterData.allies > 0 && (
+                        <div className="bg-green-500/10 border border-green-500/30 rounded p-2 text-center">
+                          <div className="text-xs text-green-400/60">Allies</div>
+                          <div className="text-xl font-bold text-green-400">{characterData.allies}</div>
+                        </div>
+                      )}
+                      {characterData.contacts > 0 && (
+                        <div className="bg-blue-500/10 border border-blue-500/30 rounded p-2 text-center">
+                          <div className="text-xs text-blue-400/60">Contacts</div>
+                          <div className="text-xl font-bold text-blue-400">{characterData.contacts}</div>
+                        </div>
+                      )}
+                      {characterData.rivals > 0 && (
+                        <div className="bg-orange-500/10 border border-orange-500/30 rounded p-2 text-center">
+                          <div className="text-xs text-orange-400/60">Rivals</div>
+                          <div className="text-xl font-bold text-orange-400">{characterData.rivals}</div>
+                        </div>
+                      )}
+                      {characterData.enemies > 0 && (
+                        <div className="bg-red-500/10 border border-red-500/30 rounded p-2 text-center">
+                          <div className="text-xs text-red-400/60">Enemies</div>
+                          <div className="text-xl font-bold text-red-400">{characterData.enemies}</div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Equipment */}
+                {(characterData.weapons.length > 0 || characterData.armor.length > 0 || characterData.equipment.length > 0 || characterData.augments.length > 0) && (
+                  <div>
+                    <h3 className="text-sm font-bold text-terminal-primary uppercase mb-2">Equipment & Possessions</h3>
+                    <div className="space-y-2">
+                      {characterData.weapons.length > 0 && (
+                        <div className="bg-red-500/5 border border-red-500/30 rounded p-2">
+                          <span className="text-red-400 text-xs uppercase font-bold">Weapons:</span>
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {characterData.weapons.map((weapon, idx) => (
+                              <span key={idx} className="bg-red-500/10 text-red-400 text-sm px-2 py-0.5 rounded">
+                                {typeof weapon === 'string' ? weapon : weapon.name || 'Unknown Weapon'}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {characterData.armor.length > 0 && (
+                        <div className="bg-blue-500/5 border border-blue-500/30 rounded p-2">
+                          <span className="text-blue-400 text-xs uppercase font-bold">Armor:</span>
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {characterData.armor.map((armor, idx) => (
+                              <span key={idx} className="bg-blue-500/10 text-blue-400 text-sm px-2 py-0.5 rounded">
+                                {typeof armor === 'string' ? armor : armor.name || 'Unknown Armor'}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {characterData.equipment.length > 0 && (
+                        <div className="bg-terminal-primary/5 border border-terminal-primary/30 rounded p-2">
+                          <span className="text-terminal-primary text-xs uppercase font-bold">Equipment:</span>
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {characterData.equipment.map((item, idx) => (
+                              <span key={idx} className="bg-terminal-primary/10 text-terminal-primary text-sm px-2 py-0.5 rounded">
+                                {typeof item === 'string' ? item : item.name || 'Unknown Item'}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {characterData.augments.length > 0 && (
+                        <div className="bg-purple-500/5 border border-purple-500/30 rounded p-2">
+                          <span className="text-purple-400 text-xs uppercase font-bold">Augments:</span>
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {characterData.augments.map((aug, idx) => (
+                              <span key={idx} className="bg-purple-500/10 text-purple-400 text-sm px-2 py-0.5 rounded">
+                                {typeof aug === 'string' ? aug : aug.name || 'Unknown Augment'}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Lifepath Log - Collapsible */}
+                {characterData.lifepath_log.length > 0 && (
+                  <div>
+                    <h3 className="text-sm font-bold text-terminal-primary uppercase mb-2">
+                      Lifepath Log ({characterData.lifepath_log.length} Terms)
+                    </h3>
+                    <div className="space-y-2 max-h-64 overflow-y-auto">
+                      {characterData.lifepath_log.map((term, idx) => (
+                        <div key={idx} className="bg-terminal-primary/5 border border-terminal-primary/30 rounded p-2 text-sm">
+                          <div className="flex justify-between items-start mb-1">
+                            <span className="font-bold text-terminal-primary">
+                              Term {term.termNumber}: {term.career}
+                              {term.assignment && ` (${term.assignment})`}
+                            </span>
+                            <span className="text-terminal-primary/60 text-xs">Age {term.age}</span>
+                          </div>
+                          <div className="text-terminal-primary/70 text-xs space-y-1">
+                            {term.rankTitle && term.rank > 0 && (
+                              <div>Rank: {term.rankTitle} ({term.rank}){term.isCommissioned ? ' - Officer' : ''}</div>
+                            )}
+                            <div className={term.survived ? 'text-green-400/70' : 'text-red-400/70'}>
+                              Survival: {term.survivalRoll} - {term.survived ? 'Survived' : 'Mishap!'}
+                            </div>
+                            {term.advancementRoll && (
+                              <div className={term.advanced ? 'text-cyan-400/70' : 'text-terminal-primary/50'}>
+                                Advancement: {term.advancementRoll} - {term.advanced ? 'Advanced!' : 'No advancement'}
+                              </div>
+                            )}
+                            {term.event && (
+                              <div className="text-yellow-400/70 mt-1">
+                                Event: {term.event.length > 100 ? term.event.substring(0, 100) + '...' : term.event}
+                              </div>
+                            )}
+                            {term.mishap && (
+                              <div className="text-red-400/70 mt-1">
+                                Mishap: {term.mishap}
+                              </div>
+                            )}
+                            {term.skillsGained && term.skillsGained.length > 0 && (
+                              <div className="text-green-400/70">
+                                Skills: {term.skillsGained.join(', ')}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Action Buttons */}
+                <div className="flex gap-2 pt-4 border-t border-terminal-primary/30">
                   <Button
                     onClick={() => setStep(5)}
                     variant="outline"
