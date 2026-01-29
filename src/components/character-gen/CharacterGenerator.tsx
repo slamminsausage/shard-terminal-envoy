@@ -704,17 +704,31 @@ export const CharacterGenerator: React.FC = () => {
   // ============================================================================
 
   const selectBackgroundSkill = (skillKey: string) => {
-    if (backgroundSkillsRemaining <= 0) return;
+    const isCurrentlySelected = characterData.skills[skillKey]?.proficient;
 
-    setCharacterData(prev => ({
-      ...prev,
-      skills: {
-        ...prev.skills,
-        [skillKey]: { proficient: true, value: '0' },
-      },
-    }));
+    if (isCurrentlySelected) {
+      // Deselect the skill
+      setCharacterData(prev => ({
+        ...prev,
+        skills: {
+          ...prev.skills,
+          [skillKey]: { proficient: false, value: '0' },
+        },
+      }));
+      setBackgroundSkillsRemaining(prev => prev + 1);
+    } else {
+      // Select the skill (only if we have remaining slots)
+      if (backgroundSkillsRemaining <= 0) return;
 
-    setBackgroundSkillsRemaining(prev => prev - 1);
+      setCharacterData(prev => ({
+        ...prev,
+        skills: {
+          ...prev.skills,
+          [skillKey]: { proficient: true, value: '0' },
+        },
+      }));
+      setBackgroundSkillsRemaining(prev => prev - 1);
+    }
   };
 
   // ============================================================================
@@ -3375,16 +3389,17 @@ export const CharacterGenerator: React.FC = () => {
                   {BACKGROUND_SKILLS.map(skill => {
                     const key = normalizeSkillName(skill);
                     const selected = characterData.skills[key]?.proficient;
+                    const isDisabled = !selected && backgroundSkillsRemaining === 0;
                     return (
                       <button
                         key={skill}
                         onClick={() => selectBackgroundSkill(key)}
-                        disabled={selected || backgroundSkillsRemaining === 0}
+                        disabled={isDisabled}
                         className={`
                           px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 border
                           ${selected
-                            ? 'bg-purple-500/20 text-purple-400 border-purple-500/50 shadow-[0_0_10px_rgba(168,85,247,0.3)]'
-                            : backgroundSkillsRemaining === 0
+                            ? 'bg-purple-500/20 text-purple-400 border-purple-500/50 shadow-[0_0_10px_rgba(168,85,247,0.3)] hover:bg-purple-500/30 hover:border-purple-400 cursor-pointer'
+                            : isDisabled
                             ? 'bg-black/30 text-terminal-primary/30 border-terminal-primary/10 cursor-not-allowed'
                             : 'bg-black/50 text-terminal-primary/70 border-terminal-primary/30 hover:border-purple-500/50 hover:text-purple-400 hover:bg-purple-500/10'
                           }
