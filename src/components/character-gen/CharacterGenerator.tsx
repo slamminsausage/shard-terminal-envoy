@@ -52,7 +52,7 @@ interface CareerRecord {
   termsServed: number;
   highestRank: number;
   isCommissioned: boolean;
-  benefitDM: number;         // Accumulated benefit DM from events in this career
+  benefitDMs: number[];      // Individual benefit DM bonuses (each used once during mustering out)
   extraBenefitRolls: number; // Extra benefit rolls from events
   isPreCareer: boolean;      // Pre-careers don't get benefits
 }
@@ -415,7 +415,7 @@ export const CharacterGenerator: React.FC = () => {
 
   // Event DM bonuses state - track bonuses granted by events for next roll
   const [eventAdvancementDM, setEventAdvancementDM] = useState<number>(0);
-  const [eventBenefitDM, setEventBenefitDM] = useState<number>(0);
+  const [eventBenefitDMs, setEventBenefitDMs] = useState<number[]>([]);  // Individual DM bonuses, each used once
   const [extraBenefitRolls, setExtraBenefitRolls] = useState<number>(0);
 
   // Mustering out state
@@ -1782,9 +1782,10 @@ export const CharacterGenerator: React.FC = () => {
         setEventAdvancementDM(prev => prev + effects.advancementDM!);
         setTermSkillsGained(prev => [...prev, `DM+${effects.advancementDM} to next advancement roll`]);
       }
-      if (effects.benefitDM) {
-        setEventBenefitDM(prev => prev + effects.benefitDM!);
-        setTermSkillsGained(prev => [...prev, `DM+${effects.benefitDM} to a Benefit roll`]);
+      if (effects.benefitDM && effects.benefitDM > 0) {
+        // Add each benefit DM as a separate entry (each can only be used once)
+        setEventBenefitDMs(prev => [...prev, effects.benefitDM!]);
+        setTermSkillsGained(prev => [...prev, `DM+${effects.benefitDM} to one Benefit roll`]);
       }
       if (effects.extraBenefit) {
         setExtraBenefitRolls(prev => prev + 1);
@@ -1900,8 +1901,8 @@ export const CharacterGenerator: React.FC = () => {
       if (effects.extraBenefit) {
         setExtraBenefitRolls(prev => prev + 1);
       }
-      if (effects.benefitDM) {
-        setEventBenefitDM(prev => prev + effects.benefitDM!);
+      if (effects.benefitDM && effects.benefitDM > 0) {
+        setEventBenefitDMs(prev => [...prev, effects.benefitDM!]);
       }
 
       // Handle table redirects from mishap (e.g., roll on injury)
@@ -2368,7 +2369,7 @@ export const CharacterGenerator: React.FC = () => {
       termsServed: currentTerm,
       highestRank: characterData.rank,
       isCommissioned: isCommissioned,
-      benefitDM: eventBenefitDM,
+      benefitDMs: eventBenefitDMs,
       extraBenefitRolls: extraBenefitRolls,
       isPreCareer: selectedCareer.isPreCareer || false,
     };
@@ -2589,7 +2590,7 @@ export const CharacterGenerator: React.FC = () => {
       termsServed: currentTerm,
       highestRank: characterData.rank,
       isCommissioned: isCommissioned,
-      benefitDM: eventBenefitDM,
+      benefitDMs: eventBenefitDMs,
       extraBenefitRolls: extraBenefitRolls,
       isPreCareer: selectedCareer.isPreCareer || false,
     };
@@ -2600,7 +2601,7 @@ export const CharacterGenerator: React.FC = () => {
     }));
 
     // Reset benefit tracking for new career
-    setEventBenefitDM(0);
+    setEventBenefitDMs([]);
     setExtraBenefitRolls(0);
   };
 
