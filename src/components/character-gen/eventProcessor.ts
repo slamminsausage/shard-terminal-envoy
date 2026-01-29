@@ -386,7 +386,9 @@ export class EventProcessor {
       return state;
     }
 
-    const roll = manualRoll ?? rollDice(subRoll.dice, subRoll.sides || 6);
+    const naturalRoll = manualRoll ?? rollDice(subRoll.dice, subRoll.sides || 6);
+    const dm = subRoll.dm || 0;
+    const roll = naturalRoll + dm; // Apply DM to the roll for outcome matching
     const outcome = subRoll.outcomes.find(o => roll >= o.min && roll <= o.max);
 
     if (!outcome) {
@@ -398,7 +400,7 @@ export class EventProcessor {
 
     return {
       ...state,
-      subRollResult: { roll, outcome },
+      subRollResult: { roll: naturalRoll, total: roll, dm, outcome },
       appliedEffects: mergedEffects,
       phase: 'show_sub_roll',
     };

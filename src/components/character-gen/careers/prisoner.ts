@@ -294,25 +294,49 @@ const PRISONER_EVENTS: GameEvent[] = [
         {
           id: 'lawyer-1',
           label: 'Advocate-1 (Cr1,000)',
-          description: 'Roll 2D+1, on 8+ reduce Parole by 1D',
+          description: 'Roll 2D+1, need 8+ to reduce Parole',
           effects: {
-            message: 'You hire an Advocate-1 lawyer for Cr1,000. (Roll 2D+1, on 8+ reduce Parole Threshold by 1D)',
+            message: 'You hire an Advocate-1 lawyer for Cr1,000.',
+          },
+          subRoll: {
+            dice: 2,
+            dm: 1,
+            outcomes: [
+              { min: 8, max: 13, label: 'Success! Parole reduced.', effects: { paroleReduction: '1D', message: 'Your lawyer succeeds! Parole Threshold reduced.' } },
+              { min: 2, max: 7, label: 'Lawyer fails.', effects: { message: 'Your lawyer fails to make progress on your case.' } },
+            ],
           },
         },
         {
           id: 'lawyer-2',
           label: 'Advocate-2 (Cr4,000)',
-          description: 'Roll 2D+2, on 8+ reduce Parole by 1D',
+          description: 'Roll 2D+2, need 8+ to reduce Parole',
           effects: {
-            message: 'You hire an Advocate-2 lawyer for Cr4,000. (Roll 2D+2, on 8+ reduce Parole Threshold by 1D)',
+            message: 'You hire an Advocate-2 lawyer for Cr4,000.',
+          },
+          subRoll: {
+            dice: 2,
+            dm: 2,
+            outcomes: [
+              { min: 8, max: 14, label: 'Success! Parole reduced.', effects: { paroleReduction: '1D', message: 'Your lawyer succeeds! Parole Threshold reduced.' } },
+              { min: 2, max: 7, label: 'Lawyer fails.', effects: { message: 'Your lawyer fails to make progress on your case.' } },
+            ],
           },
         },
         {
           id: 'lawyer-3',
           label: 'Advocate-3 (Cr9,000)',
-          description: 'Roll 2D+3, on 8+ reduce Parole by 1D',
+          description: 'Roll 2D+3, need 8+ to reduce Parole',
           effects: {
-            message: 'You hire an Advocate-3 lawyer for Cr9,000. (Roll 2D+3, on 8+ reduce Parole Threshold by 1D)',
+            message: 'You hire an Advocate-3 lawyer for Cr9,000.',
+          },
+          subRoll: {
+            dice: 2,
+            dm: 3,
+            outcomes: [
+              { min: 8, max: 15, label: 'Success! Parole reduced.', effects: { paroleReduction: '1D', message: 'Your lawyer succeeds! Parole Threshold reduced.' } },
+              { min: 2, max: 7, label: 'Lawyer fails.', effects: { message: 'Your lawyer fails to make progress on your case.' } },
+            ],
           },
         },
       ],
@@ -394,7 +418,31 @@ const PRISONER_EVENTS: GameEvent[] = [
           label: 'Save the guard',
           description: 'Roll 2D: 7 or less = Injury, 8+ = Ally and Parole -2',
           effects: {
-            message: 'You rush to help! (Roll 2D: 7 or less causes injury, 8+ gains an Ally and reduces Parole Threshold by 2)',
+            message: 'You rush to help the guard!',
+          },
+          subRoll: {
+            dice: 2,
+            outcomes: [
+              {
+                min: 2,
+                max: 7,
+                label: 'Injured!',
+                effects: {
+                  rollOnTable: 'injury',
+                  message: 'You save the guard but are injured in the process.',
+                },
+              },
+              {
+                min: 8,
+                max: 12,
+                label: 'Success! Ally gained.',
+                effects: {
+                  allies: 1,
+                  paroleReduction: 2,
+                  message: 'You save the guard! You gain an Ally and your Parole Threshold is reduced by 2.',
+                },
+              },
+            ],
           },
         },
       ],
@@ -478,9 +526,38 @@ export const PRISON_EVENTS_SUBTABLE: GameEvent[] = [
     id: 'prison-sub-1',
     description: 'Riot! Roll 1D: 1-2 = injured, 5-6 = loot something useful (extra Benefit roll).',
     resolution: {
-      type: 'automatic',
-      effects: {
-        message: 'A riot breaks out! (Roll 1D: 1-2 injury, 3-4 nothing, 5-6 extra Benefit roll)',
+      type: 'sub_roll',
+      displayText: 'A riot breaks out! Roll 1D to see what happens.',
+      subRoll: {
+        dice: 1,
+        outcomes: [
+          {
+            min: 1,
+            max: 2,
+            label: 'Injured!',
+            effects: {
+              rollOnTable: 'injury',
+              message: 'You are injured during the riot.',
+            },
+          },
+          {
+            min: 3,
+            max: 4,
+            label: 'Caught in the chaos',
+            effects: {
+              message: 'You survive the riot without incident.',
+            },
+          },
+          {
+            min: 5,
+            max: 6,
+            label: 'Looted!',
+            effects: {
+              extraBenefit: true,
+              message: 'You loot something useful during the chaos. Gain an extra Benefit roll.',
+            },
+          },
+        ],
       },
     },
   },

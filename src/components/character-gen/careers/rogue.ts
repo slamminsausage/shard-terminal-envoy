@@ -56,10 +56,31 @@ const ROGUE_MISHAPS: GameEvent[] = [
     id: 'rogue-mishap-3',
     description: 'Betrayed by a friend. One of your Contacts or Allies betrays you, ending your career. That Contact or Ally becomes a Rival or Enemy. If you have no Contacts or Allies, then you are betrayed by someone you never saw coming and still gain a Rival or Enemy. In addition, roll 2D. If you roll 2, you must take the Prisoner career in your next term.',
     resolution: {
-      type: 'automatic',
-      effects: {
-        enemies: 1,
-        message: 'Betrayed by a friend! They become an Enemy. (Roll 2D - if 2, must become Prisoner)',
+      type: 'sub_roll',
+      displayText: 'Betrayed by a friend! Roll 2D to see if you end up in prison.',
+      subRoll: {
+        dice: 2,
+        outcomes: [
+          {
+            min: 2,
+            max: 2,
+            label: 'Snake Eyes! You must become a Prisoner.',
+            effects: {
+              enemies: 1,
+              forceCareer: 'Prisoner',
+              message: 'Betrayed! Your friend becomes an Enemy and your crimes are exposed. You must take the Prisoner career next term.',
+            },
+          },
+          {
+            min: 3,
+            max: 12,
+            label: 'You avoid prison.',
+            effects: {
+              enemies: 1,
+              message: 'Betrayed! Your friend becomes an Enemy, but you avoid prison.',
+            },
+          },
+        ],
       },
     },
   },

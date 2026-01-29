@@ -255,27 +255,55 @@ const MERCHANT_EVENTS: GameEvent[] = [
     description: 'You are embroiled in legal trouble. Gain one of Advocate 1, Admin 1, Diplomat 1 or Investigate 1, then roll 2D. If you roll 2, you must take the Prisoner career in your next term.',
     resolution: {
       type: 'choice',
-      displayText: 'Legal trouble! Choose a skill and hope you don\'t roll snake eyes:',
+      displayText: 'Legal trouble! Choose a skill, then roll 2D to see if you end up in prison:',
       options: [
         {
           id: 'advocate',
           label: 'Advocate 1',
-          effects: { skills: { choices: ['Advocate'], level: 1 }, message: 'You learn legal skills dealing with the trouble. (Roll 2D - if 2, must become Prisoner)' },
+          effects: { skills: { choices: ['Advocate'], level: 1 }, message: 'You learn legal skills dealing with the trouble.' },
+          subRoll: {
+            dice: 2,
+            outcomes: [
+              { min: 2, max: 2, label: 'Snake Eyes! Prison awaits.', effects: { forceCareer: 'Prisoner', message: 'Your legal troubles land you in prison. You must take the Prisoner career next term.' } },
+              { min: 3, max: 12, label: 'You avoid prison.', effects: { message: 'You manage to stay out of prison.' } },
+            ],
+          },
         },
         {
           id: 'admin',
           label: 'Admin 1',
-          effects: { skills: { choices: ['Admin'], level: 1 }, message: 'You learn administrative skills dealing with the trouble. (Roll 2D - if 2, must become Prisoner)' },
+          effects: { skills: { choices: ['Admin'], level: 1 }, message: 'You learn administrative skills dealing with the trouble.' },
+          subRoll: {
+            dice: 2,
+            outcomes: [
+              { min: 2, max: 2, label: 'Snake Eyes! Prison awaits.', effects: { forceCareer: 'Prisoner', message: 'Your legal troubles land you in prison. You must take the Prisoner career next term.' } },
+              { min: 3, max: 12, label: 'You avoid prison.', effects: { message: 'You manage to stay out of prison.' } },
+            ],
+          },
         },
         {
           id: 'diplomat',
           label: 'Diplomat 1',
-          effects: { skills: { choices: ['Diplomat'], level: 1 }, message: 'You learn diplomatic skills dealing with the trouble. (Roll 2D - if 2, must become Prisoner)' },
+          effects: { skills: { choices: ['Diplomat'], level: 1 }, message: 'You learn diplomatic skills dealing with the trouble.' },
+          subRoll: {
+            dice: 2,
+            outcomes: [
+              { min: 2, max: 2, label: 'Snake Eyes! Prison awaits.', effects: { forceCareer: 'Prisoner', message: 'Your legal troubles land you in prison. You must take the Prisoner career next term.' } },
+              { min: 3, max: 12, label: 'You avoid prison.', effects: { message: 'You manage to stay out of prison.' } },
+            ],
+          },
         },
         {
           id: 'investigate',
           label: 'Investigate 1',
-          effects: { skills: { choices: ['Investigate'], level: 1 }, message: 'You learn investigative skills dealing with the trouble. (Roll 2D - if 2, must become Prisoner)' },
+          effects: { skills: { choices: ['Investigate'], level: 1 }, message: 'You learn investigative skills dealing with the trouble.' },
+          subRoll: {
+            dice: 2,
+            outcomes: [
+              { min: 2, max: 2, label: 'Snake Eyes! Prison awaits.', effects: { forceCareer: 'Prisoner', message: 'Your legal troubles land you in prison. You must take the Prisoner career next term.' } },
+              { min: 3, max: 12, label: 'You avoid prison.', effects: { message: 'You manage to stay out of prison.' } },
+            ],
+          },
         },
       ],
     },
