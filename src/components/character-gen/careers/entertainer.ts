@@ -244,11 +244,17 @@ const ENTERTAINER_EVENTS: GameEvent[] = [
         {
           id: 'criticize',
           label: 'Criticize the leader',
-          description: 'Gain an Enemy. Roll Art/Persuade 8+ for skill gain. Failure means Mishap.',
+          description: 'Gain an Enemy + skill. Roll 2D for Art/Persuade 8+. Failure also means Mishap.',
           effects: {
             enemies: 1,
             skills: { anySkill: true, requireExisting: true, level: 1 },
-            message: 'You speak out against the leader. Gain an Enemy and increase a skill. (If roll failed, also roll on Mishap table)',
+          },
+          subRoll: {
+            dice: 2,
+            outcomes: [
+              { min: 2, max: 7, label: 'Backlash!', effects: { rollOnTable: 'injury', message: 'Your criticism backfires! Gain an Enemy, increase a skill, but also roll on the Mishap table.' } },
+              { min: 8, max: 12, label: 'Victory!', effects: { message: 'Your criticism brings down the leader! Gain an Enemy and increase a skill.' } },
+            ],
           },
         },
         {
