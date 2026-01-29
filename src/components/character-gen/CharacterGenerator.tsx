@@ -2892,29 +2892,71 @@ export const CharacterGenerator: React.FC = () => {
 
           {/* STEP 1: BASIC INFO */}
           <TabsContent value="step1">
-            <Card className="bg-black border-terminal-primary/50">
-              <CardHeader>
-                <CardTitle className="text-terminal-primary">Character Basics</CardTitle>
+            <Card className="bg-black border-2 border-terminal-primary/50">
+              <CardHeader className="border-b border-terminal-primary/30 bg-gradient-to-r from-terminal-primary/10 via-transparent to-terminal-primary/10">
+                <CardTitle className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-terminal-primary/10 border border-terminal-primary/30">
+                    <User className="h-5 w-5 text-terminal-primary" />
+                  </div>
+                  <div>
+                    <div className="text-terminal-primary font-['Orbitron'] tracking-wider">Character Basics</div>
+                    <div className="text-terminal-primary/50 text-xs font-normal font-mono">Define your identity</div>
+                  </div>
+                </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <label className="text-xs text-terminal-primary/70 uppercase mb-1 block">
-                    Character Name
-                  </label>
-                  <Input
-                    placeholder="Enter character name..."
-                    value={characterData.name}
-                    onChange={(e) => handleNameChange(e.target.value)}
-                    className="bg-black border-terminal-primary/50 text-terminal-primary"
-                  />
+              <CardContent className="space-y-6 pt-6">
+                {/* Welcome Panel */}
+                <div className="relative rounded-lg border border-terminal-primary/30 overflow-hidden">
+                  <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-terminal-primary to-transparent" />
+                  <div className="p-4 bg-terminal-primary/5">
+                    <p className="text-sm text-terminal-primary/80 mb-2">
+                      Welcome to the Traveller 2E character generator! This wizard will guide you through creating your character using the official rules.
+                    </p>
+                    <p className="text-xs text-terminal-primary/50">
+                      You'll roll characteristics, select background skills, choose a career, and live through terms of service.
+                    </p>
+                  </div>
                 </div>
 
-                <div>
-                  <label className="text-xs text-terminal-primary/70 uppercase mb-1 block">
+                {/* Form Fields */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Character Name */}
+                  <div className="space-y-2">
+                    <label className="text-[10px] text-terminal-primary/60 uppercase tracking-wider font-bold flex items-center gap-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-terminal-primary" />
+                      Character Name
+                    </label>
+                    <Input
+                      placeholder="Enter character name..."
+                      value={characterData.name}
+                      onChange={(e) => handleNameChange(e.target.value)}
+                      className="bg-black/50 border-terminal-primary/50 text-terminal-primary focus:border-terminal-primary focus:ring-1 focus:ring-terminal-primary/50"
+                    />
+                  </div>
+
+                  {/* Homeworld */}
+                  <div className="space-y-2">
+                    <label className="text-[10px] text-terminal-primary/60 uppercase tracking-wider font-bold flex items-center gap-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-terminal-primary" />
+                      Homeworld
+                    </label>
+                    <Input
+                      placeholder="Enter homeworld..."
+                      value={characterData.homeworld}
+                      onChange={(e) => handleHomeworldChange(e.target.value)}
+                      className="bg-black/50 border-terminal-primary/50 text-terminal-primary focus:border-terminal-primary focus:ring-1 focus:ring-terminal-primary/50"
+                    />
+                  </div>
+                </div>
+
+                {/* Race Selection */}
+                <div className="space-y-2">
+                  <label className="text-[10px] text-terminal-primary/60 uppercase tracking-wider font-bold flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
                     Race
                   </label>
                   <Select value={selectedRace.id} onValueChange={handleRaceSelection}>
-                    <SelectTrigger className="bg-black border-terminal-primary/50 text-terminal-primary">
+                    <SelectTrigger className="bg-black/50 border-terminal-primary/50 text-terminal-primary focus:border-terminal-primary">
                       <SelectValue placeholder="Select a race" />
                     </SelectTrigger>
                     <SelectContent className="bg-black border-terminal-primary/50">
@@ -2939,15 +2981,18 @@ export const CharacterGenerator: React.FC = () => {
 
                   {/* Race Details Display */}
                   {selectedRace.id !== 'human' && (
-                    <div className="mt-3 bg-terminal-primary/5 border border-terminal-primary/30 rounded p-3 space-y-2">
-                      <p className="text-sm text-terminal-primary/80">{selectedRace.description}</p>
+                    <div className="mt-3 bg-cyan-500/5 border border-cyan-500/30 rounded-lg p-4 space-y-3">
+                      <div className="flex items-center gap-2">
+                        <span className="text-cyan-400 font-bold font-['Orbitron'] tracking-wide">{selectedRace.name}</span>
+                      </div>
+                      <p className="text-sm text-terminal-primary/70">{selectedRace.description}</p>
                       {selectedRace.characteristicModifiers.length > 0 && (
-                        <div className="flex gap-2 flex-wrap">
-                          <span className="text-xs text-terminal-primary/60">Stat Modifiers:</span>
+                        <div className="flex gap-3 flex-wrap items-center">
+                          <span className="text-[10px] text-terminal-primary/50 uppercase tracking-wider">Stat Modifiers:</span>
                           {selectedRace.characteristicModifiers.map((mod, idx) => (
                             <span
                               key={idx}
-                              className={`text-xs ${mod.modifier >= 0 ? 'text-green-400' : 'text-red-400'}`}
+                              className={`text-xs px-2 py-0.5 rounded ${mod.modifier >= 0 ? 'bg-green-500/10 text-green-400 border border-green-500/30' : 'bg-red-500/10 text-red-400 border border-red-500/30'}`}
                             >
                               {mod.stat.toUpperCase().slice(0, 3)} {mod.modifier >= 0 ? '+' : ''}{mod.modifier}
                             </span>
@@ -2955,12 +3000,12 @@ export const CharacterGenerator: React.FC = () => {
                         </div>
                       )}
                       {selectedRace.traits.length > 0 && (
-                        <div className="space-y-1">
-                          <span className="text-xs text-terminal-primary/60">Racial Traits:</span>
+                        <div className="space-y-2 pt-2 border-t border-cyan-500/20">
+                          <span className="text-[10px] text-terminal-primary/50 uppercase tracking-wider">Racial Traits:</span>
                           {selectedRace.traits.map((trait, idx) => (
-                            <div key={idx} className="ml-2 text-xs">
-                              <span className="text-cyan-400 font-bold">{trait.name}:</span>{' '}
-                              <span className="text-terminal-primary/70">{trait.description}</span>
+                            <div key={idx} className="bg-cyan-500/5 border border-cyan-500/20 rounded p-2">
+                              <span className="text-cyan-400 font-bold text-sm">{trait.name}</span>
+                              <p className="text-terminal-primary/60 text-xs mt-0.5">{trait.description}</p>
                             </div>
                           ))}
                         </div>
@@ -2969,31 +3014,11 @@ export const CharacterGenerator: React.FC = () => {
                   )}
                 </div>
 
-                <div>
-                  <label className="text-xs text-terminal-primary/70 uppercase mb-1 block">
-                    Homeworld
-                  </label>
-                  <Input
-                    placeholder="Enter homeworld..."
-                    value={characterData.homeworld}
-                    onChange={(e) => handleHomeworldChange(e.target.value)}
-                    className="bg-black border-terminal-primary/50 text-terminal-primary"
-                  />
-                </div>
-
-                <div className="bg-terminal-primary/5 border border-terminal-primary/30 rounded p-4">
-                  <p className="text-sm text-terminal-primary/80 mb-2">
-                    Welcome to the Traveller 2E character generator! This wizard will guide you through creating your character using the official rules.
-                  </p>
-                  <p className="text-xs text-terminal-primary/60">
-                    You'll roll characteristics, select background skills, choose a career, and live through terms of service.
-                  </p>
-                </div>
-
+                {/* Continue Button */}
                 <Button
                   onClick={() => setStep(2)}
                   disabled={!characterData.name}
-                  className="w-full bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
+                  className="w-full bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30 border border-terminal-primary/50 transition-all duration-200 hover:shadow-[0_0_15px_rgba(0,255,0,0.3)]"
                 >
                   Continue to Characteristics
                   <ArrowRight className="h-4 w-4 ml-2" />
@@ -3004,15 +3029,23 @@ export const CharacterGenerator: React.FC = () => {
 
           {/* STEP 2: CHARACTERISTICS */}
           <TabsContent value="step2">
-            <Card className="bg-black border-terminal-primary/50">
-              <CardHeader>
+            <Card className="bg-black border-2 border-yellow-500/50">
+              <CardHeader className="border-b border-yellow-500/30 bg-gradient-to-r from-yellow-500/10 via-transparent to-yellow-500/10">
                 <div className="flex justify-between items-center">
-                  <CardTitle className="text-terminal-primary">Characteristics</CardTitle>
+                  <CardTitle className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-yellow-500/10 border border-yellow-500/30">
+                      <Dices className="h-5 w-5 text-yellow-400" />
+                    </div>
+                    <div>
+                      <div className="text-yellow-400 font-['Orbitron'] tracking-wider">Characteristics</div>
+                      <div className="text-terminal-primary/50 text-xs font-normal font-mono">Roll your core attributes</div>
+                    </div>
+                  </CardTitle>
                   <div className="flex gap-2">
                     {hasRolled && (
                       <Button
                         onClick={rerollCharacteristics}
-                        className="bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
+                        className="bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30 border border-yellow-500/50"
                         size="sm"
                       >
                         <RefreshCw className="h-4 w-4 mr-2" />
@@ -3022,23 +3055,23 @@ export const CharacterGenerator: React.FC = () => {
                   </div>
                 </div>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-4 pt-4">
                 {!hasRolled ? (
                   <>
                     {/* Selected Race Display (read-only) */}
                     {selectedRace.id !== 'human' && (
-                      <div className="bg-cyan-500/10 border border-cyan-500/30 rounded p-3">
+                      <div className="bg-cyan-500/10 border border-cyan-500/30 rounded-lg p-3">
                         <div className="flex items-center gap-2 mb-2">
-                          <span className="text-xs font-bold text-cyan-400 uppercase">Race:</span>
+                          <span className="text-[10px] font-bold text-cyan-400 uppercase tracking-wider">Race:</span>
                           <span className="text-terminal-primary font-bold">{selectedRace.name}</span>
                         </div>
                         {selectedRace.characteristicModifiers.length > 0 && (
-                          <div className="flex gap-2 flex-wrap text-xs">
+                          <div className="flex gap-2 flex-wrap text-xs items-center">
                             <span className="text-terminal-primary/60">Modifiers applied after rolling:</span>
                             {selectedRace.characteristicModifiers.map((mod, idx) => (
                               <span
                                 key={idx}
-                                className={mod.modifier >= 0 ? 'text-green-400' : 'text-red-400'}
+                                className={`px-2 py-0.5 rounded ${mod.modifier >= 0 ? 'bg-green-500/10 text-green-400 border border-green-500/30' : 'bg-red-500/10 text-red-400 border border-red-500/30'}`}
                               >
                                 {mod.stat.toUpperCase().slice(0, 3)} {mod.modifier >= 0 ? '+' : ''}{mod.modifier}
                               </span>
@@ -3048,45 +3081,47 @@ export const CharacterGenerator: React.FC = () => {
                       </div>
                     )}
 
-                    <Alert className="bg-terminal-primary/5 border-terminal-primary/30">
-                      <AlertCircle className="h-4 w-4" />
-                      <AlertDescription className="text-terminal-primary/80">
-                        Choose how to generate your characteristics: Auto-assign (traditional), Manual (pick where each roll goes), or roll individually.
+                    <div className="relative rounded-lg border border-yellow-500/30 overflow-hidden">
+                      <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-yellow-500 to-transparent" />
+                      <div className="p-4 bg-yellow-500/5">
+                        <p className="text-sm text-terminal-primary/80">
+                          Choose how to generate your characteristics: Auto-assign (traditional), Manual (pick where each roll goes), or roll individually.
+                        </p>
                         {selectedRace.characteristicModifiers.length > 0 && (
-                          <span className="block mt-1 text-cyan-400">
+                          <p className="mt-2 text-xs text-cyan-400">
                             Race modifiers will be applied after rolling.
-                          </span>
+                          </p>
                         )}
-                      </AlertDescription>
-                    </Alert>
+                      </div>
+                    </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                      <Button
+                      <button
                         onClick={rollAllCharacteristics}
-                        className="bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30 h-20 flex-col"
+                        className="group bg-yellow-500/10 hover:bg-yellow-500/20 border border-yellow-500/30 hover:border-yellow-500/50 rounded-lg p-4 transition-all duration-200 hover:shadow-[0_0_15px_rgba(234,179,8,0.2)]"
                       >
-                        <Dices className="h-5 w-5 mb-1" />
-                        <span className="font-bold">Auto-Assign</span>
-                        <span className="text-xs">Roll 6, assign in order</span>
-                      </Button>
+                        <Dices className="h-6 w-6 text-yellow-400 mx-auto mb-2 group-hover:scale-110 transition-transform" />
+                        <div className="font-bold text-yellow-400 font-['Orbitron'] tracking-wide text-sm">Auto-Assign</div>
+                        <div className="text-xs text-terminal-primary/50 mt-1">Roll 6, assign in order</div>
+                      </button>
 
-                      <Button
+                      <button
                         onClick={rollForManualAssignment}
-                        className="bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30 h-20 flex-col"
+                        className="group bg-yellow-500/10 hover:bg-yellow-500/20 border border-yellow-500/30 hover:border-yellow-500/50 rounded-lg p-4 transition-all duration-200 hover:shadow-[0_0_15px_rgba(234,179,8,0.2)]"
                       >
-                        <Dices className="h-5 w-5 mb-1" />
-                        <span className="font-bold">Manual Assign</span>
-                        <span className="text-xs">Roll 6, pick placement</span>
-                      </Button>
+                        <Dices className="h-6 w-6 text-yellow-400 mx-auto mb-2 group-hover:scale-110 transition-transform" />
+                        <div className="font-bold text-yellow-400 font-['Orbitron'] tracking-wide text-sm">Manual Assign</div>
+                        <div className="text-xs text-terminal-primary/50 mt-1">Roll 6, pick placement</div>
+                      </button>
 
-                      <Button
+                      <button
                         onClick={() => setHasRolled(true)}
-                        className="bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30 h-20 flex-col"
+                        className="group bg-yellow-500/10 hover:bg-yellow-500/20 border border-yellow-500/30 hover:border-yellow-500/50 rounded-lg p-4 transition-all duration-200 hover:shadow-[0_0_15px_rgba(234,179,8,0.2)]"
                       >
-                        <Dices className="h-5 w-5 mb-1" />
-                        <span className="font-bold">Roll Individually</span>
-                        <span className="text-xs">Roll each stat separately</span>
-                      </Button>
+                        <Dices className="h-6 w-6 text-yellow-400 mx-auto mb-2 group-hover:scale-110 transition-transform" />
+                        <div className="font-bold text-yellow-400 font-['Orbitron'] tracking-wide text-sm">Roll Individually</div>
+                        <div className="text-xs text-terminal-primary/50 mt-1">Roll each stat separately</div>
+                      </button>
                     </div>
                   </>
                 ) : assignmentMode === 'auto' && characteristicRolls.length > 0 ? (
@@ -3280,7 +3315,7 @@ export const CharacterGenerator: React.FC = () => {
                   </>
                 )}
 
-                <div className="flex gap-2">
+                <div className="flex gap-2 pt-2">
                   <Button
                     onClick={() => setStep(1)}
                     variant="outline"
@@ -3295,7 +3330,7 @@ export const CharacterGenerator: React.FC = () => {
                         ? characteristicRolls.length > 0
                         : (backgroundSkillsRemaining === 0 && characterData.characteristics.education.total === 0)
                     }
-                    className="flex-1 bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
+                    className="flex-1 bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30 border border-yellow-500/50 transition-all duration-200 hover:shadow-[0_0_15px_rgba(234,179,8,0.3)]"
                   >
                     Continue to Background Skills
                     <ArrowRight className="h-4 w-4 ml-2" />
@@ -3307,42 +3342,71 @@ export const CharacterGenerator: React.FC = () => {
 
           {/* STEP 3: BACKGROUND SKILLS */}
           <TabsContent value="step3">
-            <Card className="bg-black border-terminal-primary/50">
-              <CardHeader>
-                <CardTitle className="text-terminal-primary">
-                  Background Skills ({backgroundSkillsRemaining} remaining)
+            <Card className="bg-black border-2 border-purple-500/50">
+              <CardHeader className="border-b border-purple-500/30 bg-gradient-to-r from-purple-500/10 via-transparent to-purple-500/10">
+                <CardTitle className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-purple-500/10 border border-purple-500/30">
+                    <Award className="h-5 w-5 text-purple-400" />
+                  </div>
+                  <div>
+                    <div className="text-purple-400 font-['Orbitron'] tracking-wider">Background Skills</div>
+                    <div className="text-terminal-primary/50 text-xs font-normal font-mono">
+                      {backgroundSkillsRemaining} of {getDM(characterData.characteristics.education.total) + 3} remaining
+                    </div>
+                  </div>
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <Alert className="bg-terminal-primary/5 border-terminal-primary/30">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription className="text-terminal-primary/80">
-                    You receive {getDM(characterData.characteristics.education.total) + 3} background skills at level 0, based on your EDU DM + 3.
-                  </AlertDescription>
-                </Alert>
+              <CardContent className="space-y-4 pt-4">
+                {/* Info Panel */}
+                <div className="relative rounded-lg border border-purple-500/30 overflow-hidden">
+                  <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-purple-500 to-transparent" />
+                  <div className="p-4 bg-purple-500/5">
+                    <p className="text-sm text-terminal-primary/80">
+                      You receive <span className="text-purple-400 font-bold">{getDM(characterData.characteristics.education.total) + 3}</span> background skills at level 0, based on your EDU DM + 3.
+                    </p>
+                    <p className="text-xs text-terminal-primary/50 mt-1">
+                      Select skills that reflect your character's upbringing before entering a career.
+                    </p>
+                  </div>
+                </div>
 
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                {/* Skills Grid */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                   {BACKGROUND_SKILLS.map(skill => {
                     const key = normalizeSkillName(skill);
                     const selected = characterData.skills[key]?.proficient;
                     return (
-                      <Button
+                      <button
                         key={skill}
                         onClick={() => selectBackgroundSkill(key)}
                         disabled={selected || backgroundSkillsRemaining === 0}
-                        variant={selected ? 'default' : 'outline'}
-                        className={selected
-                          ? 'bg-terminal-primary/30 text-terminal-primary border-terminal-primary'
-                          : 'border-terminal-primary/50 text-terminal-primary hover:bg-terminal-primary/20'
-                        }
+                        className={`
+                          px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 border
+                          ${selected
+                            ? 'bg-purple-500/20 text-purple-400 border-purple-500/50 shadow-[0_0_10px_rgba(168,85,247,0.3)]'
+                            : backgroundSkillsRemaining === 0
+                            ? 'bg-black/30 text-terminal-primary/30 border-terminal-primary/10 cursor-not-allowed'
+                            : 'bg-black/50 text-terminal-primary/70 border-terminal-primary/30 hover:border-purple-500/50 hover:text-purple-400 hover:bg-purple-500/10'
+                          }
+                        `}
                       >
+                        {selected && <span className="mr-1">✓</span>}
                         {skill}
-                      </Button>
+                      </button>
                     );
                   })}
                 </div>
 
-                <div className="flex gap-2">
+                {/* Progress Indicator */}
+                {backgroundSkillsRemaining === 0 && (
+                  <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-3 flex items-center gap-2">
+                    <span className="text-green-400">✓</span>
+                    <span className="text-green-400 text-sm">All background skills selected!</span>
+                  </div>
+                )}
+
+                {/* Navigation */}
+                <div className="flex gap-2 pt-2">
                   <Button
                     onClick={() => setStep(2)}
                     variant="outline"
@@ -3353,7 +3417,7 @@ export const CharacterGenerator: React.FC = () => {
                   <Button
                     onClick={() => setStep(4)}
                     disabled={backgroundSkillsRemaining > 0}
-                    className="flex-1 bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
+                    className="flex-1 bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 border border-purple-500/50 transition-all duration-200 hover:shadow-[0_0_15px_rgba(168,85,247,0.3)]"
                   >
                     Continue to Career
                     <ArrowRight className="h-4 w-4 ml-2" />
