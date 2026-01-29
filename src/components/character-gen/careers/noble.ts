@@ -182,28 +182,61 @@ const NOBLE_EVENTS: GameEvent[] = [
         {
           id: 'accept-melee',
           label: 'Accept and gain Melee (blade)',
-          description: 'Fight the duel. Roll Melee 8+.',
+          description: 'Fight the duel. Roll 2D for Melee 8+.',
           effects: {
             skills: { choices: ['Melee (blade)'], level: 1 },
-            message: 'You accept the duel. Gain Melee (blade). (Roll determines SOC change and possible injury)',
+          },
+          subRoll: {
+            dice: 2,
+            outcomes: [
+              { min: 2, max: 7, label: 'Defeat! SOC -1 and Injured', effects: { characteristics: [{ stat: 'social', modifier: -1 }], rollOnTable: 'injury', message: 'You lose the duel. Gain Melee (blade), but lose SOC and roll on the Injury table.' } },
+              { min: 8, max: 12, label: 'Victory! SOC +1', effects: { characteristics: [{ stat: 'social', modifier: 1 }], message: 'You win the duel! Gain Melee (blade) and SOC +1.' } },
+            ],
           },
         },
         {
           id: 'accept-leadership',
           label: 'Accept and gain Leadership',
-          description: 'Fight the duel. Roll Melee 8+.',
+          description: 'Fight the duel. Roll 2D for Melee 8+.',
           effects: {
             skills: { choices: ['Leadership'], level: 1 },
-            message: 'You accept the duel. Gain Leadership. (Roll determines SOC change and possible injury)',
+          },
+          subRoll: {
+            dice: 2,
+            outcomes: [
+              { min: 2, max: 7, label: 'Defeat! SOC -1 and Injured', effects: { characteristics: [{ stat: 'social', modifier: -1 }], rollOnTable: 'injury', message: 'You lose the duel. Gain Leadership, but lose SOC and roll on the Injury table.' } },
+              { min: 8, max: 12, label: 'Victory! SOC +1', effects: { characteristics: [{ stat: 'social', modifier: 1 }], message: 'You win the duel! Gain Leadership and SOC +1.' } },
+            ],
           },
         },
         {
           id: 'accept-tactics',
           label: 'Accept and gain Tactics',
-          description: 'Fight the duel. Roll Melee 8+.',
+          description: 'Fight the duel. Roll 2D for Melee 8+.',
           effects: {
             skills: { choices: ['Tactics'], level: 1 },
-            message: 'You accept the duel. Gain Tactics. (Roll determines SOC change and possible injury)',
+          },
+          subRoll: {
+            dice: 2,
+            outcomes: [
+              { min: 2, max: 7, label: 'Defeat! SOC -1 and Injured', effects: { characteristics: [{ stat: 'social', modifier: -1 }], rollOnTable: 'injury', message: 'You lose the duel. Gain Tactics, but lose SOC and roll on the Injury table.' } },
+              { min: 8, max: 12, label: 'Victory! SOC +1', effects: { characteristics: [{ stat: 'social', modifier: 1 }], message: 'You win the duel! Gain Tactics and SOC +1.' } },
+            ],
+          },
+        },
+        {
+          id: 'accept-deception',
+          label: 'Accept and gain Deception',
+          description: 'Fight the duel. Roll 2D for Melee 8+.',
+          effects: {
+            skills: { choices: ['Deception'], level: 1 },
+          },
+          subRoll: {
+            dice: 2,
+            outcomes: [
+              { min: 2, max: 7, label: 'Defeat! SOC -1 and Injured', effects: { characteristics: [{ stat: 'social', modifier: -1 }], rollOnTable: 'injury', message: 'You lose the duel. Gain Deception, but lose SOC and roll on the Injury table.' } },
+              { min: 8, max: 12, label: 'Victory! SOC +1', effects: { characteristics: [{ stat: 'social', modifier: 1 }], message: 'You win the duel! Gain Deception and SOC +1.' } },
+            ],
           },
         },
       ],
@@ -318,28 +351,61 @@ const NOBLE_EVENTS: GameEvent[] = [
         {
           id: 'accept-deception',
           label: 'Join (gain Deception)',
-          description: 'Roll Deception 8+. Success: skill. Failure: Mishap.',
+          description: 'Roll 2D for 8+. Success: skill only. Failure: skill + Mishap.',
           effects: {
             skills: { choices: ['Deception'], level: 1 },
-            message: 'You join the conspiracy and learn Deception. (If roll failed, also roll on Mishap table)',
+          },
+          subRoll: {
+            dice: 2,
+            outcomes: [
+              { min: 2, max: 7, label: 'Conspiracy collapses!', effects: { rollOnTable: 'injury', message: 'The conspiracy collapses! Gain Deception, but roll on the Mishap table.' } },
+              { min: 8, max: 12, label: 'Conspiracy succeeds!', effects: { message: 'The conspiracy succeeds! Gain Deception.' } },
+            ],
           },
         },
         {
           id: 'accept-persuade',
           label: 'Join (gain Persuade)',
-          description: 'Roll Persuade 8+. Success: skill. Failure: Mishap.',
+          description: 'Roll 2D for 8+. Success: skill only. Failure: skill + Mishap.',
           effects: {
             skills: { choices: ['Persuade'], level: 1 },
-            message: 'You join the conspiracy and learn Persuade. (If roll failed, also roll on Mishap table)',
+          },
+          subRoll: {
+            dice: 2,
+            outcomes: [
+              { min: 2, max: 7, label: 'Conspiracy collapses!', effects: { rollOnTable: 'injury', message: 'The conspiracy collapses! Gain Persuade, but roll on the Mishap table.' } },
+              { min: 8, max: 12, label: 'Conspiracy succeeds!', effects: { message: 'The conspiracy succeeds! Gain Persuade.' } },
+            ],
           },
         },
         {
           id: 'accept-tactics',
           label: 'Join (gain Tactics)',
-          description: 'Roll skill 8+. Success: skill. Failure: Mishap.',
+          description: 'Roll 2D for 8+. Success: skill only. Failure: skill + Mishap.',
           effects: {
             skills: { choices: ['Tactics'], level: 1 },
-            message: 'You join the conspiracy and learn Tactics. (If roll failed, also roll on Mishap table)',
+          },
+          subRoll: {
+            dice: 2,
+            outcomes: [
+              { min: 2, max: 7, label: 'Conspiracy collapses!', effects: { rollOnTable: 'injury', message: 'The conspiracy collapses! Gain Tactics, but roll on the Mishap table.' } },
+              { min: 8, max: 12, label: 'Conspiracy succeeds!', effects: { message: 'The conspiracy succeeds! Gain Tactics.' } },
+            ],
+          },
+        },
+        {
+          id: 'accept-carouse',
+          label: 'Join (gain Carouse)',
+          description: 'Roll 2D for 8+. Success: skill only. Failure: skill + Mishap.',
+          effects: {
+            skills: { choices: ['Carouse'], level: 1 },
+          },
+          subRoll: {
+            dice: 2,
+            outcomes: [
+              { min: 2, max: 7, label: 'Conspiracy collapses!', effects: { rollOnTable: 'injury', message: 'The conspiracy collapses! Gain Carouse, but roll on the Mishap table.' } },
+              { min: 8, max: 12, label: 'Conspiracy succeeds!', effects: { message: 'The conspiracy succeeds! Gain Carouse.' } },
+            ],
           },
         },
       ],

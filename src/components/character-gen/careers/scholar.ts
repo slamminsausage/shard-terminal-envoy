@@ -291,12 +291,14 @@ const SCHOLAR_EVENTS: GameEvent[] = [
         {
           id: 'cheat',
           label: 'Cheat',
-          description: 'Roll Deception/Admin 8+. Success: Benefits + Skill + Enemy. Fail: Enemy + lose Benefit.',
-          effects: {
-            skills: { anySkill: true, level: 1 },
-            benefitDM: 2,
-            enemies: 1,
-            message: 'You attempt to cheat. (If roll succeeded: gain skill and DM+2 to Benefit. Either way: gain Enemy)',
+          description: 'Roll 2D for Deception/Admin 8+. Success: Benefits + Skill + Enemy. Fail: Enemy + lose Benefit.',
+          effects: {},
+          subRoll: {
+            dice: 2,
+            outcomes: [
+              { min: 2, max: 7, label: 'Caught!', effects: { enemies: 1, benefitDM: -99, message: 'Your cheating is discovered! Gain an Enemy and lose one Benefit roll from this career.' } },
+              { min: 8, max: 12, label: 'Success!', effects: { skills: { anySkill: true, level: 1 }, benefitDM: 2, enemies: 1, message: 'Your cheating goes unnoticed by most. Gain DM+2 to a Benefit roll, increase a skill, but also gain an Enemy.' } },
+            ],
           },
         },
         {

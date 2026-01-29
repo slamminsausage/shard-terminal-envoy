@@ -579,14 +579,21 @@ export function EventHandler({
   const renderSubRollResult = () => {
     if (state.phase !== 'show_sub_roll' || !state.subRollResult) return null;
 
+    const { roll, dm, total, outcome } = state.subRollResult;
+    const hasDM = dm !== undefined && dm !== 0;
+
     return (
       <div className="space-y-2">
         <div className="bg-terminal-primary/5 border border-terminal-primary/30 rounded p-3">
           <p className="text-xs text-terminal-primary/80 font-mono">
-            Roll: {state.subRollResult.roll}
+            {hasDM ? (
+              <>Roll: {roll} {dm >= 0 ? '+' : ''}{dm} = {total}</>
+            ) : (
+              <>Roll: {roll}</>
+            )}
           </p>
           <p className="text-sm font-bold mt-1 text-terminal-primary">
-            Result: {state.subRollResult.outcome.label}
+            Result: {outcome.label}
           </p>
         </div>
 

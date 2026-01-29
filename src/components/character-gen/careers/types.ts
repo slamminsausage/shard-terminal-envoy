@@ -86,6 +86,7 @@ export interface EventEffects {
   rerollParoleThreshold?: boolean;   // Re-roll parole threshold (transfer)
   survivalDM?: number;               // DM to survival rolls in this career
   loseBenefits?: boolean;            // Lose all benefit rolls from this career
+  paroleReduction?: number | string; // Reduce parole threshold (number or dice expression like '1D')
 
   // Injury/medical
   rollOnInjuryTable?: boolean;
@@ -122,6 +123,7 @@ export interface RollOutcome {
 export interface SubRoll {
   dice: number;  // Number of dice (1 for 1D6, 2 for 2D6)
   sides?: number; // Sides per die (default 6)
+  dm?: number;    // Optional dice modifier to add to the roll
   outcomes: {
     min: number;
     max: number;

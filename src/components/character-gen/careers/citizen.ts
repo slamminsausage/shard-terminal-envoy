@@ -154,42 +154,66 @@ const CITIZEN_EVENTS: GameEvent[] = [
     description: 'Political upheaval strikes your homeworld and you are caught up in the revolution. Gain either Advocate 1, Persuade 1, Explosives 1 or Streetwise 1. Roll whichever skill you chose 8+. If you succeed you come out on the winning side and gain DM+2 to your next advancement roll. Fail and you suffer DM-2 to your next Survival roll.',
     resolution: {
       type: 'choice',
-      displayText: 'Political upheaval! Choose a skill to gain, then roll that skill 8+ to see which side wins.',
+      displayText: 'Political upheaval! Choose a skill to gain, then roll 2D for 8+ to see which side wins.',
       options: [
         {
           id: 'advocate',
           label: 'Advocate 1',
-          description: 'Legal and bureaucratic skills. Roll Advocate 8+.',
+          description: 'Legal and bureaucratic skills. Roll 2D for 8+.',
           effects: {
             skills: { choices: ['Advocate'], level: 1 },
-            message: 'You gain Advocate 1. Now roll to see if you\'re on the winning side.',
+          },
+          subRoll: {
+            dice: 2,
+            outcomes: [
+              { min: 2, max: 7, label: 'Losing side!', effects: { survivalDM: -2, message: 'You gain Advocate 1, but you\'re on the losing side. DM-2 to your next Survival roll.' } },
+              { min: 8, max: 12, label: 'Winning side!', effects: { advancementDM: 2, message: 'You gain Advocate 1 and you\'re on the winning side! DM+2 to your next advancement roll.' } },
+            ],
           },
         },
         {
           id: 'persuade',
           label: 'Persuade 1',
-          description: 'Convincing and negotiation. Roll Persuade 8+.',
+          description: 'Convincing and negotiation. Roll 2D for 8+.',
           effects: {
             skills: { choices: ['Persuade'], level: 1 },
-            message: 'You gain Persuade 1. Now roll to see if you\'re on the winning side.',
+          },
+          subRoll: {
+            dice: 2,
+            outcomes: [
+              { min: 2, max: 7, label: 'Losing side!', effects: { survivalDM: -2, message: 'You gain Persuade 1, but you\'re on the losing side. DM-2 to your next Survival roll.' } },
+              { min: 8, max: 12, label: 'Winning side!', effects: { advancementDM: 2, message: 'You gain Persuade 1 and you\'re on the winning side! DM+2 to your next advancement roll.' } },
+            ],
           },
         },
         {
           id: 'explosives',
           label: 'Explosives 1',
-          description: 'Demolitions expertise. Roll Explosives 8+.',
+          description: 'Demolitions expertise. Roll 2D for 8+.',
           effects: {
             skills: { choices: ['Explosives'], level: 1 },
-            message: 'You gain Explosives 1. Now roll to see if you\'re on the winning side.',
+          },
+          subRoll: {
+            dice: 2,
+            outcomes: [
+              { min: 2, max: 7, label: 'Losing side!', effects: { survivalDM: -2, message: 'You gain Explosives 1, but you\'re on the losing side. DM-2 to your next Survival roll.' } },
+              { min: 8, max: 12, label: 'Winning side!', effects: { advancementDM: 2, message: 'You gain Explosives 1 and you\'re on the winning side! DM+2 to your next advancement roll.' } },
+            ],
           },
         },
         {
           id: 'streetwise',
           label: 'Streetwise 1',
-          description: 'Urban survival. Roll Streetwise 8+.',
+          description: 'Urban survival. Roll 2D for 8+.',
           effects: {
             skills: { choices: ['Streetwise'], level: 1 },
-            message: 'You gain Streetwise 1. Now roll to see if you\'re on the winning side.',
+          },
+          subRoll: {
+            dice: 2,
+            outcomes: [
+              { min: 2, max: 7, label: 'Losing side!', effects: { survivalDM: -2, message: 'You gain Streetwise 1, but you\'re on the losing side. DM-2 to your next Survival roll.' } },
+              { min: 8, max: 12, label: 'Winning side!', effects: { advancementDM: 2, message: 'You gain Streetwise 1 and you\'re on the winning side! DM+2 to your next advancement roll.' } },
+            ],
           },
         },
       ],

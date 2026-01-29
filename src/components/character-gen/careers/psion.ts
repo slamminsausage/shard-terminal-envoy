@@ -60,9 +60,38 @@ const PSION_MISHAPS: GameEvent[] = [
     id: 'psion-mishap-3',
     description: 'An anti-psi cult or gang attempts to expose or attack you. Roll 1D: 1-2 = injured, 3-4 = lose SOC, 5-6 = escape unharmed.',
     resolution: {
-      type: 'automatic',
-      effects: {
-        message: 'An anti-psi cult attacks you. (Roll 1D: 1-2 injury, 3-4 lose SOC, 5-6 escape) You must leave this career.',
+      type: 'sub_roll',
+      displayText: 'Roll 1D to see what happens when the anti-psi cult attacks you.',
+      subRoll: {
+        dice: 1,
+        outcomes: [
+          {
+            min: 1,
+            max: 2,
+            label: 'Injured',
+            effects: {
+              rollOnTable: 'injury',
+              message: 'An anti-psi cult attacks you. You are injured in the attack.',
+            },
+          },
+          {
+            min: 3,
+            max: 4,
+            label: 'Lose SOC',
+            effects: {
+              characteristics: [{ stat: 'social', modifier: -1 }],
+              message: 'An anti-psi cult attacks you. Your reputation is damaged. SOC -1.',
+            },
+          },
+          {
+            min: 5,
+            max: 6,
+            label: 'Escape unharmed',
+            effects: {
+              message: 'An anti-psi cult attacks you, but you escape unharmed.',
+            },
+          },
+        ],
       },
     },
   },
