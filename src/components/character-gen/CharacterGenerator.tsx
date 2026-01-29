@@ -17,6 +17,7 @@ import { rollDiceExpression, rollDice as rollDiceUtil } from './eventProcessor';
 import { SpecialtySelector, needsSpecialtySelection, getBaseSkillName } from './SpecialtySelector';
 import { MusteringOut } from './MusteringOut';
 import { RACES, getRaceById, applyRaceModifiers, type Race, type RaceTrait } from './races';
+import { getCareerTheme, getCareerCardStyle, getCareerTextStyle, type CareerTheme } from './careerThemes';
 
 // ============================================================================
 // TYPE DEFINITIONS (Component-specific)
@@ -374,6 +375,7 @@ export const CharacterGenerator: React.FC = () => {
   const [academyGradPendingSpecialty, setAcademyGradPendingSpecialty] = useState<string | null>(null);
   const [showMishapTable, setShowMishapTable] = useState(false);
   const [showEventTable, setShowEventTable] = useState(false);
+  const [showLifepathLog, setShowLifepathLog] = useState(true);
   const [graduatedWithHonours, setGraduatedWithHonours] = useState(false);
   const [needsCommissionRoll, setNeedsCommissionRoll] = useState(false);
   const [commissionRollDM, setCommissionRollDM] = useState(0);
@@ -2830,29 +2832,62 @@ export const CharacterGenerator: React.FC = () => {
 
   return (
     <div className="h-full flex flex-col bg-black text-terminal-primary font-mono">
-      <div className="border-b border-terminal-primary/30 p-4">
-        <h1 className="text-2xl font-bold text-terminal-primary flex items-center gap-2">
-          <User className="h-6 w-6" />
-          TRAVELLER 2E CHARACTER GENERATOR
-        </h1>
-        <p className="text-terminal-primary/70 text-sm mt-1">
-          Step {step} of 6 - {characterData.name || 'Unnamed Character'} - Age {characterData.age}
-        </p>
+      {/* Enhanced Header */}
+      <div className="border-b border-terminal-primary/30 p-4 bg-gradient-to-r from-terminal-primary/5 via-transparent to-terminal-primary/5">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-terminal-primary/10 border border-terminal-primary/30">
+              <User className="h-6 w-6 text-terminal-primary" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold text-terminal-primary font-['Orbitron'] tracking-wider">
+                CHARACTER GENERATOR
+              </h1>
+              <p className="text-terminal-primary/50 text-xs font-mono">
+                Traveller 2nd Edition
+              </p>
+            </div>
+          </div>
+          <div className="text-right">
+            <div className="text-terminal-primary font-bold">
+              {characterData.name || 'Unnamed Character'}
+            </div>
+            <div className="text-terminal-primary/50 text-xs">
+              Age {characterData.age} • Step {step} of 6
+            </div>
+          </div>
+        </div>
       </div>
 
       <ScrollArea className="flex-1 p-4">
         <Tabs value={`step${step}`} className="w-full">
-          <TabsList className="grid w-full grid-cols-6 bg-black border border-terminal-primary/30 mb-4">
-            {['Basics', 'Characteristics', 'Background', 'Career', 'Terms', 'Review'].map((label, idx) => (
-              <TabsTrigger
-                key={label}
-                value={`step${idx + 1}`}
-                onClick={() => setStep(idx + 1)}
-                className="data-[state=active]:bg-terminal-primary/20 data-[state=active]:text-terminal-primary text-xs"
-              >
-                {idx + 1}. {label}
-              </TabsTrigger>
-            ))}
+          {/* Enhanced Step Navigation */}
+          <TabsList className="grid w-full grid-cols-6 bg-black/50 border border-terminal-primary/30 mb-4 p-1 gap-1">
+            {['Basics', 'Characteristics', 'Background', 'Career', 'Terms', 'Review'].map((label, idx) => {
+              const isActive = step === idx + 1;
+              const isCompleted = step > idx + 1;
+              return (
+                <TabsTrigger
+                  key={label}
+                  value={`step${idx + 1}`}
+                  onClick={() => setStep(idx + 1)}
+                  className={`
+                    text-xs font-bold transition-all duration-200 rounded
+                    ${isActive
+                      ? 'bg-terminal-primary/20 text-terminal-primary border border-terminal-primary/50 shadow-[0_0_10px_rgba(0,255,0,0.3)]'
+                      : isCompleted
+                      ? 'bg-terminal-primary/10 text-terminal-primary/70 hover:bg-terminal-primary/15'
+                      : 'text-terminal-primary/40 hover:text-terminal-primary/60 hover:bg-terminal-primary/5'
+                    }
+                  `}
+                >
+                  <span className={`mr-1 ${isCompleted ? 'text-green-400' : ''}`}>
+                    {isCompleted ? '✓' : idx + 1}.
+                  </span>
+                  {label}
+                </TabsTrigger>
+              );
+            })}
           </TabsList>
 
           {/* STEP 1: BASIC INFO */}
@@ -3382,62 +3417,121 @@ export const CharacterGenerator: React.FC = () => {
                 )}
 
                 {/* Career Cards */}
-                {getAvailableCareers().map(career => (
-                  <Card
-                    key={career.name}
-                    className={`cursor-pointer transition-colors ${
-                      selectedCareer?.name === career.name
-                        ? 'bg-terminal-primary/20 border-terminal-primary'
-                        : 'bg-black border-terminal-primary/30 hover:border-terminal-primary/50'
-                    }`}
-                    onClick={() => {
-                      // Handle Prisoner career specially (forced entry, automatic qualification)
-                      if (career.isPrisonerCareer) {
-                        becomePrisoner();
-                        return;
-                      }
+                {getAvailableCareers().map(career => {
+                  const theme = getCareerTheme(career.name);
+                  const CareerIcon = theme.icon;
+                  const isSelected = selectedCareer?.name === career.name;
 
-                      setSelectedCareer(career);
-                      // Don't reset if they have automatic entry to this career
-                      if (preCareerFailedService !== career.name) {
-                        resetQualification();
-                      } else {
-                        // Automatically qualify them since they have automatic entry
-                        setTimeout(() => attemptQualification(), 0);
-                      }
-                    }}
-                  >
-                    <CardContent className="p-4">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Briefcase className="h-4 w-4 text-terminal-primary" />
-                        <h3 className="font-bold text-terminal-primary">{career.name}</h3>
-                      </div>
-                      <p className="text-sm text-terminal-primary/80 mb-2">{career.description}</p>
-                      <div className="text-xs text-terminal-primary/60">
-                        Qualification: {career.qualification}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                  return (
+                    <Card
+                      key={career.name}
+                      className="cursor-pointer transition-all duration-200 border-2 bg-black"
+                      style={{
+                        ...getCareerCardStyle(career.name, isSelected),
+                        borderWidth: isSelected ? '2px' : '1px',
+                      }}
+                      onClick={() => {
+                        // Handle Prisoner career specially (forced entry, automatic qualification)
+                        if (career.isPrisonerCareer) {
+                          becomePrisoner();
+                          return;
+                        }
 
-                {selectedCareer && (
+                        setSelectedCareer(career);
+                        // Don't reset if they have automatic entry to this career
+                        if (preCareerFailedService !== career.name) {
+                          resetQualification();
+                        } else {
+                          // Automatically qualify them since they have automatic entry
+                          setTimeout(() => attemptQualification(), 0);
+                        }
+                      }}
+                    >
+                      <CardContent className="p-4">
+                        <div className="flex items-start gap-3">
+                          <div
+                            className="p-2 rounded-lg shrink-0"
+                            style={{ backgroundColor: theme.bgColor }}
+                          >
+                            <CareerIcon
+                              className="h-5 w-5"
+                              style={{ color: theme.textColor }}
+                            />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              <h3
+                                className="font-bold font-['Orbitron'] tracking-wide"
+                                style={{ color: theme.textColor }}
+                              >
+                                {career.name}
+                              </h3>
+                              {career.isPreCareer && (
+                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400 uppercase font-bold">
+                                  Pre-Career
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-xs text-terminal-primary/60 italic mb-2">{theme.tagline}</p>
+                            <p className="text-sm text-terminal-primary/80 mb-2">{career.description}</p>
+                            <div
+                              className="text-xs font-mono"
+                              style={{ color: theme.textColor, opacity: 0.7 }}
+                            >
+                              Qualification: {career.qualification}
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+
+                {selectedCareer && (() => {
+                  const selectedTheme = getCareerTheme(selectedCareer.name);
+                  const SelectedCareerIcon = selectedTheme.icon;
+
+                  return (
                   <>
-                    <div className="space-y-2">
-                      <h3 className="text-sm font-bold text-terminal-primary uppercase">Select Assignment</h3>
+                    <div
+                      className="space-y-2 p-4 rounded-lg border"
+                      style={{
+                        backgroundColor: selectedTheme.bgColor,
+                        borderColor: selectedTheme.borderColor,
+                      }}
+                    >
+                      <div className="flex items-center gap-2 mb-3">
+                        <SelectedCareerIcon className="h-4 w-4" style={{ color: selectedTheme.textColor }} />
+                        <h3
+                          className="text-sm font-bold uppercase font-['Orbitron'] tracking-wider"
+                          style={{ color: selectedTheme.textColor }}
+                        >
+                          Select Assignment
+                        </h3>
+                      </div>
                       {selectedCareer.assignments.map((assignment, idx) => (
                         <Card
                           key={idx}
-                          className={`cursor-pointer transition-colors ${
-                            selectedAssignment === idx
-                              ? 'bg-terminal-primary/20 border-terminal-primary'
-                              : 'bg-black border-terminal-primary/30 hover:border-terminal-primary/50'
-                          }`}
+                          className="cursor-pointer transition-all duration-200 bg-black/50"
+                          style={{
+                            borderColor: selectedAssignment === idx ? selectedTheme.primaryColor : selectedTheme.borderColor,
+                            borderWidth: selectedAssignment === idx ? '2px' : '1px',
+                            boxShadow: selectedAssignment === idx ? `0 0 15px ${selectedTheme.glowColor}` : 'none',
+                          }}
                           onClick={() => setSelectedAssignment(idx)}
                         >
                           <CardContent className="p-3">
-                            <h4 className="font-bold text-terminal-primary text-sm">{assignment.name}</h4>
+                            <h4
+                              className="font-bold text-sm"
+                              style={{ color: selectedTheme.textColor }}
+                            >
+                              {assignment.name}
+                            </h4>
                             <p className="text-xs text-terminal-primary/70 mb-1">{assignment.description}</p>
-                            <div className="text-xs text-terminal-primary/60">
+                            <div
+                              className="text-xs font-mono"
+                              style={{ color: selectedTheme.textColor, opacity: 0.7 }}
+                            >
                               {selectedCareer?.isPreCareer ? (
                                 `Graduation: ${assignment.survivalStat.toUpperCase()} ${assignment.survivalTarget}+`
                               ) : (
@@ -3452,16 +3546,29 @@ export const CharacterGenerator: React.FC = () => {
                     {qualificationPassed === null && (
                       <Button
                         onClick={attemptQualification}
-                        className="w-full bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
+                        className="w-full transition-all duration-200"
+                        style={{
+                          backgroundColor: selectedTheme.bgColor,
+                          color: selectedTheme.textColor,
+                          borderColor: selectedTheme.borderColor,
+                          borderWidth: '1px',
+                          borderStyle: 'solid',
+                        }}
                       >
                         <Dices className="h-4 w-4 mr-2" />
-                        Attempt Qualification
+                        Attempt Qualification for {selectedCareer.name}
                       </Button>
                     )}
 
                     {qualificationRollLog && (
-                      <div className="bg-terminal-primary/5 border border-terminal-primary/30 rounded p-3">
-                        <p className="text-xs text-terminal-primary/80 font-mono">{qualificationRollLog}</p>
+                      <div
+                        className="rounded p-3 border"
+                        style={{
+                          backgroundColor: selectedTheme.bgColor,
+                          borderColor: selectedTheme.borderColor,
+                        }}
+                      >
+                        <p className="text-xs font-mono" style={{ color: selectedTheme.textColor, opacity: 0.8 }}>{qualificationRollLog}</p>
                       </div>
                     )}
 
@@ -3665,51 +3772,84 @@ export const CharacterGenerator: React.FC = () => {
                         )}
                       </div>
                     )}
-                  </>
-                )}
 
-                <div className="flex gap-2">
-                  <Button
-                    onClick={() => setStep(3)}
-                    variant="outline"
-                    className="border-terminal-primary/50 text-terminal-primary hover:bg-terminal-primary/20"
-                  >
-                    Back
-                  </Button>
-                  <Button
-                    onClick={() => {
-                      applyPreCareerEntryBenefits();
-                      setStep(5);
-                    }}
-                    disabled={
-                      !qualificationPassed ||
-                      (selectedCareer?.preCareerType === 'university' && (!universitySkillLevel0 || !universitySkillLevel1)) ||
-                      (selectedCareer?.preCareerType === 'military_academy' && !militaryAcademyService)
-                    }
-                    className="flex-1 bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
-                  >
-                    Begin Career
-                    <ArrowRight className="h-4 w-4 ml-2" />
-                  </Button>
-                </div>
+                    <div className="flex gap-2 mt-4">
+                      <Button
+                        onClick={() => setStep(3)}
+                        variant="outline"
+                        className="border-terminal-primary/50 text-terminal-primary hover:bg-terminal-primary/20"
+                      >
+                        Back
+                      </Button>
+                      <Button
+                        onClick={() => {
+                          applyPreCareerEntryBenefits();
+                          setStep(5);
+                        }}
+                        disabled={
+                          !qualificationPassed ||
+                          (selectedCareer?.preCareerType === 'university' && (!universitySkillLevel0 || !universitySkillLevel1)) ||
+                          (selectedCareer?.preCareerType === 'military_academy' && !militaryAcademyService)
+                        }
+                        className="flex-1"
+                        style={{
+                          backgroundColor: selectedTheme.bgColor,
+                          color: selectedTheme.textColor,
+                          borderColor: selectedTheme.borderColor,
+                          borderWidth: '1px',
+                          borderStyle: 'solid',
+                        }}
+                      >
+                        Begin Career
+                        <ArrowRight className="h-4 w-4 ml-2" />
+                      </Button>
+                    </div>
+                  </>
+                  );
+                })()}
               </CardContent>
             </Card>
           </TabsContent>
 
           {/* STEP 5: TERMS */}
           <TabsContent value="step5">
-            <Card className="bg-black border-terminal-primary/50">
-              <CardHeader>
-                <CardTitle className="text-terminal-primary">
-                  Career Terms - {isInTerm ? `Term ${currentTerm} in Progress` : currentTerm > 0 ? `Completed ${currentTerm} ${currentTerm === 1 ? 'Term' : 'Terms'} in Career` : 'Ready to Begin'}
-                  {(characterData.lifepath_log.length > 0 || (characterData.totalCareerTerms || 0) > 0) && (
-                    <span className="text-terminal-primary/50 text-sm font-normal ml-2">
-                      ({characterData.lifepath_log.length} total {characterData.lifepath_log.length === 1 ? 'term' : 'terms'} served)
-                    </span>
-                  )}
+            {(() => {
+              const termTheme = selectedCareer ? getCareerTheme(selectedCareer.name) : getCareerTheme('');
+              const TermCareerIcon = termTheme.icon;
+
+              return (
+            <Card
+              className="bg-black border-2"
+              style={{ borderColor: termTheme.borderColor }}
+            >
+              <CardHeader
+                className="border-b"
+                style={{
+                  borderColor: termTheme.borderColor,
+                  background: `linear-gradient(135deg, ${termTheme.bgColor} 0%, rgba(0,0,0,0.95) 100%)`,
+                }}
+              >
+                <CardTitle className="flex items-center gap-3">
+                  <div
+                    className="p-2 rounded-lg"
+                    style={{ backgroundColor: termTheme.bgColor, boxShadow: `0 0 15px ${termTheme.glowColor}` }}
+                  >
+                    <TermCareerIcon className="h-5 w-5" style={{ color: termTheme.textColor }} />
+                  </div>
+                  <div>
+                    <div
+                      className="font-['Orbitron'] tracking-wider"
+                      style={{ color: termTheme.textColor }}
+                    >
+                      {isInTerm ? `Term ${currentTerm} in Progress` : currentTerm > 0 ? `Completed ${currentTerm} ${currentTerm === 1 ? 'Term' : 'Terms'}` : 'Ready to Begin'}
+                    </div>
+                    <div className="text-terminal-primary/50 text-sm font-normal font-mono">
+                      {characterData.career} • {characterData.lifepath_log.length} total terms served
+                    </div>
+                  </div>
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-4 pt-4">
                 {isMusteringOut ? (
                   <MusteringOut
                     careerHistory={characterData.careerHistory}
@@ -3739,40 +3879,55 @@ export const CharacterGenerator: React.FC = () => {
                   </label>
                 </div>
 
-                <div className="bg-terminal-primary/5 border border-terminal-primary/30 rounded p-4">
-                  <div className="grid grid-cols-2 gap-4 text-sm text-terminal-primary/80">
-                    <div>
-                      <span className="text-terminal-primary/60">Career:</span> {characterData.career}
+                {/* Career Status Panel */}
+                <div
+                  className="rounded-lg p-4 border"
+                  style={{
+                    backgroundColor: termTheme.bgColor,
+                    borderColor: termTheme.borderColor,
+                  }}
+                >
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                    <div className="space-y-1">
+                      <div className="text-[10px] uppercase tracking-wider text-terminal-primary/50">Career</div>
+                      <div className="font-bold" style={{ color: termTheme.textColor }}>{characterData.career}</div>
                     </div>
-                    <div>
-                      <span className="text-terminal-primary/60">Assignment:</span> {selectedCareer?.assignments[selectedAssignment].name}
+                    <div className="space-y-1">
+                      <div className="text-[10px] uppercase tracking-wider text-terminal-primary/50">Assignment</div>
+                      <div className="font-bold" style={{ color: termTheme.textColor }}>{selectedCareer?.assignments[selectedAssignment].name}</div>
                     </div>
-                    <div>
-                      <span className="text-terminal-primary/60">Rank:</span> {getRankTitle(
-                        selectedCareer,
-                        characterData.rank,
-                        isCommissioned,
-                        selectedCareer?.assignments[selectedAssignment]?.name
-                      )}
-                    </div>
-                    <div>
-                      <span className="text-terminal-primary/60">Age:</span> {characterData.age}
-                    </div>
-                    <div>
-                      <span className="text-terminal-primary/60">Terms in Career:</span> {currentTerm}
-                    </div>
-                    <div>
-                      <span className="text-terminal-primary/60">Total Terms:</span> {characterData.lifepath_log.length}
-                    </div>
-                    {/* Show Parole Threshold for Prisoner career */}
-                    {selectedCareer?.isPrisonerCareer && characterData.paroleThreshold !== undefined && (
-                      <div className="col-span-2 mt-2 p-2 bg-red-500/10 border border-red-500/30 rounded">
-                        <span className="text-red-400 font-bold">Parole Threshold:</span>{' '}
-                        <span className="text-red-300">{characterData.paroleThreshold}</span>
-                        <span className="text-red-400/70 text-xs ml-2">(advancement roll must exceed this to be released)</span>
+                    <div className="space-y-1">
+                      <div className="text-[10px] uppercase tracking-wider text-terminal-primary/50">Rank</div>
+                      <div className="font-bold" style={{ color: termTheme.textColor }}>
+                        {getRankTitle(
+                          selectedCareer,
+                          characterData.rank,
+                          isCommissioned,
+                          selectedCareer?.assignments[selectedAssignment]?.name
+                        )}
                       </div>
-                    )}
+                    </div>
+                    <div className="space-y-1">
+                      <div className="text-[10px] uppercase tracking-wider text-terminal-primary/50">Age</div>
+                      <div className="font-bold text-terminal-primary">{characterData.age}</div>
+                    </div>
+                    <div className="space-y-1">
+                      <div className="text-[10px] uppercase tracking-wider text-terminal-primary/50">Terms in Career</div>
+                      <div className="font-bold text-terminal-primary">{currentTerm}</div>
+                    </div>
+                    <div className="space-y-1">
+                      <div className="text-[10px] uppercase tracking-wider text-terminal-primary/50">Total Terms</div>
+                      <div className="font-bold text-terminal-primary">{characterData.lifepath_log.length}</div>
+                    </div>
                   </div>
+                  {/* Show Parole Threshold for Prisoner career */}
+                  {selectedCareer?.isPrisonerCareer && characterData.paroleThreshold !== undefined && (
+                    <div className="mt-3 p-2 bg-red-500/10 border border-red-500/30 rounded">
+                      <span className="text-red-400 font-bold">Parole Threshold:</span>{' '}
+                      <span className="text-red-300">{characterData.paroleThreshold}</span>
+                      <span className="text-red-400/70 text-xs ml-2">(advancement roll must exceed this to be released)</span>
+                    </div>
+                  )}
                 </div>
 
                 {/* CURRENT CHARACTERISTICS */}
@@ -5084,353 +5239,568 @@ export const CharacterGenerator: React.FC = () => {
                 )}
               </CardContent>
             </Card>
+              );
+            })()}
           </TabsContent>
 
-          {/* STEP 6: REVIEW */}
+          {/* STEP 6: REVIEW - Enhanced Character Summary */}
           <TabsContent value="step6">
-            <Card className="bg-black border-terminal-primary/50">
-              <CardHeader>
-                <CardTitle className="text-terminal-primary">Character Summary</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {/* Header Info */}
-                <div className="border-b border-terminal-primary/30 pb-4">
-                  <h2 className="text-2xl font-bold text-terminal-primary mb-2">
-                    {characterData.name || 'Unnamed Character'}
-                  </h2>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
-                    <div>
-                      <span className="text-terminal-primary/60">Race:</span>{' '}
-                      <span className="text-terminal-primary">{characterData.species || 'Human'}</span>
-                    </div>
-                    <div>
-                      <span className="text-terminal-primary/60">Homeworld:</span>{' '}
-                      <span className="text-terminal-primary">{characterData.homeworld || 'Unknown'}</span>
-                    </div>
-                    <div>
-                      <span className="text-terminal-primary/60">Age:</span>{' '}
-                      <span className="text-terminal-primary">{characterData.age}</span>
-                    </div>
-                    <div>
-                      <span className="text-terminal-primary/60">Total Terms:</span>{' '}
-                      <span className="text-terminal-primary">{characterData.lifepath_log.length}</span>
+            {(() => {
+              // Get the primary career theme for styling the summary
+              const primaryCareer = characterData.careerHistory?.filter(c => !c.isPreCareer).slice(-1)[0];
+              const summaryTheme = primaryCareer ? getCareerTheme(primaryCareer.careerName) : getCareerTheme('');
+              const SummaryIcon = summaryTheme.icon;
+
+              return (
+                <div className="space-y-4">
+                  {/* Hero Header */}
+                  <div
+                    className="relative rounded-lg border-2 overflow-hidden"
+                    style={{
+                      borderColor: summaryTheme.borderColor,
+                      background: `linear-gradient(135deg, ${summaryTheme.bgColor} 0%, rgba(0,0,0,0.95) 100%)`,
+                    }}
+                  >
+                    {/* Decorative top border glow */}
+                    <div
+                      className="absolute top-0 left-0 right-0 h-1"
+                      style={{ background: `linear-gradient(90deg, transparent, ${summaryTheme.primaryColor}, transparent)` }}
+                    />
+
+                    <div className="p-6">
+                      <div className="flex items-start gap-4">
+                        {/* Character Icon */}
+                        <div
+                          className="p-4 rounded-lg shrink-0"
+                          style={{
+                            backgroundColor: summaryTheme.bgColor,
+                            boxShadow: `0 0 20px ${summaryTheme.glowColor}`,
+                          }}
+                        >
+                          <SummaryIcon className="h-10 w-10" style={{ color: summaryTheme.textColor }} />
+                        </div>
+
+                        {/* Character Info */}
+                        <div className="flex-1">
+                          <h1
+                            className="text-3xl font-bold font-['Orbitron'] tracking-wider mb-1"
+                            style={{ color: summaryTheme.textColor, textShadow: `0 0 15px ${summaryTheme.glowColor}` }}
+                          >
+                            {characterData.name || 'Unnamed Character'}
+                          </h1>
+                          <p className="text-terminal-primary/60 text-sm font-mono mb-3">
+                            {characterData.species || 'Human'} • Age {characterData.age} • {characterData.lifepath_log.length} Terms Served
+                          </p>
+
+                          {/* Quick Stats Row */}
+                          <div className="flex flex-wrap gap-3">
+                            {primaryCareer && (
+                              <div
+                                className="px-3 py-1 rounded text-sm font-bold"
+                                style={{ backgroundColor: summaryTheme.bgColor, color: summaryTheme.textColor }}
+                              >
+                                {primaryCareer.careerName}
+                                {primaryCareer.assignment && ` (${primaryCareer.assignment})`}
+                                {primaryCareer.highestRank > 0 && ` • Rank ${primaryCareer.highestRank}`}
+                              </div>
+                            )}
+                            {characterData.homeworld && (
+                              <div className="px-3 py-1 rounded text-sm bg-terminal-primary/10 text-terminal-primary/80 border border-terminal-primary/30">
+                                Homeworld: {characterData.homeworld}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                {/* Race Traits */}
-                {(characterData.raceTraits?.length || 0) > 0 && (
-                  <div>
-                    <h3 className="text-sm font-bold text-terminal-primary uppercase mb-2">Racial Traits</h3>
-                    <div className="space-y-2">
-                      {(characterData.raceTraits || []).map((trait, idx) => (
-                        <div key={idx} className="bg-cyan-500/10 border border-cyan-500/30 rounded p-2">
-                          <span className="text-cyan-400 font-bold">{trait.name}:</span>{' '}
-                          <span className="text-terminal-primary/80 text-sm">{trait.description}</span>
-                          {trait.weapon && (
-                            <div className="text-xs text-terminal-primary/60 mt-1">
-                              Natural Weapon: {trait.weapon.name} ({trait.weapon.damage})
+                  {/* Main Content Grid */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    {/* Left Column */}
+                    <div className="space-y-4">
+                      {/* Characteristics Panel */}
+                      <Card className="bg-black border-terminal-primary/50">
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-terminal-primary text-sm font-['Orbitron'] tracking-wider uppercase flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-terminal-primary animate-pulse" />
+                            Characteristics
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="grid grid-cols-3 gap-3">
+                            {(['strength', 'dexterity', 'endurance', 'intellect', 'education', 'social'] as const).map((key) => {
+                              const value = characterData.characteristics[key].total;
+                              const barWidth = Math.min((value / 15) * 100, 100);
+                              return (
+                                <div key={key} className="relative">
+                                  <div className="bg-black/50 border border-terminal-primary/30 rounded p-2">
+                                    <div className="flex justify-between items-center mb-1">
+                                      <span className="text-[10px] text-terminal-primary/60 uppercase font-bold tracking-wider">
+                                        {key.slice(0, 3)}
+                                      </span>
+                                      <span className="text-[10px] text-terminal-primary/50">
+                                        {getDMDisplay(value)}
+                                      </span>
+                                    </div>
+                                    <div className="text-2xl font-bold text-terminal-primary text-center">
+                                      {value}
+                                    </div>
+                                    {/* Visual bar */}
+                                    <div className="h-1 bg-terminal-primary/10 rounded-full mt-1 overflow-hidden">
+                                      <div
+                                        className="h-full rounded-full transition-all duration-500"
+                                        style={{
+                                          width: `${barWidth}%`,
+                                          backgroundColor: value >= 10 ? '#22c55e' : value >= 7 ? '#00ff00' : value >= 5 ? '#eab308' : '#ef4444',
+                                        }}
+                                      />
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                          {characterData.characteristics.psionics && characterData.characteristics.psionics.total > 0 && (
+                            <div className="mt-3 bg-purple-500/10 border border-purple-500/30 rounded p-2">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-xs text-purple-400 uppercase font-bold">PSI</span>
+                                  <span className="text-xl font-bold text-purple-400">{characterData.characteristics.psionics.total}</span>
+                                </div>
+                                <span className="text-xs text-purple-400/60">DM: {getDMDisplay(characterData.characteristics.psionics.total)}</span>
+                              </div>
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+
+                      {/* Skills Panel */}
+                      <Card className="bg-black border-terminal-primary/50">
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-terminal-primary text-sm font-['Orbitron'] tracking-wider uppercase flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+                            Skills ({Object.entries(characterData.skills).filter(([_, s]) => s.proficient && parseInt(s.value) >= 0).length})
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="flex flex-wrap gap-1.5">
+                            {Object.entries(characterData.skills)
+                              .filter(([_, state]) => state.proficient && parseInt(state.value) >= 0)
+                              .sort((a, b) => parseInt(b[1].value) - parseInt(a[1].value))
+                              .map(([skill, state]) => {
+                                const level = parseInt(state.value);
+                                const isHighLevel = level >= 2;
+                                return (
+                                  <div
+                                    key={skill}
+                                    className={`px-2 py-1 rounded text-xs border transition-all ${
+                                      isHighLevel
+                                        ? 'bg-cyan-500/20 border-cyan-500/50 text-cyan-400'
+                                        : level >= 1
+                                        ? 'bg-terminal-primary/10 border-terminal-primary/30 text-terminal-primary'
+                                        : 'bg-terminal-primary/5 border-terminal-primary/20 text-terminal-primary/70'
+                                    }`}
+                                  >
+                                    {skill.replace(/_/g, ' ')} <span className="font-bold">{state.value}</span>
+                                  </div>
+                                );
+                              })}
+                            {Object.entries(characterData.skills).filter(([_, s]) => s.proficient && parseInt(s.value) >= 0).length === 0 && (
+                              <span className="text-terminal-primary/50 text-sm">No skills acquired</span>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      {/* Race Traits */}
+                      {(characterData.raceTraits?.length || 0) > 0 && (
+                        <Card className="bg-black border-cyan-500/50">
+                          <CardHeader className="pb-2">
+                            <CardTitle className="text-cyan-400 text-sm font-['Orbitron'] tracking-wider uppercase">
+                              Racial Traits
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent className="space-y-2">
+                            {(characterData.raceTraits || []).map((trait, idx) => (
+                              <div key={idx} className="bg-cyan-500/5 border border-cyan-500/20 rounded p-2">
+                                <span className="text-cyan-400 font-bold text-sm">{trait.name}</span>
+                                <p className="text-terminal-primary/70 text-xs mt-1">{trait.description}</p>
+                                {trait.weapon && (
+                                  <div className="text-[10px] text-cyan-400/60 mt-1 font-mono">
+                                    Natural Weapon: {trait.weapon.name} ({trait.weapon.damage})
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </CardContent>
+                        </Card>
+                      )}
+
+                      {/* Psionic Talents */}
+                      {(characterData.psiTalents?.length || 0) > 0 && (
+                        <Card className="bg-black border-purple-500/50">
+                          <CardHeader className="pb-2">
+                            <CardTitle className="text-purple-400 text-sm font-['Orbitron'] tracking-wider uppercase">
+                              Psionic Talents
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="flex flex-wrap gap-2">
+                              {(characterData.psiTalents || []).map((talent, idx) => (
+                                <div
+                                  key={idx}
+                                  className="px-3 py-1.5 rounded bg-purple-500/10 border border-purple-500/30 text-purple-400 text-sm"
+                                >
+                                  {talent}
+                                </div>
+                              ))}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      )}
+                    </div>
+
+                    {/* Right Column */}
+                    <div className="space-y-4">
+                      {/* Career History */}
+                      <Card className="bg-black border-terminal-primary/50">
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-terminal-primary text-sm font-['Orbitron'] tracking-wider uppercase flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-yellow-400 animate-pulse" />
+                            Career History
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-2">
+                          {(!characterData.careerHistory || characterData.careerHistory.length === 0) ? (
+                            <span className="text-terminal-primary/50 text-sm">No career history</span>
+                          ) : (
+                            characterData.careerHistory.map((career, idx) => {
+                              const careerTheme = getCareerTheme(career.careerName);
+                              const CareerIcon = careerTheme.icon;
+                              return (
+                                <div
+                                  key={idx}
+                                  className="border rounded p-3 transition-all"
+                                  style={{
+                                    backgroundColor: careerTheme.bgColor,
+                                    borderColor: careerTheme.borderColor,
+                                  }}
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <CareerIcon className="h-4 w-4 shrink-0" style={{ color: careerTheme.textColor }} />
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex items-center gap-2 flex-wrap">
+                                        <span className="font-bold text-sm" style={{ color: careerTheme.textColor }}>
+                                          {career.careerName}
+                                        </span>
+                                        {career.assignment && (
+                                          <span className="text-terminal-primary/50 text-xs">({career.assignment})</span>
+                                        )}
+                                        {career.isPreCareer && (
+                                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400 uppercase font-bold">
+                                            Pre-Career
+                                          </span>
+                                        )}
+                                      </div>
+                                      <div className="text-xs text-terminal-primary/60 mt-0.5">
+                                        {career.termsServed} term{career.termsServed !== 1 ? 's' : ''}
+                                        {career.highestRank > 0 && ` • Rank ${career.highestRank}`}
+                                        {career.isCommissioned && ' • Officer'}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })
+                          )}
+                        </CardContent>
+                      </Card>
+
+                      {/* Finances */}
+                      <Card className="bg-black border-terminal-primary/50">
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-terminal-primary text-sm font-['Orbitron'] tracking-wider uppercase flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+                            Finances
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="grid grid-cols-2 gap-2">
+                            <div className="bg-green-500/10 border border-green-500/30 rounded p-3">
+                              <div className="text-[10px] text-green-400/60 uppercase tracking-wider">Cash on Hand</div>
+                              <div className="text-xl font-bold text-green-400 font-mono">
+                                {characterData.cash_on_hand.toLocaleString()} <span className="text-sm">Cr</span>
+                              </div>
+                            </div>
+                            {characterData.pension > 0 && (
+                              <div className="bg-terminal-primary/5 border border-terminal-primary/30 rounded p-3">
+                                <div className="text-[10px] text-terminal-primary/60 uppercase tracking-wider">Annual Pension</div>
+                                <div className="text-xl font-bold text-terminal-primary font-mono">
+                                  {characterData.pension.toLocaleString()} <span className="text-sm">Cr</span>
+                                </div>
+                              </div>
+                            )}
+                            {characterData.debt > 0 && (
+                              <div className="bg-red-500/10 border border-red-500/30 rounded p-3">
+                                <div className="text-[10px] text-red-400/60 uppercase tracking-wider">Debt</div>
+                                <div className="text-xl font-bold text-red-400 font-mono">
+                                  {characterData.debt.toLocaleString()} <span className="text-sm">Cr</span>
+                                </div>
+                              </div>
+                            )}
+                            {characterData.shipShares > 0 && (
+                              <div className="bg-yellow-500/10 border border-yellow-500/30 rounded p-3">
+                                <div className="text-[10px] text-yellow-400/60 uppercase tracking-wider">Ship Shares</div>
+                                <div className="text-xl font-bold text-yellow-400">{characterData.shipShares}</div>
+                              </div>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      {/* Connections */}
+                      {(characterData.allies > 0 || characterData.contacts > 0 || characterData.rivals > 0 || characterData.enemies > 0) && (
+                        <Card className="bg-black border-terminal-primary/50">
+                          <CardHeader className="pb-2">
+                            <CardTitle className="text-terminal-primary text-sm font-['Orbitron'] tracking-wider uppercase">
+                              Connections
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="grid grid-cols-4 gap-2">
+                              <div className={`rounded p-2 text-center ${characterData.allies > 0 ? 'bg-green-500/10 border border-green-500/30' : 'bg-black/30 border border-terminal-primary/10'}`}>
+                                <div className={`text-[10px] uppercase ${characterData.allies > 0 ? 'text-green-400/60' : 'text-terminal-primary/30'}`}>Allies</div>
+                                <div className={`text-xl font-bold ${characterData.allies > 0 ? 'text-green-400' : 'text-terminal-primary/30'}`}>{characterData.allies}</div>
+                              </div>
+                              <div className={`rounded p-2 text-center ${characterData.contacts > 0 ? 'bg-blue-500/10 border border-blue-500/30' : 'bg-black/30 border border-terminal-primary/10'}`}>
+                                <div className={`text-[10px] uppercase ${characterData.contacts > 0 ? 'text-blue-400/60' : 'text-terminal-primary/30'}`}>Contacts</div>
+                                <div className={`text-xl font-bold ${characterData.contacts > 0 ? 'text-blue-400' : 'text-terminal-primary/30'}`}>{characterData.contacts}</div>
+                              </div>
+                              <div className={`rounded p-2 text-center ${characterData.rivals > 0 ? 'bg-orange-500/10 border border-orange-500/30' : 'bg-black/30 border border-terminal-primary/10'}`}>
+                                <div className={`text-[10px] uppercase ${characterData.rivals > 0 ? 'text-orange-400/60' : 'text-terminal-primary/30'}`}>Rivals</div>
+                                <div className={`text-xl font-bold ${characterData.rivals > 0 ? 'text-orange-400' : 'text-terminal-primary/30'}`}>{characterData.rivals}</div>
+                              </div>
+                              <div className={`rounded p-2 text-center ${characterData.enemies > 0 ? 'bg-red-500/10 border border-red-500/30' : 'bg-black/30 border border-terminal-primary/10'}`}>
+                                <div className={`text-[10px] uppercase ${characterData.enemies > 0 ? 'text-red-400/60' : 'text-terminal-primary/30'}`}>Enemies</div>
+                                <div className={`text-xl font-bold ${characterData.enemies > 0 ? 'text-red-400' : 'text-terminal-primary/30'}`}>{characterData.enemies}</div>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      )}
+
+                      {/* Ships & Memberships */}
+                      {((characterData.ships?.length || 0) > 0 || characterData.tasMembership) && (
+                        <Card className="bg-black border-yellow-500/50">
+                          <CardHeader className="pb-2">
+                            <CardTitle className="text-yellow-400 text-sm font-['Orbitron'] tracking-wider uppercase">
+                              Ships & Memberships
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent className="space-y-2">
+                            {(characterData.ships || []).map((ship, idx) => (
+                              <div key={idx} className="bg-yellow-500/10 border border-yellow-500/30 rounded p-2 flex items-center gap-2">
+                                <Rocket className="h-4 w-4 text-yellow-400" />
+                                <span className="text-yellow-400 font-bold text-sm">{ship}</span>
+                              </div>
+                            ))}
+                            {characterData.tasMembership && (
+                              <div className="bg-blue-500/10 border border-blue-500/30 rounded p-2 flex items-center gap-2">
+                                <Award className="h-4 w-4 text-blue-400" />
+                                <div>
+                                  <span className="text-blue-400 font-bold text-sm">TAS Membership</span>
+                                  <span className="text-blue-400/60 text-xs ml-2">Travellers' Aid Society</span>
+                                </div>
+                              </div>
+                            )}
+                          </CardContent>
+                        </Card>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Equipment Section - Full Width */}
+                  {((characterData.weapons?.length || 0) > 0 || (characterData.armor?.length || 0) > 0 || (characterData.equipment?.length || 0) > 0 || (characterData.augments?.length || 0) > 0) && (
+                    <Card className="bg-black border-terminal-primary/50">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-terminal-primary text-sm font-['Orbitron'] tracking-wider uppercase flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-orange-400 animate-pulse" />
+                          Equipment & Possessions
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                          {(characterData.weapons?.length || 0) > 0 && (
+                            <div className="bg-red-500/5 border border-red-500/30 rounded p-3">
+                              <div className="text-red-400 text-[10px] uppercase font-bold tracking-wider mb-2 flex items-center gap-1">
+                                <Sword className="h-3 w-3" /> Weapons
+                              </div>
+                              <div className="space-y-1">
+                                {(characterData.weapons || []).map((weapon, idx) => (
+                                  <div key={idx} className="text-red-400 text-sm">
+                                    {typeof weapon === 'string' ? weapon : weapon.name || 'Unknown'}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          {(characterData.armor?.length || 0) > 0 && (
+                            <div className="bg-blue-500/5 border border-blue-500/30 rounded p-3">
+                              <div className="text-blue-400 text-[10px] uppercase font-bold tracking-wider mb-2 flex items-center gap-1">
+                                <Shield className="h-3 w-3" /> Armor
+                              </div>
+                              <div className="space-y-1">
+                                {(characterData.armor || []).map((armor, idx) => (
+                                  <div key={idx} className="text-blue-400 text-sm">
+                                    {typeof armor === 'string' ? armor : armor.name || 'Unknown'}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          {(characterData.equipment?.length || 0) > 0 && (
+                            <div className="bg-terminal-primary/5 border border-terminal-primary/30 rounded p-3">
+                              <div className="text-terminal-primary text-[10px] uppercase font-bold tracking-wider mb-2">
+                                Equipment
+                              </div>
+                              <div className="space-y-1">
+                                {(characterData.equipment || []).map((item, idx) => (
+                                  <div key={idx} className="text-terminal-primary/80 text-sm">
+                                    {typeof item === 'string' ? item : item.name || 'Unknown'}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          {(characterData.augments?.length || 0) > 0 && (
+                            <div className="bg-purple-500/5 border border-purple-500/30 rounded p-3">
+                              <div className="text-purple-400 text-[10px] uppercase font-bold tracking-wider mb-2">
+                                Augments
+                              </div>
+                              <div className="space-y-1">
+                                {(characterData.augments || []).map((aug, idx) => (
+                                  <div key={idx} className="text-purple-400 text-sm">
+                                    {typeof aug === 'string' ? aug : aug.name || 'Unknown'}
+                                  </div>
+                                ))}
+                              </div>
                             </div>
                           )}
                         </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Characteristics */}
-                <div>
-                  <h3 className="text-sm font-bold text-terminal-primary uppercase mb-2">Characteristics</h3>
-                  <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
-                    {(['strength', 'dexterity', 'endurance', 'intellect', 'education', 'social'] as const).map((key) => (
-                      <div key={key} className="bg-terminal-primary/5 border border-terminal-primary/30 rounded p-2 text-center">
-                        <div className="text-xs text-terminal-primary/60 uppercase">{key.slice(0, 3)}</div>
-                        <div className="text-xl font-bold text-terminal-primary">{characterData.characteristics[key].total}</div>
-                        <div className="text-xs text-terminal-primary/60">DM: {getDMDisplay(characterData.characteristics[key].total)}</div>
-                      </div>
-                    ))}
-                  </div>
-                  {characterData.characteristics.psionics && characterData.characteristics.psionics.total > 0 && (
-                    <div className="mt-2 bg-purple-500/10 border border-purple-500/30 rounded p-2 text-center">
-                      <div className="text-xs text-purple-400 uppercase">PSI</div>
-                      <div className="text-xl font-bold text-purple-400">{characterData.characteristics.psionics.total}</div>
-                      <div className="text-xs text-purple-400/60">DM: {getDMDisplay(characterData.characteristics.psionics.total)}</div>
-                    </div>
+                      </CardContent>
+                    </Card>
                   )}
+
+                  {/* Lifepath Log - Collapsible */}
+                  {(characterData.lifepath_log?.length || 0) > 0 && (
+                    <Card className="bg-black border-terminal-primary/50">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-terminal-primary text-sm font-['Orbitron'] tracking-wider uppercase flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-terminal-primary animate-pulse" />
+                            Lifepath Log ({characterData.lifepath_log?.length || 0} Terms)
+                          </div>
+                          <button
+                            onClick={() => setShowLifepathLog(!showLifepathLog)}
+                            className="text-terminal-primary/60 hover:text-terminal-primary transition-colors"
+                          >
+                            {showLifepathLog ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                          </button>
+                        </CardTitle>
+                      </CardHeader>
+                      {showLifepathLog && (
+                        <CardContent className="pt-0">
+                          <div className="space-y-2 max-h-80 overflow-y-auto">
+                            {(characterData.lifepath_log || []).map((term, idx) => {
+                              const termTheme = getCareerTheme(term.career);
+                              return (
+                                <div
+                                  key={idx}
+                                  className="border rounded p-3 text-sm"
+                                  style={{
+                                    backgroundColor: termTheme.bgColor,
+                                    borderColor: termTheme.borderColor,
+                                  }}
+                                >
+                                  <div className="flex justify-between items-start mb-2">
+                                    <span className="font-bold" style={{ color: termTheme.textColor }}>
+                                      Term {term.termNumber}: {term.career}
+                                      {term.assignment && ` (${term.assignment})`}
+                                    </span>
+                                    <span className="text-terminal-primary/50 text-xs font-mono">Age {term.age}</span>
+                                  </div>
+                                  <div className="text-xs space-y-1">
+                                    {term.rankTitle && term.rank > 0 && (
+                                      <div className="text-terminal-primary/70">
+                                        Rank: {term.rankTitle} ({term.rank}){term.isCommissioned ? ' - Officer' : ''}
+                                      </div>
+                                    )}
+                                    <div className={`flex items-center gap-1 ${term.survived ? 'text-green-400' : 'text-red-400'}`}>
+                                      <span className={`w-1.5 h-1.5 rounded-full ${term.survived ? 'bg-green-400' : 'bg-red-400'}`} />
+                                      Survival: {term.survivalRoll} - {term.survived ? 'Survived' : 'Mishap!'}
+                                    </div>
+                                    {term.advancementRoll && (
+                                      <div className={`flex items-center gap-1 ${term.advanced ? 'text-cyan-400' : 'text-terminal-primary/50'}`}>
+                                        <span className={`w-1.5 h-1.5 rounded-full ${term.advanced ? 'bg-cyan-400' : 'bg-terminal-primary/30'}`} />
+                                        Advancement: {term.advancementRoll} - {term.advanced ? 'Advanced!' : 'No advancement'}
+                                      </div>
+                                    )}
+                                    {term.event && (
+                                      <div className="text-yellow-400/80 mt-1 pl-2 border-l border-yellow-400/30">
+                                        {term.event.length > 120 ? term.event.substring(0, 120) + '...' : term.event}
+                                      </div>
+                                    )}
+                                    {term.mishap && (
+                                      <div className="text-red-400/80 mt-1 pl-2 border-l border-red-400/30">
+                                        Mishap: {term.mishap}
+                                      </div>
+                                    )}
+                                    {term.skillsGained && term.skillsGained.length > 0 && (
+                                      <div className="text-green-400/80 flex items-start gap-1">
+                                        <span className="shrink-0">+</span>
+                                        <span>{term.skillsGained.join(', ')}</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </CardContent>
+                      )}
+                    </Card>
+                  )}
+
+                  {/* Action Buttons */}
+                  <div className="flex gap-3 pt-2">
+                    <Button
+                      onClick={() => setStep(5)}
+                      variant="outline"
+                      className="border-terminal-primary/50 text-terminal-primary hover:bg-terminal-primary/20"
+                    >
+                      Back
+                    </Button>
+                    <Button
+                      onClick={handleSaveCharacter}
+                      disabled={!characterData.name}
+                      className="flex-1 transition-all duration-200"
+                      style={{
+                        backgroundColor: summaryTheme.bgColor,
+                        color: summaryTheme.textColor,
+                        borderColor: summaryTheme.borderColor,
+                        borderWidth: '2px',
+                        borderStyle: 'solid',
+                        boxShadow: `0 0 20px ${summaryTheme.glowColor}`,
+                      }}
+                    >
+                      <Save className="h-4 w-4 mr-2" />
+                      Create Character
+                    </Button>
+                  </div>
                 </div>
-
-                {/* Skills */}
-                <div>
-                  <h3 className="text-sm font-bold text-terminal-primary uppercase mb-2">Skills</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {Object.entries(characterData.skills)
-                      .filter(([_, state]) => state.proficient && parseInt(state.value) >= 0)
-                      .sort((a, b) => parseInt(b[1].value) - parseInt(a[1].value))
-                      .map(([skill, state]) => (
-                        <div key={skill} className="bg-terminal-primary/10 border border-terminal-primary/30 rounded px-3 py-1">
-                          <span className="text-terminal-primary">{skill.replace(/_/g, ' ')}</span>
-                          <span className="text-terminal-primary/70 ml-1">{state.value}</span>
-                        </div>
-                      ))}
-                    {Object.entries(characterData.skills).filter(([_, state]) => state.proficient && parseInt(state.value) >= 0).length === 0 && (
-                      <span className="text-terminal-primary/50 text-sm">No skills acquired</span>
-                    )}
-                  </div>
-                </div>
-
-                {/* Psionic Talents */}
-                {(characterData.psiTalents?.length || 0) > 0 && (
-                  <div>
-                    <h3 className="text-sm font-bold text-purple-400 uppercase mb-2">Psionic Talents</h3>
-                    <div className="flex flex-wrap gap-2">
-                      {(characterData.psiTalents || []).map((talent, idx) => (
-                        <div key={idx} className="bg-purple-500/10 border border-purple-500/30 rounded px-3 py-1">
-                          <span className="text-purple-400">{talent}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Career History */}
-                <div>
-                  <h3 className="text-sm font-bold text-terminal-primary uppercase mb-2">Career History</h3>
-                  <div className="space-y-2">
-                    {(!characterData.careerHistory || characterData.careerHistory.filter(c => !c.isPreCareer).length === 0) ? (
-                      <span className="text-terminal-primary/50 text-sm">No career history</span>
-                    ) : (
-                      characterData.careerHistory.map((career, idx) => (
-                        <div key={idx} className={`border rounded p-2 ${career.isPreCareer ? 'bg-blue-500/10 border-blue-500/30' : 'bg-terminal-primary/5 border-terminal-primary/30'}`}>
-                          <div className="flex justify-between items-center">
-                            <div>
-                              <span className={`font-bold ${career.isPreCareer ? 'text-blue-400' : 'text-terminal-primary'}`}>
-                                {career.careerName}
-                              </span>
-                              {career.assignment && (
-                                <span className="text-terminal-primary/60 ml-2">({career.assignment})</span>
-                              )}
-                            </div>
-                            <div className="text-sm text-terminal-primary/70">
-                              {career.termsServed} term{career.termsServed !== 1 ? 's' : ''}
-                              {career.highestRank > 0 && ` • Rank ${career.highestRank}`}
-                              {career.isCommissioned && ' (Officer)'}
-                            </div>
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-
-                {/* Finances */}
-                <div>
-                  <h3 className="text-sm font-bold text-terminal-primary uppercase mb-2">Finances</h3>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                    <div className="bg-terminal-primary/5 border border-terminal-primary/30 rounded p-2">
-                      <div className="text-xs text-terminal-primary/60">Cash on Hand</div>
-                      <div className="text-lg font-bold text-terminal-primary">{characterData.cash_on_hand.toLocaleString()} Cr</div>
-                    </div>
-                    {characterData.pension > 0 && (
-                      <div className="bg-terminal-primary/5 border border-terminal-primary/30 rounded p-2">
-                        <div className="text-xs text-terminal-primary/60">Annual Pension</div>
-                        <div className="text-lg font-bold text-terminal-primary">{characterData.pension.toLocaleString()} Cr</div>
-                      </div>
-                    )}
-                    {characterData.debt > 0 && (
-                      <div className="bg-red-500/10 border border-red-500/30 rounded p-2">
-                        <div className="text-xs text-red-400/60">Debt</div>
-                        <div className="text-lg font-bold text-red-400">{characterData.debt.toLocaleString()} Cr</div>
-                      </div>
-                    )}
-                    {characterData.shipShares > 0 && (
-                      <div className="bg-yellow-500/10 border border-yellow-500/30 rounded p-2">
-                        <div className="text-xs text-yellow-400/60">Ship Shares</div>
-                        <div className="text-lg font-bold text-yellow-400">{characterData.shipShares}</div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Ships & Memberships */}
-                {((characterData.ships?.length || 0) > 0 || characterData.tasMembership) && (
-                  <div>
-                    <h3 className="text-sm font-bold text-terminal-primary uppercase mb-2">Ships & Memberships</h3>
-                    <div className="space-y-2">
-                      {(characterData.ships || []).map((ship, idx) => (
-                        <div key={idx} className="bg-yellow-500/10 border border-yellow-500/30 rounded p-2">
-                          <span className="text-yellow-400 font-bold">🚀 {ship}</span>
-                        </div>
-                      ))}
-                      {characterData.tasMembership && (
-                        <div className="bg-blue-500/10 border border-blue-500/30 rounded p-2">
-                          <span className="text-blue-400 font-bold">✦ TAS Membership</span>
-                          <span className="text-blue-400/70 text-sm ml-2">- Travellers' Aid Society</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Connections */}
-                {(characterData.allies > 0 || characterData.contacts > 0 || characterData.rivals > 0 || characterData.enemies > 0) && (
-                  <div>
-                    <h3 className="text-sm font-bold text-terminal-primary uppercase mb-2">Connections</h3>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                      {characterData.allies > 0 && (
-                        <div className="bg-green-500/10 border border-green-500/30 rounded p-2 text-center">
-                          <div className="text-xs text-green-400/60">Allies</div>
-                          <div className="text-xl font-bold text-green-400">{characterData.allies}</div>
-                        </div>
-                      )}
-                      {characterData.contacts > 0 && (
-                        <div className="bg-blue-500/10 border border-blue-500/30 rounded p-2 text-center">
-                          <div className="text-xs text-blue-400/60">Contacts</div>
-                          <div className="text-xl font-bold text-blue-400">{characterData.contacts}</div>
-                        </div>
-                      )}
-                      {characterData.rivals > 0 && (
-                        <div className="bg-orange-500/10 border border-orange-500/30 rounded p-2 text-center">
-                          <div className="text-xs text-orange-400/60">Rivals</div>
-                          <div className="text-xl font-bold text-orange-400">{characterData.rivals}</div>
-                        </div>
-                      )}
-                      {characterData.enemies > 0 && (
-                        <div className="bg-red-500/10 border border-red-500/30 rounded p-2 text-center">
-                          <div className="text-xs text-red-400/60">Enemies</div>
-                          <div className="text-xl font-bold text-red-400">{characterData.enemies}</div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Equipment */}
-                {((characterData.weapons?.length || 0) > 0 || (characterData.armor?.length || 0) > 0 || (characterData.equipment?.length || 0) > 0 || (characterData.augments?.length || 0) > 0) && (
-                  <div>
-                    <h3 className="text-sm font-bold text-terminal-primary uppercase mb-2">Equipment & Possessions</h3>
-                    <div className="space-y-2">
-                      {(characterData.weapons?.length || 0) > 0 && (
-                        <div className="bg-red-500/5 border border-red-500/30 rounded p-2">
-                          <span className="text-red-400 text-xs uppercase font-bold">Weapons:</span>
-                          <div className="flex flex-wrap gap-1 mt-1">
-                            {(characterData.weapons || []).map((weapon, idx) => (
-                              <span key={idx} className="bg-red-500/10 text-red-400 text-sm px-2 py-0.5 rounded">
-                                {typeof weapon === 'string' ? weapon : weapon.name || 'Unknown Weapon'}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                      {(characterData.armor?.length || 0) > 0 && (
-                        <div className="bg-blue-500/5 border border-blue-500/30 rounded p-2">
-                          <span className="text-blue-400 text-xs uppercase font-bold">Armor:</span>
-                          <div className="flex flex-wrap gap-1 mt-1">
-                            {(characterData.armor || []).map((armor, idx) => (
-                              <span key={idx} className="bg-blue-500/10 text-blue-400 text-sm px-2 py-0.5 rounded">
-                                {typeof armor === 'string' ? armor : armor.name || 'Unknown Armor'}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                      {(characterData.equipment?.length || 0) > 0 && (
-                        <div className="bg-terminal-primary/5 border border-terminal-primary/30 rounded p-2">
-                          <span className="text-terminal-primary text-xs uppercase font-bold">Equipment:</span>
-                          <div className="flex flex-wrap gap-1 mt-1">
-                            {(characterData.equipment || []).map((item, idx) => (
-                              <span key={idx} className="bg-terminal-primary/10 text-terminal-primary text-sm px-2 py-0.5 rounded">
-                                {typeof item === 'string' ? item : item.name || 'Unknown Item'}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                      {(characterData.augments?.length || 0) > 0 && (
-                        <div className="bg-purple-500/5 border border-purple-500/30 rounded p-2">
-                          <span className="text-purple-400 text-xs uppercase font-bold">Augments:</span>
-                          <div className="flex flex-wrap gap-1 mt-1">
-                            {(characterData.augments || []).map((aug, idx) => (
-                              <span key={idx} className="bg-purple-500/10 text-purple-400 text-sm px-2 py-0.5 rounded">
-                                {typeof aug === 'string' ? aug : aug.name || 'Unknown Augment'}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Lifepath Log - Collapsible */}
-                {(characterData.lifepath_log?.length || 0) > 0 && (
-                  <div>
-                    <h3 className="text-sm font-bold text-terminal-primary uppercase mb-2">
-                      Lifepath Log ({characterData.lifepath_log?.length || 0} Terms)
-                    </h3>
-                    <div className="space-y-2 max-h-64 overflow-y-auto">
-                      {(characterData.lifepath_log || []).map((term, idx) => (
-                        <div key={idx} className="bg-terminal-primary/5 border border-terminal-primary/30 rounded p-2 text-sm">
-                          <div className="flex justify-between items-start mb-1">
-                            <span className="font-bold text-terminal-primary">
-                              Term {term.termNumber}: {term.career}
-                              {term.assignment && ` (${term.assignment})`}
-                            </span>
-                            <span className="text-terminal-primary/60 text-xs">Age {term.age}</span>
-                          </div>
-                          <div className="text-terminal-primary/70 text-xs space-y-1">
-                            {term.rankTitle && term.rank > 0 && (
-                              <div>Rank: {term.rankTitle} ({term.rank}){term.isCommissioned ? ' - Officer' : ''}</div>
-                            )}
-                            <div className={term.survived ? 'text-green-400/70' : 'text-red-400/70'}>
-                              Survival: {term.survivalRoll} - {term.survived ? 'Survived' : 'Mishap!'}
-                            </div>
-                            {term.advancementRoll && (
-                              <div className={term.advanced ? 'text-cyan-400/70' : 'text-terminal-primary/50'}>
-                                Advancement: {term.advancementRoll} - {term.advanced ? 'Advanced!' : 'No advancement'}
-                              </div>
-                            )}
-                            {term.event && (
-                              <div className="text-yellow-400/70 mt-1">
-                                Event: {term.event.length > 100 ? term.event.substring(0, 100) + '...' : term.event}
-                              </div>
-                            )}
-                            {term.mishap && (
-                              <div className="text-red-400/70 mt-1">
-                                Mishap: {term.mishap}
-                              </div>
-                            )}
-                            {term.skillsGained && term.skillsGained.length > 0 && (
-                              <div className="text-green-400/70">
-                                Skills: {term.skillsGained.join(', ')}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Action Buttons */}
-                <div className="flex gap-2 pt-4 border-t border-terminal-primary/30">
-                  <Button
-                    onClick={() => setStep(5)}
-                    variant="outline"
-                    className="border-terminal-primary/50 text-terminal-primary hover:bg-terminal-primary/20"
-                  >
-                    Back
-                  </Button>
-                  <Button
-                    onClick={handleSaveCharacter}
-                    disabled={!characterData.name}
-                    className="flex-1 bg-green-500/20 text-green-400 hover:bg-green-500/30 border border-green-500/50"
-                  >
-                    <Save className="h-4 w-4 mr-2" />
-                    Create Character
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+              );
+            })()}
           </TabsContent>
         </Tabs>
       </ScrollArea>
