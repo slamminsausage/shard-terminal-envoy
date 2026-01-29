@@ -22,7 +22,7 @@ interface CareerRecord {
   termsServed: number;
   highestRank: number;
   isCommissioned: boolean;
-  benefitDM: number;
+  benefitDMs: number[];      // Individual benefit DM bonuses (each used once)
   extraBenefitRolls: number;
   isPreCareer: boolean;
 }
@@ -191,9 +191,19 @@ export const MusteringOut: React.FC<MusteringOutProps> = ({
         ...career,
         totalRolls: rolls,
         rankDM,
-        benefitDM: career.benefitDM,
       };
     });
+  }, [eligibleCareers]);
+
+  // Pool all benefit DMs from all careers into a single list (sorted descending for auto-apply)
+  const initialBenefitDMPool = useMemo(() => {
+    const allDMs: number[] = [];
+    eligibleCareers.forEach(career => {
+      if (career.benefitDMs) {
+        allDMs.push(...career.benefitDMs);
+      }
+    });
+    return allDMs.sort((a, b) => b - a); // Sort descending (highest first)
   }, [eligibleCareers]);
 
   // State
@@ -207,6 +217,9 @@ export const MusteringOut: React.FC<MusteringOutProps> = ({
   const [accumulatedContacts, setAccumulatedContacts] = useState(0);
   const [accumulatedEquipment, setAccumulatedEquipment] = useState<string[]>([]);
   const [characteristics, setCharacteristics] = useState(initialCharacteristics);
+
+  // Track available benefit DMs from events (each can only be used once)
+  const [availableBenefitDMs, setAvailableBenefitDMs] = useState<number[]>(initialBenefitDMPool);
 
   // Track rolls remaining per career
   const [rollsRemaining, setRollsRemaining] = useState<Record<string, number>>(() => {
@@ -247,8 +260,11 @@ export const MusteringOut: React.FC<MusteringOutProps> = ({
     const careerDef = getCareerDefinition(career.careerName);
     if (!careerDef?.benefitsTable) return;
 
-    // Calculate DM: career benefitDM + rank DM + Gambler skill
-    const dm = career.benefitDM + career.rankDM + gamblerSkillLevel;
+    // Use one event benefit DM if available (auto-apply highest first)
+    const eventDM = availableBenefitDMs.length > 0 ? availableBenefitDMs[0] : 0;
+
+    // Calculate DM: event DM (one use) + rank DM + Gambler skill
+    const dm = eventDM + career.rankDM + gamblerSkillLevel;
     const roll = rollDice(1, 6);
     const total = Math.min(Math.max(roll + dm, 1), 7); // Clamp to 1-7
 
@@ -261,6 +277,11 @@ export const MusteringOut: React.FC<MusteringOutProps> = ({
       ...prev,
       [careerKey]: prev[careerKey] - 1,
     }));
+
+    // Consume the event DM (remove from pool)
+    if (eventDM > 0) {
+      setAvailableBenefitDMs(prev => prev.slice(1));
+    }
 
     const result: BenefitRollResult = {
       careerName: career.careerName,
@@ -295,8 +316,11 @@ export const MusteringOut: React.FC<MusteringOutProps> = ({
     const careerDef = getCareerDefinition(career.careerName);
     if (!careerDef?.benefitsTable) return;
 
-    // Calculate DM: career benefitDM + rank DM (no Gambler for non-cash)
-    const dm = career.benefitDM + career.rankDM;
+    // Use one event benefit DM if available (auto-apply highest first)
+    const eventDM = availableBenefitDMs.length > 0 ? availableBenefitDMs[0] : 0;
+
+    // Calculate DM: event DM (one use) + rank DM (no Gambler for non-cash)
+    const dm = eventDM + career.rankDM;
     const roll = rollDice(1, 6);
     const total = Math.min(Math.max(roll + dm, 1), 7);
 
@@ -307,6 +331,11 @@ export const MusteringOut: React.FC<MusteringOutProps> = ({
       ...prev,
       [careerKey]: prev[careerKey] - 1,
     }));
+
+    // Consume the event DM (remove from pool)
+    if (eventDM > 0) {
+      setAvailableBenefitDMs(prev => prev.slice(1));
+    }
 
     setLastRollResult({
       type: 'benefit',
@@ -586,6 +615,18 @@ export const MusteringOut: React.FC<MusteringOutProps> = ({
       {/* Career Benefit Rolls */}
       {totalRollsRemaining > 0 && !pendingBenefitChoice ? (
         <div className="space-y-3">
+          {/* Show available benefit DMs from events */}
+          {availableBenefitDMs.length > 0 && (
+            <Alert className="border-amber-500/30 bg-amber-500/10">
+              <Award className="h-4 w-4 text-amber-400" />
+              <AlertDescription className="text-amber-300/80 text-sm">
+                <span className="font-semibold">{availableBenefitDMs.length} Event DM{availableBenefitDMs.length !== 1 ? 's' : ''} Available:</span>
+                {' '}[{availableBenefitDMs.map(dm => `+${dm}`).join(', ')}]
+                <span className="text-amber-300/60 ml-2">(Auto-applied one per roll, highest first)</span>
+              </AlertDescription>
+            </Alert>
+          )}
+
           {careerBenefits.map((career, idx) => {
             const careerKey = `${career.careerName}-${idx}`;
             const remaining = rollsRemaining[careerKey] || 0;
@@ -602,7 +643,6 @@ export const MusteringOut: React.FC<MusteringOutProps> = ({
                       <div className="text-terminal-primary font-medium">{career.careerName}</div>
                       <div className="text-terminal-primary/60 text-xs">
                         {remaining} roll{remaining !== 1 ? 's' : ''} remaining
-                        {career.benefitDM > 0 && ` • DM+${career.benefitDM} from events`}
                         {career.rankDM > 0 && ` • DM+${career.rankDM} from rank`}
                       </div>
                     </div>
