@@ -56,7 +56,7 @@ export const FinanceProvider: React.FC<FinanceProviderProps> = ({ children }) =>
   // Load party funds on mount
   useEffect(() => {
     getPartyFunds();
-  }, []);
+  }, [getPartyFunds]);
 
   const getAllTransactions = useCallback(async (characterId?: string) => {
     setIsLoading(true);
@@ -90,10 +90,11 @@ export const FinanceProvider: React.FC<FinanceProviderProps> = ({ children }) =>
         setTransactions(prev => [data as Transaction, ...prev]);
 
         // Update party funds if this is a party transaction
-        if (newTransaction.is_party_transaction && partyFunds) {
+        if (newTransaction.is_party_transaction) {
           const amount = newTransaction.amount || 0;
           const adjustment = newTransaction.transaction_type === 'income' ? amount : -amount;
-          await updatePartyFundsBalance(partyFunds.balance + adjustment);
+          const currentBalance = partyFunds?.balance || 0;
+          await updatePartyFundsBalance(currentBalance + adjustment);
         }
 
         toast({
