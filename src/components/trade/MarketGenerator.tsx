@@ -64,7 +64,7 @@ export const MarketGenerator: React.FC<MarketGeneratorProps> = ({ onPurchase }) 
   // Purchase state
   const [purchasingGood, setPurchasingGood] = useState<MarketGood | null>(null);
   const [purchaseTons, setPurchaseTons] = useState('1');
-  const [purchaseVehicle, setPurchaseVehicle] = useState('');
+  const [purchaseVehicle, setPurchaseVehicle] = useState('none');
 
   const toggleTradeCode = (code: string) => {
     setSelectedTradeCodes(prev =>
@@ -172,7 +172,7 @@ export const MarketGenerator: React.FC<MarketGeneratorProps> = ({ onPurchase }) 
       purchase_price: totalPrice,
       purchase_world: worldName || undefined,
       purchase_date: new Date().toISOString(),
-      vehicle_id: purchaseVehicle || undefined,
+      vehicle_id: purchaseVehicle === 'none' ? undefined : purchaseVehicle,
       is_speculation: true,
       broker_skill_used: parseInt(brokerSkill) || 0,
     });
@@ -339,7 +339,7 @@ export const MarketGenerator: React.FC<MarketGeneratorProps> = ({ onPurchase }) 
                     <SelectValue placeholder="Select..." />
                   </SelectTrigger>
                   <SelectContent className="bg-black border-terminal-primary/50">
-                    <SelectItem value="" className="text-terminal-primary">
+                    <SelectItem value="none" className="text-terminal-primary">
                       None (General)
                     </SelectItem>
                     {vehicles.map(v => (
