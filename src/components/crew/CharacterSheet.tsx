@@ -9,6 +9,7 @@ import { Upload, X, Crop } from "lucide-react";
 import { ThumbnailCropper } from "@/components/ui/ThumbnailCropper";
 import { InventoryList } from "@/components/inventory/InventoryList";
 import { EncumbranceTracker } from "@/components/inventory/EncumbranceTracker";
+import { ItemCreator } from "@/components/inventory/ItemCreator";
 import type { InventoryItem } from "@/types/inventory";
 
 interface CharacterSheetProps {
@@ -265,12 +266,19 @@ const CharacterSheet = ({ characterId }: CharacterSheetProps = {}) => {
     complete: ""
   });
   const [notes, setNotes] = useState("");
+  const [relationships, setRelationships] = useState({
+    allies: "",
+    contacts: "",
+    rivals: "",
+    enemies: ""
+  });
   const [weapons, setWeapons] = useState(initialWeapons);
   const [weaponCharMods, setWeaponCharMods] = useState<string[]>(initialWeapons.map(() => "none"));
   const [equipment, setEquipment] = useState(initialEquipment);
   const [augments, setAugments] = useState(initialAugments);
   const [totalMass, setTotalMass] = useState("");
   const [skillRollDifficulty, setSkillRollDifficulty] = useState("8");
+  const [showItemCreator, setShowItemCreator] = useState(false);
   const [skillRollCharacteristic, setSkillRollCharacteristic] = useState<CharacteristicKey>("intellect");
   const [skillRollModifier, setSkillRollModifier] = useState("0");
   const [lastRollLog, setLastRollLog] = useState<string>("");
@@ -316,26 +324,64 @@ const CharacterSheet = ({ characterId }: CharacterSheetProps = {}) => {
           psionics: { total: psionicsValue.toString(), current: psionicsValue.toString() }
         });
         // Load other character data safely with array validation
+        // Handle both string arrays (from character generator) and proper row objects
         if (character.weapons && Array.isArray(character.weapons)) {
-          setWeapons(character.weapons as WeaponRow[]);
+          const weaponRows: WeaponRow[] = character.weapons.map((w: any) => {
+            if (typeof w === 'string') {
+              return { weapon: w, accuracy: '', range: '', damage: '', kg: '', magazine: '', traits: '' };
+            }
+            return w as WeaponRow;
+          });
+          // Ensure we have at least 4 rows for display
+          while (weaponRows.length < 4) {
+            weaponRows.push({ weapon: '', accuracy: '', range: '', damage: '', kg: '', magazine: '', traits: '' });
+          }
+          setWeapons(weaponRows);
         } else {
           setWeapons(initialWeapons);
         }
 
         if (character.armor && Array.isArray(character.armor)) {
-          setArmourRows(character.armor as ArmourRow[]);
+          const armorRows: ArmourRow[] = character.armor.map((a: any) => {
+            if (typeof a === 'string') {
+              return { type: a, rad: '', protection: '', kg: '', options: '', total: '' };
+            }
+            return a as ArmourRow;
+          });
+          while (armorRows.length < 4) {
+            armorRows.push({ type: '', rad: '', protection: '', kg: '', options: '', total: '' });
+          }
+          setArmourRows(armorRows);
         } else {
           setArmourRows(initialArmourRows);
         }
 
         if (character.equipment && Array.isArray(character.equipment)) {
-          setEquipment(character.equipment as EquipmentRow[]);
+          const equipmentRows: EquipmentRow[] = character.equipment.map((e: any) => {
+            if (typeof e === 'string') {
+              return { item: e, mass: '' };
+            }
+            return e as EquipmentRow;
+          });
+          while (equipmentRows.length < 6) {
+            equipmentRows.push({ item: '', mass: '' });
+          }
+          setEquipment(equipmentRows);
         } else {
           setEquipment(initialEquipment);
         }
 
         if (character.augments && Array.isArray(character.augments)) {
-          setAugments(character.augments as AugmentRow[]);
+          const augmentRows: AugmentRow[] = character.augments.map((a: any) => {
+            if (typeof a === 'string') {
+              return { type: a, tl: '', improvement: '' };
+            }
+            return a as AugmentRow;
+          });
+          while (augmentRows.length < 4) {
+            augmentRows.push({ type: '', tl: '', improvement: '' });
+          }
+          setAugments(augmentRows);
         } else {
           setAugments(initialAugments);
         }
@@ -345,6 +391,14 @@ const CharacterSheet = ({ characterId }: CharacterSheetProps = {}) => {
         }
 
         if (typeof character.notes === "string") setNotes(character.notes);
+
+        // Load relationships
+        setRelationships({
+          allies: character.allies || "",
+          contacts: character.contacts || "",
+          rivals: character.rivals || "",
+          enemies: character.enemies || ""
+        });
 
         // Load finances
         setFinances({
@@ -586,10 +640,10 @@ const CharacterSheet = ({ characterId }: CharacterSheetProps = {}) => {
         study_skill: studyPeriod.skill,
         study_weeks: studyPeriod.weeks,
         study_complete: studyPeriod.complete,
-        allies: "",
-        contacts: "",
-        rivals: "",
-        enemies: "",
+        allies: relationships.allies,
+        contacts: relationships.contacts,
+        rivals: relationships.rivals,
+        enemies: relationships.enemies,
         weapons: weapons,
         armor: armourRows,
         augments: augments,
@@ -1135,8 +1189,25 @@ const customGroups = skillDefinitions.filter(def => def.isCustomGroup);
         <section className="panel">
           <div className="panel-header">
             <span className="panel-title">INVENTORY MANAGEMENT</span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowItemCreator(true)}
+              className="ml-auto text-xs"
+            >
+              + Add Item
+            </Button>
           </div>
           <div className="panel-content">
+            {showItemCreator && (
+              <div className="mb-4">
+                <ItemCreator
+                  ownerId={characterId}
+                  ownerType="character"
+                  onClose={() => setShowItemCreator(false)}
+                />
+              </div>
+            )}
             <div className="mb-4">
               <EncumbranceTracker
                 ownerId={characterId}
@@ -1176,9 +1247,50 @@ const customGroups = skillDefinitions.filter(def => def.isCustomGroup);
               <TextField label="Weeks" value={studyPeriod.weeks} onChange={value => setStudyPeriod(prev => ({ ...prev, weeks: value }))} compact />
               <TextField label="Study Periods Complete" value={studyPeriod.complete} onChange={value => setStudyPeriod(prev => ({ ...prev, complete: value }))} compact />
             </div>
+            <div className="space-y-3">
+              <h4 className="text-xs font-semibold uppercase tracking-wide text-primary">Allies, Contacts, Enemies, Rivals</h4>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[10px] text-primary/60 uppercase tracking-wide">Allies</label>
+                  <textarea
+                    className="terminal-input w-full h-16 text-xs mt-1"
+                    value={relationships.allies}
+                    onChange={e => setRelationships(prev => ({ ...prev, allies: e.target.value }))}
+                    placeholder="List allies..."
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] text-primary/60 uppercase tracking-wide">Contacts</label>
+                  <textarea
+                    className="terminal-input w-full h-16 text-xs mt-1"
+                    value={relationships.contacts}
+                    onChange={e => setRelationships(prev => ({ ...prev, contacts: e.target.value }))}
+                    placeholder="List contacts..."
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] text-primary/60 uppercase tracking-wide">Rivals</label>
+                  <textarea
+                    className="terminal-input w-full h-16 text-xs mt-1"
+                    value={relationships.rivals}
+                    onChange={e => setRelationships(prev => ({ ...prev, rivals: e.target.value }))}
+                    placeholder="List rivals..."
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] text-primary/60 uppercase tracking-wide">Enemies</label>
+                  <textarea
+                    className="terminal-input w-full h-16 text-xs mt-1"
+                    value={relationships.enemies}
+                    onChange={e => setRelationships(prev => ({ ...prev, enemies: e.target.value }))}
+                    placeholder="List enemies..."
+                  />
+                </div>
+              </div>
+            </div>
             <div>
-              <h4 className="text-xs font-semibold uppercase tracking-wide mb-2 text-primary">Allies, Contacts, Enemies, Rivals</h4>
-              <textarea className="terminal-input w-full h-32 text-xs" value={notes} onChange={event => setNotes(event.target.value)} />
+              <label className="text-[10px] text-primary/60 uppercase tracking-wide">Notes</label>
+              <textarea className="terminal-input w-full h-24 text-xs mt-1" value={notes} onChange={event => setNotes(event.target.value)} placeholder="Character notes..." />
             </div>
           </div>
         </div>
