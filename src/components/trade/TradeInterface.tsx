@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Package } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Package, Store } from 'lucide-react';
 import { CargoManifest } from './CargoManifest';
+import { MarketGenerator } from './MarketGenerator';
 
 export const TradeInterface: React.FC = () => {
+  const [activeTab, setActiveTab] = useState('cargo');
+
   return (
     <div className="h-full flex flex-col bg-black text-terminal-primary font-mono">
       <div className="border-b border-terminal-primary/30 p-4">
@@ -22,29 +24,32 @@ export const TradeInterface: React.FC = () => {
       </div>
 
       <div className="flex-1 p-4 overflow-hidden">
-        <div className="grid grid-cols-1 gap-4 h-full">
-          {/* Cargo Manifest */}
-          <Card className="bg-black border-terminal-primary/50 overflow-hidden flex flex-col">
-            <CardContent className="p-4 flex-1 overflow-hidden">
-              <CargoManifest />
-            </CardContent>
-          </Card>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
+          <TabsList className="bg-black border border-terminal-primary/30 mb-4">
+            <TabsTrigger
+              value="cargo"
+              className="data-[state=active]:bg-terminal-primary/20 data-[state=active]:text-terminal-primary text-terminal-primary/70"
+            >
+              <Package className="h-4 w-4 mr-2" />
+              Cargo Hold
+            </TabsTrigger>
+            <TabsTrigger
+              value="market"
+              className="data-[state=active]:bg-terminal-primary/20 data-[state=active]:text-terminal-primary text-terminal-primary/70"
+            >
+              <Store className="h-4 w-4 mr-2" />
+              Market
+            </TabsTrigger>
+          </TabsList>
 
-          {/* Placeholder for Market Generator */}
-          <Card className="bg-black border-terminal-primary/30">
-            <CardContent className="p-6 text-center">
-              <div className="text-terminal-primary/70">
-                <p className="text-lg font-bold mb-2">Market Generator</p>
-                <p className="text-sm">
-                  Market generation will be available in a future update.
-                </p>
-                <p className="text-xs mt-2 text-terminal-primary/50">
-                  For now, you can manually add trade goods to your cargo using the database.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+          <TabsContent value="cargo" className="flex-1 overflow-hidden mt-0">
+            <CargoManifest />
+          </TabsContent>
+
+          <TabsContent value="market" className="flex-1 overflow-auto mt-0">
+            <MarketGenerator />
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );

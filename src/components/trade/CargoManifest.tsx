@@ -6,7 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
-import { Package, TrendingUp, TrendingDown, DollarSign, Trash2, ShoppingCart } from 'lucide-react';
+import { Package, TrendingUp, TrendingDown, DollarSign, Trash2, ShoppingCart, Plus } from 'lucide-react';
+import { AddCargoDialog } from './AddCargoDialog';
 
 interface CargoManifestProps {
   vehicleId?: string;
@@ -15,6 +16,7 @@ interface CargoManifestProps {
 export const CargoManifest: React.FC<CargoManifestProps> = ({ vehicleId }) => {
   const { tradeGoods, getAllTradeGoods, sellTradeGood, deleteTradeGood, calculateCargoTonnage, calculateTotalInvestment } = useTrade();
   const [showSellDialog, setShowSellDialog] = useState(false);
+  const [showAddDialog, setShowAddDialog] = useState(false);
   const [selectedGood, setSelectedGood] = useState<TradeGood | null>(null);
   const [salePrice, setSalePrice] = useState('');
   const [saleWorld, setSaleWorld] = useState('');
@@ -67,9 +69,27 @@ export const CargoManifest: React.FC<CargoManifestProps> = ({ vehicleId }) => {
 
   return (
     <div className="h-full flex flex-col">
+      {/* Add Cargo Dialog */}
+      {showAddDialog && (
+        <AddCargoDialog
+          vehicleId={vehicleId}
+          onClose={() => setShowAddDialog(false)}
+        />
+      )}
+
       {/* Header with Stats */}
       <div className="mb-4">
-        <h2 className="text-xl font-bold text-terminal-primary mb-2">Cargo Manifest</h2>
+        <div className="flex justify-between items-center mb-2">
+          <h2 className="text-xl font-bold text-terminal-primary">Cargo Manifest</h2>
+          <Button
+            onClick={() => setShowAddDialog(true)}
+            className="bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
+            size="sm"
+          >
+            <Plus className="h-4 w-4 mr-1" />
+            Add Cargo
+          </Button>
+        </div>
         <div className="grid grid-cols-2 gap-2">
           <Card className="bg-black border-terminal-primary/50">
             <CardContent className="p-3">
