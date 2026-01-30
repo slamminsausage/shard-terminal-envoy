@@ -31,7 +31,7 @@ export const AddCargoDialog: React.FC<AddCargoDialogProps> = ({
   const [tons, setTons] = useState('1');
   const [purchasePrice, setPurchasePrice] = useState('');
   const [purchaseWorld, setPurchaseWorld] = useState('');
-  const [selectedVehicle, setSelectedVehicle] = useState(vehicleId || '');
+  const [selectedVehicle, setSelectedVehicle] = useState(vehicleId || 'none');
   const [isSpeculation, setIsSpeculation] = useState(false);
   const [brokerSkill, setBrokerSkill] = useState('0');
   const [notes, setNotes] = useState('');
@@ -63,7 +63,7 @@ export const AddCargoDialog: React.FC<AddCargoDialogProps> = ({
       purchase_price: parsedPrice,
       purchase_world: purchaseWorld || undefined,
       purchase_date: new Date().toISOString(),
-      vehicle_id: selectedVehicle || undefined,
+      vehicle_id: selectedVehicle === 'none' ? undefined : selectedVehicle,
       is_speculation: isSpeculation,
       broker_skill_used: parseInt(brokerSkill) || 0,
       notes: notes || undefined,
@@ -195,7 +195,7 @@ export const AddCargoDialog: React.FC<AddCargoDialogProps> = ({
                 <SelectValue placeholder="None (General Cargo)" />
               </SelectTrigger>
               <SelectContent className="bg-black border-terminal-primary/50">
-                <SelectItem value="" className="text-terminal-primary">
+                <SelectItem value="none" className="text-terminal-primary">
                   None (General Cargo)
                 </SelectItem>
                 {vehicles.map(vehicle => (
