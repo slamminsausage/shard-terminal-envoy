@@ -142,15 +142,15 @@ export function BridgeConsole() {
   };
 
   return (
-    <div className="bridge-console min-h-screen md:h-screen md:max-h-screen flex flex-col bg-terminal-bg-darker text-terminal-primary-light font-mono crt-container border border-primary/30 rounded shadow-[0_0_32px_rgba(0,255,0,0.12)] overflow-hidden">
+    <div className="interface-container min-h-screen md:h-screen md:max-h-screen crt-container overflow-hidden">
       {/* Header */}
-      <header className="bridge-header flex flex-col md:flex-row justify-between md:items-center gap-2 px-4 md:px-6 py-3 border-b border-terminal-bg-border bg-gradient-to-b from-terminal-primary-light/5 to-transparent">
+      <header className="interface-header">
         <div className="ship-identity">
-          <span className="font-['Orbitron'] font-black text-base md:text-xl tracking-[2px] md:tracking-[4px] drop-shadow-[0_0_20px_var(--primary-light)]">
+          <span className="interface-title text-base md:text-xl tracking-[2px] md:tracking-[4px]">
             {linkedVehicle?.name || playerShip?.name || "NO SHIP SELECTED"}
           </span>
           {(linkedVehicle?.class_type || playerShip?.shipClass) && (
-            <span className="text-terminal-text-dimmer text-xs md:text-sm ml-2 md:ml-4">
+            <span className="interface-subtitle ml-2 md:ml-4">
               {linkedVehicle?.class_type || playerShip?.shipClass} - {linkedVehicle?.tonnage || playerShip?.tonnage || "?"}t
             </span>
           )}
@@ -167,7 +167,7 @@ export function BridgeConsole() {
                     : "bg-terminal-primary-light shadow-[0_0_8px_var(--primary-light)]"
               }`}
             />
-            <span className="uppercase">{bridgeState.alertLevel}</span>
+            <span className="uppercase text-terminal-primary-light">{bridgeState.alertLevel}</span>
           </div>
           <div className="font-['Orbitron'] text-terminal-primary-light">
             {new Date().toLocaleTimeString("en-US", { hour12: false })}
