@@ -849,7 +849,7 @@ export default function CombatInterface() {
                         <select
                           value={combatant.cover}
                           onChange={(e) =>
-                            handleUpdateCombatant(combatant.id, { cover: e.target.value as any })
+                            handleUpdateCombatant(combatant.id, { cover: e.target.value as Combatant['cover'] })
                           }
                           className="terminal-input h-8 text-xs"
                         >
@@ -864,7 +864,7 @@ export default function CombatInterface() {
                         <select
                           value={combatant.range}
                           onChange={(e) =>
-                            handleUpdateCombatant(combatant.id, { range: e.target.value as any })
+                            handleUpdateCombatant(combatant.id, { range: e.target.value as Combatant['range'] })
                           }
                           className="terminal-input h-8 text-xs"
                         >
