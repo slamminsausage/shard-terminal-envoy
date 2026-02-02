@@ -73,39 +73,45 @@ export default function VehicleInterface() {
 
   if (showVehicleSheet) {
     return (
-      <div className="p-6 space-y-6">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-['Orbitron'] tracking-[0.2em] text-primary drop-shadow-[0_0_10px_rgba(0,255,0,0.4)]">
-            VEHICLE SHEET INTERFACE
-          </h2>
+      <div className="interface-container">
+        <header className="interface-header">
+          <h2 className="interface-title">VEHICLE SHEET INTERFACE</h2>
           <button className="terminal-btn" onClick={handleBackToVehicleInterface}>
             Back to Vehicle Management
           </button>
+        </header>
+        <div className="interface-content">
+          <VehicleSheet vehicleId={selectedVehicleId || undefined} />
         </div>
-        <VehicleSheet vehicleId={selectedVehicleId || undefined} />
       </div>
     );
   }
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-['Orbitron'] tracking-[0.2em] text-primary drop-shadow-[0_0_10px_rgba(0,255,0,0.4)]">VEHICLE MANAGEMENT SYSTEM</h2>
-      </div>
+    <div className="interface-container">
+      <header className="interface-header">
+        <div>
+          <h2 className="interface-title">VEHICLE MANAGEMENT SYSTEM</h2>
+          <p className="interface-subtitle">Manage spacecraft and ground vehicles</p>
+        </div>
+      </header>
 
-      <div className="panel">
-        <div className="panel-content">
-          <div className="terminal terminal-flicker h-[200px] overflow-auto mb-4 border border-primary/30 rounded">
-            <div className="font-mono text-sm whitespace-pre-wrap p-4 text-primary">
-              {displayText}
+      <div className="interface-content">
+        <div className="panel mb-4">
+          <div className="panel-content">
+            <div className="terminal terminal-flicker h-[150px] overflow-auto border border-primary/30 rounded">
+              <div className="font-mono text-sm whitespace-pre-wrap p-4 text-terminal-primary-light">
+                {displayText}
+              </div>
             </div>
           </div>
-          
-          <Tabs defaultValue="hangar" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 bg-black/60 border border-primary/30 rounded">
-              <TabsTrigger value="hangar" className="font-mono">Ship Hangar</TabsTrigger>
-              <TabsTrigger value="vehicles" className="font-mono">Vehicles</TabsTrigger>
-            </TabsList>
+        </div>
+
+        <Tabs defaultValue="hangar" className="w-full">
+          <TabsList className="terminal-tabs-list grid-cols-2 mb-4">
+            <TabsTrigger value="hangar" className="terminal-tab-trigger">Ship Hangar</TabsTrigger>
+            <TabsTrigger value="vehicles" className="terminal-tab-trigger">Vehicles</TabsTrigger>
+          </TabsList>
             
             <TabsContent value="hangar" className="space-y-4">
               <div className="panel">
@@ -295,8 +301,7 @@ export default function VehicleInterface() {
               </div>
             </TabsContent>
 
-          </Tabs>
-        </div>
+        </Tabs>
       </div>
 
       {/* Crew Assignment Dialog */}

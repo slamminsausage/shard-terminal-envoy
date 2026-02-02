@@ -911,6 +911,279 @@ textarea.terminal-input {
 }
 
 /* ===================================
+   UNIFIED INTERFACE COMPONENTS
+   =================================== */
+
+/* Main interface container - use on all tab interfaces */
+.interface-container {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-darker);
+  color: var(--primary-light);
+  font-family: var(--font-mono);
+  border: 1px solid rgba(0, 255, 0, 0.3);
+  border-radius: 4px;
+  box-shadow: 0 0 32px rgba(0, 255, 0, 0.12);
+  overflow: hidden;
+}
+
+/* Interface header - consistent across all tabs */
+.interface-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--bg-border);
+  background: linear-gradient(180deg, rgba(0, 255, 136, 0.05) 0%, transparent 100%);
+}
+
+@media (min-width: 768px) {
+  .interface-header {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+}
+
+/* Interface title - Orbitron with glow */
+.interface-title {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 900;
+  font-size: 1.25rem;
+  letter-spacing: 0.2em;
+  color: var(--primary);
+  text-shadow: 0 0 20px rgba(0, 255, 0, 0.4);
+  text-transform: uppercase;
+}
+
+@media (min-width: 640px) {
+  .interface-title {
+    font-size: 1.5rem;
+    letter-spacing: 0.25em;
+  }
+}
+
+/* Interface subtitle */
+.interface-subtitle {
+  font-size: 0.75rem;
+  color: var(--text-dimmer);
+  letter-spacing: 0.1em;
+}
+
+/* Interface content area */
+.interface-content {
+  flex: 1;
+  padding: 1rem;
+  overflow-y: auto;
+}
+
+@media (min-width: 640px) {
+  .interface-content {
+    padding: 1.5rem;
+  }
+}
+
+/* Terminal-styled card component */
+.terminal-card {
+  background: var(--bg-panel);
+  border: 1px solid rgba(0, 255, 0, 0.3);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.terminal-card:hover {
+  border-color: rgba(0, 255, 0, 0.5);
+}
+
+.terminal-card-header {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid rgba(0, 255, 0, 0.2);
+  background: rgba(0, 255, 0, 0.05);
+}
+
+.terminal-card-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.875rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--primary);
+}
+
+.terminal-card-description {
+  font-size: 0.75rem;
+  color: var(--text-dimmer);
+  margin-top: 0.25rem;
+}
+
+.terminal-card-content {
+  padding: 1rem;
+}
+
+/* Terminal-styled tabs */
+.terminal-tabs-list {
+  display: grid;
+  background: var(--bg-dark);
+  border: 1px solid rgba(0, 255, 0, 0.3);
+  border-radius: 4px;
+  padding: 2px;
+}
+
+.terminal-tab-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--text-dimmer);
+  background: transparent;
+  border: none;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.terminal-tab-trigger:hover {
+  color: var(--primary);
+  background: rgba(0, 255, 0, 0.1);
+}
+
+.terminal-tab-trigger[data-state="active"] {
+  color: var(--primary);
+  background: rgba(0, 255, 0, 0.2);
+  box-shadow: 0 0 10px rgba(0, 255, 0, 0.2);
+}
+
+/* Terminal list item - for crew/vehicle/contact lists */
+.terminal-list-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  background: rgba(0, 255, 0, 0.02);
+  border: 1px solid var(--bg-border);
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+}
+
+.terminal-list-item:hover {
+  background: rgba(0, 255, 0, 0.08);
+  border-color: rgba(0, 255, 0, 0.3);
+}
+
+.terminal-list-item.selected {
+  background: rgba(0, 255, 0, 0.12);
+  border-color: var(--primary);
+  box-shadow: 0 0 10px rgba(0, 255, 0, 0.2);
+}
+
+.terminal-list-item.empty {
+  opacity: 0.5;
+  border-style: dashed;
+}
+
+/* Terminal empty state */
+.terminal-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1.5rem;
+  text-align: center;
+  color: var(--text-dimmer);
+}
+
+.terminal-empty-state-icon {
+  width: 4rem;
+  height: 4rem;
+  margin-bottom: 1rem;
+  opacity: 0.5;
+}
+
+.terminal-empty-state-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--primary);
+  margin-bottom: 0.5rem;
+}
+
+.terminal-empty-state-description {
+  font-size: 0.875rem;
+  color: var(--text-dimmer);
+  margin-bottom: 1rem;
+}
+
+/* Terminal action bar */
+.terminal-action-bar {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background: var(--bg-panel-alt);
+  border-top: 1px solid var(--bg-border);
+}
+
+/* Terminal stat display */
+.terminal-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.5rem;
+  background: var(--bg-panel-alt);
+  border: 1px solid var(--bg-border);
+  border-radius: 4px;
+}
+
+.terminal-stat-label {
+  font-size: 0.65rem;
+  color: var(--text-dimmer);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.terminal-stat-value {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+/* Terminal badge */
+.terminal-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.125rem 0.5rem;
+  font-size: 0.65rem;
+  font-family: var(--font-mono);
+  color: var(--primary);
+  background: rgba(0, 255, 0, 0.1);
+  border: 1px solid rgba(0, 255, 0, 0.3);
+  border-radius: 2px;
+}
+
+.terminal-badge.warning {
+  color: var(--warning);
+  background: rgba(255, 102, 0, 0.1);
+  border-color: rgba(255, 102, 0, 0.3);
+}
+
+.terminal-badge.danger {
+  color: var(--danger);
+  background: rgba(255, 51, 68, 0.1);
+  border-color: rgba(255, 51, 68, 0.3);
+}
+
+.terminal-badge.secondary {
+  color: var(--secondary);
+  background: rgba(0, 204, 255, 0.1);
+  border-color: rgba(0, 204, 255, 0.3);
+}
+
+/* ===================================
    CRT MONOCHROME EMOJI STYLING
    =================================== */
 /* Convert colorful emojis to green CRT terminal aesthetic */

@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Calendar, ListTodo, ScrollText, FileText, Image } from 'lucide-react';
 import { NotesInterface } from './NotesInterface';
 import { SessionsList } from '../sessions/SessionsList';
@@ -20,87 +19,66 @@ export const CampaignInterface: React.FC = () => {
   }, [activeSubTab]);
 
   return (
-    <div className="h-full flex flex-col bg-black text-terminal-primary font-mono">
-      <div className="border-b border-terminal-primary/30 p-4">
-        <h1 className="text-2xl font-bold text-terminal-primary">
-          CAMPAIGN MANAGEMENT
-        </h1>
-        <p className="text-terminal-primary/70 text-sm mt-1">
-          Manage sessions, quests, calendar, notes, and handouts
-        </p>
-      </div>
+    <div className="interface-container">
+      <header className="interface-header">
+        <div>
+          <h1 className="interface-title">CAMPAIGN MANAGEMENT</h1>
+          <p className="interface-subtitle">
+            Manage sessions, quests, calendar, notes, and handouts
+          </p>
+        </div>
+      </header>
 
-      <ScrollArea className="flex-1">
+      <div className="interface-content">
         <Tabs value={activeSubTab} onValueChange={setActiveSubTab} className="w-full">
-          <div className="sticky top-0 z-10 bg-black border-b border-terminal-primary/30 px-4 pt-4">
-            <TabsList className="grid w-full grid-cols-5 bg-black border border-terminal-primary/30">
-              <TabsTrigger
-                value="sessions"
-                className="data-[state=active]:bg-terminal-primary/20 data-[state=active]:text-terminal-primary flex items-center gap-2"
-              >
-                <ScrollText className="h-4 w-4" />
-                <span className="hidden sm:inline">Sessions</span>
-              </TabsTrigger>
-              <TabsTrigger
-                value="quests"
-                className="data-[state=active]:bg-terminal-primary/20 data-[state=active]:text-terminal-primary flex items-center gap-2"
-              >
-                <ListTodo className="h-4 w-4" />
-                <span className="hidden sm:inline">Quests</span>
-              </TabsTrigger>
-              <TabsTrigger
-                value="calendar"
-                className="data-[state=active]:bg-terminal-primary/20 data-[state=active]:text-terminal-primary flex items-center gap-2"
-              >
-                <Calendar className="h-4 w-4" />
-                <span className="hidden sm:inline">Calendar</span>
-              </TabsTrigger>
-              <TabsTrigger
-                value="notes"
-                className="data-[state=active]:bg-terminal-primary/20 data-[state=active]:text-terminal-primary flex items-center gap-2"
-              >
-                <FileText className="h-4 w-4" />
-                <span className="hidden sm:inline">Notes</span>
-              </TabsTrigger>
-              <TabsTrigger
-                value="handouts"
-                className="data-[state=active]:bg-terminal-primary/20 data-[state=active]:text-terminal-primary flex items-center gap-2"
-              >
-                <Image className="h-4 w-4" />
-                <span className="hidden sm:inline">Handouts</span>
-              </TabsTrigger>
-            </TabsList>
-          </div>
+          <TabsList className="terminal-tabs-list grid-cols-5 mb-4">
+            <TabsTrigger value="sessions" className="terminal-tab-trigger">
+              <ScrollText className="h-4 w-4" />
+              <span className="hidden sm:inline">Sessions</span>
+            </TabsTrigger>
+            <TabsTrigger value="quests" className="terminal-tab-trigger">
+              <ListTodo className="h-4 w-4" />
+              <span className="hidden sm:inline">Quests</span>
+            </TabsTrigger>
+            <TabsTrigger value="calendar" className="terminal-tab-trigger">
+              <Calendar className="h-4 w-4" />
+              <span className="hidden sm:inline">Calendar</span>
+            </TabsTrigger>
+            <TabsTrigger value="notes" className="terminal-tab-trigger">
+              <FileText className="h-4 w-4" />
+              <span className="hidden sm:inline">Notes</span>
+            </TabsTrigger>
+            <TabsTrigger value="handouts" className="terminal-tab-trigger">
+              <Image className="h-4 w-4" />
+              <span className="hidden sm:inline">Handouts</span>
+            </TabsTrigger>
+          </TabsList>
 
-          <div className="p-4">
-            <TabsContent value="sessions" className="mt-0">
-              <SessionsList />
-            </TabsContent>
+          <TabsContent value="sessions" className="mt-0">
+            <SessionsList />
+          </TabsContent>
 
-            <TabsContent value="quests" className="mt-0">
-              <QuestBoard />
-            </TabsContent>
+          <TabsContent value="quests" className="mt-0">
+            <QuestBoard />
+          </TabsContent>
 
-            <TabsContent value="calendar" className="mt-0">
-              <CalendarView />
-            </TabsContent>
+          <TabsContent value="calendar" className="mt-0">
+            <CalendarView />
+          </TabsContent>
 
-            <TabsContent value="notes" className="mt-0">
-              {/* Wrap NotesInterface in a container that starts on the "notes" tab */}
-              <div className="campaign-notes-wrapper">
-                <NotesInterface defaultTab="notes" />
-              </div>
-            </TabsContent>
+          <TabsContent value="notes" className="mt-0">
+            <div className="campaign-notes-wrapper">
+              <NotesInterface defaultTab="notes" />
+            </div>
+          </TabsContent>
 
-            <TabsContent value="handouts" className="mt-0">
-              {/* Wrap NotesInterface in a container that starts on the "handouts" tab */}
-              <div className="campaign-handouts-wrapper">
-                <NotesInterface defaultTab="handouts" />
-              </div>
-            </TabsContent>
-          </div>
+          <TabsContent value="handouts" className="mt-0">
+            <div className="campaign-handouts-wrapper">
+              <NotesInterface defaultTab="handouts" />
+            </div>
+          </TabsContent>
         </Tabs>
-      </ScrollArea>
+      </div>
     </div>
   );
 };

@@ -54,51 +54,45 @@ export default function CrewInterface() {
 
   if (showCharacterSheet) {
     return (
-      <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4 sm:mb-6">
-          <h2 className="text-base sm:text-xl font-['Orbitron'] tracking-[0.15em] sm:tracking-[0.2em] text-primary drop-shadow-[0_0_10px_rgba(0,255,0,0.4)]">CHARACTER SHEET INTERFACE</h2>
-          <button className="terminal-btn text-xs sm:text-sm w-full sm:w-auto" onClick={handleBackToCrewInterface}>
+      <div className="interface-container">
+        <header className="interface-header">
+          <h2 className="interface-title">CHARACTER SHEET INTERFACE</h2>
+          <button className="terminal-btn text-xs sm:text-sm" onClick={handleBackToCrewInterface}>
             Back to Crew Management
           </button>
+        </header>
+        <div className="interface-content">
+          <CharacterSheet characterId={activeCrewMember || undefined} />
         </div>
-        <CharacterSheet characterId={activeCrewMember || undefined} />
       </div>
     );
   }
 
   return (
-    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
-      <div className="flex justify-between items-center mb-4 sm:mb-6">
-        <h2 className="text-base sm:text-xl font-['Orbitron'] tracking-[0.15em] sm:tracking-[0.2em] text-primary drop-shadow-[0_0_10px_rgba(0,255,0,0.4)]">CREW & OPERATIONS</h2>
-      </div>
+    <div className="interface-container">
+      <header className="interface-header">
+        <div>
+          <h2 className="interface-title">CREW & OPERATIONS</h2>
+          <p className="interface-subtitle">Manage crew, character generation, trade, and finance</p>
+        </div>
+      </header>
 
+      <div className="interface-content">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4 bg-black border border-terminal-primary/30 mb-4">
-          <TabsTrigger
-            value="crew"
-            className="data-[state=active]:bg-terminal-primary/20 data-[state=active]:text-terminal-primary flex items-center gap-2"
-          >
+        <TabsList className="terminal-tabs-list grid-cols-4 mb-4">
+          <TabsTrigger value="crew" className="terminal-tab-trigger">
             <Users className="h-4 w-4" />
             <span className="hidden sm:inline">Crew</span>
           </TabsTrigger>
-          <TabsTrigger
-            value="chargen"
-            className="data-[state=active]:bg-terminal-primary/20 data-[state=active]:text-terminal-primary flex items-center gap-2"
-          >
+          <TabsTrigger value="chargen" className="terminal-tab-trigger">
             <UserPlus className="h-4 w-4" />
             <span className="hidden sm:inline">Char Gen</span>
           </TabsTrigger>
-          <TabsTrigger
-            value="trade"
-            className="data-[state=active]:bg-terminal-primary/20 data-[state=active]:text-terminal-primary flex items-center gap-2"
-          >
+          <TabsTrigger value="trade" className="terminal-tab-trigger">
             <Package className="h-4 w-4" />
             <span className="hidden sm:inline">Trade</span>
           </TabsTrigger>
-          <TabsTrigger
-            value="finance"
-            className="data-[state=active]:bg-terminal-primary/20 data-[state=active]:text-terminal-primary flex items-center gap-2"
-          >
+          <TabsTrigger value="finance" className="terminal-tab-trigger">
             <DollarSign className="h-4 w-4" />
             <span className="hidden sm:inline">Finance</span>
           </TabsTrigger>
@@ -228,6 +222,7 @@ export default function CrewInterface() {
         <FinanceInterface />
       </TabsContent>
     </Tabs>
-  </div>
-);
+      </div>
+    </div>
+  );
 }

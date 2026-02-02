@@ -576,83 +576,81 @@ export default function CombatInterface() {
   };
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="interface-container">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <header className="interface-header">
         <div>
-          <h2 className="text-3xl font-bold flex items-center gap-2">
-            <Swords className="w-8 h-8" />
+          <h2 className="interface-title flex items-center gap-3">
+            <Swords className="w-6 h-6" />
             Combat Tracker
           </h2>
-          <p className="text-muted-foreground">Manage initiative, health, and actions</p>
+          <p className="interface-subtitle">Manage initiative, health, and actions</p>
         </div>
 
         <div className="flex gap-2">
-          <Button onClick={() => setIsAddDialogOpen(true)}>
-            <Plus className="w-4 h-4 mr-2" />
+          <button className="terminal-btn" onClick={() => setIsAddDialogOpen(true)}>
+            <Plus className="w-4 h-4 mr-2 inline" />
             Add Combatant
-          </Button>
+          </button>
           {combatants.length > 0 && (
-            <Button variant="destructive" onClick={handleResetCombat}>
-              <RefreshCw className="w-4 h-4 mr-2" />
-              Reset Combat
-            </Button>
+            <button className="terminal-btn danger" onClick={handleResetCombat}>
+              <RefreshCw className="w-4 h-4 mr-2 inline" />
+              Reset
+            </button>
           )}
         </div>
-      </div>
+      </header>
 
+      <div className="interface-content">
       {combatants.length === 0 ? (
-        <Card>
-          <CardContent className="py-16 text-center">
-            <Swords className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
-            <h3 className="text-xl font-semibold mb-2">No combatants yet</h3>
-            <p className="text-muted-foreground mb-4">
+        <div className="terminal-card">
+          <div className="terminal-empty-state">
+            <Swords className="terminal-empty-state-icon text-terminal-primary" />
+            <h3 className="terminal-empty-state-title">No combatants yet</h3>
+            <p className="terminal-empty-state-description">
               Add characters from your crew or create NPCs to start tracking combat
             </p>
-            <Button onClick={() => setIsAddDialogOpen(true)}>
-              <Plus className="w-4 h-4 mr-2" />
+            <button className="terminal-btn" onClick={() => setIsAddDialogOpen(true)}>
+              <Plus className="w-4 h-4 mr-2 inline" />
               Add First Combatant
-            </Button>
-          </CardContent>
-        </Card>
+            </button>
+          </div>
+        </div>
       ) : (
-        <>
+        <div className="space-y-4">
           {/* Combat Controls */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <span>Round {currentRound}</span>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handlePreviousTurn}
-                    disabled={currentRound === 1 && currentTurnIndex === 0}
-                  >
-                    <ArrowUp className="w-4 h-4 mr-1" />
-                    Previous
-                  </Button>
-                  <Button
-                    size="sm"
-                    onClick={handleNextTurn}
-                  >
-                    Next Turn
-                    <ArrowDown className="w-4 h-4 ml-1" />
-                  </Button>
-                </div>
-              </CardTitle>
-            </CardHeader>
-          </Card>
+          <div className="panel">
+            <div className="panel-header">
+              <span className="panel-title">ROUND {currentRound}</span>
+              <div className="flex gap-2">
+                <button
+                  className="terminal-btn text-xs py-1 px-3"
+                  onClick={handlePreviousTurn}
+                  disabled={currentRound === 1 && currentTurnIndex === 0}
+                >
+                  <ArrowUp className="w-3 h-3 mr-1 inline" />
+                  Previous
+                </button>
+                <button
+                  className="terminal-btn primary text-xs py-1 px-3"
+                  onClick={handleNextTurn}
+                >
+                  Next Turn
+                  <ArrowDown className="w-3 h-3 ml-1 inline" />
+                </button>
+              </div>
+            </div>
+          </div>
 
           {/* Combatants List */}
-          <div className="grid gap-4">
+          <div className="grid gap-3">
             {sortedCombatants.map((combatant, index) => {
               const isCurrentTurn = index === currentTurnIndex;
               const isDragging = draggedCombatantId === combatant.id;
               const isDragOver = dragOverIndex === index;
 
               return (
-                <Card
+                <div
                   key={combatant.id}
                   draggable
                   onDragStart={(e) => handleDragStart(e, combatant.id)}
@@ -661,83 +659,80 @@ export default function CombatInterface() {
                   onDrop={(e) => handleDrop(e, index)}
                   onDragEnd={handleDragEnd}
                   className={cn(
-                    "transition-all cursor-move",
-                    isCurrentTurn && "ring-2 ring-primary shadow-lg",
+                    "terminal-card transition-all cursor-move",
+                    isCurrentTurn && "ring-2 ring-terminal-primary shadow-[0_0_20px_rgba(0,255,0,0.3)]",
                     combatant.isDowned && "opacity-60",
                     isDragging && "opacity-50",
-                    isDragOver && "ring-2 ring-blue-400 scale-105"
+                    isDragOver && "ring-2 ring-terminal-secondary scale-[1.02]"
                   )}
                 >
-                  <CardHeader className="pb-3">
+                  <div className="terminal-card-header">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <GripVertical className="w-5 h-5 text-muted-foreground cursor-grab active:cursor-grabbing flex-shrink-0" />
-                        <div className="flex flex-col items-center justify-center w-12 h-12 rounded-full bg-primary/20 border-2 border-primary">
-                          <div className="text-xs text-muted-foreground">Init</div>
-                          <div className="text-lg font-bold">{combatant.initiative}</div>
+                        <GripVertical className="w-5 h-5 text-terminal-text-dimmer cursor-grab active:cursor-grabbing flex-shrink-0" />
+                        <div className="flex flex-col items-center justify-center w-12 h-12 rounded-full bg-terminal-primary/20 border-2 border-terminal-primary">
+                          <div className="text-[0.6rem] text-terminal-text-dimmer">INIT</div>
+                          <div className="text-lg font-bold font-['Orbitron'] text-terminal-primary">{combatant.initiative}</div>
                         </div>
 
                         <div>
-                          <CardTitle className="flex items-center gap-2">
+                          <div className="terminal-card-title flex items-center gap-2">
                             {combatant.type === 'character' ? (
-                              <User className="w-4 h-4 text-blue-500" />
+                              <User className="w-4 h-4 text-terminal-secondary" />
                             ) : (
-                              <User className="w-4 h-4 text-orange-500" />
+                              <User className="w-4 h-4 text-terminal-warning" />
                             )}
                             {combatant.name}
                             {combatant.isDowned && (
-                              <span className="text-sm text-destructive font-normal">(DOWNED)</span>
+                              <span className="terminal-badge danger">(DOWNED)</span>
                             )}
-                          </CardTitle>
+                          </div>
                           {isCurrentTurn && (
-                            <p className="text-sm text-primary font-semibold">CURRENT TURN</p>
+                            <p className="text-xs text-terminal-primary font-semibold tracking-wider mt-1">CURRENT TURN</p>
                           )}
                         </div>
                       </div>
 
-                      <Button
-                        variant="ghost"
-                        size="icon"
+                      <button
+                        className="p-2 text-terminal-danger hover:bg-terminal-danger/20 rounded transition-colors"
                         onClick={() => handleRemoveCombatant(combatant.id)}
                       >
                         <Trash2 className="w-4 h-4" />
-                      </Button>
+                      </button>
                     </div>
-                  </CardHeader>
+                  </div>
 
-                  <CardContent className="space-y-4">
+                  <div className="terminal-card-content space-y-4">
                     {/* Health */}
                     {combatant.healthType === 'hits' ? (
                       // Show Hits for inanimate objects, robots, animals
                       <div className="space-y-2">
-                        <Label className="flex items-center gap-1">
-                          <Heart className="w-3 h-3 text-red-500" />
+                        <label className="flex items-center gap-1 text-xs text-terminal-text-dimmer uppercase tracking-wider">
+                          <Heart className="w-3 h-3 text-terminal-danger" />
                           Hits
-                        </Label>
+                        </label>
                         <div className="flex items-center gap-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
+                          <button
+                            className="terminal-btn text-xs py-1 px-3"
                             onClick={() => handleApplyDamage(combatant.id, 1)}
                           >
                             -1
-                          </Button>
+                          </button>
                           <div className="flex-1 text-center">
                             <span className={cn(
-                              "text-2xl font-bold",
-                              combatant.hits === 0 && "text-destructive"
+                              "text-2xl font-bold font-['Orbitron']",
+                              combatant.hits === 0 ? "text-terminal-danger" : "text-terminal-primary"
                             )}>
                               {combatant.hits}
                             </span>
-                            <span className="text-muted-foreground">/{combatant.hitsMax}</span>
+                            <span className="text-terminal-text-dimmer">/{combatant.hitsMax}</span>
                           </div>
-                          <Button
-                            size="sm"
-                            variant="outline"
+                          <button
+                            className="terminal-btn text-xs py-1 px-3"
                             onClick={() => handleHeal(combatant.id, 1)}
                           >
                             +1
-                          </Button>
+                          </button>
                         </div>
                       </div>
                     ) : (
@@ -745,97 +740,85 @@ export default function CombatInterface() {
                       <div className="grid grid-cols-3 gap-2">
                         {/* STR */}
                         <div className="space-y-2">
-                          <Label className="text-xs font-bold">STR</Label>
+                          <label className="text-xs font-bold text-terminal-text-dimmer uppercase tracking-wider block text-center">STR</label>
                           <div className="flex flex-col items-center gap-1">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="h-6 w-full"
+                            <button
+                              className="terminal-btn text-xs py-1 px-2 w-full"
                               onClick={() => handleHeal(combatant.id, 1, 'str')}
                             >
                               +1
-                            </Button>
+                            </button>
                             <div className="text-center">
                               <span className={cn(
-                                "text-xl font-bold",
-                                combatant.currentStr === 0 && "text-destructive"
+                                "text-xl font-bold font-['Orbitron']",
+                                combatant.currentStr === 0 ? "text-terminal-danger" : "text-terminal-primary"
                               )}>
                                 {combatant.currentStr}
                               </span>
-                              <span className="text-xs text-muted-foreground">/{combatant.maxStr}</span>
+                              <span className="text-xs text-terminal-text-dimmer">/{combatant.maxStr}</span>
                             </div>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="h-6 w-full"
+                            <button
+                              className="terminal-btn text-xs py-1 px-2 w-full"
                               onClick={() => handleApplyDamage(combatant.id, 1, 'str')}
                             >
                               -1
-                            </Button>
+                            </button>
                           </div>
                         </div>
 
                         {/* DEX */}
                         <div className="space-y-2">
-                          <Label className="text-xs font-bold">DEX</Label>
+                          <label className="text-xs font-bold text-terminal-text-dimmer uppercase tracking-wider block text-center">DEX</label>
                           <div className="flex flex-col items-center gap-1">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="h-6 w-full"
+                            <button
+                              className="terminal-btn text-xs py-1 px-2 w-full"
                               onClick={() => handleHeal(combatant.id, 1, 'dex')}
                             >
                               +1
-                            </Button>
+                            </button>
                             <div className="text-center">
                               <span className={cn(
-                                "text-xl font-bold",
-                                combatant.currentDex === 0 && "text-destructive"
+                                "text-xl font-bold font-['Orbitron']",
+                                combatant.currentDex === 0 ? "text-terminal-danger" : "text-terminal-primary"
                               )}>
                                 {combatant.currentDex}
                               </span>
-                              <span className="text-xs text-muted-foreground">/{combatant.maxDex}</span>
+                              <span className="text-xs text-terminal-text-dimmer">/{combatant.maxDex}</span>
                             </div>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="h-6 w-full"
+                            <button
+                              className="terminal-btn text-xs py-1 px-2 w-full"
                               onClick={() => handleApplyDamage(combatant.id, 1, 'dex')}
                             >
                               -1
-                            </Button>
+                            </button>
                           </div>
                         </div>
 
                         {/* END */}
                         <div className="space-y-2">
-                          <Label className="text-xs font-bold">END</Label>
+                          <label className="text-xs font-bold text-terminal-text-dimmer uppercase tracking-wider block text-center">END</label>
                           <div className="flex flex-col items-center gap-1">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="h-6 w-full"
+                            <button
+                              className="terminal-btn text-xs py-1 px-2 w-full"
                               onClick={() => handleHeal(combatant.id, 1, 'end')}
                             >
                               +1
-                            </Button>
+                            </button>
                             <div className="text-center">
                               <span className={cn(
-                                "text-xl font-bold",
-                                combatant.currentEnd === 0 && "text-destructive"
+                                "text-xl font-bold font-['Orbitron']",
+                                combatant.currentEnd === 0 ? "text-terminal-danger" : "text-terminal-primary"
                               )}>
                                 {combatant.currentEnd}
                               </span>
-                              <span className="text-xs text-muted-foreground">/{combatant.maxEnd}</span>
+                              <span className="text-xs text-terminal-text-dimmer">/{combatant.maxEnd}</span>
                             </div>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="h-6 w-full"
+                            <button
+                              className="terminal-btn text-xs py-1 px-2 w-full"
                               onClick={() => handleApplyDamage(combatant.id, 1, 'end')}
                             >
                               -1
-                            </Button>
+                            </button>
                           </div>
                         </div>
                       </div>
@@ -843,17 +826,17 @@ export default function CombatInterface() {
 
                     {/* Action Economy */}
                     <div className="grid grid-cols-3 gap-2 text-center">
-                      <div className="p-2 bg-muted rounded">
-                        <div className="text-xs text-muted-foreground">Actions</div>
-                        <div className="text-lg font-bold">{combatant.actionsRemaining}/2</div>
+                      <div className="terminal-stat">
+                        <div className="terminal-stat-label">Actions</div>
+                        <div className="terminal-stat-value text-base">{combatant.actionsRemaining}/2</div>
                       </div>
-                      <div className="p-2 bg-muted rounded">
-                        <div className="text-xs text-muted-foreground">Reactions</div>
-                        <div className="text-lg font-bold">{combatant.reactionsRemaining}/1</div>
+                      <div className="terminal-stat">
+                        <div className="terminal-stat-label">Reactions</div>
+                        <div className="terminal-stat-value text-base">{combatant.reactionsRemaining}/1</div>
                       </div>
-                      <div className="p-2 bg-muted rounded">
-                        <div className="text-xs text-muted-foreground">Movement</div>
-                        <div className="text-lg font-bold">
+                      <div className="terminal-stat">
+                        <div className="terminal-stat-label">Movement</div>
+                        <div className="terminal-stat-value text-base">
                           {combatant.hasMovedThisRound ? '✓' : '○'}
                         </div>
                       </div>
@@ -862,48 +845,40 @@ export default function CombatInterface() {
                     {/* Combat Status */}
                     <div className="grid grid-cols-3 gap-2">
                       <div>
-                        <Label className="text-xs">Cover</Label>
-                        <Select
+                        <label className="text-xs text-terminal-text-dimmer uppercase tracking-wider block mb-1">Cover</label>
+                        <select
                           value={combatant.cover}
-                          onValueChange={(value: any) =>
-                            handleUpdateCombatant(combatant.id, { cover: value })
+                          onChange={(e) =>
+                            handleUpdateCombatant(combatant.id, { cover: e.target.value as any })
                           }
+                          className="terminal-input h-8 text-xs"
                         >
-                          <SelectTrigger className="h-8">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="none">None</SelectItem>
-                            <SelectItem value="partial">Partial</SelectItem>
-                            <SelectItem value="full">Full</SelectItem>
-                          </SelectContent>
-                        </Select>
+                          <option value="none">None</option>
+                          <option value="partial">Partial</option>
+                          <option value="full">Full</option>
+                        </select>
                       </div>
 
                       <div>
-                        <Label className="text-xs">Range</Label>
-                        <Select
+                        <label className="text-xs text-terminal-text-dimmer uppercase tracking-wider block mb-1">Range</label>
+                        <select
                           value={combatant.range}
-                          onValueChange={(value: any) =>
-                            handleUpdateCombatant(combatant.id, { range: value })
+                          onChange={(e) =>
+                            handleUpdateCombatant(combatant.id, { range: e.target.value as any })
                           }
+                          className="terminal-input h-8 text-xs"
                         >
-                          <SelectTrigger className="h-8">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="close">Close</SelectItem>
-                            <SelectItem value="short">Short</SelectItem>
-                            <SelectItem value="medium">Medium</SelectItem>
-                            <SelectItem value="long">Long</SelectItem>
-                            <SelectItem value="extreme">Extreme</SelectItem>
-                          </SelectContent>
-                        </Select>
+                          <option value="close">Close</option>
+                          <option value="short">Short</option>
+                          <option value="medium">Medium</option>
+                          <option value="long">Long</option>
+                          <option value="extreme">Extreme</option>
+                        </select>
                       </div>
 
                       <div>
-                        <Label className="text-xs">Armor</Label>
-                        <Input
+                        <label className="text-xs text-terminal-text-dimmer uppercase tracking-wider block mb-1">Armor</label>
+                        <input
                           type="number"
                           value={combatant.armor}
                           onChange={(e) =>
@@ -911,61 +886,62 @@ export default function CombatInterface() {
                               armor: parseInt(e.target.value) || 0
                             })
                           }
-                          className="h-8"
+                          className="terminal-input h-8 text-xs"
                         />
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
               );
             })}
           </div>
-        </>
+        </div>
       )}
+      </div>
 
       {/* Add Combatant Dialog */}
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md bg-terminal-bg-panel border-terminal-primary/50">
           <DialogHeader>
-            <DialogTitle>Add Combatant</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="font-['Orbitron'] text-terminal-primary tracking-wider">Add Combatant</DialogTitle>
+            <DialogDescription className="text-terminal-text-dimmer">
               Add a character from your crew or create a new NPC
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-2">
-              <Button
-                variant={addType === 'character' ? 'default' : 'outline'}
+              <button
+                className={cn("terminal-btn text-xs", addType === 'character' && "primary")}
                 onClick={() => setAddType('character')}
               >
                 Character
-              </Button>
-              <Button
-                variant={addType === 'npc' ? 'default' : 'outline'}
+              </button>
+              <button
+                className={cn("terminal-btn text-xs", addType === 'npc' && "primary")}
                 onClick={() => setAddType('npc')}
               >
                 NPC
-              </Button>
+              </button>
             </div>
 
             {addType === 'character' ? (
               <div className="space-y-2">
-                <Label>Select Character</Label>
-                <Select value={selectedCharacterId} onValueChange={setSelectedCharacterId}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Choose a character..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {characters.map(char => (
-                      <SelectItem key={char.id} value={char.id}>
-                        {char.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <label className="text-xs text-terminal-text-dimmer uppercase tracking-wider block">Select Character</label>
+                <select
+                  value={selectedCharacterId}
+                  onChange={(e) => setSelectedCharacterId(e.target.value)}
+                  className="terminal-input"
+                >
+                  <option value="">Choose a character...</option>
+                  {characters.map(char => (
+                    <option key={char.id} value={char.id}>
+                      {char.name}
+                    </option>
+                  ))}
+                </select>
                 {characters.length === 0 && (
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-terminal-text-dimmer">
                     No characters available. Create one in the Crew tab first.
                   </p>
                 )}
@@ -973,89 +949,94 @@ export default function CombatInterface() {
             ) : (
               <div className="space-y-3">
                 <div>
-                  <Label>Name</Label>
-                  <Input
+                  <label className="text-xs text-terminal-text-dimmer uppercase tracking-wider block mb-1">Name</label>
+                  <input
                     value={npcName}
                     onChange={(e) => setNpcName(e.target.value)}
                     placeholder="NPC Name"
+                    className="terminal-input"
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <Label>Initiative</Label>
-                    <Input
+                    <label className="text-xs text-terminal-text-dimmer uppercase tracking-wider block mb-1">Initiative</label>
+                    <input
                       type="number"
                       value={npcInitiative}
                       onChange={(e) => setNpcInitiative(parseInt(e.target.value) || 0)}
+                      className="terminal-input"
                     />
                   </div>
                   <div>
-                    <Label>Armor</Label>
-                    <Input
+                    <label className="text-xs text-terminal-text-dimmer uppercase tracking-wider block mb-1">Armor</label>
+                    <input
                       type="number"
                       value={npcArmor}
                       onChange={(e) => setNpcArmor(parseInt(e.target.value) || 0)}
+                      className="terminal-input"
                     />
                   </div>
                 </div>
 
                 {/* Health Type Selection */}
                 <div>
-                  <Label>Health Type</Label>
+                  <label className="text-xs text-terminal-text-dimmer uppercase tracking-wider block mb-1">Health Type</label>
                   <div className="grid grid-cols-2 gap-2 mt-1">
-                    <Button
+                    <button
                       type="button"
-                      size="sm"
-                      variant={npcHealthType === 'hits' ? 'default' : 'outline'}
+                      className={cn("terminal-btn text-xs", npcHealthType === 'hits' && "primary")}
                       onClick={() => setNpcHealthType('hits')}
                     >
-                      Hits (Objects/Animals)
-                    </Button>
-                    <Button
+                      Hits (Objects)
+                    </button>
+                    <button
                       type="button"
-                      size="sm"
-                      variant={npcHealthType === 'characteristics' ? 'default' : 'outline'}
+                      className={cn("terminal-btn text-xs", npcHealthType === 'characteristics' && "primary")}
                       onClick={() => setNpcHealthType('characteristics')}
                     >
-                      Characteristics (Sophonts)
-                    </Button>
+                      Characteristics
+                    </button>
                   </div>
                 </div>
 
                 {/* Health Fields */}
                 {npcHealthType === 'hits' ? (
                   <div>
-                    <Label>Hits</Label>
-                    <Input
+                    <label className="text-xs text-terminal-text-dimmer uppercase tracking-wider block mb-1">Hits</label>
+                    <input
                       type="number"
                       value={npcHits}
                       onChange={(e) => setNpcHits(parseInt(e.target.value) || 10)}
+                      className="terminal-input"
                     />
                   </div>
                 ) : (
                   <div className="grid grid-cols-3 gap-2">
                     <div>
-                      <Label>STR</Label>
-                      <Input
+                      <label className="text-xs text-terminal-text-dimmer uppercase tracking-wider block mb-1">STR</label>
+                      <input
                         type="number"
                         value={npcStr}
                         onChange={(e) => setNpcStr(parseInt(e.target.value) || 7)}
+                        className="terminal-input"
                       />
                     </div>
                     <div>
-                      <Label>DEX</Label>
-                      <Input
+                      <label className="text-xs text-terminal-text-dimmer uppercase tracking-wider block mb-1">DEX</label>
+                      <input
                         type="number"
                         value={npcDex}
                         onChange={(e) => setNpcDex(parseInt(e.target.value) || 7)}
+                        className="terminal-input"
                       />
                     </div>
                     <div>
-                      <Label>END</Label>
-                      <Input
+                      <label className="text-xs text-terminal-text-dimmer uppercase tracking-wider block mb-1">END</label>
+                      <input
                         type="number"
                         value={npcEnd}
                         onChange={(e) => setNpcEnd(parseInt(e.target.value) || 7)}
+                        className="terminal-input"
                       />
                     </div>
                   </div>
@@ -1065,28 +1046,29 @@ export default function CombatInterface() {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+            <button className="terminal-btn" onClick={() => setIsAddDialogOpen(false)}>
               Cancel
-            </Button>
-            <Button
+            </button>
+            <button
+              className="terminal-btn primary"
               onClick={addType === 'character' ? handleAddCharacter : handleAddNPC}
               disabled={addType === 'character' ? !selectedCharacterId : !npcName.trim()}
             >
               Add Combatant
-            </Button>
+            </button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* Initiative Roll Dialog */}
       <Dialog open={isInitiativeDialogOpen} onOpenChange={setIsInitiativeDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md bg-terminal-bg-panel border-terminal-primary/50">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+            <DialogTitle className="flex items-center gap-2 font-['Orbitron'] text-terminal-primary tracking-wider">
               <Dices className="w-5 h-5" />
               Roll Initiative: {pendingCharacter?.name}
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-terminal-text-dimmer">
               Roll 2d6 + DEX or INT DM + bonuses for initiative
             </DialogDescription>
           </DialogHeader>
@@ -1094,41 +1076,39 @@ export default function CombatInterface() {
           <div className="space-y-4">
             {/* Manual Entry Toggle */}
             <div>
-              <Label>Initiative Entry Method</Label>
+              <label className="text-xs text-terminal-text-dimmer uppercase tracking-wider block mb-1">Initiative Entry Method</label>
               <div className="grid grid-cols-2 gap-2 mt-1">
-                <Button
+                <button
                   type="button"
-                  size="sm"
-                  variant={!useManualInitiative ? 'default' : 'outline'}
+                  className={cn("terminal-btn text-xs", !useManualInitiative && "primary")}
                   onClick={() => setUseManualInitiative(false)}
                 >
                   Roll Dice
-                </Button>
-                <Button
+                </button>
+                <button
                   type="button"
-                  size="sm"
-                  variant={useManualInitiative ? 'default' : 'outline'}
+                  className={cn("terminal-btn text-xs", useManualInitiative && "primary")}
                   onClick={() => setUseManualInitiative(true)}
                 >
                   Manual Entry
-                </Button>
+                </button>
               </div>
             </div>
 
             {useManualInitiative ? (
               /* Manual Initiative Entry */
-              <div className="border border-primary/30 bg-card/40 rounded p-4 space-y-3">
+              <div className="border border-terminal-primary/30 bg-terminal-bg-panel-alt rounded p-4 space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Initiative Value:</span>
-                  <Input
+                  <span className="text-sm text-terminal-text-dimmer">Initiative Value:</span>
+                  <input
                     type="number"
                     value={manualInitiative}
                     onChange={(e) => setManualInitiative(parseInt(e.target.value) || 0)}
-                    className="h-10 w-24 text-center text-xl font-bold"
+                    className="terminal-input h-10 w-24 text-center text-xl font-bold font-['Orbitron']"
                     autoFocus
                   />
                 </div>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-terminal-text-dimmer">
                   Enter the initiative value rolled by the player at the table.
                 </p>
               </div>
@@ -1136,44 +1116,42 @@ export default function CombatInterface() {
               <>
                 {/* Characteristic Selection */}
                 <div>
-                  <Label>Use Characteristic</Label>
+                  <label className="text-xs text-terminal-text-dimmer uppercase tracking-wider block mb-1">Use Characteristic</label>
                   <div className="grid grid-cols-2 gap-2 mt-1">
-                    <Button
+                    <button
                       type="button"
-                      size="sm"
-                      variant={initiativeCharacteristic === 'dex' ? 'default' : 'outline'}
+                      className={cn("terminal-btn text-xs", initiativeCharacteristic === 'dex' && "primary")}
                       onClick={() => {
                         setInitiativeCharacteristic('dex');
                         if (pendingCharacter) handleRollInitiative('dex', pendingCharacter);
                       }}
                     >
                       DEX ({pendingCharacter ? (pendingCharacter.current_dexterity ?? pendingCharacter.dexterity) : 0})
-                    </Button>
-                    <Button
+                    </button>
+                    <button
                       type="button"
-                      size="sm"
-                      variant={initiativeCharacteristic === 'int' ? 'default' : 'outline'}
+                      className={cn("terminal-btn text-xs", initiativeCharacteristic === 'int' && "primary")}
                       onClick={() => {
                         setInitiativeCharacteristic('int');
                         if (pendingCharacter) handleRollInitiative('int', pendingCharacter);
                       }}
                     >
                       INT ({pendingCharacter?.intellect || 0})
-                    </Button>
+                    </button>
                   </div>
                 </div>
 
                 {/* Roll Display */}
-                <div className="border border-primary/30 bg-card/40 rounded p-4 space-y-3">
+                <div className="border border-terminal-primary/30 bg-terminal-bg-panel-alt rounded p-4 space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">2d6 Roll:</span>
-                    <span className="text-2xl font-bold">{initiativeRoll}</span>
+                    <span className="text-sm text-terminal-text-dimmer">2d6 Roll:</span>
+                    <span className="text-2xl font-bold font-['Orbitron'] text-terminal-primary">{initiativeRoll}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">
+                    <span className="text-sm text-terminal-text-dimmer">
                       {initiativeCharacteristic.toUpperCase()} DM:
                     </span>
-                    <span className="text-xl font-bold">
+                    <span className="text-xl font-bold font-['Orbitron'] text-terminal-primary">
                       {pendingCharacter && getCharacteristicDM(
                         initiativeCharacteristic === 'dex'
                           ? (pendingCharacter.current_dexterity ?? pendingCharacter.dexterity)
@@ -1187,17 +1165,17 @@ export default function CombatInterface() {
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Bonus:</span>
-                    <Input
+                    <span className="text-sm text-terminal-text-dimmer">Bonus:</span>
+                    <input
                       type="number"
                       value={initiativeBonus}
                       onChange={(e) => setInitiativeBonus(parseInt(e.target.value) || 0)}
-                      className="h-8 w-20 text-center"
+                      className="terminal-input h-8 w-20 text-center"
                     />
                   </div>
-                  <div className="border-t border-primary/20 pt-2 flex items-center justify-between">
-                    <span className="text-sm font-semibold">Total Initiative:</span>
-                    <span className="text-3xl font-bold text-primary">
+                  <div className="border-t border-terminal-primary/20 pt-2 flex items-center justify-between">
+                    <span className="text-sm font-semibold text-terminal-primary-light">Total Initiative:</span>
+                    <span className="text-3xl font-bold font-['Orbitron'] text-terminal-primary drop-shadow-[0_0_10px_rgba(0,255,0,0.5)]">
                       {pendingCharacter && (
                         initiativeRoll +
                         getCharacteristicDM(
@@ -1212,30 +1190,29 @@ export default function CombatInterface() {
                 </div>
 
                 {/* Re-roll Button */}
-                <Button
-                  variant="outline"
-                  className="w-full"
+                <button
+                  className="terminal-btn w-full"
                   onClick={() => {
                     if (pendingCharacter) handleRollInitiative(initiativeCharacteristic, pendingCharacter);
                   }}
                 >
-                  <RefreshCw className="w-4 h-4 mr-2" />
+                  <RefreshCw className="w-4 h-4 mr-2 inline" />
                   Re-roll Initiative
-                </Button>
+                </button>
               </>
             )}
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => {
+            <button className="terminal-btn" onClick={() => {
               setIsInitiativeDialogOpen(false);
               setPendingCharacter(null);
             }}>
               Cancel
-            </Button>
-            <Button onClick={handleConfirmInitiative}>
+            </button>
+            <button className="terminal-btn primary" onClick={handleConfirmInitiative}>
               Add to Combat
-            </Button>
+            </button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

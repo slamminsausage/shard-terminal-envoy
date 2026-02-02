@@ -3,7 +3,6 @@ import { useNotes } from '@/contexts/NotesContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Edit2, Trash2, Save, X, Image as ImageIcon, Video, FileText, Folder, Maximize2, Upload, Crop } from 'lucide-react';
@@ -132,29 +131,23 @@ export const NotesInterface: React.FC<NotesInterfaceProps> = ({ defaultTab = 'no
   };
 
   return (
-    <div className="h-full flex flex-col bg-black text-terminal-primary font-mono">
-      <div className="border-b border-terminal-primary/30 p-4">
-        <h1 className="text-2xl font-bold text-terminal-primary">
-          NOTES & HANDOUTS
-        </h1>
-        <p className="text-terminal-primary/70 text-sm mt-1">
-          Track campaign notes and view shared handouts
-        </p>
+    <div className="terminal-card">
+      <div className="terminal-card-header">
+        <div>
+          <h1 className="terminal-card-title text-lg">NOTES & HANDOUTS</h1>
+          <p className="terminal-card-description">
+            Track campaign notes and view shared handouts
+          </p>
+        </div>
       </div>
 
-      <ScrollArea className="flex-1 p-4">
+      <div className="terminal-card-content">
         <Tabs defaultValue={defaultTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 bg-black border border-terminal-primary/30">
-            <TabsTrigger
-              value="notes"
-              className="data-[state=active]:bg-terminal-primary/20 data-[state=active]:text-terminal-primary"
-            >
+          <TabsList className="terminal-tabs-list grid-cols-2 mb-4">
+            <TabsTrigger value="notes" className="terminal-tab-trigger">
               Player Notes ({playerNotes.length})
             </TabsTrigger>
-            <TabsTrigger
-              value="handouts"
-              className="data-[state=active]:bg-terminal-primary/20 data-[state=active]:text-terminal-primary"
-            >
+            <TabsTrigger value="handouts" className="terminal-tab-trigger">
               Handouts ({visibleHandouts.length})
             </TabsTrigger>
           </TabsList>
@@ -397,7 +390,7 @@ export const NotesInterface: React.FC<NotesInterfaceProps> = ({ defaultTab = 'no
             )}
           </TabsContent>
         </Tabs>
-      </ScrollArea>
+      </div>
     </div>
   );
 };
