@@ -53,11 +53,6 @@ export const FinanceProvider: React.FC<FinanceProviderProps> = ({ children }) =>
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
-  // Load party funds on mount
-  useEffect(() => {
-    getPartyFunds();
-  }, [getPartyFunds]);
-
   const getAllTransactions = useCallback(async (characterId?: string) => {
     setIsLoading(true);
     try {
@@ -128,6 +123,11 @@ export const FinanceProvider: React.FC<FinanceProviderProps> = ({ children }) =>
       });
     }
   }, [toast]);
+
+  // Load party funds on mount
+  useEffect(() => {
+    getPartyFunds();
+  }, [getPartyFunds]);
 
   const updatePartyFundsBalance = useCallback(async (newBalance: number) => {
     try {
