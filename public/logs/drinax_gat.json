@@ -1,0 +1,92 @@
+[
+  {
+    "title": "Port Authority Status Bulletin",
+    "location": "Drinax Highport - General Access Terminal",
+    "date": "181-1105",
+    "author": "Drinax Port Authority",
+    "content": "NOTICE: SHIPYARD CAPACITY UPDATE\n\nDue to ongoing material shortages and workforce attrition, Drinax Highport Shipyards are operating at limited capacity.\n\nPriority repairs are currently restricted to:\n- Life support systems\n- Hull breach containment\n- Maneuver drive stabilization (non-combat rated)\n\nJump drive overhauls are not currently guaranteed and may require:\n- External component sourcing\n- Extended calibration windows\n- Approval from the Royal Technical Office\n\nCaptains are advised to plan accordingly.\n\nDrinax Port Authority regrets the inconvenience.",
+    "security_level": "unlocked",
+    "requires_roll": false
+  },
+  {
+    "title": "Merchant Advisory: Route Volatility",
+    "location": "Drinax Trade Exchange - Public Terminal",
+    "date": "179-1105",
+    "author": "Independent Trade Consortium",
+    "content": "ADVISORY: ROUTE VOLATILITY IN THE TROJAN REACH\n\nSeveral independent captains report irregular losses along secondary trade routes.\n\nNo consistent pirate signatures detected.\n\nLosses attributed to:\n- Fuel shortages at unreliable ports\n- Contract enforcement disputes\n- Unexplained delays resulting in missed jump windows\n\nInsurance premiums adjusted accordingly.\n\nRecommendation: avoid prolonged stops in under-maintained systems.",
+    "security_level": "unlocked",
+    "requires_roll": false
+  },
+  {
+    "title": "Civic Continuity Notice",
+    "location": "Drinax Palace District - Public Kiosk",
+    "date": "182-1105",
+    "author": "Ministry of Civic Continuity",
+    "content": "CITIZEN REMINDER\n\nDrinax remains a sovereign kingdom.\n\nWhile foreign media may describe our current state as 'declining,' citizens are reminded that:\n- Royal authority remains intact\n- Trade relationships are ongoing\n- External interference is neither welcome nor required\n\nReports of unrest are exaggerated.\n\nService guarantees will resume as resources permit.",
+    "security_level": "unlocked",
+    "requires_roll": false
+  },
+  {
+    "title": "Technical Maintenance Advisory",
+    "location": "Drinax Highport - Shipyard Utility Terminal",
+    "date": "176-1105",
+    "author": "R. Kel, Senior Systems Engineer",
+    "content": "NOTE TO INCOMING CAPTAINS\n\nIf your jump field collapses during calibration, do not attempt a second cycle without full diagnostic clearance.\n\nWe have already lost two hulls this quarter to improvised solutions.\n\nDrinax can stabilize maneuver drives reliably.\n\nJump drives require:\n- Time\n- Parts\n- Patience\n\nIf you are short on any of the above, consider alternative arrangements.",
+    "security_level": "restricted",
+    "requires_roll": true,
+    "roll_check": {
+      "difficulty": 7,
+      "skill": "Electronics (computers)",
+      "on_success": "Access granted. Technical advisory displayed.",
+      "on_failure": "Access denied. Terminal access logged."
+    }
+  },
+  {
+    "title": "Historical Archive Excerpt: Sindalian Collapse",
+    "location": "Drinax Public Archives",
+    "date": "ARCHIVED",
+    "author": "Unknown (Recovered Record)",
+    "content": "\"…and so the Sindalian trade routes collapsed not through invasion, but neglect.\"\n\nTribute lapsed.\n\nMaintenance failed.\n\nWorlds adapted.\n\nThose who waited for restoration found themselves waiting alone.",
+    "security_level": "unlocked",
+    "requires_roll": false
+  },
+  {
+    "title": "Internal Memorandum: Outside Contractors",
+    "location": "Drinax Administrative Network",
+    "date": "180-1105",
+    "author": "Office of Strategic Resources",
+    "content": "RE: OUTSIDE CONTRACTORS\n\nRecent review indicates an increased reliance on non-state actors for:\n- Asset recovery\n- Trade disruption mitigation\n- Discretionary operations beyond official capacity\n\nWhile unofficial, these measures reduce direct exposure.\n\nRecommendation: continue exploratory outreach.",
+    "security_level": "restricted",
+    "requires_roll": true,
+    "roll_check": {
+      "difficulty": 8,
+      "skill": "Electronics (computers)",
+      "on_success": "Access granted. Internal memorandum displayed.",
+      "on_failure": "Access denied. Attempt recorded."
+    }
+  },
+  {
+    "title": "Cached Personal Message",
+    "location": "Drinax Public Comms Terminal",
+    "date": "177-1105",
+    "author": "Dockworker Tams",
+    "content": "They say Drinax is dying.\n\nI do not know about that.\n\nI know the lights still come on.\n\nI know ships still land.\n\nAnd I know every month there is a little less to go around.\n\nPeople do strange things when they are trying not to disappear.",
+    "security_level": "unlocked",
+    "requires_roll": false
+  },
+  {
+    "title": "Royal Technical Office Flagged Pattern",
+    "location": "Drinax Deep Systems Terminal",
+    "date": "182-1105",
+    "author": "REDACTED",
+    "content": "FLAGGED PATTERN\n\nResource depletion alone does not account for current degradation rates.\n\nRecommend investigation into:\n- External pressure vectors\n- Deliberate trade manipulation\n- Historical system dependencies long assumed inactive",
+    "security_level": "restricted",
+    "requires_roll": true,
+    "roll_check": {
+      "difficulty": 10,
+      "skill": "Electronics (computers)",
+      "on_success": "Access granted. Flagged analysis displayed.",
+      "on_failure": "Access denied. Security trace initiated."
+    }
+  }
+]
