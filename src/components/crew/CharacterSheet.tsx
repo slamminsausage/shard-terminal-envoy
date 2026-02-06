@@ -7,10 +7,11 @@ import { performSkillCheck, rollDamageExpression, getCharacteristicDM, getSkillD
 import { dbHelpers } from "@/lib/supabase";
 import { Upload, X, Crop } from "lucide-react";
 import { ThumbnailCropper } from "@/components/ui/ThumbnailCropper";
-import { InventoryList } from "@/components/inventory/InventoryList";
-import { EncumbranceTracker } from "@/components/inventory/EncumbranceTracker";
-import { ItemCreator } from "@/components/inventory/ItemCreator";
-import type { InventoryItem } from "@/types/inventory";
+import { WeaponTable, type WeaponRow } from "@/components/inventory/WeaponTable";
+import { ArmorTable, type ArmourRow } from "@/components/inventory/ArmorTable";
+import { EquipmentTable, type EquipmentRow } from "@/components/inventory/EquipmentTable";
+import { AugmentTable, type AugmentRow } from "@/components/inventory/AugmentTable";
+import { EncumbranceSummary } from "@/components/inventory/EncumbranceSummary";
 
 interface CharacterSheetProps {
   characterId?: string;
@@ -36,35 +37,7 @@ interface SkillDefinition {
   isPsionic?: boolean;
 }
 
-type ArmourRow = {
-  type: string;
-  rad: string;
-  protection: string;
-  kg: string;
-  options: string;
-  total: string;
-};
-
-type WeaponRow = {
-  weapon: string;
-  accuracy: string;
-  range: string;
-  damage: string;
-  kg: string;
-  magazine: string;
-  traits: string;
-};
-
-type EquipmentRow = {
-  item: string;
-  mass: string;
-};
-
-type AugmentRow = {
-  type: string;
-  tl: string;
-  improvement: string;
-};
+// Row types are now imported from the inventory components
 
 const characteristicKeys = [
   "strength",
@@ -276,9 +249,9 @@ const CharacterSheet = ({ characterId }: CharacterSheetProps = {}) => {
   const [weaponCharMods, setWeaponCharMods] = useState<string[]>(initialWeapons.map(() => "none"));
   const [equipment, setEquipment] = useState(initialEquipment);
   const [augments, setAugments] = useState(initialAugments);
-  const [totalMass, setTotalMass] = useState("");
+  // totalMass removed - auto-calculated by EncumbranceSummary
   const [skillRollDifficulty, setSkillRollDifficulty] = useState("8");
-  const [showItemCreator, setShowItemCreator] = useState(false);
+  // showItemCreator removed - replaced by catalog picker in new components
   const [skillRollCharacteristic, setSkillRollCharacteristic] = useState<CharacteristicKey>("intellect");
   const [skillRollModifier, setSkillRollModifier] = useState("0");
   const [lastRollLog, setLastRollLog] = useState<string>("");
@@ -438,21 +411,7 @@ const CharacterSheet = ({ characterId }: CharacterSheetProps = {}) => {
     }));
   };
 
-  const updateArmourRow = (index: number, field: keyof ArmourRow, value: string) => {
-    setArmourRows(prev => prev.map((row, idx) => (idx === index ? { ...row, [field]: value } : row)));
-  };
-
-  const updateWeaponRow = (index: number, field: keyof WeaponRow, value: string) => {
-    setWeapons(prev => prev.map((row, idx) => (idx === index ? { ...row, [field]: value } : row)));
-  };
-
-  const updateEquipmentRow = (index: number, field: keyof EquipmentRow, value: string) => {
-    setEquipment(prev => prev.map((row, idx) => (idx === index ? { ...row, [field]: value } : row)));
-  };
-
-  const updateAugmentRow = (index: number, field: keyof AugmentRow, value: string) => {
-    setAugments(prev => prev.map((row, idx) => (idx === index ? { ...row, [field]: value } : row)));
-  };
+  // Individual row update handlers removed - new components manage their own state
 
   const handleThumbnailUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -523,67 +482,7 @@ const CharacterSheet = ({ characterId }: CharacterSheetProps = {}) => {
     }
   };
 
-  // Handle adding inventory items to character sheet
-  const handleAddItemToSheet = (item: InventoryItem) => {
-    if (item.item_type === 'weapon') {
-      // Map InventoryItem to WeaponRow
-      const weaponRow: WeaponRow = {
-        weapon: item.name || "",
-        accuracy: "", // Can be filled in manually
-        range: "", // Can be filled in manually
-        damage: item.description?.match(/\d+d\d+/)?.[0] || "", // Try to extract damage from description
-        kg: item.weight_kg?.toString() || "",
-        magazine: "", // Can be filled in manually
-        traits: item.notes || ""
-      };
-
-      // Find first empty slot or add to end
-      const emptyIndex = weapons.findIndex(w => !w.weapon);
-      if (emptyIndex !== -1) {
-        const newWeapons = [...weapons];
-        newWeapons[emptyIndex] = weaponRow;
-        setWeapons(newWeapons);
-      } else {
-        setWeapons([...weapons, weaponRow]);
-      }
-    } else if (item.item_type === 'armor') {
-      // Map InventoryItem to ArmourRow
-      const armorRow: ArmourRow = {
-        type: item.name || "",
-        rad: "", // Can be filled in manually
-        protection: item.description?.match(/\d+/)?.[0] || "", // Try to extract protection value
-        kg: item.weight_kg?.toString() || "",
-        options: item.notes || "",
-        total: ""
-      };
-
-      // Find first empty slot or add to end
-      const emptyIndex = armourRows.findIndex(a => !a.type);
-      if (emptyIndex !== -1) {
-        const newArmor = [...armourRows];
-        newArmor[emptyIndex] = armorRow;
-        setArmourRows(newArmor);
-      } else {
-        setArmourRows([...armourRows, armorRow]);
-      }
-    } else if (item.item_type === 'equipment') {
-      // Map InventoryItem to EquipmentRow
-      const equipmentRow: EquipmentRow = {
-        item: item.name || "",
-        mass: item.weight_kg?.toString() || ""
-      };
-
-      // Find first empty slot or add to end
-      const emptyIndex = equipment.findIndex(e => !e.item);
-      if (emptyIndex !== -1) {
-        const newEquipment = [...equipment];
-        newEquipment[emptyIndex] = equipmentRow;
-        setEquipment(newEquipment);
-      } else {
-        setEquipment([...equipment, equipmentRow]);
-      }
-    }
-  };
+  // handleAddItemToSheet removed - catalog picker handles adding items directly
 
   const handleSaveCharacter = async () => {
     try {
@@ -1072,157 +971,36 @@ const customGroups = skillDefinitions.filter(def => def.isCustomGroup);
         </div>
       </section>
 
-      <section className="panel">
-        <div className="panel-header">
-          <span className="panel-title">WEAPONS</span>
-          {lastWeaponRollLog && (
-            <div className="text-[11px] font-mono text-primary/80 mt-2">
-              {lastWeaponRollLog}
-            </div>
-          )}
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs">
-            <thead className="bg-primary/20 text-primary-foreground">
-              <tr>
-                {["Weapon", "Accuracy", "Range", "Damage", "KG", "Magazine", "Traits", "Char Mod", "Roll"].map(header => (
-                  <th key={header} className="px-2 py-1 text-left uppercase tracking-wide font-semibold">
-                    {header}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {weapons.map((row, rowIndex) => (
-                <tr key={rowIndex} className="border-t border-primary/20">
-                  {(["weapon", "accuracy", "range", "damage", "kg", "magazine", "traits"] as const).map(field => (
-                    <td key={field} className="p-1">
-                      <Input
-                        className="h-8"
-                        value={row[field] ?? ""}
-                        onChange={event => updateWeaponRow(rowIndex, field, event.target.value)}
-                      />
-                    </td>
-                  ))}
-                  <td className="p-1">
-                    <select
-                      className="bg-background border border-primary/40 rounded px-2 h-8 text-xs"
-                      value={weaponCharMods[rowIndex] || "none"}
-                      onChange={e => handleWeaponCharSelect(rowIndex, e.target.value)}
-                    >
-                      <option value="none">None</option>
-                      <option value="strength">Strength</option>
-                      <option value="dexterity">Dexterity</option>
-                      <option value="endurance">Endurance</option>
-                    </select>
-                  </td>
-                  <td className="p-1">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="h-8 w-full"
-                      onClick={() => handleWeaponDamageRoll(rowIndex)}
-                    >
-                      Roll
-                    </Button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
+      <WeaponTable
+        weapons={weapons}
+        onChange={setWeapons}
+        charMods={weaponCharMods}
+        onCharModChange={handleWeaponCharSelect}
+        onRoll={handleWeaponDamageRoll}
+        lastRollLog={lastWeaponRollLog}
+      />
+
+      <ArmorTable
+        armour={armourRows}
+        onChange={setArmourRows}
+      />
 
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="panel">
-          <div className="panel-header">
-            <span className="panel-title">EQUIPMENT</span>
-          </div>
-          <div className="panel-content p-0">
-            <Table
-              headers={["Equipment", "Mass"]}
-              fields={["item", "mass"]}
-              values={equipment}
-              onChange={updateEquipmentRow}
-            />
-          </div>
-        </div>
-        <div className="panel">
-          <div className="panel-header">
-            <span className="panel-title">AUGMENTS</span>
-          </div>
-          <div className="panel-content p-0">
-            <Table
-              headers={["Type", "TL", "Improvement"]}
-              fields={["type", "tl", "improvement"]}
-              values={augments}
-              onChange={updateAugmentRow}
-            />
-          </div>
-        </div>
-        <div className="panel flex flex-col">
-          <div className="panel-header">
-            <span className="panel-title">TOTAL CARRIED MASS</span>
-          </div>
-          <div className="panel-content flex-1 flex items-center justify-center">
-            <Input placeholder="Total" className="terminal-input w-32 text-center" value={totalMass} onChange={event => setTotalMass(event.target.value)} />
-          </div>
-        </div>
+        <EquipmentTable
+          equipment={equipment}
+          onChange={setEquipment}
+        />
+        <AugmentTable
+          augments={augments}
+          onChange={setAugments}
+        />
+        <EncumbranceSummary
+          weapons={weapons}
+          armour={armourRows}
+          equipment={equipment}
+          strengthScore={parseInt(characteristics.strength?.current || "7")}
+        />
       </section>
-
-      <section className="panel">
-        <div className="panel-header">
-          <span className="panel-title">ARMOUR</span>
-        </div>
-        <div className="panel-content">
-          <Table
-            headers={["Type", "RAD", "Protection", "KG", "Options", "Total"]}
-            fields={["type", "rad", "protection", "kg", "options", "total"]}
-            values={armourRows}
-            onChange={updateArmourRow}
-          />
-        </div>
-      </section>
-
-      {/* Inventory Management Section */}
-      {characterId && (
-        <section className="panel">
-          <div className="panel-header">
-            <span className="panel-title">INVENTORY MANAGEMENT</span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowItemCreator(true)}
-              className="ml-auto text-xs"
-            >
-              + Add Item
-            </Button>
-          </div>
-          <div className="panel-content">
-            {showItemCreator && (
-              <div className="mb-4">
-                <ItemCreator
-                  ownerId={characterId}
-                  ownerType="character"
-                  onClose={() => setShowItemCreator(false)}
-                />
-              </div>
-            )}
-            <div className="mb-4">
-              <EncumbranceTracker
-                ownerId={characterId}
-                ownerType="character"
-                strengthScore={parseInt(characteristics.strength?.current || "7")}
-              />
-            </div>
-            <InventoryList
-              ownerId={characterId}
-              ownerType="character"
-              onAddToSheet={handleAddItemToSheet}
-            />
-          </div>
-        </section>
-      )}
 
       <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="panel">
