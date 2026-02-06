@@ -27,7 +27,7 @@ export const ARMOR_CATALOG: ArmorCatalogItem[] = [
     isFullBodySuit: false,
     hasLifeSupport: false,
     isPowered: false,
-    description: 'A natural or synthetic leather jacket or body suit covering the torso and arms.',
+    description: 'A natural or synthetic leather jacket or body suit covering the torso and upper arms and legs. Jack is better than ordinary clothing or bare skin when defending against blades but is useless against guns.',
   },
   {
     id: 'mesh',
@@ -44,7 +44,7 @@ export const ARMOR_CATALOG: ArmorCatalogItem[] = [
     isFullBodySuit: false,
     hasLifeSupport: false,
     isPowered: false,
-    description: 'A jacket or body suit lined with a flexible metal or plastic mesh that provides protection against blades and projectiles.',
+    description: 'A jacket or body suit lined with a flexible metal or plastic mesh that gives it added protection against bullets.',
   },
   {
     id: 'cloth-tl7',
@@ -61,7 +61,7 @@ export const ARMOR_CATALOG: ArmorCatalogItem[] = [
     isFullBodySuit: true,
     hasLifeSupport: false,
     isPowered: false,
-    description: 'A heavy duty body suit tailored from ballistic cloth. Resistant to most pistol rounds.',
+    description: 'A heavy duty body suit tailored from ballistic cloth. The fabric absorbs impact energy and spreads it over the body, which can result in bruising. However, cloth armour is highly useful and versatile.',
   },
   {
     id: 'cloth-tl10',
@@ -78,7 +78,7 @@ export const ARMOR_CATALOG: ArmorCatalogItem[] = [
     isFullBodySuit: true,
     hasLifeSupport: false,
     isPowered: false,
-    description: 'Advanced ballistic cloth using TL10 materials. Lighter and more protective than its TL7 counterpart.',
+    description: 'Advanced ballistic cloth that is lighter and more flexible than its TL7 counterpart. Can be indistinguishable from ordinary clothing under normal circumstances.',
   },
 
   // ── Flak ─────────────────────────────────────────────────────────
@@ -97,7 +97,7 @@ export const ARMOR_CATALOG: ArmorCatalogItem[] = [
     isFullBodySuit: false,
     hasLifeSupport: false,
     isPowered: false,
-    description: 'A heavy jacket filled with ballistic fibres designed to protect against shrapnel and low-velocity projectiles.',
+    description: 'A less expensive version of ballistic cloth, the bulky flak jacket is an unmistakably military garment.',
   },
   {
     id: 'flak-jacket-tl8',
@@ -114,7 +114,7 @@ export const ARMOR_CATALOG: ArmorCatalogItem[] = [
     isFullBodySuit: false,
     hasLifeSupport: false,
     isPowered: false,
-    description: 'An improved flak jacket using advanced ballistic materials for better protection at reduced weight.',
+    description: 'An improved flak jacket using advanced ballistic materials for better protection at reduced weight. Still unmistakably military in appearance.',
   },
 
   // ── Specialised Armor ────────────────────────────────────────────
@@ -133,7 +133,7 @@ export const ARMOR_CATALOG: ArmorCatalogItem[] = [
     isFullBodySuit: true,
     hasLifeSupport: false,
     isPowered: false,
-    description: 'Reflective material on a flexible base that provides excellent protection against laser weapons (+10 vs lasers) but no protection against other attacks.',
+    description: 'A flexible plastic suit with layers of reflective material and heat-dispersing gel. Highly effective against lasers but provides no protection against other attacks. Reflec can be worn with other armour but is hard to obtain, quite expensive and imposes DM-2 on any Stealth checks.',
   },
   {
     id: 'ablat',
@@ -150,7 +150,7 @@ export const ARMOR_CATALOG: ArmorCatalogItem[] = [
     isFullBodySuit: true,
     hasLifeSupport: false,
     isPowered: false,
-    description: 'A cheap alternative to Reflec. Ablative coating dissipates laser energy (+6 vs lasers, +1 vs other). Degrades with use.',
+    description: 'A cheap alternative to Reflec, ablat armour is made from a material that ablates (vaporises) when hit by laser fire. Each laser hit reduces its Protection value against lasers by one, but the armour is cheap and easily replaceable.',
   },
 
   // ── Combat Armour ────────────────────────────────────────────────
@@ -169,7 +169,7 @@ export const ARMOR_CATALOG: ArmorCatalogItem[] = [
     isFullBodySuit: true,
     hasLifeSupport: true,
     isPowered: false,
-    description: 'Military-grade full body suit with integral life support. Standard issue for front-line troops.',
+    description: 'A full-body suit used by the military and not generally available on the open market, although those with military or criminal contacts can obtain suits. Functions as a vacc suit with six hours of life support. All weapons used while wearing combat armour count as having the Scope trait.',
   },
   {
     id: 'combat-armour-tl12',
@@ -186,7 +186,7 @@ export const ARMOR_CATALOG: ArmorCatalogItem[] = [
     isFullBodySuit: true,
     hasLifeSupport: true,
     isPowered: false,
-    description: 'Advanced combat armour with improved protection and radiation shielding at reduced weight.',
+    description: 'Considerably lighter combat armour, substituting carbon-tube weave for the smart plastic of the previous generation. Functions as a vacc suit with six hours of life support. All weapons count as having the Scope trait.',
   },
   {
     id: 'combat-armour-tl14',
@@ -203,7 +203,7 @@ export const ARMOR_CATALOG: ArmorCatalogItem[] = [
     isFullBodySuit: true,
     hasLifeSupport: true,
     isPowered: false,
-    description: 'Cutting-edge combat armour using advanced composites. Superior protection in a lighter package.',
+    description: 'Cutting-edge combat armour offering vastly improved protection over earlier generations. Functions as a vacc suit with six hours of life support. All weapons count as having the Scope trait.',
   },
 
   // ── Vacc Suits ───────────────────────────────────────────────────
@@ -222,7 +222,7 @@ export const ARMOR_CATALOG: ArmorCatalogItem[] = [
     isFullBodySuit: true,
     hasLifeSupport: true,
     isPowered: false,
-    description: 'Standard vacuum suit providing protection from the void. Bulky but functional.',
+    description: 'The spacer\'s best friend, providing life support and protection when in space. Early vacc suits are unwieldy and uncomfortable. Provides life support for six hours.',
   },
   {
     id: 'vacc-suit-tl10',
@@ -239,7 +239,7 @@ export const ARMOR_CATALOG: ArmorCatalogItem[] = [
     isFullBodySuit: true,
     hasLifeSupport: true,
     isPowered: false,
-    description: 'Improved vacuum suit with better radiation shielding and reduced bulk.',
+    description: 'An improved vacc suit that masses considerably less than the TL8 model. Provides life support for six hours.',
   },
   {
     id: 'vacc-suit-tl12',
@@ -256,7 +256,7 @@ export const ARMOR_CATALOG: ArmorCatalogItem[] = [
     isFullBodySuit: true,
     hasLifeSupport: true,
     isPowered: false,
-    description: 'Advanced vacuum suit. Lightweight and highly protective with excellent rad shielding.',
+    description: 'At this Tech Level, "tailored" vacc suits feel like ordinary clothing with a flexible hood and face mask. Provides life support for six hours.',
   },
 
   // ── Hostile Environment Vacc Suits ───────────────────────────────
@@ -275,7 +275,7 @@ export const ARMOR_CATALOG: ArmorCatalogItem[] = [
     isFullBodySuit: true,
     hasLifeSupport: true,
     isPowered: false,
-    description: 'Hostile Environment Vacc Suit designed for extreme conditions. Very bulky but well-protected.',
+    description: 'Hostile environment suits are designed for conditions where a normal vacc suit would be insufficient, such as deep underwater, worlds with toxic atmosphere, extremes of radiation or temperature. Provides life support for six hours.',
   },
   {
     id: 'hev-suit-tl10',
@@ -292,7 +292,7 @@ export const ARMOR_CATALOG: ArmorCatalogItem[] = [
     isFullBodySuit: true,
     hasLifeSupport: true,
     isPowered: false,
-    description: 'Improved Hostile Environment Vacc Suit with better materials and reduced weight.',
+    description: 'An improved hostile environment suit with better materials and reduced weight. Designed for deep underwater, toxic atmospheres, extreme radiation or temperature. Provides life support for six hours.',
   },
   {
     id: 'hev-suit-tl13',
@@ -309,7 +309,7 @@ export const ARMOR_CATALOG: ArmorCatalogItem[] = [
     isFullBodySuit: true,
     hasLifeSupport: true,
     isPowered: false,
-    description: 'Advanced HEV suit with outstanding radiation protection and manageable weight.',
+    description: 'Advanced hostile environment suit with outstanding radiation protection at manageable weight. Handles deep underwater, toxic atmospheres, and extreme conditions. Provides life support for six hours.',
   },
   {
     id: 'hev-suit-tl14',
@@ -326,7 +326,7 @@ export const ARMOR_CATALOG: ArmorCatalogItem[] = [
     isFullBodySuit: true,
     hasLifeSupport: true,
     isPowered: false,
-    description: 'Top-of-the-line HEV suit. Remarkably light for its exceptional protection and rad shielding.',
+    description: 'Top-of-the-line hostile environment suit. Remarkably light for its exceptional protection and radiation shielding. Handles the most extreme environments. Provides life support for six hours.',
   },
 
   // ── Battle Dress ─────────────────────────────────────────────────
@@ -345,7 +345,7 @@ export const ARMOR_CATALOG: ArmorCatalogItem[] = [
     isFullBodySuit: true,
     hasLifeSupport: true,
     isPowered: true,
-    description: 'Powered military armour. The 100kg mass is supported by the suit\'s power systems, effectively weighing nothing when worn.',
+    description: 'The premier personal armour, battle dress is a powered form of combat armour. Servomotors increase STR and DEX by +4 while worn. An on-board Computer/2 gives tactical advice and updates. Fully enclosed with a six-hour air supply and substantial NBC protection. All weapons count as having the Scope trait. The 100kg mass is supported by the suit\'s power systems, effectively weighing nothing when worn.',
   },
   {
     id: 'battle-dress-tl14',
@@ -362,7 +362,7 @@ export const ARMOR_CATALOG: ArmorCatalogItem[] = [
     isFullBodySuit: true,
     hasLifeSupport: true,
     isPowered: true,
-    description: 'Advanced powered armour with the highest protection available. Reduced skill requirements over TL13 variant.',
+    description: 'More advanced battle dress that is considerably stronger, granting STR +6 and DEX +4 while worn. Upgrades internal systems to Computer/3. Fully enclosed with a six-hour air supply and substantial NBC protection. All weapons count as having the Scope trait. The 100kg mass is supported by the suit\'s power systems.',
   },
 ];
 
