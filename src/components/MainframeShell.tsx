@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { Terminal, FileText, Users, Radar, Navigation, BookOpen, Swords } from "lucide-react";
+import { Terminal, FileText, Users, Radar, Navigation, BookOpen, Swords, Skull } from "lucide-react";
 import TerminalInterface from "./interfaces/TerminalInterface";
 import CrewInterface from "./interfaces/CrewInterface";
 import VehicleInterface from "./interfaces/VehicleInterface";
 import CombatInterface from "./interfaces/CombatInterface";
 import { CampaignInterface } from "./interfaces/CampaignInterface";
+import { PiracyInterface } from "./interfaces/PiracyInterface";
 import AppHeader from "./layout/AppHeader";
 import AppFooter from "./layout/AppFooter";
 import { BridgeConsole } from "./bridge/BridgeConsole";
@@ -30,6 +31,7 @@ export default function MainframeShell() {
     { id: "bridge", label: "Bridge", icon: Radar },
     { id: "navigation", label: "Star Map", icon: Navigation },
     { id: "campaign", label: "Campaign", icon: BookOpen },
+    { id: "piracy", label: "Piracy", icon: Skull },
     { id: "combat", label: "Combat", icon: Swords }
   ];
 
@@ -66,6 +68,9 @@ export default function MainframeShell() {
         )}
         {activeTab === "campaign" && (
           <CampaignInterface />
+        )}
+        {activeTab === "piracy" && (
+          <PiracyInterface />
         )}
         {activeTab === "combat" && (
           <CombatInterface />

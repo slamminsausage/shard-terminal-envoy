@@ -13,6 +13,7 @@ import { CalendarProvider } from "@/contexts/CalendarContext";
 import { InventoryProvider } from "@/contexts/InventoryContext";
 import { FinanceProvider } from "@/contexts/FinanceContext";
 import { TradeProvider } from "@/contexts/TradeContext";
+import { PiracyProvider } from "@/contexts/PiracyContext";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import CRTOverlay from "@/components/ui/CRTOverlay";
 import { GlobalSearch } from "@/components/GlobalSearch";
@@ -50,6 +51,7 @@ const App = () => (
                     <TradeProvider>
                       <JumpPlannerProvider>
                         <NotesProvider>
+                          <PiracyProvider>
                           <BridgeProvider>
             <CRTOverlay />
             <Toaster />
@@ -68,6 +70,7 @@ const App = () => (
               </Routes>
             </BrowserRouter>
                           </BridgeProvider>
+                          </PiracyProvider>
                         </NotesProvider>
                       </JumpPlannerProvider>
                     </TradeProvider>
