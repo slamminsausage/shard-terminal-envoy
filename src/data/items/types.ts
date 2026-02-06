@@ -126,12 +126,34 @@ export interface EquipmentCatalogItem extends CatalogItem {
   effect?: string;
 }
 
-// ─── Augment Types (for future use) ──────────────────────────────────
+// ─── Augment Types ───────────────────────────────────────────────────
+
+/** Augment subcategory for UI dropdown grouping */
+export type AugmentType =
+  | 'physical'      // STR, DEX, END augmentations
+  | 'cognitive'     // INT augmentation
+  | 'neural'        // Neural Comm, Wafer Jack
+  | 'sensory'       // Enhanced Vision
+  | 'skill'         // Skill Augmentation
+  | 'protective';   // Subdermal Armour
+
+/** Human-readable labels for augment type groups */
+export const AUGMENT_TYPE_LABELS: Record<AugmentType, string> = {
+  physical: 'Physical Augmentation',
+  cognitive: 'Cognitive Augmentation',
+  neural: 'Neural Implants',
+  sensory: 'Sensory Augmentation',
+  skill: 'Skill Augmentation',
+  protective: 'Protective Augmentation',
+};
 
 export interface AugmentCatalogItem extends CatalogItem {
   category: 'augment';
-  improvement: string;      // What it does, e.g. "STR+2"
-  slot?: string;            // Body location, e.g. "arm", "eye", "neural"
+  augmentType: AugmentType;
+  improvement: string;      // What it does, e.g. "STR +1", "Protection +3"
+  slot?: string;            // Body location, e.g. "musculature", "eyes", "neural", "skeletal"
+  stackable: boolean;       // Can multiple of this type be installed?
+  installationTime: string; // Typical installation time, e.g. "1D weeks"
 }
 
 // ─── Equipped Item (what a character actually has) ────────────────────
@@ -156,6 +178,14 @@ export interface EquippedWeapon {
   currentAmmo?: number;
   condition: 'excellent' | 'good' | 'worn' | 'damaged' | 'broken';
   location: 'worn' | 'carried' | 'stowed';
+  notes?: string;
+}
+
+export interface EquippedAugment {
+  catalogId: string;
+  customName?: string;
+  skillName?: string;        // For Skill Augmentation: which skill it boosts
+  condition: 'excellent' | 'good' | 'worn' | 'damaged' | 'broken';
   notes?: string;
 }
 
