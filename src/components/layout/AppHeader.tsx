@@ -29,18 +29,20 @@ export default function AppHeader({
 
   return (
     <header className="app-shell-header">
-      <div className="container mx-auto px-6 py-4">
-        <div className="flex items-center justify-between gap-6">
-          <div>
-            <h1 className="app-shell-title">{title}</h1>
-            <div className="flex items-center gap-3">
-              <p className="app-shell-subtitle">{subtitle}</p>
-              {currentDate && (
-                <div className="flex items-center gap-1 text-terminal-primary/70 text-xs border border-terminal-primary/30 px-2 py-0.5 rounded">
-                  <Calendar size={12} />
-                  <span>{currentDate.formatted}</span>
-                </div>
-              )}
+      <div className="container mx-auto px-4 sm:px-6 py-3 sm:py-4 3xl:py-5">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-6">
+          <div className="flex items-center justify-between sm:block">
+            <div>
+              <h1 className="app-shell-title">{title}</h1>
+              <div className="flex items-center gap-3">
+                <p className="app-shell-subtitle">{subtitle}</p>
+                {currentDate && (
+                  <div className="flex items-center gap-1 text-terminal-primary/70 text-xs border border-terminal-primary/30 px-2 py-0.5 rounded">
+                    <Calendar size={12} />
+                    <span>{currentDate.formatted}</span>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
@@ -63,8 +65,8 @@ export default function AppHeader({
                   ) : Icon ? (
                     <Icon size={14} aria-hidden className="opacity-70" />
                   ) : null}
-                  <span>{tab.label.toUpperCase()}</span>
-                  <span className="text-[10px] opacity-50 ml-1" aria-label={`Shortcut: ${shortcutNumber}`}>
+                  <span className="tab-label">{tab.label.toUpperCase()}</span>
+                  <span className="text-[10px] opacity-50 ml-1 hidden sm:inline" aria-label={`Shortcut: ${shortcutNumber}`}>
                     {shortcutNumber}
                   </span>
                 </button>

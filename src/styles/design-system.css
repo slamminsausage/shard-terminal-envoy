@@ -743,14 +743,8 @@ textarea.terminal-input {
 
   /* Header responsive layout */
   .app-shell-header .container {
-    padding-left: 1rem !important;
-    padding-right: 1rem !important;
-  }
-
-  .app-shell-header .container > div {
-    flex-direction: column !important;
-    gap: 1rem !important;
-    align-items: flex-start !important;
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
   }
 
   .app-shell-title {
@@ -761,24 +755,41 @@ textarea.terminal-input {
     font-size: 0.65rem !important;
   }
 
-  /* Mobile tab navigation - 4-column grid */
+  /* Mobile tab navigation - horizontal scroll strip */
   .app-shell-tabs {
+    display: flex !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    gap: 0.25rem !important;
+    padding-bottom: 2px;
     width: 100%;
-    grid-template-columns: repeat(4, 1fr) !important;
-    gap: 0.35rem !important;
   }
 
-  /* Smaller tabs on mobile */
+  .app-shell-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Smaller tabs on mobile - icon + short label */
   .tab-button {
-    padding: 0.5rem 0.75rem !important;
-    font-size: 0.7rem !important;
+    padding: 0.5rem 0.6rem !important;
+    font-size: 0.6rem !important;
     white-space: nowrap;
     flex-shrink: 0;
+    min-height: 44px;
+    min-width: 44px;
+    justify-content: center;
   }
 
-  .tab-button svg {
-    width: 12px !important;
-    height: 12px !important;
+  .tab-button svg,
+  .tab-button span[aria-hidden] {
+    width: 14px !important;
+    height: 14px !important;
+  }
+
+  /* On mobile < 768px: show only icons by default */
+  .tab-button .tab-label {
+    display: none;
   }
 
   /* General mobile optimizations */
@@ -801,6 +812,7 @@ textarea.terminal-input {
     font-size: 0.65rem;
     padding: 8px 12px;
     letter-spacing: 2px;
+    min-height: 40px;
   }
 
   .panel-content {
@@ -808,9 +820,10 @@ textarea.terminal-input {
   }
 
   .terminal-btn {
-    padding: 8px 14px;
+    padding: 10px 14px;
     font-size: 0.65rem;
     letter-spacing: 1.5px;
+    min-height: 44px;
   }
 
   /* Modal responsive */
@@ -846,6 +859,20 @@ textarea.terminal-input {
   .tactical-svg {
     max-height: 500px !important;
   }
+
+  /* Interface header stacks on mobile */
+  .interface-header {
+    padding: 0.75rem 1rem !important;
+  }
+
+  .interface-title {
+    font-size: 1rem !important;
+    letter-spacing: 0.12em !important;
+  }
+
+  .interface-subtitle {
+    font-size: 0.65rem !important;
+  }
 }
 
 /* Small mobile devices */
@@ -875,9 +902,9 @@ textarea.terminal-input {
   }
 
   .tab-button {
-    padding: 0.45rem 0.65rem !important;
-    font-size: 0.65rem !important;
-    gap: 0.25rem !important;
+    padding: 0.45rem 0.5rem !important;
+    font-size: 0.6rem !important;
+    gap: 0.2rem !important;
   }
 
   .panel-header {
@@ -886,8 +913,9 @@ textarea.terminal-input {
   }
 
   .terminal-btn {
-    padding: 6px 12px;
+    padding: 8px 12px;
     font-size: 0.6rem;
+    min-height: 40px;
   }
 
   .terminal-window {
@@ -907,6 +935,214 @@ textarea.terminal-input {
   .terminal-grid-item {
     padding: 8px 6px;
     font-size: 0.65rem;
+  }
+}
+
+/* Show tab labels on wider mobile (480-768px) */
+@media (min-width: 480px) and (max-width: 767px) {
+  .tab-button .tab-label {
+    display: inline;
+    font-size: 0.6rem;
+  }
+}
+
+/* ===================================
+   LARGE DISPLAY - TV / 40"+ (1920px+)
+   =================================== */
+@media (min-width: 1920px) {
+  /* Scale up header */
+  .app-shell-title {
+    font-size: 2rem !important;
+    letter-spacing: 0.12em !important;
+  }
+
+  .app-shell-subtitle {
+    font-size: 1rem !important;
+  }
+
+  /* Scale up tab buttons */
+  .app-shell-tabs {
+    gap: 0.5rem 1rem;
+  }
+
+  .tab-button {
+    padding: 0.85rem 1.75rem !important;
+    font-size: 1rem !important;
+    letter-spacing: 0.16em;
+    gap: 0.5rem;
+  }
+
+  .tab-button svg {
+    width: 18px !important;
+    height: 18px !important;
+  }
+
+  /* Scale up panels */
+  .panel-header {
+    font-size: 0.9rem;
+    padding: 14px 20px;
+    letter-spacing: 4px;
+  }
+
+  .panel-content {
+    padding: 20px;
+  }
+
+  .panel-status {
+    font-size: 0.8rem;
+  }
+
+  /* Scale up buttons */
+  .terminal-btn {
+    padding: 14px 28px;
+    font-size: 0.9rem;
+    letter-spacing: 2.5px;
+  }
+
+  /* Scale up inputs */
+  .terminal-input {
+    padding: 14px 16px;
+    font-size: 1.05rem;
+  }
+
+  /* Scale up modals */
+  .modal {
+    max-width: 800px;
+  }
+
+  .modal-title {
+    font-size: 1rem;
+    letter-spacing: 3px;
+  }
+
+  .modal-body {
+    padding: 28px;
+  }
+
+  /* Scale up interface */
+  .interface-header {
+    padding: 1.25rem 2rem;
+  }
+
+  .interface-title {
+    font-size: 1.75rem !important;
+    letter-spacing: 0.3em;
+  }
+
+  .interface-subtitle {
+    font-size: 0.9rem;
+    letter-spacing: 0.14em;
+  }
+
+  .interface-content {
+    padding: 2rem;
+  }
+
+  /* Scale up terminal grid */
+  .terminal-grid {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 16px;
+    padding: 20px;
+  }
+
+  .terminal-grid-item {
+    padding: 16px;
+    font-size: 0.9rem;
+  }
+
+  /* Scale up cards */
+  .terminal-card-header {
+    padding: 1rem 1.25rem;
+  }
+
+  .terminal-card-title {
+    font-size: 1.1rem;
+  }
+
+  .terminal-card-content {
+    padding: 1.25rem;
+  }
+
+  /* Scale up stat displays */
+  .terminal-stat-label {
+    font-size: 0.8rem;
+  }
+
+  .terminal-stat-value {
+    font-size: 1.6rem;
+  }
+
+  /* Scale up badges */
+  .terminal-badge {
+    padding: 0.2rem 0.65rem;
+    font-size: 0.8rem;
+  }
+
+  /* Scale up list items */
+  .terminal-list-item {
+    padding: 1rem 1.25rem;
+    font-size: 1rem;
+  }
+
+  /* Scale up empty state */
+  .terminal-empty-state {
+    padding: 4rem 2rem;
+  }
+
+  .terminal-empty-state-icon {
+    width: 5rem;
+    height: 5rem;
+  }
+
+  .terminal-empty-state-title {
+    font-size: 1.25rem;
+  }
+
+  .terminal-empty-state-description {
+    font-size: 1rem;
+  }
+
+  /* Scale up scrollbars for TV remote/touch */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  /* Scale up status dots */
+  .status-dot {
+    width: 12px;
+    height: 12px;
+  }
+
+  /* Scale up power bars */
+  .power-bar {
+    height: 12px;
+  }
+
+  /* Bridge console tactical display scales up */
+  .tactical-canvas {
+    min-height: 800px;
+  }
+
+  .tactical-svg {
+    max-height: 1000px;
+  }
+
+  /* Scale jump planner components */
+  .jump-rating-btn {
+    width: 44px;
+    height: 44px;
+    font-size: 1.1rem;
+  }
+
+  .world-list-item {
+    padding: 12px 16px;
+    font-size: 0.95rem;
+  }
+
+  .route-leg {
+    padding-left: 16px;
+    margin-left: 12px;
   }
 }
 

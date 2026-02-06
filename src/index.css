@@ -113,8 +113,8 @@
 }
 
 *::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
 }
 
 *::-webkit-scrollbar-track {
@@ -386,4 +386,76 @@
   font-size: 11px;
   font-family: 'Share Tech Mono', monospace;
   color: var(--text-dim);
+}
+
+/* ===================================
+   MOBILE TOUCH TARGET & SCROLLBAR
+   =================================== */
+@media (max-width: 768px) {
+  /* Wider scrollbar thumb for touch */
+  * {
+    scrollbar-width: thin;
+  }
+
+  *::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  /* Ensure minimum touch target sizes */
+  button, a, [role="tab"], select, input[type="checkbox"] {
+    min-height: 36px;
+    min-width: 36px;
+  }
+
+  input[type="text"], input[type="email"], input[type="password"], textarea, select {
+    font-size: 16px; /* Prevents iOS zoom on focus */
+  }
+}
+
+/* ===================================
+   LARGE DISPLAY - TV (1920px+) scaling
+   =================================== */
+@media (min-width: 1920px) {
+  body {
+    font-size: 1.1rem;
+  }
+
+  /* Wider scrollbars for TV remote */
+  * {
+    scrollbar-width: auto;
+  }
+
+  *::-webkit-scrollbar {
+    width: 14px;
+    height: 14px;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background: rgba(0, 255, 136, 0.4);
+    border: 3px solid rgba(0, 255, 136, 0.15);
+  }
+
+  .tactical-canvas {
+    min-height: 800px;
+  }
+
+  .tactical-svg {
+    max-height: 1000px;
+  }
+
+  .tactical-wrapper {
+    padding: 16px;
+  }
+
+  .tactical-legend {
+    font-size: 14px;
+    gap: 16px;
+    bottom: 12px;
+    left: 16px;
+  }
+
+  .range-label {
+    font-size: 13px;
+  }
 }
