@@ -2,7 +2,7 @@ import { useRef, useEffect, useState } from "react";
 import { useJumpPlanner } from "@/contexts/JumpPlannerContext";
 import { generateMapUrl, padHex, getSectorFullName, type WorldSearchResult } from "@/lib/travellerMapApi";
 import { WorldSearchAutocomplete } from "./WorldSearchAutocomplete";
-import { MapPin, Navigation, Info, ZoomIn, ZoomOut, Maximize2 } from "lucide-react";
+import { MapPin, Navigation, Info, Maximize2 } from "lucide-react";
 import { StarMapLegendModal } from "./StarMapLegendModal";
 import { usePinchZoom } from "@/hooks/usePinchZoom";
 
@@ -78,101 +78,116 @@ export function StarMapPanel() {
         </span>
       </div>
 
-      <div className="panel-content flex flex-col gap-3 p-0 min-h-0">
-        {/* Search Controls */}
-        <div className="px-4 pt-4">
-          <WorldSearchAutocomplete
-            value={searchValue}
-            onChange={setSearchValue}
-            onSelect={handleSearchSelect}
-            placeholder="Search worlds by name (e.g., Drinax, Theev...)"
-          />
+      <div className="panel-content flex flex-col gap-0 p-0 min-h-0">
+        {/* Compact Controls Toolbar */}
+        <div className="px-3 pt-3 pb-2 flex flex-col gap-2">
+          {/* Row 1: Search + Hex Input */}
+          <div className="flex gap-2 items-center">
+            <div className="flex-1 min-w-0">
+              <WorldSearchAutocomplete
+                value={searchValue}
+                onChange={setSearchValue}
+                onSelect={handleSearchSelect}
+                placeholder="Search worlds by name (e.g., Drinax, Theev...)"
+              />
+            </div>
+            <input
+              type="text"
+              value={hexInput}
+              onChange={(e) => setHexInput(e.target.value)}
+              placeholder="Hex"
+              className="terminal-input w-16 text-xs text-center"
+              maxLength={4}
+            />
+            <button
+              onClick={() => {
+                if (currentLocation?.sector && hexInput) {
+                  const paddedHex = padHex(hexInput);
+                  setMapLocation(currentLocation.sector, paddedHex);
+                  setCurrentLocation(currentLocation.sector, paddedHex);
+                }
+              }}
+              disabled={!currentLocation?.sector || !hexInput}
+              className="terminal-btn secondary text-xs px-2 py-1 whitespace-nowrap"
+            >
+              GO
+            </button>
+          </div>
+
+          {/* Row 2: Location buttons + Legend - compact */}
+          <div className="flex gap-2 items-center">
+            <button
+              onClick={handleSetPlayerLocation}
+              disabled={!currentLocation}
+              className="terminal-btn text-xs flex-1 flex items-center justify-center gap-1 py-1"
+              title="Mark current location as your ship's position"
+            >
+              <MapPin className="w-3 h-3 shrink-0" />
+              <span className="hidden sm:inline">SET LOCATION</span>
+              <span className="sm:hidden">SET</span>
+            </button>
+            <button
+              onClick={handleGoToPlayerLocation}
+              disabled={!playerLocation}
+              className="terminal-btn secondary text-xs flex-1 flex items-center justify-center gap-1 py-1"
+              title="Navigate to your ship's location"
+            >
+              <Navigation className="w-3 h-3 shrink-0" />
+              <span className="hidden sm:inline">GO TO SHIP</span>
+              <span className="sm:hidden">SHIP</span>
+            </button>
+            <button
+              onClick={() => setIsLegendOpen(true)}
+              className="terminal-btn secondary text-xs px-2 py-1 flex items-center justify-center gap-1"
+              title="View map legend and symbol key"
+            >
+              <Info className="w-3 h-3" />
+              <span className="hidden sm:inline">LEGEND</span>
+            </button>
+          </div>
         </div>
 
-        {/* Quick Nav - Hex input for manual entry */}
-        <div className="flex gap-2 px-4">
-          <input
-            type="text"
-            value={hexInput}
-            onChange={(e) => setHexInput(e.target.value)}
-            placeholder="Hex (e.g., 2223)"
-            className="terminal-input w-24 text-sm"
-            maxLength={4}
-          />
-          <button
-            onClick={() => {
-              if (currentLocation?.sector && hexInput) {
-                const paddedHex = padHex(hexInput);
-                setMapLocation(currentLocation.sector, paddedHex);
-                setCurrentLocation(currentLocation.sector, paddedHex);
-              }
-            }}
-            disabled={!currentLocation?.sector || !hexInput}
-            className="terminal-btn secondary text-xs flex-1"
-          >
-            GO TO HEX
-          </button>
-        </div>
-
-        {/* Player Location Controls */}
-        <div className="flex gap-2 px-4">
-          <button
-            onClick={handleSetPlayerLocation}
-            disabled={!currentLocation}
-            className="terminal-btn text-xs flex-1 flex items-center justify-center gap-1"
-            title="Mark current location as your ship's position"
-          >
-            <MapPin className="w-3 h-3" />
-            SET "YOU ARE HERE"
-          </button>
-          <button
-            onClick={handleGoToPlayerLocation}
-            disabled={!playerLocation}
-            className="terminal-btn secondary text-xs flex-1 flex items-center justify-center gap-1"
-            title="Navigate to your ship's location"
-          >
-            <Navigation className="w-3 h-3" />
-            GO TO SHIP
-          </button>
-        </div>
-
-        {/* Legend Button */}
-        <div className="px-4">
-          <button
-            onClick={() => setIsLegendOpen(true)}
-            className="terminal-btn secondary text-xs w-full flex items-center justify-center gap-1"
-            title="View map legend and symbol key"
-          >
-            <Info className="w-3 h-3" />
-            MAP LEGEND
-          </button>
-        </div>
-
-        {/* Player Location Display */}
-        {playerLocation && (
-          <div className="px-4 py-2 bg-terminal-primary-light/5 border-y border-primary/20">
-            <div className="flex items-center gap-2">
-              <MapPin className="w-4 h-4 text-primary" />
-              <span className="text-xs text-terminal-text-dimmer">SHIP LOCATION:</span>
-              <span className="text-primary font-bold text-sm">
+        {/* Ship Location + Selection Status Bar */}
+        <div className="px-3 py-1 bg-terminal-primary-light/5 border-y border-primary/20 flex items-center gap-3 text-xs min-h-[28px]">
+          {playerLocation && (
+            <div className="flex items-center gap-1.5 shrink-0">
+              <MapPin className="w-3 h-3 text-primary" />
+              <span className="text-terminal-text-dimmer">SHIP:</span>
+              <span className="text-primary font-bold">
                 {playerLocation.worldName || playerLocation.hex}
               </span>
-              <span className="text-terminal-secondary text-xs font-mono ml-auto">
-                {playerLocation.sector} {playerLocation.hex}
+              <span className="text-terminal-secondary font-mono">
+                {playerLocation.hex}
               </span>
             </div>
-          </div>
-        )}
+          )}
+          {playerLocation && currentLocation && (
+            <span className="text-terminal-text-dimmer">|</span>
+          )}
+          {currentLocation && (
+            <div className="flex items-center gap-1.5 ml-auto">
+              <span className="text-terminal-text-dimmer">SELECTED:</span>
+              <span className="text-primary font-bold">
+                {currentLocation.worldName || currentLocation.hex}
+              </span>
+              <span className="text-terminal-secondary font-mono">
+                {currentLocation.sector} {currentLocation.hex}
+              </span>
+            </div>
+          )}
+          {!playerLocation && !currentLocation && (
+            <span className="text-terminal-text-dimmer">Click on the map to select a hex</span>
+          )}
+        </div>
 
-        {/* Map Iframe with Pinch Zoom */}
-        <div ref={zoomRef} className="flex-1 relative min-h-[320px] min-w-0 overflow-hidden touch-none">
+        {/* Map Iframe with Pinch Zoom - fills remaining space */}
+        <div ref={zoomRef} className="flex-1 relative min-h-[500px] min-w-0 overflow-hidden touch-none">
           <div style={zoomStyle} className="absolute inset-0">
             <iframe
               ref={iframeRef}
-              // Key forces iframe to fully reload when sector/hex changes
               key={`${mapSector}-${mapHex}`}
               src={mapUrl}
-              className="absolute inset-0 w-full h-full border-t border-terminal-bg-border"
+              className="absolute inset-0 w-full h-full"
               title="TravellerMap"
               allow="fullscreen"
               style={{ pointerEvents: transform.scale > 1 ? 'auto' : 'auto' }}
@@ -189,31 +204,6 @@ export function StarMapPanel() {
               <Maximize2 className="w-4 h-4" />
             </button>
           )}
-        </div>
-
-        {/* Current Selection Display */}
-        {currentLocation && (
-          <div className="px-4 pb-4 border-t border-terminal-bg-border pt-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <span className="text-terminal-text-dimmer text-xs mr-2">SELECTED:</span>
-                <span className="text-primary font-bold">
-                  {currentLocation.worldName || currentLocation.hex}
-                </span>
-              </div>
-              <span className="text-terminal-secondary text-sm font-mono">
-                {currentLocation.sector} {currentLocation.hex}
-              </span>
-            </div>
-          </div>
-        )}
-
-        {/* Instructions */}
-        <div className="px-4 pb-3 text-center">
-          <span className="text-xs text-terminal-text-dimmer">
-            Search for worlds by name, or click on the map to select a hex.
-            Set your ship location to display "You Are Here" marker.
-          </span>
         </div>
       </div>
 
