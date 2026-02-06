@@ -345,6 +345,50 @@ export const SPACECRAFT_EQUIPMENT: SpacecraftEquipment[] = [
     notes: 'Hangar tonnage = 2x tonnage of craft. Allows full maintenance and repairs.',
   },
 
+  // ── Cabin Space (Small Craft) ──────────────────────────────────────
+  {
+    id: 'cabin_space',
+    name: 'Cabin Space',
+    category: 'accommodation',
+    tl: 7,
+    description:
+      'Basic accommodation for small craft. Each cabin provides sleeping area and basic facilities for one person.',
+    tonnageMode: 'per_unit',
+    fixedTons: 1.5,
+    costMode: 'per_unit',
+    fixedCost: 0.075, // MCr per cabin
+    notes: '1.5 tons, MCr0.075 per cabin. Standard small craft accommodation.',
+  },
+
+  // ── Modular Hull (Modular Cutter) ────────────────────────────────
+  {
+    id: 'modular_hull',
+    name: 'Modular Hull',
+    category: 'operations',
+    tl: 8,
+    description:
+      'Detachable module bay allowing rapid role changes without starport refits. Common modules include ATV, fuel, and open cargo.',
+    tonnageMode: 'variable',
+    costMode: 'per_ton',
+    costPerTon: 0.06, // MCr per ton
+    notes: 'Allows swapping modules for different missions. ATV module MCr1.8, Fuel module MCr1, Open module MCr2.',
+  },
+
+  // ── Acceleration Bench ───────────────────────────────────────────
+  {
+    id: 'acceleration_bench',
+    name: 'Acceleration Bench',
+    category: 'accommodation',
+    tl: 7,
+    description:
+      'Basic acceleration seating for mass passenger transport on short trips. Each bench seats 4 passengers.',
+    tonnageMode: 'per_unit',
+    fixedTons: 1,
+    costMode: 'per_unit',
+    fixedCost: 0.01, // MCr per bench
+    notes: '1 ton, MCr0.01 per bench. Seats 4 passengers.',
+  },
+
   // ── Ammunition Storage ─────────────────────────────────────────────
   {
     id: 'ammunition_storage',

@@ -1397,10 +1397,780 @@ export const MERCENARY_CRUISER: PreMadeShip = {
 };
 
 // ═══════════════════════════════════════════════════════════════════════
+//  LIGHT FIGHTER (10 tons)
+// ═══════════════════════════════════════════════════════════════════════
+
+export const LIGHT_FIGHTER: PreMadeShip = {
+  id: 'light_fighter',
+  name: 'Light Fighter',
+  designation: undefined,
+  category: 'small_craft',
+  tl: 12,
+  tonnage: 10,
+  description:
+    'Consisting of little more than a power plant and pulse laser with a pilot strapped to the top, the light fighter is a small, fast and highly manoeuvrable craft designed to make high-speed runs on enemy ships and destroy other small craft. Designed to adhere to a strict budget, the Light Fighter allows even the poorest worlds a chance at self-defence.',
+
+  hullPoints: 4,
+  purchaseCostMCr: 9.09,
+  maintenanceCostCrPerMonth: 758,
+
+  crew: ['Pilot'],
+
+  powerRequirements: [
+    { system: 'Basic Ship Systems', power: 2 },
+    { system: 'Manoeuvre Drive', power: 6 },
+    { system: 'Sensors', power: 2 },
+    { system: 'Weapons', power: 3 },
+  ],
+
+  components: [
+    { category: 'Hull', name: '10 tons, Streamlined', tons: null, costMCr: 0.6 },
+    { category: 'Armour', name: 'Crystaliron, Armour: 2', tons: 0.25, costMCr: 0.06 },
+    { category: 'M-Drive', name: 'Thrust 6', tons: 0.6, costMCr: 1.2 },
+    { category: 'Power Plant', name: 'Fusion, Power 15', tons: 1, costMCr: 1 },
+    { category: 'Fuel Tanks', name: '4 weeks operation', tons: 1, costMCr: null },
+    { category: 'Bridge', name: 'Cockpit', tons: 1.5, costMCr: 0.01 },
+    { category: 'Computer', name: 'Computer/5', tons: null, costMCr: 0.03 },
+    { category: 'Sensors', name: 'Military Grade', tons: 2, costMCr: 4.1 },
+    { category: 'Weapons', name: 'Fixed Mount (pulse laser)', tons: null, costMCr: 1.1 },
+    { category: 'Software', name: 'Fire Control/1', tons: null, costMCr: 2 },
+    { category: 'Software', name: 'Library', tons: null, costMCr: null },
+    { category: 'Software', name: 'Manoeuvre', tons: null, costMCr: null },
+    { category: 'Software', name: 'Intellect', tons: null, costMCr: null },
+    { category: 'Cargo', name: 'Cargo', tons: 3.65, costMCr: null },
+  ],
+
+  softwareIds: ['fire_control_1', 'library', 'manoeuvre_0', 'intellect_0'],
+
+  design: {
+    name: 'Light Fighter',
+    techLevel: 12,
+    tonnage: 10,
+    hullConfiguration: 'streamlined',
+    armorMaterial: 'crystaliron',
+    armorProtection: 2,
+    manoeuvreRating: 6,
+    jumpRating: 0,
+    isReactionDrive: false,
+    powerPlantTier: 'fusion_tl12',
+    powerPlantTons: 1,
+    additionalFuelWeeks: 0,
+    useCockpit: true,
+    cockpitType: 'cockpit',
+    holographicControls: false,
+    computerId: 'computer_5',
+    computerBis: false,
+    sensorSuiteId: 'military',
+    additionalSensorStations: 0,
+    weapons: [
+      { mountType: 'fixed_mount', weapons: ['pulse_laser'], isFirmpoint: true },
+    ],
+    equipment: [],
+    standardStaterooms: 0,
+    doubleOccupancyStaterooms: 0,
+    highStaterooms: 0,
+    luxuryStaterooms: 0,
+    lowBerths: 0,
+    commonAreaTons: 0,
+    cargoTons: 3.65,
+  },
+};
+
+// ═══════════════════════════════════════════════════════════════════════
+//  GIG (20 tons)
+// ═══════════════════════════════════════════════════════════════════════
+
+export const GIG: PreMadeShip = {
+  id: 'gig',
+  name: 'Gig',
+  designation: undefined,
+  category: 'small_craft',
+  tl: 12,
+  tonnage: 20,
+  description:
+    'This Tech Level 12 Gig is an often encountered institution at starports throughout the Imperium. Technically a vessel of the Imperial Navy, it is crewed by local starport personnel and used to perform orbital inspections and other light duties.',
+
+  hullPoints: 8,
+  purchaseCostMCr: 7.272,
+  maintenanceCostCrPerMonth: 606,
+
+  crew: ['Pilot'],
+
+  powerRequirements: [
+    { system: 'Basic Ship Systems', power: 4 },
+    { system: 'Manoeuvre Drive', power: 14 },
+    { system: 'Turret', power: 1 },
+  ],
+
+  components: [
+    { category: 'Hull', name: '20 tons, Streamlined', tons: null, costMCr: 1.2 },
+    { category: 'M-Drive', name: 'Thrust 7', tons: 1.4, costMCr: 2.8 },
+    { category: 'Power Plant', name: 'Fusion, Power 30', tons: 2, costMCr: 2 },
+    { category: 'Fuel Tanks', name: '4 weeks operation', tons: 1, costMCr: null },
+    { category: 'Bridge', name: 'Bridge', tons: 3, costMCr: 0.5 },
+    { category: 'Computer', name: 'Computer/5', tons: null, costMCr: 0.03 },
+    { category: 'Sensors', name: 'Basic', tons: null, costMCr: null },
+    { category: 'Weapons', name: 'Single Turret, Empty', tons: 1, costMCr: 0.2 },
+    { category: 'Systems', name: 'Cabin Space x2', tons: 3, costMCr: 0.15 },
+    { category: 'Systems', name: 'Fuel Scoops', tons: null, costMCr: null },
+    { category: 'Software', name: 'Library', tons: null, costMCr: null },
+    { category: 'Software', name: 'Manoeuvre', tons: null, costMCr: null },
+    { category: 'Software', name: 'Intellect', tons: null, costMCr: null },
+    { category: 'Cargo', name: 'Cargo', tons: 8.6, costMCr: null },
+  ],
+
+  softwareIds: ['library', 'manoeuvre_0', 'intellect_0'],
+
+  design: {
+    name: 'Gig',
+    techLevel: 12,
+    tonnage: 20,
+    hullConfiguration: 'streamlined',
+    armorProtection: 0,
+    manoeuvreRating: 7,
+    jumpRating: 0,
+    isReactionDrive: false,
+    powerPlantTier: 'fusion_tl12',
+    powerPlantTons: 2,
+    additionalFuelWeeks: 0,
+    useCockpit: false,
+    holographicControls: false,
+    computerId: 'computer_5',
+    computerBis: false,
+    sensorSuiteId: 'basic',
+    additionalSensorStations: 0,
+    weapons: [
+      { mountType: 'single_turret', weapons: [], isFirmpoint: true },
+    ],
+    equipment: [
+      { equipmentId: 'cabin_space', tons: 3, quantity: 2 },
+    ],
+    standardStaterooms: 0,
+    doubleOccupancyStaterooms: 0,
+    highStaterooms: 0,
+    luxuryStaterooms: 0,
+    lowBerths: 0,
+    commonAreaTons: 0,
+    cargoTons: 8.6,
+  },
+};
+
+// ═══════════════════════════════════════════════════════════════════════
+//  LAUNCH (20 tons)
+// ═══════════════════════════════════════════════════════════════════════
+
+export const LAUNCH: PreMadeShip = {
+  id: 'launch',
+  name: 'Launch',
+  designation: undefined,
+  category: 'small_craft',
+  tl: 12,
+  tonnage: 20,
+  description:
+    'Also called a life boat, due to one of its expected roles, this craft uses a 20-ton hull and can easily be flown by a single skilled individual. A launch can be configured to engage in a wide variety of roles but ambitious schemes will find themselves limited by the small hull and weak power plant. However, for the price, the launch provides a means to very cheap space travel.',
+
+  hullPoints: 8,
+  purchaseCostMCr: 2.367,
+  maintenanceCostCrPerMonth: 197,
+
+  crew: ['Pilot'],
+
+  powerRequirements: [
+    { system: 'Basic Ship Systems', power: 4 },
+    { system: 'Manoeuvre Drive', power: 2 },
+  ],
+
+  components: [
+    { category: 'Hull', name: '20 tons, Streamlined', tons: null, costMCr: 1.2 },
+    { category: 'M-Drive', name: 'Thrust 1', tons: 0.2, costMCr: 0.4 },
+    { category: 'Power Plant', name: 'Fusion (TL8), Power 10', tons: 1, costMCr: 0.5 },
+    { category: 'Fuel Tanks', name: '4 weeks operation', tons: 1, costMCr: null },
+    { category: 'Bridge', name: 'Bridge', tons: 3, costMCr: 0.5 },
+    { category: 'Computer', name: 'Computer/5', tons: null, costMCr: 0.03 },
+    { category: 'Sensors', name: 'Basic', tons: null, costMCr: null },
+    { category: 'Software', name: 'Library', tons: null, costMCr: null },
+    { category: 'Software', name: 'Manoeuvre', tons: null, costMCr: null },
+    { category: 'Software', name: 'Intellect', tons: null, costMCr: null },
+    { category: 'Cargo', name: 'Cargo', tons: 14.8, costMCr: null },
+  ],
+
+  softwareIds: ['library', 'manoeuvre_0', 'intellect_0'],
+
+  design: {
+    name: 'Launch',
+    techLevel: 12,
+    tonnage: 20,
+    hullConfiguration: 'streamlined',
+    armorProtection: 0,
+    manoeuvreRating: 1,
+    jumpRating: 0,
+    isReactionDrive: false,
+    powerPlantTier: 'fusion_tl8',
+    powerPlantTons: 1,
+    additionalFuelWeeks: 0,
+    useCockpit: false,
+    holographicControls: false,
+    computerId: 'computer_5',
+    computerBis: false,
+    sensorSuiteId: 'basic',
+    additionalSensorStations: 0,
+    weapons: [],
+    equipment: [],
+    standardStaterooms: 0,
+    doubleOccupancyStaterooms: 0,
+    highStaterooms: 0,
+    luxuryStaterooms: 0,
+    lowBerths: 0,
+    commonAreaTons: 0,
+    cargoTons: 14.8,
+  },
+};
+
+// ═══════════════════════════════════════════════════════════════════════
+//  SHIP'S BOAT (30 tons)
+// ═══════════════════════════════════════════════════════════════════════
+
+export const SHIPS_BOAT: PreMadeShip = {
+  id: 'ships_boat',
+  name: "Ship's Boat",
+  designation: undefined,
+  category: 'small_craft',
+  tl: 12,
+  tonnage: 30,
+  description:
+    "The ship's boat is both fast and versatile, making it a popular choice for auxiliary craft. While most commonly seen hauling small cargo and passenger loads between ships and worlds, in smaller militaries the ship's boat is also used as a boarding craft by marine assault teams.",
+
+  hullPoints: 12,
+  purchaseCostMCr: 7.092,
+  maintenanceCostCrPerMonth: 591,
+
+  crew: ['Pilot'],
+
+  powerRequirements: [
+    { system: 'Basic Ship Systems', power: 6 },
+    { system: 'Manoeuvre Drive', power: 15 },
+  ],
+
+  components: [
+    { category: 'Hull', name: '30 tons, Streamlined', tons: null, costMCr: 1.8 },
+    { category: 'M-Drive', name: 'Thrust 5', tons: 1.5, costMCr: 3 },
+    { category: 'Power Plant', name: 'Fusion, Power 30', tons: 2, costMCr: 2 },
+    { category: 'Fuel Tanks', name: '4 weeks operation', tons: 1, costMCr: null },
+    { category: 'Bridge', name: 'Bridge', tons: 3, costMCr: 0.5 },
+    { category: 'Computer', name: 'Computer/5', tons: null, costMCr: 0.03 },
+    { category: 'Sensors', name: 'Basic', tons: null, costMCr: null },
+    { category: 'Weapons', name: 'Fixed Mount', tons: null, costMCr: 0.1 },
+    { category: 'Systems', name: 'Cabin Space x6', tons: 9, costMCr: 0.45 },
+    { category: 'Software', name: 'Library', tons: null, costMCr: null },
+    { category: 'Software', name: 'Manoeuvre', tons: null, costMCr: null },
+    { category: 'Software', name: 'Intellect', tons: null, costMCr: null },
+    { category: 'Cargo', name: 'Cargo', tons: 13.5, costMCr: null },
+  ],
+
+  softwareIds: ['library', 'manoeuvre_0', 'intellect_0'],
+
+  design: {
+    name: "Ship's Boat",
+    techLevel: 12,
+    tonnage: 30,
+    hullConfiguration: 'streamlined',
+    armorProtection: 0,
+    manoeuvreRating: 5,
+    jumpRating: 0,
+    isReactionDrive: false,
+    powerPlantTier: 'fusion_tl12',
+    powerPlantTons: 2,
+    additionalFuelWeeks: 0,
+    useCockpit: false,
+    holographicControls: false,
+    computerId: 'computer_5',
+    computerBis: false,
+    sensorSuiteId: 'basic',
+    additionalSensorStations: 0,
+    weapons: [
+      { mountType: 'fixed_mount', weapons: [], isFirmpoint: true },
+    ],
+    equipment: [
+      { equipmentId: 'cabin_space', tons: 9, quantity: 6 },
+    ],
+    standardStaterooms: 0,
+    doubleOccupancyStaterooms: 0,
+    highStaterooms: 0,
+    luxuryStaterooms: 0,
+    lowBerths: 0,
+    commonAreaTons: 0,
+    cargoTons: 13.5,
+  },
+};
+
+// ═══════════════════════════════════════════════════════════════════════
+//  SLOW BOAT (30 tons)
+// ═══════════════════════════════════════════════════════════════════════
+
+export const SLOW_BOAT: PreMadeShip = {
+  id: 'slow_boat',
+  name: 'Slow Boat',
+  designation: undefined,
+  category: 'small_craft',
+  tl: 12,
+  tonnage: 30,
+  description:
+    "The slow boat appears either as an early design of the ship's boat, before power cells and manoeuvre drives become more efficient, or as an intentional throttling back of the ship's boat performance. Either way, the slow boat is comparable to the ship's boat but it trades speed for increased cargo space.",
+
+  hullPoints: 12,
+  purchaseCostMCr: 4.842,
+  maintenanceCostCrPerMonth: 404,
+
+  crew: ['Pilot'],
+
+  powerRequirements: [
+    { system: 'Basic Ship Systems', power: 6 },
+    { system: 'Manoeuvre Drive', power: 9 },
+  ],
+
+  components: [
+    { category: 'Hull', name: '30 tons, Streamlined', tons: null, costMCr: 1.8 },
+    { category: 'M-Drive', name: 'Thrust 3', tons: 0.9, costMCr: 1.8 },
+    { category: 'Power Plant', name: 'Fusion, Power 15', tons: 1, costMCr: 1 },
+    { category: 'Fuel Tanks', name: '4 weeks operation', tons: 1, costMCr: null },
+    { category: 'Bridge', name: 'Bridge', tons: 3, costMCr: 0.5 },
+    { category: 'Computer', name: 'Computer/5', tons: null, costMCr: 0.03 },
+    { category: 'Sensors', name: 'Basic', tons: null, costMCr: null },
+    { category: 'Weapons', name: 'Fixed Mount', tons: null, costMCr: 0.1 },
+    { category: 'Systems', name: 'Cabin Space x2', tons: 3, costMCr: 0.15 },
+    { category: 'Software', name: 'Library', tons: null, costMCr: null },
+    { category: 'Software', name: 'Manoeuvre', tons: null, costMCr: null },
+    { category: 'Software', name: 'Intellect', tons: null, costMCr: null },
+    { category: 'Cargo', name: 'Cargo', tons: 21.1, costMCr: null },
+  ],
+
+  softwareIds: ['library', 'manoeuvre_0', 'intellect_0'],
+
+  design: {
+    name: 'Slow Boat',
+    techLevel: 12,
+    tonnage: 30,
+    hullConfiguration: 'streamlined',
+    armorProtection: 0,
+    manoeuvreRating: 3,
+    jumpRating: 0,
+    isReactionDrive: false,
+    powerPlantTier: 'fusion_tl12',
+    powerPlantTons: 1,
+    additionalFuelWeeks: 0,
+    useCockpit: false,
+    holographicControls: false,
+    computerId: 'computer_5',
+    computerBis: false,
+    sensorSuiteId: 'basic',
+    additionalSensorStations: 0,
+    weapons: [
+      { mountType: 'fixed_mount', weapons: [], isFirmpoint: true },
+    ],
+    equipment: [
+      { equipmentId: 'cabin_space', tons: 3, quantity: 2 },
+    ],
+    standardStaterooms: 0,
+    doubleOccupancyStaterooms: 0,
+    highStaterooms: 0,
+    luxuryStaterooms: 0,
+    lowBerths: 0,
+    commonAreaTons: 0,
+    cargoTons: 21.1,
+  },
+};
+
+// ═══════════════════════════════════════════════════════════════════════
+//  PINNACE (40 tons)
+// ═══════════════════════════════════════════════════════════════════════
+
+export const PINNACE: PreMadeShip = {
+  id: 'pinnace',
+  name: 'Pinnace',
+  designation: undefined,
+  category: 'small_craft',
+  tl: 12,
+  tonnage: 40,
+  description:
+    'The pinnace is a popular choice as an auxiliary vessel for adventuring or exploratory ships, as it has the speed, range and cargo capacity to support extended missions. It combines a generous cargo hold with a speed that leaves most star ships trailing far behind and can be configured for light combat operations with the addition of weaponry to its fixed mount.',
+
+  hullPoints: 16,
+  purchaseCostMCr: 8.712,
+  maintenanceCostCrPerMonth: 726,
+
+  crew: ['Pilot'],
+
+  powerRequirements: [
+    { system: 'Basic Ship Systems', power: 8 },
+    { system: 'Manoeuvre Drive', power: 20 },
+  ],
+
+  components: [
+    { category: 'Hull', name: '40 tons, Streamlined', tons: null, costMCr: 2.4 },
+    { category: 'M-Drive', name: 'Thrust 5', tons: 2, costMCr: 4 },
+    { category: 'Power Plant', name: 'Fusion, Power 30', tons: 2, costMCr: 2 },
+    { category: 'Fuel Tanks', name: '4 weeks operation', tons: 1, costMCr: null },
+    { category: 'Bridge', name: 'Bridge', tons: 3, costMCr: 0.5 },
+    { category: 'Computer', name: 'Computer/5', tons: null, costMCr: 0.03 },
+    { category: 'Sensors', name: 'Basic', tons: null, costMCr: null },
+    { category: 'Weapons', name: 'Fixed Mount', tons: null, costMCr: 0.1 },
+    { category: 'Systems', name: 'Cabin Space x6', tons: 9, costMCr: 0.45 },
+    { category: 'Software', name: 'Library', tons: null, costMCr: null },
+    { category: 'Software', name: 'Manoeuvre', tons: null, costMCr: null },
+    { category: 'Software', name: 'Intellect', tons: null, costMCr: null },
+    { category: 'Cargo', name: 'Cargo', tons: 23, costMCr: null },
+  ],
+
+  softwareIds: ['library', 'manoeuvre_0', 'intellect_0'],
+
+  design: {
+    name: 'Pinnace',
+    techLevel: 12,
+    tonnage: 40,
+    hullConfiguration: 'streamlined',
+    armorProtection: 0,
+    manoeuvreRating: 5,
+    jumpRating: 0,
+    isReactionDrive: false,
+    powerPlantTier: 'fusion_tl12',
+    powerPlantTons: 2,
+    additionalFuelWeeks: 0,
+    useCockpit: false,
+    holographicControls: false,
+    computerId: 'computer_5',
+    computerBis: false,
+    sensorSuiteId: 'basic',
+    additionalSensorStations: 0,
+    weapons: [
+      { mountType: 'fixed_mount', weapons: [], isFirmpoint: true },
+    ],
+    equipment: [
+      { equipmentId: 'cabin_space', tons: 9, quantity: 6 },
+    ],
+    standardStaterooms: 0,
+    doubleOccupancyStaterooms: 0,
+    highStaterooms: 0,
+    luxuryStaterooms: 0,
+    lowBerths: 0,
+    commonAreaTons: 0,
+    cargoTons: 23,
+  },
+};
+
+// ═══════════════════════════════════════════════════════════════════════
+//  SLOW PINNACE (40 tons)
+// ═══════════════════════════════════════════════════════════════════════
+
+export const SLOW_PINNACE: PreMadeShip = {
+  id: 'slow_pinnace',
+  name: 'Slow Pinnace',
+  designation: undefined,
+  category: 'small_craft',
+  tl: 12,
+  tonnage: 40,
+  description:
+    'Like the slow boat, the slow pinnace trades speed and raw performance for increased cargo space, although this craft is based on the traditional pinnace. As a larger hull, it provides even more cargo carrying capacity than a slow boat and many are customised to become troop or vehicle transports, or to serve as fuel skimmers for larger ships.',
+
+  hullPoints: 16,
+  purchaseCostMCr: 5.787,
+  maintenanceCostCrPerMonth: 482,
+
+  crew: ['Pilot'],
+
+  powerRequirements: [
+    { system: 'Basic Ship Systems', power: 8 },
+    { system: 'Manoeuvre Drive', power: 12 },
+  ],
+
+  components: [
+    { category: 'Hull', name: '40 tons, Streamlined', tons: null, costMCr: 2.4 },
+    { category: 'M-Drive', name: 'Thrust 3', tons: 1.2, costMCr: 2.4 },
+    { category: 'Power Plant', name: 'Fusion (TL8), Power 20', tons: 2, costMCr: 1 },
+    { category: 'Fuel Tanks', name: '4 weeks operation', tons: 1, costMCr: null },
+    { category: 'Bridge', name: 'Bridge', tons: 3, costMCr: 0.5 },
+    { category: 'Computer', name: 'Computer/5', tons: null, costMCr: 0.03 },
+    { category: 'Sensors', name: 'Basic', tons: null, costMCr: null },
+    { category: 'Weapons', name: 'Fixed Mount', tons: null, costMCr: 0.1 },
+    { category: 'Software', name: 'Library', tons: null, costMCr: null },
+    { category: 'Software', name: 'Manoeuvre', tons: null, costMCr: null },
+    { category: 'Software', name: 'Intellect', tons: null, costMCr: null },
+    { category: 'Cargo', name: 'Cargo', tons: 32.8, costMCr: null },
+  ],
+
+  softwareIds: ['library', 'manoeuvre_0', 'intellect_0'],
+
+  design: {
+    name: 'Slow Pinnace',
+    techLevel: 12,
+    tonnage: 40,
+    hullConfiguration: 'streamlined',
+    armorProtection: 0,
+    manoeuvreRating: 3,
+    jumpRating: 0,
+    isReactionDrive: false,
+    powerPlantTier: 'fusion_tl8',
+    powerPlantTons: 2,
+    additionalFuelWeeks: 0,
+    useCockpit: false,
+    holographicControls: false,
+    computerId: 'computer_5',
+    computerBis: false,
+    sensorSuiteId: 'basic',
+    additionalSensorStations: 0,
+    weapons: [
+      { mountType: 'fixed_mount', weapons: [], isFirmpoint: true },
+    ],
+    equipment: [],
+    standardStaterooms: 0,
+    doubleOccupancyStaterooms: 0,
+    highStaterooms: 0,
+    luxuryStaterooms: 0,
+    lowBerths: 0,
+    commonAreaTons: 0,
+    cargoTons: 32.8,
+  },
+};
+
+// ═══════════════════════════════════════════════════════════════════════
+//  MODULAR CUTTER (50 tons)
+// ═══════════════════════════════════════════════════════════════════════
+
+export const MODULAR_CUTTER: PreMadeShip = {
+  id: 'modular_cutter',
+  name: 'Modular Cutter',
+  designation: undefined,
+  category: 'small_craft',
+  tl: 12,
+  tonnage: 50,
+  description:
+    'The modular cutter is notable for having 30 tons dedicated to a detachable module; this allows the cutter to quickly and efficiently change roles during a voyage without needing extensive refits at a starport. While there are a great many customised modules available for the cutter, the three most common and routinely available are: ATV module (MCr1.8), Fuel module (MCr1), and Open module (MCr2).',
+
+  hullPoints: 20,
+  purchaseCostMCr: 10.107,
+  maintenanceCostCrPerMonth: 842,
+
+  crew: ['Pilot'],
+
+  powerRequirements: [
+    { system: 'Basic Ship Systems', power: 10 },
+    { system: 'Manoeuvre Drive', power: 20 },
+  ],
+
+  components: [
+    { category: 'Hull', name: '50 tons, Streamlined', tons: null, costMCr: 3 },
+    { category: 'M-Drive', name: 'Thrust 4', tons: 2, costMCr: 4 },
+    { category: 'Power Plant', name: 'Fusion (TL8), Power 30', tons: 3, costMCr: 1.5 },
+    { category: 'Fuel Tanks', name: '4 weeks operation', tons: 1, costMCr: null },
+    { category: 'Bridge', name: 'Bridge', tons: 3, costMCr: 0.5 },
+    { category: 'Computer', name: 'Computer/5', tons: null, costMCr: 0.03 },
+    { category: 'Sensors', name: 'Basic', tons: null, costMCr: null },
+    { category: 'Weapons', name: 'Fixed Mount', tons: null, costMCr: 0.1 },
+    { category: 'Systems', name: 'Modular Hull', tons: 30, costMCr: 1.8 },
+    { category: 'Systems', name: 'Cabin Space x4', tons: 6, costMCr: 0.3 },
+    { category: 'Software', name: 'Library', tons: null, costMCr: null },
+    { category: 'Software', name: 'Manoeuvre', tons: null, costMCr: null },
+    { category: 'Software', name: 'Intellect', tons: null, costMCr: null },
+    { category: 'Cargo', name: 'Cargo', tons: 3, costMCr: null },
+  ],
+
+  softwareIds: ['library', 'manoeuvre_0', 'intellect_0'],
+
+  design: {
+    name: 'Modular Cutter',
+    techLevel: 12,
+    tonnage: 50,
+    hullConfiguration: 'streamlined',
+    armorProtection: 0,
+    manoeuvreRating: 4,
+    jumpRating: 0,
+    isReactionDrive: false,
+    powerPlantTier: 'fusion_tl8',
+    powerPlantTons: 3,
+    additionalFuelWeeks: 0,
+    useCockpit: false,
+    holographicControls: false,
+    computerId: 'computer_5',
+    computerBis: false,
+    sensorSuiteId: 'basic',
+    additionalSensorStations: 0,
+    weapons: [
+      { mountType: 'fixed_mount', weapons: [], isFirmpoint: true },
+    ],
+    equipment: [
+      { equipmentId: 'modular_hull', tons: 30, quantity: 1 },
+      { equipmentId: 'cabin_space', tons: 6, quantity: 4 },
+    ],
+    standardStaterooms: 0,
+    doubleOccupancyStaterooms: 0,
+    highStaterooms: 0,
+    luxuryStaterooms: 0,
+    lowBerths: 0,
+    commonAreaTons: 0,
+    cargoTons: 3,
+    notes: 'Module not included. Available modules: ATV (MCr1.8), Fuel (MCr1), Open (MCr2).',
+  },
+};
+
+// ═══════════════════════════════════════════════════════════════════════
+//  SHUTTLE (95 tons)
+// ═══════════════════════════════════════════════════════════════════════
+
+export const SHUTTLE: PreMadeShip = {
+  id: 'shuttle',
+  name: 'Shuttle',
+  designation: undefined,
+  category: 'small_craft',
+  tl: 12,
+  tonnage: 95,
+  description:
+    'One of the most common small craft seen in space, the shuttle is present throughout the galaxy and becomes a standard vessel for orbital operations as soon as a civilisation makes its first firm steps into space. It is designed to carry passengers and cargo from orbit to surface and back again, as well as act as an interplanetary transport.',
+
+  hullPoints: 38,
+  purchaseCostMCr: 15.147,
+  maintenanceCostCrPerMonth: 1262,
+
+  crew: ['Pilot'],
+
+  powerRequirements: [
+    { system: 'Basic Ship Systems', power: 19 },
+    { system: 'Manoeuvre Drive', power: 29 },
+  ],
+
+  components: [
+    { category: 'Hull', name: '95 tons, Streamlined', tons: null, costMCr: 5.7 },
+    { category: 'M-Drive', name: 'Thrust 3', tons: 2.85, costMCr: 5.7 },
+    { category: 'Power Plant', name: 'Fusion, Power 60', tons: 4, costMCr: 4 },
+    { category: 'Fuel Tanks', name: '4 weeks operation', tons: 1, costMCr: null },
+    { category: 'Bridge', name: 'Bridge', tons: 6, costMCr: 0.5 },
+    { category: 'Computer', name: 'Computer/5', tons: null, costMCr: 0.03 },
+    { category: 'Sensors', name: 'Basic', tons: null, costMCr: null },
+    { category: 'Weapons', name: 'Fixed Mount', tons: null, costMCr: 0.1 },
+    { category: 'Systems', name: 'Cabin Space x8', tons: 12, costMCr: 0.6 },
+    { category: 'Software', name: 'Library', tons: null, costMCr: null },
+    { category: 'Software', name: 'Manoeuvre', tons: null, costMCr: null },
+    { category: 'Software', name: 'Intellect', tons: null, costMCr: null },
+    { category: 'Cargo', name: 'Cargo', tons: 67.15, costMCr: null },
+  ],
+
+  softwareIds: ['library', 'manoeuvre_0', 'intellect_0'],
+
+  design: {
+    name: 'Shuttle',
+    techLevel: 12,
+    tonnage: 95,
+    hullConfiguration: 'streamlined',
+    armorProtection: 0,
+    manoeuvreRating: 3,
+    jumpRating: 0,
+    isReactionDrive: false,
+    powerPlantTier: 'fusion_tl12',
+    powerPlantTons: 4,
+    additionalFuelWeeks: 0,
+    useCockpit: false,
+    holographicControls: false,
+    computerId: 'computer_5',
+    computerBis: false,
+    sensorSuiteId: 'basic',
+    additionalSensorStations: 0,
+    weapons: [
+      { mountType: 'fixed_mount', weapons: [], isFirmpoint: true },
+    ],
+    equipment: [
+      { equipmentId: 'cabin_space', tons: 12, quantity: 8 },
+    ],
+    standardStaterooms: 0,
+    doubleOccupancyStaterooms: 0,
+    highStaterooms: 0,
+    luxuryStaterooms: 0,
+    lowBerths: 0,
+    commonAreaTons: 0,
+    cargoTons: 67.15,
+  },
+};
+
+// ═══════════════════════════════════════════════════════════════════════
+//  PASSENGER SHUTTLE (95 tons)
+// ═══════════════════════════════════════════════════════════════════════
+
+export const PASSENGER_SHUTTLE: PreMadeShip = {
+  id: 'passenger_shuttle',
+  name: 'Passenger Shuttle',
+  designation: undefined,
+  category: 'small_craft',
+  tl: 12,
+  tonnage: 95,
+  description:
+    'Intended for routine passenger transport this shuttle fills the need at a reasonable price point. Capable of carrying up to 240 passengers. The shuttle has a small cargo bay, passenger area and crew section separated by internal bulkheads. Normally only the passenger area is accessible to non-crew and operations are sufficiently routine that no stewards are carried.',
+
+  hullPoints: 38,
+  purchaseCostMCr: 9.927,
+  maintenanceCostCrPerMonth: 827,
+
+  crew: ['Pilot', 'Co-pilot'],
+
+  powerRequirements: [
+    { system: 'Basic Ship Systems', power: 19 },
+    { system: 'Manoeuvre Drive', power: 10 },
+    { system: 'Sensors', power: 1 },
+  ],
+
+  components: [
+    { category: 'Hull', name: '95 tons, Streamlined', tons: null, costMCr: 5.7 },
+    { category: 'M-Drive', name: 'Thrust 1', tons: 0.95, costMCr: 1.9 },
+    { category: 'Power Plant', name: 'Fusion (TL8), Power 30', tons: 3, costMCr: 1.5 },
+    { category: 'Fuel Tanks', name: '4 weeks operation', tons: 1, costMCr: null },
+    { category: 'Bridge', name: 'Bridge', tons: 6, costMCr: 0.5 },
+    { category: 'Computer', name: 'Computer/5', tons: null, costMCr: 0.03 },
+    { category: 'Sensors', name: 'Basic', tons: null, costMCr: null },
+    { category: 'Systems', name: 'Acceleration Bench x60 (240 passengers)', tons: 60, costMCr: 0.6 },
+    { category: 'Software', name: 'Library', tons: null, costMCr: null },
+    { category: 'Software', name: 'Manoeuvre', tons: null, costMCr: null },
+    { category: 'Software', name: 'Intellect', tons: null, costMCr: null },
+    { category: 'Common Areas', name: 'Common Areas', tons: 8, costMCr: 0.8 },
+    { category: 'Cargo', name: 'Cargo', tons: 16.05, costMCr: null },
+  ],
+
+  softwareIds: ['library', 'manoeuvre_0', 'intellect_0'],
+
+  design: {
+    name: 'Passenger Shuttle',
+    techLevel: 12,
+    tonnage: 95,
+    hullConfiguration: 'streamlined',
+    armorProtection: 0,
+    manoeuvreRating: 1,
+    jumpRating: 0,
+    isReactionDrive: false,
+    powerPlantTier: 'fusion_tl8',
+    powerPlantTons: 3,
+    additionalFuelWeeks: 0,
+    useCockpit: false,
+    holographicControls: false,
+    computerId: 'computer_5',
+    computerBis: false,
+    sensorSuiteId: 'basic',
+    additionalSensorStations: 0,
+    weapons: [],
+    equipment: [
+      { equipmentId: 'acceleration_bench', tons: 60, quantity: 60 },
+    ],
+    standardStaterooms: 0,
+    doubleOccupancyStaterooms: 0,
+    highStaterooms: 0,
+    luxuryStaterooms: 0,
+    lowBerths: 0,
+    commonAreaTons: 8,
+    cargoTons: 16.05,
+    notes: '60 acceleration benches seat up to 240 passengers (4 per bench). No stewards carried.',
+  },
+};
+
+// ═══════════════════════════════════════════════════════════════════════
 //  ALL PRE-MADE SHIPS
 // ═══════════════════════════════════════════════════════════════════════
 
 export const PRE_MADE_SHIPS: PreMadeShip[] = [
+  // Starships
   SCOUT_COURIER,
   SEEKER_MINING_SHIP,
   FREE_TRADER,
@@ -1415,6 +2185,17 @@ export const PRE_MADE_SHIPS: PreMadeShip[] = [
   SURVEY_SCOUT_DONOSEV,
   SUBSIDISED_LINER,
   MERCENARY_CRUISER,
+  // Small Craft
+  LIGHT_FIGHTER,
+  GIG,
+  LAUNCH,
+  SHIPS_BOAT,
+  SLOW_BOAT,
+  PINNACE,
+  SLOW_PINNACE,
+  MODULAR_CUTTER,
+  SHUTTLE,
+  PASSENGER_SHUTTLE,
 ];
 
 // ═══════════════════════════════════════════════════════════════════════

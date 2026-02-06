@@ -178,6 +178,7 @@ export {
 
 // ── Pre-Made Ships ──────────────────────────────────────────────────
 export {
+  // Starships
   SCOUT_COURIER,
   SEEKER_MINING_SHIP,
   FREE_TRADER,
@@ -192,6 +193,18 @@ export {
   SURVEY_SCOUT_DONOSEV,
   SUBSIDISED_LINER,
   MERCENARY_CRUISER,
+  // Small Craft
+  LIGHT_FIGHTER,
+  GIG,
+  LAUNCH,
+  SHIPS_BOAT,
+  SLOW_BOAT,
+  PINNACE,
+  SLOW_PINNACE,
+  MODULAR_CUTTER,
+  SHUTTLE,
+  PASSENGER_SHUTTLE,
+  // Collection & Helpers
   PRE_MADE_SHIPS,
   getPreMadeShip,
   getShipsByCategory,
