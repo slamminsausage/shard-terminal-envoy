@@ -324,6 +324,69 @@ export interface ShipDesign {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
+//  PRE-MADE SHIPS
+// ═══════════════════════════════════════════════════════════════════════
+
+export type ShipCategory =
+  | 'scout'
+  | 'trader'
+  | 'military'
+  | 'passenger'
+  | 'exploration'
+  | 'mining'
+  | 'small_craft';
+
+/** A single line item from a published ship stat block */
+export interface ShipComponentLine {
+  /** Display category (e.g. "Hull", "M-Drive", "Systems", "Weapons") */
+  category: string;
+  /** Component name as published */
+  name: string;
+  /** Tons consumed (null = none, e.g. computer, software) */
+  tons: number | null;
+  /** Cost in MCr (null = included/free) */
+  costMCr: number | null;
+}
+
+/** Published power requirement entry */
+export interface PowerRequirementLine {
+  system: string;
+  power: number;
+}
+
+/** A complete pre-made ship from the rulebook */
+export interface PreMadeShip {
+  id: string;
+  name: string;
+  designation?: string; // e.g. "Type S", "Type A", "Type K"
+  category: ShipCategory;
+  tl: number;
+  tonnage: number;
+  description: string;
+
+  // ── Published Totals ──
+  hullPoints: number;
+  /** Purchase cost after standard 10% discount */
+  purchaseCostMCr: number;
+  maintenanceCostCrPerMonth: number;
+
+  // ── Published Crew ──
+  crew: string[];
+
+  // ── Published Power Requirements ──
+  powerRequirements: PowerRequirementLine[];
+
+  // ── Component Breakdown (as published in rulebook) ──
+  components: ShipComponentLine[];
+
+  // ── Software Installed ──
+  softwareIds: string[];
+
+  // ── The ShipDesign for the calculator ──
+  design: ShipDesign;
+}
+
+// ═══════════════════════════════════════════════════════════════════════
 //  CALCULATED VALUES
 // ═══════════════════════════════════════════════════════════════════════
 

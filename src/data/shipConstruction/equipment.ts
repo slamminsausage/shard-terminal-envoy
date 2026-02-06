@@ -258,6 +258,65 @@ export const SPACECRAFT_EQUIPMENT: SpacecraftEquipment[] = [
     costPerTon: 0.15, // MCr per ton
     notes: 'Every 6 tons: 2 Travellers with Mechanic DM+2.',
   },
+
+  // ── Hull Reinforcement (High Guard) ────────────────────────────────
+  {
+    id: 'reinforced_hull',
+    name: 'Reinforced Hull',
+    category: 'defense',
+    tl: 8,
+    description:
+      'Strengthened structural members and additional bracing throughout the hull, increasing hull points by 10%.',
+    tonnageMode: 'fixed',
+    fixedTons: 0,
+    costMode: 'per_hull_ton',
+    costPerHullTon: 25_000, // Cr25,000 per ton of hull
+    notes: 'Adds +10% hull points. Cannot be retrofitted.',
+  },
+
+  // ── Armoured Bulkheads (High Guard) ────────────────────────────────
+  {
+    id: 'armoured_bulkheads',
+    name: 'Armoured Bulkheads',
+    category: 'defense',
+    tl: 8,
+    description:
+      'Heavy internal partitions protecting a specific system. Tonnage = 10% of the protected system. Prevents critical hits on that system.',
+    tonnageMode: 'variable',
+    costMode: 'per_ton',
+    costPerTon: 0.2, // MCr per ton of bulkhead
+    notes: 'Tonnage = 10% of the system being protected. MCr0.2 per ton.',
+  },
+
+  // ── Ammunition Storage ─────────────────────────────────────────────
+  {
+    id: 'ammunition_storage',
+    name: 'Ammunition Storage',
+    category: 'operations',
+    tl: 7,
+    description:
+      'Dedicated storage for missile ammunition. Stores 12 missiles per ton.',
+    tonnageMode: 'variable',
+    costMode: 'fixed',
+    fixedCost: 0,
+    notes: 'No cost (just dedicated tonnage). 12 missiles per ton.',
+  },
+
+  // ── Countermeasures Suite (High Guard) ─────────────────────────────
+  {
+    id: 'countermeasures',
+    name: 'Countermeasures Suite',
+    category: 'defense',
+    tl: 13,
+    description:
+      'Electronic countermeasures suite that can be added to an existing sensor package. Grants DM-2 to enemy attempts to lock on.',
+    tonnageMode: 'fixed',
+    fixedTons: 2,
+    costMode: 'fixed',
+    fixedCost: 8, // MCr
+    power: 1,
+    notes: 'Added to sensor suite. DM-2 to enemy sensor locks.',
+  },
 ];
 
 // ═══════════════════════════════════════════════════════════════════════

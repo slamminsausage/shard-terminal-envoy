@@ -2,7 +2,7 @@
  * Traveller Core Rulebook - Spacecraft Construction System
  *
  * Complete 13-step ship construction system with data tables,
- * calculation engine, and type definitions.
+ * calculation engine, pre-made ships, and type definitions.
  *
  * Usage:
  *   import { createEmptyShipDesign, calculateShipDesign } from '@/data/shipConstruction';
@@ -13,6 +13,10 @@
  *   // ... configure design ...
  *   const calc = calculateShipDesign(design);
  *   console.log(calc.totalCost, calc.isValid, calc.validationErrors);
+ *
+ *   // Or load a pre-made ship:
+ *   import { PRE_MADE_SHIPS, getPreMadeShip } from '@/data/shipConstruction';
+ *   const scout = getPreMadeShip('scout_courier');
  */
 
 // ── Types ────────────────────────────────────────────────────────────
@@ -42,6 +46,10 @@ export type {
   ShipEquipmentInstallation,
   ShipDesign,
   ShipCalculations,
+  ShipCategory,
+  ShipComponentLine,
+  PowerRequirementLine,
+  PreMadeShip,
 } from './types';
 
 // ── Hull Data (Step 1) ──────────────────────────────────────────────
@@ -128,6 +136,20 @@ export {
   calculateEquipmentPower,
 } from './equipment';
 
+// ── Software ────────────────────────────────────────────────────────
+export type { SoftwarePackage } from './software';
+export {
+  STANDARD_SOFTWARE,
+  JUMP_CONTROL_SOFTWARE,
+  COMBAT_SOFTWARE,
+  UTILITY_SOFTWARE,
+  ALL_SOFTWARE,
+  getSoftware,
+  getRequiredJumpControl,
+  calculateSoftwareCostMCr,
+  calculateProcessingRequired,
+} from './software';
+
 // ── Staterooms & Crew (Steps 10-11) ────────────────────────────────
 export {
   STATEROOM_TYPES,
@@ -153,3 +175,17 @@ export {
   formatTons,
   constructionTimeDays,
 } from './shipBuilder';
+
+// ── Pre-Made Ships ──────────────────────────────────────────────────
+export {
+  SCOUT_COURIER,
+  SEEKER_MINING_SHIP,
+  FREE_TRADER,
+  FAR_TRADER,
+  SAFARI_SHIP,
+  SYSTEM_DEFENCE_BOAT,
+  PRE_MADE_SHIPS,
+  getPreMadeShip,
+  getShipsByCategory,
+  getFullCostMCr,
+} from './preMadeShips';
