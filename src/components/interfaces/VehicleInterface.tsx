@@ -7,10 +7,12 @@ import { typeTextWithSound } from '@/lib/typing';
 import VehicleSheet from "@/components/crew/VehicleSheet";
 import CrewAssignmentDialog from "@/components/crew/CrewAssignmentDialog";
 import PreMadeShipSelector from "@/components/crew/PreMadeShipSelector";
+import PreMadeVehicleSelector from "@/components/crew/PreMadeVehicleSelector";
 import { useCampaign } from "@/contexts/CampaignContext";
 import { Vehicle } from "@/types/database";
-import { preMadeShipToVehicle } from "@/lib/shipConversion";
+import { preMadeShipToVehicle, preMadeVehicleToVehicle } from "@/lib/shipConversion";
 import type { PreMadeShip } from "@/data/shipConstruction";
+import type { PreMadeVehicle } from "@/data/vehicleCatalog";
 
 export default function VehicleInterface() {
   const [displayText, setDisplayText] = useState("");
@@ -19,6 +21,7 @@ export default function VehicleInterface() {
   const [showCrewAssignment, setShowCrewAssignment] = useState(false);
   const [selectedVehicleForCrew, setSelectedVehicleForCrew] = useState<Vehicle | null>(null);
   const [showShipCatalog, setShowShipCatalog] = useState(false);
+  const [showVehicleCatalog, setShowVehicleCatalog] = useState(false);
   const { createNewVehicle, saveVehicle, vehicles, deleteVehicle } = useCampaign();
 
   useEffect(() => {
@@ -52,6 +55,15 @@ export default function VehicleInterface() {
 
   const handleDeployFromCatalog = async (ship: PreMadeShip) => {
     const vehicleData = preMadeShipToVehicle(ship);
+    const saved = await saveVehicle(vehicleData);
+    if (saved) {
+      setSelectedVehicleId(saved.id);
+      setShowVehicleSheet(true);
+    }
+  };
+
+  const handleDeployVehicleFromCatalog = async (vehicle: PreMadeVehicle) => {
+    const vehicleData = preMadeVehicleToVehicle(vehicle);
     const saved = await saveVehicle(vehicleData);
     if (saved) {
       setSelectedVehicleId(saved.id);
@@ -308,12 +320,14 @@ export default function VehicleInterface() {
                       </div>
                     )}
                     
-                    <button
-                      className="terminal-btn w-full"
-                      onClick={() => handleRegisterNewVehicle("Ground Vehicle")}
-                    >
-                      Register New Vehicle
-                    </button>
+                    <div className="flex gap-2">
+                      <button className="terminal-btn flex-1" onClick={() => setShowVehicleCatalog(true)}>
+                        Deploy from Catalog
+                      </button>
+                      <button className="terminal-btn flex-1" onClick={() => handleRegisterNewVehicle("Ground Vehicle")}>
+                        Custom Vehicle
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -337,6 +351,13 @@ export default function VehicleInterface() {
         open={showShipCatalog}
         onOpenChange={setShowShipCatalog}
         onSelectShip={handleDeployFromCatalog}
+      />
+
+      {/* Pre-Made Vehicle Catalog */}
+      <PreMadeVehicleSelector
+        open={showVehicleCatalog}
+        onOpenChange={setShowVehicleCatalog}
+        onSelectVehicle={handleDeployVehicleFromCatalog}
       />
     </div>
   );
