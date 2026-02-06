@@ -85,6 +85,8 @@ export {
 // Equipment data + utilities
 export {
   COMMS_EQUIPMENT,
+  COMPUTERS_EQUIPMENT,
+  SOFTWARE_EQUIPMENT,
   EQUIPMENT_CATALOG,
   getEquipmentById,
   getEquipmentByType,
