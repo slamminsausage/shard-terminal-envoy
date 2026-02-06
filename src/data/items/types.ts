@@ -53,19 +53,59 @@ export interface ArmorOptionVariant {
   incompatibleWith?: string[];
 }
 
-// ─── Weapon Types (for future use) ──────────────────────────────────
+// ─── Weapon Types ────────────────────────────────────────────────────
 
-export type WeaponCategory = 'melee' | 'pistol' | 'rifle' | 'shotgun' | 'heavy' | 'launcher' | 'energy';
+/** Weapon subcategory for UI dropdown grouping */
+export type WeaponType =
+  | 'melee'
+  | 'slug_pistol'
+  | 'slug_rifle'
+  | 'energy_pistol'
+  | 'energy_rifle'
+  | 'grenade'
+  | 'heavy'
+  | 'explosive';
+
+/** Human-readable labels for weapon type groups */
+export const WEAPON_TYPE_LABELS: Record<WeaponType, string> = {
+  melee: 'Melee Weapons',
+  slug_pistol: 'Slug Pistols',
+  slug_rifle: 'Slug Rifles',
+  energy_pistol: 'Energy Pistols',
+  energy_rifle: 'Energy Rifles',
+  grenade: 'Grenades',
+  heavy: 'Heavy Weapons',
+  explosive: 'Explosives',
+};
 
 export interface WeaponCatalogItem extends CatalogItem {
   category: 'weapon';
-  weaponType: WeaponCategory;
-  damage: string;           // Dice expression e.g. "2d6", "3d6+2"
-  range: string;            // Range band or meters
-  magazine?: number;
-  magazineCost?: number;
-  traits: string[];         // e.g. ["Auto 3", "AP 5", "Bulky"]
-  requiredSkill?: string;   // e.g. "Gun Combat (slug)" or "Melee (blade)"
+  weaponType: WeaponType;
+  damage: string;           // Dice expression e.g. "2D", "3D-3", "1DD", "As grenade"
+  range: string;            // "Melee" or distance in metres e.g. "200m"
+  magazine?: number;        // Rounds per magazine. undefined = no magazine, -1 = unlimited
+  magazineCost?: number;    // Cost per magazine/power pack reload
+  traits: string[];         // e.g. ["Auto 3", "AP 5", "Bulky", "Stun"]
+  requiredSkill?: string;   // e.g. "Gun Combat (slug)", "Melee", "Heavy Weapons (portable)"
+}
+
+/** An option/upgrade that can be added to weapons */
+export interface WeaponOption {
+  id: string;
+  name: string;
+  description: string;
+  variants: WeaponOptionVariant[];
+}
+
+/** A specific TL variant of a weapon option */
+export interface WeaponOptionVariant {
+  tl: number;
+  cost: number;
+  effect: string;
+  /** Which weapon types this can be added to. If empty/undefined, compatible with all. */
+  compatibleWeaponTypes?: WeaponType[];
+  /** Which specific weapon IDs this CANNOT be added to */
+  incompatibleWith?: string[];
 }
 
 // ─── Equipment Types (for future use) ────────────────────────────────
@@ -112,6 +152,7 @@ export interface EquippedArmor {
 export interface EquippedWeapon {
   catalogId: string;
   customName?: string;
+  options: string[];          // IDs of WeaponOptionVariant applied
   currentAmmo?: number;
   condition: 'excellent' | 'good' | 'worn' | 'damaged' | 'broken';
   location: 'worn' | 'carried' | 'stowed';

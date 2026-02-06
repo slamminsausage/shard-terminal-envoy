@@ -2,7 +2,7 @@
  * Item Catalog - Central export for all Traveller equipment data.
  *
  * Usage:
- *   import { ARMOR_CATALOG, ARMOR_OPTIONS, getArmorById } from '@/data/items';
+ *   import { ARMOR_CATALOG, WEAPON_CATALOG, getArmorById } from '@/data/items';
  */
 
 // Types
@@ -13,7 +13,9 @@ export type {
   ArmorOption,
   ArmorOptionVariant,
   WeaponCatalogItem,
-  WeaponCategory,
+  WeaponType,
+  WeaponOption,
+  WeaponOptionVariant,
   EquipmentCatalogItem,
   EquipmentCategory,
   AugmentCatalogItem,
@@ -22,6 +24,8 @@ export type {
   EquippedItem,
   AnyCatalogItem,
 } from './types';
+
+export { WEAPON_TYPE_LABELS } from './types';
 
 // Armor data + utilities
 export {
@@ -36,3 +40,26 @@ export {
   formatProtection,
   formatRequiredSkill,
 } from './armor';
+
+// Weapon data + utilities
+export {
+  MELEE_WEAPONS,
+  SLUG_PISTOLS,
+  SLUG_RIFLES,
+  ENERGY_PISTOLS,
+  ENERGY_RIFLES,
+  GRENADES,
+  HEAVY_WEAPONS,
+  EXPLOSIVES,
+  WEAPON_CATALOG,
+  WEAPON_OPTIONS,
+  getWeaponById,
+  getWeaponOptionById,
+  getWeaponsByType,
+  isWeaponOptionCompatible,
+  getCompatibleWeaponOptions,
+  calculateWeaponCost,
+  formatDamage,
+  formatMagazine,
+  formatMagazineCost,
+} from './weapons';
