@@ -181,7 +181,7 @@ export function StarMapPanel() {
         </div>
 
         {/* Map Iframe with Pinch Zoom - fills remaining space */}
-        <div ref={zoomRef} className="flex-1 relative min-h-[500px] min-w-0 overflow-hidden touch-none">
+        <div ref={zoomRef} className="flex-1 relative min-h-[280px] sm:min-h-[400px] xl:min-h-[500px] 3xl:min-h-[700px] min-w-0 overflow-hidden touch-none">
           <div style={zoomStyle} className="absolute inset-0">
             <iframe
               ref={iframeRef}

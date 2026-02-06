@@ -523,7 +523,7 @@ export default function TerminalInterface() {
   );
 
   return (
-    <div className="h-screen bg-background crt-container">
+    <div className="h-screen bg-background crt-container overflow-hidden">
       <SignalInterference
         level={session.signalInterferenceLevel}
         terminalType={session.activeTerminal ? 'corrupted' : 'normal'}
@@ -558,13 +558,13 @@ export default function TerminalInterface() {
 
       {/* Terminal/Log View */}
       {(session.currentView === 'terminal' || session.currentView === 'log') && (
-        <div className="h-full p-8">
+        <div className="h-full p-3 sm:p-6 3xl:p-10">
           <div
             className={`${
               session.activeTerminal
                 ? getTerminalEffectClasses(session.activeTerminal.logPath)
                 : "terminal terminal-flicker"
-            } h-full overflow-auto relative bg-background/20 border border-primary/30 p-6`}
+            } h-full overflow-auto relative bg-background/20 border border-primary/30 p-3 sm:p-6 3xl:p-8`}
             ref={terminalRef}
           >
             {session.logsLoading && !session.terminalPasswordRequired && (
