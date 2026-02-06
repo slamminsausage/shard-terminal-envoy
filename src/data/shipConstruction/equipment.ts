@@ -288,6 +288,63 @@ export const SPACECRAFT_EQUIPMENT: SpacecraftEquipment[] = [
     notes: 'Tonnage = 10% of the system being protected. MCr0.2 per ton.',
   },
 
+  // ── Armoury ───────────────────────────────────────────────────────
+  {
+    id: 'armoury',
+    name: 'Armoury',
+    category: 'operations',
+    tl: 8,
+    description:
+      'Secure weapons storage and maintenance facility for military and mercenary vessels.',
+    tonnageMode: 'per_unit',
+    fixedTons: 1,
+    costMode: 'per_unit',
+    fixedCost: 0.25, // MCr per armoury
+    notes: '1 ton, MCr0.25 per armoury.',
+  },
+
+  // ── Drop Tank Mount ──────────────────────────────────────────────
+  {
+    id: 'drop_tank_mount',
+    name: 'Drop Tank Mount',
+    category: 'fuel',
+    tl: 9,
+    description:
+      'External fuel tank mounting points. Drop tanks can be jettisoned after use. Mount tonnage = 0.4% of drop tank capacity.',
+    tonnageMode: 'variable',
+    costMode: 'per_ton',
+    costPerTon: 0.5, // MCr per ton of mount
+    notes: 'Mount tonnage = 0.4% of external tank capacity. Tanks jettisoned after jump.',
+  },
+
+  // ── Advanced Probe Drones ────────────────────────────────────────
+  {
+    id: 'advanced_probe_drones',
+    name: 'Advanced Probe Drones',
+    category: 'drones',
+    tl: 12,
+    description:
+      'Enhanced probe drones with improved sensors and extended endurance for deep survey work.',
+    tonnageMode: 'variable',
+    costMode: 'per_ton',
+    costPerTon: 0.8, // MCr per ton
+    notes: 'Superior sensors compared to standard probes. Used by survey scouts.',
+  },
+
+  // ── Full Hangar ──────────────────────────────────────────────────
+  {
+    id: 'full_hangar',
+    name: 'Full Hangar',
+    category: 'operations',
+    tl: 8,
+    description:
+      'Internal hangar with full maintenance and repair facilities. Tonnage = 2x the tonnage of the largest craft housed.',
+    tonnageMode: 'variable',
+    costMode: 'per_ton',
+    costPerTon: 0.2, // MCr per ton of hangar
+    notes: 'Hangar tonnage = 2x tonnage of craft. Allows full maintenance and repairs.',
+  },
+
   // ── Ammunition Storage ─────────────────────────────────────────────
   {
     id: 'ammunition_storage',
