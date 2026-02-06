@@ -124,6 +124,125 @@ export const defaultVehicles: Vehicle[] = [
     updated_at: timestamp
   },
   {
+    id: "veh_demo_harrier",
+    player_id: "campaign",
+    name: "The Harrier",
+    vehicle_type: "Ship",
+    class_type: "Harrier-Class Commerce Raider",
+    tech_level: 15,
+    tonnage: 200,
+    cost: 318948750,
+    hull: 200,
+    structure: 200,
+    armor: 4,
+    maneuver_drive: 6,
+    jump_drive: 2,
+    power_plant: 260,
+    acceleration: 6,
+    top_speed: 0,
+    jump_rating: 2,
+    fuel_capacity: 42,
+    cargo_capacity: 29.7,
+    passenger_capacity: 8,
+    weapons: [
+      {
+        weapon: "Particle Barbette",
+        mount: "Barbette",
+        tl: "15",
+        range: "Long",
+        damage: "4D+4",
+        ammunition: "-",
+        traits: "Accurate, High Yield"
+      },
+      {
+        weapon: "Missile Rack",
+        mount: "Single Turret",
+        tl: "15",
+        range: "Special",
+        damage: "4D",
+        ammunition: "12",
+        traits: "Smart"
+      },
+      { weapon: "", mount: "", tl: "", range: "", damage: "", ammunition: "", traits: "" },
+      { weapon: "", mount: "", tl: "", range: "", damage: "", ammunition: "", traits: "" }
+    ],
+    screens: { countermeasures: "Military Countermeasures Suite" },
+    computer_rating: 20,
+    sensors: 5,
+    communications: 5,
+    maintenance_cost: 26579,
+    life_support: 16000,
+    salaries: 0,
+    crew_requirements: {
+      captain: "Unassigned",
+      pilot: "Unassigned",
+      astrogator: "Unassigned",
+      engineer: "Unassigned",
+      maintenance: "Unassigned",
+      gunner1: "Unassigned",
+      gunner2: "Unassigned",
+      medic: "Unassigned",
+      marine1: "Unassigned",
+      marine2: "Unassigned",
+      marine3: "Unassigned"
+    },
+    specifications: {
+      notes: "Commerce Raider. 200-ton streamlined reinforced hull with superior stealth, bonded superdense armour, holographic hull, early jump capability, stealth jump, and size-reduced drives. Equipped with armoury, cargo scoop, and fuel processor (40 tons/day). 8 staterooms and 8 low berths. Common areas: 8 tons.",
+      software: [
+        "Evade/1",
+        "Fire Control/2",
+        "Jump Control/2",
+        "Library",
+        "Manoeuvre/0",
+        "",
+        ""
+      ],
+      systems: [
+        "Superior Stealth",
+        "Holographic Hull",
+        "Armoury (1 ton)",
+        "Cargo Scoop (2 tons)",
+        "Fuel Processor (40 tons/day)",
+        "8 Low Berths",
+        "Advanced Sensors",
+        "Military Countermeasures Suite (15 tons)"
+      ],
+      sensors: [
+        { type: "Advanced", dm: "+1" }
+      ],
+      powerRequirements: [
+        { label: "Basic Ship Systems", value: "40" },
+        { label: "Maneouvre Drive", value: "120" },
+        { label: "Jump Drive", value: "40" },
+        { label: "Sensors", value: "8" },
+        { label: "Weapons", value: "52" }
+      ],
+      cargo: [
+        { description: "General Cargo", tons: "29.7" },
+        { description: "Missile Storage (12 missiles)", tons: "1" },
+        { description: "", tons: "" },
+        { description: "", tons: "" },
+        { description: "", tons: "" },
+        { description: "", tons: "" }
+      ],
+      criticalHits: [
+        { label: "Armour", boxes: [false, false, false, false, false, false] },
+        { label: "Bridge", boxes: [false, false, false, false, false, false] },
+        { label: "Cargo", boxes: [false, false, false, false, false, false] },
+        { label: "Crew", boxes: [false, false, false, false, false, false] },
+        { label: "Fuel", boxes: [false, false, false, false, false, false] },
+        { label: "Hull", boxes: [false, false, false, false, false, false] },
+        { label: "J-Drive", boxes: [false, false, false, false, false, false] },
+        { label: "M-Drive", boxes: [false, false, false, false, false, false] },
+        { label: "Power Plant", boxes: [false, false, false, false, false, false] },
+        { label: "Sensors", boxes: [false, false, false, false, false, false] },
+        { label: "Weapons", boxes: [false, false, false, false, false, false] }
+      ]
+    },
+    created_at: timestamp,
+    updated_at: timestamp
+  },
+  {
     id: "veh_demo_auger",
     player_id: "campaign",
     name: "Auger Crawler",
