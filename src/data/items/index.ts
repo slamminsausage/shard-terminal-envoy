@@ -81,3 +81,11 @@ export {
   getAugmentConflicts,
   formatAugmentCost,
 } from './augments';
+
+// Equipment data + utilities
+export {
+  COMMS_EQUIPMENT,
+  EQUIPMENT_CATALOG,
+  getEquipmentById,
+  getEquipmentByType,
+} from './equipment';
