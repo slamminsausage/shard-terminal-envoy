@@ -219,7 +219,7 @@ describe('Skill Check', () => {
   });
 
   it('should succeed when total meets or exceeds difficulty', () => {
-    expect(performSkillCheck(8, 1, 1, 6).success).toBe(false); // 6+1+1=8 meets
+    expect(performSkillCheck(8, 1, 1, 6).success).toBe(true); // 6+1+1=8 meets exactly
     expect(performSkillCheck(8, 1, 1, 7).success).toBe(true); // 7+1+1=9 exceeds
     expect(performSkillCheck(10, 2, 1, 7).success).toBe(true); // 7+2+1=10 meets exactly
   });

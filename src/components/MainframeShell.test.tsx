@@ -19,6 +19,29 @@ vi.mock("./interfaces/VehicleInterface", () => ({
   default: () => <div>VehicleMock</div>
 }));
 
+vi.mock("./layout/AppHeader", () => ({
+  __esModule: true,
+  default: ({ tabs, activeTab, onTabChange }: any) => (
+    <nav role="tablist">
+      {tabs.map((tab: any) => (
+        <button
+          key={tab.id}
+          role="tab"
+          aria-selected={activeTab === tab.id}
+          onClick={() => onTabChange(tab.id)}
+        >
+          {tab.label}
+        </button>
+      ))}
+    </nav>
+  )
+}));
+
+vi.mock("./layout/AppFooter", () => ({
+  __esModule: true,
+  default: () => <footer>FooterMock</footer>
+}));
+
 describe("MainframeShell tabs", () => {
   beforeEach(() => {
     localStorage.clear();
@@ -36,7 +59,7 @@ describe("MainframeShell tabs", () => {
       </MemoryRouter>
     );
 
-    const crewTab = screen.getByRole("tab", { name: /crew & sheets/i });
+    const crewTab = screen.getByRole("tab", { name: /crew/i });
     await user.click(crewTab);
 
     expect(localStorage.getItem("mainframe_active_tab")).toBe("crew");
@@ -51,7 +74,7 @@ describe("MainframeShell tabs", () => {
       </MemoryRouter>
     );
 
-    const vehiclesTab = screen.getByRole("tab", { name: /vehicles & spaceships/i });
+    const vehiclesTab = screen.getByRole("tab", { name: /hangar/i });
     expect(vehiclesTab).toHaveAttribute("aria-selected", "true");
   });
 });

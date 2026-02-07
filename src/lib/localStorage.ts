@@ -14,7 +14,7 @@ import { toast } from "sonner";
 export function getLocalStorage<T>(key: string, fallback: T): T {
   try {
     const raw = localStorage.getItem(key);
-    if (!raw) return fallback;
+    if (raw === null) return fallback;
     const parsed = JSON.parse(raw);
     return parsed as T;
   } catch (error) {

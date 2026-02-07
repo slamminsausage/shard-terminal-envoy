@@ -19,11 +19,6 @@ export function useTerminalHistory() {
   const [history, setHistory] = useState<TerminalHistoryEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Load history on mount
-  useEffect(() => {
-    loadHistory();
-  }, []);
-
   const loadHistory = useCallback(async () => {
     setIsLoading(true);
     try {
@@ -56,6 +51,11 @@ export function useTerminalHistory() {
       setIsLoading(false);
     }
   }, []);
+
+  // Load history on mount
+  useEffect(() => {
+    loadHistory();
+  }, [loadHistory]);
 
   const saveHistory = useCallback(async (newHistory: TerminalHistoryEntry[]) => {
     // Save to both localStorage and Supabase
