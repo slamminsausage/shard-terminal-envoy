@@ -2,6 +2,7 @@ import React from "react";
 import { LucideIcon, Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCalendar } from "@/contexts/CalendarContext";
+import { CrtThemePicker } from "@/components/CrtThemePicker";
 
 type HeaderTab = {
   id: string;
@@ -42,6 +43,7 @@ export default function AppHeader({
                     <span>{currentDate.formatted}</span>
                   </div>
                 )}
+                <CrtThemePicker />
               </div>
             </div>
           </div>

@@ -42,6 +42,15 @@ vi.mock("./layout/AppFooter", () => ({
   default: () => <footer>FooterMock</footer>
 }));
 
+vi.mock("./KeyboardShortcutOverlay", () => ({
+  KeyboardShortcutOverlay: () => null
+}));
+
+vi.mock("./TerminalLoadingSkeleton", () => ({
+  __esModule: true,
+  default: () => <div>LoadingMock</div>
+}));
+
 describe("MainframeShell tabs", () => {
   beforeEach(() => {
     localStorage.clear();
