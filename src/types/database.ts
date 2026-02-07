@@ -82,6 +82,10 @@ export interface Character {
   // Character portrait
   thumbnail_url?: string;
 
+  // Character classification
+  character_type?: 'pc' | 'npc';
+  npc_role?: 'crew' | 'enemy' | 'contact' | 'patron';
+
   created_at: string;
   updated_at: string;
 }
