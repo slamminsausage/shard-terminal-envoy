@@ -547,4 +547,124 @@ The Shard-Terminal-Envoy codebase is well-structured with excellent fallback mec
 
 ---
 
+## Code Review Round 2 — 2026-02-07
+
+### Bugs Fixed
+
+#### 1. **`rollDamageExpression` fails on whitespace in dice expressions** — FIXED
+**Location**: `src/lib/dice.ts:173`
+
+**Bug**: The regex `/(\d*)d(\d+)([+-]\d+)?/i` operated on `expression.trim()`, which only strips leading/trailing whitespace. An input like `"2d6 + 3"` would fail to parse the `+ 3` modifier (space before `3`) and silently return `modifier: 0`.
+
+**Fix**: Changed `expression.trim()` to `expression.replace(/\s+/g, '')` to strip all internal whitespace before regex matching.
+
+---
+
+#### 2. **Skill check test asserted wrong result for "meets difficulty"** — FIXED
+**Location**: `src/lib/dice.test.ts:222`
+
+**Bug**: The test asserted `performSkillCheck(8, 1, 1, 6).success` should be `false`, but `6+1+1=8` meets the difficulty of `8`. In Traveller RPG, meeting the target number is a success (`total >= difficulty`). The implementation was correct; the test expectation was wrong.
+
+**Fix**: Changed assertion to `toBe(true)` with corrected comment.
+
+---
+
+#### 3. **`getLocalStorage` treats empty strings as missing values** — FIXED
+**Location**: `src/lib/localStorage.ts:17`
+
+**Bug**: The guard `if (!raw) return fallback` uses falsy coercion, so an empty string `""` stored via `setLocalStorage` would be treated as "key doesn't exist" and return the fallback instead. This also affected `hasLocalStorage` indirectly via the test mock.
+
+**Fix**: Changed to `if (raw === null) return fallback` for an explicit null check. Also fixed the test mock's `getItem` from `store[key] || null` to `key in store ? store[key] : null`.
+
+---
+
+#### 4. **`recallHistory` returns empty string due to React 18 batching** — FIXED
+**Location**: `src/hooks/useTerminalSession.ts:309-325`
+
+**Bug**: `recallHistory` set a local `recalled` variable inside a `setState` updater function, then returned it after `setState`. In React 18, `setState` updater functions are deferred to the render phase — they don't execute synchronously during the `setState` call. So `recalled` was always `''` when `return recalled` executed.
+
+**Fix**: Added a `stateRef` that mirrors `state`, and read command history/index from `stateRef.current` synchronously instead of relying on the `setState` updater. The `setState` call now only updates `historyIndex`.
+
+---
+
+#### 5. **`useTerminalHistory` calls `loadHistory` before it's defined** — FIXED
+**Location**: `src/hooks/useTerminalHistory.ts:22-63`
+
+**Bug**: The `useEffect` that calls `loadHistory()` was declared before the `useCallback` that defines `loadHistory`. While this worked at runtime due to JavaScript hoisting semantics with `useCallback`, it also had a missing ESLint dependency (`loadHistory` not in the dep array).
+
+**Fix**: Moved `loadHistory` definition above the `useEffect`, and added `[loadHistory]` to the dependency array.
+
+---
+
+#### 6. **MainframeShell test crashes — missing context providers** — FIXED
+**Location**: `src/components/MainframeShell.test.tsx`
+
+**Bug**: The test rendered `<MainframeShell />` inside only `<MemoryRouter>`, but `AppHeader` calls `useCalendar()` and `AppFooter` renders `ExportImportDialog` which calls `useCampaign()`. Both throw without their context providers. The test also used wrong tab label patterns (`/crew & sheets/i`, `/vehicles & spaceships/i`) that don't match the actual labels ("Crew", "Hangar").
+
+**Fix**: Added mocks for `AppHeader` and `AppFooter` to isolate the tab logic being tested. Updated tab name patterns to match actual labels.
+
+---
+
+### Additional Issues Found (Not Yet Fixed)
+
+#### 7. **NexaInterface is unwired** ⚠️ LOW PRIORITY
+**Location**: `src/components/interfaces/NexaInterface.tsx`
+
+The NexaInterface component exists with a "COMING SOON" placeholder but is not registered as a tab in `MainframeShell.tsx`. It's a dead component — either wire it up or remove it.
+
+---
+
+#### 8. **AutoSaveIndicator component unused** ⚠️ LOW PRIORITY
+**Location**: `src/components/AutoSaveIndicator.tsx`
+
+This component is defined but never imported or rendered anywhere in the app.
+
+---
+
+#### 9. **~48 debug `console.log` statements left in production code** ⚠️ LOW PRIORITY
+**Key files**:
+- `src/lib/supabase.ts` (~18 occurrences — upload/delete status)
+- `src/contexts/NotesContext.tsx` (~14 occurrences — migration logging)
+- `src/lib/travellerMapApi.ts` (~8 occurrences — API debugging)
+- `src/contexts/JumpPlannerContext.tsx` (2 occurrences — coordinate processing)
+
+Most appear to be leftover development/migration logging rather than intentional production logging. Consider gating behind `isDev` or removing.
+
+---
+
+#### 10. **Two incomplete TODO items in production code** ⚠️ LOW PRIORITY
+- `src/components/bridge/BridgeConsole.tsx:306` — `// TODO: Apply damage to selected contact` — the `onApplyDamage` callback is a no-op
+- `src/components/campaign/ExportImportDialog.tsx:127-128` — `// TODO: Import world notes and hex markers` — export/import skips world notes and hex markers
+
+---
+
+#### 11. **Bundle size is 1.8MB (gzipped: 461KB)** ⚠️ MEDIUM PRIORITY
+
+The entire app ships as a single JS chunk. Vite warns about this. Consider:
+- `React.lazy()` + `Suspense` for tab interfaces (each tab is independent)
+- `manualChunks` in Vite config to split vendor libraries
+- Dynamic import for heavy components like the star map, bridge console, and character generator
+
+---
+
+#### 12. **8 npm vulnerabilities (4 moderate, 4 high)**
+
+Run `npm audit fix` to address known dependency vulnerabilities.
+
+---
+
+### Visual & UX Suggestions
+
+1. **Code-split tab content** — Each MainframeShell tab renders independently; lazy-loading them would cut initial load time significantly and improve perceived performance.
+
+2. **Add loading skeletons** — When switching tabs or loading data from Supabase, show terminal-themed skeleton/shimmer states instead of blank space.
+
+3. **CRT color scheme options** — The design system defines green-on-black, but offering amber (`#FFB000`) and blue (`#00BFFF`) phosphor variants would add personality. The infrastructure for this is partially in `design-system.css` already.
+
+4. **Keyboard shortcut discoverability** — Tab shortcuts (1-8) exist but are only shown as tiny numbers. Consider a `?` hotkey that shows a command palette or shortcut overlay.
+
+5. **Terminal history panel** — The `useTerminalHistory` hook tracks terminal access history, but there's no UI exposing "recently accessed terminals" to users. A small sidebar or dropdown in the Terminal tab would make this useful.
+
+---
+
 *End of Code Review*

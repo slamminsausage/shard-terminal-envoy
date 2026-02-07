@@ -170,7 +170,7 @@ export interface DamageRoll {
  * Supports NdM with optional +/− integer modifier.
  */
 export function rollDamageExpression(expression: string, charMod: number = 0): DamageRoll {
-  const trimmed = expression.trim();
+  const trimmed = expression.replace(/\s+/g, '');
   const match = trimmed.match(/(\d*)d(\d+)([+-]\d+)?/i);
 
   if (!match) {

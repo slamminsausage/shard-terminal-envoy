@@ -12,7 +12,7 @@
  * - UI effects (interference, glitches)
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { TerminalDefinition } from '@/lib/terminals';
 
 type ViewType = 'loading' | 'init' | 'terminal' | 'log';
@@ -164,6 +164,8 @@ const initialState: TerminalSessionState = {
 
 export function useTerminalSession(): TerminalSessionState & TerminalSessionActions {
   const [state, setState] = useState<TerminalSessionState>(initialState);
+  const stateRef = useRef(state);
+  stateRef.current = state;
 
   // View navigation
   const setView = useCallback((view: ViewType) => {
@@ -307,24 +309,20 @@ export function useTerminalSession(): TerminalSessionState & TerminalSessionActi
   }, []);
 
   const recallHistory = useCallback((direction: 'back' | 'forward') => {
-    let recalled = '';
+    const cur = stateRef.current;
+    if (cur.commandHistory.length === 0) return '';
 
-    setState((prev) => {
-      if (prev.commandHistory.length === 0) return prev;
+    const maxIndex = cur.commandHistory.length - 1;
+    let nextIndex = cur.historyIndex;
 
-      const maxIndex = prev.commandHistory.length - 1;
-      let nextIndex = prev.historyIndex;
+    if (direction === 'back') {
+      nextIndex = Math.min(maxIndex, cur.historyIndex + 1);
+    } else {
+      nextIndex = Math.max(-1, cur.historyIndex - 1);
+    }
 
-      if (direction === 'back') {
-        nextIndex = Math.min(maxIndex, prev.historyIndex + 1);
-      } else {
-        nextIndex = Math.max(-1, prev.historyIndex - 1);
-      }
-
-      recalled = nextIndex >= 0 ? prev.commandHistory[nextIndex] : '';
-      return { ...prev, historyIndex: nextIndex };
-    });
-
+    const recalled = nextIndex >= 0 ? cur.commandHistory[nextIndex] : '';
+    setState((prev) => ({ ...prev, historyIndex: nextIndex }));
     return recalled;
   }, []);
 
