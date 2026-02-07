@@ -288,6 +288,107 @@ export const SPACECRAFT_EQUIPMENT: SpacecraftEquipment[] = [
     notes: 'Tonnage = 10% of the system being protected. MCr0.2 per ton.',
   },
 
+  // ── Armoury ───────────────────────────────────────────────────────
+  {
+    id: 'armoury',
+    name: 'Armoury',
+    category: 'operations',
+    tl: 8,
+    description:
+      'Secure weapons storage and maintenance facility for military and mercenary vessels.',
+    tonnageMode: 'per_unit',
+    fixedTons: 1,
+    costMode: 'per_unit',
+    fixedCost: 0.25, // MCr per armoury
+    notes: '1 ton, MCr0.25 per armoury.',
+  },
+
+  // ── Drop Tank Mount ──────────────────────────────────────────────
+  {
+    id: 'drop_tank_mount',
+    name: 'Drop Tank Mount',
+    category: 'fuel',
+    tl: 9,
+    description:
+      'External fuel tank mounting points. Drop tanks can be jettisoned after use. Mount tonnage = 0.4% of drop tank capacity.',
+    tonnageMode: 'variable',
+    costMode: 'per_ton',
+    costPerTon: 0.5, // MCr per ton of mount
+    notes: 'Mount tonnage = 0.4% of external tank capacity. Tanks jettisoned after jump.',
+  },
+
+  // ── Advanced Probe Drones ────────────────────────────────────────
+  {
+    id: 'advanced_probe_drones',
+    name: 'Advanced Probe Drones',
+    category: 'drones',
+    tl: 12,
+    description:
+      'Enhanced probe drones with improved sensors and extended endurance for deep survey work.',
+    tonnageMode: 'variable',
+    costMode: 'per_ton',
+    costPerTon: 0.8, // MCr per ton
+    notes: 'Superior sensors compared to standard probes. Used by survey scouts.',
+  },
+
+  // ── Full Hangar ──────────────────────────────────────────────────
+  {
+    id: 'full_hangar',
+    name: 'Full Hangar',
+    category: 'operations',
+    tl: 8,
+    description:
+      'Internal hangar with full maintenance and repair facilities. Tonnage = 2x the tonnage of the largest craft housed.',
+    tonnageMode: 'variable',
+    costMode: 'per_ton',
+    costPerTon: 0.2, // MCr per ton of hangar
+    notes: 'Hangar tonnage = 2x tonnage of craft. Allows full maintenance and repairs.',
+  },
+
+  // ── Cabin Space (Small Craft) ──────────────────────────────────────
+  {
+    id: 'cabin_space',
+    name: 'Cabin Space',
+    category: 'accommodation',
+    tl: 7,
+    description:
+      'Basic accommodation for small craft. Each cabin provides sleeping area and basic facilities for one person.',
+    tonnageMode: 'per_unit',
+    fixedTons: 1.5,
+    costMode: 'per_unit',
+    fixedCost: 0.075, // MCr per cabin
+    notes: '1.5 tons, MCr0.075 per cabin. Standard small craft accommodation.',
+  },
+
+  // ── Modular Hull (Modular Cutter) ────────────────────────────────
+  {
+    id: 'modular_hull',
+    name: 'Modular Hull',
+    category: 'operations',
+    tl: 8,
+    description:
+      'Detachable module bay allowing rapid role changes without starport refits. Common modules include ATV, fuel, and open cargo.',
+    tonnageMode: 'variable',
+    costMode: 'per_ton',
+    costPerTon: 0.06, // MCr per ton
+    notes: 'Allows swapping modules for different missions. ATV module MCr1.8, Fuel module MCr1, Open module MCr2.',
+  },
+
+  // ── Acceleration Bench ───────────────────────────────────────────
+  {
+    id: 'acceleration_bench',
+    name: 'Acceleration Bench',
+    category: 'accommodation',
+    tl: 7,
+    description:
+      'Basic acceleration seating for mass passenger transport on short trips. Each bench seats 4 passengers.',
+    tonnageMode: 'per_unit',
+    fixedTons: 1,
+    costMode: 'per_unit',
+    fixedCost: 0.01, // MCr per bench
+    notes: '1 ton, MCr0.01 per bench. Seats 4 passengers.',
+  },
+
   // ── Ammunition Storage ─────────────────────────────────────────────
   {
     id: 'ammunition_storage',
