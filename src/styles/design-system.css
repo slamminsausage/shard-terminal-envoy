@@ -64,7 +64,7 @@
   z-index: 9999;
 }
 
-/* Scanline effect - UPDATED */
+/* Scanline effect - uses CSS custom property for theme color */
 .crt-overlay::before {
   content: '';
   position: absolute;
@@ -76,8 +76,8 @@
     0deg,
     transparent 0px,
     transparent 2px,
-    rgba(0, 255, 0, 0.025) 2px,
-    rgba(0, 255, 0, 0.025) 4px
+    color-mix(in srgb, var(--primary) 2.5%, transparent) 2px,
+    color-mix(in srgb, var(--primary) 2.5%, transparent) 4px
   );
   animation: scanlines 8s linear infinite;
 }
@@ -550,6 +550,16 @@
 
 .blink {
   animation: blink 1s step-end infinite;
+}
+
+/* Terminal skeleton loading pulse */
+@keyframes terminalPulse {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 1; }
+}
+
+.terminal-skeleton-pulse > div {
+  animation: terminalPulse 1.4s ease-in-out infinite;
 }
 
 /* ===================================
