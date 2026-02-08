@@ -14,6 +14,7 @@ import { InventoryProvider } from "@/contexts/InventoryContext";
 import { FinanceProvider } from "@/contexts/FinanceContext";
 import { TradeProvider } from "@/contexts/TradeContext";
 import { PiracyProvider } from "@/contexts/PiracyContext";
+import { VTTProvider } from "@/contexts/VTTContext";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import CRTOverlay from "@/components/ui/CRTOverlay";
 import { GlobalSearch } from "@/components/GlobalSearch";
@@ -52,6 +53,7 @@ const App = () => (
                       <JumpPlannerProvider>
                         <NotesProvider>
                           <PiracyProvider>
+                          <VTTProvider>
                           <BridgeProvider>
             <CRTOverlay />
             <Toaster />
@@ -70,6 +72,7 @@ const App = () => (
               </Routes>
             </BrowserRouter>
                           </BridgeProvider>
+                          </VTTProvider>
                           </PiracyProvider>
                         </NotesProvider>
                       </JumpPlannerProvider>

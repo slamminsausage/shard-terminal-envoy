@@ -1,5 +1,5 @@
 import React, { lazy, Suspense, useEffect, useState } from "react";
-import { Terminal, Users, Radar, Navigation, BookOpen, Swords, Skull } from "lucide-react";
+import { Terminal, Users, Radar, Navigation, BookOpen, Swords, Skull, Layout } from "lucide-react";
 import AppHeader from "./layout/AppHeader";
 import AppFooter from "./layout/AppFooter";
 import TerminalLoadingSkeleton from "./TerminalLoadingSkeleton";
@@ -15,6 +15,7 @@ const CampaignInterface = lazy(() => import("./interfaces/CampaignInterface").th
 const PiracyInterface = lazy(() => import("./interfaces/PiracyInterface").then(m => ({ default: m.PiracyInterface })));
 const BridgeConsole = lazy(() => import("./bridge/BridgeConsole").then(m => ({ default: m.BridgeConsole })));
 const JumpPlannerInterface = lazy(() => import("./navigation/JumpPlannerInterface").then(m => ({ default: m.JumpPlannerInterface })));
+const VTTInterface = lazy(() => import("./interfaces/VTTInterface"));
 
 export default function MainframeShell() {
   const [activeTab, setActiveTab] = useState(() => {
@@ -38,7 +39,8 @@ export default function MainframeShell() {
     { id: "navigation", label: "Star Map", icon: Navigation },
     { id: "campaign", label: "Campaign", icon: BookOpen },
     { id: "piracy", label: "Piracy", icon: Skull },
-    { id: "combat", label: "Combat", icon: Swords }
+    { id: "combat", label: "Combat", icon: Swords },
+    { id: "vtt", label: "VTT", icon: Layout }
   ];
 
   // Enable keyboard shortcuts for tab navigation (1-8)
@@ -83,6 +85,7 @@ export default function MainframeShell() {
           {activeTab === "campaign" && <CampaignInterface />}
           {activeTab === "piracy" && <PiracyInterface />}
           {activeTab === "combat" && <CombatInterface />}
+          {activeTab === "vtt" && <VTTInterface />}
         </Suspense>
       </main>
 
