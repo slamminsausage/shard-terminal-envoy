@@ -2,6 +2,13 @@ import { useVTT } from "@/contexts/VTTContext";
 import VTTMapLibrary from "./VTTMapLibrary";
 import VTTTokenPanel from "./VTTTokenPanel";
 import VTTDrawingPanel from "./VTTDrawingPanel";
+import VTTAudioMixer from "./VTTAudioMixer";
+import VTTEffectsPanel from "./VTTEffectsPanel";
+import VTTInitiativePanel from "./VTTInitiativePanel";
+import VTTClocksPanel from "./VTTClocksPanel";
+import VTTHandoutsPanel from "./VTTHandoutsPanel";
+import VTTFogPanel from "./VTTFogPanel";
+import VTTSettingsPanel from "./VTTSettingsPanel";
 import { X } from "lucide-react";
 
 export default function VTTSidebar() {
@@ -43,14 +50,14 @@ export default function VTTSidebar() {
         {state.sidebarPanel === "maps" && <VTTMapLibrary />}
         {state.sidebarPanel === "tokens" && <VTTTokenPanel />}
         {state.sidebarPanel === "drawing" && <VTTDrawingPanel />}
-        {state.sidebarPanel === "audio" && <PlaceholderPanel name="Audio Mixer" />}
-        {state.sidebarPanel === "effects" && <PlaceholderPanel name="Particle Effects" />}
-        {state.sidebarPanel === "initiative" && <PlaceholderPanel name="Initiative Tracker" />}
-        {state.sidebarPanel === "clocks" && <PlaceholderPanel name="Clocks" />}
-        {state.sidebarPanel === "handouts" && <PlaceholderPanel name="Handouts" />}
-        {state.sidebarPanel === "fog" && <PlaceholderPanel name="Fog of War" />}
+        {state.sidebarPanel === "audio" && <VTTAudioMixer />}
+        {state.sidebarPanel === "effects" && <VTTEffectsPanel />}
+        {state.sidebarPanel === "initiative" && <VTTInitiativePanel />}
+        {state.sidebarPanel === "clocks" && <VTTClocksPanel />}
+        {state.sidebarPanel === "handouts" && <VTTHandoutsPanel />}
+        {state.sidebarPanel === "fog" && <VTTFogPanel />}
         {state.sidebarPanel === "lighting" && <PlaceholderPanel name="Dynamic Lighting" />}
-        {state.sidebarPanel === "settings" && <PlaceholderPanel name="VTT Settings" />}
+        {state.sidebarPanel === "settings" && <VTTSettingsPanel />}
       </div>
     </div>
   );
@@ -61,7 +68,7 @@ function PlaceholderPanel({ name }: { name: string }) {
     <div className="flex flex-col items-center justify-center h-full text-terminal-primary/30 font-mono text-xs p-4 text-center">
       <div className="mb-2 text-2xl opacity-30">&#9881;</div>
       {name}
-      <div className="mt-1 text-[10px]">Coming in Phase 2+</div>
+      <div className="mt-1 text-[10px]">Coming soon</div>
     </div>
   );
 }
