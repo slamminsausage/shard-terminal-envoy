@@ -18,6 +18,13 @@ export default function VTTPresenterView() {
   const [particles, setParticles] = useState<ParticleConfig>(createDefaultParticles());
   const [handout, setHandout] = useState<{ imageDataUrl: string; name: string } | null>(null);
   const [connected, setConnected] = useState(false);
+  const [diceRoll, setDiceRoll] = useState<{
+    label: string;
+    dice: number[];
+    total: number;
+    modifier: number;
+    timestamp: number;
+  } | null>(null);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const particleCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -44,7 +51,16 @@ export default function VTTPresenterView() {
     setHandout(null);
   }, []);
 
-  usePresenterReceiver(onMapSync, onParticlesSync, onShowHandout, onHideHandout);
+  const onDiceRoll = useCallback(
+    (label: string, dice: number[], total: number, modifier: number) => {
+      setDiceRoll({ label, dice, total, modifier, timestamp: Date.now() });
+      // Auto-hide after 6 seconds
+      setTimeout(() => setDiceRoll(null), 6000);
+    },
+    []
+  );
+
+  usePresenterReceiver(onMapSync, onParticlesSync, onShowHandout, onHideHandout, onDiceRoll);
 
   // Connect particle canvas
   useEffect(() => {
@@ -271,6 +287,44 @@ export default function VTTPresenterView() {
           />
           <div className="absolute bottom-6 text-center text-terminal-primary/60 text-sm font-mono">
             {handout.name}
+          </div>
+        </div>
+      )}
+
+      {/* Dice roll overlay */}
+      {diceRoll && (
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-30 animate-in fade-in slide-in-from-bottom-4 duration-300">
+          <div className="bg-black/90 border border-terminal-primary/50 rounded-lg px-8 py-4 text-center shadow-[0_0_30px_rgba(0,255,0,0.2)]">
+            <div className="text-terminal-primary/60 text-xs font-mono uppercase tracking-wider mb-1">
+              {diceRoll.label}
+            </div>
+            <div className="flex items-center justify-center gap-2 mb-1">
+              {diceRoll.dice.map((d, i) => (
+                <span
+                  key={i}
+                  className="w-10 h-10 flex items-center justify-center bg-terminal-primary/10 border border-terminal-primary/30 rounded text-terminal-primary text-lg font-mono font-bold"
+                >
+                  {d}
+                </span>
+              ))}
+              {diceRoll.modifier !== 0 && (
+                <span className="text-terminal-primary/50 text-sm font-mono">
+                  {diceRoll.modifier > 0 ? "+" : ""}
+                  {diceRoll.modifier}
+                </span>
+              )}
+            </div>
+            <div
+              className={`text-3xl font-mono font-bold ${
+                diceRoll.total >= 8
+                  ? "text-green-400"
+                  : diceRoll.total >= 6
+                  ? "text-yellow-400"
+                  : "text-red-400"
+              }`}
+            >
+              {diceRoll.total}
+            </div>
           </div>
         </div>
       )}

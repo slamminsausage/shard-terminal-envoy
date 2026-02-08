@@ -30,6 +30,8 @@ import {
   RotateCw,
   FlipHorizontal,
   FlipVertical,
+  UserPlus,
+  Sparkles,
 } from "lucide-react";
 import { useVTT } from "@/contexts/VTTContext";
 import type { VTTTool, VTTSidebarPanel } from "@/types/vtt";
@@ -68,10 +70,13 @@ interface PanelDef {
 const panels: PanelDef[] = [
   { panel: "maps", icon: <Map size={16} />, label: "Maps" },
   { panel: "tokens", icon: <Users size={16} />, label: "Tokens" },
+  { panel: "characters", icon: <UserPlus size={16} />, label: "Import Characters" },
   { panel: "drawing", icon: <Paintbrush size={16} />, label: "Drawing" },
   { panel: "fog", icon: <Eye size={16} />, label: "Fog of War" },
   { panel: "lighting", icon: <Lightbulb size={16} />, label: "Lighting" },
+  { panel: "aoe", icon: <Target size={16} />, label: "AoE Templates" },
   { panel: "effects", icon: <Cloud size={16} />, label: "Effects" },
+  { panel: "scenes", icon: <Sparkles size={16} />, label: "Scene Presets" },
   { panel: "audio", icon: <Music size={16} />, label: "Audio" },
   { panel: "initiative", icon: <Swords size={16} />, label: "Initiative" },
   { panel: "clocks", icon: <Clock size={16} />, label: "Clocks" },

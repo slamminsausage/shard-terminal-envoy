@@ -13,6 +13,7 @@ export type PresenterMessage =
   | { type: "sync-viewport"; mapId: string; scrollX: number; scrollY: number; zoom: number }
   | { type: "show-handout"; imageDataUrl: string; name: string }
   | { type: "hide-handout" }
+  | { type: "dice-roll"; label: string; dice: number[]; total: number; modifier: number }
   | { type: "ping" }
   | { type: "pong" };
 
@@ -91,7 +92,20 @@ export function usePresenterController(state: VTTState, activeMap: VTTMap | null
     } satisfies PresenterMessage);
   }, []);
 
-  return { showHandout, hideHandout };
+  const broadcastDiceRoll = useCallback(
+    (label: string, dice: number[], total: number, modifier: number) => {
+      channelRef.current?.postMessage({
+        type: "dice-roll",
+        label,
+        dice,
+        total,
+        modifier,
+      } satisfies PresenterMessage);
+    },
+    []
+  );
+
+  return { showHandout, hideHandout, broadcastDiceRoll };
 }
 
 /**
@@ -101,7 +115,8 @@ export function usePresenterReceiver(
   onMapSync: (map: VTTMap | null) => void,
   onParticlesSync: (particles: ParticleConfig) => void,
   onShowHandout: (imageDataUrl: string, name: string) => void,
-  onHideHandout: () => void
+  onHideHandout: () => void,
+  onDiceRoll?: (label: string, dice: number[], total: number, modifier: number) => void
 ) {
   const channelRef = useRef<BroadcastChannel | null>(null);
 
@@ -122,6 +137,9 @@ export function usePresenterReceiver(
         case "hide-handout":
           onHideHandout();
           break;
+        case "dice-roll":
+          onDiceRoll?.(e.data.label, e.data.dice, e.data.total, e.data.modifier);
+          break;
         case "pong":
           // Controller is alive
           break;
@@ -134,5 +152,5 @@ export function usePresenterReceiver(
     return () => {
       channelRef.current?.close();
     };
-  }, [onMapSync, onParticlesSync, onShowHandout, onHideHandout]);
+  }, [onMapSync, onParticlesSync, onShowHandout, onHideHandout, onDiceRoll]);
 }

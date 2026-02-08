@@ -11,6 +11,9 @@ import VTTFogPanel from "./VTTFogPanel";
 import VTTDiceRoller from "./VTTDiceRoller";
 import VTTLightingPanel from "./VTTLightingPanel";
 import VTTSettingsPanel from "./VTTSettingsPanel";
+import VTTCharacterImport from "./VTTCharacterImport";
+import VTTScenePresets from "./VTTScenePresets";
+import VTTAoEPanel from "./VTTAoEPanel";
 import { X } from "lucide-react";
 
 export default function VTTSidebar() {
@@ -21,14 +24,17 @@ export default function VTTSidebar() {
   const panelLabels: Record<string, string> = {
     maps: "Maps",
     tokens: "Tokens",
+    characters: "Characters",
     drawing: "Drawing",
     fog: "Fog of War",
     lighting: "Lighting",
     audio: "Audio Mixer",
     effects: "Effects",
+    scenes: "Scene Presets",
     initiative: "Initiative",
     clocks: "Clocks",
     handouts: "Handouts",
+    aoe: "AoE Templates",
     dice: "Dice Roller",
     settings: "Settings",
   };
@@ -52,12 +58,15 @@ export default function VTTSidebar() {
       <div className="flex-1 overflow-hidden">
         {state.sidebarPanel === "maps" && <VTTMapLibrary />}
         {state.sidebarPanel === "tokens" && <VTTTokenPanel />}
+        {state.sidebarPanel === "characters" && <VTTCharacterImport />}
         {state.sidebarPanel === "drawing" && <VTTDrawingPanel />}
         {state.sidebarPanel === "audio" && <VTTAudioMixer />}
         {state.sidebarPanel === "effects" && <VTTEffectsPanel />}
+        {state.sidebarPanel === "scenes" && <VTTScenePresets />}
         {state.sidebarPanel === "initiative" && <VTTInitiativePanel />}
         {state.sidebarPanel === "clocks" && <VTTClocksPanel />}
         {state.sidebarPanel === "handouts" && <VTTHandoutsPanel />}
+        {state.sidebarPanel === "aoe" && <VTTAoEPanel />}
         {state.sidebarPanel === "fog" && <VTTFogPanel />}
         {state.sidebarPanel === "lighting" && <VTTLightingPanel />}
         {state.sidebarPanel === "dice" && <VTTDiceRoller />}

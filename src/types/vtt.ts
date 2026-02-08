@@ -401,14 +401,17 @@ export interface VTTState {
 export type VTTSidebarPanel =
   | "maps"
   | "tokens"
+  | "characters"
   | "drawing"
   | "fog"
   | "lighting"
   | "audio"
   | "effects"
+  | "scenes"
   | "initiative"
   | "clocks"
   | "handouts"
+  | "aoe"
   | "dice"
   | "settings";
 

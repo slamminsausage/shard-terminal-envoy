@@ -154,6 +154,37 @@ export default function VTTSettingsPanel() {
               />
             </div>
 
+            <div className="mt-2">
+              <label className="text-[10px] text-terminal-primary/50 font-mono block mb-1">
+                Grid Style
+              </label>
+              <div className="flex gap-1">
+                {(["square", "hex"] as const).map((style) => (
+                  <button
+                    key={style}
+                    onClick={() =>
+                      dispatch({
+                        type: "UPDATE_MAP",
+                        payload: {
+                          id: activeMap.id,
+                          updates: {
+                            grid: { ...grid, style },
+                          },
+                        },
+                      })
+                    }
+                    className={`flex-1 text-xs font-mono py-1 rounded border transition-colors capitalize ${
+                      grid.style === style
+                        ? "bg-terminal-primary/20 border-terminal-primary/50 text-terminal-primary"
+                        : "border-terminal-border/30 text-terminal-primary/40 hover:text-terminal-primary/60"
+                    }`}
+                  >
+                    {style}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <ToggleRow
               label="Snap to Grid"
               checked={grid.snap}

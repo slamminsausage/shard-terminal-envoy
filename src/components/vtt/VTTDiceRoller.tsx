@@ -1,10 +1,7 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useVTT } from "@/contexts/VTTContext";
 import { Dice5, Plus, Minus } from "lucide-react";
-
-function roll2d6(): number {
-  return Math.floor(Math.random() * 6) + 1 + Math.floor(Math.random() * 6) + 1;
-}
+import type { PresenterMessage } from "@/hooks/useVTTPresenter";
 
 function rollDice(count: number, sides: number): number[] {
   return Array.from({ length: count }, () => Math.floor(Math.random() * sides) + 1);
@@ -18,12 +15,32 @@ interface RollResult {
   timestamp: number;
 }
 
+const CHANNEL_NAME = "shard-vtt-presenter";
+
 export default function VTTDiceRoller() {
   const [results, setResults] = useState<RollResult[]>([]);
   const [modifier, setModifier] = useState(0);
   const [diceCount, setDiceCount] = useState(2);
   const [diceSides, setDiceSides] = useState(6);
   const [customLabel, setCustomLabel] = useState("");
+  const [broadcastEnabled, setBroadcastEnabled] = useState(true);
+  const channelRef = useRef<BroadcastChannel | null>(null);
+
+  useEffect(() => {
+    channelRef.current = new BroadcastChannel(CHANNEL_NAME);
+    return () => channelRef.current?.close();
+  }, []);
+
+  const broadcastRoll = (result: RollResult) => {
+    if (!broadcastEnabled) return;
+    channelRef.current?.postMessage({
+      type: "dice-roll",
+      label: result.label,
+      dice: result.dice,
+      total: result.total,
+      modifier: result.modifier,
+    } satisfies PresenterMessage);
+  };
 
   const doRoll = (label?: string) => {
     const dice = rollDice(diceCount, diceSides);
@@ -36,23 +53,21 @@ export default function VTTDiceRoller() {
       timestamp: Date.now(),
     };
     setResults((prev) => [result, ...prev].slice(0, 20));
+    broadcastRoll(result);
   };
 
   const doQuick2d6 = () => {
     const dice = rollDice(2, 6);
     const sum = dice.reduce((a, b) => a + b, 0);
-    setResults((prev) =>
-      [
-        {
-          label: `2d6${modifier !== 0 ? (modifier > 0 ? `+${modifier}` : modifier) : ""}`,
-          dice,
-          modifier,
-          total: sum + modifier,
-          timestamp: Date.now(),
-        },
-        ...prev,
-      ].slice(0, 20)
-    );
+    const result: RollResult = {
+      label: `2d6${modifier !== 0 ? (modifier > 0 ? `+${modifier}` : modifier) : ""}`,
+      dice,
+      modifier,
+      total: sum + modifier,
+      timestamp: Date.now(),
+    };
+    setResults((prev) => [result, ...prev].slice(0, 20));
+    broadcastRoll(result);
   };
 
   const doBoon = () => {
@@ -60,18 +75,15 @@ export default function VTTDiceRoller() {
     dice.sort((a, b) => b - a);
     const kept = [dice[0], dice[1]];
     const sum = kept[0] + kept[1];
-    setResults((prev) =>
-      [
-        {
-          label: `Boon (3d6 keep 2 best)${modifier !== 0 ? (modifier > 0 ? `+${modifier}` : modifier) : ""}`,
-          dice,
-          modifier,
-          total: sum + modifier,
-          timestamp: Date.now(),
-        },
-        ...prev,
-      ].slice(0, 20)
-    );
+    const result: RollResult = {
+      label: `Boon (3d6 keep 2 best)${modifier !== 0 ? (modifier > 0 ? `+${modifier}` : modifier) : ""}`,
+      dice,
+      modifier,
+      total: sum + modifier,
+      timestamp: Date.now(),
+    };
+    setResults((prev) => [result, ...prev].slice(0, 20));
+    broadcastRoll(result);
   };
 
   const doBane = () => {
@@ -79,18 +91,15 @@ export default function VTTDiceRoller() {
     dice.sort((a, b) => a - b);
     const kept = [dice[0], dice[1]];
     const sum = kept[0] + kept[1];
-    setResults((prev) =>
-      [
-        {
-          label: `Bane (3d6 keep 2 worst)${modifier !== 0 ? (modifier > 0 ? `+${modifier}` : modifier) : ""}`,
-          dice,
-          modifier,
-          total: sum + modifier,
-          timestamp: Date.now(),
-        },
-        ...prev,
-      ].slice(0, 20)
-    );
+    const result: RollResult = {
+      label: `Bane (3d6 keep 2 worst)${modifier !== 0 ? (modifier > 0 ? `+${modifier}` : modifier) : ""}`,
+      dice,
+      modifier,
+      total: sum + modifier,
+      timestamp: Date.now(),
+    };
+    setResults((prev) => [result, ...prev].slice(0, 20));
+    broadcastRoll(result);
   };
 
   return (
@@ -230,6 +239,17 @@ export default function VTTDiceRoller() {
         )}
       </div>
 
+      <div className="p-2 border-t border-terminal-border/20 space-y-1">
+        <label className="flex items-center gap-2 text-[10px] text-terminal-primary/40 font-mono cursor-pointer">
+          <input
+            type="checkbox"
+            checked={broadcastEnabled}
+            onChange={(e) => setBroadcastEnabled(e.target.checked)}
+            className="accent-green-500"
+          />
+          Show rolls on presenter
+        </label>
+      </div>
       {results.length > 0 && (
         <div className="p-2 border-t border-terminal-border/20">
           <button

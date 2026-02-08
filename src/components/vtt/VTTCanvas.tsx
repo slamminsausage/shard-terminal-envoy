@@ -424,6 +424,16 @@ export default function VTTCanvas({ className }: VTTCanvasProps) {
           type: "ADD_STROKE",
           payload: { mapId: activeMap.id, stroke },
         });
+        dispatch({
+          type: "PUSH_HISTORY",
+          payload: {
+            type: "stroke-add",
+            mapId: activeMap.id,
+            before: null,
+            after: stroke.id,
+            timestamp: Date.now(),
+          },
+        });
         currentStrokeRef.current = [];
         return;
       }
@@ -441,12 +451,13 @@ export default function VTTCanvas({ className }: VTTCanvasProps) {
         const dy = en.y - s.y;
         if (Math.sqrt(dx * dx + dy * dy) < 5) return;
 
+        const wallId = crypto.randomUUID();
         dispatch({
           type: "ADD_WALL",
           payload: {
             mapId: activeMap.id,
             wall: {
-              id: crypto.randomUUID(),
+              id: wallId,
               x1: s.x,
               y1: s.y,
               x2: en.x,
@@ -454,6 +465,16 @@ export default function VTTCanvas({ className }: VTTCanvasProps) {
               type: state.activeTool === "door" ? "door" : "wall",
               doorOpen: false,
             },
+          },
+        });
+        dispatch({
+          type: "PUSH_HISTORY",
+          payload: {
+            type: "wall-add",
+            mapId: activeMap.id,
+            before: null,
+            after: wallId,
+            timestamp: Date.now(),
           },
         });
         return;
@@ -826,19 +847,59 @@ function drawGrid(ctx: CanvasRenderingContext2D, map: VTTMap) {
   ctx.strokeStyle = grid.color;
   ctx.globalAlpha = grid.opacity;
   ctx.lineWidth = 1;
+
+  if (grid.style === "hex") {
+    drawHexGrid(ctx, width, height, grid.size);
+  } else {
+    ctx.beginPath();
+    for (let x = 0; x <= width; x += grid.size) {
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, height);
+    }
+    for (let y = 0; y <= height; y += grid.size) {
+      ctx.moveTo(0, y);
+      ctx.lineTo(width, y);
+    }
+    ctx.stroke();
+  }
+
+  ctx.globalAlpha = 1;
+}
+
+function drawHexGrid(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  size: number
+) {
+  // Flat-top hexagon geometry
+  const hexW = size;
+  const hexH = (Math.sqrt(3) / 2) * hexW;
+  const colWidth = hexW * 0.75;
+
   ctx.beginPath();
 
-  for (let x = 0; x <= width; x += grid.size) {
-    ctx.moveTo(x, 0);
-    ctx.lineTo(x, height);
-  }
-  for (let y = 0; y <= height; y += grid.size) {
-    ctx.moveTo(0, y);
-    ctx.lineTo(width, y);
+  const cols = Math.ceil(width / colWidth) + 2;
+  const rows = Math.ceil(height / hexH) + 2;
+
+  for (let col = -1; col < cols; col++) {
+    for (let row = -1; row < rows; row++) {
+      const cx = col * colWidth;
+      const cy = row * hexH + (col % 2 === 1 ? hexH / 2 : 0);
+
+      // Draw hexagon
+      for (let i = 0; i < 6; i++) {
+        const angle = (Math.PI / 3) * i;
+        const hx = cx + (hexW / 2) * Math.cos(angle);
+        const hy = cy + (hexW / 2) * Math.sin(angle);
+        if (i === 0) ctx.moveTo(hx, hy);
+        else ctx.lineTo(hx, hy);
+      }
+      ctx.closePath();
+    }
   }
 
   ctx.stroke();
-  ctx.globalAlpha = 1;
 }
 
 function drawStrokes(ctx: CanvasRenderingContext2D, strokes: Stroke[]) {
