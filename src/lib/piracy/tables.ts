@@ -203,3 +203,51 @@ export const PREY_TYPE_LABELS: Record<PreyType, string> = {
   'system_defence_boat': 'System Defence Boat',
   'naval_patrol': 'Naval Patrol',
 };
+
+// === Prize Ship Hull Types ===
+
+import {
+  PrizeShipCondition,
+  PrizeShipStatus,
+} from '@/types/piracy';
+
+export interface HullTypeTemplate {
+  label: string;
+  tonnage: number;
+  typicalTL: number;
+  baseValue: number; // MCr, for sale estimate
+  minCrew: number;
+  cargoCapacity: number;
+  armed: boolean;
+}
+
+export const HULL_TYPE_TEMPLATES: Record<string, HullTypeTemplate> = {
+  'free_trader': { label: 'Free Trader (Type A)', tonnage: 200, typicalTL: 11, baseValue: 37, minCrew: 4, cargoCapacity: 82, armed: false },
+  'far_trader': { label: 'Far Trader (Type A2)', tonnage: 200, typicalTL: 12, baseValue: 52, minCrew: 5, cargoCapacity: 61, armed: false },
+  'subsidised_merchant': { label: 'Subsidised Merchant (Type R)', tonnage: 400, typicalTL: 12, baseValue: 101, minCrew: 7, cargoCapacity: 200, armed: false },
+  'subsidised_liner': { label: 'Subsidised Liner (Type M)', tonnage: 600, typicalTL: 12, baseValue: 152, minCrew: 9, cargoCapacity: 100, armed: false },
+  'safari_ship': { label: 'Safari Ship', tonnage: 200, typicalTL: 12, baseValue: 51, minCrew: 4, cargoCapacity: 6, armed: false },
+  'yacht': { label: 'Yacht', tonnage: 200, typicalTL: 13, baseValue: 51, minCrew: 3, cargoCapacity: 10, armed: false },
+  'scout_courier': { label: 'Scout/Courier (Type S)', tonnage: 100, typicalTL: 11, baseValue: 29, minCrew: 1, cargoCapacity: 3, armed: true },
+  'patrol_corvette': { label: 'Patrol Corvette (Type T)', tonnage: 400, typicalTL: 13, baseValue: 195, minCrew: 10, cargoCapacity: 12, armed: true },
+  'corsair': { label: 'Corsair (Type P)', tonnage: 400, typicalTL: 12, baseValue: 149, minCrew: 8, cargoCapacity: 50, armed: true },
+  'seeker': { label: 'Seeker Mining Ship', tonnage: 200, typicalTL: 11, baseValue: 32, minCrew: 2, cargoCapacity: 30, armed: false },
+  'laboratory_ship': { label: 'Laboratory Ship', tonnage: 400, typicalTL: 13, baseValue: 130, minCrew: 5, cargoCapacity: 10, armed: false },
+  'other': { label: 'Other / Unknown', tonnage: 200, typicalTL: 10, baseValue: 30, minCrew: 3, cargoCapacity: 50, armed: false },
+};
+
+export const PRIZE_CONDITION_CONFIG: Record<PrizeShipCondition, { label: string; valueMultiplier: number; repairWeeksPerPercent: number; color: string }> = {
+  pristine: { label: 'Pristine', valueMultiplier: 0.80, repairWeeksPerPercent: 0, color: 'text-green-400' },
+  good: { label: 'Good', valueMultiplier: 0.60, repairWeeksPerPercent: 0.5, color: 'text-cyan-400' },
+  damaged: { label: 'Damaged', valueMultiplier: 0.40, repairWeeksPerPercent: 1, color: 'text-yellow-400' },
+  heavily_damaged: { label: 'Heavily Damaged', valueMultiplier: 0.20, repairWeeksPerPercent: 2, color: 'text-orange-400' },
+  hulk: { label: 'Hulk', valueMultiplier: 0.05, repairWeeksPerPercent: 4, color: 'text-red-400' },
+};
+
+export const PRIZE_STATUS_CONFIG: Record<PrizeShipStatus, { label: string; color: string }> = {
+  captured: { label: 'Captured', color: 'text-yellow-400' },
+  kept: { label: 'In Fleet', color: 'text-cyan-400' },
+  sold: { label: 'Sold', color: 'text-green-400' },
+  scrapped: { label: 'Scrapped', color: 'text-orange-400' },
+  gifted: { label: 'Gifted', color: 'text-purple-400' },
+};

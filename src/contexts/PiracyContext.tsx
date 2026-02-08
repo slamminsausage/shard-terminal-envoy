@@ -13,6 +13,8 @@ import {
   CrewSkillLevel,
   ImperialPower,
   PiracyState,
+  PrizeShip,
+  PrizeShipStatus,
 } from '@/types/piracy';
 import { getLocalStorage, setLocalStorage } from '@/lib/localStorage';
 import { useToast } from '@/hooks/use-toast';
@@ -84,6 +86,7 @@ function getDefaultState(): PiracyState {
     standingEvents: [],
     spoilsDivisions: [],
     preyEncounters: [],
+    prizeShips: [],
   };
 }
 
@@ -97,6 +100,7 @@ interface PiracyContextType {
   standingEvents: StandingEvent[];
   spoilsDivisions: SpoilsDivision[];
   preyEncounters: PreyEncounterResult[];
+  prizeShips: PrizeShip[];
 
   // Port operations
   addPort: (port: Partial<PiratePort>) => void;
@@ -123,6 +127,12 @@ interface PiracyContextType {
 
   // Prey encounter operations
   addPreyEncounter: (encounter: Partial<PreyEncounterResult>) => void;
+
+  // Prize ship operations
+  addPrizeShip: (ship: Partial<PrizeShip>) => void;
+  updatePrizeShip: (shipId: string, updates: Partial<PrizeShip>) => void;
+  deletePrizeShip: (shipId: string) => void;
+  disposePrizeShip: (shipId: string, status: PrizeShipStatus, details: Partial<PrizeShip>) => void;
 
   // Utilities
   getActiveCrew: () => PirateCrew[];
@@ -405,6 +415,80 @@ export const PiracyProvider: React.FC<PiracyProviderProps> = ({ children }) => {
     }));
   }, []);
 
+  // === Prize Ship Operations ===
+
+  const addPrizeShip = useCallback((ship: Partial<PrizeShip>) => {
+    const newShip: PrizeShip = {
+      id: generateId(),
+      player_id: 'campaign',
+      name: ship.name || 'Unknown Vessel',
+      hull_type: ship.hull_type || 'other',
+      tonnage: ship.tonnage || 200,
+      tech_level: ship.tech_level || 10,
+      capture_date: new Date().toISOString(),
+      capture_imperial_date: ship.capture_imperial_date,
+      capture_location: ship.capture_location,
+      prey_encounter_id: ship.prey_encounter_id,
+      condition: ship.condition || 'damaged',
+      hull_damage_percent: ship.hull_damage_percent || 0,
+      drives_operational: ship.drives_operational ?? true,
+      weapons: ship.weapons || [],
+      cargo_tons: ship.cargo_tons || 0,
+      cargo_manifest: ship.cargo_manifest,
+      cargo_estimated_value: ship.cargo_estimated_value || 0,
+      status: 'captured',
+      assigned_prize_crew: [],
+      notes: ship.notes,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+    setState(prev => ({ ...prev, prizeShips: [newShip, ...prev.prizeShips] }));
+    toast({ title: 'Prize Taken!', description: `${newShip.name} captured and added to prize log.` });
+  }, [toast]);
+
+  const updatePrizeShip = useCallback((shipId: string, updates: Partial<PrizeShip>) => {
+    setState(prev => ({
+      ...prev,
+      prizeShips: prev.prizeShips.map(s =>
+        s.id === shipId ? { ...s, ...updates, updated_at: new Date().toISOString() } : s
+      ),
+    }));
+  }, []);
+
+  const deletePrizeShip = useCallback((shipId: string) => {
+    const ship = stateRef.current.prizeShips.find(s => s.id === shipId);
+    setState(prev => ({
+      ...prev,
+      prizeShips: prev.prizeShips.filter(s => s.id !== shipId),
+    }));
+    toast({ title: 'Prize Removed', description: `${ship?.name || 'Ship'} removed from prize log.` });
+  }, [toast]);
+
+  const disposePrizeShip = useCallback((shipId: string, status: PrizeShipStatus, details: Partial<PrizeShip>) => {
+    const ship = stateRef.current.prizeShips.find(s => s.id === shipId);
+    const now = new Date().toISOString();
+
+    setState(prev => ({
+      ...prev,
+      prizeShips: prev.prizeShips.map(s =>
+        s.id === shipId ? { ...s, status, ...details, updated_at: now } : s
+      ),
+    }));
+
+    const statusLabels: Record<PrizeShipStatus, string> = {
+      captured: 'captured',
+      kept: 'added to fleet',
+      sold: `sold${details.sale_value ? ` for Cr${details.sale_value.toLocaleString()}` : ''}`,
+      scrapped: `scrapped${details.scrap_value ? ` for Cr${details.scrap_value.toLocaleString()}` : ''}`,
+      gifted: `gifted to ${details.gifted_to_port || 'port'}`,
+    };
+
+    toast({
+      title: 'Prize Disposed',
+      description: `${ship?.name || 'Ship'} ${statusLabels[status]}.`,
+    });
+  }, [toast]);
+
   // === Utility Functions ===
 
   const getActiveCrew = useCallback(() => {
@@ -428,6 +512,7 @@ export const PiracyProvider: React.FC<PiracyProviderProps> = ({ children }) => {
     standingEvents: state.standingEvents,
     spoilsDivisions: state.spoilsDivisions,
     preyEncounters: state.preyEncounters,
+    prizeShips: state.prizeShips,
     addPort,
     updatePort,
     deletePort,
@@ -442,6 +527,10 @@ export const PiracyProvider: React.FC<PiracyProviderProps> = ({ children }) => {
     resetStanding,
     addSpoilsDivision,
     addPreyEncounter,
+    addPrizeShip,
+    updatePrizeShip,
+    deletePrizeShip,
+    disposePrizeShip,
     getActiveCrew,
     getTotalShares,
     getTotalMonthlySalary,
