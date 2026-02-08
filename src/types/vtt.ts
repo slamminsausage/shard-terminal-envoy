@@ -402,6 +402,7 @@ export type VTTSidebarPanel =
   | "initiative"
   | "clocks"
   | "handouts"
+  | "dice"
   | "settings";
 
 // --- Default Factories ---

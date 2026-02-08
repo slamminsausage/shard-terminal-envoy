@@ -2,10 +2,28 @@ import React, { useRef, useEffect, useCallback, useState } from "react";
 import { useVTT } from "@/contexts/VTTContext";
 import { screenToWorld } from "@/lib/vtt/geometry";
 import { clamp } from "@/lib/vtt/geometry";
-import type { Point, Stroke, Token, VTTMap } from "@/types/vtt";
+import { renderDynamicLighting } from "@/lib/vtt/raycasting";
+import type { Point, Stroke, Token, MapNote, VTTMap, Measurement } from "@/types/vtt";
+import VTTContextMenu from "./VTTContextMenu";
+import VTTTokenEditModal from "./VTTTokenEditModal";
+import VTTNoteModal from "./VTTNoteModal";
 
 const MIN_ZOOM = 0.1;
 const MAX_ZOOM = 5;
+
+// ─── Token image cache ────────────────────────────────────────────────
+const tokenImageCache = new Map<string, HTMLImageElement>();
+
+function getTokenImage(dataUrl: string): HTMLImageElement | null {
+  const cached = tokenImageCache.get(dataUrl);
+  if (cached && cached.complete) return cached;
+  if (!cached) {
+    const img = new Image();
+    img.src = dataUrl;
+    tokenImageCache.set(dataUrl, img);
+  }
+  return null;
+}
 
 interface VTTCanvasProps {
   className?: string;
@@ -26,6 +44,32 @@ export default function VTTCanvas({ className }: VTTCanvasProps) {
   const currentStrokeRef = useRef<Point[]>([]);
   const [dragToken, setDragToken] = useState<string | null>(null);
   const dragOffsetRef = useRef<Point>({ x: 0, y: 0 });
+
+  // Measurement state
+  const [measuring, setMeasuring] = useState(false);
+  const measureStartRef = useRef<Point>({ x: 0, y: 0 });
+  const measureEndRef = useRef<Point>({ x: 0, y: 0 });
+
+  // Wall drawing state
+  const [drawingWall, setDrawingWall] = useState(false);
+  const wallStartRef = useRef<Point>({ x: 0, y: 0 });
+  const wallEndRef = useRef<Point>({ x: 0, y: 0 });
+
+  // Context menu
+  const [contextMenu, setContextMenu] = useState<{
+    x: number;
+    y: number;
+    worldPos: Point;
+    token: Token | null;
+    note: MapNote | null;
+  } | null>(null);
+
+  // Modals
+  const [editingToken, setEditingToken] = useState<Token | null>(null);
+  const [editingNote, setEditingNote] = useState<{
+    note: MapNote | null;
+    worldPos: Point;
+  } | null>(null);
 
   // Load map background image
   useEffect(() => {
@@ -81,7 +125,6 @@ export default function VTTCanvas({ className }: VTTCanvasProps) {
   const findTokenAt = useCallback(
     (pos: Point): Token | null => {
       if (!activeMap) return null;
-      // Check tokens in reverse order (topmost first)
       for (let i = activeMap.tokens.length - 1; i >= 0; i--) {
         const t = activeMap.tokens[i];
         const halfSize = (t.size * (activeMap.grid.size || 50)) / 2;
@@ -99,28 +142,59 @@ export default function VTTCanvas({ className }: VTTCanvasProps) {
     [activeMap]
   );
 
+  const findNoteAt = useCallback(
+    (pos: Point): MapNote | null => {
+      if (!activeMap) return null;
+      for (let i = activeMap.notes.length - 1; i >= 0; i--) {
+        const n = activeMap.notes[i];
+        if (!n.visible) continue;
+        const dx = pos.x - n.x;
+        const dy = pos.y - n.y;
+        if (dx * dx + dy * dy <= 12 * 12) return n;
+      }
+      return null;
+    },
+    [activeMap]
+  );
+
   // ─── Mouse handlers ─────────────────────────────────────────────────
 
   const handleMouseDown = useCallback(
     (e: React.MouseEvent) => {
       if (!activeMap) return;
+      if (contextMenu) {
+        setContextMenu(null);
+        return;
+      }
       const worldPos = getWorldPos(e);
 
-      // Middle-click or pan tool → pan
+      // Middle-click → pan
       if (e.button === 1 || state.activeTool === "pan") {
         setIsPanning(true);
         panStartRef.current = { x: e.clientX, y: e.clientY };
-        scrollStartRef.current = {
-          x: activeMap.scrollX,
-          y: activeMap.scrollY,
-        };
+        scrollStartRef.current = { x: activeMap.scrollX, y: activeMap.scrollY };
         e.preventDefault();
         return;
       }
 
       // Left click
       if (e.button === 0) {
+        // Cursor tool
         if (state.activeTool === "cursor") {
+          // Double-click to edit
+          if (e.detail === 2) {
+            const token = findTokenAt(worldPos);
+            if (token) {
+              setEditingToken(token);
+              return;
+            }
+            const note = findNoteAt(worldPos);
+            if (note) {
+              setEditingNote({ note, worldPos });
+              return;
+            }
+          }
+
           const token = findTokenAt(worldPos);
           if (token && !token.locked) {
             setDragToken(token.id);
@@ -138,16 +212,59 @@ export default function VTTCanvas({ className }: VTTCanvasProps) {
           currentStrokeRef.current = [worldPos];
           return;
         }
+
+        // Measurement tool
+        if (state.activeTool === "measure") {
+          setMeasuring(true);
+          measureStartRef.current = worldPos;
+          measureEndRef.current = worldPos;
+          return;
+        }
+
+        // Wall/Door tool
+        if (state.activeTool === "wall" || state.activeTool === "door") {
+          setDrawingWall(true);
+          const snapped = activeMap.grid.snap
+            ? { x: Math.round(worldPos.x / activeMap.grid.size) * activeMap.grid.size, y: Math.round(worldPos.y / activeMap.grid.size) * activeMap.grid.size }
+            : worldPos;
+          wallStartRef.current = snapped;
+          wallEndRef.current = snapped;
+          return;
+        }
+
+        // Light placement
+        if (state.activeTool === "light") {
+          dispatch({
+            type: "ADD_LIGHT",
+            payload: {
+              mapId: activeMap.id,
+              light: {
+                id: crypto.randomUUID(),
+                x: worldPos.x,
+                y: worldPos.y,
+                radius: 200,
+                color: "#ffcc44",
+                intensity: 0.8,
+              },
+            },
+          });
+          return;
+        }
+
+        // Note placement
+        if (state.activeTool === "note") {
+          setEditingNote({ note: null, worldPos });
+          return;
+        }
       }
     },
-    [activeMap, state.activeTool, getWorldPos, findTokenAt]
+    [activeMap, state.activeTool, getWorldPos, findTokenAt, findNoteAt, contextMenu, dispatch]
   );
 
   const handleMouseMove = useCallback(
     (e: React.MouseEvent) => {
       if (!activeMap) return;
 
-      // Panning
       if (isPanning) {
         const dx = (e.clientX - panStartRef.current.x) / activeMap.zoom;
         const dy = (e.clientY - panStartRef.current.y) / activeMap.zoom;
@@ -163,7 +280,6 @@ export default function VTTCanvas({ className }: VTTCanvasProps) {
         return;
       }
 
-      // Token drag
       if (dragToken) {
         const worldPos = getWorldPos(e);
         let targetX = worldPos.x - dragOffsetRef.current.x;
@@ -184,14 +300,26 @@ export default function VTTCanvas({ className }: VTTCanvasProps) {
         return;
       }
 
-      // Drawing
       if (isDrawing) {
         const worldPos = getWorldPos(e);
         currentStrokeRef.current.push(worldPos);
         return;
       }
+
+      if (measuring) {
+        measureEndRef.current = getWorldPos(e);
+        return;
+      }
+
+      if (drawingWall) {
+        const worldPos = getWorldPos(e);
+        wallEndRef.current = activeMap.grid.snap
+          ? { x: Math.round(worldPos.x / activeMap.grid.size) * activeMap.grid.size, y: Math.round(worldPos.y / activeMap.grid.size) * activeMap.grid.size }
+          : worldPos;
+        return;
+      }
     },
-    [activeMap, isPanning, dragToken, isDrawing, dispatch, getWorldPos]
+    [activeMap, isPanning, dragToken, isDrawing, measuring, drawingWall, dispatch, getWorldPos]
   );
 
   const handleMouseUp = useCallback(
@@ -235,8 +363,58 @@ export default function VTTCanvas({ className }: VTTCanvasProps) {
         currentStrokeRef.current = [];
         return;
       }
+
+      if (measuring) {
+        setMeasuring(false);
+        return;
+      }
+
+      if (drawingWall && activeMap) {
+        setDrawingWall(false);
+        const s = wallStartRef.current;
+        const en = wallEndRef.current;
+        const dx = en.x - s.x;
+        const dy = en.y - s.y;
+        if (Math.sqrt(dx * dx + dy * dy) < 5) return;
+
+        dispatch({
+          type: "ADD_WALL",
+          payload: {
+            mapId: activeMap.id,
+            wall: {
+              id: crypto.randomUUID(),
+              x1: s.x,
+              y1: s.y,
+              x2: en.x,
+              y2: en.y,
+              type: state.activeTool === "door" ? "door" : "wall",
+              doorOpen: false,
+            },
+          },
+        });
+        return;
+      }
     },
-    [isPanning, dragToken, isDrawing, activeMap, state, dispatch]
+    [isPanning, dragToken, isDrawing, measuring, drawingWall, activeMap, state, dispatch]
+  );
+
+  // Right-click context menu
+  const handleContextMenu = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      if (!activeMap) return;
+      const worldPos = getWorldPos(e);
+      const token = findTokenAt(worldPos);
+      const note = findNoteAt(worldPos);
+      setContextMenu({
+        x: e.clientX,
+        y: e.clientY,
+        worldPos,
+        token,
+        note,
+      });
+    },
+    [activeMap, getWorldPos, findTokenAt, findNoteAt]
   );
 
   // Zoom with scroll wheel
@@ -272,12 +450,10 @@ export default function VTTCanvas({ className }: VTTCanvasProps) {
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Background
     ctx.fillStyle = "#0a0a0a";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     if (!activeMap) {
-      // No map loaded - show placeholder
       ctx.fillStyle = "#00ff0066";
       ctx.font = `${16 * dpr}px "Share Tech Mono", monospace`;
       ctx.textAlign = "center";
@@ -308,29 +484,56 @@ export default function VTTCanvas({ className }: VTTCanvasProps) {
     // Strokes
     drawStrokes(ctx, activeMap.strokes);
 
-    // In-progress stroke
+    // In-progress stroke preview
     if (isDrawing && currentStrokeRef.current.length > 1) {
       drawStrokePreview(ctx, currentStrokeRef.current, state.drawColor, state.drawWidth, state.activeTool);
     }
 
-    // Tokens
+    // Tokens (with image support)
     drawTokens(ctx, activeMap, state.showTokenNames);
+
+    // Dynamic lighting
+    if (state.showLights && activeMap.lights.length > 0 && activeMap.walls.length > 0) {
+      renderDynamicLighting(ctx, activeMap.lights, activeMap.walls, activeMap.width, activeMap.height);
+    }
+
+    // Fog of War overlay
+    if (state.showFog && activeMap.fog.enabled) {
+      drawFogOfWar(ctx, activeMap);
+    }
 
     // Walls (GM overlay)
     if (state.showWalls) {
       drawWalls(ctx, activeMap.walls);
     }
 
-    // Lights (GM overlay)
+    // Light indicators (GM overlay)
     if (state.showLights && activeMap.lights.length > 0) {
       drawLightIndicators(ctx, activeMap.lights);
+    }
+
+    // Wall drawing preview
+    if (drawingWall) {
+      ctx.strokeStyle = state.activeTool === "door" ? "#00ccff" : "#ff6600";
+      ctx.lineWidth = 3;
+      ctx.setLineDash([6, 4]);
+      ctx.beginPath();
+      ctx.moveTo(wallStartRef.current.x, wallStartRef.current.y);
+      ctx.lineTo(wallEndRef.current.x, wallEndRef.current.y);
+      ctx.stroke();
+      ctx.setLineDash([]);
     }
 
     // Notes
     drawNotes(ctx, activeMap.notes);
 
+    // Measurement overlay
+    if (measuring) {
+      drawMeasurement(ctx, measureStartRef.current, measureEndRef.current, activeMap.grid.size);
+    }
+
     animFrameRef.current = requestAnimationFrame(render);
-  }, [activeMap, state, isDrawing]);
+  }, [activeMap, state, isDrawing, measuring, drawingWall]);
 
   useEffect(() => {
     animFrameRef.current = requestAnimationFrame(render);
@@ -350,14 +553,61 @@ export default function VTTCanvas({ className }: VTTCanvasProps) {
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
         onWheel={handleWheel}
-        onContextMenu={(e) => e.preventDefault()}
+        onContextMenu={handleContextMenu}
         className="block w-full h-full"
       />
+
       {/* Map name overlay */}
       {activeMap && (
         <div className="absolute top-2 left-2 text-terminal-primary/60 text-xs font-mono pointer-events-none select-none">
           {activeMap.name} | {Math.round(activeMap.zoom * 100)}%
+          {state.activeTool !== "cursor" && state.activeTool !== "pan" && (
+            <span className="ml-2 text-terminal-primary/40">
+              [{state.activeTool}]
+            </span>
+          )}
         </div>
+      )}
+
+      {/* Context Menu */}
+      {contextMenu && activeMap && (
+        <VTTContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          worldPos={contextMenu.worldPos}
+          token={contextMenu.token}
+          note={contextMenu.note}
+          mapId={activeMap.id}
+          onClose={() => setContextMenu(null)}
+          onEditToken={(t) => {
+            setContextMenu(null);
+            setEditingToken(t);
+          }}
+          onEditNote={(n, wp) => {
+            setContextMenu(null);
+            setEditingNote({ note: n, worldPos: wp });
+          }}
+        />
+      )}
+
+      {/* Token Edit Modal */}
+      {editingToken && activeMap && (
+        <VTTTokenEditModal
+          token={editingToken}
+          mapId={activeMap.id}
+          onClose={() => setEditingToken(null)}
+        />
+      )}
+
+      {/* Note Edit Modal */}
+      {editingNote && activeMap && (
+        <VTTNoteModal
+          note={editingNote.note}
+          mapId={activeMap.id}
+          defaultX={editingNote.worldPos.x}
+          defaultY={editingNote.worldPos.y}
+          onClose={() => setEditingNote(null)}
+        />
       )}
     </div>
   );
@@ -373,6 +623,8 @@ function getCursor(tool: string, isPanning: boolean, isDragging: boolean): strin
   if (tool.startsWith("draw-")) return "crosshair";
   if (tool.startsWith("fog-")) return "crosshair";
   if (tool === "measure") return "crosshair";
+  if (tool === "wall" || tool === "door") return "crosshair";
+  if (tool === "light" || tool === "note") return "crosshair";
   return "default";
 }
 
@@ -501,23 +753,41 @@ function drawTokens(
     ctx.translate(t.x, t.y);
     ctx.rotate((t.rotation * Math.PI) / 180);
 
-    // Background circle
-    ctx.fillStyle = "#1a1a2e";
-    ctx.strokeStyle = "#00ff00";
-    ctx.lineWidth = 2;
+    // Clip to circle
     ctx.beginPath();
     ctx.arc(0, 0, halfSize, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.stroke();
+    ctx.closePath();
 
-    // First letter as fallback if no image
-    if (!t.imageDataUrl) {
+    // Draw image or fallback
+    if (t.imageDataUrl) {
+      const img = getTokenImage(t.imageDataUrl);
+      if (img) {
+        ctx.save();
+        ctx.clip();
+        ctx.drawImage(img, -halfSize, -halfSize, pixelSize, pixelSize);
+        ctx.restore();
+      } else {
+        // Image still loading - draw placeholder
+        ctx.fillStyle = "#1a1a2e";
+        ctx.fill();
+      }
+    } else {
+      ctx.fillStyle = "#1a1a2e";
+      ctx.fill();
+      // First letter fallback
       ctx.fillStyle = "#00ff00";
       ctx.font = `${Math.max(12, halfSize)}px "Share Tech Mono", monospace`;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       ctx.fillText(t.name.charAt(0).toUpperCase(), 0, 0);
     }
+
+    // Border ring
+    ctx.strokeStyle = t.locked ? "#ffcc00" : "#00ff00";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(0, 0, halfSize, 0, Math.PI * 2);
+    ctx.stroke();
 
     ctx.restore();
 
@@ -550,11 +820,26 @@ function drawTokens(
       t.conditions.forEach((c, i) => {
         ctx.fillStyle = c.color;
         ctx.beginPath();
-        ctx.arc(t.x - ((t.conditions.length - 1) * 6) + i * 12, condY, 4, 0, Math.PI * 2);
+        ctx.arc(
+          t.x - ((t.conditions.length - 1) * 6) + i * 12,
+          condY,
+          4,
+          0,
+          Math.PI * 2
+        );
         ctx.fill();
       });
     }
   }
+}
+
+function drawFogOfWar(ctx: CanvasRenderingContext2D, map: VTTMap) {
+  ctx.save();
+  ctx.globalAlpha = map.fog.opacity;
+  ctx.fillStyle = map.fog.color || "#000000";
+  ctx.fillRect(0, 0, map.width, map.height);
+  ctx.globalAlpha = 1;
+  ctx.restore();
 }
 
 function drawWalls(ctx: CanvasRenderingContext2D, walls: VTTMap["walls"]) {
@@ -577,7 +862,6 @@ function drawWalls(ctx: CanvasRenderingContext2D, walls: VTTMap["walls"]) {
 
 function drawLightIndicators(ctx: CanvasRenderingContext2D, lights: VTTMap["lights"]) {
   for (const l of lights) {
-    // Radius indicator
     ctx.strokeStyle = l.color + "44";
     ctx.lineWidth = 1;
     ctx.setLineDash([3, 3]);
@@ -586,7 +870,6 @@ function drawLightIndicators(ctx: CanvasRenderingContext2D, lights: VTTMap["ligh
     ctx.stroke();
     ctx.setLineDash([]);
 
-    // Center dot
     ctx.fillStyle = l.color;
     ctx.beginPath();
     ctx.arc(l.x, l.y, 5, 0, Math.PI * 2);
@@ -597,20 +880,17 @@ function drawLightIndicators(ctx: CanvasRenderingContext2D, lights: VTTMap["ligh
 function drawNotes(ctx: CanvasRenderingContext2D, notes: VTTMap["notes"]) {
   for (const n of notes) {
     if (!n.visible) continue;
-    // Pin marker
     ctx.fillStyle = n.color || "#00ccff";
     ctx.beginPath();
     ctx.arc(n.x, n.y, 8, 0, Math.PI * 2);
     ctx.fill();
 
-    // Pin icon (simple "i")
     ctx.fillStyle = "#000";
     ctx.font = `bold 10px "Share Tech Mono", monospace`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillText("i", n.x, n.y);
 
-    // Title
     if (n.title) {
       ctx.fillStyle = "#00ccff";
       ctx.font = `10px "Share Tech Mono", monospace`;
@@ -618,4 +898,57 @@ function drawNotes(ctx: CanvasRenderingContext2D, notes: VTTMap["notes"]) {
       ctx.fillText(n.title, n.x, n.y - 14);
     }
   }
+}
+
+function drawMeasurement(
+  ctx: CanvasRenderingContext2D,
+  start: Point,
+  end: Point,
+  gridSize: number
+) {
+  const dx = end.x - start.x;
+  const dy = end.y - start.y;
+  const pixelDist = Math.sqrt(dx * dx + dy * dy);
+  const gridDist = pixelDist / gridSize;
+
+  // Line
+  ctx.strokeStyle = "#ffcc00";
+  ctx.lineWidth = 2;
+  ctx.setLineDash([6, 4]);
+  ctx.beginPath();
+  ctx.moveTo(start.x, start.y);
+  ctx.lineTo(end.x, end.y);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Endpoints
+  ctx.fillStyle = "#ffcc00";
+  ctx.beginPath();
+  ctx.arc(start.x, start.y, 4, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(end.x, end.y, 4, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Distance label
+  const midX = (start.x + end.x) / 2;
+  const midY = (start.y + end.y) / 2;
+  const label = `${gridDist.toFixed(1)} sq`;
+
+  ctx.font = `bold 13px "Share Tech Mono", monospace`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "bottom";
+
+  // Background
+  const metrics = ctx.measureText(label);
+  ctx.fillStyle = "#000000cc";
+  ctx.fillRect(
+    midX - metrics.width / 2 - 4,
+    midY - 18,
+    metrics.width + 8,
+    18
+  );
+
+  ctx.fillStyle = "#ffcc00";
+  ctx.fillText(label, midX, midY - 2);
 }

@@ -21,6 +21,10 @@ import {
   Download,
   Upload,
   Type,
+  Ruler,
+  Lightbulb,
+  StickyNote,
+  Dice5,
 } from "lucide-react";
 import { useVTT } from "@/contexts/VTTContext";
 import type { VTTTool, VTTSidebarPanel } from "@/types/vtt";
@@ -33,13 +37,18 @@ interface ToolDef {
 }
 
 const tools: ToolDef[] = [
-  { tool: "cursor", icon: <MousePointer size={16} />, label: "Select" },
-  { tool: "pan", icon: <Hand size={16} />, label: "Pan" },
+  { tool: "cursor", icon: <MousePointer size={16} />, label: "Select (double-click to edit)" },
+  { tool: "pan", icon: <Hand size={16} />, label: "Pan (or middle-click)" },
   { tool: "draw-freehand", icon: <Pencil size={16} />, label: "Freehand" },
   { tool: "draw-line", icon: <Minus size={16} />, label: "Line" },
   { tool: "draw-rect", icon: <Square size={16} />, label: "Rectangle" },
   { tool: "draw-circle", icon: <Circle size={16} />, label: "Circle" },
   { tool: "draw-text", icon: <Type size={16} />, label: "Text" },
+  { tool: "measure", icon: <Ruler size={16} />, label: "Measure Distance" },
+  { tool: "wall", icon: <Minus size={16} className="text-orange-400" />, label: "Wall" },
+  { tool: "door", icon: <Minus size={16} className="text-cyan-400" />, label: "Door" },
+  { tool: "light", icon: <Lightbulb size={16} />, label: "Place Light" },
+  { tool: "note", icon: <StickyNote size={16} />, label: "Place Note" },
 ];
 
 interface PanelDef {
@@ -52,11 +61,14 @@ const panels: PanelDef[] = [
   { panel: "maps", icon: <Map size={16} />, label: "Maps" },
   { panel: "tokens", icon: <Users size={16} />, label: "Tokens" },
   { panel: "drawing", icon: <Paintbrush size={16} />, label: "Drawing" },
+  { panel: "fog", icon: <Eye size={16} />, label: "Fog of War" },
+  { panel: "lighting", icon: <Lightbulb size={16} />, label: "Lighting" },
   { panel: "effects", icon: <Cloud size={16} />, label: "Effects" },
   { panel: "audio", icon: <Music size={16} />, label: "Audio" },
   { panel: "initiative", icon: <Swords size={16} />, label: "Initiative" },
   { panel: "clocks", icon: <Clock size={16} />, label: "Clocks" },
   { panel: "handouts", icon: <Image size={16} />, label: "Handouts" },
+  { panel: "dice", icon: <Dice5 size={16} />, label: "Dice Roller" },
   { panel: "settings", icon: <Settings size={16} />, label: "Settings" },
 ];
 
@@ -94,7 +106,7 @@ export default function VTTToolbar() {
   };
 
   return (
-    <div className="flex flex-col gap-1 p-1 bg-terminal-bg-dark border-r border-terminal-border/30">
+    <div className="flex flex-col gap-1 p-1 bg-terminal-bg-dark border-r border-terminal-border/30 overflow-y-auto">
       {/* Tools */}
       <div className="flex flex-col gap-0.5">
         <span className="text-[9px] text-terminal-primary/40 uppercase tracking-wider px-1 pt-1">

@@ -8,6 +8,8 @@ import VTTInitiativePanel from "./VTTInitiativePanel";
 import VTTClocksPanel from "./VTTClocksPanel";
 import VTTHandoutsPanel from "./VTTHandoutsPanel";
 import VTTFogPanel from "./VTTFogPanel";
+import VTTDiceRoller from "./VTTDiceRoller";
+import VTTLightingPanel from "./VTTLightingPanel";
 import VTTSettingsPanel from "./VTTSettingsPanel";
 import { X } from "lucide-react";
 
@@ -27,6 +29,7 @@ export default function VTTSidebar() {
     initiative: "Initiative",
     clocks: "Clocks",
     handouts: "Handouts",
+    dice: "Dice Roller",
     settings: "Settings",
   };
 
@@ -56,19 +59,10 @@ export default function VTTSidebar() {
         {state.sidebarPanel === "clocks" && <VTTClocksPanel />}
         {state.sidebarPanel === "handouts" && <VTTHandoutsPanel />}
         {state.sidebarPanel === "fog" && <VTTFogPanel />}
-        {state.sidebarPanel === "lighting" && <PlaceholderPanel name="Dynamic Lighting" />}
+        {state.sidebarPanel === "lighting" && <VTTLightingPanel />}
+        {state.sidebarPanel === "dice" && <VTTDiceRoller />}
         {state.sidebarPanel === "settings" && <VTTSettingsPanel />}
       </div>
-    </div>
-  );
-}
-
-function PlaceholderPanel({ name }: { name: string }) {
-  return (
-    <div className="flex flex-col items-center justify-center h-full text-terminal-primary/30 font-mono text-xs p-4 text-center">
-      <div className="mb-2 text-2xl opacity-30">&#9881;</div>
-      {name}
-      <div className="mt-1 text-[10px]">Coming soon</div>
     </div>
   );
 }
