@@ -35,6 +35,28 @@ class ErrorBoundary extends Component<Props, State> {
       error,
       errorInfo,
     });
+
+    // Auto-reload on stale chunk errors (e.g. after a new deploy)
+    if (this.isChunkLoadError(error)) {
+      const reloadKey = 'chunk_reload_attempted';
+      const lastReload = sessionStorage.getItem(reloadKey);
+      const now = Date.now();
+
+      if (!lastReload || now - parseInt(lastReload, 10) > 30000) {
+        sessionStorage.setItem(reloadKey, now.toString());
+        window.location.reload();
+      }
+    }
+  }
+
+  isChunkLoadError(error: Error): boolean {
+    const msg = error.message || '';
+    return (
+      msg.includes('Failed to fetch dynamically imported module') ||
+      msg.includes('Loading chunk') ||
+      msg.includes('Loading CSS chunk') ||
+      msg.includes('MIME type')
+    );
   }
 
   handleReset = () => {
@@ -63,17 +85,30 @@ class ErrorBoundary extends Component<Props, State> {
             <CardContent className="space-y-4">
               <div className="terminal terminal-flicker p-4 bg-background/40 rounded">
                 <div className="font-mono text-sm">
-                  <p className="text-destructive mb-2">
-                    &gt; CRITICAL ERROR: {this.props.fallbackMessage || 'An unexpected error occurred'}
-                  </p>
-                  {this.state.error && (
-                    <p className="text-muted-foreground mb-2">
-                      &gt; ERROR TYPE: {this.state.error.toString()}
-                    </p>
+                  {this.state.error && this.isChunkLoadError(this.state.error) ? (
+                    <>
+                      <p className="text-destructive mb-2">
+                        &gt; MODULE UPDATE DETECTED
+                      </p>
+                      <p className="text-muted-foreground mb-2">
+                        &gt; A new version of the terminal has been deployed. Reload to continue.
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-destructive mb-2">
+                        &gt; CRITICAL ERROR: {this.props.fallbackMessage || 'An unexpected error occurred'}
+                      </p>
+                      {this.state.error && (
+                        <p className="text-muted-foreground mb-2">
+                          &gt; ERROR TYPE: {this.state.error.toString()}
+                        </p>
+                      )}
+                      <p className="text-muted-foreground mt-4">
+                        &gt; The terminal interface has encountered an error and needs to reset.
+                      </p>
+                    </>
                   )}
-                  <p className="text-muted-foreground mt-4">
-                    &gt; The terminal interface has encountered an error and needs to reset.
-                  </p>
                 </div>
               </div>
 
