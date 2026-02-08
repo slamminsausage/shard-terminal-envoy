@@ -178,6 +178,82 @@ export interface PreyEncounterResult {
   created_at: string;
 }
 
+// === Prize Ship & Salvage System ===
+
+export type PrizeShipStatus = 'captured' | 'kept' | 'sold' | 'scrapped' | 'gifted';
+export type PrizeShipCondition = 'pristine' | 'good' | 'damaged' | 'heavily_damaged' | 'hulk';
+
+export interface PrizeShipWeapon {
+  name: string;
+  mount: string;
+  damage?: string;
+  condition: 'operational' | 'damaged' | 'destroyed';
+}
+
+export interface PrizeCrew {
+  crew_id: string;
+  crew_name: string;
+  assigned_date: string;
+}
+
+export interface PrizeShip {
+  id: string;
+  player_id: string;
+
+  // Ship identification
+  name: string;
+  hull_type: string;
+  tonnage: number;
+  tech_level: number;
+
+  // Capture details
+  capture_date: string;
+  capture_imperial_date?: string;
+  capture_location?: string;
+  prey_encounter_id?: string;
+
+  // Ship condition
+  condition: PrizeShipCondition;
+  hull_damage_percent: number;
+  drives_operational: boolean;
+  weapons: PrizeShipWeapon[];
+
+  // Cargo at time of capture
+  cargo_tons: number;
+  cargo_manifest?: string;
+  cargo_estimated_value: number;
+
+  // Prize disposition
+  status: PrizeShipStatus;
+
+  // For 'kept' ships
+  assigned_prize_crew: PrizeCrew[];
+  renamed_to?: string;
+
+  // For 'sold' ships
+  sale_value?: number;
+  sale_port?: string;
+  sale_date?: string;
+
+  // For 'scrapped' ships
+  scrap_value?: number;
+  scrap_date?: string;
+
+  // For 'gifted' ships
+  gifted_to_port?: string;
+  gifted_date?: string;
+  reputation_gained?: number;
+
+  // Repair tracking
+  repair_cost_estimate?: number;
+  repair_weeks_estimate?: number;
+  repairs_completed?: boolean;
+
+  notes?: string;
+  created_at: string;
+  updated_at: string;
+}
+
 // === Overall Piracy State (stored in localStorage) ===
 
 export interface PiracyState {
@@ -189,4 +265,5 @@ export interface PiracyState {
   standingEvents: StandingEvent[];
   spoilsDivisions: SpoilsDivision[];
   preyEncounters: PreyEncounterResult[];
+  prizeShips: PrizeShip[];
 }

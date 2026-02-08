@@ -120,3 +120,46 @@ export function calculateBounty(standing: number): number {
   const absStanding = Math.abs(standing);
   return 1000 * roll1d6() * absStanding;
 }
+
+// === Prize Ship Helpers ===
+
+import { PrizeShipCondition } from '@/types/piracy';
+import { HULL_TYPE_TEMPLATES, PRIZE_CONDITION_CONFIG } from './tables';
+
+export function estimateSaleValue(
+  hullType: string,
+  condition: PrizeShipCondition,
+): number {
+  const template = HULL_TYPE_TEMPLATES[hullType] || HULL_TYPE_TEMPLATES['other'];
+  const condConfig = PRIZE_CONDITION_CONFIG[condition];
+  return Math.floor(template.baseValue * condConfig.valueMultiplier * 1_000_000);
+}
+
+export function estimateRepairCost(
+  hullType: string,
+  hullDamagePercent: number,
+): number {
+  const template = HULL_TYPE_TEMPLATES[hullType] || HULL_TYPE_TEMPLATES['other'];
+  const costPerPercent = (template.baseValue * 1_000_000) * 0.01;
+  return Math.floor(costPerPercent * hullDamagePercent);
+}
+
+export function estimateRepairWeeks(
+  condition: PrizeShipCondition,
+  hullDamagePercent: number,
+): number {
+  const condConfig = PRIZE_CONDITION_CONFIG[condition];
+  return Math.ceil(condConfig.repairWeeksPerPercent * hullDamagePercent);
+}
+
+export function estimateScrapValue(
+  hullType: string,
+): number {
+  const template = HULL_TYPE_TEMPLATES[hullType] || HULL_TYPE_TEMPLATES['other'];
+  return Math.floor(template.baseValue * 0.05 * 1_000_000);
+}
+
+export function getMinPrizeCrew(hullType: string): number {
+  const template = HULL_TYPE_TEMPLATES[hullType] || HULL_TYPE_TEMPLATES['other'];
+  return template.minCrew;
+}
