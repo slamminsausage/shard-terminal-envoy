@@ -125,10 +125,63 @@ export default function VTTFogPanel() {
         </div>
       </div>
 
+      {/* Brush Size */}
+      <div>
+        <div className="flex items-center justify-between mb-0.5">
+          <label className="text-[10px] text-terminal-primary/50 uppercase tracking-wider font-mono">
+            Brush Size
+          </label>
+          <span className="text-[10px] text-terminal-primary/40 font-mono">
+            {state.fogBrushSize}px
+          </span>
+        </div>
+        <input
+          type="range"
+          min={10}
+          max={200}
+          step={5}
+          value={state.fogBrushSize}
+          onChange={(e) =>
+            dispatch({
+              type: "SET_FOG_BRUSH_SIZE",
+              payload: parseInt(e.target.value),
+            })
+          }
+          className="w-full accent-green-500 h-1"
+        />
+      </div>
+
+      {/* Brush Mode */}
+      <div>
+        <label className="text-[10px] text-terminal-primary/50 uppercase tracking-wider font-mono block mb-1.5">
+          Brush Mode
+        </label>
+        <div className="flex gap-1">
+          {[
+            { mode: "reveal" as const, label: "Reveal" },
+            { mode: "conceal" as const, label: "Conceal" },
+          ].map(({ mode, label }) => (
+            <button
+              key={mode}
+              onClick={() =>
+                dispatch({ type: "SET_FOG_BRUSH_MODE", payload: mode })
+              }
+              className={`flex-1 text-xs font-mono py-1.5 rounded border transition-colors ${
+                state.fogBrushMode === mode
+                  ? "bg-terminal-primary/20 border-terminal-primary/50 text-terminal-primary"
+                  : "border-terminal-border/30 text-terminal-primary/40 hover:text-terminal-primary/60"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Info */}
       <div className="text-[10px] text-terminal-primary/30 font-mono leading-relaxed mt-auto">
-        Select a fog brush tool, then click & drag on the map to reveal or
-        conceal areas. Left-click reveals; right-click conceals.
+        Select a fog brush tool, then click & drag on the map to paint fog.
+        Use brush mode to reveal or conceal areas.
       </div>
 
       {/* Reset fog */}

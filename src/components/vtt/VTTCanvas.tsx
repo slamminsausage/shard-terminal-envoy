@@ -3,7 +3,8 @@ import { useVTT } from "@/contexts/VTTContext";
 import { screenToWorld } from "@/lib/vtt/geometry";
 import { clamp } from "@/lib/vtt/geometry";
 import { renderDynamicLighting } from "@/lib/vtt/raycasting";
-import type { Point, Stroke, Token, MapNote, VTTMap, Measurement } from "@/types/vtt";
+import { useVTTFogBrush } from "@/hooks/useVTTFogBrush";
+import type { Point, Stroke, Token, MapNote, VTTMap, AoETemplate, TextOverlay } from "@/types/vtt";
 import VTTContextMenu from "./VTTContextMenu";
 import VTTTokenEditModal from "./VTTTokenEditModal";
 import VTTNoteModal from "./VTTNoteModal";
@@ -36,6 +37,9 @@ export default function VTTCanvas({ className }: VTTCanvasProps) {
   const mapImageRef = useRef<HTMLImageElement | null>(null);
   const animFrameRef = useRef<number>(0);
 
+  // Fog brush hook
+  const { paintFog, resetFog, getFogCanvas, exportFogData } = useVTTFogBrush(activeMap);
+
   // Interaction state
   const [isPanning, setIsPanning] = useState(false);
   const [isDrawing, setIsDrawing] = useState(false);
@@ -44,6 +48,23 @@ export default function VTTCanvas({ className }: VTTCanvasProps) {
   const currentStrokeRef = useRef<Point[]>([]);
   const [dragToken, setDragToken] = useState<string | null>(null);
   const dragOffsetRef = useRef<Point>({ x: 0, y: 0 });
+
+  // Fog brush painting state
+  const [isFogPainting, setIsFogPainting] = useState(false);
+
+  // AoE placement state
+  const [placingAoE, setPlacingAoE] = useState(false);
+  const aoeStartRef = useRef<Point>({ x: 0, y: 0 });
+  const aoeEndRef = useRef<Point>({ x: 0, y: 0 });
+
+  // Text input state
+  const [textInput, setTextInput] = useState<{
+    x: number;
+    y: number;
+    screenX: number;
+    screenY: number;
+  } | null>(null);
+  const textInputRef = useRef<HTMLInputElement>(null);
 
   // Measurement state
   const [measuring, setMeasuring] = useState(false);
@@ -256,9 +277,40 @@ export default function VTTCanvas({ className }: VTTCanvasProps) {
           setEditingNote({ note: null, worldPos });
           return;
         }
+
+        // Fog brush tools
+        if (state.activeTool.startsWith("fog-")) {
+          setIsFogPainting(true);
+          const shape = state.activeTool === "fog-rect" ? "rect" : "circle";
+          paintFog(worldPos.x, worldPos.y, state.fogBrushSize, state.fogBrushMode, shape);
+          return;
+        }
+
+        // AoE placement tools
+        if (state.activeTool.startsWith("aoe-")) {
+          setPlacingAoE(true);
+          aoeStartRef.current = worldPos;
+          aoeEndRef.current = worldPos;
+          return;
+        }
+
+        // Text tool
+        if (state.activeTool === "draw-text") {
+          const canvas = canvasRef.current;
+          if (!canvas) return;
+          const rect = canvas.getBoundingClientRect();
+          setTextInput({
+            x: worldPos.x,
+            y: worldPos.y,
+            screenX: e.clientX - rect.left,
+            screenY: e.clientY - rect.top,
+          });
+          setTimeout(() => textInputRef.current?.focus(), 0);
+          return;
+        }
       }
     },
-    [activeMap, state.activeTool, getWorldPos, findTokenAt, findNoteAt, contextMenu, dispatch]
+    [activeMap, state.activeTool, state.fogBrushSize, state.fogBrushMode, getWorldPos, findTokenAt, findNoteAt, contextMenu, dispatch, paintFog]
   );
 
   const handleMouseMove = useCallback(
@@ -318,8 +370,20 @@ export default function VTTCanvas({ className }: VTTCanvasProps) {
           : worldPos;
         return;
       }
+
+      if (isFogPainting) {
+        const worldPos = getWorldPos(e);
+        const shape = state.activeTool === "fog-rect" ? "rect" : "circle";
+        paintFog(worldPos.x, worldPos.y, state.fogBrushSize, state.fogBrushMode, shape);
+        return;
+      }
+
+      if (placingAoE) {
+        aoeEndRef.current = getWorldPos(e);
+        return;
+      }
     },
-    [activeMap, isPanning, dragToken, isDrawing, measuring, drawingWall, dispatch, getWorldPos]
+    [activeMap, isPanning, dragToken, isDrawing, measuring, drawingWall, isFogPainting, placingAoE, state.activeTool, state.fogBrushSize, state.fogBrushMode, dispatch, getWorldPos, paintFog]
   );
 
   const handleMouseUp = useCallback(
@@ -394,8 +458,55 @@ export default function VTTCanvas({ className }: VTTCanvasProps) {
         });
         return;
       }
+
+      if (isFogPainting && activeMap) {
+        setIsFogPainting(false);
+        // Persist fog canvas data
+        const fogDataUrl = exportFogData();
+        if (fogDataUrl) {
+          dispatch({
+            type: "UPDATE_FOG",
+            payload: {
+              mapId: activeMap.id,
+              fog: { dataUrl: fogDataUrl },
+            },
+          });
+        }
+        return;
+      }
+
+      if (placingAoE && activeMap) {
+        setPlacingAoE(false);
+        const s = aoeStartRef.current;
+        const en = aoeEndRef.current;
+        const dx = en.x - s.x;
+        const dy = en.y - s.y;
+        const radius = Math.sqrt(dx * dx + dy * dy);
+        if (radius < 5) return;
+
+        const angle = Math.atan2(dy, dx);
+        let shape: "cone" | "circle" | "line" = "circle";
+        if (state.activeTool === "aoe-cone") shape = "cone";
+        else if (state.activeTool === "aoe-line") shape = "line";
+
+        dispatch({
+          type: "ADD_AOE",
+          payload: {
+            id: crypto.randomUUID(),
+            shape,
+            x: s.x,
+            y: s.y,
+            radius,
+            angle,
+            coneAngle: Math.PI / 3,
+            color: shape === "cone" ? "#ff440088" : shape === "line" ? "#4488ff88" : "#ffcc0088",
+            opacity: 0.35,
+          },
+        });
+        return;
+      }
     },
-    [isPanning, dragToken, isDrawing, measuring, drawingWall, activeMap, state, dispatch]
+    [isPanning, dragToken, isDrawing, measuring, drawingWall, isFogPainting, placingAoE, activeMap, state, dispatch, exportFogData]
   );
 
   // Right-click context menu
@@ -471,9 +582,19 @@ export default function VTTCanvas({ className }: VTTCanvasProps) {
     // Apply camera transform
     ctx.setTransform(dpr * zoom, 0, 0, dpr * zoom, -scrollX * dpr * zoom, -scrollY * dpr * zoom);
 
-    // Map background image
+    // Map background image (with rotation/flip)
     if (mapImageRef.current) {
-      ctx.drawImage(mapImageRef.current, 0, 0, activeMap.width, activeMap.height);
+      const { rotation, flipH, flipV } = activeMap;
+      if (rotation !== 0 || flipH || flipV) {
+        ctx.save();
+        ctx.translate(activeMap.width / 2, activeMap.height / 2);
+        ctx.rotate((rotation * Math.PI) / 180);
+        ctx.scale(flipH ? -1 : 1, flipV ? -1 : 1);
+        ctx.drawImage(mapImageRef.current, -activeMap.width / 2, -activeMap.height / 2, activeMap.width, activeMap.height);
+        ctx.restore();
+      } else {
+        ctx.drawImage(mapImageRef.current, 0, 0, activeMap.width, activeMap.height);
+      }
     }
 
     // Grid
@@ -484,6 +605,11 @@ export default function VTTCanvas({ className }: VTTCanvasProps) {
     // Strokes
     drawStrokes(ctx, activeMap.strokes);
 
+    // Text overlays
+    if (activeMap.texts.length > 0) {
+      drawTextOverlays(ctx, activeMap.texts);
+    }
+
     // In-progress stroke preview
     if (isDrawing && currentStrokeRef.current.length > 1) {
       drawStrokePreview(ctx, currentStrokeRef.current, state.drawColor, state.drawWidth, state.activeTool);
@@ -492,14 +618,38 @@ export default function VTTCanvas({ className }: VTTCanvasProps) {
     // Tokens (with image support)
     drawTokens(ctx, activeMap, state.showTokenNames);
 
+    // AoE templates
+    if (state.aoeTemplates.length > 0) {
+      drawAoETemplates(ctx, state.aoeTemplates);
+    }
+
+    // AoE placement preview
+    if (placingAoE) {
+      drawAoEPreview(ctx, aoeStartRef.current, aoeEndRef.current, state.activeTool);
+    }
+
     // Dynamic lighting
     if (state.showLights && activeMap.lights.length > 0 && activeMap.walls.length > 0) {
       renderDynamicLighting(ctx, activeMap.lights, activeMap.walls, activeMap.width, activeMap.height);
     }
 
-    // Fog of War overlay
+    // Fog of War overlay (use brush canvas if available, otherwise basic fill)
     if (state.showFog && activeMap.fog.enabled) {
-      drawFogOfWar(ctx, activeMap);
+      const fogCanvas = getFogCanvas();
+      if (fogCanvas) {
+        ctx.save();
+        ctx.globalAlpha = activeMap.fog.opacity;
+        ctx.drawImage(fogCanvas, 0, 0);
+        ctx.globalAlpha = 1;
+        ctx.restore();
+      } else {
+        drawFogOfWar(ctx, activeMap);
+      }
+    }
+
+    // Fog brush cursor preview
+    if (state.activeTool.startsWith("fog-") && !isFogPainting) {
+      // Drawn after fog so the cursor is visible on top
     }
 
     // Walls (GM overlay)
@@ -533,7 +683,7 @@ export default function VTTCanvas({ className }: VTTCanvasProps) {
     }
 
     animFrameRef.current = requestAnimationFrame(render);
-  }, [activeMap, state, isDrawing, measuring, drawingWall]);
+  }, [activeMap, state, isDrawing, measuring, drawingWall, placingAoE, isFogPainting, getFogCanvas]);
 
   useEffect(() => {
     animFrameRef.current = requestAnimationFrame(render);
@@ -567,6 +717,48 @@ export default function VTTCanvas({ className }: VTTCanvasProps) {
             </span>
           )}
         </div>
+      )}
+
+      {/* Text input overlay */}
+      {textInput && activeMap && (
+        <input
+          ref={textInputRef}
+          className="absolute bg-black/80 border border-terminal-primary/50 text-terminal-primary font-mono text-sm px-2 py-1 rounded outline-none"
+          style={{
+            left: textInput.screenX,
+            top: textInput.screenY,
+            zIndex: 20,
+            minWidth: 120,
+          }}
+          placeholder="Type text..."
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              const value = (e.target as HTMLInputElement).value.trim();
+              if (value && activeMap) {
+                dispatch({
+                  type: "ADD_TEXT",
+                  payload: {
+                    mapId: activeMap.id,
+                    text: {
+                      id: crypto.randomUUID(),
+                      text: value,
+                      x: textInput.x,
+                      y: textInput.y,
+                      fontSize: state.drawWidth * 6 + 10,
+                      color: state.drawColor,
+                      layer: state.activeLayer,
+                    },
+                  },
+                });
+              }
+              setTextInput(null);
+            }
+            if (e.key === "Escape") {
+              setTextInput(null);
+            }
+          }}
+          onBlur={() => setTextInput(null)}
+        />
       )}
 
       {/* Context Menu */}
@@ -622,6 +814,7 @@ function getCursor(tool: string, isPanning: boolean, isDragging: boolean): strin
   if (tool === "cursor") return "default";
   if (tool.startsWith("draw-")) return "crosshair";
   if (tool.startsWith("fog-")) return "crosshair";
+  if (tool.startsWith("aoe-")) return "crosshair";
   if (tool === "measure") return "crosshair";
   if (tool === "wall" || tool === "door") return "crosshair";
   if (tool === "light" || tool === "note") return "crosshair";
@@ -951,4 +1144,122 @@ function drawMeasurement(
 
   ctx.fillStyle = "#ffcc00";
   ctx.fillText(label, midX, midY - 2);
+}
+
+function drawTextOverlays(ctx: CanvasRenderingContext2D, texts: TextOverlay[]) {
+  for (const t of texts) {
+    ctx.fillStyle = t.color;
+    ctx.font = `${t.fontSize}px "${t.fontFamily || "Share Tech Mono"}", monospace`;
+    ctx.textAlign = "left";
+    ctx.textBaseline = "top";
+    ctx.fillText(t.text, t.x, t.y);
+  }
+}
+
+function drawAoETemplates(ctx: CanvasRenderingContext2D, templates: AoETemplate[]) {
+  for (const aoe of templates) {
+    ctx.save();
+    ctx.globalAlpha = aoe.opacity;
+
+    if (aoe.shape === "circle") {
+      ctx.fillStyle = aoe.color;
+      ctx.beginPath();
+      ctx.arc(aoe.x, aoe.y, aoe.radius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = aoe.color;
+      ctx.lineWidth = 2;
+      ctx.globalAlpha = Math.min(1, aoe.opacity + 0.3);
+      ctx.stroke();
+    } else if (aoe.shape === "cone") {
+      const angle = aoe.angle ?? 0;
+      const spread = (aoe.coneAngle ?? Math.PI / 3) / 2;
+      ctx.fillStyle = aoe.color;
+      ctx.beginPath();
+      ctx.moveTo(aoe.x, aoe.y);
+      ctx.arc(aoe.x, aoe.y, aoe.radius, angle - spread, angle + spread);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = aoe.color;
+      ctx.lineWidth = 2;
+      ctx.globalAlpha = Math.min(1, aoe.opacity + 0.3);
+      ctx.stroke();
+    } else if (aoe.shape === "line") {
+      const angle = aoe.angle ?? 0;
+      const lineWidth = 20;
+      const endX = aoe.x + Math.cos(angle) * aoe.radius;
+      const endY = aoe.y + Math.sin(angle) * aoe.radius;
+      const perpX = Math.cos(angle + Math.PI / 2) * lineWidth;
+      const perpY = Math.sin(angle + Math.PI / 2) * lineWidth;
+
+      ctx.fillStyle = aoe.color;
+      ctx.beginPath();
+      ctx.moveTo(aoe.x + perpX, aoe.y + perpY);
+      ctx.lineTo(endX + perpX, endY + perpY);
+      ctx.lineTo(endX - perpX, endY - perpY);
+      ctx.lineTo(aoe.x - perpX, aoe.y - perpY);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = aoe.color;
+      ctx.lineWidth = 2;
+      ctx.globalAlpha = Math.min(1, aoe.opacity + 0.3);
+      ctx.stroke();
+    }
+
+    ctx.restore();
+  }
+}
+
+function drawAoEPreview(
+  ctx: CanvasRenderingContext2D,
+  start: Point,
+  end: Point,
+  tool: string
+) {
+  const dx = end.x - start.x;
+  const dy = end.y - start.y;
+  const radius = Math.sqrt(dx * dx + dy * dy);
+  const angle = Math.atan2(dy, dx);
+
+  ctx.save();
+  ctx.setLineDash([6, 4]);
+  ctx.lineWidth = 2;
+  ctx.globalAlpha = 0.4;
+
+  if (tool === "aoe-circle") {
+    ctx.strokeStyle = "#ffcc00";
+    ctx.fillStyle = "#ffcc0033";
+    ctx.beginPath();
+    ctx.arc(start.x, start.y, radius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+  } else if (tool === "aoe-cone") {
+    const spread = Math.PI / 6;
+    ctx.strokeStyle = "#ff4400";
+    ctx.fillStyle = "#ff440033";
+    ctx.beginPath();
+    ctx.moveTo(start.x, start.y);
+    ctx.arc(start.x, start.y, radius, angle - spread, angle + spread);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+  } else if (tool === "aoe-line") {
+    const lineWidth = 20;
+    const endX = start.x + Math.cos(angle) * radius;
+    const endY = start.y + Math.sin(angle) * radius;
+    const perpX = Math.cos(angle + Math.PI / 2) * lineWidth;
+    const perpY = Math.sin(angle + Math.PI / 2) * lineWidth;
+
+    ctx.strokeStyle = "#4488ff";
+    ctx.fillStyle = "#4488ff33";
+    ctx.beginPath();
+    ctx.moveTo(start.x + perpX, start.y + perpY);
+    ctx.lineTo(endX + perpX, endY + perpY);
+    ctx.lineTo(endX - perpX, endY - perpY);
+    ctx.lineTo(start.x - perpX, start.y - perpY);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+  }
+
+  ctx.restore();
 }

@@ -25,6 +25,11 @@ import {
   Lightbulb,
   StickyNote,
   Dice5,
+  Target,
+  Presentation,
+  RotateCw,
+  FlipHorizontal,
+  FlipVertical,
 } from "lucide-react";
 import { useVTT } from "@/contexts/VTTContext";
 import type { VTTTool, VTTSidebarPanel } from "@/types/vtt";
@@ -49,6 +54,9 @@ const tools: ToolDef[] = [
   { tool: "door", icon: <Minus size={16} className="text-cyan-400" />, label: "Door" },
   { tool: "light", icon: <Lightbulb size={16} />, label: "Place Light" },
   { tool: "note", icon: <StickyNote size={16} />, label: "Place Note" },
+  { tool: "aoe-cone", icon: <Target size={16} className="text-red-400" />, label: "AoE Cone" },
+  { tool: "aoe-circle", icon: <Target size={16} className="text-yellow-400" />, label: "AoE Circle" },
+  { tool: "aoe-line", icon: <Target size={16} className="text-blue-400" />, label: "AoE Line" },
 ];
 
 interface PanelDef {
@@ -73,7 +81,7 @@ const panels: PanelDef[] = [
 ];
 
 export default function VTTToolbar() {
-  const { state, dispatch, saveSession, exportSession, loadSession } = useVTT();
+  const { state, dispatch, activeMap, saveSession, exportSession, loadSession } = useVTT();
 
   const handleExport = () => {
     const json = exportSession();
@@ -189,8 +197,87 @@ export default function VTTToolbar() {
         </button>
       </div>
 
+      {/* Separator */}
+      <div className="border-t border-terminal-border/20 my-1" />
+
+      {/* Map controls */}
+      {activeMap && (
+        <div className="flex flex-col gap-0.5">
+          <span className="text-[9px] text-terminal-primary/40 uppercase tracking-wider px-1">
+            Map
+          </span>
+          <button
+            onClick={() =>
+              dispatch({
+                type: "UPDATE_MAP",
+                payload: {
+                  id: activeMap.id,
+                  updates: { rotation: (activeMap.rotation + 90) % 360 },
+                },
+              })
+            }
+            className="flex items-center justify-center w-8 h-8 rounded text-terminal-primary/50 hover:text-terminal-primary hover:bg-terminal-primary/10 transition-colors"
+            title={`Rotate Map (${activeMap.rotation}°)`}
+          >
+            <RotateCw size={16} />
+          </button>
+          <button
+            onClick={() =>
+              dispatch({
+                type: "UPDATE_MAP",
+                payload: {
+                  id: activeMap.id,
+                  updates: { flipH: !activeMap.flipH },
+                },
+              })
+            }
+            className={`flex items-center justify-center w-8 h-8 rounded transition-colors ${
+              activeMap.flipH
+                ? "text-terminal-primary bg-terminal-primary/10"
+                : "text-terminal-primary/50 hover:text-terminal-primary hover:bg-terminal-primary/10"
+            }`}
+            title="Flip Horizontal"
+          >
+            <FlipHorizontal size={16} />
+          </button>
+          <button
+            onClick={() =>
+              dispatch({
+                type: "UPDATE_MAP",
+                payload: {
+                  id: activeMap.id,
+                  updates: { flipV: !activeMap.flipV },
+                },
+              })
+            }
+            className={`flex items-center justify-center w-8 h-8 rounded transition-colors ${
+              activeMap.flipV
+                ? "text-terminal-primary bg-terminal-primary/10"
+                : "text-terminal-primary/50 hover:text-terminal-primary hover:bg-terminal-primary/10"
+            }`}
+            title="Flip Vertical"
+          >
+            <FlipVertical size={16} />
+          </button>
+        </div>
+      )}
+
       {/* Spacer */}
       <div className="flex-1" />
+
+      {/* Presenter launch */}
+      <div className="flex flex-col gap-0.5">
+        <button
+          onClick={() => window.open("/presenter", "_blank", "popup=true")}
+          className="flex items-center justify-center w-8 h-8 rounded text-terminal-primary/50 hover:text-cyan-400 hover:bg-cyan-400/10 transition-colors"
+          title="Open Presenter View"
+        >
+          <Presentation size={16} />
+        </button>
+      </div>
+
+      {/* Separator */}
+      <div className="border-t border-terminal-border/20 my-1" />
 
       {/* Session actions */}
       <div className="flex flex-col gap-0.5">

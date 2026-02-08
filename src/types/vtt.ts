@@ -387,6 +387,13 @@ export interface VTTState {
   showFog: boolean;
   presenterMode: boolean;
 
+  // AoE Templates (active on canvas)
+  aoeTemplates: AoETemplate[];
+
+  // Fog brush settings
+  fogBrushSize: number;
+  fogBrushMode: "reveal" | "conceal";
+
   // Sidebar
   sidebarPanel: VTTSidebarPanel | null;
 }
@@ -503,6 +510,9 @@ export function createDefaultVTTState(): VTTState {
     showLights: true,
     showFog: true,
     presenterMode: false,
+    aoeTemplates: [],
+    fogBrushSize: 40,
+    fogBrushMode: "reveal",
     sidebarPanel: "maps",
   };
 }

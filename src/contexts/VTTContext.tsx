@@ -105,6 +105,13 @@ type VTTAction =
   | { type: "SET_AUDIO"; payload: Partial<AudioState> }
   | { type: "SET_AMBIENT_TRACK"; payload: { slot: "A" | "B"; track: AmbientTrack | null } }
   | { type: "SET_SFX_SLOT"; payload: { index: number; slot: Partial<SFXSlot> } }
+  // AoE Templates
+  | { type: "ADD_AOE"; payload: import("@/types/vtt").AoETemplate }
+  | { type: "REMOVE_AOE"; payload: string }
+  | { type: "CLEAR_AOE" }
+  // Fog Brush
+  | { type: "SET_FOG_BRUSH_SIZE"; payload: number }
+  | { type: "SET_FOG_BRUSH_MODE"; payload: "reveal" | "conceal" }
   // History
   | { type: "PUSH_HISTORY"; payload: VTTHistoryEntry }
   | { type: "UNDO" }
@@ -379,6 +386,20 @@ function vttReducer(state: VTTState, action: VTTAction): VTTState {
       };
       return { ...state, audio: { ...state.audio, sfxSlots: slots } };
     }
+
+    // AoE Templates
+    case "ADD_AOE":
+      return { ...state, aoeTemplates: [...state.aoeTemplates, action.payload] };
+    case "REMOVE_AOE":
+      return { ...state, aoeTemplates: state.aoeTemplates.filter((a) => a.id !== action.payload) };
+    case "CLEAR_AOE":
+      return { ...state, aoeTemplates: [] };
+
+    // Fog Brush
+    case "SET_FOG_BRUSH_SIZE":
+      return { ...state, fogBrushSize: action.payload };
+    case "SET_FOG_BRUSH_MODE":
+      return { ...state, fogBrushMode: action.payload };
 
     // History
     case "PUSH_HISTORY": {

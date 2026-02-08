@@ -1,15 +1,23 @@
-import { useCallback, useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 import VTTCanvas from "@/components/vtt/VTTCanvas";
 import VTTToolbar from "@/components/vtt/VTTToolbar";
 import VTTSidebar from "@/components/vtt/VTTSidebar";
 import { useVTT } from "@/contexts/VTTContext";
 import { useVTTParticles } from "@/hooks/useVTTParticles";
+import { useVTTKeyboard } from "@/hooks/useVTTKeyboard";
+import { usePresenterController } from "@/hooks/useVTTPresenter";
 
 export default function VTTInterface() {
-  const { state } = useVTT();
+  const { state, activeMap } = useVTT();
   const particleCanvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const { setCanvas } = useVTTParticles(state.particles);
+
+  // Keyboard shortcuts
+  useVTTKeyboard();
+
+  // Presenter mode broadcast
+  usePresenterController(state, activeMap);
 
   // Resize particle canvas to match container
   useEffect(() => {
