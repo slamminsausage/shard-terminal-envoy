@@ -338,8 +338,9 @@ export default function VTTCanvas({ className }: VTTCanvasProps) {
         let targetY = worldPos.y - dragOffsetRef.current.y;
         if (activeMap.grid.snap) {
           const gs = activeMap.grid.size;
-          targetX = Math.round(targetX / gs) * gs;
-          targetY = Math.round(targetY / gs) * gs;
+          // Snap to grid cell centers (half-cell offset)
+          targetX = Math.floor(targetX / gs) * gs + gs / 2;
+          targetY = Math.floor(targetY / gs) * gs + gs / 2;
         }
         dispatch({
           type: "UPDATE_TOKEN",
@@ -549,26 +550,37 @@ export default function VTTCanvas({ className }: VTTCanvasProps) {
     [activeMap, getWorldPos, findTokenAt, findNoteAt]
   );
 
-  // Zoom with scroll wheel
-  const handleWheel = useCallback(
-    (e: React.WheelEvent) => {
-      if (!activeMap) return;
+  // Zoom with scroll wheel - use native listener with { passive: false }
+  // so preventDefault() actually stops page scrolling
+  const activeMapRef = useRef(activeMap);
+  activeMapRef.current = activeMap;
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      const map = activeMapRef.current;
+      if (!map) return;
       e.preventDefault();
+      e.stopPropagation();
       const delta = e.deltaY > 0 ? 0.9 : 1.1;
-      const newZoom = clamp(activeMap.zoom * delta, MIN_ZOOM, MAX_ZOOM);
+      const newZoom = clamp(map.zoom * delta, MIN_ZOOM, MAX_ZOOM);
 
       dispatch({
         type: "SET_VIEWPORT",
         payload: {
-          mapId: activeMap.id,
-          scrollX: activeMap.scrollX,
-          scrollY: activeMap.scrollY,
+          mapId: map.id,
+          scrollX: map.scrollX,
+          scrollY: map.scrollY,
           zoom: newZoom,
         },
       });
-    },
-    [activeMap, dispatch]
-  );
+    };
+
+    canvas.addEventListener("wheel", handleWheel, { passive: false });
+    return () => canvas.removeEventListener("wheel", handleWheel);
+  }, [dispatch]);
 
   // ─── Render loop ────────────────────────────────────────────────────
 
@@ -723,7 +735,6 @@ export default function VTTCanvas({ className }: VTTCanvasProps) {
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
-        onWheel={handleWheel}
         onContextMenu={handleContextMenu}
         className="block w-full h-full"
       />
