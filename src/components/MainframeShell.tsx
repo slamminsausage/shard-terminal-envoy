@@ -1,20 +1,22 @@
-import React, { lazy, Suspense, useEffect, useState } from "react";
-import { Terminal, Users, Radar, Navigation, BookOpen, Swords, Skull } from "lucide-react";
+import React, { Suspense, useEffect, useState } from "react";
+import { Terminal, Users, Radar, Navigation, BookOpen, Swords, Skull, Layout } from "lucide-react";
 import AppHeader from "./layout/AppHeader";
 import AppFooter from "./layout/AppFooter";
 import TerminalLoadingSkeleton from "./TerminalLoadingSkeleton";
 import { useTabNavigationShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { KeyboardShortcutOverlay } from "./KeyboardShortcutOverlay";
+import { lazyWithRetry, lazyNamedWithRetry } from "@/lib/lazyWithRetry";
 
-// Lazy-loaded tab interfaces for code-splitting
-const TerminalInterface = lazy(() => import("./interfaces/TerminalInterface"));
-const CrewInterface = lazy(() => import("./interfaces/CrewInterface"));
-const VehicleInterface = lazy(() => import("./interfaces/VehicleInterface"));
-const CombatInterface = lazy(() => import("./interfaces/CombatInterface"));
-const CampaignInterface = lazy(() => import("./interfaces/CampaignInterface").then(m => ({ default: m.CampaignInterface })));
-const PiracyInterface = lazy(() => import("./interfaces/PiracyInterface").then(m => ({ default: m.PiracyInterface })));
-const BridgeConsole = lazy(() => import("./bridge/BridgeConsole").then(m => ({ default: m.BridgeConsole })));
-const JumpPlannerInterface = lazy(() => import("./navigation/JumpPlannerInterface").then(m => ({ default: m.JumpPlannerInterface })));
+// Lazy-loaded tab interfaces with automatic retry on stale chunk errors
+const TerminalInterface = lazyWithRetry(() => import("./interfaces/TerminalInterface"));
+const CrewInterface = lazyWithRetry(() => import("./interfaces/CrewInterface"));
+const VehicleInterface = lazyWithRetry(() => import("./interfaces/VehicleInterface"));
+const CombatInterface = lazyWithRetry(() => import("./interfaces/CombatInterface"));
+const CampaignInterface = lazyNamedWithRetry(() => import("./interfaces/CampaignInterface"), "CampaignInterface");
+const PiracyInterface = lazyNamedWithRetry(() => import("./interfaces/PiracyInterface"), "PiracyInterface");
+const BridgeConsole = lazyNamedWithRetry(() => import("./bridge/BridgeConsole"), "BridgeConsole");
+const JumpPlannerInterface = lazyNamedWithRetry(() => import("./navigation/JumpPlannerInterface"), "JumpPlannerInterface");
+const VTTInterface = lazyWithRetry(() => import("./interfaces/VTTInterface"));
 
 export default function MainframeShell() {
   const [activeTab, setActiveTab] = useState(() => {
@@ -38,7 +40,8 @@ export default function MainframeShell() {
     { id: "navigation", label: "Star Map", icon: Navigation },
     { id: "campaign", label: "Campaign", icon: BookOpen },
     { id: "piracy", label: "Piracy", icon: Skull },
-    { id: "combat", label: "Combat", icon: Swords }
+    { id: "combat", label: "Combat", icon: Swords },
+    { id: "vtt", label: "VTT", icon: Layout }
   ];
 
   // Enable keyboard shortcuts for tab navigation (1-8)
@@ -83,6 +86,7 @@ export default function MainframeShell() {
           {activeTab === "campaign" && <CampaignInterface />}
           {activeTab === "piracy" && <PiracyInterface />}
           {activeTab === "combat" && <CombatInterface />}
+          {activeTab === "vtt" && <VTTInterface />}
         </Suspense>
       </main>
 
