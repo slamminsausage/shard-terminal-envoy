@@ -200,6 +200,7 @@ export interface VTTMap {
   name: string;
   // Image stored as data URL from local file or as objectURL
   imageDataUrl: string | null;
+  isVideo?: boolean;
   width: number;
   height: number;
   // Image transform (independent of canvas size)
@@ -465,7 +466,7 @@ export function createDefaultAudio(): AudioState {
     muted: false,
     ambientA: null,
     ambientB: null,
-    crossfade: 0,
+    crossfade: 0.5,
     sfxSlots: Array.from({ length: 18 }, (_, i) => ({
       id: i,
       name: "",

@@ -76,14 +76,16 @@ export function useVTTAudio() {
   // ─── Crossfade sync ───────────────────────────────────────────────
 
   useEffect(() => {
-    const cf = state.audio.crossfade; // 0 = full A, 1 = full B
+    const cf = state.audio.crossfade; // 0 = full A, 0.5 = both, 1 = full B
     if (ambientAGainRef.current) {
       const aVol = state.audio.ambientA?.volume ?? 1;
-      ambientAGainRef.current.gain.value = aVol * (1 - cf);
+      // DJ-style crossfade: A at full until cf > 0.5, then fades
+      ambientAGainRef.current.gain.value = aVol * Math.min(1, 2 * (1 - cf));
     }
     if (ambientBGainRef.current) {
       const bVol = state.audio.ambientB?.volume ?? 1;
-      ambientBGainRef.current.gain.value = bVol * cf;
+      // B at full until cf < 0.5, then fades
+      ambientBGainRef.current.gain.value = bVol * Math.min(1, 2 * cf);
     }
   }, [state.audio.crossfade, state.audio.ambientA?.volume, state.audio.ambientB?.volume]);
 
@@ -281,3 +283,5 @@ export function useVTTAudio() {
     ensureContext,
   };
 }
+
+export type VTTAudioApi = ReturnType<typeof useVTTAudio>;

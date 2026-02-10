@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { usePresenterReceiver } from "@/hooks/useVTTPresenter";
 import { useVTTParticles } from "@/hooks/useVTTParticles";
 import { renderDynamicLighting } from "@/lib/vtt/raycasting";
-import type { VTTMap, ParticleConfig, Point, Stroke, Token, Clock, InitiativeEntry, AoETemplate } from "@/types/vtt";
+import type { VTTMap, ParticleConfig, Point, Stroke, Token, Clock, InitiativeEntry, AoETemplate, TextOverlay } from "@/types/vtt";
 import { createDefaultParticles } from "@/types/vtt";
 
 // ─── Token image cache (mirrors VTTCanvas pattern) ──────────────────────────
@@ -53,7 +53,9 @@ export default function VTTPresenterView() {
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const particleCanvasRef = useRef<HTMLCanvasElement>(null);
-  const mapImageRef = useRef<HTMLImageElement | null>(null);
+  const mapImageRef = useRef<HTMLImageElement | HTMLVideoElement | null>(null);
+  const fogImageRef = useRef<HTMLImageElement | null>(null);
+  const lastFogUrlRef = useRef<string | null>(null);
   const animRef = useRef<number>(0);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -113,18 +115,49 @@ export default function VTTPresenterView() {
     setParticleCanvas(particleCanvasRef.current);
   }, [setParticleCanvas, particles.enabled]);
 
-  // Load map image
+  // Load map image (supports both images and video)
   useEffect(() => {
     if (!map?.imageDataUrl) {
       mapImageRef.current = null;
       return;
     }
+
+    if (map.isVideo) {
+      const video = document.createElement("video");
+      video.src = map.imageDataUrl;
+      video.muted = true;
+      video.loop = true;
+      video.playsInline = true;
+      video.autoplay = true;
+      video.play().catch(() => {});
+      mapImageRef.current = video;
+      return () => {
+        video.pause();
+      };
+    }
+
     const img = new Image();
     img.onload = () => {
       mapImageRef.current = img;
     };
     img.src = map.imageDataUrl;
-  }, [map?.imageDataUrl]);
+  }, [map?.imageDataUrl, map?.isVideo]);
+
+  // Load fog brush image when fog.dataUrl changes
+  useEffect(() => {
+    if (!map?.fog?.dataUrl) {
+      fogImageRef.current = null;
+      lastFogUrlRef.current = null;
+      return;
+    }
+    if (map.fog.dataUrl === lastFogUrlRef.current) return;
+    lastFogUrlRef.current = map.fog.dataUrl;
+    const img = new Image();
+    img.onload = () => {
+      fogImageRef.current = img;
+    };
+    img.src = map.fog.dataUrl;
+  }, [map?.fog?.dataUrl]);
 
   // Resize canvases
   useEffect(() => {
@@ -246,17 +279,18 @@ export default function VTTPresenterView() {
     const zoom = localZoom ?? map.zoom;
     ctx.setTransform(dpr * zoom, 0, 0, dpr * zoom, -scrollX * dpr * zoom, -scrollY * dpr * zoom);
 
-    // Map image (with scale/offset support)
-    if (mapImageRef.current) {
+    // Map image (with scale/offset support, supports video)
+    const mapImg = mapImageRef.current;
+    if (mapImg) {
       const imgScale = (map as any).imageScale || 1;
       const imgOX = (map as any).imageOffsetX || 0;
       const imgOY = (map as any).imageOffsetY || 0;
-      const natW = (map as any).imageNaturalWidth || mapImageRef.current.naturalWidth;
-      const natH = (map as any).imageNaturalHeight || mapImageRef.current.naturalHeight;
+      const natW = (map as any).imageNaturalWidth || (mapImg instanceof HTMLVideoElement ? mapImg.videoWidth : (mapImg as HTMLImageElement).naturalWidth);
+      const natH = (map as any).imageNaturalHeight || (mapImg instanceof HTMLVideoElement ? mapImg.videoHeight : (mapImg as HTMLImageElement).naturalHeight);
 
       ctx.save();
       ctx.translate(imgOX, imgOY);
-      ctx.drawImage(mapImageRef.current, 0, 0, natW * imgScale, natH * imgScale);
+      ctx.drawImage(mapImg, 0, 0, natW * imgScale, natH * imgScale);
       ctx.restore();
     }
 
@@ -312,6 +346,16 @@ export default function VTTPresenterView() {
         ctx.stroke();
       }
       ctx.globalAlpha = 1;
+    }
+
+    // Text overlays (skip GM layer)
+    for (const t of map.texts) {
+      if (t.layer === 2) continue;
+      ctx.fillStyle = t.color;
+      ctx.font = `${t.fontSize}px "${t.fontFamily || "Share Tech Mono"}", monospace`;
+      ctx.textAlign = "left";
+      ctx.textBaseline = "top";
+      ctx.fillText(t.text, t.x, t.y);
     }
 
     // Visible tokens only (with image rendering)
@@ -443,13 +487,16 @@ export default function VTTPresenterView() {
       renderDynamicLighting(ctx, map.lights, map.walls, map.width, map.height);
     }
 
-    // Fog of war
+    // Fog of war (use brush data if available, otherwise solid fill)
     if (map.fog.enabled) {
       ctx.save();
       ctx.globalAlpha = map.fog.opacity;
-      ctx.fillStyle = map.fog.color || "#000000";
-      ctx.fillRect(0, 0, map.width, map.height);
-      ctx.globalAlpha = 1;
+      if (fogImageRef.current) {
+        ctx.drawImage(fogImageRef.current, 0, 0);
+      } else {
+        ctx.fillStyle = map.fog.color || "#000000";
+        ctx.fillRect(0, 0, map.width, map.height);
+      }
       ctx.restore();
     }
 

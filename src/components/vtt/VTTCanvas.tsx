@@ -34,7 +34,7 @@ export default function VTTCanvas({ className }: VTTCanvasProps) {
   const { state, dispatch, activeMap } = useVTT();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const mapImageRef = useRef<HTMLImageElement | null>(null);
+  const mapImageRef = useRef<HTMLImageElement | HTMLVideoElement | null>(null);
   const animFrameRef = useRef<number>(0);
 
   // Fog brush hook
@@ -92,18 +92,33 @@ export default function VTTCanvas({ className }: VTTCanvasProps) {
     worldPos: Point;
   } | null>(null);
 
-  // Load map background image
+  // Load map background image (supports video)
   useEffect(() => {
     if (!activeMap?.imageDataUrl) {
       mapImageRef.current = null;
       return;
     }
+
+    if (activeMap.isVideo) {
+      const video = document.createElement("video");
+      video.src = activeMap.imageDataUrl;
+      video.muted = true;
+      video.loop = true;
+      video.playsInline = true;
+      video.autoplay = true;
+      video.play().catch(() => {});
+      mapImageRef.current = video;
+      return () => {
+        video.pause();
+      };
+    }
+
     const img = new Image();
     img.onload = () => {
       mapImageRef.current = img;
     };
     img.src = activeMap.imageDataUrl;
-  }, [activeMap?.imageDataUrl]);
+  }, [activeMap?.imageDataUrl, activeMap?.isVideo]);
 
   // Resize canvas to fill container
   useEffect(() => {
@@ -622,8 +637,11 @@ export default function VTTCanvas({ className }: VTTCanvasProps) {
       const imgScale = activeMap.imageScale || 1;
       const imgOX = activeMap.imageOffsetX || 0;
       const imgOY = activeMap.imageOffsetY || 0;
-      const natW = activeMap.imageNaturalWidth || mapImageRef.current.naturalWidth;
-      const natH = activeMap.imageNaturalHeight || mapImageRef.current.naturalHeight;
+      const mapEl = mapImageRef.current;
+      const elW = mapEl instanceof HTMLVideoElement ? mapEl.videoWidth : (mapEl as HTMLImageElement).naturalWidth;
+      const elH = mapEl instanceof HTMLVideoElement ? mapEl.videoHeight : (mapEl as HTMLImageElement).naturalHeight;
+      const natW = activeMap.imageNaturalWidth || elW;
+      const natH = activeMap.imageNaturalHeight || elH;
 
       ctx.save();
       ctx.translate(imgOX, imgOY);
