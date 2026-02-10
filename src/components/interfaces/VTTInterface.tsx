@@ -35,10 +35,10 @@ export default function VTTInterface() {
     return () => observer.disconnect();
   }, []);
 
-  // Connect particle canvas
+  // Connect particle canvas - re-run when particles toggle on/off
   useEffect(() => {
     setCanvas(particleCanvasRef.current);
-  }, [setCanvas]);
+  }, [setCanvas, state.particles.enabled]);
 
   return (
     <div className="flex h-full w-full overflow-hidden bg-terminal-bg-dark">
@@ -49,14 +49,15 @@ export default function VTTInterface() {
       <div ref={containerRef} className="flex-1 relative min-w-0">
         <VTTCanvas />
 
-        {/* Particle overlay */}
-        {state.particles.enabled && (
-          <canvas
-            ref={particleCanvasRef}
-            className="absolute inset-0 w-full h-full pointer-events-none"
-            style={{ zIndex: 10 }}
-          />
-        )}
+        {/* Particle overlay - always mounted, visibility controlled via CSS */}
+        <canvas
+          ref={particleCanvasRef}
+          className="absolute inset-0 w-full h-full pointer-events-none"
+          style={{
+            zIndex: 10,
+            display: state.particles.enabled ? "block" : "none",
+          }}
+        />
       </div>
 
       {/* Right sidebar */}

@@ -112,6 +112,10 @@ type VTTAction =
   // Fog Brush
   | { type: "SET_FOG_BRUSH_SIZE"; payload: number }
   | { type: "SET_FOG_BRUSH_MODE"; payload: "reveal" | "conceal" }
+  // Canvas size
+  | { type: "SET_CANVAS_SIZE"; payload: { mapId: string; width: number; height: number } }
+  // Presenter toggles
+  | { type: "TOGGLE_INITIATIVE_PRESENTER" }
   // History
   | { type: "PUSH_HISTORY"; payload: VTTHistoryEntry }
   | { type: "UNDO" }
@@ -150,8 +154,17 @@ function vttReducer(state: VTTState, action: VTTAction): VTTState {
       return { ...state, drawWidth: action.payload };
     case "SET_SIDEBAR":
       return { ...state, sidebarPanel: action.payload };
-    case "TOGGLE_GRID":
-      return { ...state, showGrid: !state.showGrid };
+    case "TOGGLE_GRID": {
+      const newShowGrid = !state.showGrid;
+      const gridToggledState = { ...state, showGrid: newShowGrid };
+      if (state.activeMapId) {
+        return updateMapInState(gridToggledState, state.activeMapId, (m) => ({
+          ...m,
+          grid: { ...m.grid, enabled: newShowGrid },
+        }));
+      }
+      return gridToggledState;
+    }
     case "TOGGLE_TOKEN_NAMES":
       return { ...state, showTokenNames: !state.showTokenNames };
     case "TOGGLE_WALLS":
@@ -387,19 +400,43 @@ function vttReducer(state: VTTState, action: VTTAction): VTTState {
       return { ...state, audio: { ...state.audio, sfxSlots: slots } };
     }
 
-    // AoE Templates
+    // AoE Templates (per-map)
     case "ADD_AOE":
-      return { ...state, aoeTemplates: [...state.aoeTemplates, action.payload] };
+      if (!state.activeMapId) return state;
+      return updateMapInState(state, state.activeMapId, (m) => ({
+        ...m,
+        aoeTemplates: [...(m.aoeTemplates || []), action.payload],
+      }));
     case "REMOVE_AOE":
-      return { ...state, aoeTemplates: state.aoeTemplates.filter((a) => a.id !== action.payload) };
+      if (!state.activeMapId) return state;
+      return updateMapInState(state, state.activeMapId, (m) => ({
+        ...m,
+        aoeTemplates: (m.aoeTemplates || []).filter((a) => a.id !== action.payload),
+      }));
     case "CLEAR_AOE":
-      return { ...state, aoeTemplates: [] };
+      if (!state.activeMapId) return state;
+      return updateMapInState(state, state.activeMapId, (m) => ({
+        ...m,
+        aoeTemplates: [],
+      }));
 
     // Fog Brush
     case "SET_FOG_BRUSH_SIZE":
       return { ...state, fogBrushSize: action.payload };
     case "SET_FOG_BRUSH_MODE":
       return { ...state, fogBrushMode: action.payload };
+
+    // Canvas size
+    case "SET_CANVAS_SIZE":
+      return updateMapInState(state, action.payload.mapId, (m) => ({
+        ...m,
+        width: action.payload.width,
+        height: action.payload.height,
+      }));
+
+    // Presenter toggles
+    case "TOGGLE_INITIATIVE_PRESENTER":
+      return { ...state, showInitiativeOnPresenter: !(state.showInitiativeOnPresenter ?? false) };
 
     // History
     case "PUSH_HISTORY": {
@@ -444,8 +481,29 @@ export function VTTProvider({ children }: { children: React.ReactNode }) {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
-        const parsed = JSON.parse(saved) as VTTState;
-        return parsed;
+        const parsed = JSON.parse(saved) as VTTState & { aoeTemplates?: unknown[] };
+        // Migrate: move top-level aoeTemplates to per-map if present (old format)
+        if (parsed.aoeTemplates && Array.isArray(parsed.aoeTemplates) && parsed.aoeTemplates.length > 0) {
+          const activeMap = parsed.maps.find((m) => m.id === parsed.activeMapId);
+          if (activeMap && !activeMap.aoeTemplates) {
+            activeMap.aoeTemplates = parsed.aoeTemplates as any;
+          }
+          delete parsed.aoeTemplates;
+        }
+        // Ensure all maps have aoeTemplates array and image scaling fields
+        for (const m of parsed.maps) {
+          if (!m.aoeTemplates) m.aoeTemplates = [];
+          if (m.imageScale === undefined) m.imageScale = 1;
+          if (m.imageOffsetX === undefined) m.imageOffsetX = 0;
+          if (m.imageOffsetY === undefined) m.imageOffsetY = 0;
+          if (m.imageNaturalWidth === undefined) m.imageNaturalWidth = 0;
+          if (m.imageNaturalHeight === undefined) m.imageNaturalHeight = 0;
+        }
+        // Ensure new state fields exist
+        if (parsed.showInitiativeOnPresenter === undefined) {
+          (parsed as any).showInitiativeOnPresenter = false;
+        }
+        return parsed as VTTState;
       }
     } catch (e) {
       console.warn("Failed to load VTT session from localStorage:", e);
@@ -492,13 +550,36 @@ export function VTTProvider({ children }: { children: React.ReactNode }) {
           const dataUrl = e.target?.result as string;
           const img = new Image();
           img.onload = () => {
+            // Find current map to get its canvas dimensions
+            const currentMap = stateRef.current.maps.find((m) => m.id === mapId);
+            const canvasW = currentMap?.width || 1920;
+            const canvasH = currentMap?.height || 1080;
+
+            // Calculate scale to fit image within canvas
+            const scaleX = canvasW / img.naturalWidth;
+            const scaleY = canvasH / img.naturalHeight;
+            const fitScale = Math.min(scaleX, scaleY);
+
             dispatch({
               type: "SET_MAP_IMAGE",
               payload: {
                 mapId,
                 dataUrl,
-                width: img.naturalWidth,
-                height: img.naturalHeight,
+                width: canvasW,
+                height: canvasH,
+              },
+            });
+            dispatch({
+              type: "UPDATE_MAP",
+              payload: {
+                id: mapId,
+                updates: {
+                  imageScale: fitScale,
+                  imageOffsetX: 0,
+                  imageOffsetY: 0,
+                  imageNaturalWidth: img.naturalWidth,
+                  imageNaturalHeight: img.naturalHeight,
+                },
               },
             });
             resolve();

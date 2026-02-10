@@ -227,6 +227,21 @@ export default function VTTCanvas({ className }: VTTCanvasProps) {
           return;
         }
 
+        // Text tool (must be checked before generic draw- tools)
+        if (state.activeTool === "draw-text") {
+          const canvas = canvasRef.current;
+          if (!canvas) return;
+          const rect = canvas.getBoundingClientRect();
+          setTextInput({
+            x: worldPos.x,
+            y: worldPos.y,
+            screenX: e.clientX - rect.left,
+            screenY: e.clientY - rect.top,
+          });
+          setTimeout(() => textInputRef.current?.focus(), 0);
+          return;
+        }
+
         // Drawing tools
         if (state.activeTool.startsWith("draw-")) {
           setIsDrawing(true);
@@ -294,20 +309,6 @@ export default function VTTCanvas({ className }: VTTCanvasProps) {
           return;
         }
 
-        // Text tool
-        if (state.activeTool === "draw-text") {
-          const canvas = canvasRef.current;
-          if (!canvas) return;
-          const rect = canvas.getBoundingClientRect();
-          setTextInput({
-            x: worldPos.x,
-            y: worldPos.y,
-            screenX: e.clientX - rect.left,
-            screenY: e.clientY - rect.top,
-          });
-          setTimeout(() => textInputRef.current?.focus(), 0);
-          return;
-        }
       }
     },
     [activeMap, state.activeTool, state.fogBrushSize, state.fogBrushMode, getWorldPos, findTokenAt, findNoteAt, contextMenu, dispatch, paintFog]
@@ -615,19 +616,29 @@ export default function VTTCanvas({ className }: VTTCanvasProps) {
     // Apply camera transform
     ctx.setTransform(dpr * zoom, 0, 0, dpr * zoom, -scrollX * dpr * zoom, -scrollY * dpr * zoom);
 
-    // Map background image (with rotation/flip)
+    // Map background image (with scale/offset and rotation/flip)
     if (mapImageRef.current) {
       const { rotation, flipH, flipV } = activeMap;
+      const imgScale = activeMap.imageScale || 1;
+      const imgOX = activeMap.imageOffsetX || 0;
+      const imgOY = activeMap.imageOffsetY || 0;
+      const natW = activeMap.imageNaturalWidth || mapImageRef.current.naturalWidth;
+      const natH = activeMap.imageNaturalHeight || mapImageRef.current.naturalHeight;
+
+      ctx.save();
+      ctx.translate(imgOX, imgOY);
+
       if (rotation !== 0 || flipH || flipV) {
-        ctx.save();
-        ctx.translate(activeMap.width / 2, activeMap.height / 2);
+        const scaledW = natW * imgScale;
+        const scaledH = natH * imgScale;
+        ctx.translate(scaledW / 2, scaledH / 2);
         ctx.rotate((rotation * Math.PI) / 180);
         ctx.scale(flipH ? -1 : 1, flipV ? -1 : 1);
-        ctx.drawImage(mapImageRef.current, -activeMap.width / 2, -activeMap.height / 2, activeMap.width, activeMap.height);
-        ctx.restore();
+        ctx.drawImage(mapImageRef.current, -scaledW / 2, -scaledH / 2, scaledW, scaledH);
       } else {
-        ctx.drawImage(mapImageRef.current, 0, 0, activeMap.width, activeMap.height);
+        ctx.drawImage(mapImageRef.current, 0, 0, natW * imgScale, natH * imgScale);
       }
+      ctx.restore();
     }
 
     // Grid
@@ -651,9 +662,9 @@ export default function VTTCanvas({ className }: VTTCanvasProps) {
     // Tokens (with image support)
     drawTokens(ctx, activeMap, state.showTokenNames);
 
-    // AoE templates
-    if (state.aoeTemplates.length > 0) {
-      drawAoETemplates(ctx, state.aoeTemplates);
+    // AoE templates (per-map)
+    if ((activeMap.aoeTemplates || []).length > 0) {
+      drawAoETemplates(ctx, activeMap.aoeTemplates || []);
     }
 
     // AoE placement preview
@@ -1109,18 +1120,43 @@ function drawFogOfWar(ctx: CanvasRenderingContext2D, map: VTTMap) {
 
 function drawWalls(ctx: CanvasRenderingContext2D, walls: VTTMap["walls"]) {
   for (const w of walls) {
-    ctx.lineWidth = 3;
     if (w.type === "door") {
-      ctx.strokeStyle = w.doorOpen ? "#00ccff44" : "#00ccff";
-      ctx.setLineDash(w.doorOpen ? [4, 4] : []);
+      ctx.strokeStyle = w.doorOpen ? "#00ccff66" : "#00ccff";
+      ctx.lineWidth = 3;
+      ctx.setLineDash(w.doorOpen ? [6, 4] : []);
     } else {
       ctx.strokeStyle = w.color || "#ff6600";
+      ctx.lineWidth = 4;
       ctx.setLineDash([]);
     }
     ctx.beginPath();
     ctx.moveTo(w.x1, w.y1);
     ctx.lineTo(w.x2, w.y2);
     ctx.stroke();
+
+    // Door marker at midpoint
+    if (w.type === "door") {
+      const mx = (w.x1 + w.x2) / 2;
+      const my = (w.y1 + w.y2) / 2;
+      const angle = Math.atan2(w.y2 - w.y1, w.x2 - w.x1);
+      ctx.save();
+      ctx.translate(mx, my);
+      ctx.rotate(angle);
+      ctx.setLineDash([]);
+      if (w.doorOpen) {
+        // Open door: small arc indicator
+        ctx.strokeStyle = "#00ccff88";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(0, 0, 8, -Math.PI / 2, Math.PI / 2);
+        ctx.stroke();
+      } else {
+        // Closed door: small filled rectangle
+        ctx.fillStyle = "#00ccff";
+        ctx.fillRect(-6, -3, 12, 6);
+      }
+      ctx.restore();
+    }
   }
   ctx.setLineDash([]);
 }
@@ -1198,7 +1234,7 @@ function drawMeasurement(
   // Distance label
   const midX = (start.x + end.x) / 2;
   const midY = (start.y + end.y) / 2;
-  const label = `${gridDist.toFixed(1)} sq`;
+  const label = `${gridDist.toFixed(1)}m`;
 
   ctx.font = `bold 13px "Share Tech Mono", monospace`;
   ctx.textAlign = "center";

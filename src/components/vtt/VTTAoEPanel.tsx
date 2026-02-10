@@ -2,8 +2,8 @@ import { useVTT } from "@/contexts/VTTContext";
 import { Target, Trash2, X } from "lucide-react";
 
 export default function VTTAoEPanel() {
-  const { state, dispatch } = useVTT();
-  const templates = state.aoeTemplates;
+  const { state, dispatch, activeMap } = useVTT();
+  const templates = activeMap?.aoeTemplates || [];
 
   return (
     <div className="flex flex-col h-full p-3 space-y-3">
