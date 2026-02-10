@@ -1,13 +1,34 @@
-import { useState } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useVTT } from "@/contexts/VTTContext";
 import type { InitiativeEntry } from "@/types/vtt";
-import { Plus, Trash2, ArrowUpDown, ChevronUp, ChevronDown, Dices } from "lucide-react";
+import type { Combatant } from "@/types/database";
+import { supabase } from "@/lib/supabase";
+import {
+  Plus,
+  Trash2,
+  ArrowUpDown,
+  ChevronUp,
+  ChevronDown,
+  Dices,
+  RefreshCw,
+  Upload,
+  Download,
+  Monitor,
+  MonitorOff,
+} from "lucide-react";
+import { toast } from "sonner";
+
+const PLAYER_ID = "campaign";
 
 export default function VTTInitiativePanel() {
   const { state, dispatch } = useVTT();
   const [newName, setNewName] = useState("");
   const [newInit, setNewInit] = useState("");
   const [isNPC, setIsNPC] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [autoSync, setAutoSync] = useState(false);
+  const autoSyncRef = useRef(autoSync);
+  autoSyncRef.current = autoSync;
 
   const handleAdd = () => {
     if (!newName.trim()) return;
@@ -32,7 +53,6 @@ export default function VTTInitiativePanel() {
     dispatch({ type: "SET_INITIATIVE", payload: sorted });
   };
 
-  // Roll 2d6 for Traveller initiative
   const handleRoll2d6 = () => {
     const d1 = Math.floor(Math.random() * 6) + 1;
     const d2 = Math.floor(Math.random() * 6) + 1;
@@ -56,6 +76,176 @@ export default function VTTInitiativePanel() {
   const handleClearAll = () => {
     dispatch({ type: "SET_INITIATIVE", payload: [] });
   };
+
+  // ─── Combat Tracker Sync ─────────────────────────────────────────────────
+
+  const combatantToEntry = (c: Combatant): InitiativeEntry => {
+    let hp = 0;
+    let maxHp = 0;
+    if (c.healthType === "hits") {
+      hp = c.hits ?? 0;
+      maxHp = c.hitsMax ?? 0;
+    } else {
+      hp = (c.currentStr ?? 0) + (c.currentDex ?? 0) + (c.currentEnd ?? 0);
+      maxHp = (c.maxStr ?? 0) + (c.maxDex ?? 0) + (c.maxEnd ?? 0);
+    }
+
+    return {
+      id: crypto.randomUUID(),
+      name: c.name,
+      initiative: c.initiative,
+      hp,
+      maxHp,
+      isNPC: c.type === "npc",
+      combatantId: c.id,
+      notes: c.notes || "",
+    };
+  };
+
+  const entryToCombatant = (entry: InitiativeEntry, existingCombatant?: Combatant): Combatant => {
+    const base: Combatant = existingCombatant || {
+      id: entry.combatantId || crypto.randomUUID(),
+      name: entry.name,
+      type: entry.isNPC ? "npc" : "character",
+      initiative: entry.initiative,
+      turnOrder: entry.initiative,
+      healthType: "hits",
+      hits: entry.hp,
+      hitsMax: entry.maxHp,
+      armor: 0,
+      cover: "none",
+      range: "medium",
+      actionsRemaining: 2,
+      reactionsRemaining: 1,
+      hasMovedThisRound: false,
+      isActive: true,
+      isDowned: false,
+      notes: entry.notes || "",
+    };
+
+    return {
+      ...base,
+      name: entry.name,
+      initiative: entry.initiative,
+      turnOrder: entry.initiative,
+      notes: entry.notes || base.notes,
+    };
+  };
+
+  const pullFromCombatTracker = async () => {
+    setSyncing(true);
+    try {
+      const { data, error } = await supabase
+        .from("combat_encounters")
+        .select("*")
+        .eq("player_id", PLAYER_ID)
+        .single();
+
+      if (error && error.code !== "PGRST116") {
+        toast.error("Failed to load combat tracker");
+        return;
+      }
+
+      if (!data || !data.combatants || data.combatants.length === 0) {
+        toast.info("No combatants in combat tracker");
+        return;
+      }
+
+      const entries: InitiativeEntry[] = data.combatants
+        .sort((a: Combatant, b: Combatant) => a.turnOrder - b.turnOrder)
+        .map(combatantToEntry);
+
+      dispatch({ type: "SET_INITIATIVE", payload: entries });
+      toast.success(`Pulled ${entries.length} combatants from combat tracker`);
+    } catch {
+      toast.error("Failed to connect to combat tracker");
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  const pushToCombatTracker = async () => {
+    if (state.initiative.length === 0) {
+      toast.info("No initiative entries to push");
+      return;
+    }
+
+    setSyncing(true);
+    try {
+      // Load existing combat data to preserve fields we don't track
+      const { data: existing } = await supabase
+        .from("combat_encounters")
+        .select("*")
+        .eq("player_id", PLAYER_ID)
+        .single();
+
+      const existingCombatants: Combatant[] = existing?.combatants || [];
+
+      const combatants: Combatant[] = state.initiative.map((entry, index) => {
+        // Try to find matching existing combatant by combatantId or name
+        const match = existingCombatants.find(
+          (c) => (entry.combatantId && c.id === entry.combatantId) || c.name === entry.name
+        );
+        const combatant = entryToCombatant(entry, match);
+        combatant.turnOrder = index;
+        return combatant;
+      });
+
+      const { error } = await supabase
+        .from("combat_encounters")
+        .upsert(
+          {
+            player_id: PLAYER_ID,
+            current_round: existing?.current_round || 1,
+            current_turn_index: existing?.current_turn_index || 0,
+            combatants,
+          },
+          { onConflict: "player_id" }
+        );
+
+      if (error) {
+        toast.error("Failed to push to combat tracker");
+        return;
+      }
+
+      toast.success(`Pushed ${combatants.length} entries to combat tracker`);
+    } catch {
+      toast.error("Failed to connect to combat tracker");
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  // Auto-sync: poll combat tracker every 5 seconds
+  useEffect(() => {
+    if (!autoSync) return;
+
+    const poll = async () => {
+      if (!autoSyncRef.current) return;
+      try {
+        const { data } = await supabase
+          .from("combat_encounters")
+          .select("*")
+          .eq("player_id", PLAYER_ID)
+          .single();
+
+        if (data?.combatants) {
+          const entries: InitiativeEntry[] = data.combatants
+            .sort((a: Combatant, b: Combatant) => a.turnOrder - b.turnOrder)
+            .map(combatantToEntry);
+
+          dispatch({ type: "SET_INITIATIVE", payload: entries });
+        }
+      } catch {
+        // silently fail during auto-sync
+      }
+    };
+
+    const interval = setInterval(poll, 5000);
+    return () => clearInterval(interval);
+  }, [autoSync, dispatch]);
+
+  const showOnPresenter = state.showInitiativeOnPresenter ?? false;
 
   return (
     <div className="flex flex-col h-full">
@@ -107,6 +297,54 @@ export default function VTTInitiativePanel() {
         </div>
       </div>
 
+      {/* Combat Tracker Sync */}
+      <div className="px-3 py-2 border-b border-terminal-border/20 space-y-1.5">
+        <div className="text-[10px] text-terminal-primary/40 uppercase tracking-wider font-mono">
+          Combat Tracker Sync
+        </div>
+        <div className="flex gap-1">
+          <button
+            onClick={pullFromCombatTracker}
+            disabled={syncing}
+            className="flex-1 flex items-center justify-center gap-1 px-2 py-1 text-[10px] font-mono rounded border border-terminal-border/30 text-terminal-primary/50 hover:text-terminal-primary hover:bg-terminal-primary/10 transition-colors disabled:opacity-30"
+            title="Pull combatants from Combat Tracker"
+          >
+            <Download size={10} /> Pull
+          </button>
+          <button
+            onClick={pushToCombatTracker}
+            disabled={syncing}
+            className="flex-1 flex items-center justify-center gap-1 px-2 py-1 text-[10px] font-mono rounded border border-terminal-border/30 text-terminal-primary/50 hover:text-terminal-primary hover:bg-terminal-primary/10 transition-colors disabled:opacity-30"
+            title="Push initiative to Combat Tracker"
+          >
+            <Upload size={10} /> Push
+          </button>
+        </div>
+        <div className="flex items-center justify-between">
+          <label className="flex items-center gap-1.5 text-[10px] text-terminal-primary/40 font-mono cursor-pointer">
+            <input
+              type="checkbox"
+              checked={autoSync}
+              onChange={(e) => setAutoSync(e.target.checked)}
+              className="accent-green-500"
+            />
+            Auto-sync (5s)
+          </label>
+          <button
+            onClick={() => dispatch({ type: "TOGGLE_INITIATIVE_PRESENTER" })}
+            className={`flex items-center gap-1 px-2 py-0.5 text-[10px] font-mono rounded border transition-colors ${
+              showOnPresenter
+                ? "border-cyan-500/40 text-cyan-400 bg-cyan-500/10"
+                : "border-terminal-border/30 text-terminal-primary/40 hover:text-terminal-primary"
+            }`}
+            title={showOnPresenter ? "Hide from presenter" : "Show on presenter"}
+          >
+            {showOnPresenter ? <Monitor size={10} /> : <MonitorOff size={10} />}
+            {showOnPresenter ? "On" : "Off"}
+          </button>
+        </div>
+      </div>
+
       {/* Controls */}
       {state.initiative.length > 0 && (
         <div className="flex items-center justify-between px-3 py-1.5 border-b border-terminal-border/20">
@@ -134,7 +372,7 @@ export default function VTTInitiativePanel() {
           <div className="text-terminal-primary/30 text-xs font-mono text-center py-8">
             No initiative entries.
             <br />
-            Add combatants above.
+            Add combatants above or pull from combat tracker.
           </div>
         ) : (
           state.initiative.map((entry, index) => (
@@ -156,11 +394,18 @@ export default function VTTInitiativePanel() {
                 <div className="text-terminal-primary text-xs font-mono truncate">
                   {entry.name}
                 </div>
-                {entry.isNPC && (
-                  <span className="text-[9px] text-red-400/50 font-mono">
-                    NPC
-                  </span>
-                )}
+                <div className="flex items-center gap-2">
+                  {entry.isNPC && (
+                    <span className="text-[9px] text-red-400/50 font-mono">
+                      NPC
+                    </span>
+                  )}
+                  {entry.maxHp > 0 && (
+                    <span className="text-[9px] text-terminal-primary/30 font-mono">
+                      HP: {entry.hp}/{entry.maxHp}
+                    </span>
+                  )}
+                </div>
               </div>
 
               {/* Controls */}

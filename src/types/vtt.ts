@@ -202,6 +202,12 @@ export interface VTTMap {
   imageDataUrl: string | null;
   width: number;
   height: number;
+  // Image transform (independent of canvas size)
+  imageScale: number;
+  imageOffsetX: number;
+  imageOffsetY: number;
+  imageNaturalWidth: number;
+  imageNaturalHeight: number;
   // Per-map state
   strokes: Stroke[];
   texts: TextOverlay[];
@@ -210,6 +216,7 @@ export interface VTTMap {
   fog: FogState;
   walls: Wall[];
   lights: LightSource[];
+  aoeTemplates: AoETemplate[];
   grid: GridConfig;
   // Viewport state
   scrollX: number;
@@ -277,6 +284,7 @@ export interface InitiativeEntry {
   maxHp: number;
   isNPC: boolean;
   tokenId?: string;
+  combatantId?: string;
   notes?: string;
 }
 
@@ -387,8 +395,8 @@ export interface VTTState {
   showFog: boolean;
   presenterMode: boolean;
 
-  // AoE Templates (active on canvas)
-  aoeTemplates: AoETemplate[];
+  // Presenter toggles
+  showInitiativeOnPresenter: boolean;
 
   // Fog brush settings
   fogBrushSize: number;
@@ -475,6 +483,11 @@ export function createDefaultMap(name: string = "New Map"): VTTMap {
     imageDataUrl: null,
     width: 1920,
     height: 1080,
+    imageScale: 1,
+    imageOffsetX: 0,
+    imageOffsetY: 0,
+    imageNaturalWidth: 0,
+    imageNaturalHeight: 0,
     strokes: [],
     texts: [],
     notes: [],
@@ -482,6 +495,7 @@ export function createDefaultMap(name: string = "New Map"): VTTMap {
     fog: createDefaultFog(),
     walls: [],
     lights: [],
+    aoeTemplates: [],
     grid: createDefaultGrid(),
     scrollX: 0,
     scrollY: 0,
@@ -509,11 +523,11 @@ export function createDefaultVTTState(): VTTState {
     historyIndex: -1,
     showGrid: true,
     showTokenNames: true,
-    showWalls: false,
+    showWalls: true,
     showLights: true,
     showFog: true,
     presenterMode: false,
-    aoeTemplates: [],
+    showInitiativeOnPresenter: false,
     fogBrushSize: 40,
     fogBrushMode: "reveal",
     sidebarPanel: "maps",

@@ -1,12 +1,22 @@
 import { useVTT } from "@/contexts/VTTContext";
 import type { Handout } from "@/types/vtt";
-import { Upload, Trash2, Eye, EyeOff, Maximize2 } from "lucide-react";
-import { useState } from "react";
+import type { PresenterMessage } from "@/hooks/useVTTPresenter";
+import { Upload, Trash2, Eye, EyeOff, Maximize2, Monitor, MonitorOff } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
 import { toast } from "sonner";
+
+const CHANNEL_NAME = "shard-vtt-presenter";
 
 export default function VTTHandoutsPanel() {
   const { state, dispatch } = useVTT();
   const [previewId, setPreviewId] = useState<string | null>(null);
+  const [sentToPresenter, setSentToPresenter] = useState<string | null>(null);
+  const channelRef = useRef<BroadcastChannel | null>(null);
+
+  useEffect(() => {
+    channelRef.current = new BroadcastChannel(CHANNEL_NAME);
+    return () => channelRef.current?.close();
+  }, []);
 
   const handleAddHandout = () => {
     const input = document.createElement("input");
@@ -34,17 +44,44 @@ export default function VTTHandoutsPanel() {
     input.click();
   };
 
+  const sendToPresenter = (handout: Handout) => {
+    channelRef.current?.postMessage({
+      type: "show-handout",
+      imageDataUrl: handout.imageDataUrl,
+      name: handout.name,
+    } satisfies PresenterMessage);
+    setSentToPresenter(handout.id);
+    toast.success(`"${handout.name}" sent to presenter`);
+  };
+
+  const hideFromPresenter = () => {
+    channelRef.current?.postMessage({
+      type: "hide-handout",
+    } satisfies PresenterMessage);
+    setSentToPresenter(null);
+    toast.success("Handout hidden from presenter");
+  };
+
   const previewHandout = state.handouts.find((h) => h.id === previewId);
 
   return (
     <div className="flex flex-col h-full">
-      <div className="p-3 border-b border-terminal-border/30">
+      <div className="p-3 border-b border-terminal-border/30 space-y-2">
         <button
           onClick={handleAddHandout}
           className="flex items-center gap-1.5 w-full px-2 py-1.5 text-xs font-mono border border-dashed border-terminal-border/30 rounded text-terminal-primary/50 hover:text-terminal-primary hover:border-terminal-primary/30 transition-colors justify-center"
         >
           <Upload size={12} /> Add Handout Images
         </button>
+
+        {sentToPresenter && (
+          <button
+            onClick={hideFromPresenter}
+            className="flex items-center gap-1.5 w-full px-2 py-1.5 text-xs font-mono border border-red-500/30 rounded text-red-400/60 hover:text-red-400 hover:border-red-500/50 transition-colors justify-center"
+          >
+            <MonitorOff size={12} /> Hide from Presenter
+          </button>
+        )}
       </div>
 
       <div className="flex-1 overflow-y-auto p-2 space-y-1.5">
@@ -58,7 +95,11 @@ export default function VTTHandoutsPanel() {
           state.handouts.map((h) => (
             <div
               key={h.id}
-              className="group rounded border border-terminal-border/20 hover:border-terminal-border/40 bg-terminal-bg-dark/50 transition-colors overflow-hidden"
+              className={`group rounded border transition-colors overflow-hidden ${
+                sentToPresenter === h.id
+                  ? "border-cyan-500/40 bg-cyan-500/5"
+                  : "border-terminal-border/20 hover:border-terminal-border/40 bg-terminal-bg-dark/50"
+              }`}
             >
               {/* Thumbnail */}
               <div className="w-full h-20 overflow-hidden">
@@ -74,6 +115,17 @@ export default function VTTHandoutsPanel() {
                   {h.name}
                 </span>
                 <div className="flex gap-0.5">
+                  <button
+                    onClick={() => sendToPresenter(h)}
+                    className={`p-1 transition-colors ${
+                      sentToPresenter === h.id
+                        ? "text-cyan-400"
+                        : "text-terminal-primary/40 hover:text-cyan-400"
+                    }`}
+                    title="Send to Presenter"
+                  >
+                    <Monitor size={10} />
+                  </button>
                   <button
                     onClick={() => setPreviewId(h.id === previewId ? null : h.id)}
                     className="p-1 text-terminal-primary/40 hover:text-terminal-primary transition-colors"
@@ -94,9 +146,10 @@ export default function VTTHandoutsPanel() {
                     {h.visible ? <Eye size={10} /> : <EyeOff size={10} />}
                   </button>
                   <button
-                    onClick={() =>
-                      dispatch({ type: "REMOVE_HANDOUT", payload: h.id })
-                    }
+                    onClick={() => {
+                      if (sentToPresenter === h.id) hideFromPresenter();
+                      dispatch({ type: "REMOVE_HANDOUT", payload: h.id });
+                    }}
                     className="p-1 text-terminal-primary/40 hover:text-red-400 transition-colors"
                     title="Delete"
                   >

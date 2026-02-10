@@ -1,5 +1,5 @@
 import { useEffect, useRef, useCallback } from "react";
-import type { VTTState, VTTMap, ParticleConfig } from "@/types/vtt";
+import type { VTTState, VTTMap, ParticleConfig, Clock, InitiativeEntry } from "@/types/vtt";
 
 /**
  * Messages sent over BroadcastChannel between controller and presenter.
@@ -11,6 +11,8 @@ export type PresenterMessage =
   | { type: "sync-fog"; mapId: string; fog: VTTMap["fog"] }
   | { type: "sync-tokens"; mapId: string; tokens: VTTMap["tokens"] }
   | { type: "sync-viewport"; mapId: string; scrollX: number; scrollY: number; zoom: number }
+  | { type: "sync-clocks"; clocks: Clock[] }
+  | { type: "sync-initiative"; initiative: InitiativeEntry[]; showOnPresenter: boolean }
   | { type: "show-handout"; imageDataUrl: string; name: string }
   | { type: "hide-handout" }
   | { type: "dice-roll"; label: string; dice: number[]; total: number; modifier: number }
@@ -43,6 +45,15 @@ export function usePresenterController(state: VTTState, activeMap: VTTMap | null
             type: "sync-particles",
             particles: state.particles,
           } satisfies PresenterMessage);
+          channelRef.current?.postMessage({
+            type: "sync-clocks",
+            clocks: state.clocks,
+          } satisfies PresenterMessage);
+          channelRef.current?.postMessage({
+            type: "sync-initiative",
+            initiative: state.initiative,
+            showOnPresenter: state.showInitiativeOnPresenter ?? false,
+          } satisfies PresenterMessage);
         }
       }
     };
@@ -58,7 +69,7 @@ export function usePresenterController(state: VTTState, activeMap: VTTMap | null
 
     // Throttle: only send if state actually changed
     const key = activeMap
-      ? `${activeMap.id}-${activeMap.tokens.length}-${activeMap.strokes.length}-${activeMap.scrollX}-${activeMap.scrollY}-${activeMap.zoom}-${activeMap.fog.enabled}`
+      ? `${activeMap.id}-${activeMap.tokens.length}-${activeMap.strokes.length}-${activeMap.scrollX}-${activeMap.scrollY}-${activeMap.zoom}-${activeMap.fog.enabled}-${activeMap.lights.length}-${activeMap.walls.length}-${activeMap.walls.filter(w => w.type === "door" && w.doorOpen).length}`
       : "null";
 
     if (key === lastSentRef.current) return;
@@ -77,6 +88,23 @@ export function usePresenterController(state: VTTState, activeMap: VTTMap | null
       particles: state.particles,
     } satisfies PresenterMessage);
   }, [state.particles]);
+
+  // Send clock updates
+  useEffect(() => {
+    channelRef.current?.postMessage({
+      type: "sync-clocks",
+      clocks: state.clocks,
+    } satisfies PresenterMessage);
+  }, [state.clocks]);
+
+  // Send initiative updates
+  useEffect(() => {
+    channelRef.current?.postMessage({
+      type: "sync-initiative",
+      initiative: state.initiative,
+      showOnPresenter: state.showInitiativeOnPresenter ?? false,
+    } satisfies PresenterMessage);
+  }, [state.initiative, state.showInitiativeOnPresenter]);
 
   const showHandout = useCallback((imageDataUrl: string, name: string) => {
     channelRef.current?.postMessage({
@@ -116,7 +144,9 @@ export function usePresenterReceiver(
   onParticlesSync: (particles: ParticleConfig) => void,
   onShowHandout: (imageDataUrl: string, name: string) => void,
   onHideHandout: () => void,
-  onDiceRoll?: (label: string, dice: number[], total: number, modifier: number) => void
+  onDiceRoll?: (label: string, dice: number[], total: number, modifier: number) => void,
+  onClocksSync?: (clocks: Clock[]) => void,
+  onInitiativeSync?: (initiative: InitiativeEntry[], showOnPresenter: boolean) => void
 ) {
   const channelRef = useRef<BroadcastChannel | null>(null);
 
@@ -140,6 +170,12 @@ export function usePresenterReceiver(
         case "dice-roll":
           onDiceRoll?.(e.data.label, e.data.dice, e.data.total, e.data.modifier);
           break;
+        case "sync-clocks":
+          onClocksSync?.(e.data.clocks);
+          break;
+        case "sync-initiative":
+          onInitiativeSync?.(e.data.initiative, e.data.showOnPresenter);
+          break;
         case "pong":
           // Controller is alive
           break;
@@ -152,5 +188,5 @@ export function usePresenterReceiver(
     return () => {
       channelRef.current?.close();
     };
-  }, [onMapSync, onParticlesSync, onShowHandout, onHideHandout, onDiceRoll]);
+  }, [onMapSync, onParticlesSync, onShowHandout, onHideHandout, onDiceRoll, onClocksSync, onInitiativeSync]);
 }

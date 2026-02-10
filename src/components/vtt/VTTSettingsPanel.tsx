@@ -78,7 +78,7 @@ export default function VTTSettingsPanel() {
             <ToggleRow
               label="Grid Enabled"
               checked={grid.enabled}
-              onChange={() =>
+              onChange={() => {
                 dispatch({
                   type: "UPDATE_MAP",
                   payload: {
@@ -87,8 +87,12 @@ export default function VTTSettingsPanel() {
                       grid: { ...grid, enabled: !grid.enabled },
                     },
                   },
-                })
-              }
+                });
+                // Keep showGrid in sync with grid.enabled
+                if (state.showGrid !== !grid.enabled) {
+                  dispatch({ type: "TOGGLE_GRID" });
+                }
+              }}
             />
 
             <div className="mt-2">
@@ -229,6 +233,226 @@ export default function VTTSettingsPanel() {
             </div>
           </div>
         </>
+      )}
+
+      {/* Canvas & Image Scaling */}
+      {activeMap && (
+        <div className="border-t border-terminal-border/20 pt-3">
+          <h4 className="text-[10px] text-terminal-primary/50 uppercase tracking-wider font-mono mb-2">
+            Canvas Size
+          </h4>
+
+          <div className="flex gap-2 mb-2">
+            <div className="flex-1">
+              <label className="text-[10px] text-terminal-primary/40 font-mono block mb-0.5">Width</label>
+              <input
+                type="number"
+                min={100}
+                max={10000}
+                step={100}
+                value={activeMap.width}
+                onChange={(e) => {
+                  const w = Math.max(100, parseInt(e.target.value) || 1920);
+                  dispatch({
+                    type: "SET_CANVAS_SIZE",
+                    payload: { mapId: activeMap.id, width: w, height: activeMap.height },
+                  });
+                }}
+                className="w-full bg-terminal-bg-dark border border-terminal-border/30 text-terminal-primary text-xs px-1.5 py-1 rounded font-mono text-center focus:border-terminal-primary/50 focus:outline-none"
+              />
+            </div>
+            <div className="flex-1">
+              <label className="text-[10px] text-terminal-primary/40 font-mono block mb-0.5">Height</label>
+              <input
+                type="number"
+                min={100}
+                max={10000}
+                step={100}
+                value={activeMap.height}
+                onChange={(e) => {
+                  const h = Math.max(100, parseInt(e.target.value) || 1080);
+                  dispatch({
+                    type: "SET_CANVAS_SIZE",
+                    payload: { mapId: activeMap.id, width: activeMap.width, height: h },
+                  });
+                }}
+                className="w-full bg-terminal-bg-dark border border-terminal-border/30 text-terminal-primary text-xs px-1.5 py-1 rounded font-mono text-center focus:border-terminal-primary/50 focus:outline-none"
+              />
+            </div>
+          </div>
+
+          <div className="text-[10px] text-terminal-primary/30 font-mono mb-2">
+            {activeMap.width}x{activeMap.height}px ({Math.round(activeMap.width / (grid?.size || 50))}x{Math.round(activeMap.height / (grid?.size || 50))} cells)
+          </div>
+
+          {activeMap.imageDataUrl && (
+            <>
+              <h4 className="text-[10px] text-terminal-primary/50 uppercase tracking-wider font-mono mb-2 mt-3">
+                Image Transform
+              </h4>
+
+              <div className="mb-2">
+                <div className="flex items-center justify-between mb-0.5">
+                  <label className="text-[10px] text-terminal-primary/50 font-mono">
+                    Image Scale
+                  </label>
+                  <span className="text-[10px] text-terminal-primary/40 font-mono">
+                    {(activeMap.imageScale || 1).toFixed(2)}x
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min={0.1}
+                  max={5}
+                  step={0.01}
+                  value={activeMap.imageScale || 1}
+                  onChange={(e) =>
+                    dispatch({
+                      type: "UPDATE_MAP",
+                      payload: {
+                        id: activeMap.id,
+                        updates: { imageScale: parseFloat(e.target.value) },
+                      },
+                    })
+                  }
+                  className="w-full accent-green-500 h-1"
+                />
+              </div>
+
+              <div className="mb-2">
+                <div className="flex items-center justify-between mb-0.5">
+                  <label className="text-[10px] text-terminal-primary/50 font-mono">
+                    Offset X
+                  </label>
+                  <span className="text-[10px] text-terminal-primary/40 font-mono">
+                    {activeMap.imageOffsetX || 0}px
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min={-2000}
+                  max={2000}
+                  step={1}
+                  value={activeMap.imageOffsetX || 0}
+                  onChange={(e) =>
+                    dispatch({
+                      type: "UPDATE_MAP",
+                      payload: {
+                        id: activeMap.id,
+                        updates: { imageOffsetX: parseInt(e.target.value) },
+                      },
+                    })
+                  }
+                  className="w-full accent-green-500 h-1"
+                />
+              </div>
+
+              <div className="mb-2">
+                <div className="flex items-center justify-between mb-0.5">
+                  <label className="text-[10px] text-terminal-primary/50 font-mono">
+                    Offset Y
+                  </label>
+                  <span className="text-[10px] text-terminal-primary/40 font-mono">
+                    {activeMap.imageOffsetY || 0}px
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min={-2000}
+                  max={2000}
+                  step={1}
+                  value={activeMap.imageOffsetY || 0}
+                  onChange={(e) =>
+                    dispatch({
+                      type: "UPDATE_MAP",
+                      payload: {
+                        id: activeMap.id,
+                        updates: { imageOffsetY: parseInt(e.target.value) },
+                      },
+                    })
+                  }
+                  className="w-full accent-green-500 h-1"
+                />
+              </div>
+
+              <div className="flex gap-1">
+                <button
+                  onClick={() => {
+                    const natW = activeMap.imageNaturalWidth || activeMap.width;
+                    const natH = activeMap.imageNaturalHeight || activeMap.height;
+                    const scaleX = activeMap.width / natW;
+                    const scaleY = activeMap.height / natH;
+                    dispatch({
+                      type: "UPDATE_MAP",
+                      payload: {
+                        id: activeMap.id,
+                        updates: {
+                          imageScale: Math.min(scaleX, scaleY),
+                          imageOffsetX: 0,
+                          imageOffsetY: 0,
+                        },
+                      },
+                    });
+                    toast.success("Image fitted to canvas");
+                  }}
+                  className="flex-1 px-2 py-1 text-[10px] font-mono rounded border border-terminal-border/30 text-terminal-primary/50 hover:text-terminal-primary hover:bg-terminal-primary/10 transition-colors"
+                >
+                  Fit to Canvas
+                </button>
+                <button
+                  onClick={() => {
+                    const natW = activeMap.imageNaturalWidth || 1920;
+                    const natH = activeMap.imageNaturalHeight || 1080;
+                    dispatch({
+                      type: "SET_CANVAS_SIZE",
+                      payload: { mapId: activeMap.id, width: natW, height: natH },
+                    });
+                    dispatch({
+                      type: "UPDATE_MAP",
+                      payload: {
+                        id: activeMap.id,
+                        updates: { imageScale: 1, imageOffsetX: 0, imageOffsetY: 0 },
+                      },
+                    });
+                    toast.success("Canvas matched to image");
+                  }}
+                  className="flex-1 px-2 py-1 text-[10px] font-mono rounded border border-terminal-border/30 text-terminal-primary/50 hover:text-terminal-primary hover:bg-terminal-primary/10 transition-colors"
+                >
+                  Match to Image
+                </button>
+              </div>
+              <button
+                onClick={() => {
+                  const natW = activeMap.imageNaturalWidth || activeMap.width;
+                  const natH = activeMap.imageNaturalHeight || activeMap.height;
+                  const imgScale = activeMap.imageScale || 1;
+                  const scaledW = natW * imgScale;
+                  const scaledH = natH * imgScale;
+                  dispatch({
+                    type: "UPDATE_MAP",
+                    payload: {
+                      id: activeMap.id,
+                      updates: {
+                        imageOffsetX: (activeMap.width - scaledW) / 2,
+                        imageOffsetY: (activeMap.height - scaledH) / 2,
+                      },
+                    },
+                  });
+                  toast.success("Image centered");
+                }}
+                className="w-full mt-1 px-2 py-1 text-[10px] font-mono rounded border border-terminal-border/30 text-terminal-primary/50 hover:text-terminal-primary hover:bg-terminal-primary/10 transition-colors"
+              >
+                Center Image
+              </button>
+
+              {activeMap.imageNaturalWidth > 0 && (
+                <div className="text-[10px] text-terminal-primary/20 font-mono mt-2">
+                  Original: {activeMap.imageNaturalWidth}x{activeMap.imageNaturalHeight}px
+                </div>
+              )}
+            </>
+          )}
+        </div>
       )}
 
       {/* Session */}
