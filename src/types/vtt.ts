@@ -399,6 +399,9 @@ export interface VTTState {
   // Presenter toggles
   showInitiativeOnPresenter: boolean;
 
+  // Selection
+  selectedTokenIds: string[];
+
   // Fog brush settings
   fogBrushSize: number;
   fogBrushMode: "reveal" | "conceal";
@@ -529,6 +532,7 @@ export function createDefaultVTTState(): VTTState {
     showFog: true,
     presenterMode: false,
     showInitiativeOnPresenter: false,
+    selectedTokenIds: [],
     fogBrushSize: 40,
     fogBrushMode: "reveal",
     sidebarPanel: "maps",

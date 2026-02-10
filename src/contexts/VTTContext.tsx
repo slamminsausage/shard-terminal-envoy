@@ -116,6 +116,9 @@ type VTTAction =
   | { type: "SET_CANVAS_SIZE"; payload: { mapId: string; width: number; height: number } }
   // Presenter toggles
   | { type: "TOGGLE_INITIATIVE_PRESENTER" }
+  // Selection
+  | { type: "SET_SELECTION"; payload: string[] }
+  | { type: "CLEAR_SELECTION" }
   // History
   | { type: "PUSH_HISTORY"; payload: VTTHistoryEntry }
   | { type: "UNDO" }
@@ -132,6 +135,172 @@ function updateMapInState(
     ...state,
     maps: state.maps.map((m) => (m.id === mapId ? updater(m) : m)),
   };
+}
+
+// ─── Undo/Redo helpers ──────────────────────────────────────────────────────
+
+function applyHistoryReverse(state: VTTState, entry: VTTHistoryEntry): VTTState {
+  const { type: actionType, mapId } = entry;
+  switch (actionType) {
+    case "stroke-add":
+      return updateMapInState(state, mapId, (m) => ({
+        ...m,
+        strokes: m.strokes.filter((s) => s.id !== (entry.after as any).id),
+      }));
+    case "stroke-remove":
+      return updateMapInState(state, mapId, (m) => ({
+        ...m,
+        strokes: [...m.strokes, entry.before as Stroke],
+      }));
+    case "token-move": {
+      const before = entry.before as { tokenId: string; x: number; y: number };
+      return updateMapInState(state, mapId, (m) => ({
+        ...m,
+        tokens: m.tokens.map((t) =>
+          t.id === before.tokenId ? { ...t, x: before.x, y: before.y } : t
+        ),
+      }));
+    }
+    case "token-add":
+      return updateMapInState(state, mapId, (m) => ({
+        ...m,
+        tokens: m.tokens.filter((t) => t.id !== (entry.after as any).id),
+      }));
+    case "token-remove":
+      return updateMapInState(state, mapId, (m) => ({
+        ...m,
+        tokens: [...m.tokens, entry.before as Token],
+      }));
+    case "text-add":
+      return updateMapInState(state, mapId, (m) => ({
+        ...m,
+        texts: m.texts.filter((t) => t.id !== (entry.after as any).id),
+      }));
+    case "text-remove":
+      return updateMapInState(state, mapId, (m) => ({
+        ...m,
+        texts: [...m.texts, entry.before as TextOverlay],
+      }));
+    case "wall-add":
+      return updateMapInState(state, mapId, (m) => ({
+        ...m,
+        walls: m.walls.filter((w) => w.id !== (entry.after as any).id),
+      }));
+    case "wall-remove":
+      return updateMapInState(state, mapId, (m) => ({
+        ...m,
+        walls: [...m.walls, entry.before as Wall],
+      }));
+    case "note-add":
+      return updateMapInState(state, mapId, (m) => ({
+        ...m,
+        notes: m.notes.filter((n) => n.id !== (entry.after as any).id),
+      }));
+    case "note-remove":
+      return updateMapInState(state, mapId, (m) => ({
+        ...m,
+        notes: [...m.notes, entry.before as MapNote],
+      }));
+    case "light-add":
+      return updateMapInState(state, mapId, (m) => ({
+        ...m,
+        lights: m.lights.filter((l) => l.id !== (entry.after as any).id),
+      }));
+    case "light-remove":
+      return updateMapInState(state, mapId, (m) => ({
+        ...m,
+        lights: [...m.lights, entry.before as LightSource],
+      }));
+    case "fog-update":
+      return updateMapInState(state, mapId, (m) => ({
+        ...m,
+        fog: { ...m.fog, dataUrl: entry.before as string | null },
+      }));
+    default:
+      return state;
+  }
+}
+
+function applyHistoryForward(state: VTTState, entry: VTTHistoryEntry): VTTState {
+  const { type: actionType, mapId } = entry;
+  switch (actionType) {
+    case "stroke-add":
+      return updateMapInState(state, mapId, (m) => ({
+        ...m,
+        strokes: [...m.strokes, entry.after as Stroke],
+      }));
+    case "stroke-remove":
+      return updateMapInState(state, mapId, (m) => ({
+        ...m,
+        strokes: m.strokes.filter((s) => s.id !== (entry.before as any).id),
+      }));
+    case "token-move": {
+      const after = entry.after as { tokenId: string; x: number; y: number };
+      return updateMapInState(state, mapId, (m) => ({
+        ...m,
+        tokens: m.tokens.map((t) =>
+          t.id === after.tokenId ? { ...t, x: after.x, y: after.y } : t
+        ),
+      }));
+    }
+    case "token-add":
+      return updateMapInState(state, mapId, (m) => ({
+        ...m,
+        tokens: [...m.tokens, entry.after as Token],
+      }));
+    case "token-remove":
+      return updateMapInState(state, mapId, (m) => ({
+        ...m,
+        tokens: m.tokens.filter((t) => t.id !== (entry.before as any).id),
+      }));
+    case "text-add":
+      return updateMapInState(state, mapId, (m) => ({
+        ...m,
+        texts: [...m.texts, entry.after as TextOverlay],
+      }));
+    case "text-remove":
+      return updateMapInState(state, mapId, (m) => ({
+        ...m,
+        texts: m.texts.filter((t) => t.id !== (entry.before as any).id),
+      }));
+    case "wall-add":
+      return updateMapInState(state, mapId, (m) => ({
+        ...m,
+        walls: [...m.walls, entry.after as Wall],
+      }));
+    case "wall-remove":
+      return updateMapInState(state, mapId, (m) => ({
+        ...m,
+        walls: m.walls.filter((w) => w.id !== (entry.before as any).id),
+      }));
+    case "note-add":
+      return updateMapInState(state, mapId, (m) => ({
+        ...m,
+        notes: [...m.notes, entry.after as MapNote],
+      }));
+    case "note-remove":
+      return updateMapInState(state, mapId, (m) => ({
+        ...m,
+        notes: m.notes.filter((n) => n.id !== (entry.before as any).id),
+      }));
+    case "light-add":
+      return updateMapInState(state, mapId, (m) => ({
+        ...m,
+        lights: [...m.lights, entry.after as LightSource],
+      }));
+    case "light-remove":
+      return updateMapInState(state, mapId, (m) => ({
+        ...m,
+        lights: m.lights.filter((l) => l.id !== (entry.before as any).id),
+      }));
+    case "fog-update":
+      return updateMapInState(state, mapId, (m) => ({
+        ...m,
+        fog: { ...m.fog, dataUrl: entry.after as string | null },
+      }));
+    default:
+      return state;
+  }
 }
 
 // ─── Reducer ────────────────────────────────────────────────────────────────
@@ -438,18 +607,31 @@ function vttReducer(state: VTTState, action: VTTAction): VTTState {
     case "TOGGLE_INITIATIVE_PRESENTER":
       return { ...state, showInitiativeOnPresenter: !(state.showInitiativeOnPresenter ?? false) };
 
+    // Selection
+    case "SET_SELECTION":
+      return { ...state, selectedTokenIds: action.payload };
+    case "CLEAR_SELECTION":
+      return { ...state, selectedTokenIds: [] };
+
     // History
     case "PUSH_HISTORY": {
       const trimmed = state.history.slice(0, state.historyIndex + 1);
       const next = [...trimmed, action.payload].slice(-MAX_HISTORY);
       return { ...state, history: next, historyIndex: next.length - 1 };
     }
-    case "UNDO":
+    case "UNDO": {
       if (state.historyIndex < 0) return state;
-      return { ...state, historyIndex: state.historyIndex - 1 };
-    case "REDO":
+      const entry = state.history[state.historyIndex];
+      const undoneState = applyHistoryReverse(state, entry);
+      return { ...undoneState, historyIndex: state.historyIndex - 1 };
+    }
+    case "REDO": {
       if (state.historyIndex >= state.history.length - 1) return state;
-      return { ...state, historyIndex: state.historyIndex + 1 };
+      const nextIndex = state.historyIndex + 1;
+      const entry = state.history[nextIndex];
+      const redoneState = applyHistoryForward(state, entry);
+      return { ...redoneState, historyIndex: nextIndex };
+    }
 
     default:
       return state;
@@ -503,6 +685,15 @@ export function VTTProvider({ children }: { children: React.ReactNode }) {
         if (parsed.showInitiativeOnPresenter === undefined) {
           (parsed as any).showInitiativeOnPresenter = false;
         }
+        if (!parsed.selectedTokenIds) {
+          (parsed as any).selectedTokenIds = [];
+        }
+        // Clean up stale video blob URLs (objectURLs don't persist across reloads)
+        for (const m of parsed.maps) {
+          if (m.isVideo && m.imageDataUrl && m.imageDataUrl.startsWith("blob:")) {
+            m.imageDataUrl = null;
+          }
+        }
         return parsed as VTTState;
       }
     } catch (e) {
@@ -516,11 +707,19 @@ export function VTTProvider({ children }: { children: React.ReactNode }) {
     stateRef.current = state;
   }, [state]);
 
-  // Autosave every 2 minutes
+  // Autosave every 2 minutes (strip non-persistent data like blob URLs)
   useEffect(() => {
     const interval = setInterval(() => {
       try {
-        const toSave = stateRef.current;
+        const toSave = JSON.parse(JSON.stringify(stateRef.current)) as VTTState;
+        // Strip blob URLs for video maps (they can't persist)
+        for (const m of toSave.maps) {
+          if (m.isVideo && m.imageDataUrl?.startsWith("blob:")) {
+            m.imageDataUrl = null;
+          }
+        }
+        // Don't persist transient selection state
+        toSave.selectedTokenIds = [];
         localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
       } catch (e) {
         console.warn("VTT autosave failed:", e);
@@ -640,7 +839,14 @@ export function VTTProvider({ children }: { children: React.ReactNode }) {
 
   const saveSession = useCallback(() => {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(stateRef.current));
+      const toSave = JSON.parse(JSON.stringify(stateRef.current)) as VTTState;
+      for (const m of toSave.maps) {
+        if (m.isVideo && m.imageDataUrl?.startsWith("blob:")) {
+          m.imageDataUrl = null;
+        }
+      }
+      toSave.selectedTokenIds = [];
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
     } catch (e) {
       console.warn("VTT save failed:", e);
     }

@@ -16,6 +16,7 @@ export type PresenterMessage =
   | { type: "show-handout"; imageDataUrl: string; name: string }
   | { type: "hide-handout" }
   | { type: "dice-roll"; label: string; dice: number[]; total: number; modifier: number }
+  | { type: "gm-ping"; x: number; y: number }
   | { type: "ping" }
   | { type: "pong" };
 
@@ -69,7 +70,7 @@ export function usePresenterController(state: VTTState, activeMap: VTTMap | null
 
     // Throttle: only send if state actually changed
     const key = activeMap
-      ? `${activeMap.id}-${activeMap.tokens.length}-${activeMap.strokes.length}-${activeMap.texts.length}-${activeMap.scrollX}-${activeMap.scrollY}-${activeMap.zoom}-${activeMap.fog.enabled}-${activeMap.fog.dataUrl?.length || 0}-${activeMap.lights.length}-${activeMap.walls.length}-${activeMap.walls.filter(w => w.type === "door" && w.doorOpen).length}`
+      ? `${activeMap.id}-${activeMap.tokens.length}-${activeMap.strokes.length}-${activeMap.texts.length}-${activeMap.scrollX}-${activeMap.scrollY}-${activeMap.zoom}-${activeMap.fog.enabled}-${activeMap.fog.dataUrl?.length || 0}-${activeMap.lights.length}-${activeMap.walls.length}-${activeMap.walls.filter(w => w.type === "door" && w.doorOpen).length}-${(activeMap.aoeTemplates || []).length}-${activeMap.notes.length}`
       : "null";
 
     if (key === lastSentRef.current) return;
@@ -133,7 +134,15 @@ export function usePresenterController(state: VTTState, activeMap: VTTMap | null
     []
   );
 
-  return { showHandout, hideHandout, broadcastDiceRoll };
+  const broadcastPing = useCallback((x: number, y: number) => {
+    channelRef.current?.postMessage({
+      type: "gm-ping",
+      x,
+      y,
+    } satisfies PresenterMessage);
+  }, []);
+
+  return { showHandout, hideHandout, broadcastDiceRoll, broadcastPing };
 }
 
 /**
@@ -146,7 +155,8 @@ export function usePresenterReceiver(
   onHideHandout: () => void,
   onDiceRoll?: (label: string, dice: number[], total: number, modifier: number) => void,
   onClocksSync?: (clocks: Clock[]) => void,
-  onInitiativeSync?: (initiative: InitiativeEntry[], showOnPresenter: boolean) => void
+  onInitiativeSync?: (initiative: InitiativeEntry[], showOnPresenter: boolean) => void,
+  onGmPing?: (x: number, y: number) => void
 ) {
   const channelRef = useRef<BroadcastChannel | null>(null);
 
@@ -176,6 +186,9 @@ export function usePresenterReceiver(
         case "sync-initiative":
           onInitiativeSync?.(e.data.initiative, e.data.showOnPresenter);
           break;
+        case "gm-ping":
+          onGmPing?.(e.data.x, e.data.y);
+          break;
         case "pong":
           // Controller is alive
           break;
@@ -188,5 +201,5 @@ export function usePresenterReceiver(
     return () => {
       channelRef.current?.close();
     };
-  }, [onMapSync, onParticlesSync, onShowHandout, onHideHandout, onDiceRoll, onClocksSync, onInitiativeSync]);
+  }, [onMapSync, onParticlesSync, onShowHandout, onHideHandout, onDiceRoll, onClocksSync, onInitiativeSync, onGmPing]);
 }
