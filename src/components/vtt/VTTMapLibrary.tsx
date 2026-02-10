@@ -92,7 +92,13 @@ export default function VTTMapLibrary() {
             >
               {/* Thumbnail / placeholder */}
               <div className="w-full h-16 rounded bg-terminal-bg-dark mb-1.5 overflow-hidden flex items-center justify-center">
-                {map.imageDataUrl ? (
+                {map.imageDataUrl && map.isVideo ? (
+                  <video
+                    src={map.imageDataUrl}
+                    muted
+                    className="w-full h-full object-cover opacity-70"
+                  />
+                ) : map.imageDataUrl ? (
                   <img
                     src={map.imageDataUrl}
                     alt={map.name}

@@ -6,6 +6,8 @@ import { useVTT } from "@/contexts/VTTContext";
 import { useVTTParticles } from "@/hooks/useVTTParticles";
 import { useVTTKeyboard } from "@/hooks/useVTTKeyboard";
 import { usePresenterController } from "@/hooks/useVTTPresenter";
+import { useVTTAudio } from "@/hooks/useVTTAudio";
+import { VTTAudioProvider } from "@/contexts/VTTAudioContext";
 
 export default function VTTInterface() {
   const { state, activeMap } = useVTT();
@@ -18,6 +20,9 @@ export default function VTTInterface() {
 
   // Presenter mode broadcast
   usePresenterController(state, activeMap);
+
+  // Audio - hoisted here so it persists across sidebar panel changes
+  const audioApi = useVTTAudio();
 
   // Resize particle canvas to match container
   useEffect(() => {
@@ -41,27 +46,29 @@ export default function VTTInterface() {
   }, [setCanvas, state.particles.enabled]);
 
   return (
-    <div className="flex h-full w-full overflow-hidden bg-terminal-bg-dark">
-      {/* Left toolbar */}
-      <VTTToolbar />
+    <VTTAudioProvider value={audioApi}>
+      <div className="flex h-full w-full overflow-hidden bg-terminal-bg-dark">
+        {/* Left toolbar */}
+        <VTTToolbar />
 
-      {/* Main canvas area */}
-      <div ref={containerRef} className="flex-1 relative min-w-0">
-        <VTTCanvas />
+        {/* Main canvas area */}
+        <div ref={containerRef} className="flex-1 relative min-w-0">
+          <VTTCanvas />
 
-        {/* Particle overlay - always mounted, visibility controlled via CSS */}
-        <canvas
-          ref={particleCanvasRef}
-          className="absolute inset-0 w-full h-full pointer-events-none"
-          style={{
-            zIndex: 10,
-            display: state.particles.enabled ? "block" : "none",
-          }}
-        />
+          {/* Particle overlay - always mounted, visibility controlled via CSS */}
+          <canvas
+            ref={particleCanvasRef}
+            className="absolute inset-0 w-full h-full pointer-events-none"
+            style={{
+              zIndex: 10,
+              display: state.particles.enabled ? "block" : "none",
+            }}
+          />
+        </div>
+
+        {/* Right sidebar */}
+        <VTTSidebar />
       </div>
-
-      {/* Right sidebar */}
-      <VTTSidebar />
-    </div>
+    </VTTAudioProvider>
   );
 }

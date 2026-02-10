@@ -544,6 +544,49 @@ export function VTTProvider({ children }: { children: React.ReactNode }) {
 
   const loadMapImage = useCallback(
     async (mapId: string, file: File) => {
+      const isVideo = file.type.startsWith("video/");
+
+      if (isVideo) {
+        // Use objectURL for video (dataURL would be too large)
+        const url = URL.createObjectURL(file);
+        const video = document.createElement("video");
+        video.muted = true;
+        video.preload = "metadata";
+
+        return new Promise<void>((resolve, reject) => {
+          video.onloadedmetadata = () => {
+            const currentMap = stateRef.current.maps.find((m) => m.id === mapId);
+            const canvasW = currentMap?.width || 1920;
+            const canvasH = currentMap?.height || 1080;
+            const scaleX = canvasW / video.videoWidth;
+            const scaleY = canvasH / video.videoHeight;
+            const fitScale = Math.min(scaleX, scaleY);
+
+            dispatch({
+              type: "SET_MAP_IMAGE",
+              payload: { mapId, dataUrl: url, width: canvasW, height: canvasH },
+            });
+            dispatch({
+              type: "UPDATE_MAP",
+              payload: {
+                id: mapId,
+                updates: {
+                  isVideo: true,
+                  imageScale: fitScale,
+                  imageOffsetX: 0,
+                  imageOffsetY: 0,
+                  imageNaturalWidth: video.videoWidth,
+                  imageNaturalHeight: video.videoHeight,
+                },
+              },
+            });
+            resolve();
+          };
+          video.onerror = () => reject(new Error("Failed to load video"));
+          video.src = url;
+        });
+      }
+
       return new Promise<void>((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = (e) => {
@@ -574,6 +617,7 @@ export function VTTProvider({ children }: { children: React.ReactNode }) {
               payload: {
                 id: mapId,
                 updates: {
+                  isVideo: false,
                   imageScale: fitScale,
                   imageOffsetX: 0,
                   imageOffsetY: 0,

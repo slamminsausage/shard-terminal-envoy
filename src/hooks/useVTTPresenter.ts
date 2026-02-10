@@ -69,7 +69,7 @@ export function usePresenterController(state: VTTState, activeMap: VTTMap | null
 
     // Throttle: only send if state actually changed
     const key = activeMap
-      ? `${activeMap.id}-${activeMap.tokens.length}-${activeMap.strokes.length}-${activeMap.scrollX}-${activeMap.scrollY}-${activeMap.zoom}-${activeMap.fog.enabled}-${activeMap.lights.length}-${activeMap.walls.length}-${activeMap.walls.filter(w => w.type === "door" && w.doorOpen).length}`
+      ? `${activeMap.id}-${activeMap.tokens.length}-${activeMap.strokes.length}-${activeMap.texts.length}-${activeMap.scrollX}-${activeMap.scrollY}-${activeMap.zoom}-${activeMap.fog.enabled}-${activeMap.fog.dataUrl?.length || 0}-${activeMap.lights.length}-${activeMap.walls.length}-${activeMap.walls.filter(w => w.type === "door" && w.doorOpen).length}`
       : "null";
 
     if (key === lastSentRef.current) return;

@@ -1,5 +1,5 @@
 import { useVTT } from "@/contexts/VTTContext";
-import { useVTTAudio } from "@/hooks/useVTTAudio";
+import { useVTTAudioApi } from "@/contexts/VTTAudioContext";
 import {
   Volume2,
   VolumeX,
@@ -13,7 +13,7 @@ import { useRef, useEffect, useCallback, useState } from "react";
 
 export default function VTTAudioMixer() {
   const { state, dispatch } = useVTT();
-  const audio = useVTTAudio();
+  const audio = useVTTAudioApi();
   const visualizerRef = useRef<HTMLCanvasElement>(null);
   const animRef = useRef<number>(0);
   const [visualizerActive, setVisualizerActive] = useState(false);
