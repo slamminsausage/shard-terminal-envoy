@@ -5,84 +5,43 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Label } from '@/components/ui/label';
 import { Loader2, Terminal, Lock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { dbHelpers } from '@/lib/supabase';
-
-// Session token generation for secure authentication
-const generateSessionToken = (): string => {
-  const timestamp = Date.now().toString(36);
-  const randomPart = Math.random().toString(36).substring(2, 15);
-  const additionalRandom = Math.random().toString(36).substring(2, 15);
-  return `${timestamp}-${randomPart}-${additionalRandom}`;
-};
-
-// Validate password against backend (game_settings table)
-const validatePasswordWithBackend = async (password: string): Promise<boolean> => {
-  try {
-    // Get the campaign password from game_settings
-    const storedPassword = await dbHelpers.getGameSetting<string>('campaign_password');
-
-    // If no password is set in the database, use default (for initial setup)
-    // In production, you should set this via Supabase dashboard or admin panel
-    const expectedPassword = storedPassword || 'TRAVELLER2024';
-
-    return password.toUpperCase() === expectedPassword.toUpperCase();
-  } catch (error) {
-    console.error('Error validating password:', error);
-    // Fallback to default if database is unavailable
-    return password.toUpperCase() === 'TRAVELLER2024';
-  }
-};
+import { useCampaign } from '@/contexts/CampaignContext';
 
 interface AccessCodeEntryProps {
   onSuccess?: () => void;
 }
 
 export default function AccessCodeEntry({ onSuccess }: AccessCodeEntryProps) {
-  const [password, setPassword] = useState('');
+  const [code, setCode] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
+  const { loginWithCode } = useCampaign();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!password.trim()) {
+    if (!code.trim()) {
       return;
     }
 
     setIsSubmitting(true);
 
     try {
-      // Validate password with backend
-      const isValid = await validatePasswordWithBackend(password);
+      const result = await loginWithCode(code.trim());
 
-      if (isValid) {
-        // Generate a secure session token
-        const sessionToken = generateSessionToken();
-
-        // Store session token with timestamp for expiration checking
-        const session = {
-          token: sessionToken,
-          createdAt: Date.now(),
-          expiresAt: Date.now() + (24 * 60 * 60 * 1000), // 24 hours
-        };
-        localStorage.setItem('traveller_session', JSON.stringify(session));
-
-        // Keep backward compatibility
-        localStorage.setItem('traveller_authenticated', 'true');
-
+      if (result.success) {
         toast({
           title: "Access Granted",
           description: "Welcome to the Traveller Terminal System!",
         });
 
-        // Call onSuccess to trigger parent re-render
         if (onSuccess) {
           onSuccess();
         }
       } else {
         toast({
           title: "Access Denied",
-          description: "Incorrect password. Please try again.",
+          description: result.error || "Invalid access code. Please try again.",
           variant: "destructive",
         });
       }
@@ -98,10 +57,6 @@ export default function AccessCodeEntry({ onSuccess }: AccessCodeEntryProps) {
     setIsSubmitting(false);
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setPassword(e.target.value);
-  };
-
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-md space-y-6">
@@ -115,7 +70,7 @@ export default function AccessCodeEntry({ onSuccess }: AccessCodeEntryProps) {
             TRAVELLER TERMINAL
           </h1>
           <p className="text-primary/60 font-mono text-sm">
-            Vánagandr Mainframe Access
+            V&aacute;nagandr Mainframe Access
           </p>
         </div>
 
@@ -123,43 +78,43 @@ export default function AccessCodeEntry({ onSuccess }: AccessCodeEntryProps) {
         <Card className="border-primary/30 bg-background/50">
           <CardHeader className="text-center">
             <CardTitle className="text-primary font-mono">
-              Campaign Access Required
+              Authentication Required
             </CardTitle>
             <CardDescription className="text-primary/60 font-mono text-sm">
-              Enter the campaign password to continue
+              Enter your access code to continue
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="password" className="text-primary font-mono text-sm">
-                  Campaign Password
+                <Label htmlFor="access-code" className="text-primary font-mono text-sm">
+                  Access Code
                 </Label>
                 <Input
-                  id="password"
+                  id="access-code"
                   type="password"
-                  value={password}
-                  onChange={handleInputChange}
-                  placeholder="Enter campaign password"
+                  value={code}
+                  onChange={(e) => setCode(e.target.value)}
+                  placeholder="Enter access code"
                   className="font-mono bg-background/50 border-primary/30 text-primary placeholder:text-primary/40"
                   disabled={isSubmitting}
                   autoComplete="off"
                   autoFocus
                 />
               </div>
-              
+
               <Button
                 type="submit"
-                disabled={password.length === 0 || isSubmitting}
+                disabled={code.length === 0 || isSubmitting}
                 className="w-full font-mono bg-primary text-background hover:bg-primary/90 disabled:opacity-50"
               >
                 {isSubmitting ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Checking...
+                    Authenticating...
                   </>
                 ) : (
-                  'Access Campaign'
+                  'Access Terminal'
                 )}
               </Button>
             </form>

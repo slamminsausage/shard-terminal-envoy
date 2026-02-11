@@ -1,12 +1,16 @@
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Calendar, ListTodo, ScrollText, FileText, Image } from 'lucide-react';
+import { Calendar, ListTodo, ScrollText, FileText, Image, Users } from 'lucide-react';
 import { NotesInterface } from './NotesInterface';
 import { SessionsList } from '../sessions/SessionsList';
 import { QuestBoard } from '../quests/QuestBoard';
 import { CalendarView } from '../calendar/CalendarView';
+import PlayerManagement from '../auth/PlayerManagement';
+import { useCampaign } from '@/contexts/CampaignContext';
 
 export const CampaignInterface: React.FC = () => {
+  const { isGM } = useCampaign();
+
   const [activeSubTab, setActiveSubTab] = useState(() => {
     if (typeof window === "undefined") return "sessions";
     return localStorage.getItem("campaign_active_subtab") || "sessions";
@@ -31,7 +35,7 @@ export const CampaignInterface: React.FC = () => {
 
       <div className="interface-content">
         <Tabs value={activeSubTab} onValueChange={setActiveSubTab} className="w-full">
-          <TabsList className="terminal-tabs-list grid-cols-5 mb-4">
+          <TabsList className={`terminal-tabs-list ${isGM ? 'grid-cols-6' : 'grid-cols-5'} mb-4`}>
             <TabsTrigger value="sessions" className="terminal-tab-trigger">
               <ScrollText className="h-4 w-4" />
               <span className="hidden sm:inline">Sessions</span>
@@ -52,6 +56,12 @@ export const CampaignInterface: React.FC = () => {
               <Image className="h-4 w-4" />
               <span className="hidden sm:inline">Handouts</span>
             </TabsTrigger>
+            {isGM && (
+              <TabsTrigger value="players" className="terminal-tab-trigger">
+                <Users className="h-4 w-4" />
+                <span className="hidden sm:inline">Players</span>
+              </TabsTrigger>
+            )}
           </TabsList>
 
           <TabsContent value="sessions" className="mt-0">
@@ -77,6 +87,12 @@ export const CampaignInterface: React.FC = () => {
               <NotesInterface defaultTab="handouts" />
             </div>
           </TabsContent>
+
+          {isGM && (
+            <TabsContent value="players" className="mt-0">
+              <PlayerManagement />
+            </TabsContent>
+          )}
         </Tabs>
       </div>
     </div>

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback, ReactNode } from 'react';
-import { Character, Vehicle } from '@/types/database';
+import { Character, Vehicle, Player } from '@/types/database';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from "@/integrations/supabase/client";
 import { dbHelpers } from '@/lib/supabase';
@@ -12,21 +12,21 @@ interface Session {
   expiresAt: number;
 }
 
+const PLAYER_STORAGE_KEY = 'traveller_current_player';
+
 const isValidSession = (): boolean => {
   try {
     const sessionStr = localStorage.getItem('traveller_session');
     if (!sessionStr) {
-      // Fallback for backward compatibility
       return localStorage.getItem('traveller_authenticated') === 'true';
     }
 
     const session: Session = JSON.parse(sessionStr);
 
-    // Check if session has expired
     if (Date.now() > session.expiresAt) {
-      // Clear expired session
       localStorage.removeItem('traveller_session');
       localStorage.removeItem('traveller_authenticated');
+      localStorage.removeItem(PLAYER_STORAGE_KEY);
       return false;
     }
 
@@ -36,19 +36,40 @@ const isValidSession = (): boolean => {
   }
 };
 
+const getStoredPlayer = (): Player | null => {
+  try {
+    const raw = localStorage.getItem(PLAYER_STORAGE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw) as Player;
+  } catch {
+    return null;
+  }
+};
+
+// Generate a session token
+const generateSessionToken = (): string => {
+  const timestamp = Date.now().toString(36);
+  const randomPart = Math.random().toString(36).substring(2, 15);
+  const additionalRandom = Math.random().toString(36).substring(2, 15);
+  return `${timestamp}-${randomPart}-${additionalRandom}`;
+};
+
 interface CampaignContextType {
   // Authentication state
   isAuthenticated: boolean;
   isLoading: boolean;
-  
+  currentPlayer: Player | null;
+  isGM: boolean;
+
   // Campaign data
   characters: Character[];
   vehicles: Vehicle[];
-  
+
   // Authentication methods
   checkAuthentication: () => boolean;
+  loginWithCode: (code: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
-  
+
   // Data management
   refreshData: () => Promise<void>;
   saveCharacter: (characterData: Partial<Character>) => Promise<Character | null>;
@@ -75,36 +96,98 @@ interface CampaignProviderProps {
 
 export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [currentPlayer, setCurrentPlayer] = useState<Player | null>(getStoredPlayer);
   const [characters, setCharacters] = useState<Character[]>([]);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
+  const isGM = currentPlayer?.role === 'gm';
+
   // Refs to track latest state for localStorage backup (avoids stale closure)
   const charactersRef = useRef<Character[]>([]);
   const vehiclesRef = useRef<Vehicle[]>([]);
+  const currentPlayerRef = useRef<Player | null>(currentPlayer);
 
-  // Keep refs in sync with state
-  useEffect(() => {
-    charactersRef.current = characters;
-  }, [characters]);
-
-  useEffect(() => {
-    vehiclesRef.current = vehicles;
-  }, [vehicles]);
+  useEffect(() => { charactersRef.current = characters; }, [characters]);
+  useEffect(() => { vehiclesRef.current = vehicles; }, [vehicles]);
+  useEffect(() => { currentPlayerRef.current = currentPlayer; }, [currentPlayer]);
 
   const checkAuthentication = (): boolean => {
     const isAuth = isValidSession();
     setIsAuthenticated(isAuth);
+    if (!isAuth) {
+      setCurrentPlayer(null);
+    }
     return isAuth;
   };
 
+  const loginWithCode = useCallback(async (code: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      // Try player-based login first (new system)
+      const player = await dbHelpers.getPlayerByAccessCode(code);
+
+      if (player) {
+        // Player found - set up session
+        const session = {
+          token: generateSessionToken(),
+          createdAt: Date.now(),
+          expiresAt: Date.now() + (24 * 60 * 60 * 1000),
+        };
+        localStorage.setItem('traveller_session', JSON.stringify(session));
+        localStorage.setItem('traveller_authenticated', 'true');
+        localStorage.setItem(PLAYER_STORAGE_KEY, JSON.stringify(player));
+
+        setCurrentPlayer(player);
+        setIsAuthenticated(true);
+        return { success: true };
+      }
+
+      // Fallback: check legacy campaign password for backward compatibility
+      const storedPassword = await dbHelpers.getGameSetting<string>('campaign_password');
+      const expectedPassword = storedPassword || 'TRAVELLER2024';
+
+      if (code.toUpperCase() === expectedPassword.toUpperCase()) {
+        // Legacy password match - create a session as GM (backward compat)
+        const legacyGM: Player = {
+          id: 'legacy-gm',
+          name: 'Game Master',
+          role: 'gm',
+          access_code: 'LEGACY',
+          is_active: true,
+          last_accessed: new Date().toISOString(),
+          created_at: new Date().toISOString(),
+        };
+
+        const session = {
+          token: generateSessionToken(),
+          createdAt: Date.now(),
+          expiresAt: Date.now() + (24 * 60 * 60 * 1000),
+        };
+        localStorage.setItem('traveller_session', JSON.stringify(session));
+        localStorage.setItem('traveller_authenticated', 'true');
+        localStorage.setItem(PLAYER_STORAGE_KEY, JSON.stringify(legacyGM));
+
+        setCurrentPlayer(legacyGM);
+        setIsAuthenticated(true);
+        return { success: true };
+      }
+
+      return { success: false, error: 'Invalid access code.' };
+    } catch (error) {
+      console.error('Login error:', error);
+      return { success: false, error: 'Authentication error. Please try again.' };
+    }
+  }, []);
+
   const logout = () => {
     setIsAuthenticated(false);
+    setCurrentPlayer(null);
     setCharacters([]);
     setVehicles([]);
     localStorage.removeItem('traveller_authenticated');
     localStorage.removeItem('traveller_session');
+    localStorage.removeItem(PLAYER_STORAGE_KEY);
 
     toast({
       title: "Logged Out",
@@ -115,18 +198,30 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
   const refreshData = useCallback(async () => {
     setIsLoading(true);
     try {
-      // Fetch all characters
-      const charactersData = await dbHelpers.getAllCharacters();
+      const player = currentPlayerRef.current;
+
+      // GM sees all characters; players see their own + NPCs
+      let charactersData: any[];
+      if (!player || player.role === 'gm') {
+        charactersData = await dbHelpers.getAllCharacters();
+      } else {
+        // Fetch all and filter client-side (simpler than multiple queries)
+        const allChars = await dbHelpers.getAllCharacters();
+        charactersData = allChars.filter((c: any) =>
+          c.player_id === player.id ||
+          c.player_id === 'campaign' ||
+          c.character_type === 'npc'
+        );
+      }
       setCharacters(charactersData as Character[]);
 
-      // Fetch all vehicles
+      // All players see all vehicles (shared crew ship)
       const vehiclesData = await dbHelpers.getAllVehicles();
       setVehicles(vehiclesData as Vehicle[]);
     } catch (error) {
       console.error('Failed to refresh data:', error);
-      // Don't show error toast immediately, might just be env vars not set up yet
 
-      // Fallback to localStorage for development
+      // Fallback to localStorage
       const savedCharacters = localStorage.getItem('traveller_characters');
       const savedVehicles = localStorage.getItem('traveller_vehicles');
       let usedLocalCharacters = false;
@@ -162,7 +257,6 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
         }
       }
 
-      // Fallback to typed defaults so UI still has content in offline mode
       if (!usedLocalCharacters) {
         setCharacters(defaultCharacters);
       }
@@ -174,30 +268,39 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
     }
   }, []);
 
-  // Check authentication on mount and whenever it changes
+  // Check authentication on mount
   useEffect(() => {
     const isAuth = checkAuthentication();
     setIsAuthenticated(isAuth);
-
-    // Always try to refresh data for view components, regardless of auth state
-    // This allows character/vehicle view tabs to work even without shared localStorage
+    // Always try to refresh data
     refreshData();
   }, [refreshData]);
 
+  // Re-fetch data when player changes
+  useEffect(() => {
+    if (currentPlayer) {
+      refreshData();
+    }
+  }, [currentPlayer?.id]);
+
   const saveCharacter = async (characterData: Partial<Character>): Promise<Character | null> => {
     try {
+      // Use current player's ID for new characters
+      const player = currentPlayerRef.current;
+      if (!characterData.id && player && player.id !== 'legacy-gm') {
+        characterData.player_id = player.id;
+      }
+
       const savedCharacter = await dbHelpers.saveCharacter(characterData);
-      
-      // Update local state
+
       if (characterData.id) {
-        setCharacters(prev => 
+        setCharacters(prev =>
           prev.map(char => char.id === savedCharacter.id ? savedCharacter as Character : char)
         );
       } else {
         setCharacters(prev => [...prev, savedCharacter as Character]);
       }
 
-      // Also save to localStorage as backup (using ref to get latest state)
       const currentCharacters = charactersRef.current;
       const updatedCharacters = characterData.id
         ? currentCharacters.map(char => char.id === savedCharacter.id ? savedCharacter as Character : char)
@@ -212,19 +315,19 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
       return savedCharacter as Character;
     } catch (error) {
       console.error('Failed to save character:', error);
-      
-      // Fallback to localStorage
+
+      const player = currentPlayerRef.current;
       const characterWithId = {
         ...characterData,
         id: characterData.id || `char_${Date.now()}`,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
-        player_id: 'campaign'
+        player_id: characterData.player_id || (player && player.id !== 'legacy-gm' ? player.id : 'campaign')
       };
-      
+
       let updatedCharacters;
       if (characterData.id) {
-        updatedCharacters = characters.map(char => 
+        updatedCharacters = characters.map(char =>
           char.id === characterData.id ? characterWithId as Character : char
         );
         setCharacters(updatedCharacters);
@@ -232,9 +335,9 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
         updatedCharacters = [...characters, characterWithId as Character];
         setCharacters(updatedCharacters);
       }
-      
+
       localStorage.setItem('traveller_characters', JSON.stringify(updatedCharacters));
-      
+
       toast({
         title: "Character Saved Locally",
         description: `${characterWithId.name} saved to local storage (database unavailable).`,
@@ -248,7 +351,6 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
     try {
       const savedVehicle = await dbHelpers.saveVehicle(vehicleData);
 
-      // Update local state
       if (vehicleData.id) {
         setVehicles(prev =>
           prev.map(vehicle => vehicle.id === savedVehicle.id ? savedVehicle as Vehicle : vehicle)
@@ -257,7 +359,6 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
         setVehicles(prev => [...prev, savedVehicle as Vehicle]);
       }
 
-      // Also save to localStorage as backup (using ref to get latest state)
       const currentVehicles = vehiclesRef.current;
       const updatedVehicles = vehicleData.id
         ? currentVehicles.map(vehicle => vehicle.id === savedVehicle.id ? savedVehicle as Vehicle : vehicle)
@@ -273,7 +374,6 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
     } catch (error) {
       console.error('Failed to save vehicle:', error);
 
-      // Fallback to localStorage
       const vehicleWithId = {
         ...vehicleData,
         id: vehicleData.id || `vehicle_${Date.now()}`,
@@ -374,16 +474,24 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
   };
 
   const deleteCharacter = async (characterId: string): Promise<boolean> => {
+    // Players can only delete their own characters
+    const player = currentPlayerRef.current;
+    if (player && player.role !== 'gm') {
+      const char = charactersRef.current.find(c => c.id === characterId);
+      if (char && char.player_id !== player.id) {
+        toast({
+          title: "Permission Denied",
+          description: "You can only delete your own characters.",
+          variant: "destructive",
+        });
+        return false;
+      }
+    }
+
     try {
-      // Delete the character first
       await dbHelpers.deleteCharacter(characterId);
-      
-      // Update local state - remove character
       setCharacters(prev => prev.filter(char => char.id !== characterId));
-      
-      // Note: For now, we're not implementing complex crew assignment tracking
-      // In a future enhancement, we could track and update vehicle crew assignments
-      
+
       toast({
         title: "Character Deleted",
         description: "Character has been deleted successfully.",
@@ -402,13 +510,21 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
   };
 
   const deleteVehicle = async (vehicleId: string): Promise<boolean> => {
+    // Only GM can delete vehicles
+    const player = currentPlayerRef.current;
+    if (player && player.role !== 'gm') {
+      toast({
+        title: "Permission Denied",
+        description: "Only the Game Master can delete vehicles.",
+        variant: "destructive",
+      });
+      return false;
+    }
+
     try {
-      // Delete the vehicle from database
       await dbHelpers.deleteVehicle(vehicleId);
-      
-      // Update local state - remove vehicle
       setVehicles(prev => prev.filter(vehicle => vehicle.id !== vehicleId));
-      
+
       toast({
         title: "Vehicle Deleted",
         description: "Vehicle has been deleted successfully.",
@@ -429,9 +545,12 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
   const value: CampaignContextType = {
     isAuthenticated,
     isLoading,
+    currentPlayer,
+    isGM,
     characters,
     vehicles,
     checkAuthentication,
+    loginWithCode,
     logout,
     refreshData,
     saveCharacter,
