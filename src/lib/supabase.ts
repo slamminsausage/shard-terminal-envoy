@@ -1,7 +1,7 @@
 // Use the integrated Supabase client instead of environment variables
 import { supabase } from "@/integrations/supabase/client";
 import type { WorldNote, HexMarker } from "@/types/navigation";
-import type { Character, Vehicle } from "@/types/database";
+import type { Character, Vehicle, Player } from "@/types/database";
 import type { PlayerNote } from "@/types/notes";
 import type { Json } from "@/integrations/supabase/types";
 
@@ -299,8 +299,8 @@ export const dbHelpers = {
         }
         return data
       } else {
-        // Create new character - add player_id for new records
-        dbPayload.player_id = 'campaign';
+        // Create new character - use provided player_id or fall back to 'campaign'
+        dbPayload.player_id = characterData.player_id || 'campaign';
 
         const { data, error } = await supabase
           .from('characters')
@@ -2450,6 +2450,217 @@ export const dbHelpers = {
     } catch (error) {
       console.error('Failed to save ship combat action:', error);
       throw error;
+    }
+  },
+
+  // ─── Player Management ───────────────────────────────────────────
+
+  async getPlayerByAccessCode(code: string): Promise<Player | null> {
+    if (supabaseDisabled) {
+      const players = getLocalGameSetting<Player[]>('players') || [];
+      return players.find(p => p.access_code.toUpperCase() === code.toUpperCase() && p.is_active) || null;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('players')
+        .select('*')
+        .ilike('access_code', code)
+        .eq('is_active', true)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Database error:', error);
+        const players = getLocalGameSetting<Player[]>('players') || [];
+        return players.find(p => p.access_code.toUpperCase() === code.toUpperCase() && p.is_active) || null;
+      }
+
+      if (data) {
+        // Update last_accessed timestamp
+        await supabase
+          .from('players')
+          .update({ last_accessed: new Date().toISOString() })
+          .eq('id', data.id);
+      }
+
+      return data as Player | null;
+    } catch (error) {
+      console.error('Failed to get player by access code:', error);
+      const players = getLocalGameSetting<Player[]>('players') || [];
+      return players.find(p => p.access_code.toUpperCase() === code.toUpperCase() && p.is_active) || null;
+    }
+  },
+
+  async getAllPlayers(): Promise<Player[]> {
+    if (supabaseDisabled) {
+      return getLocalGameSetting<Player[]>('players') || [];
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('players')
+        .select('*')
+        .order('created_at', { ascending: true });
+
+      if (error) {
+        console.error('Database error:', error);
+        return getLocalGameSetting<Player[]>('players') || [];
+      }
+
+      return (data || []) as Player[];
+    } catch (error) {
+      console.error('Failed to fetch players:', error);
+      return getLocalGameSetting<Player[]>('players') || [];
+    }
+  },
+
+  async createPlayer(name: string, role: 'gm' | 'player', accessCode: string): Promise<Player | null> {
+    const newPlayer: Player = {
+      id: crypto.randomUUID(),
+      name,
+      role,
+      access_code: accessCode,
+      is_active: true,
+      last_accessed: null,
+      created_at: new Date().toISOString(),
+    };
+
+    if (supabaseDisabled) {
+      const players = getLocalGameSetting<Player[]>('players') || [];
+      players.push(newPlayer);
+      saveLocalGameSetting('players', players);
+      return newPlayer;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('players')
+        .insert([{ name, role, access_code: accessCode }])
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Database error:', error);
+        throw error;
+      }
+
+      return data as Player;
+    } catch (error) {
+      console.error('Failed to create player:', error);
+      throw error;
+    }
+  },
+
+  async updatePlayer(id: string, updates: Partial<Pick<Player, 'name' | 'role' | 'is_active' | 'access_code'>>): Promise<boolean> {
+    if (supabaseDisabled) {
+      const players = getLocalGameSetting<Player[]>('players') || [];
+      const idx = players.findIndex(p => p.id === id);
+      if (idx >= 0) {
+        players[idx] = { ...players[idx], ...updates };
+        saveLocalGameSetting('players', players);
+      }
+      return true;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('players')
+        .update(updates)
+        .eq('id', id);
+
+      if (error) {
+        console.error('Database error:', error);
+        return false;
+      }
+      return true;
+    } catch (error) {
+      console.error('Failed to update player:', error);
+      return false;
+    }
+  },
+
+  async deletePlayer(id: string): Promise<boolean> {
+    if (supabaseDisabled) {
+      const players = getLocalGameSetting<Player[]>('players') || [];
+      saveLocalGameSetting('players', players.filter(p => p.id !== id));
+      return true;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('players')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        console.error('Database error:', error);
+        return false;
+      }
+      return true;
+    } catch (error) {
+      console.error('Failed to delete player:', error);
+      return false;
+    }
+  },
+
+  async reassignCharacter(characterId: string, newPlayerId: string): Promise<boolean> {
+    if (supabaseDisabled) {
+      // For localStorage mode, update character's player_id in localStorage
+      const savedChars = localStorage.getItem('traveller_characters');
+      if (savedChars) {
+        try {
+          const chars = JSON.parse(savedChars);
+          const idx = chars.findIndex((c: any) => c.id === characterId);
+          if (idx >= 0) {
+            chars[idx].player_id = newPlayerId;
+            localStorage.setItem('traveller_characters', JSON.stringify(chars));
+          }
+        } catch { /* ignore */ }
+      }
+      return true;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('characters')
+        .update({ player_id: newPlayerId })
+        .eq('id', characterId);
+
+      if (error) {
+        console.error('Database error:', error);
+        return false;
+      }
+      return true;
+    } catch (error) {
+      console.error('Failed to reassign character:', error);
+      return false;
+    }
+  },
+
+  async getCharactersByPlayer(playerId: string): Promise<any[]> {
+    if (supabaseDisabled) {
+      const savedChars = localStorage.getItem('traveller_characters');
+      if (savedChars) {
+        try {
+          const chars = JSON.parse(savedChars);
+          return chars.filter((c: any) => c.player_id === playerId);
+        } catch { /* ignore */ }
+      }
+      return [];
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('characters')
+        .select('*')
+        .eq('player_id', playerId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('Failed to fetch characters by player:', error);
+      return [];
     }
   }
 }

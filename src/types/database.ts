@@ -1,12 +1,15 @@
 // Database types for the Traveller Terminal system
 
+export type PlayerRole = 'gm' | 'player';
+
 export interface Player {
   id: string;
   name: string;
+  role: PlayerRole;
   access_code: string;
-  created_at: string;
-  last_accessed: string;
   is_active: boolean;
+  last_accessed: string | null;
+  created_at: string;
 }
 
 export interface Character {
