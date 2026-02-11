@@ -208,6 +208,136 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
     return isAuth;
   };
 
+  // ─── Login (Supabase Auth) ────────────────────────────────────
+
+  const login = useCallback(async (username: string, password: string): Promise<LoginResult> => {
+    const trimmedUsername = username.trim().toLowerCase();
+    const email = `${trimmedUsername}@${EMAIL_DOMAIN}`;
+
+    // Helper: establish session + player state from edge function response
+    const finishLogin = async (accessToken: string, refreshToken: string, player: any) => {
+      if (player) {
+        setCurrentPlayer(player);
+        currentPlayerRef.current = player;
+        localStorage.setItem(PLAYER_STORAGE_KEY, JSON.stringify(player));
+        setIsAuthenticated(true);
+      }
+
+      skipNextAuthEvent.current = true;
+
+      const { error: sessionError } = await supabase.auth.setSession({
+        access_token: accessToken,
+        refresh_token: refreshToken,
+      });
+
+      if (sessionError) {
+        console.error('Session setup error:', sessionError);
+      }
+    };
+
+    // Helper: race a promise against a timeout
+    const withTimeout = <T,>(promise: Promise<T>, ms: number): Promise<T> =>
+      Promise.race([
+        promise,
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('TIMEOUT')), ms)
+        ),
+      ]);
+
+    try {
+      // ── Attempt 1: Login Edge Function (server-side auth, avoids CAPTCHA/browser issues)
+      try {
+        const { data, error } = await withTimeout(
+          supabase.functions.invoke('login', {
+            body: { username: trimmedUsername, password },
+          }),
+          12000, // 12 second timeout
+        );
+
+        if (!error && data && !data.error && data.access_token && data.refresh_token) {
+          if (!data.player) {
+            return { success: false, error: 'Account error: player profile not found. Please contact the GM.' };
+          }
+          await finishLogin(data.access_token, data.refresh_token, data.player);
+          return { success: true };
+        }
+
+        // Edge function returned an error — extract message
+        if (data?.error) {
+          return { success: false, error: data.error };
+        }
+
+        if (error) {
+          let errorMessage = '';
+          try {
+            if (error.context && typeof error.context.json === 'function') {
+              const body = await error.context.json();
+              if (body?.error) errorMessage = body.error;
+            }
+          } catch (_) { /* ignore */ }
+
+          // If it's a real auth error (not a network/deployment issue), return it
+          if (errorMessage && !errorMessage.includes('not found') && !errorMessage.includes('Function not found')) {
+            return { success: false, error: errorMessage };
+          }
+          // Otherwise fall through to direct auth
+          console.warn('Login edge function failed, trying direct auth:', error);
+        }
+      } catch (edgeFnError: any) {
+        // Timeout or network error — fall through to direct auth
+        console.warn('Login edge function unavailable:', edgeFnError?.message || edgeFnError);
+      }
+
+      // ── Attempt 2: Direct signInWithPassword (with timeout to prevent infinite hang)
+      console.log('Attempting direct signInWithPassword...');
+      try {
+        const { data: authData, error: authError } = await withTimeout(
+          supabase.auth.signInWithPassword({ email, password }),
+          10000, // 10 second timeout
+        );
+
+        if (authError) {
+          return { success: false, error: authError.message || 'Invalid username or password.' };
+        }
+
+        if (!authData.session) {
+          return { success: false, error: 'Authentication failed — no session returned.' };
+        }
+
+        // Fetch player record
+        const player = await dbHelpers.getPlayerByAuthUserId(authData.user.id);
+        if (player) {
+          setCurrentPlayer(player);
+          currentPlayerRef.current = player;
+          localStorage.setItem(PLAYER_STORAGE_KEY, JSON.stringify(player));
+          setIsAuthenticated(true);
+        } else {
+          // Try by access_code as fallback
+          const playerByCode = await dbHelpers.getPlayerByAccessCode(trimmedUsername);
+          if (playerByCode) {
+            setCurrentPlayer(playerByCode);
+            currentPlayerRef.current = playerByCode;
+            localStorage.setItem(PLAYER_STORAGE_KEY, JSON.stringify(playerByCode));
+            setIsAuthenticated(true);
+          } else {
+            await supabase.auth.signOut();
+            return { success: false, error: 'Account error: player profile not found. Please contact the GM.' };
+          }
+        }
+
+        return { success: true };
+      } catch (directAuthError: any) {
+        if (directAuthError?.message === 'TIMEOUT') {
+          return { success: false, error: 'Login timed out. The server may be unreachable. Please try again.' };
+        }
+        throw directAuthError;
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      return { success: false, error: 'Authentication error. Please try again.' };
+    }
+  }, []);
+
   // ─── Register (Supabase Auth) ─────────────────────────────────
 
   const register = useCallback(async (
@@ -246,16 +376,10 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
         return { success: false, error: data.error };
       }
 
-      // Auto-login after successful registration via the login edge function
-      const { data: loginData, error: loginError } = await supabase.functions.invoke('login', {
-        body: {
-          username: username.trim().toLowerCase(),
-          password,
-        },
-      });
+      // Auto-login after successful registration (reuses the login function with timeouts/fallbacks)
+      const loginResult = await login(username, password);
 
-      if (loginError || !loginData?.access_token) {
-        console.error('Auto-login after registration failed:', loginError);
+      if (!loginResult.success) {
         // Registration succeeded even if auto-login failed
         return {
           success: true,
@@ -264,100 +388,12 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
         };
       }
 
-      // Set player state directly BEFORE setSession to avoid auth listener race
-      if (loginData.player) {
-        setCurrentPlayer(loginData.player);
-        currentPlayerRef.current = loginData.player;
-        localStorage.setItem(PLAYER_STORAGE_KEY, JSON.stringify(loginData.player));
-        setIsAuthenticated(true);
-      }
-
-      // Tell the auth listener to skip the SIGNED_IN event
-      skipNextAuthEvent.current = true;
-
-      // Establish session on the client
-      const { error: sessionError } = await supabase.auth.setSession({
-        access_token: loginData.access_token,
-        refresh_token: loginData.refresh_token,
-      });
-
-      if (sessionError) {
-        console.error('Session setup after registration failed:', sessionError);
-        // Player state is already set — continue anyway
-      }
-
       return { success: true, role: data?.role };
     } catch (error) {
       console.error('Registration error:', error);
       return { success: false, error: 'An error occurred during registration.' };
     }
-  }, []);
-
-  // ─── Login (Supabase Auth) ────────────────────────────────────
-
-  const login = useCallback(async (username: string, password: string): Promise<LoginResult> => {
-    try {
-      // Use the login edge function (server-side auth) to avoid browser-to-auth hangs
-      const { data, error } = await supabase.functions.invoke('login', {
-        body: {
-          username: username.trim().toLowerCase(),
-          password,
-        },
-      });
-
-      if (error) {
-        console.error('Login error:', error);
-        let errorMessage = 'Invalid username or password.';
-        try {
-          if (error.context && typeof error.context.json === 'function') {
-            const body = await error.context.json();
-            if (body?.error) errorMessage = body.error;
-          }
-        } catch (_) {
-          // Fall through to generic message
-        }
-        return { success: false, error: errorMessage };
-      }
-
-      if (data?.error) {
-        return { success: false, error: data.error };
-      }
-
-      if (!data?.access_token || !data?.refresh_token) {
-        return { success: false, error: 'Authentication failed. Please try again.' };
-      }
-
-      // Set player state directly from the edge function response BEFORE setSession
-      // so the auth listener doesn't race with us
-      if (data.player) {
-        setCurrentPlayer(data.player);
-        currentPlayerRef.current = data.player; // Update ref immediately for the listener check
-        localStorage.setItem(PLAYER_STORAGE_KEY, JSON.stringify(data.player));
-        setIsAuthenticated(true);
-      } else {
-        return { success: false, error: 'Account error: player profile not found. Please contact the GM.' };
-      }
-
-      // Tell the auth listener to skip the SIGNED_IN event we're about to trigger
-      skipNextAuthEvent.current = true;
-
-      // Establish the session on the client using the tokens from the edge function
-      const { error: sessionError } = await supabase.auth.setSession({
-        access_token: data.access_token,
-        refresh_token: data.refresh_token,
-      });
-
-      if (sessionError) {
-        console.error('Session setup error:', sessionError);
-        // Player state is already set — session may still work via token refresh
-      }
-
-      return { success: true };
-    } catch (error) {
-      console.error('Login error:', error);
-      return { success: false, error: 'Authentication error. Please try again.' };
-    }
-  }, []);
+  }, [login]);
 
   // ─── Legacy login with access code (backward compat) ───────────
 
