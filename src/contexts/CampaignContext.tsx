@@ -212,7 +212,17 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
 
       if (error) {
         console.error('Registration error:', error);
-        return { success: false, error: 'Registration failed. Please try again.' };
+        // Extract the actual error message from the edge function response
+        let errorMessage = 'Registration failed. Please try again.';
+        try {
+          if (error.context && typeof error.context.json === 'function') {
+            const body = await error.context.json();
+            if (body?.error) errorMessage = body.error;
+          }
+        } catch (_) {
+          // Fall through to generic message
+        }
+        return { success: false, error: errorMessage };
       }
 
       if (data?.error) {
