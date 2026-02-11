@@ -19,7 +19,7 @@ export default function VTTInterface() {
   useVTTKeyboard();
 
   // Presenter mode broadcast
-  usePresenterController(state, activeMap);
+  const { broadcastPing } = usePresenterController(state, activeMap);
 
   // Audio - hoisted here so it persists across sidebar panel changes
   const audioApi = useVTTAudio();
@@ -53,7 +53,7 @@ export default function VTTInterface() {
 
         {/* Main canvas area */}
         <div ref={containerRef} className="flex-1 relative min-w-0">
-          <VTTCanvas />
+          <VTTCanvas broadcastPing={broadcastPing} />
 
           {/* Particle overlay - always mounted, visibility controlled via CSS */}
           <canvas

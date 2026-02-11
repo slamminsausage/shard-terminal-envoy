@@ -4,7 +4,7 @@ import { screenToWorld } from "@/lib/vtt/geometry";
 import { clamp } from "@/lib/vtt/geometry";
 import { renderDynamicLighting } from "@/lib/vtt/raycasting";
 import { useVTTFogBrush } from "@/hooks/useVTTFogBrush";
-import type { Point, Stroke, Token, MapNote, VTTMap, AoETemplate, TextOverlay } from "@/types/vtt";
+import type { Point, Stroke, Token, MapNote, VTTMap, AoETemplate, TextOverlay, Wall } from "@/types/vtt";
 import VTTContextMenu from "./VTTContextMenu";
 import VTTTokenEditModal from "./VTTTokenEditModal";
 import VTTNoteModal from "./VTTNoteModal";
@@ -28,9 +28,10 @@ function getTokenImage(dataUrl: string): HTMLImageElement | null {
 
 interface VTTCanvasProps {
   className?: string;
+  broadcastPing?: (x: number, y: number) => void;
 }
 
-export default function VTTCanvas({ className }: VTTCanvasProps) {
+export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) {
   const { state, dispatch, activeMap } = useVTT();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -84,6 +85,16 @@ export default function VTTCanvas({ className }: VTTCanvasProps) {
     token: Token | null;
     note: MapNote | null;
   } | null>(null);
+
+  // Selection box state
+  const [selectionBox, setSelectionBox] = useState<{ start: Point; end: Point } | null>(null);
+  const selectionBoxStartRef = useRef<Point>({ x: 0, y: 0 });
+
+  // Ping state (visual on GM canvas)
+  const [pings, setPings] = useState<{ x: number; y: number; timestamp: number }[]>([]);
+
+  // Drag start position for undo history
+  const dragStartPosRef = useRef<Point>({ x: 0, y: 0 });
 
   // Modals
   const [editingToken, setEditingToken] = useState<Token | null>(null);
@@ -217,6 +228,15 @@ export default function VTTCanvas({ className }: VTTCanvasProps) {
       if (e.button === 0) {
         // Cursor tool
         if (state.activeTool === "cursor") {
+          // Ctrl+Click → GM ping
+          if (e.ctrlKey || e.metaKey) {
+            const ping = { x: worldPos.x, y: worldPos.y, timestamp: Date.now() };
+            setPings((prev) => [...prev, ping]);
+            setTimeout(() => setPings((prev) => prev.filter((p) => p !== ping)), 2000);
+            broadcastPing?.(worldPos.x, worldPos.y);
+            return;
+          }
+
           // Double-click to edit
           if (e.detail === 2) {
             const token = findTokenAt(worldPos);
@@ -233,11 +253,37 @@ export default function VTTCanvas({ className }: VTTCanvasProps) {
 
           const token = findTokenAt(worldPos);
           if (token && !token.locked) {
+            // Shift+Click toggles token in/out of selection
+            if (e.shiftKey) {
+              const ids = state.selectedTokenIds || [];
+              const isSelected = ids.includes(token.id);
+              dispatch({
+                type: "SET_SELECTION",
+                payload: isSelected
+                  ? ids.filter((id) => id !== token.id)
+                  : [...ids, token.id],
+              });
+              return;
+            }
+            // If token is already selected (part of multi-select), start group drag
+            const ids = state.selectedTokenIds || [];
+            if (!ids.includes(token.id)) {
+              dispatch({ type: "SET_SELECTION", payload: [token.id] });
+            }
             setDragToken(token.id);
+            dragStartPosRef.current = { x: token.x, y: token.y };
             dragOffsetRef.current = {
               x: worldPos.x - token.x,
               y: worldPos.y - token.y,
             };
+          } else if (!token) {
+            // Click empty space: start selection box or deselect
+            if (!e.shiftKey) {
+              dispatch({ type: "CLEAR_SELECTION" });
+            }
+            // Start selection box drag
+            selectionBoxStartRef.current = worldPos;
+            setSelectionBox({ start: worldPos, end: worldPos });
           }
           return;
         }
@@ -399,8 +445,14 @@ export default function VTTCanvas({ className }: VTTCanvasProps) {
         aoeEndRef.current = getWorldPos(e);
         return;
       }
+
+      // Selection box drag
+      if (selectionBox) {
+        setSelectionBox({ start: selectionBoxStartRef.current, end: getWorldPos(e) });
+        return;
+      }
     },
-    [activeMap, isPanning, dragToken, isDrawing, measuring, drawingWall, isFogPainting, placingAoE, state.activeTool, state.fogBrushSize, state.fogBrushMode, dispatch, getWorldPos, paintFog]
+    [activeMap, isPanning, dragToken, isDrawing, measuring, drawingWall, isFogPainting, placingAoE, selectionBox, state.activeTool, state.fogBrushSize, state.fogBrushMode, dispatch, getWorldPos, paintFog]
   );
 
   const handleMouseUp = useCallback(
@@ -410,7 +462,21 @@ export default function VTTCanvas({ className }: VTTCanvasProps) {
         return;
       }
 
-      if (dragToken) {
+      if (dragToken && activeMap) {
+        // Record undo history for token move
+        const token = activeMap.tokens.find((t) => t.id === dragToken);
+        if (token && (token.x !== dragStartPosRef.current.x || token.y !== dragStartPosRef.current.y)) {
+          dispatch({
+            type: "PUSH_HISTORY",
+            payload: {
+              type: "token-move",
+              mapId: activeMap.id,
+              before: { tokenId: dragToken, x: dragStartPosRef.current.x, y: dragStartPosRef.current.y },
+              after: { tokenId: dragToken, x: token.x, y: token.y },
+              timestamp: Date.now(),
+            },
+          });
+        }
         setDragToken(null);
         return;
       }
@@ -447,7 +513,7 @@ export default function VTTCanvas({ className }: VTTCanvasProps) {
             type: "stroke-add",
             mapId: activeMap.id,
             before: null,
-            after: stroke.id,
+            after: stroke,
             timestamp: Date.now(),
           },
         });
@@ -468,21 +534,18 @@ export default function VTTCanvas({ className }: VTTCanvasProps) {
         const dy = en.y - s.y;
         if (Math.sqrt(dx * dx + dy * dy) < 5) return;
 
-        const wallId = crypto.randomUUID();
+        const wall: Wall = {
+          id: crypto.randomUUID(),
+          x1: s.x,
+          y1: s.y,
+          x2: en.x,
+          y2: en.y,
+          type: state.activeTool === "door" ? "door" : "wall",
+          doorOpen: false,
+        };
         dispatch({
           type: "ADD_WALL",
-          payload: {
-            mapId: activeMap.id,
-            wall: {
-              id: wallId,
-              x1: s.x,
-              y1: s.y,
-              x2: en.x,
-              y2: en.y,
-              type: state.activeTool === "door" ? "door" : "wall",
-              doorOpen: false,
-            },
-          },
+          payload: { mapId: activeMap.id, wall },
         });
         dispatch({
           type: "PUSH_HISTORY",
@@ -490,7 +553,7 @@ export default function VTTCanvas({ className }: VTTCanvasProps) {
             type: "wall-add",
             mapId: activeMap.id,
             before: null,
-            after: wallId,
+            after: wall,
             timestamp: Date.now(),
           },
         });
@@ -543,8 +606,36 @@ export default function VTTCanvas({ className }: VTTCanvasProps) {
         });
         return;
       }
+
+      // Selection box complete
+      if (selectionBox && activeMap) {
+        const box = selectionBox;
+        setSelectionBox(null);
+        const minX = Math.min(box.start.x, box.end.x);
+        const maxX = Math.max(box.start.x, box.end.x);
+        const minY = Math.min(box.start.y, box.end.y);
+        const maxY = Math.max(box.start.y, box.end.y);
+        // Only select if the box has some size
+        if (maxX - minX > 5 || maxY - minY > 5) {
+          const gridSize = activeMap.grid.size || 50;
+          const selected = activeMap.tokens
+            .filter((t) => {
+              const halfSize = (t.size * gridSize) / 2;
+              return (
+                t.x + halfSize >= minX &&
+                t.x - halfSize <= maxX &&
+                t.y + halfSize >= minY &&
+                t.y - halfSize <= maxY &&
+                !t.locked
+              );
+            })
+            .map((t) => t.id);
+          dispatch({ type: "SET_SELECTION", payload: selected });
+        }
+        return;
+      }
     },
-    [isPanning, dragToken, isDrawing, measuring, drawingWall, isFogPainting, placingAoE, activeMap, state, dispatch, exportFogData]
+    [isPanning, dragToken, isDrawing, measuring, drawingWall, isFogPainting, placingAoE, selectionBox, activeMap, state, dispatch, exportFogData]
   );
 
   // Right-click context menu
@@ -744,8 +835,96 @@ export default function VTTCanvas({ className }: VTTCanvasProps) {
       drawMeasurement(ctx, measureStartRef.current, measureEndRef.current, activeMap.grid.size);
     }
 
+    // Selected token highlights
+    const selectedIds = state.selectedTokenIds || [];
+    if (selectedIds.length > 0) {
+      const gridSize = activeMap.grid.size || 50;
+      for (const tokenId of selectedIds) {
+        const token = activeMap.tokens.find((t) => t.id === tokenId);
+        if (!token || !token.visible) continue;
+        const halfSize = (token.size * gridSize) / 2;
+        ctx.save();
+        ctx.strokeStyle = "#00ff00";
+        ctx.lineWidth = 3;
+        ctx.shadowColor = "#00ff00";
+        ctx.shadowBlur = 12;
+        ctx.setLineDash([6, 4]);
+        ctx.beginPath();
+        ctx.arc(token.x, token.y, halfSize + 3, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.restore();
+      }
+    }
+
+    // Active turn indicator (pulsing yellow glow)
+    if (state.initiative?.length > 0) {
+      const activeTokenId = state.initiative[0]?.tokenId;
+      if (activeTokenId) {
+        const token = activeMap.tokens.find((t) => t.id === activeTokenId);
+        if (token && token.visible) {
+          const gridSize = activeMap.grid.size || 50;
+          const halfSize = (token.size * gridSize) / 2;
+          const pulse = 0.4 + 0.6 * Math.abs(Math.sin(Date.now() / 400));
+          ctx.save();
+          ctx.strokeStyle = "#ffcc00";
+          ctx.lineWidth = 3;
+          ctx.globalAlpha = pulse;
+          ctx.shadowColor = "#ffcc00";
+          ctx.shadowBlur = 15;
+          ctx.beginPath();
+          ctx.arc(token.x, token.y, halfSize + 4, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.restore();
+        }
+      }
+    }
+
+    // Selection box (drag rectangle)
+    if (selectionBox) {
+      ctx.save();
+      ctx.strokeStyle = "#00ff00";
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([6, 4]);
+      ctx.globalAlpha = 0.8;
+      const bx = Math.min(selectionBox.start.x, selectionBox.end.x);
+      const by = Math.min(selectionBox.start.y, selectionBox.end.y);
+      const bw = Math.abs(selectionBox.end.x - selectionBox.start.x);
+      const bh = Math.abs(selectionBox.end.y - selectionBox.start.y);
+      ctx.strokeRect(bx, by, bw, bh);
+      ctx.fillStyle = "#00ff0011";
+      ctx.setLineDash([]);
+      ctx.globalAlpha = 1;
+      ctx.fillRect(bx, by, bw, bh);
+      ctx.restore();
+    }
+
+    // GM Pings (animated expanding rings)
+    if (pings.length > 0) {
+      const now = Date.now();
+      for (const ping of pings) {
+        const age = now - ping.timestamp;
+        const progress = age / 2000;
+        const alpha = 1 - progress;
+        const radius = 10 + progress * 60;
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, alpha);
+        ctx.strokeStyle = "#ffcc00";
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(ping.x, ping.y, radius, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.fillStyle = "#ffcc00";
+        ctx.globalAlpha = Math.max(0, alpha * 0.8);
+        ctx.beginPath();
+        ctx.arc(ping.x, ping.y, 5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+
     animFrameRef.current = requestAnimationFrame(render);
-  }, [activeMap, state, isDrawing, measuring, drawingWall, placingAoE, isFogPainting, getFogCanvas]);
+  }, [activeMap, state, isDrawing, measuring, drawingWall, placingAoE, isFogPainting, selectionBox, pings, getFogCanvas]);
 
   useEffect(() => {
     animFrameRef.current = requestAnimationFrame(render);

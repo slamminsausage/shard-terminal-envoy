@@ -46,6 +46,7 @@ export default function VTTPresenterView() {
   const [clocks, setClocks] = useState<Clock[]>([]);
   const [initiative, setInitiative] = useState<InitiativeEntry[]>([]);
   const [showInitiative, setShowInitiative] = useState(false);
+  const [pings, setPings] = useState<{ x: number; y: number; timestamp: number }[]>([]);
 
   // Local presenter viewport (independent pan/zoom)
   const [localScroll, setLocalScroll] = useState<Point | null>(null);
@@ -100,6 +101,14 @@ export default function VTTPresenterView() {
     setShowInitiative(show);
   }, []);
 
+  const onGmPing = useCallback((x: number, y: number) => {
+    const ping = { x, y, timestamp: Date.now() };
+    setPings((prev) => [...prev, ping]);
+    setTimeout(() => {
+      setPings((prev) => prev.filter((p) => p !== ping));
+    }, 2000);
+  }, []);
+
   usePresenterReceiver(
     onMapSync,
     onParticlesSync,
@@ -107,7 +116,8 @@ export default function VTTPresenterView() {
     onHideHandout,
     onDiceRoll,
     onClocksSync,
-    onInitiativeSync
+    onInitiativeSync,
+    onGmPing
   );
 
   // Connect particle canvas - always mounted now
@@ -426,6 +436,38 @@ export default function VTTPresenterView() {
         ctx.textAlign = "center";
         ctx.fillText(t.name, t.x, t.y - halfSize - 6);
       }
+
+      // Conditions
+      if (t.conditions.length > 0) {
+        const condY = t.y + halfSize + (t.showHpBar && t.maxHp > 0 ? 14 : 6);
+        t.conditions.forEach((c, i) => {
+          ctx.fillStyle = c.color;
+          ctx.beginPath();
+          ctx.arc(
+            t.x - ((t.conditions.length - 1) * 6) + i * 12,
+            condY,
+            4,
+            0,
+            Math.PI * 2
+          );
+          ctx.fill();
+        });
+      }
+
+      // Active turn indicator (pulsing glow)
+      if (initiative.length > 0 && initiative[0].tokenId === t.id) {
+        const pulse = 0.4 + 0.6 * Math.abs(Math.sin(Date.now() / 400));
+        ctx.save();
+        ctx.strokeStyle = "#ffcc00";
+        ctx.lineWidth = 3;
+        ctx.globalAlpha = pulse;
+        ctx.shadowColor = "#ffcc00";
+        ctx.shadowBlur = 15;
+        ctx.beginPath();
+        ctx.arc(t.x, t.y, halfSize + 4, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      }
     }
 
     // AoE templates (per-map)
@@ -487,6 +529,32 @@ export default function VTTPresenterView() {
       renderDynamicLighting(ctx, map.lights, map.walls, map.width, map.height);
     }
 
+    // GM pings (animated expanding rings)
+    for (const ping of pings) {
+      const age = Date.now() - ping.timestamp;
+      const progress = Math.min(1, age / 2000);
+      const radius = 10 + progress * 60;
+      const alpha = 1 - progress;
+      ctx.save();
+      ctx.strokeStyle = "#ffcc00";
+      ctx.lineWidth = 3;
+      ctx.globalAlpha = alpha;
+      ctx.shadowColor = "#ffcc00";
+      ctx.shadowBlur = 10;
+      ctx.beginPath();
+      ctx.arc(ping.x, ping.y, radius, 0, Math.PI * 2);
+      ctx.stroke();
+      // Inner dot
+      if (progress < 0.5) {
+        ctx.fillStyle = "#ffcc00";
+        ctx.globalAlpha = alpha * 0.6;
+        ctx.beginPath();
+        ctx.arc(ping.x, ping.y, 5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+
     // Fog of war (use brush data if available, otherwise solid fill)
     if (map.fog.enabled) {
       ctx.save();
@@ -501,7 +569,7 @@ export default function VTTPresenterView() {
     }
 
     animRef.current = requestAnimationFrame(render);
-  }, [map, localScroll, localZoom]);
+  }, [map, localScroll, localZoom, pings, initiative]);
 
   useEffect(() => {
     animRef.current = requestAnimationFrame(render);

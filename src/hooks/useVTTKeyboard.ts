@@ -89,9 +89,31 @@ export function useVTTKeyboard() {
         return;
       }
 
-      // Delete key
+      // Delete key - remove selected tokens
       if (key === "delete" || key === "backspace") {
-        // Could be used for deleting selected elements in future
+        const ids = state.selectedTokenIds || [];
+        if (ids.length > 0 && activeMap) {
+          for (const tokenId of ids) {
+            const token = activeMap.tokens.find((t) => t.id === tokenId);
+            if (token) {
+              dispatch({
+                type: "PUSH_HISTORY",
+                payload: {
+                  type: "token-remove",
+                  mapId: activeMap.id,
+                  before: token,
+                  after: null,
+                  timestamp: Date.now(),
+                },
+              });
+            }
+            dispatch({
+              type: "REMOVE_TOKEN",
+              payload: { mapId: activeMap.id, tokenId },
+            });
+          }
+          dispatch({ type: "CLEAR_SELECTION" });
+        }
         return;
       }
 
