@@ -1,13 +1,13 @@
 import React from 'react';
 import MainframeShell from '@/components/MainframeShell';
-import AccessCodeEntry from '@/components/auth/AccessCodeEntry';
+import AuthScreen from '@/components/auth/AuthScreen';
 import { useCampaign } from '@/contexts/CampaignContext';
 
 const Index = () => {
   const { isAuthenticated } = useCampaign();
 
   if (!isAuthenticated) {
-    return <AccessCodeEntry />;
+    return <AuthScreen />;
   }
 
   return <MainframeShell />;

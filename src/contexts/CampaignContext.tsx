@@ -2,10 +2,13 @@ import React, { createContext, useContext, useState, useEffect, useRef, useCallb
 import { Character, Vehicle, Player } from '@/types/database';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from "@/integrations/supabase/client";
-import { dbHelpers } from '@/lib/supabase';
+import { dbHelpers, supabaseDisabled } from '@/lib/supabase';
 import { defaultCharacters, defaultVehicles } from "@/data/campaignDefaults";
 
-// Session validation helper
+const EMAIL_DOMAIN = 'eclipse-shard.local';
+
+// ─── Legacy session helpers (used when Supabase Auth is disabled) ───
+
 interface Session {
   token: string;
   createdAt: number;
@@ -46,13 +49,25 @@ const getStoredPlayer = (): Player | null => {
   }
 };
 
-// Generate a session token
 const generateSessionToken = (): string => {
   const timestamp = Date.now().toString(36);
   const randomPart = Math.random().toString(36).substring(2, 15);
   const additionalRandom = Math.random().toString(36).substring(2, 15);
   return `${timestamp}-${randomPart}-${additionalRandom}`;
 };
+
+// ─── Types ──────────────────────────────────────────────────────────
+
+interface RegisterResult {
+  success: boolean;
+  error?: string;
+  role?: 'gm' | 'player';
+}
+
+interface LoginResult {
+  success: boolean;
+  error?: string;
+}
 
 interface CampaignContextType {
   // Authentication state
@@ -67,6 +82,8 @@ interface CampaignContextType {
 
   // Authentication methods
   checkAuthentication: () => boolean;
+  login: (username: string, password: string) => Promise<LoginResult>;
+  register: (campaignCode: string, username: string, password: string, displayName: string) => Promise<RegisterResult>;
   loginWithCode: (code: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
 
@@ -100,6 +117,7 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
   const [characters, setCharacters] = useState<Character[]>([]);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [authInitialized, setAuthInitialized] = useState(supabaseDisabled);
   const { toast } = useToast();
 
   const isGM = currentPlayer?.role === 'gm';
@@ -113,7 +131,58 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
   useEffect(() => { vehiclesRef.current = vehicles; }, [vehicles]);
   useEffect(() => { currentPlayerRef.current = currentPlayer; }, [currentPlayer]);
 
+  // ─── Supabase Auth state listener ──────────────────────────────
+
+  useEffect(() => {
+    if (supabaseDisabled) return;
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        if (session?.user) {
+          const player = await dbHelpers.getPlayerByAuthUserId(session.user.id);
+          if (player) {
+            setCurrentPlayer(player);
+            localStorage.setItem(PLAYER_STORAGE_KEY, JSON.stringify(player));
+            setIsAuthenticated(true);
+          }
+        }
+      } else if (event === 'SIGNED_OUT') {
+        setCurrentPlayer(null);
+        setIsAuthenticated(false);
+        setCharacters([]);
+        setVehicles([]);
+        localStorage.removeItem(PLAYER_STORAGE_KEY);
+        localStorage.removeItem('traveller_authenticated');
+        localStorage.removeItem('traveller_session');
+      }
+      setAuthInitialized(true);
+    });
+
+    // Check initial session
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (session?.user) {
+        const player = await dbHelpers.getPlayerByAuthUserId(session.user.id);
+        if (player) {
+          setCurrentPlayer(player);
+          localStorage.setItem(PLAYER_STORAGE_KEY, JSON.stringify(player));
+          setIsAuthenticated(true);
+        }
+      }
+      setAuthInitialized(true);
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  // ─── Legacy auth check (for supabaseDisabled mode) ──────────────
+
   const checkAuthentication = (): boolean => {
+    if (!supabaseDisabled) {
+      // In Supabase Auth mode, auth state is managed by the listener
+      return isAuthenticated;
+    }
     const isAuth = isValidSession();
     setIsAuthenticated(isAuth);
     if (!isAuth) {
@@ -121,6 +190,83 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
     }
     return isAuth;
   };
+
+  // ─── Register (Supabase Auth) ─────────────────────────────────
+
+  const register = useCallback(async (
+    campaignCode: string,
+    username: string,
+    password: string,
+    displayName: string
+  ): Promise<RegisterResult> => {
+    try {
+      // Call the register edge function
+      const { data, error } = await supabase.functions.invoke('register', {
+        body: {
+          campaign_code: campaignCode,
+          username: username.trim().toLowerCase(),
+          password,
+          display_name: displayName.trim() || username.trim(),
+        },
+      });
+
+      if (error) {
+        console.error('Registration error:', error);
+        return { success: false, error: 'Registration failed. Please try again.' };
+      }
+
+      if (data?.error) {
+        return { success: false, error: data.error };
+      }
+
+      // Auto-login after successful registration
+      const email = `${username.trim().toLowerCase()}@${EMAIL_DOMAIN}`;
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (signInError) {
+        console.error('Auto-login after registration failed:', signInError);
+        // Registration succeeded even if auto-login failed
+        return {
+          success: true,
+          role: data?.role,
+          error: 'Account created! Please log in with your username and password.',
+        };
+      }
+
+      return { success: true, role: data?.role };
+    } catch (error) {
+      console.error('Registration error:', error);
+      return { success: false, error: 'An error occurred during registration.' };
+    }
+  }, []);
+
+  // ─── Login (Supabase Auth) ────────────────────────────────────
+
+  const login = useCallback(async (username: string, password: string): Promise<LoginResult> => {
+    try {
+      const email = `${username.trim().toLowerCase()}@${EMAIL_DOMAIN}`;
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        console.error('Login error:', error);
+        return { success: false, error: 'Invalid username or password.' };
+      }
+
+      // Auth state listener will handle setting currentPlayer and isAuthenticated
+      return { success: true };
+    } catch (error) {
+      console.error('Login error:', error);
+      return { success: false, error: 'Authentication error. Please try again.' };
+    }
+  }, []);
+
+  // ─── Legacy login with access code (backward compat) ───────────
 
   const loginWithCode = useCallback(async (code: string): Promise<{ success: boolean; error?: string }> => {
     try {
@@ -180,7 +326,13 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
     }
   }, []);
 
-  const logout = () => {
+  // ─── Logout ───────────────────────────────────────────────────
+
+  const logout = useCallback(async () => {
+    if (!supabaseDisabled) {
+      await supabase.auth.signOut();
+    }
+
     setIsAuthenticated(false);
     setCurrentPlayer(null);
     setCharacters([]);
@@ -193,7 +345,9 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
       title: "Logged Out",
       description: "You have been logged out successfully.",
     });
-  };
+  }, []);
+
+  // ─── Data loading ─────────────────────────────────────────────
 
   const refreshData = useCallback(async () => {
     setIsLoading(true);
@@ -270,8 +424,10 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
 
   // Check authentication on mount
   useEffect(() => {
-    const isAuth = checkAuthentication();
-    setIsAuthenticated(isAuth);
+    if (supabaseDisabled) {
+      const isAuth = checkAuthentication();
+      setIsAuthenticated(isAuth);
+    }
     // Always try to refresh data
     refreshData();
   }, [refreshData]);
@@ -282,6 +438,8 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
       refreshData();
     }
   }, [currentPlayer?.id]);
+
+  // ─── CRUD operations ──────────────────────────────────────────
 
   const saveCharacter = async (characterData: Partial<Character>): Promise<Character | null> => {
     try {
@@ -550,6 +708,8 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
     characters,
     vehicles,
     checkAuthentication,
+    login,
+    register,
     loginWithCode,
     logout,
     refreshData,

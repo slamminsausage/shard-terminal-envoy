@@ -15,7 +15,7 @@ interface DatabaseError extends Error {
 }
 
 const isDev = import.meta.env?.DEV ?? false;
-const supabaseDisabled =
+export const supabaseDisabled =
   import.meta.env?.VITE_DISABLE_SUPABASE === 'true' ||
   (isDev && import.meta.env?.VITE_ENABLE_SUPABASE !== 'true');
 
@@ -2454,6 +2454,41 @@ export const dbHelpers = {
   },
 
   // ─── Player Management ───────────────────────────────────────────
+
+  async getPlayerByAuthUserId(authUserId: string): Promise<Player | null> {
+    if (supabaseDisabled) {
+      const players = getLocalGameSetting<Player[]>('players') || [];
+      return players.find(p => p.auth_user_id === authUserId && p.is_active) || null;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('players')
+        .select('*')
+        .eq('auth_user_id', authUserId)
+        .eq('is_active', true)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Database error:', error);
+        const players = getLocalGameSetting<Player[]>('players') || [];
+        return players.find(p => p.auth_user_id === authUserId && p.is_active) || null;
+      }
+
+      if (data) {
+        await supabase
+          .from('players')
+          .update({ last_accessed: new Date().toISOString() })
+          .eq('id', data.id);
+      }
+
+      return data as Player | null;
+    } catch (error) {
+      console.error('Failed to get player by auth user ID:', error);
+      const players = getLocalGameSetting<Player[]>('players') || [];
+      return players.find(p => p.auth_user_id === authUserId && p.is_active) || null;
+    }
+  },
 
   async getPlayerByAccessCode(code: string): Promise<Player | null> {
     if (supabaseDisabled) {
