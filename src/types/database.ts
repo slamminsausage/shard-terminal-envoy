@@ -10,6 +10,7 @@ export interface Player {
   is_active: boolean;
   last_accessed: string | null;
   created_at: string;
+  auth_user_id?: string | null;
 }
 
 export interface Character {
