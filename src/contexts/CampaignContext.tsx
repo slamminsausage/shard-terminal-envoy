@@ -236,21 +236,44 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
         return { success: false, error: data.error };
       }
 
-      // Auto-login after successful registration
-      const email = `${username.trim().toLowerCase()}@${EMAIL_DOMAIN}`;
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+      // Auto-login after successful registration via the login edge function
+      const { data: loginData, error: loginError } = await supabase.functions.invoke('login', {
+        body: {
+          username: username.trim().toLowerCase(),
+          password,
+        },
       });
 
-      if (signInError) {
-        console.error('Auto-login after registration failed:', signInError);
+      if (loginError || !loginData?.access_token) {
+        console.error('Auto-login after registration failed:', loginError);
         // Registration succeeded even if auto-login failed
         return {
           success: true,
           role: data?.role,
           error: 'Account created! Please log in with your username and password.',
         };
+      }
+
+      // Establish session on the client
+      const { error: sessionError } = await supabase.auth.setSession({
+        access_token: loginData.access_token,
+        refresh_token: loginData.refresh_token,
+      });
+
+      if (sessionError) {
+        console.error('Session setup after registration failed:', sessionError);
+        return {
+          success: true,
+          role: data?.role,
+          error: 'Account created! Please log in with your username and password.',
+        };
+      }
+
+      // Set player state directly
+      if (loginData.player) {
+        setCurrentPlayer(loginData.player);
+        localStorage.setItem(PLAYER_STORAGE_KEY, JSON.stringify(loginData.player));
+        setIsAuthenticated(true);
       }
 
       return { success: true, role: data?.role };
@@ -264,31 +287,57 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
 
   const login = useCallback(async (username: string, password: string): Promise<LoginResult> => {
     try {
-      const email = `${username.trim().toLowerCase()}@${EMAIL_DOMAIN}`;
-      const { data: authData, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+      // Use the login edge function (server-side auth) to avoid browser-to-auth hangs
+      const { data, error } = await supabase.functions.invoke('login', {
+        body: {
+          username: username.trim().toLowerCase(),
+          password,
+        },
       });
 
       if (error) {
         console.error('Login error:', error);
-        return { success: false, error: 'Invalid username or password.' };
+        let errorMessage = 'Invalid username or password.';
+        try {
+          if (error.context && typeof error.context.json === 'function') {
+            const body = await error.context.json();
+            if (body?.error) errorMessage = body.error;
+          }
+        } catch (_) {
+          // Fall through to generic message
+        }
+        return { success: false, error: errorMessage };
       }
 
-      // Directly fetch and set player state instead of relying solely on the async listener
-      if (authData?.user) {
-        const player = await dbHelpers.getPlayerByAuthUserId(authData.user.id);
-        if (player) {
-          setCurrentPlayer(player);
-          localStorage.setItem(PLAYER_STORAGE_KEY, JSON.stringify(player));
-          setIsAuthenticated(true);
-          return { success: true };
-        } else {
-          // Auth succeeded but no player record found — sign out to avoid stuck state
-          console.error('Login: no player record found for auth user', authData.user.id);
-          await supabase.auth.signOut();
-          return { success: false, error: 'Account error: player profile not found. Please contact the GM.' };
-        }
+      if (data?.error) {
+        return { success: false, error: data.error };
+      }
+
+      if (!data?.access_token || !data?.refresh_token) {
+        return { success: false, error: 'Authentication failed. Please try again.' };
+      }
+
+      // Establish the session on the client using the tokens from the edge function
+      const { error: sessionError } = await supabase.auth.setSession({
+        access_token: data.access_token,
+        refresh_token: data.refresh_token,
+      });
+
+      if (sessionError) {
+        console.error('Session setup error:', sessionError);
+        return { success: false, error: 'Failed to establish session. Please try again.' };
+      }
+
+      // Set player state directly from the edge function response
+      if (data.player) {
+        setCurrentPlayer(data.player);
+        localStorage.setItem(PLAYER_STORAGE_KEY, JSON.stringify(data.player));
+        setIsAuthenticated(true);
+      } else {
+        // Auth succeeded but no player record — sign out
+        console.error('Login: no player record found');
+        await supabase.auth.signOut();
+        return { success: false, error: 'Account error: player profile not found. Please contact the GM.' };
       }
 
       return { success: true };
