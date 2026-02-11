@@ -144,6 +144,10 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
             setCurrentPlayer(player);
             localStorage.setItem(PLAYER_STORAGE_KEY, JSON.stringify(player));
             setIsAuthenticated(true);
+          } else {
+            console.warn('Auth listener: no player record found for auth user', session.user.id);
+            // Don't leave user in a stuck state — sign them out
+            await supabase.auth.signOut();
           }
         }
       } else if (event === 'SIGNED_OUT') {
@@ -166,6 +170,9 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
           setCurrentPlayer(player);
           localStorage.setItem(PLAYER_STORAGE_KEY, JSON.stringify(player));
           setIsAuthenticated(true);
+        } else {
+          console.warn('Initial session check: no player record for auth user', session.user.id);
+          await supabase.auth.signOut();
         }
       }
       setAuthInitialized(true);
@@ -212,7 +219,17 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
 
       if (error) {
         console.error('Registration error:', error);
-        return { success: false, error: 'Registration failed. Please try again.' };
+        // Extract the actual error message from the edge function response
+        let errorMessage = 'Registration failed. Please try again.';
+        try {
+          if (error.context && typeof error.context.json === 'function') {
+            const body = await error.context.json();
+            if (body?.error) errorMessage = body.error;
+          }
+        } catch (_) {
+          // Fall through to generic message
+        }
+        return { success: false, error: errorMessage };
       }
 
       if (data?.error) {
@@ -248,7 +265,7 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
   const login = useCallback(async (username: string, password: string): Promise<LoginResult> => {
     try {
       const email = `${username.trim().toLowerCase()}@${EMAIL_DOMAIN}`;
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data: authData, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
@@ -258,7 +275,22 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
         return { success: false, error: 'Invalid username or password.' };
       }
 
-      // Auth state listener will handle setting currentPlayer and isAuthenticated
+      // Directly fetch and set player state instead of relying solely on the async listener
+      if (authData?.user) {
+        const player = await dbHelpers.getPlayerByAuthUserId(authData.user.id);
+        if (player) {
+          setCurrentPlayer(player);
+          localStorage.setItem(PLAYER_STORAGE_KEY, JSON.stringify(player));
+          setIsAuthenticated(true);
+          return { success: true };
+        } else {
+          // Auth succeeded but no player record found — sign out to avoid stuck state
+          console.error('Login: no player record found for auth user', authData.user.id);
+          await supabase.auth.signOut();
+          return { success: false, error: 'Account error: player profile not found. Please contact the GM.' };
+        }
+      }
+
       return { success: true };
     } catch (error) {
       console.error('Login error:', error);
