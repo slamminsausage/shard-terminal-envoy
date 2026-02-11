@@ -69,15 +69,35 @@ serve(async (req) => {
 
     // Fetch the player record using admin client
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey)
-    const { data: player, error: playerError } = await supabaseAdmin
+
+    // Try lookup by auth_user_id first, fall back to access_code if column missing
+    let player: any = null
+    const { data: p1, error: playerError } = await supabaseAdmin
       .from('players')
       .select('*')
       .eq('auth_user_id', authData.user.id)
       .eq('is_active', true)
       .maybeSingle()
 
-    if (playerError) {
-      console.error('Player lookup error:', playerError)
+    if (playerError && (playerError.message?.includes('auth_user_id') || playerError.code === 'PGRST204')) {
+      // auth_user_id column doesn't exist yet — fall back to matching by access_code (username)
+      console.warn('auth_user_id column missing, falling back to access_code lookup:', playerError.message)
+      const { data: p2, error: fallbackError } = await supabaseAdmin
+        .from('players')
+        .select('*')
+        .eq('access_code', trimmedUsername)
+        .eq('is_active', true)
+        .maybeSingle()
+
+      if (fallbackError) {
+        console.error('Player fallback lookup error:', fallbackError)
+      }
+      player = p2
+    } else {
+      if (playerError) {
+        console.error('Player lookup error:', playerError)
+      }
+      player = p1
     }
 
     // Update last_accessed

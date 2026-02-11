@@ -121,17 +121,32 @@ serve(async (req) => {
     const authUserId = authData.user.id
 
     // 7. Determine role: first auth-linked account becomes GM
-    const { data: gmCheck } = await supabaseAdmin
+    let role = 'player'
+    const { data: gmCheck, error: gmCheckError } = await supabaseAdmin
       .from('players')
       .select('id')
       .not('auth_user_id', 'is', null)
       .eq('role', 'gm')
       .limit(1)
 
-    const role = (!gmCheck || gmCheck.length === 0) ? 'gm' : 'player'
+    if (gmCheckError) {
+      // auth_user_id column may not exist yet — fall back to checking any GM
+      console.warn('GM check with auth_user_id failed, falling back:', gmCheckError.message)
+      const { data: anyGM } = await supabaseAdmin
+        .from('players')
+        .select('id')
+        .eq('role', 'gm')
+        .limit(1)
+      role = (!anyGM || anyGM.length === 0) ? 'gm' : 'player'
+    } else {
+      role = (!gmCheck || gmCheck.length === 0) ? 'gm' : 'player'
+    }
 
-    // 8. Create player record
-    const { data: player, error: playerError } = await supabaseAdmin
+    // 8. Create player record (try with auth_user_id, fall back without if column missing)
+    let player: any = null
+    let playerError: any = null
+
+    const { data: p1, error: e1 } = await supabaseAdmin
       .from('players')
       .insert({
         name,
@@ -142,6 +157,26 @@ serve(async (req) => {
       })
       .select()
       .single()
+
+    if (e1 && (e1.message?.includes('auth_user_id') || e1.code === '42703')) {
+      // auth_user_id column doesn't exist — insert without it
+      console.warn('auth_user_id column missing, inserting without it:', e1.message)
+      const { data: p2, error: e2 } = await supabaseAdmin
+        .from('players')
+        .insert({
+          name,
+          role,
+          access_code: trimmedUsername,
+          is_active: true,
+        })
+        .select()
+        .single()
+      player = p2
+      playerError = e2
+    } else {
+      player = p1
+      playerError = e1
+    }
 
     if (playerError) {
       console.error('Player creation error:', playerError)

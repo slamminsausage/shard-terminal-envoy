@@ -127,6 +127,9 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
   const vehiclesRef = useRef<Vehicle[]>([]);
   const currentPlayerRef = useRef<Player | null>(currentPlayer);
 
+  // Flag to skip the next auth listener event (set by login/register which handle player state directly)
+  const skipNextAuthEvent = useRef(false);
+
   useEffect(() => { charactersRef.current = characters; }, [characters]);
   useEffect(() => { vehiclesRef.current = vehicles; }, [vehicles]);
   useEffect(() => { currentPlayerRef.current = currentPlayer; }, [currentPlayer]);
@@ -138,15 +141,22 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        // If login/register already handled the player state, skip this event
+        if (skipNextAuthEvent.current) {
+          skipNextAuthEvent.current = false;
+          setAuthInitialized(true);
+          return;
+        }
         if (session?.user) {
           const player = await dbHelpers.getPlayerByAuthUserId(session.user.id);
           if (player) {
             setCurrentPlayer(player);
             localStorage.setItem(PLAYER_STORAGE_KEY, JSON.stringify(player));
             setIsAuthenticated(true);
-          } else {
+          } else if (!currentPlayerRef.current) {
+            // Only sign out if we don't already have a valid player
+            // (login/register may have set one directly before this listener ran)
             console.warn('Auth listener: no player record found for auth user', session.user.id);
-            // Don't leave user in a stuck state — sign them out
             await supabase.auth.signOut();
           }
         }
@@ -254,6 +264,17 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
         };
       }
 
+      // Set player state directly BEFORE setSession to avoid auth listener race
+      if (loginData.player) {
+        setCurrentPlayer(loginData.player);
+        currentPlayerRef.current = loginData.player;
+        localStorage.setItem(PLAYER_STORAGE_KEY, JSON.stringify(loginData.player));
+        setIsAuthenticated(true);
+      }
+
+      // Tell the auth listener to skip the SIGNED_IN event
+      skipNextAuthEvent.current = true;
+
       // Establish session on the client
       const { error: sessionError } = await supabase.auth.setSession({
         access_token: loginData.access_token,
@@ -262,18 +283,7 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
 
       if (sessionError) {
         console.error('Session setup after registration failed:', sessionError);
-        return {
-          success: true,
-          role: data?.role,
-          error: 'Account created! Please log in with your username and password.',
-        };
-      }
-
-      // Set player state directly
-      if (loginData.player) {
-        setCurrentPlayer(loginData.player);
-        localStorage.setItem(PLAYER_STORAGE_KEY, JSON.stringify(loginData.player));
-        setIsAuthenticated(true);
+        // Player state is already set — continue anyway
       }
 
       return { success: true, role: data?.role };
@@ -317,6 +327,20 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
         return { success: false, error: 'Authentication failed. Please try again.' };
       }
 
+      // Set player state directly from the edge function response BEFORE setSession
+      // so the auth listener doesn't race with us
+      if (data.player) {
+        setCurrentPlayer(data.player);
+        currentPlayerRef.current = data.player; // Update ref immediately for the listener check
+        localStorage.setItem(PLAYER_STORAGE_KEY, JSON.stringify(data.player));
+        setIsAuthenticated(true);
+      } else {
+        return { success: false, error: 'Account error: player profile not found. Please contact the GM.' };
+      }
+
+      // Tell the auth listener to skip the SIGNED_IN event we're about to trigger
+      skipNextAuthEvent.current = true;
+
       // Establish the session on the client using the tokens from the edge function
       const { error: sessionError } = await supabase.auth.setSession({
         access_token: data.access_token,
@@ -325,19 +349,7 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
 
       if (sessionError) {
         console.error('Session setup error:', sessionError);
-        return { success: false, error: 'Failed to establish session. Please try again.' };
-      }
-
-      // Set player state directly from the edge function response
-      if (data.player) {
-        setCurrentPlayer(data.player);
-        localStorage.setItem(PLAYER_STORAGE_KEY, JSON.stringify(data.player));
-        setIsAuthenticated(true);
-      } else {
-        // Auth succeeded but no player record — sign out
-        console.error('Login: no player record found');
-        await supabase.auth.signOut();
-        return { success: false, error: 'Account error: player profile not found. Please contact the GM.' };
+        // Player state is already set — session may still work via token refresh
       }
 
       return { success: true };
