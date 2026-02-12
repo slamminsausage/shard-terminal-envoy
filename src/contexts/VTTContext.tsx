@@ -67,10 +67,12 @@ type VTTAction =
   // Stroke actions
   | { type: "ADD_STROKE"; payload: { mapId: string; stroke: Stroke } }
   | { type: "REMOVE_STROKE"; payload: { mapId: string; strokeId: string } }
+  | { type: "UPDATE_STROKE"; payload: { mapId: string; strokeId: string; updates: Partial<Stroke> } }
   | { type: "CLEAR_STROKES"; payload: { mapId: string; layer: LayerIndex } }
   // Text actions
   | { type: "ADD_TEXT"; payload: { mapId: string; text: TextOverlay } }
   | { type: "REMOVE_TEXT"; payload: { mapId: string; textId: string } }
+  | { type: "UPDATE_TEXT"; payload: { mapId: string; textId: string; updates: Partial<TextOverlay> } }
   // Note actions
   | { type: "ADD_NOTE"; payload: { mapId: string; note: MapNote } }
   | { type: "REMOVE_NOTE"; payload: { mapId: string; noteId: string } }
@@ -118,6 +120,10 @@ type VTTAction =
   | { type: "TOGGLE_INITIATIVE_PRESENTER" }
   // Selection
   | { type: "SET_SELECTION"; payload: string[] }
+  | { type: "SET_STROKE_SELECTION"; payload: string[] }
+  | { type: "SET_TEXT_SELECTION"; payload: string[] }
+  | { type: "SET_NOTE_SELECTION"; payload: string[] }
+  | { type: "SET_FULL_SELECTION"; payload: { tokenIds: string[]; strokeIds: string[]; textIds: string[]; noteIds: string[] } }
   | { type: "CLEAR_SELECTION" }
   // History
   | { type: "PUSH_HISTORY"; payload: VTTHistoryEntry }
@@ -404,6 +410,15 @@ function vttReducer(state: VTTState, action: VTTAction): VTTState {
         ...m,
         strokes: m.strokes.filter((s) => s.id !== action.payload.strokeId),
       }));
+    case "UPDATE_STROKE":
+      return updateMapInState(state, action.payload.mapId, (m) => ({
+        ...m,
+        strokes: m.strokes.map((s) =>
+          s.id === action.payload.strokeId
+            ? { ...s, ...action.payload.updates }
+            : s
+        ),
+      }));
     case "CLEAR_STROKES":
       return updateMapInState(state, action.payload.mapId, (m) => ({
         ...m,
@@ -420,6 +435,15 @@ function vttReducer(state: VTTState, action: VTTAction): VTTState {
       return updateMapInState(state, action.payload.mapId, (m) => ({
         ...m,
         texts: m.texts.filter((t) => t.id !== action.payload.textId),
+      }));
+    case "UPDATE_TEXT":
+      return updateMapInState(state, action.payload.mapId, (m) => ({
+        ...m,
+        texts: m.texts.map((t) =>
+          t.id === action.payload.textId
+            ? { ...t, ...action.payload.updates }
+            : t
+        ),
       }));
 
     // Notes
@@ -610,8 +634,22 @@ function vttReducer(state: VTTState, action: VTTAction): VTTState {
     // Selection
     case "SET_SELECTION":
       return { ...state, selectedTokenIds: action.payload };
+    case "SET_STROKE_SELECTION":
+      return { ...state, selectedStrokeIds: action.payload };
+    case "SET_TEXT_SELECTION":
+      return { ...state, selectedTextIds: action.payload };
+    case "SET_NOTE_SELECTION":
+      return { ...state, selectedNoteIds: action.payload };
+    case "SET_FULL_SELECTION":
+      return {
+        ...state,
+        selectedTokenIds: action.payload.tokenIds,
+        selectedStrokeIds: action.payload.strokeIds,
+        selectedTextIds: action.payload.textIds,
+        selectedNoteIds: action.payload.noteIds,
+      };
     case "CLEAR_SELECTION":
-      return { ...state, selectedTokenIds: [] };
+      return { ...state, selectedTokenIds: [], selectedStrokeIds: [], selectedTextIds: [], selectedNoteIds: [] };
 
     // History
     case "PUSH_HISTORY": {
@@ -688,6 +726,15 @@ export function VTTProvider({ children }: { children: React.ReactNode }) {
         if (!parsed.selectedTokenIds) {
           (parsed as any).selectedTokenIds = [];
         }
+        if (!parsed.selectedStrokeIds) {
+          (parsed as any).selectedStrokeIds = [];
+        }
+        if (!parsed.selectedTextIds) {
+          (parsed as any).selectedTextIds = [];
+        }
+        if (!parsed.selectedNoteIds) {
+          (parsed as any).selectedNoteIds = [];
+        }
         // Clean up stale video blob URLs (objectURLs don't persist across reloads)
         for (const m of parsed.maps) {
           if (m.isVideo && m.imageDataUrl && m.imageDataUrl.startsWith("blob:")) {
@@ -720,6 +767,9 @@ export function VTTProvider({ children }: { children: React.ReactNode }) {
         }
         // Don't persist transient selection state
         toSave.selectedTokenIds = [];
+        toSave.selectedStrokeIds = [];
+        toSave.selectedTextIds = [];
+        toSave.selectedNoteIds = [];
         localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
       } catch (e) {
         console.warn("VTT autosave failed:", e);
@@ -846,6 +896,9 @@ export function VTTProvider({ children }: { children: React.ReactNode }) {
         }
       }
       toSave.selectedTokenIds = [];
+      toSave.selectedStrokeIds = [];
+      toSave.selectedTextIds = [];
+      toSave.selectedNoteIds = [];
       localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
     } catch (e) {
       console.warn("VTT save failed:", e);

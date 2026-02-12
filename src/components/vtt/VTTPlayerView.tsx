@@ -1,11 +1,23 @@
+/**
+ * VTTPlayerView: An embedded presenter-style view for non-GM players.
+ * Receives map state via BroadcastChannel and renders read-only.
+ * Players can pan and zoom their own viewport independently.
+ */
 import { useState, useEffect, useCallback, useRef } from "react";
 import { usePresenterReceiver } from "@/hooks/useVTTPresenter";
 import { useVTTParticles } from "@/hooks/useVTTParticles";
 import { renderDynamicLighting } from "@/lib/vtt/raycasting";
-import type { VTTMap, ParticleConfig, Point, Stroke, Token, Clock, InitiativeEntry, AoETemplate, TextOverlay } from "@/types/vtt";
+import { clamp } from "@/lib/vtt/geometry";
+import type {
+  VTTMap,
+  ParticleConfig,
+  Point,
+  Clock,
+  InitiativeEntry,
+  AoETemplate,
+} from "@/types/vtt";
 import { createDefaultParticles } from "@/types/vtt";
 
-// ─── Token image cache (mirrors VTTCanvas pattern) ──────────────────────────
 const presenterTokenImageCache = new Map<string, HTMLImageElement>();
 
 function getPresenterTokenImage(dataUrl: string): HTMLImageElement | null {
@@ -22,19 +34,15 @@ function getPresenterTokenImage(dataUrl: string): HTMLImageElement | null {
 const MIN_ZOOM = 0.1;
 const MAX_ZOOM = 5;
 
-/**
- * Presenter View: a standalone fullscreen display meant to be shown on
- * a second monitor/projector. Receives state from the controller via
- * BroadcastChannel and renders the map, tokens, fog, and effects
- * without any GM controls.
- *
- * Open via: window.open('/presenter', '_blank')
- * or from the VTT toolbar presenter button.
- */
-export default function VTTPresenterView() {
+export default function VTTPlayerView() {
   const [map, setMap] = useState<VTTMap | null>(null);
-  const [particles, setParticles] = useState<ParticleConfig>(createDefaultParticles());
-  const [handout, setHandout] = useState<{ imageDataUrl: string; name: string } | null>(null);
+  const [particles, setParticles] = useState<ParticleConfig>(
+    createDefaultParticles()
+  );
+  const [handout, setHandout] = useState<{
+    imageDataUrl: string;
+    name: string;
+  } | null>(null);
   const [connected, setConnected] = useState(false);
   const [diceRoll, setDiceRoll] = useState<{
     label: string;
@@ -46,9 +54,11 @@ export default function VTTPresenterView() {
   const [clocks, setClocks] = useState<Clock[]>([]);
   const [initiative, setInitiative] = useState<InitiativeEntry[]>([]);
   const [showInitiative, setShowInitiative] = useState(false);
-  const [pings, setPings] = useState<{ x: number; y: number; timestamp: number }[]>([]);
+  const [pings, setPings] = useState<
+    { x: number; y: number; timestamp: number }[]
+  >([]);
 
-  // Local presenter viewport (fully independent from GM)
+  // Local viewport (fully independent)
   const [localScroll, setLocalScroll] = useState<Point | null>(null);
   const [localZoom, setLocalZoom] = useState<number | null>(null);
   const initializedMapIdRef = useRef<string | null>(null);
@@ -69,7 +79,6 @@ export default function VTTPresenterView() {
   const { setCanvas: setParticleCanvas } = useVTTParticles(particles);
 
   const onMapSync = useCallback((m: VTTMap | null) => {
-    // When receiving a new/different map, initialize presenter viewport once
     if (m && m.id !== initializedMapIdRef.current) {
       initializedMapIdRef.current = m.id;
       setLocalScroll({ x: m.scrollX, y: m.scrollY });
@@ -83,9 +92,12 @@ export default function VTTPresenterView() {
     setParticles(p);
   }, []);
 
-  const onShowHandout = useCallback((imageDataUrl: string, name: string) => {
-    setHandout({ imageDataUrl, name });
-  }, []);
+  const onShowHandout = useCallback(
+    (imageDataUrl: string, name: string) => {
+      setHandout({ imageDataUrl, name });
+    },
+    []
+  );
 
   const onHideHandout = useCallback(() => {
     setHandout(null);
@@ -103,10 +115,13 @@ export default function VTTPresenterView() {
     setClocks(c);
   }, []);
 
-  const onInitiativeSync = useCallback((entries: InitiativeEntry[], show: boolean) => {
-    setInitiative(entries);
-    setShowInitiative(show);
-  }, []);
+  const onInitiativeSync = useCallback(
+    (entries: InitiativeEntry[], show: boolean) => {
+      setInitiative(entries);
+      setShowInitiative(show);
+    },
+    []
+  );
 
   const onGmPing = useCallback((x: number, y: number) => {
     const ping = { x, y, timestamp: Date.now() };
@@ -127,18 +142,16 @@ export default function VTTPresenterView() {
     onGmPing
   );
 
-  // Connect particle canvas - always mounted now
   useEffect(() => {
     setParticleCanvas(particleCanvasRef.current);
   }, [setParticleCanvas, particles.enabled]);
 
-  // Load map image (supports both images and video)
+  // Load map image
   useEffect(() => {
     if (!map?.imageDataUrl) {
       mapImageRef.current = null;
       return;
     }
-
     if (map.isVideo) {
       const video = document.createElement("video");
       video.src = map.imageDataUrl;
@@ -152,7 +165,6 @@ export default function VTTPresenterView() {
         video.pause();
       };
     }
-
     const img = new Image();
     img.onload = () => {
       mapImageRef.current = img;
@@ -160,7 +172,7 @@ export default function VTTPresenterView() {
     img.src = map.imageDataUrl;
   }, [map?.imageDataUrl, map?.isVideo]);
 
-  // Load fog brush image when fog.dataUrl changes
+  // Load fog image
   useEffect(() => {
     if (!map?.fog?.dataUrl) {
       fogImageRef.current = null;
@@ -200,7 +212,7 @@ export default function VTTPresenterView() {
     return () => observer.disconnect();
   }, []);
 
-  // Zoom with scroll wheel
+  // Zoom with scroll wheel (centered)
   const mapRef = useRef(map);
   mapRef.current = map;
   const localScrollRef = useRef(localScroll);
@@ -219,11 +231,13 @@ export default function VTTPresenterView() {
       e.stopPropagation();
 
       const currentZoom = localZoomRef.current ?? m.zoom;
-      const currentScroll = localScrollRef.current ?? { x: m.scrollX, y: m.scrollY };
+      const currentScroll = localScrollRef.current ?? {
+        x: m.scrollX,
+        y: m.scrollY,
+      };
       const delta = e.deltaY > 0 ? 0.9 : 1.1;
-      const newZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, currentZoom * delta));
+      const newZoom = clamp(currentZoom * delta, MIN_ZOOM, MAX_ZOOM);
 
-      // Zoom from viewport center
       const rect = canvas.getBoundingClientRect();
       const viewCenterX = rect.width / 2;
       const viewCenterY = rect.height / 2;
@@ -246,10 +260,12 @@ export default function VTTPresenterView() {
       if (!map) return;
       setIsPanning(true);
       panStartRef.current = { x: e.clientX, y: e.clientY };
-      const currentZoom = localZoom ?? map.zoom;
-      scrollStartRef.current = localScroll ?? { x: map.scrollX, y: map.scrollY };
+      scrollStartRef.current = localScroll ?? {
+        x: map.scrollX,
+        y: map.scrollY,
+      };
     },
-    [map, localScroll, localZoom]
+    [map, localScroll]
   );
 
   const handleMouseMove = useCallback(
@@ -270,11 +286,6 @@ export default function VTTPresenterView() {
     setIsPanning(false);
   }, []);
 
-  const resetView = useCallback(() => {
-    setLocalScroll(null);
-    setLocalZoom(null);
-  }, []);
-
   // Render loop
   const render = useCallback(() => {
     const canvas = canvasRef.current;
@@ -290,27 +301,47 @@ export default function VTTPresenterView() {
 
     if (!map) {
       ctx.fillStyle = "#00ff0044";
-      ctx.font = `${20 * dpr}px "Share Tech Mono", monospace`;
+      ctx.font = `${16 * dpr}px "Share Tech Mono", monospace`;
       ctx.textAlign = "center";
-      ctx.fillText("Waiting for controller...", canvas.width / 2, canvas.height / 2);
+      ctx.fillText(
+        connected
+          ? "Waiting for GM to load a map..."
+          : "Connecting to GM...",
+        canvas.width / 2,
+        canvas.height / 2
+      );
       animRef.current = requestAnimationFrame(render);
       return;
     }
 
-    // Use local viewport if set, otherwise use GM viewport
     const scrollX = localScroll?.x ?? map.scrollX;
     const scrollY = localScroll?.y ?? map.scrollY;
     const zoom = localZoom ?? map.zoom;
-    ctx.setTransform(dpr * zoom, 0, 0, dpr * zoom, -scrollX * dpr * zoom, -scrollY * dpr * zoom);
+    ctx.setTransform(
+      dpr * zoom,
+      0,
+      0,
+      dpr * zoom,
+      -scrollX * dpr * zoom,
+      -scrollY * dpr * zoom
+    );
 
-    // Map image (with scale/offset support, supports video)
+    // Map image
     const mapImg = mapImageRef.current;
     if (mapImg) {
       const imgScale = (map as any).imageScale || 1;
       const imgOX = (map as any).imageOffsetX || 0;
       const imgOY = (map as any).imageOffsetY || 0;
-      const natW = (map as any).imageNaturalWidth || (mapImg instanceof HTMLVideoElement ? mapImg.videoWidth : (mapImg as HTMLImageElement).naturalWidth);
-      const natH = (map as any).imageNaturalHeight || (mapImg instanceof HTMLVideoElement ? mapImg.videoHeight : (mapImg as HTMLImageElement).naturalHeight);
+      const natW =
+        (map as any).imageNaturalWidth ||
+        (mapImg instanceof HTMLVideoElement
+          ? mapImg.videoWidth
+          : (mapImg as HTMLImageElement).naturalWidth);
+      const natH =
+        (map as any).imageNaturalHeight ||
+        (mapImg instanceof HTMLVideoElement
+          ? mapImg.videoHeight
+          : (mapImg as HTMLImageElement).naturalHeight);
 
       ctx.save();
       ctx.translate(imgOX, imgOY);
@@ -382,7 +413,7 @@ export default function VTTPresenterView() {
       ctx.fillText(t.text, t.x, t.y);
     }
 
-    // Visible tokens only (with image rendering)
+    // Visible tokens only
     const gridSize = map.grid.size || 50;
     for (const t of map.tokens) {
       if (!t.visible) continue;
@@ -399,8 +430,6 @@ export default function VTTPresenterView() {
       ctx.save();
       ctx.translate(t.x, t.y);
       ctx.rotate((t.rotation * Math.PI) / 180);
-
-      // Clip to circle and draw image or fallback
       ctx.beginPath();
       ctx.arc(0, 0, halfSize, 0, Math.PI * 2);
       ctx.closePath();
@@ -413,7 +442,6 @@ export default function VTTPresenterView() {
           ctx.drawImage(img, -halfSize, -halfSize, pixelSize, pixelSize);
           ctx.restore();
         } else {
-          // Image still loading
           ctx.fillStyle = "#1a1a2e";
           ctx.fill();
         }
@@ -427,7 +455,6 @@ export default function VTTPresenterView() {
         ctx.fillText(t.name.charAt(0).toUpperCase(), 0, 0);
       }
 
-      // Border ring
       ctx.strokeStyle = "#00ff00";
       ctx.lineWidth = 2;
       ctx.beginPath();
@@ -440,8 +467,18 @@ export default function VTTPresenterView() {
         const hpRatio = Math.max(0, t.hp / t.maxHp);
         ctx.fillStyle = "#333";
         ctx.fillRect(t.x - halfSize, t.y + halfSize + 4, barWidth, 4);
-        ctx.fillStyle = hpRatio > 0.5 ? "#00ff00" : hpRatio > 0.25 ? "#ff6600" : "#ff3344";
-        ctx.fillRect(t.x - halfSize, t.y + halfSize + 4, barWidth * hpRatio, 4);
+        ctx.fillStyle =
+          hpRatio > 0.5
+            ? "#00ff00"
+            : hpRatio > 0.25
+            ? "#ff6600"
+            : "#ff3344";
+        ctx.fillRect(
+          t.x - halfSize,
+          t.y + halfSize + 4,
+          barWidth * hpRatio,
+          4
+        );
       }
 
       if (t.showName) {
@@ -451,9 +488,9 @@ export default function VTTPresenterView() {
         ctx.fillText(t.name, t.x, t.y - halfSize - 6);
       }
 
-      // Conditions
       if (t.conditions.length > 0) {
-        const condY = t.y + halfSize + (t.showHpBar && t.maxHp > 0 ? 14 : 6);
+        const condY =
+          t.y + halfSize + (t.showHpBar && t.maxHp > 0 ? 14 : 6);
         t.conditions.forEach((c, i) => {
           ctx.fillStyle = c.color;
           ctx.beginPath();
@@ -468,7 +505,7 @@ export default function VTTPresenterView() {
         });
       }
 
-      // Active turn indicator (pulsing glow)
+      // Active turn indicator
       if (initiative.length > 0 && initiative[0].tokenId === t.id) {
         const pulse = 0.4 + 0.6 * Math.abs(Math.sin(Date.now() / 400));
         ctx.save();
@@ -484,7 +521,7 @@ export default function VTTPresenterView() {
       }
     }
 
-    // AoE templates (per-map)
+    // AoE templates
     const aoeTemplates: AoETemplate[] = (map as any).aoeTemplates || [];
     if (aoeTemplates.length > 0) {
       for (const aoe of aoeTemplates) {
@@ -506,7 +543,13 @@ export default function VTTPresenterView() {
           ctx.fillStyle = aoe.color;
           ctx.beginPath();
           ctx.moveTo(aoe.x, aoe.y);
-          ctx.arc(aoe.x, aoe.y, aoe.radius, angle - spread, angle + spread);
+          ctx.arc(
+            aoe.x,
+            aoe.y,
+            aoe.radius,
+            angle - spread,
+            angle + spread
+          );
           ctx.closePath();
           ctx.fill();
           ctx.strokeStyle = aoe.color;
@@ -540,10 +583,16 @@ export default function VTTPresenterView() {
 
     // Dynamic lighting
     if (map.lights.length > 0 && map.walls.length > 0) {
-      renderDynamicLighting(ctx, map.lights, map.walls, map.width, map.height);
+      renderDynamicLighting(
+        ctx,
+        map.lights,
+        map.walls,
+        map.width,
+        map.height
+      );
     }
 
-    // GM pings (animated expanding rings)
+    // GM pings
     for (const ping of pings) {
       const age = Date.now() - ping.timestamp;
       const progress = Math.min(1, age / 2000);
@@ -558,7 +607,6 @@ export default function VTTPresenterView() {
       ctx.beginPath();
       ctx.arc(ping.x, ping.y, radius, 0, Math.PI * 2);
       ctx.stroke();
-      // Inner dot
       if (progress < 0.5) {
         ctx.fillStyle = "#ffcc00";
         ctx.globalAlpha = alpha * 0.6;
@@ -569,7 +617,7 @@ export default function VTTPresenterView() {
       ctx.restore();
     }
 
-    // Fog of war (use brush data if available, otherwise solid fill)
+    // Fog of war
     if (map.fog.enabled) {
       ctx.save();
       ctx.globalAlpha = map.fog.opacity;
@@ -583,7 +631,7 @@ export default function VTTPresenterView() {
     }
 
     animRef.current = requestAnimationFrame(render);
-  }, [map, localScroll, localZoom, pings, initiative]);
+  }, [map, localScroll, localZoom, pings, initiative, connected]);
 
   useEffect(() => {
     animRef.current = requestAnimationFrame(render);
@@ -593,7 +641,7 @@ export default function VTTPresenterView() {
   return (
     <div
       ref={containerRef}
-      className="fixed inset-0 bg-black"
+      className="relative w-full h-full bg-black"
       style={{ cursor: isPanning ? "grabbing" : "grab" }}
     >
       <canvas
@@ -605,86 +653,67 @@ export default function VTTPresenterView() {
         onMouseLeave={handleMouseUp}
       />
 
-      {/* Particle overlay - always mounted */}
+      {/* Particle overlay */}
       <canvas
         ref={particleCanvasRef}
         className="absolute inset-0 w-full h-full pointer-events-none"
         style={{ display: particles.enabled ? "block" : "none" }}
       />
 
-      {/* Reset view button (shows when local viewport is active) */}
-      {(localScroll || localZoom) && (
-        <button
-          onClick={resetView}
-          className="absolute top-4 left-4 z-10 bg-black/80 border border-terminal-primary/30 text-terminal-primary/60 text-xs font-mono px-3 py-1.5 rounded hover:text-terminal-primary hover:border-terminal-primary/50 transition-colors"
-        >
-          Reset View
-        </button>
-      )}
-
       {/* Zoom indicator */}
-      {map && (localZoom != null) && (
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10 text-terminal-primary/30 text-xs font-mono">
-          {Math.round((localZoom ?? map.zoom) * 100)}%
+      {map && localZoom != null && (
+        <div className="absolute top-2 right-2 z-10 text-terminal-primary/30 text-xs font-mono">
+          {Math.round(localZoom * 100)}%
         </div>
       )}
 
-      {/* Clocks overlay */}
-      {clocks.length > 0 && (
-        <div className="absolute top-4 right-4 z-10 flex flex-col gap-2">
-          {clocks.map((clock) => (
-            <div
-              key={clock.id}
-              className="bg-black/80 border border-terminal-primary/20 rounded-lg px-3 py-2 flex items-center gap-3"
-            >
-              <PresenterClockSVG clock={clock} />
-              <div>
-                <div className="text-terminal-primary/80 text-xs font-mono">
-                  {clock.name}
-                </div>
-                <div className="text-terminal-primary/40 text-[10px] font-mono">
-                  {clock.filled}/{clock.segments}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Initiative tracker overlay */}
+      {/* Initiative tracker */}
       {showInitiative && initiative.length > 0 && (
-        <div className="absolute top-4 left-4 z-10 bg-black/85 border border-terminal-primary/30 rounded-lg overflow-hidden min-w-[180px]">
-          <div className="px-3 py-1.5 border-b border-terminal-primary/20">
-            <span className="text-[10px] text-terminal-primary/50 uppercase tracking-wider font-mono">
+        <div className="absolute top-2 left-2 z-10 bg-black/85 border border-terminal-primary/30 rounded-lg overflow-hidden min-w-[160px]">
+          <div className="px-3 py-1 border-b border-terminal-primary/20">
+            <span className="text-[9px] text-terminal-primary/50 uppercase tracking-wider font-mono">
               Initiative
             </span>
           </div>
-          <div className="max-h-[60vh] overflow-y-auto">
+          <div className="max-h-[50vh] overflow-y-auto">
             {initiative.map((entry, index) => (
               <div
                 key={entry.id}
-                className={`flex items-center gap-2 px-3 py-1.5 border-b border-terminal-border/10 ${
+                className={`flex items-center gap-2 px-2 py-1 border-b border-terminal-border/10 ${
                   index === 0
-                    ? "bg-terminal-primary/10 shadow-[inset_0_0_20px_rgba(0,255,0,0.05)]"
+                    ? "bg-terminal-primary/10"
                     : ""
                 }`}
               >
-                <span className="w-6 text-center text-terminal-primary font-mono text-sm font-bold flex-shrink-0">
+                <span className="w-5 text-center text-terminal-primary font-mono text-xs font-bold flex-shrink-0">
                   {entry.initiative}
                 </span>
                 <span
-                  className={`text-xs font-mono flex-1 truncate ${
-                    index === 0 ? "text-terminal-primary" : "text-terminal-primary/60"
+                  className={`text-[10px] font-mono flex-1 truncate ${
+                    index === 0
+                      ? "text-terminal-primary"
+                      : "text-terminal-primary/60"
                   }`}
                 >
                   {entry.name}
                 </span>
-                {entry.isNPC && (
-                  <span className="text-[8px] text-red-400/50 font-mono">NPC</span>
-                )}
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Clocks */}
+      {clocks.length > 0 && (
+        <div className="absolute top-2 right-2 z-10 flex flex-col gap-1">
+          {clocks.map((clock) => (
+            <div
+              key={clock.id}
+              className="bg-black/80 border border-terminal-primary/20 rounded px-2 py-1 text-terminal-primary/60 text-[10px] font-mono"
+            >
+              {clock.name}: {clock.filled}/{clock.segments}
+            </div>
+          ))}
         </div>
       )}
 
@@ -694,9 +723,9 @@ export default function VTTPresenterView() {
           <img
             src={handout.imageDataUrl}
             alt={handout.name}
-            className="max-w-[90vw] max-h-[90vh] object-contain"
+            className="max-w-[90%] max-h-[90%] object-contain"
           />
-          <div className="absolute bottom-6 text-center text-terminal-primary/60 text-sm font-mono">
+          <div className="absolute bottom-4 text-center text-terminal-primary/60 text-xs font-mono">
             {handout.name}
           </div>
         </div>
@@ -704,29 +733,29 @@ export default function VTTPresenterView() {
 
       {/* Dice roll overlay */}
       {diceRoll && (
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-30 animate-in fade-in slide-in-from-bottom-4 duration-300">
-          <div className="bg-black/90 border border-terminal-primary/50 rounded-lg px-8 py-4 text-center shadow-[0_0_30px_rgba(0,255,0,0.2)]">
-            <div className="text-terminal-primary/60 text-xs font-mono uppercase tracking-wider mb-1">
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 animate-in fade-in slide-in-from-bottom-4 duration-300">
+          <div className="bg-black/90 border border-terminal-primary/50 rounded-lg px-6 py-3 text-center shadow-[0_0_20px_rgba(0,255,0,0.15)]">
+            <div className="text-terminal-primary/60 text-[10px] font-mono uppercase tracking-wider mb-1">
               {diceRoll.label}
             </div>
-            <div className="flex items-center justify-center gap-2 mb-1">
+            <div className="flex items-center justify-center gap-1 mb-1">
               {diceRoll.dice.map((d, i) => (
                 <span
                   key={i}
-                  className="w-10 h-10 flex items-center justify-center bg-terminal-primary/10 border border-terminal-primary/30 rounded text-terminal-primary text-lg font-mono font-bold"
+                  className="w-8 h-8 flex items-center justify-center bg-terminal-primary/10 border border-terminal-primary/30 rounded text-terminal-primary text-sm font-mono font-bold"
                 >
                   {d}
                 </span>
               ))}
               {diceRoll.modifier !== 0 && (
-                <span className="text-terminal-primary/50 text-sm font-mono">
+                <span className="text-terminal-primary/50 text-xs font-mono">
                   {diceRoll.modifier > 0 ? "+" : ""}
                   {diceRoll.modifier}
                 </span>
               )}
             </div>
             <div
-              className={`text-3xl font-mono font-bold ${
+              className={`text-2xl font-mono font-bold ${
                 diceRoll.total >= 8
                   ? "text-green-400"
                   : diceRoll.total >= 6
@@ -742,50 +771,12 @@ export default function VTTPresenterView() {
 
       {/* Connection status */}
       {!connected && (
-        <div className="absolute top-4 right-4 text-terminal-primary/40 text-xs font-mono animate-pulse">
-          Connecting...
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="text-terminal-primary/40 text-sm font-mono animate-pulse">
+            Connecting to GM session...
+          </div>
         </div>
       )}
     </div>
-  );
-}
-
-// ─── Clock SVG for presenter (compact) ──────────────────────────────────────
-
-function PresenterClockSVG({ clock }: { clock: Clock }) {
-  const size = 40;
-  const cx = size / 2;
-  const cy = size / 2;
-  const r = size / 2 - 2;
-
-  const segments = [];
-  for (let i = 0; i < clock.segments; i++) {
-    const startAngle = (i / clock.segments) * Math.PI * 2 - Math.PI / 2;
-    const endAngle = ((i + 1) / clock.segments) * Math.PI * 2 - Math.PI / 2;
-    const x1 = cx + r * Math.cos(startAngle);
-    const y1 = cy + r * Math.sin(startAngle);
-    const x2 = cx + r * Math.cos(endAngle);
-    const y2 = cy + r * Math.sin(endAngle);
-    const largeArc = endAngle - startAngle > Math.PI ? 1 : 0;
-    const d = `M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${largeArc} 1 ${x2} ${y2} Z`;
-    const filled = i < clock.filled;
-
-    segments.push(
-      <path
-        key={i}
-        d={d}
-        fill={filled ? clock.color : "transparent"}
-        stroke={clock.color}
-        strokeWidth={1}
-        opacity={filled ? 0.8 : 0.2}
-      />
-    );
-  }
-
-  return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-      <circle cx={cx} cy={cy} r={r} fill="transparent" stroke={clock.color} strokeWidth={1.5} opacity={0.3} />
-      {segments}
-    </svg>
   );
 }

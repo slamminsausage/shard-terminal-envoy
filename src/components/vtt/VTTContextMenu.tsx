@@ -10,6 +10,8 @@ import {
   Unlock,
   StickyNote,
   Copy,
+  ShieldAlert,
+  ShieldCheck,
 } from "lucide-react";
 
 interface VTTContextMenuProps {
@@ -35,7 +37,54 @@ export default function VTTContextMenu({
   onEditToken,
   onEditNote,
 }: VTTContextMenuProps) {
-  const { dispatch } = useVTT();
+  const { dispatch, state, activeMap } = useVTT();
+
+  const hasSelection =
+    (state.selectedTokenIds?.length || 0) > 0 ||
+    (state.selectedStrokeIds?.length || 0) > 0 ||
+    (state.selectedTextIds?.length || 0) > 0 ||
+    (state.selectedNoteIds?.length || 0) > 0;
+
+  const toggleGmOnlySelection = () => {
+    if (!activeMap) return;
+    // Toggle gmOnly for all selected items
+    for (const tokenId of state.selectedTokenIds || []) {
+      const t = activeMap.tokens.find((tk) => tk.id === tokenId);
+      if (t) {
+        dispatch({
+          type: "UPDATE_TOKEN",
+          payload: { mapId, tokenId, updates: { visible: !t.visible } },
+        });
+      }
+    }
+    for (const strokeId of state.selectedStrokeIds || []) {
+      const s = activeMap.strokes.find((sk) => sk.id === strokeId);
+      if (s) {
+        dispatch({
+          type: "UPDATE_STROKE",
+          payload: { mapId, strokeId, updates: { gmOnly: !s.gmOnly } },
+        });
+      }
+    }
+    for (const textId of state.selectedTextIds || []) {
+      const t = activeMap.texts.find((tk) => tk.id === textId);
+      if (t) {
+        dispatch({
+          type: "UPDATE_TEXT",
+          payload: { mapId, textId, updates: { gmOnly: !t.gmOnly } },
+        });
+      }
+    }
+    for (const noteId of state.selectedNoteIds || []) {
+      const n = activeMap.notes.find((nk) => nk.id === noteId);
+      if (n) {
+        dispatch({
+          type: "UPDATE_NOTE",
+          payload: { mapId, noteId, updates: { visible: !n.visible } },
+        });
+      }
+    }
+  };
 
   const MenuItem = ({
     icon: Icon,
@@ -91,7 +140,7 @@ export default function VTTContextMenu({
             />
             <MenuItem
               icon={token.visible ? EyeOff : Eye}
-              label={token.visible ? "Hide Token" : "Show Token"}
+              label={token.visible ? "Hide from Players" : "Show to Players"}
               onClick={() =>
                 dispatch({
                   type: "UPDATE_TOKEN",
@@ -162,6 +211,20 @@ export default function VTTContextMenu({
               onClick={() => onEditNote(note, worldPos)}
             />
             <MenuItem
+              icon={note.visible ? EyeOff : Eye}
+              label={note.visible ? "Hide from Players" : "Show to Players"}
+              onClick={() =>
+                dispatch({
+                  type: "UPDATE_NOTE",
+                  payload: {
+                    mapId,
+                    noteId: note.id,
+                    updates: { visible: !note.visible },
+                  },
+                })
+              }
+            />
+            <MenuItem
               icon={Trash2}
               label="Delete Note"
               onClick={() =>
@@ -171,6 +234,21 @@ export default function VTTContextMenu({
                 })
               }
               danger
+            />
+            <Separator />
+          </>
+        )}
+
+        {/* GM Layer toggle for selection */}
+        {hasSelection && (
+          <>
+            <div className="px-3 py-1 text-[10px] text-terminal-primary/40 font-mono uppercase tracking-wider">
+              Selection ({(state.selectedTokenIds?.length || 0) + (state.selectedStrokeIds?.length || 0) + (state.selectedTextIds?.length || 0) + (state.selectedNoteIds?.length || 0)} items)
+            </div>
+            <MenuItem
+              icon={ShieldAlert}
+              label="Toggle GM Only"
+              onClick={toggleGmOnlySelection}
             />
             <Separator />
           </>
