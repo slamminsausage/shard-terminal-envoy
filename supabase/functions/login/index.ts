@@ -47,10 +47,30 @@ serve(async (req) => {
 
     const supabaseClient = createClient(supabaseUrl, supabaseAnonKey)
 
-    const { data: authData, error: authError } = await supabaseClient.auth.signInWithPassword({
-      email,
-      password,
-    })
+    // Wrap signInWithPassword in a timeout — this call can hang indefinitely
+    // if GoTrue is unresponsive or CAPTCHA is misconfigured
+    let authData: any = null
+    let authError: any = null
+
+    try {
+      const result = await Promise.race([
+        supabaseClient.auth.signInWithPassword({ email, password }),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('AUTH_TIMEOUT')), 8000)
+        ),
+      ])
+      authData = result.data
+      authError = result.error
+    } catch (timeoutErr: any) {
+      if (timeoutErr?.message === 'AUTH_TIMEOUT') {
+        console.error('signInWithPassword timed out after 8s')
+        return new Response(
+          JSON.stringify({ error: 'Authentication timed out. Please try again.' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 504 }
+        )
+      }
+      throw timeoutErr
+    }
 
     if (authError) {
       console.error('Login auth error:', authError)
@@ -60,7 +80,7 @@ serve(async (req) => {
       )
     }
 
-    if (!authData.session) {
+    if (!authData?.session) {
       return new Response(
         JSON.stringify({ error: 'Authentication failed — no session returned.' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
@@ -70,7 +90,7 @@ serve(async (req) => {
     // Fetch the player record using admin client
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey)
 
-    // Try lookup by auth_user_id first, fall back to access_code if column missing
+    // Try lookup by auth_user_id first, fall back to access_code if column missing or no match
     let player: any = null
     const { data: p1, error: playerError } = await supabaseAdmin
       .from('players')
@@ -79,9 +99,16 @@ serve(async (req) => {
       .eq('is_active', true)
       .maybeSingle()
 
-    if (playerError && (playerError.message?.includes('auth_user_id') || playerError.code === 'PGRST204')) {
-      // auth_user_id column doesn't exist yet — fall back to matching by access_code (username)
-      console.warn('auth_user_id column missing, falling back to access_code lookup:', playerError.message)
+    if (playerError) {
+      // auth_user_id column may not exist — fall back to access_code
+      console.warn('auth_user_id lookup failed, falling back to access_code:', playerError.message)
+    }
+
+    player = p1
+
+    // If auth_user_id lookup returned no row (or errored), try by access_code
+    // This covers players created before the auth_user_id migration
+    if (!player) {
       const { data: p2, error: fallbackError } = await supabaseAdmin
         .from('players')
         .select('*')
@@ -90,14 +117,23 @@ serve(async (req) => {
         .maybeSingle()
 
       if (fallbackError) {
-        console.error('Player fallback lookup error:', fallbackError)
+        console.error('Player access_code lookup error:', fallbackError)
       }
       player = p2
-    } else {
-      if (playerError) {
-        console.error('Player lookup error:', playerError)
+
+      // If we found a player by access_code but it lacks auth_user_id, link it now
+      if (player && !player.auth_user_id) {
+        await supabaseAdmin
+          .from('players')
+          .update({ auth_user_id: authData.user.id })
+          .eq('id', player.id)
+          .then(({ error: linkError }) => {
+            if (linkError) {
+              // Column might not exist — not critical, just log it
+              console.warn('Could not link auth_user_id to player:', linkError.message)
+            }
+          })
       }
-      player = p1
     }
 
     // Update last_accessed

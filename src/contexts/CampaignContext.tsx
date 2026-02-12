@@ -215,14 +215,8 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
     const email = `${trimmedUsername}@${EMAIL_DOMAIN}`;
 
     // Helper: establish session + player state from edge function response
-    const finishLogin = async (accessToken: string, refreshToken: string, player: any) => {
-      if (player) {
-        setCurrentPlayer(player);
-        currentPlayerRef.current = player;
-        localStorage.setItem(PLAYER_STORAGE_KEY, JSON.stringify(player));
-        setIsAuthenticated(true);
-      }
-
+    // Returns an error string if setSession fails, null on success
+    const finishLogin = async (accessToken: string, refreshToken: string, player: any): Promise<string | null> => {
       skipNextAuthEvent.current = true;
 
       const { error: sessionError } = await supabase.auth.setSession({
@@ -232,7 +226,18 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
 
       if (sessionError) {
         console.error('Session setup error:', sessionError);
+        skipNextAuthEvent.current = false;
+        return 'Failed to establish session. Please try again.';
       }
+
+      if (player) {
+        setCurrentPlayer(player);
+        currentPlayerRef.current = player;
+        localStorage.setItem(PLAYER_STORAGE_KEY, JSON.stringify(player));
+        setIsAuthenticated(true);
+      }
+
+      return null;
     };
 
     // Helper: race a promise against a timeout
@@ -258,7 +263,10 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
           if (!data.player) {
             return { success: false, error: 'Account error: player profile not found. Please contact the GM.' };
           }
-          await finishLogin(data.access_token, data.refresh_token, data.player);
+          const sessionErr = await finishLogin(data.access_token, data.refresh_token, data.player);
+          if (sessionErr) {
+            return { success: false, error: sessionErr };
+          }
           return { success: true };
         }
 
