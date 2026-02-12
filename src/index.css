@@ -459,3 +459,46 @@
     font-size: 13px;
   }
 }
+
+/* VTT Zoom Slider */
+.vtt-zoom-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+}
+
+.vtt-zoom-slider::-webkit-slider-track {
+  width: 4px;
+  background: rgba(0, 255, 0, 0.15);
+  border-radius: 2px;
+  border: 1px solid rgba(0, 255, 0, 0.2);
+}
+
+.vtt-zoom-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  background: rgba(0, 255, 0, 0.8);
+  border-radius: 50%;
+  border: 1px solid rgba(0, 255, 0, 0.5);
+  box-shadow: 0 0 6px rgba(0, 255, 0, 0.4);
+  cursor: pointer;
+}
+
+.vtt-zoom-slider::-moz-range-track {
+  width: 4px;
+  background: rgba(0, 255, 0, 0.15);
+  border-radius: 2px;
+  border: 1px solid rgba(0, 255, 0, 0.2);
+}
+
+.vtt-zoom-slider::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  background: rgba(0, 255, 0, 0.8);
+  border-radius: 50%;
+  border: 1px solid rgba(0, 255, 0, 0.5);
+  box-shadow: 0 0 6px rgba(0, 255, 0, 0.4);
+  cursor: pointer;
+}

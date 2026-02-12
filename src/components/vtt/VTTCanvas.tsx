@@ -8,6 +8,7 @@ import type { Point, Stroke, Token, MapNote, VTTMap, AoETemplate, TextOverlay, W
 import VTTContextMenu from "./VTTContextMenu";
 import VTTTokenEditModal from "./VTTTokenEditModal";
 import VTTNoteModal from "./VTTNoteModal";
+import VTTZoomControl from "./VTTZoomControl";
 
 const MIN_ZOOM = 0.1;
 const MAX_ZOOM = 5;
@@ -49,6 +50,9 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
   const currentStrokeRef = useRef<Point[]>([]);
   const [dragToken, setDragToken] = useState<string | null>(null);
   const dragOffsetRef = useRef<Point>({ x: 0, y: 0 });
+  // Group drag: tracks whether we're dragging a multi-selection
+  const [isGroupDrag, setIsGroupDrag] = useState(false);
+  const groupDragLastWorldRef = useRef<Point>({ x: 0, y: 0 });
 
   // Fog brush painting state
   const [isFogPainting, setIsFogPainting] = useState(false);
@@ -265,17 +269,30 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
               });
               return;
             }
-            // If token is already selected (part of multi-select), start group drag
             const ids = state.selectedTokenIds || [];
-            if (!ids.includes(token.id)) {
-              dispatch({ type: "SET_SELECTION", payload: [token.id] });
+            const hasMultiSelection =
+              ids.length > 1 ||
+              (state.selectedStrokeIds || []).length > 0 ||
+              (state.selectedTextIds || []).length > 0 ||
+              (state.selectedNoteIds || []).length > 0;
+
+            if (ids.includes(token.id) && hasMultiSelection) {
+              // Start group drag for all selected items
+              setIsGroupDrag(true);
+              groupDragLastWorldRef.current = worldPos;
+              dragStartPosRef.current = { x: token.x, y: token.y };
+            } else {
+              // Single token selection + drag
+              if (!ids.includes(token.id)) {
+                dispatch({ type: "SET_SELECTION", payload: [token.id] });
+              }
+              setDragToken(token.id);
+              dragStartPosRef.current = { x: token.x, y: token.y };
+              dragOffsetRef.current = {
+                x: worldPos.x - token.x,
+                y: worldPos.y - token.y,
+              };
             }
-            setDragToken(token.id);
-            dragStartPosRef.current = { x: token.x, y: token.y };
-            dragOffsetRef.current = {
-              x: worldPos.x - token.x,
-              y: worldPos.y - token.y,
-            };
           } else if (!token) {
             // Click empty space: start selection box or deselect
             if (!e.shiftKey) {
@@ -415,6 +432,85 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
         return;
       }
 
+      // Group drag: move all selected items by delta
+      if (isGroupDrag && activeMap) {
+        const worldPos = getWorldPos(e);
+        const dx = worldPos.x - groupDragLastWorldRef.current.x;
+        const dy = worldPos.y - groupDragLastWorldRef.current.y;
+        groupDragLastWorldRef.current = worldPos;
+
+        // Move selected tokens
+        for (const tokenId of (state.selectedTokenIds || [])) {
+          const token = activeMap.tokens.find((t) => t.id === tokenId);
+          if (token && !token.locked) {
+            dispatch({
+              type: "UPDATE_TOKEN",
+              payload: {
+                mapId: activeMap.id,
+                tokenId,
+                updates: { x: token.x + dx, y: token.y + dy },
+              },
+            });
+          }
+        }
+
+        // Move selected strokes
+        for (const strokeId of (state.selectedStrokeIds || [])) {
+          const stroke = activeMap.strokes.find((s) => s.id === strokeId);
+          if (stroke) {
+            const movedPoints = stroke.points.map((p) => ({
+              x: p.x + dx,
+              y: p.y + dy,
+            }));
+            dispatch({
+              type: "REMOVE_STROKE",
+              payload: { mapId: activeMap.id, strokeId },
+            });
+            dispatch({
+              type: "ADD_STROKE",
+              payload: {
+                mapId: activeMap.id,
+                stroke: { ...stroke, points: movedPoints },
+              },
+            });
+          }
+        }
+
+        // Move selected texts
+        for (const textId of (state.selectedTextIds || [])) {
+          const text = activeMap.texts.find((t) => t.id === textId);
+          if (text) {
+            dispatch({
+              type: "REMOVE_TEXT",
+              payload: { mapId: activeMap.id, textId },
+            });
+            dispatch({
+              type: "ADD_TEXT",
+              payload: {
+                mapId: activeMap.id,
+                text: { ...text, x: text.x + dx, y: text.y + dy },
+              },
+            });
+          }
+        }
+
+        // Move selected notes
+        for (const noteId of (state.selectedNoteIds || [])) {
+          const note = activeMap.notes.find((n) => n.id === noteId);
+          if (note) {
+            dispatch({
+              type: "UPDATE_NOTE",
+              payload: {
+                mapId: activeMap.id,
+                noteId,
+                updates: { x: note.x + dx, y: note.y + dy },
+              },
+            });
+          }
+        }
+        return;
+      }
+
       if (isDrawing) {
         const worldPos = getWorldPos(e);
         currentStrokeRef.current.push(worldPos);
@@ -452,13 +548,18 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
         return;
       }
     },
-    [activeMap, isPanning, dragToken, isDrawing, measuring, drawingWall, isFogPainting, placingAoE, selectionBox, state.activeTool, state.fogBrushSize, state.fogBrushMode, dispatch, getWorldPos, paintFog]
+    [activeMap, isPanning, dragToken, isGroupDrag, isDrawing, measuring, drawingWall, isFogPainting, placingAoE, selectionBox, state, dispatch, getWorldPos, paintFog]
   );
 
   const handleMouseUp = useCallback(
     (e: React.MouseEvent) => {
       if (isPanning) {
         setIsPanning(false);
+        return;
+      }
+
+      if (isGroupDrag) {
+        setIsGroupDrag(false);
         return;
       }
 
@@ -501,6 +602,7 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
           color: state.drawColor,
           width: state.drawWidth,
           layer: state.activeLayer,
+          gmOnly: state.activeLayer === 2,
         };
 
         dispatch({
@@ -607,7 +709,7 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
         return;
       }
 
-      // Selection box complete
+      // Selection box complete - select all non-map layer items within box
       if (selectionBox && activeMap) {
         const box = selectionBox;
         setSelectionBox(null);
@@ -618,7 +720,9 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
         // Only select if the box has some size
         if (maxX - minX > 5 || maxY - minY > 5) {
           const gridSize = activeMap.grid.size || 50;
-          const selected = activeMap.tokens
+
+          // Select tokens (not on map layer, not locked)
+          const tokenIds = activeMap.tokens
             .filter((t) => {
               const halfSize = (t.size * gridSize) / 2;
               return (
@@ -630,12 +734,41 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
               );
             })
             .map((t) => t.id);
-          dispatch({ type: "SET_SELECTION", payload: selected });
+
+          // Select strokes (non-map layer) by checking if any point is within box
+          const strokeIds = activeMap.strokes
+            .filter((s) => {
+              if (s.layer === 0) return false; // skip map layer
+              return s.points.some(
+                (p) => p.x >= minX && p.x <= maxX && p.y >= minY && p.y <= maxY
+              );
+            })
+            .map((s) => s.id);
+
+          // Select text overlays (non-map layer)
+          const textIds = activeMap.texts
+            .filter((t) => {
+              if (t.layer === 0) return false;
+              return t.x >= minX && t.x <= maxX && t.y >= minY && t.y <= maxY;
+            })
+            .map((t) => t.id);
+
+          // Select notes
+          const noteIds = activeMap.notes
+            .filter((n) => {
+              return n.x >= minX && n.x <= maxX && n.y >= minY && n.y <= maxY;
+            })
+            .map((n) => n.id);
+
+          dispatch({
+            type: "SET_FULL_SELECTION",
+            payload: { tokenIds, strokeIds, textIds, noteIds },
+          });
         }
         return;
       }
     },
-    [isPanning, dragToken, isDrawing, measuring, drawingWall, isFogPainting, placingAoE, selectionBox, activeMap, state, dispatch, exportFogData]
+    [isPanning, isGroupDrag, dragToken, isDrawing, measuring, drawingWall, isFogPainting, placingAoE, selectionBox, activeMap, state, dispatch, exportFogData]
   );
 
   // Right-click context menu
@@ -657,37 +790,19 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
     [activeMap, getWorldPos, findTokenAt, findNoteAt]
   );
 
-  // Zoom with scroll wheel - use native listener with { passive: false }
-  // so preventDefault() actually stops page scrolling
-  const activeMapRef = useRef(activeMap);
-  activeMapRef.current = activeMap;
-
+  // Prevent scroll wheel from scrolling the page on the canvas (no zoom)
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
     const handleWheel = (e: WheelEvent) => {
-      const map = activeMapRef.current;
-      if (!map) return;
       e.preventDefault();
       e.stopPropagation();
-      const delta = e.deltaY > 0 ? 0.9 : 1.1;
-      const newZoom = clamp(map.zoom * delta, MIN_ZOOM, MAX_ZOOM);
-
-      dispatch({
-        type: "SET_VIEWPORT",
-        payload: {
-          mapId: map.id,
-          scrollX: map.scrollX,
-          scrollY: map.scrollY,
-          zoom: newZoom,
-        },
-      });
     };
 
     canvas.addEventListener("wheel", handleWheel, { passive: false });
     return () => canvas.removeEventListener("wheel", handleWheel);
-  }, [dispatch]);
+  }, []);
 
   // ─── Render loop ────────────────────────────────────────────────────
 
@@ -857,6 +972,86 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
       }
     }
 
+    // Selected stroke highlights
+    const selectedStrokeIds = state.selectedStrokeIds || [];
+    if (selectedStrokeIds.length > 0) {
+      for (const strokeId of selectedStrokeIds) {
+        const stroke = activeMap.strokes.find((s) => s.id === strokeId);
+        if (!stroke || stroke.points.length === 0) continue;
+        ctx.save();
+        ctx.strokeStyle = "#00ccff";
+        ctx.lineWidth = stroke.width + 4;
+        ctx.globalAlpha = 0.4;
+        ctx.setLineDash([6, 4]);
+        if (stroke.tool === "freehand" && stroke.points.length > 1) {
+          ctx.beginPath();
+          ctx.moveTo(stroke.points[0].x, stroke.points[0].y);
+          for (let i = 1; i < stroke.points.length; i++) {
+            ctx.lineTo(stroke.points[i].x, stroke.points[i].y);
+          }
+          ctx.stroke();
+        } else if (stroke.tool === "line" && stroke.points.length >= 2) {
+          ctx.beginPath();
+          ctx.moveTo(stroke.points[0].x, stroke.points[0].y);
+          ctx.lineTo(stroke.points[1].x, stroke.points[1].y);
+          ctx.stroke();
+        } else if (stroke.tool === "rect" && stroke.points.length >= 2) {
+          const [p1, p2] = stroke.points;
+          ctx.strokeRect(p1.x, p1.y, p2.x - p1.x, p2.y - p1.y);
+        } else if (stroke.tool === "circle" && stroke.points.length >= 2) {
+          const [center, edge] = stroke.points;
+          const dx = edge.x - center.x;
+          const dy = edge.y - center.y;
+          const r = Math.sqrt(dx * dx + dy * dy);
+          ctx.beginPath();
+          ctx.arc(center.x, center.y, r, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+        ctx.setLineDash([]);
+        ctx.restore();
+      }
+    }
+
+    // Selected text highlights
+    const selectedTextIds = state.selectedTextIds || [];
+    if (selectedTextIds.length > 0) {
+      for (const textId of selectedTextIds) {
+        const text = activeMap.texts.find((t) => t.id === textId);
+        if (!text) continue;
+        ctx.save();
+        ctx.strokeStyle = "#00ccff";
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([4, 3]);
+        ctx.globalAlpha = 0.6;
+        ctx.font = `${text.fontSize}px "${text.fontFamily || "Share Tech Mono"}", monospace`;
+        const metrics = ctx.measureText(text.text);
+        ctx.strokeRect(text.x - 2, text.y - 2, metrics.width + 4, text.fontSize + 4);
+        ctx.setLineDash([]);
+        ctx.restore();
+      }
+    }
+
+    // Selected note highlights
+    const selectedNoteIds = state.selectedNoteIds || [];
+    if (selectedNoteIds.length > 0) {
+      for (const noteId of selectedNoteIds) {
+        const note = activeMap.notes.find((n) => n.id === noteId);
+        if (!note) continue;
+        ctx.save();
+        ctx.strokeStyle = "#00ccff";
+        ctx.lineWidth = 2;
+        ctx.setLineDash([4, 3]);
+        ctx.globalAlpha = 0.8;
+        ctx.shadowColor = "#00ccff";
+        ctx.shadowBlur = 8;
+        ctx.beginPath();
+        ctx.arc(note.x, note.y, 12, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.restore();
+      }
+    }
+
     // Active turn indicator (pulsing yellow glow)
     if (state.initiative?.length > 0) {
       const activeTokenId = state.initiative[0]?.tokenId;
@@ -935,7 +1130,7 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
     <div
       ref={containerRef}
       className={`relative w-full h-full overflow-hidden bg-terminal-bg-dark ${className || ""}`}
-      style={{ cursor: getCursor(state.activeTool, isPanning, !!dragToken) }}
+      style={{ cursor: getCursor(state.activeTool, isPanning, !!dragToken || isGroupDrag) }}
     >
       <canvas
         ref={canvasRef}
@@ -944,8 +1139,11 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
         onContextMenu={handleContextMenu}
-        className="block w-full h-full"
+        className="block w-full h-full vtt-main-canvas"
       />
+
+      {/* Zoom control */}
+      <VTTZoomControl />
 
       {/* Map name overlay */}
       {activeMap && (
@@ -987,6 +1185,7 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
                       fontSize: state.drawWidth * 6 + 10,
                       color: state.drawColor,
                       layer: state.activeLayer,
+                      gmOnly: state.activeLayer === 2,
                     },
                   },
                 });
@@ -1127,7 +1326,10 @@ function drawStrokes(ctx: CanvasRenderingContext2D, strokes: Stroke[]) {
     ctx.lineWidth = s.width;
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
-    ctx.globalAlpha = s.opacity ?? 1;
+    // GM-only items rendered dimmed with dashed lines
+    const isGmOnly = s.gmOnly;
+    ctx.globalAlpha = isGmOnly ? (s.opacity ?? 1) * 0.35 : (s.opacity ?? 1);
+    if (isGmOnly) ctx.setLineDash([8, 4]);
 
     if (s.tool === "freehand" && s.points.length > 1) {
       ctx.beginPath();
@@ -1154,6 +1356,7 @@ function drawStrokes(ctx: CanvasRenderingContext2D, strokes: Stroke[]) {
       ctx.stroke();
     }
 
+    if (isGmOnly) ctx.setLineDash([]);
     ctx.globalAlpha = 1;
   }
 }
@@ -1453,11 +1656,14 @@ function drawMeasurement(
 
 function drawTextOverlays(ctx: CanvasRenderingContext2D, texts: TextOverlay[]) {
   for (const t of texts) {
+    const isGmOnly = t.gmOnly;
+    ctx.globalAlpha = isGmOnly ? 0.35 : 1;
     ctx.fillStyle = t.color;
     ctx.font = `${t.fontSize}px "${t.fontFamily || "Share Tech Mono"}", monospace`;
     ctx.textAlign = "left";
     ctx.textBaseline = "top";
     ctx.fillText(t.text, t.x, t.y);
+    ctx.globalAlpha = 1;
   }
 }
 

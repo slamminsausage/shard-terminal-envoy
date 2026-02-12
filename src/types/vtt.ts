@@ -56,6 +56,7 @@ export interface Stroke {
   width: number;
   layer: LayerIndex;
   opacity?: number;
+  gmOnly?: boolean;
 }
 
 // --- Text Overlays ---
@@ -69,6 +70,7 @@ export interface TextOverlay {
   color: string;
   fontFamily?: string;
   layer: LayerIndex;
+  gmOnly?: boolean;
 }
 
 // --- Notes (GM Pins) ---
@@ -401,6 +403,9 @@ export interface VTTState {
 
   // Selection
   selectedTokenIds: string[];
+  selectedStrokeIds: string[];
+  selectedTextIds: string[];
+  selectedNoteIds: string[];
 
   // Fog brush settings
   fogBrushSize: number;
@@ -533,6 +538,9 @@ export function createDefaultVTTState(): VTTState {
     presenterMode: false,
     showInitiativeOnPresenter: false,
     selectedTokenIds: [],
+    selectedStrokeIds: [],
+    selectedTextIds: [],
+    selectedNoteIds: [],
     fogBrushSize: 40,
     fogBrushMode: "reveal",
     sidebarPanel: "maps",

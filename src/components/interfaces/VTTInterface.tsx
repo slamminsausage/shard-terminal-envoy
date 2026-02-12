@@ -2,23 +2,26 @@ import { useEffect, useRef } from "react";
 import VTTCanvas from "@/components/vtt/VTTCanvas";
 import VTTToolbar from "@/components/vtt/VTTToolbar";
 import VTTSidebar from "@/components/vtt/VTTSidebar";
+import VTTPlayerView from "@/components/vtt/VTTPlayerView";
 import { useVTT } from "@/contexts/VTTContext";
 import { useVTTParticles } from "@/hooks/useVTTParticles";
 import { useVTTKeyboard } from "@/hooks/useVTTKeyboard";
 import { usePresenterController } from "@/hooks/useVTTPresenter";
 import { useVTTAudio } from "@/hooks/useVTTAudio";
 import { VTTAudioProvider } from "@/contexts/VTTAudioContext";
+import { useCampaign } from "@/contexts/CampaignContext";
 
 export default function VTTInterface() {
+  const { isGM } = useCampaign();
   const { state, activeMap } = useVTT();
   const particleCanvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const { setCanvas } = useVTTParticles(state.particles);
 
-  // Keyboard shortcuts
+  // Keyboard shortcuts (GM only)
   useVTTKeyboard();
 
-  // Presenter mode broadcast
+  // Presenter mode broadcast (GM only)
   const { broadcastPing } = usePresenterController(state, activeMap);
 
   // Audio - hoisted here so it persists across sidebar panel changes
@@ -44,6 +47,15 @@ export default function VTTInterface() {
   useEffect(() => {
     setCanvas(particleCanvasRef.current);
   }, [setCanvas, state.particles.enabled]);
+
+  // Players see the presenter view (read-only map display)
+  if (!isGM) {
+    return (
+      <div className="flex h-full w-full overflow-hidden bg-black">
+        <VTTPlayerView />
+      </div>
+    );
+  }
 
   return (
     <VTTAudioProvider value={audioApi}>
