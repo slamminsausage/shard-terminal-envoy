@@ -29,8 +29,24 @@ BEGIN
     RETURN json_build_object('error', 'Invalid username or password.');
   END IF;
 
+  -- Legacy account without password: allow login (backward compatible)
+  -- They should set a password later via set_player_password
   IF rec.password_hash IS NULL THEN
-    RETURN json_build_object('error', 'No password set. Use access code login or register a new account.');
+    UPDATE public.players SET last_accessed = now() WHERE id = rec.id;
+
+    RETURN json_build_object(
+      'success', true,
+      'needs_password', true,
+      'player', json_build_object(
+        'id', rec.id,
+        'name', rec.name,
+        'role', rec.role,
+        'access_code', rec.access_code,
+        'is_active', rec.is_active,
+        'last_accessed', now(),
+        'created_at', rec.created_at
+      )
+    );
   END IF;
 
   IF rec.password_hash = crypt(p_password, rec.password_hash) THEN

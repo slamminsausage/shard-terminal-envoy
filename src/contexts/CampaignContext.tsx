@@ -180,7 +180,12 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
           console.warn('RPC authenticate_player error:', error.message);
           // Fall through to access-code fallback
         } else if (data?.error) {
-          return { success: false, error: data.error };
+          // If "no password set", fall through to access-code fallback
+          // Otherwise, return the error to the user (e.g. wrong password)
+          if (!String(data.error).toLowerCase().includes('no password set')) {
+            return { success: false, error: data.error };
+          }
+          console.log('Account has no password, falling through to access-code login...');
         } else if (data?.success && data?.player) {
           const player = data.player as Player;
           createLocalSession(player);
