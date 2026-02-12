@@ -2470,7 +2470,12 @@ export const dbHelpers = {
         .maybeSingle();
 
       if (error) {
-        console.error('Database error:', error);
+        // If auth_user_id column doesn't exist, the query will fail with PGRST204
+        if (error.message?.includes('auth_user_id') || error.code === 'PGRST204') {
+          console.warn('auth_user_id column not found in players table — migration may be pending');
+        } else {
+          console.error('Database error:', error);
+        }
         const players = getLocalGameSetting<Player[]>('players') || [];
         return players.find(p => p.auth_user_id === authUserId && p.is_active) || null;
       }
