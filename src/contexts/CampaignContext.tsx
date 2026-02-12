@@ -5,9 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { dbHelpers, supabaseDisabled } from '@/lib/supabase';
 import { defaultCharacters, defaultVehicles } from "@/data/campaignDefaults";
 
-const EMAIL_DOMAIN = 'eclipse-shard.local';
-
-// ─── Legacy session helpers (used when Supabase Auth is disabled) ───
+// ─── Session helpers (localStorage-based, no GoTrue) ───────────────
 
 interface Session {
   token: string;
@@ -54,6 +52,17 @@ const generateSessionToken = (): string => {
   const randomPart = Math.random().toString(36).substring(2, 15);
   const additionalRandom = Math.random().toString(36).substring(2, 15);
   return `${timestamp}-${randomPart}-${additionalRandom}`;
+};
+
+const createLocalSession = (player: Player) => {
+  const session: Session = {
+    token: generateSessionToken(),
+    createdAt: Date.now(),
+    expiresAt: Date.now() + (24 * 60 * 60 * 1000), // 24 hours
+  };
+  localStorage.setItem('traveller_session', JSON.stringify(session));
+  localStorage.setItem('traveller_authenticated', 'true');
+  localStorage.setItem(PLAYER_STORAGE_KEY, JSON.stringify(player));
 };
 
 // ─── Types ──────────────────────────────────────────────────────────
@@ -117,89 +126,32 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
   const [characters, setCharacters] = useState<Character[]>([]);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [authInitialized, setAuthInitialized] = useState(supabaseDisabled);
   const { toast } = useToast();
 
   const isGM = currentPlayer?.role === 'gm';
 
-  // Refs to track latest state for localStorage backup (avoids stale closure)
+  // Refs to track latest state (avoids stale closures in callbacks)
   const charactersRef = useRef<Character[]>([]);
   const vehiclesRef = useRef<Vehicle[]>([]);
   const currentPlayerRef = useRef<Player | null>(currentPlayer);
-
-  // Flag to skip the next auth listener event (set by login/register which handle player state directly)
-  const skipNextAuthEvent = useRef(false);
 
   useEffect(() => { charactersRef.current = characters; }, [characters]);
   useEffect(() => { vehiclesRef.current = vehicles; }, [vehicles]);
   useEffect(() => { currentPlayerRef.current = currentPlayer; }, [currentPlayer]);
 
-  // ─── Supabase Auth state listener ──────────────────────────────
+  // ─── Timeout helper ─────────────────────────────────────────────
 
-  useEffect(() => {
-    if (supabaseDisabled) return;
+  const withTimeout = <T,>(promise: Promise<T>, ms: number): Promise<T> =>
+    Promise.race([
+      promise,
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('TIMEOUT')), ms)
+      ),
+    ]);
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-        // If login/register already handled the player state, skip this event
-        if (skipNextAuthEvent.current) {
-          skipNextAuthEvent.current = false;
-          setAuthInitialized(true);
-          return;
-        }
-        if (session?.user) {
-          const player = await dbHelpers.getPlayerByAuthUserId(session.user.id);
-          if (player) {
-            setCurrentPlayer(player);
-            localStorage.setItem(PLAYER_STORAGE_KEY, JSON.stringify(player));
-            setIsAuthenticated(true);
-          } else if (!currentPlayerRef.current) {
-            // Only sign out if we don't already have a valid player
-            // (login/register may have set one directly before this listener ran)
-            console.warn('Auth listener: no player record found for auth user', session.user.id);
-            await supabase.auth.signOut();
-          }
-        }
-      } else if (event === 'SIGNED_OUT') {
-        setCurrentPlayer(null);
-        setIsAuthenticated(false);
-        setCharacters([]);
-        setVehicles([]);
-        localStorage.removeItem(PLAYER_STORAGE_KEY);
-        localStorage.removeItem('traveller_authenticated');
-        localStorage.removeItem('traveller_session');
-      }
-      setAuthInitialized(true);
-    });
-
-    // Check initial session
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (session?.user) {
-        const player = await dbHelpers.getPlayerByAuthUserId(session.user.id);
-        if (player) {
-          setCurrentPlayer(player);
-          localStorage.setItem(PLAYER_STORAGE_KEY, JSON.stringify(player));
-          setIsAuthenticated(true);
-        } else {
-          console.warn('Initial session check: no player record for auth user', session.user.id);
-          await supabase.auth.signOut();
-        }
-      }
-      setAuthInitialized(true);
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, []);
-
-  // ─── Legacy auth check (for supabaseDisabled mode) ──────────────
+  // ─── Session check ──────────────────────────────────────────────
 
   const checkAuthentication = (): boolean => {
-    if (!supabaseDisabled) {
-      // In Supabase Auth mode, auth state is managed by the listener
-      return isAuthenticated;
-    }
     const isAuth = isValidSession();
     setIsAuthenticated(isAuth);
     if (!isAuth) {
@@ -208,179 +160,65 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
     return isAuth;
   };
 
-  // ─── Login (Supabase Auth) ────────────────────────────────────
+  // ─── Login (DB-only via RPC — no GoTrue) ────────────────────────
 
   const login = useCallback(async (username: string, password: string): Promise<LoginResult> => {
     const trimmedUsername = username.trim().toLowerCase();
-    const email = `${trimmedUsername}@${EMAIL_DOMAIN}`;
 
-    // Helper: establish session + player state from edge function response
-    // Returns an error string if setSession fails, null on success
-    const finishLogin = async (accessToken: string, refreshToken: string, player: any): Promise<string | null> => {
-      skipNextAuthEvent.current = true;
-
-      const { error: sessionError } = await supabase.auth.setSession({
-        access_token: accessToken,
-        refresh_token: refreshToken,
-      });
-
-      if (sessionError) {
-        console.error('Session setup error:', sessionError);
-        skipNextAuthEvent.current = false;
-        return 'Failed to establish session. Please try again.';
-      }
-
-      if (player) {
-        setCurrentPlayer(player);
-        currentPlayerRef.current = player;
-        localStorage.setItem(PLAYER_STORAGE_KEY, JSON.stringify(player));
-        setIsAuthenticated(true);
-      }
-
-      return null;
-    };
-
-    // Helper: race a promise against a timeout
-    const withTimeout = <T,>(promise: Promise<T>, ms: number): Promise<T> =>
-      Promise.race([
-        promise,
-        new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error('TIMEOUT')), ms)
-        ),
-      ]);
-
-    try {
-      // ── Attempt 1: Login Edge Function (server-side auth, avoids CAPTCHA/browser issues)
+    if (!supabaseDisabled) {
+      // Primary path: call authenticate_player RPC (PostgREST, not GoTrue)
       try {
         const { data, error } = await withTimeout(
-          supabase.functions.invoke('login', {
-            body: { username: trimmedUsername, password },
+          supabase.rpc('authenticate_player', {
+            p_username: trimmedUsername,
+            p_password: password,
           }),
-          12000, // 12 second timeout
-        );
-
-        if (!error && data && !data.error && data.access_token && data.refresh_token) {
-          if (!data.player) {
-            return { success: false, error: 'Account error: player profile not found. Please contact the GM.' };
-          }
-          const sessionErr = await finishLogin(data.access_token, data.refresh_token, data.player);
-          if (sessionErr) {
-            return { success: false, error: sessionErr };
-          }
-          return { success: true };
-        }
-
-        // Edge function returned an error — extract message
-        if (data?.error) {
-          return { success: false, error: data.error };
-        }
-
-        if (error) {
-          let errorMessage = '';
-          try {
-            if (error.context && typeof error.context.json === 'function') {
-              const body = await error.context.json();
-              if (body?.error) errorMessage = body.error;
-            }
-          } catch (_) { /* ignore */ }
-
-          // If it's a real auth error (not a network/deployment issue), return it
-          if (errorMessage && !errorMessage.includes('not found') && !errorMessage.includes('Function not found')) {
-            return { success: false, error: errorMessage };
-          }
-          // Otherwise fall through to direct auth
-          console.warn('Login edge function failed, trying direct auth:', error);
-        }
-      } catch (edgeFnError: any) {
-        // Timeout or network error — fall through to direct auth
-        console.warn('Login edge function unavailable:', edgeFnError?.message || edgeFnError);
-      }
-
-      // ── Attempt 2: Direct signInWithPassword (with timeout to prevent infinite hang)
-      console.log('Attempting direct signInWithPassword...');
-      try {
-        const { data: authData, error: authError } = await withTimeout(
-          supabase.auth.signInWithPassword({ email, password }),
           10000, // 10 second timeout
         );
 
-        if (authError) {
-          return { success: false, error: authError.message || 'Invalid username or password.' };
-        }
-
-        if (!authData.session) {
-          return { success: false, error: 'Authentication failed — no session returned.' };
-        }
-
-        // Fetch player record
-        const player = await dbHelpers.getPlayerByAuthUserId(authData.user.id);
-        if (player) {
-          setCurrentPlayer(player);
-          currentPlayerRef.current = player;
-          localStorage.setItem(PLAYER_STORAGE_KEY, JSON.stringify(player));
-          setIsAuthenticated(true);
-        } else {
-          // Try by access_code as fallback
-          const playerByCode = await dbHelpers.getPlayerByAccessCode(trimmedUsername);
-          if (playerByCode) {
-            setCurrentPlayer(playerByCode);
-            currentPlayerRef.current = playerByCode;
-            localStorage.setItem(PLAYER_STORAGE_KEY, JSON.stringify(playerByCode));
-            setIsAuthenticated(true);
-          } else {
-            await supabase.auth.signOut();
-            return { success: false, error: 'Account error: player profile not found. Please contact the GM.' };
-          }
-        }
-
-        return { success: true };
-      } catch (directAuthError: any) {
-        if (directAuthError?.message === 'TIMEOUT') {
-          // Both auth tiers timed out — Supabase Auth is unreachable.
-          // Fall through to Tier 3 (access-code / offline fallback).
-          console.warn('Direct signInWithPassword timed out, trying access-code fallback...');
-        } else {
-          throw directAuthError;
-        }
-      }
-
-      // ── Attempt 3: Access-code fallback (works offline / when Auth is down) ──
-      // Treat the username as an access code and try the player lookup directly,
-      // which falls back to localStorage when the database is also unreachable.
-      console.log('Attempting access-code fallback (Supabase Auth unreachable)...');
-      try {
-        const player = await dbHelpers.getPlayerByAccessCode(trimmedUsername);
-        if (player) {
-          const session = {
-            token: generateSessionToken(),
-            createdAt: Date.now(),
-            expiresAt: Date.now() + (24 * 60 * 60 * 1000),
-          };
-          localStorage.setItem('traveller_session', JSON.stringify(session));
-          localStorage.setItem('traveller_authenticated', 'true');
-          localStorage.setItem(PLAYER_STORAGE_KEY, JSON.stringify(player));
-
+        if (error) {
+          console.warn('RPC authenticate_player error:', error.message);
+          // Fall through to access-code fallback
+        } else if (data?.error) {
+          return { success: false, error: data.error };
+        } else if (data?.success && data?.player) {
+          const player = data.player as Player;
+          createLocalSession(player);
           setCurrentPlayer(player);
           currentPlayerRef.current = player;
           setIsAuthenticated(true);
           return { success: true };
         }
-      } catch (fallbackErr) {
-        console.warn('Access-code fallback also failed:', fallbackErr);
+      } catch (rpcError: any) {
+        if (rpcError?.message === 'TIMEOUT') {
+          console.warn('authenticate_player RPC timed out, trying access-code fallback...');
+        } else {
+          console.warn('RPC call failed:', rpcError?.message || rpcError);
+        }
       }
-
-      // Nothing worked — Supabase is likely paused or unreachable
-      return {
-        success: false,
-        error: 'Cannot reach the authentication server. Your Supabase project may be paused — check the Supabase dashboard.',
-      };
-    } catch (error) {
-      console.error('Login error:', error);
-      return { success: false, error: 'Authentication error. Please try again.' };
     }
+
+    // Fallback: access-code lookup (works offline / when RPC not deployed yet)
+    try {
+      const player = await dbHelpers.getPlayerByAccessCode(trimmedUsername);
+      if (player) {
+        createLocalSession(player);
+        setCurrentPlayer(player);
+        currentPlayerRef.current = player;
+        setIsAuthenticated(true);
+        return { success: true };
+      }
+    } catch (fallbackErr) {
+      console.warn('Access-code fallback failed:', fallbackErr);
+    }
+
+    return {
+      success: false,
+      error: 'Invalid username or password.',
+    };
   }, []);
 
-  // ─── Register (Supabase Auth) ─────────────────────────────────
+  // ─── Register (DB-only via RPC — no GoTrue) ────────────────────
 
   const register = useCallback(async (
     campaignCode: string,
@@ -389,83 +227,63 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
     displayName: string
   ): Promise<RegisterResult> => {
     try {
-      // Call the register edge function
-      const { data, error } = await supabase.functions.invoke('register', {
-        body: {
-          campaign_code: campaignCode,
-          username: username.trim().toLowerCase(),
-          password,
-          display_name: displayName.trim() || username.trim(),
-        },
-      });
+      const { data, error } = await withTimeout(
+        supabase.rpc('register_player', {
+          p_campaign_code: campaignCode,
+          p_username: username.trim().toLowerCase(),
+          p_password: password,
+          p_display_name: displayName.trim() || username.trim(),
+        }),
+        10000,
+      );
 
       if (error) {
-        console.error('Registration error:', error);
-        // Extract the actual error message from the edge function response
-        let errorMessage = 'Registration failed. Please try again.';
-        try {
-          if (error.context && typeof error.context.json === 'function') {
-            const body = await error.context.json();
-            if (body?.error) errorMessage = body.error;
-          }
-        } catch (_) {
-          // Fall through to generic message
-        }
-        return { success: false, error: errorMessage };
+        console.error('Registration RPC error:', error);
+        return { success: false, error: 'Registration failed. The database may be unavailable.' };
       }
 
       if (data?.error) {
         return { success: false, error: data.error };
       }
 
-      // Auto-login after successful registration (reuses the login function with timeouts/fallbacks)
-      const loginResult = await login(username, password);
-
-      if (!loginResult.success) {
-        // Registration succeeded even if auto-login failed
-        return {
-          success: true,
-          role: data?.role,
-          error: 'Account created! Please log in with your username and password.',
-        };
+      if (data?.success && data?.player) {
+        const player = data.player as Player;
+        createLocalSession(player);
+        setCurrentPlayer(player);
+        currentPlayerRef.current = player;
+        setIsAuthenticated(true);
+        return { success: true, role: (data.role || player.role) as 'gm' | 'player' };
       }
 
-      return { success: true, role: data?.role };
-    } catch (error) {
+      return { success: false, error: 'Registration failed — unexpected response.' };
+    } catch (error: any) {
+      if (error?.message === 'TIMEOUT') {
+        return { success: false, error: 'Registration timed out. Please try again.' };
+      }
       console.error('Registration error:', error);
       return { success: false, error: 'An error occurred during registration.' };
     }
-  }, [login]);
+  }, []);
 
-  // ─── Legacy login with access code (backward compat) ───────────
+  // ─── Legacy login with access code ──────────────────────────────
 
   const loginWithCode = useCallback(async (code: string): Promise<{ success: boolean; error?: string }> => {
     try {
-      // Try player-based login first (new system)
+      // Try player-based login first
       const player = await dbHelpers.getPlayerByAccessCode(code);
 
       if (player) {
-        // Player found - set up session
-        const session = {
-          token: generateSessionToken(),
-          createdAt: Date.now(),
-          expiresAt: Date.now() + (24 * 60 * 60 * 1000),
-        };
-        localStorage.setItem('traveller_session', JSON.stringify(session));
-        localStorage.setItem('traveller_authenticated', 'true');
-        localStorage.setItem(PLAYER_STORAGE_KEY, JSON.stringify(player));
-
+        createLocalSession(player);
         setCurrentPlayer(player);
         setIsAuthenticated(true);
         return { success: true };
       }
 
-      // Fallback: check legacy campaign password for backward compatibility
+      // Fallback: check legacy campaign password
       const storedPassword = await dbHelpers.getGameSetting<string>('campaign_password');
       const expectedPassword = storedPassword || 'TRAVELLER2024';
 
       if (code.toUpperCase() === expectedPassword.toUpperCase()) {
-        // Legacy password match - create a session as GM (backward compat)
         const legacyGM: Player = {
           id: 'legacy-gm',
           name: 'Game Master',
@@ -476,15 +294,7 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
           created_at: new Date().toISOString(),
         };
 
-        const session = {
-          token: generateSessionToken(),
-          createdAt: Date.now(),
-          expiresAt: Date.now() + (24 * 60 * 60 * 1000),
-        };
-        localStorage.setItem('traveller_session', JSON.stringify(session));
-        localStorage.setItem('traveller_authenticated', 'true');
-        localStorage.setItem(PLAYER_STORAGE_KEY, JSON.stringify(legacyGM));
-
+        createLocalSession(legacyGM);
         setCurrentPlayer(legacyGM);
         setIsAuthenticated(true);
         return { success: true };
@@ -497,13 +307,9 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
     }
   }, []);
 
-  // ─── Logout ───────────────────────────────────────────────────
+  // ─── Logout (no GoTrue signOut needed) ──────────────────────────
 
   const logout = useCallback(async () => {
-    if (!supabaseDisabled) {
-      await supabase.auth.signOut();
-    }
-
     setIsAuthenticated(false);
     setCurrentPlayer(null);
     setCharacters([]);
@@ -530,7 +336,6 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
       if (!player || player.role === 'gm') {
         charactersData = await dbHelpers.getAllCharacters();
       } else {
-        // Fetch all and filter client-side (simpler than multiple queries)
         const allChars = await dbHelpers.getAllCharacters();
         charactersData = allChars.filter((c: any) =>
           c.player_id === player.id ||
@@ -540,13 +345,11 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
       }
       setCharacters(charactersData as Character[]);
 
-      // All players see all vehicles (shared crew ship)
       const vehiclesData = await dbHelpers.getAllVehicles();
       setVehicles(vehiclesData as Vehicle[]);
     } catch (error) {
       console.error('Failed to refresh data:', error);
 
-      // Fallback to localStorage
       const savedCharacters = localStorage.getItem('traveller_characters');
       const savedVehicles = localStorage.getItem('traveller_vehicles');
       let usedLocalCharacters = false;
@@ -593,13 +396,16 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
     }
   }, []);
 
-  // Check authentication on mount
+  // Restore session from localStorage on mount
   useEffect(() => {
-    if (supabaseDisabled) {
-      const isAuth = checkAuthentication();
-      setIsAuthenticated(isAuth);
+    const isAuth = isValidSession();
+    const storedPlayer = getStoredPlayer();
+
+    if (isAuth && storedPlayer) {
+      setCurrentPlayer(storedPlayer);
+      setIsAuthenticated(true);
     }
-    // Always try to refresh data
+
     refreshData();
   }, [refreshData]);
 
@@ -614,7 +420,6 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
 
   const saveCharacter = async (characterData: Partial<Character>): Promise<Character | null> => {
     try {
-      // Use current player's ID for new characters
       const player = currentPlayerRef.current;
       if (!characterData.id && player && player.id !== 'legacy-gm') {
         characterData.player_id = player.id;
@@ -803,7 +608,6 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
   };
 
   const deleteCharacter = async (characterId: string): Promise<boolean> => {
-    // Players can only delete their own characters
     const player = currentPlayerRef.current;
     if (player && player.role !== 'gm') {
       const char = charactersRef.current.find(c => c.id === characterId);
@@ -839,7 +643,6 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
   };
 
   const deleteVehicle = async (vehicleId: string): Promise<boolean> => {
-    // Only GM can delete vehicles
     const player = currentPlayerRef.current;
     if (player && player.role !== 'gm') {
       toast({
