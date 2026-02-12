@@ -40,54 +40,62 @@ serve(async (req) => {
     const trimmedUsername = username.trim().toLowerCase()
     const email = `${trimmedUsername}@${EMAIL_DOMAIN}`
 
-    // Use a regular client (anon key) to perform signInWithPassword server-side
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? ''
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
 
-    const supabaseClient = createClient(supabaseUrl, supabaseAnonKey)
+    // ── Sign in via direct GoTrue REST API (bypasses Supabase JS client which hangs) ──
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 8000)
 
-    // Wrap signInWithPassword in a timeout — this call can hang indefinitely
-    // if GoTrue is unresponsive or CAPTCHA is misconfigured
-    let authData: any = null
-    let authError: any = null
-
+    let authResult: any
     try {
-      const result = await Promise.race([
-        supabaseClient.auth.signInWithPassword({ email, password }),
-        new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error('AUTH_TIMEOUT')), 8000)
-        ),
-      ])
-      authData = result.data
-      authError = result.error
-    } catch (timeoutErr: any) {
-      if (timeoutErr?.message === 'AUTH_TIMEOUT') {
-        console.error('signInWithPassword timed out after 8s')
+      const authResponse = await fetch(`${supabaseUrl}/auth/v1/token?grant_type=password`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': supabaseAnonKey,
+        },
+        body: JSON.stringify({ email, password }),
+        signal: controller.signal,
+      })
+      clearTimeout(timeout)
+
+      authResult = await authResponse.json()
+
+      if (!authResponse.ok) {
+        console.error('GoTrue auth error:', authResult)
+        const msg = authResult?.error_description || authResult?.msg || 'Invalid username or password.'
+        return new Response(
+          JSON.stringify({ error: msg }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
+        )
+      }
+    } catch (fetchErr: any) {
+      clearTimeout(timeout)
+      if (fetchErr.name === 'AbortError') {
+        console.error('GoTrue auth request aborted after 8s timeout')
         return new Response(
           JSON.stringify({ error: 'Authentication timed out. Please try again.' }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 504 }
         )
       }
-      throw timeoutErr
+      throw fetchErr
     }
 
-    if (authError) {
-      console.error('Login auth error:', authError)
-      return new Response(
-        JSON.stringify({ error: 'Invalid username or password.' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
-      )
-    }
+    // GoTrue returns access_token, refresh_token, user directly in the response body
+    const accessToken = authResult.access_token
+    const refreshToken = authResult.refresh_token
+    const authUser = authResult.user
 
-    if (!authData?.session) {
+    if (!accessToken || !refreshToken || !authUser) {
       return new Response(
         JSON.stringify({ error: 'Authentication failed — no session returned.' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
       )
     }
 
-    // Fetch the player record using admin client
+    // ── Fetch player record using admin client ──
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey)
 
     // Try lookup by auth_user_id first, fall back to access_code if column missing or no match
@@ -95,19 +103,17 @@ serve(async (req) => {
     const { data: p1, error: playerError } = await supabaseAdmin
       .from('players')
       .select('*')
-      .eq('auth_user_id', authData.user.id)
+      .eq('auth_user_id', authUser.id)
       .eq('is_active', true)
       .maybeSingle()
 
     if (playerError) {
-      // auth_user_id column may not exist — fall back to access_code
       console.warn('auth_user_id lookup failed, falling back to access_code:', playerError.message)
     }
 
     player = p1
 
     // If auth_user_id lookup returned no row (or errored), try by access_code
-    // This covers players created before the auth_user_id migration
     if (!player) {
       const { data: p2, error: fallbackError } = await supabaseAdmin
         .from('players')
@@ -121,15 +127,14 @@ serve(async (req) => {
       }
       player = p2
 
-      // If we found a player by access_code but it lacks auth_user_id, link it now
+      // Link auth_user_id to the player if found by access_code
       if (player && !player.auth_user_id) {
         await supabaseAdmin
           .from('players')
-          .update({ auth_user_id: authData.user.id })
+          .update({ auth_user_id: authUser.id })
           .eq('id', player.id)
           .then(({ error: linkError }) => {
             if (linkError) {
-              // Column might not exist — not critical, just log it
               console.warn('Could not link auth_user_id to player:', linkError.message)
             }
           })
@@ -147,8 +152,8 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
-        access_token: authData.session.access_token,
-        refresh_token: authData.session.refresh_token,
+        access_token: accessToken,
+        refresh_token: refreshToken,
         player: player || null,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
