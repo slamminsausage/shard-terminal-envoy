@@ -336,10 +336,44 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
         return { success: true };
       } catch (directAuthError: any) {
         if (directAuthError?.message === 'TIMEOUT') {
-          return { success: false, error: 'Login timed out. The server may be unreachable. Please try again.' };
+          // Both auth tiers timed out — Supabase Auth is unreachable.
+          // Fall through to Tier 3 (access-code / offline fallback).
+          console.warn('Direct signInWithPassword timed out, trying access-code fallback...');
+        } else {
+          throw directAuthError;
         }
-        throw directAuthError;
       }
+
+      // ── Attempt 3: Access-code fallback (works offline / when Auth is down) ──
+      // Treat the username as an access code and try the player lookup directly,
+      // which falls back to localStorage when the database is also unreachable.
+      console.log('Attempting access-code fallback (Supabase Auth unreachable)...');
+      try {
+        const player = await dbHelpers.getPlayerByAccessCode(trimmedUsername);
+        if (player) {
+          const session = {
+            token: generateSessionToken(),
+            createdAt: Date.now(),
+            expiresAt: Date.now() + (24 * 60 * 60 * 1000),
+          };
+          localStorage.setItem('traveller_session', JSON.stringify(session));
+          localStorage.setItem('traveller_authenticated', 'true');
+          localStorage.setItem(PLAYER_STORAGE_KEY, JSON.stringify(player));
+
+          setCurrentPlayer(player);
+          currentPlayerRef.current = player;
+          setIsAuthenticated(true);
+          return { success: true };
+        }
+      } catch (fallbackErr) {
+        console.warn('Access-code fallback also failed:', fallbackErr);
+      }
+
+      // Nothing worked — Supabase is likely paused or unreachable
+      return {
+        success: false,
+        error: 'Cannot reach the authentication server. Your Supabase project may be paused — check the Supabase dashboard.',
+      };
     } catch (error) {
       console.error('Login error:', error);
       return { success: false, error: 'Authentication error. Please try again.' };
