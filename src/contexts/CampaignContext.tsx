@@ -73,6 +73,8 @@ interface RegisterResult {
   role?: 'gm' | 'player';
 }
 
+type RegistrationRole = 'gm' | 'player';
+
 interface LoginResult {
   success: boolean;
   error?: string;
@@ -92,7 +94,13 @@ interface CampaignContextType {
   // Authentication methods
   checkAuthentication: () => boolean;
   login: (username: string, password: string) => Promise<LoginResult>;
-  register: (campaignCode: string, username: string, password: string, displayName: string) => Promise<RegisterResult>;
+  register: (
+    campaignCode: string,
+    username: string,
+    password: string,
+    displayName: string,
+    requestedRole: RegistrationRole,
+  ) => Promise<RegisterResult>;
   loginWithCode: (code: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
 
@@ -102,6 +110,7 @@ interface CampaignContextType {
   saveVehicle: (vehicleData: Partial<Vehicle>) => Promise<Vehicle | null>;
   createNewCharacter: () => Promise<Character | null>;
   createNewVehicle: (vehicleType?: string) => Promise<Vehicle | null>;
+  claimCharacter: (characterId: string) => Promise<boolean>;
   deleteCharacter: (characterId: string) => Promise<boolean>;
   deleteVehicle: (vehicleId: string) => Promise<boolean>;
 }
@@ -229,7 +238,8 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
     campaignCode: string,
     username: string,
     password: string,
-    displayName: string
+    displayName: string,
+    requestedRole: RegistrationRole,
   ): Promise<RegisterResult> => {
     try {
       const { data, error } = await withTimeout(
@@ -238,6 +248,7 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
           p_username: username.trim().toLowerCase(),
           p_password: password,
           p_display_name: displayName.trim() || username.trim(),
+          p_requested_role: requestedRole,
         }),
         10000,
       );
@@ -647,6 +658,66 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
     }
   };
 
+  const claimCharacter = async (characterId: string): Promise<boolean> => {
+    const player = currentPlayerRef.current;
+    if (!player) {
+      return false;
+    }
+
+    if (player.role === 'gm') {
+      toast({
+        title: "Not Needed",
+        description: "GM accounts can already manage all character sheets.",
+      });
+      return false;
+    }
+
+    const char = charactersRef.current.find(c => c.id === characterId);
+    if (!char) {
+      toast({
+        title: "Character Not Found",
+        description: "Could not find that character in the roster.",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    if ((char.character_type || 'pc') !== 'pc') {
+      toast({
+        title: "Cannot Claim NPC",
+        description: "Only player character sheets can be claimed.",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    if (char.player_id !== 'campaign') {
+      toast({
+        title: "Already Claimed",
+        description: "This character is already assigned to a player.",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    const ok = await dbHelpers.reassignCharacter(characterId, player.id);
+    if (!ok) {
+      toast({
+        title: "Claim Failed",
+        description: "Could not claim this character right now.",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    setCharacters(prev => prev.map(c => c.id === characterId ? { ...c, player_id: player.id } : c));
+    toast({
+      title: "Character Claimed",
+      description: `${char.name} is now assigned to your account.`,
+    });
+    return true;
+  };
+
   const deleteVehicle = async (vehicleId: string): Promise<boolean> => {
     const player = currentPlayerRef.current;
     if (player && player.role !== 'gm') {
@@ -696,6 +767,7 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
     saveVehicle,
     createNewCharacter,
     createNewVehicle,
+    claimCharacter,
     deleteCharacter,
     deleteVehicle,
   };
