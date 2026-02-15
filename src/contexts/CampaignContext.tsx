@@ -73,6 +73,8 @@ interface RegisterResult {
   role?: 'gm' | 'player';
 }
 
+type RegistrationRole = 'gm' | 'player';
+
 interface LoginResult {
   success: boolean;
   error?: string;
@@ -92,7 +94,13 @@ interface CampaignContextType {
   // Authentication methods
   checkAuthentication: () => boolean;
   login: (username: string, password: string) => Promise<LoginResult>;
-  register: (campaignCode: string, username: string, password: string, displayName: string) => Promise<RegisterResult>;
+  register: (
+    campaignCode: string,
+    username: string,
+    password: string,
+    displayName: string,
+    requestedRole: RegistrationRole,
+  ) => Promise<RegisterResult>;
   loginWithCode: (code: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
 
@@ -229,7 +237,8 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
     campaignCode: string,
     username: string,
     password: string,
-    displayName: string
+    displayName: string,
+    requestedRole: RegistrationRole,
   ): Promise<RegisterResult> => {
     try {
       const { data, error } = await withTimeout(
@@ -238,6 +247,7 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
           p_username: username.trim().toLowerCase(),
           p_password: password,
           p_display_name: displayName.trim() || username.trim(),
+          p_requested_role: requestedRole,
         }),
         10000,
       );

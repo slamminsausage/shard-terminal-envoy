@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Loader2 } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { useCampaign } from '@/contexts/CampaignContext';
 
@@ -13,6 +14,7 @@ export default function RegisterForm() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [requestedRole, setRequestedRole] = useState<'gm' | 'player'>('player');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
   const { register } = useCampaign();
@@ -48,7 +50,7 @@ export default function RegisterForm() {
     setIsSubmitting(true);
 
     try {
-      const result = await register(campaignCode, username, password, displayName);
+      const result = await register(campaignCode, username, password, displayName, requestedRole);
 
       if (result.success) {
         const roleMsg = result.role === 'gm'
@@ -141,6 +143,29 @@ export default function RegisterForm() {
             />
             <p className="text-primary/40 font-mono text-[10px]">
               Letters, numbers, and underscores only (3-20 chars)
+            </p>
+          </div>
+
+
+          <div className="space-y-2">
+            <Label htmlFor="reg-role" className="text-primary font-mono text-sm">
+              Account Role
+            </Label>
+            <Select
+              value={requestedRole}
+              onValueChange={(value: 'gm' | 'player') => setRequestedRole(value)}
+              disabled={isSubmitting}
+            >
+              <SelectTrigger id="reg-role" className="font-mono bg-background/50 border-primary/30 text-primary">
+                <SelectValue placeholder="Select account role" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="player">Player</SelectItem>
+                <SelectItem value="gm">Game Master</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-primary/40 font-mono text-[10px]">
+              Only one GM account can exist. If a GM already exists, choose Player.
             </p>
           </div>
 
