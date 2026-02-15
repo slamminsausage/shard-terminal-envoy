@@ -29,7 +29,7 @@ function generateAccessCode(): string {
 }
 
 export default function PlayerManagement() {
-  const { characters, isGM, refreshData } = useCampaign();
+  const { characters, isGM, refreshData, currentPlayer } = useCampaign();
   const { toast } = useToast();
   const [players, setPlayers] = useState<Player[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -84,15 +84,30 @@ export default function PlayerManagement() {
   };
 
   const handleDeletePlayer = async (player: Player) => {
-    if (player.role === 'gm') {
-      toast({ title: "Warning", description: "Cannot delete a GM account.", variant: "destructive" });
+    if (!currentPlayer) {
+      toast({ title: "Error", description: "Unable to identify current GM account.", variant: "destructive" });
       return;
     }
 
-    const ok = await dbHelpers.deletePlayer(player.id);
-    if (ok) {
+    if (player.id === currentPlayer.id) {
+      toast({ title: "Warning", description: "You cannot delete the account you are currently using.", variant: "destructive" });
+      return;
+    }
+
+    if (player.role === 'gm') {
+      const gmCount = players.filter(p => p.role === 'gm').length;
+      if (gmCount <= 1) {
+        toast({ title: "Warning", description: "Cannot delete the last GM account.", variant: "destructive" });
+        return;
+      }
+    }
+
+    const result = await dbHelpers.deletePlayerAsGM(currentPlayer.id, player.id);
+    if (result.success) {
       setPlayers(prev => prev.filter(p => p.id !== player.id));
       toast({ title: "Player Deleted", description: `${player.name} has been removed.` });
+    } else {
+      toast({ title: "Error", description: result.error || 'Failed to delete player.', variant: 'destructive' });
     }
   };
 
@@ -191,13 +206,13 @@ export default function PlayerManagement() {
                   >
                     {player.is_active ? 'Disable' : 'Enable'}
                   </Button>
-                  {player.role !== 'gm' && (
+                  {player.id !== currentPlayer?.id && (
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => handleDeletePlayer(player)}
                       className="h-6 px-1 text-terminal-primary/40 hover:text-red-400"
-                      title="Delete player"
+                      title={player.role === 'gm' ? 'Delete GM account' : 'Delete player'}
                     >
                       <Trash2 size={12} />
                     </Button>
