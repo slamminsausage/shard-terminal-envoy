@@ -139,9 +139,9 @@ export default function VTTInitiativePanel() {
         .from("combat_encounters")
         .select("*")
         .eq("player_id", PLAYER_ID)
-        .single();
+        .maybeSingle();
 
-      if (error && error.code !== "PGRST116") {
+      if (error) {
         toast.error("Failed to load combat tracker");
         return;
       }
@@ -177,7 +177,7 @@ export default function VTTInitiativePanel() {
         .from("combat_encounters")
         .select("*")
         .eq("player_id", PLAYER_ID)
-        .single();
+        .maybeSingle();
 
       const existingCombatants: Combatant[] = existing?.combatants || [];
 
@@ -227,7 +227,7 @@ export default function VTTInitiativePanel() {
           .from("combat_encounters")
           .select("*")
           .eq("player_id", PLAYER_ID)
-          .single();
+          .maybeSingle();
 
         if (data?.combatants) {
           const entries: InitiativeEntry[] = data.combatants
