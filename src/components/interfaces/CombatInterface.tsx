@@ -84,9 +84,9 @@ export default function CombatInterface() {
         .from('combat_encounters')
         .select('*')
         .eq('player_id', PLAYER_ID)
-        .single();
+        .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') { // PGRST116 = no rows found
+      if (error) {
         console.error('Error loading combat:', error);
         return;
       }
