@@ -11,6 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ArrowLeft, Plus, Check, X, Trash2, CheckCircle, XCircle } from 'lucide-react';
 import { format } from 'date-fns';
+import { useCampaign } from '@/contexts/CampaignContext';
 
 interface QuestDetailProps {
   questId: string;
@@ -18,6 +19,7 @@ interface QuestDetailProps {
 }
 
 export const QuestDetail: React.FC<QuestDetailProps> = ({ questId, onClose }) => {
+  const { isGM } = useCampaign();
   const {
     getQuest,
     updateQuest,
@@ -454,7 +456,7 @@ export const QuestDetail: React.FC<QuestDetailProps> = ({ questId, onClose }) =>
                     </div>
                   )}
 
-                  {quest.gm_notes && (
+                  {isGM && quest.gm_notes && (
                     <div>
                       <label className="text-xs text-terminal-primary/70 uppercase mb-1 block">
                         GM Notes

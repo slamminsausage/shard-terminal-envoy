@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { X, Save } from 'lucide-react';
+import { useCampaign } from '@/contexts/CampaignContext';
 
 interface SessionCreatorProps {
   onClose: () => void;
@@ -15,6 +16,7 @@ interface SessionCreatorProps {
 
 export const SessionCreator: React.FC<SessionCreatorProps> = ({ onClose }) => {
   const { createSession } = useSession();
+  const { isGM } = useCampaign();
   const { currentDate } = useCalendar();
   const [title, setTitle] = useState('');
   const [sessionDate, setSessionDate] = useState(new Date().toISOString().split('T')[0]);
@@ -33,7 +35,7 @@ export const SessionCreator: React.FC<SessionCreatorProps> = ({ onClose }) => {
       session_date: new Date(sessionDate).toISOString(),
       status,
       summary: summary || undefined,
-      notes: notes || undefined,
+      notes: isGM ? notes || undefined : undefined,
       in_game_date: inGameDate || undefined,
     });
 
@@ -123,18 +125,20 @@ export const SessionCreator: React.FC<SessionCreatorProps> = ({ onClose }) => {
           />
         </div>
 
-        <div>
-          <label className="text-xs text-terminal-primary/70 uppercase mb-1 block">
-            GM Notes
-          </label>
-          <Textarea
-            placeholder="Private notes for the GM..."
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            rows={3}
-            className="bg-black border-terminal-primary/50 text-terminal-primary resize-none"
-          />
-        </div>
+        {isGM && (
+          <div>
+            <label className="text-xs text-terminal-primary/70 uppercase mb-1 block">
+              GM Notes
+            </label>
+            <Textarea
+              placeholder="Private notes for the GM..."
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              rows={3}
+              className="bg-black border-terminal-primary/50 text-terminal-primary resize-none"
+            />
+          </div>
+        )}
 
         <div className="flex gap-2">
           <Button

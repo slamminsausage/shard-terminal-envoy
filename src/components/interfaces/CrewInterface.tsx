@@ -70,6 +70,12 @@ export default function CrewInterface() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!isGM && activeTab === "npcgen") {
+      setActiveTab("crew");
+    }
+  }, [activeTab, isGM]);
+
   const filteredCharacters = useMemo(() => {
     if (rosterFilter === 'all') return characters;
     return characters.filter(c => {
@@ -132,15 +138,17 @@ export default function CrewInterface() {
 
       <div className="interface-content">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="terminal-tabs-list grid-cols-5 mb-4">
+        <TabsList className={`terminal-tabs-list ${isGM ? 'grid-cols-5' : 'grid-cols-4'} mb-4`}>
           <TabsTrigger value="crew" className="terminal-tab-trigger">
             <Users className="h-4 w-4" />
             <span className="hidden sm:inline">Crew</span>
           </TabsTrigger>
-          <TabsTrigger value="npcgen" className="terminal-tab-trigger">
-            <Bot className="h-4 w-4" />
-            <span className="hidden sm:inline">NPC Gen</span>
-          </TabsTrigger>
+          {isGM && (
+            <TabsTrigger value="npcgen" className="terminal-tab-trigger">
+              <Bot className="h-4 w-4" />
+              <span className="hidden sm:inline">NPC Gen</span>
+            </TabsTrigger>
+          )}
           <TabsTrigger value="chargen" className="terminal-tab-trigger">
             <UserPlus className="h-4 w-4" />
             <span className="hidden sm:inline">Char Gen</span>
@@ -317,7 +325,7 @@ export default function CrewInterface() {
                     ) : (
                       rosterFilter !== 'all' ? (
                         <div className="p-3 border border-primary/20 rounded font-mono text-sm text-[var(--text-dimmer)] bg-background/30 text-center">
-                          No {rosterFilter === 'pc' ? 'player characters' : 'NPCs'} found. {rosterFilter === 'npc' ? 'Use the NPC Gen tab to create some.' : ''}
+                          No {rosterFilter === 'pc' ? 'player characters' : 'NPCs'} found. {rosterFilter === 'npc' && isGM ? 'Use the NPC Gen tab to create some.' : ''}
                         </div>
                       ) : (
                         <>
@@ -348,9 +356,11 @@ export default function CrewInterface() {
       </TabsContent>
 
       {/* NPC Generator Tab */}
-      <TabsContent value="npcgen">
-        <NPCGenerator onNPCSaved={() => setActiveTab('crew')} />
-      </TabsContent>
+      {isGM && (
+        <TabsContent value="npcgen">
+          <NPCGenerator onNPCSaved={() => setActiveTab('crew')} />
+        </TabsContent>
+      )}
 
       {/* Character Generator Tab */}
       <TabsContent value="chargen">

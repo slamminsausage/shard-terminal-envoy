@@ -21,6 +21,7 @@ import {
   type CampaignExport
 } from '@/lib/exportImport';
 import { toast } from 'sonner';
+import { dbHelpers } from '@/lib/supabase';
 
 interface ExportImportDialogProps {
   isOpen: boolean;
@@ -29,7 +30,7 @@ interface ExportImportDialogProps {
 
 export function ExportImportDialog({ isOpen, onClose }: ExportImportDialogProps) {
   const { characters, vehicles, saveCharacter, saveVehicle } = useCampaign();
-  const { allNotes, hexMarkers } = useJumpPlanner();
+  const { allNotes, hexMarkers, loadAllNotes, loadAllMarkers, saveMarker } = useJumpPlanner();
 
   const [importedData, setImportedData] = useState<CampaignExport | null>(null);
   const [importError, setImportError] = useState<string | null>(null);
@@ -124,8 +125,31 @@ export function ExportImportDialog({ isOpen, onClose }: ExportImportDialogProps)
         }
       }
 
-      // TODO: Import world notes and hex markers
-      // These would need to be added to the context providers
+      // Import world notes
+      for (const note of importedData.worldNotes) {
+        try {
+          const { id, created_at, updated_at, ...noteData } = note;
+          await dbHelpers.saveWorldNote(noteData);
+          importedCount++;
+        } catch (error) {
+          console.error('Failed to import world note:', note.sector, note.hex, error);
+          errorCount++;
+        }
+      }
+
+      // Import hex markers
+      for (const marker of importedData.hexMarkers) {
+        try {
+          const { id, created_at, updated_at, ...markerData } = marker;
+          await saveMarker(markerData);
+          importedCount++;
+        } catch (error) {
+          console.error('Failed to import hex marker:', marker.marker_label, error);
+          errorCount++;
+        }
+      }
+
+      await Promise.all([loadAllNotes(), loadAllMarkers()]);
 
       if (errorCount === 0) {
         toast.success(`Successfully imported ${importedCount} items!`);
