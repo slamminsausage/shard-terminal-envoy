@@ -2738,6 +2738,52 @@ export const dbHelpers = {
     }
   },
 
+  async claimUnassignedCharacter(characterId: string, playerId: string): Promise<boolean> {
+    if (supabaseDisabled) {
+      const savedChars = localStorage.getItem('traveller_characters');
+      if (!savedChars) return false;
+
+      try {
+        const chars = JSON.parse(savedChars);
+        if (!Array.isArray(chars)) return false;
+
+        const idx = chars.findIndex((c: any) => c?.id === characterId);
+        if (idx < 0) return false;
+
+        const char = chars[idx];
+        const charType = char?.character_type || 'pc';
+        if (charType !== 'pc') return false;
+        if (char?.player_id !== 'campaign') return false;
+
+        chars[idx] = { ...char, player_id: playerId };
+        localStorage.setItem('traveller_characters', JSON.stringify(chars));
+        return true;
+      } catch {
+        return false;
+      }
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('characters')
+        .update({ player_id: playerId })
+        .eq('id', characterId)
+        .eq('player_id', 'campaign')
+        .select('id')
+        .maybeSingle();
+
+      if (error) {
+        console.error('Database error:', error);
+        return false;
+      }
+
+      return Boolean(data?.id);
+    } catch (error) {
+      console.error('Failed to claim unassigned character:', error);
+      return false;
+    }
+  },
+
   async getCharactersByPlayer(playerId: string): Promise<any[]> {
     if (supabaseDisabled) {
       const savedChars = localStorage.getItem('traveller_characters');

@@ -700,11 +700,11 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
       return false;
     }
 
-    const ok = await dbHelpers.reassignCharacter(characterId, player.id);
+    const ok = await dbHelpers.claimUnassignedCharacter(characterId, player.id);
     if (!ok) {
       toast({
         title: "Claim Failed",
-        description: "Could not claim this character right now.",
+        description: "This character may have just been claimed by another player. Refresh and try again.",
         variant: "destructive",
       });
       return false;
