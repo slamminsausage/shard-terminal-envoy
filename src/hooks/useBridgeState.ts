@@ -135,6 +135,7 @@ export function useBridgeState() {
     import.meta.env?.VITE_DISABLE_SUPABASE === "true" ||
     ((import.meta.env?.DEV ?? false) && import.meta.env?.VITE_ENABLE_SUPABASE !== "true")
   );
+  const realtimeEnabled = import.meta.env?.VITE_ENABLE_SUPABASE_REALTIME === "true";
   const [bridgeState, setBridgeState] = useState<BridgeState>({
     id: "local-dev",
     mode: "tactical",
@@ -328,7 +329,7 @@ export function useBridgeState() {
   // REAL-TIME SUBSCRIPTIONS
   // =========================================================
   useEffect(() => {
-    if (!bridgeState.id || bridgeState.id === "local-dev") return;
+    if (!bridgeState.id || bridgeState.id === "local-dev" || !realtimeEnabled) return;
 
     const channel = sb
       .channel("bridge-realtime")
@@ -360,7 +361,7 @@ export function useBridgeState() {
     return () => {
       sb.removeChannel(channel);
     };
-  }, [bridgeState.id, sb]);
+  }, [bridgeState.id, sb, realtimeEnabled]);
 
   // =========================================================
   // ACTIONS (optimistic local update, then Supabase)
