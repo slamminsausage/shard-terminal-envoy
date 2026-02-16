@@ -200,6 +200,22 @@ const removeLocalGameSetting = (key: string): void => {
   }
 };
 
+const getLocalCharacters = (): any[] => {
+  const savedChars = localStorage.getItem('traveller_characters');
+  if (!savedChars) return [];
+
+  try {
+    const chars = JSON.parse(savedChars);
+    return Array.isArray(chars) ? chars : [];
+  } catch {
+    return [];
+  }
+};
+
+const saveLocalCharacters = (characters: any[]): void => {
+  localStorage.setItem('traveller_characters', JSON.stringify(characters));
+};
+
 // Database helper functions
 export const dbHelpers = {
   // Characters
@@ -2660,19 +2676,12 @@ export const dbHelpers = {
 
       // Mirror RPC behavior in offline mode: reassign deleted user's characters
       // back to unassigned campaign ownership.
-      const savedChars = localStorage.getItem('traveller_characters');
-      if (savedChars) {
-        try {
-          const chars = JSON.parse(savedChars);
-          if (Array.isArray(chars)) {
-            const updatedChars = chars.map((c: any) =>
-              c?.player_id === targetPlayerId ? { ...c, player_id: 'campaign' } : c
-            );
-            localStorage.setItem('traveller_characters', JSON.stringify(updatedChars));
-          }
-        } catch {
-          // Ignore local parse errors and still allow account deletion.
-        }
+      const chars = getLocalCharacters();
+      if (chars.length > 0) {
+        const updatedChars = chars.map((c: any) =>
+          c?.player_id === targetPlayerId ? { ...c, player_id: 'campaign' } : c
+        );
+        saveLocalCharacters(updatedChars);
       }
 
       return { success: true };
@@ -2707,16 +2716,11 @@ export const dbHelpers = {
   async reassignCharacter(characterId: string, newPlayerId: string): Promise<boolean> {
     if (supabaseDisabled) {
       // For localStorage mode, update character's player_id in localStorage
-      const savedChars = localStorage.getItem('traveller_characters');
-      if (savedChars) {
-        try {
-          const chars = JSON.parse(savedChars);
-          const idx = chars.findIndex((c: any) => c.id === characterId);
-          if (idx >= 0) {
-            chars[idx].player_id = newPlayerId;
-            localStorage.setItem('traveller_characters', JSON.stringify(chars));
-          }
-        } catch { /* ignore */ }
+      const chars = getLocalCharacters();
+      const idx = chars.findIndex((c: any) => c.id === characterId);
+      if (idx >= 0) {
+        chars[idx].player_id = newPlayerId;
+        saveLocalCharacters(chars);
       }
       return true;
     }
@@ -2740,27 +2744,20 @@ export const dbHelpers = {
 
   async claimUnassignedCharacter(characterId: string, playerId: string): Promise<boolean> {
     if (supabaseDisabled) {
-      const savedChars = localStorage.getItem('traveller_characters');
-      if (!savedChars) return false;
+      const chars = getLocalCharacters();
+      if (!Array.isArray(chars) || chars.length === 0) return false;
 
-      try {
-        const chars = JSON.parse(savedChars);
-        if (!Array.isArray(chars)) return false;
+      const idx = chars.findIndex((c: any) => c?.id === characterId);
+      if (idx < 0) return false;
 
-        const idx = chars.findIndex((c: any) => c?.id === characterId);
-        if (idx < 0) return false;
+      const char = chars[idx];
+      const charType = char?.character_type || 'pc';
+      if (charType !== 'pc') return false;
+      if (char?.player_id !== 'campaign') return false;
 
-        const char = chars[idx];
-        const charType = char?.character_type || 'pc';
-        if (charType !== 'pc') return false;
-        if (char?.player_id !== 'campaign') return false;
-
-        chars[idx] = { ...char, player_id: playerId };
-        localStorage.setItem('traveller_characters', JSON.stringify(chars));
-        return true;
-      } catch {
-        return false;
-      }
+      chars[idx] = { ...char, player_id: playerId };
+      saveLocalCharacters(chars);
+      return true;
     }
 
     try {
@@ -2786,14 +2783,8 @@ export const dbHelpers = {
 
   async getCharactersByPlayer(playerId: string): Promise<any[]> {
     if (supabaseDisabled) {
-      const savedChars = localStorage.getItem('traveller_characters');
-      if (savedChars) {
-        try {
-          const chars = JSON.parse(savedChars);
-          return chars.filter((c: any) => c.player_id === playerId);
-        } catch { /* ignore */ }
-      }
-      return [];
+      const chars = getLocalCharacters();
+      return chars.filter((c: any) => c.player_id === playerId);
     }
 
     try {
