@@ -2643,6 +2643,67 @@ export const dbHelpers = {
     }
   },
 
+  async deletePlayerAsGM(actorPlayerId: string, targetPlayerId: string): Promise<{ success: boolean; error?: string }> {
+    if (supabaseDisabled) {
+      const players = getLocalGameSetting<Player[]>('players') || [];
+      const actor = players.find(p => p.id === actorPlayerId);
+      const target = players.find(p => p.id === targetPlayerId);
+
+      if (!actor || actor.role !== 'gm') return { success: false, error: 'Only GMs can delete accounts.' };
+      if (!target) return { success: false, error: 'Account not found.' };
+      if (actorPlayerId === targetPlayerId) return { success: false, error: 'You cannot delete your own account.' };
+      if (target.role === 'gm' && players.filter(p => p.role === 'gm').length <= 1) {
+        return { success: false, error: 'Cannot delete the last GM account.' };
+      }
+
+      saveLocalGameSetting('players', players.filter(p => p.id !== targetPlayerId));
+
+      // Mirror RPC behavior in offline mode: reassign deleted user's characters
+      // back to unassigned campaign ownership.
+      const savedChars = localStorage.getItem('traveller_characters');
+      if (savedChars) {
+        try {
+          const chars = JSON.parse(savedChars);
+          if (Array.isArray(chars)) {
+            const updatedChars = chars.map((c: any) =>
+              c?.player_id === targetPlayerId ? { ...c, player_id: 'campaign' } : c
+            );
+            localStorage.setItem('traveller_characters', JSON.stringify(updatedChars));
+          }
+        } catch {
+          // Ignore local parse errors and still allow account deletion.
+        }
+      }
+
+      return { success: true };
+    }
+
+    try {
+      const { data, error } = await supabase.rpc('delete_player_account', {
+        p_actor_player_id: actorPlayerId,
+        p_target_player_id: targetPlayerId,
+      });
+
+      if (error) {
+        console.error('Database error:', error);
+        return { success: false, error: error.message || 'Failed to delete player account.' };
+      }
+
+      if (data?.error) {
+        return { success: false, error: data.error };
+      }
+
+      if (!data?.success) {
+        return { success: false, error: 'Failed to delete player account.' };
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error('Failed to delete player as GM:', error);
+      return { success: false, error: 'Failed to delete player account.' };
+    }
+  },
+
   async reassignCharacter(characterId: string, newPlayerId: string): Promise<boolean> {
     if (supabaseDisabled) {
       // For localStorage mode, update character's player_id in localStorage

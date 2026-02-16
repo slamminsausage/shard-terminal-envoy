@@ -56,7 +56,7 @@ export default function CrewInterface() {
   const [showCharacterSheet, setShowCharacterSheet] = useState(false);
   const [activeTab, setActiveTab] = useState("crew");
   const [rosterFilter, setRosterFilter] = useState<RosterFilter>('all');
-  const { createNewCharacter, characters, vehicles, deleteCharacter } = useCampaign();
+  const { createNewCharacter, characters, vehicles, deleteCharacter, claimCharacter, currentPlayer, isGM } = useCampaign();
   const [characterToDelete, setCharacterToDelete] = useState<string | null>(null);
 
   useEffect(() => {
@@ -209,6 +209,11 @@ export default function CrewInterface() {
                   <div className="space-y-2">
                     {filteredCharacters.length > 0 ? (
                       filteredCharacters.map((character, index) => {
+                        const isOwner = currentPlayer?.id === character.player_id;
+                        const isUnassignedPC = (character.character_type || 'pc') === 'pc' && character.player_id === 'campaign';
+                        const canEdit = isGM || isOwner;
+                        const canClaim = !isGM && isUnassignedPC;
+                        const canDelete = isGM || isOwner;
                         const assignedVehicle = vehicles.find(vehicle =>
                           vehicle.crew_requirements &&
                           Object.keys(vehicle.crew_requirements).includes(character.id)
@@ -249,6 +254,7 @@ export default function CrewInterface() {
                                variant="outline"
                                size="sm"
                                className="text-xs"
+                               disabled={!canEdit}
                                onClick={() => {
                                  setActiveCrewMember(character.id);
                                  setShowCharacterSheet(true);
@@ -256,6 +262,16 @@ export default function CrewInterface() {
                              >
                                Edit
                              </Button>
+                             {canClaim && (
+                               <Button
+                                 variant="outline"
+                                 size="sm"
+                                 className="text-xs border-emerald-500 text-emerald-400 hover:bg-emerald-500 hover:text-black"
+                                 onClick={() => void claimCharacter(character.id)}
+                               >
+                                 Claim
+                               </Button>
+                             )}
                              <Button
                                onClick={() => {
                                  const url = `/character-view/${character.id}`;
@@ -267,31 +283,33 @@ export default function CrewInterface() {
                              >
                                View
                              </Button>
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button variant="outline" size="sm" className="text-xs text-red-400 border-red-400 hover:bg-red-400 hover:text-white">
-                                  Delete
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Delete Character</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    Are you sure you want to permanently delete "{character.name}"? This action cannot be undone.
-                                    The character will be removed from any ship crew assignments.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction
-                                    onClick={() => handleDeleteCharacter(character.id)}
-                                    className="bg-red-600 hover:bg-red-700"
-                                  >
-                                    Delete Permanently
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                             </AlertDialog>
+                            {canDelete && (
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button variant="outline" size="sm" className="text-xs text-red-400 border-red-400 hover:bg-red-400 hover:text-white">
+                                    Delete
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Delete Character</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Are you sure you want to permanently delete "{character.name}"? This action cannot be undone.
+                                      The character will be removed from any ship crew assignments.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction
+                                      onClick={() => handleDeleteCharacter(character.id)}
+                                      className="bg-red-600 hover:bg-red-700"
+                                    >
+                                      Delete Permanently
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            )}
                            </div>
                         </div>
                         );
