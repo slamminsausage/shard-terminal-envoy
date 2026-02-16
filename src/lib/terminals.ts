@@ -3,8 +3,6 @@ export interface TerminalDefinition {
   name: string;
   logPath: string;
   requiresRoll?: number;
-  requiresPassword?: boolean;
-  password?: string;
   requiresSpecialHandler?: boolean;
 }
 
@@ -22,9 +20,7 @@ export const TERMINALS: TerminalDefinition[] = [
     code: 'vennik01',
     name: 'Vennik Corporate Hub',
     logPath: '/logs/vennik01.json',
-    requiresRoll: 12,
-    requiresPassword: true,
-    password: 'vennik4ever'
+    requiresRoll: 12
   },
   { code: 'caldonis_public', name: 'Caldonis Public Network', logPath: '/logs/caldonis_public.json' },
   { code: 'es1-omegalab', name: 'ES1-OmegaLab', logPath: '/logs/es1-omegalab.json', requiresRoll: 10 },

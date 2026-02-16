@@ -1,6 +1,7 @@
 import { X } from "lucide-react";
 import type { HexMarker } from "@/types/navigation";
 import { getMarkerTypeConfig } from "@/config/markerTypes";
+import { useCampaign } from "@/contexts/CampaignContext";
 
 interface MarkerInfoModalProps {
   marker: HexMarker;
@@ -10,6 +11,7 @@ interface MarkerInfoModalProps {
 
 export function MarkerInfoModal({ marker, isOpen, onClose }: MarkerInfoModalProps) {
   const config = getMarkerTypeConfig(marker.marker_type);
+  const { isGM } = useCampaign();
 
   if (!isOpen) return null;
 
@@ -74,7 +76,7 @@ export function MarkerInfoModal({ marker, isOpen, onClose }: MarkerInfoModalProp
         </div>
 
         {/* GM Notes (if any) */}
-        {marker.gm_notes && (
+        {isGM && marker.gm_notes && (
           <div className="mb-4">
             <div className="text-xs text-terminal-text-dimmer uppercase mb-1">GM Notes</div>
             <div className="text-sm text-terminal-secondary whitespace-pre-wrap opacity-60">

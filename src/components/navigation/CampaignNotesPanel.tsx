@@ -2,6 +2,7 @@ import { useJumpPlanner } from "@/contexts/JumpPlannerContext";
 import { AccordionPanel } from "./AccordionPanel";
 import type { WorldStatus } from "@/types/navigation";
 import { Loader2 } from "lucide-react";
+import { useCampaign } from "@/contexts/CampaignContext";
 
 const STATUS_OPTIONS: { value: WorldStatus; label: string; color: string }[] = [
   { value: "UNKNOWN", label: "Unknown", color: "var(--text-dimmer)" },
@@ -23,6 +24,7 @@ export function CampaignNotesPanel() {
     updateNote,
     saveNote,
   } = useJumpPlanner();
+  const { isGM } = useCampaign();
 
   return (
     <AccordionPanel
@@ -39,6 +41,11 @@ export function CampaignNotesPanel() {
           <Loader2 className="w-6 h-6 animate-spin text-primary" />
         </div>
       ) : currentNote ? (
+        currentNote.gm_only && !isGM ? (
+          <div className="text-center py-8 text-terminal-warning-alt">
+            <p>This world note is marked GM-only.</p>
+          </div>
+        ) : (
         <div className="space-y-3">
           {/* World Status */}
           <div>
@@ -114,30 +121,34 @@ export function CampaignNotesPanel() {
           </div>
 
           {/* GM Notes */}
-          <div>
-            <label className="text-terminal-text-dimmer text-xs block mb-1">
-              GM NOTES (hidden):
-            </label>
-            <textarea
-              value={currentNote.gm_notes || ""}
-              onChange={(e) => updateNote({ gm_notes: e.target.value })}
-              placeholder="Secret GM information..."
-              className="terminal-input text-sm min-h-[80px] resize-y border-terminal-warning-alt/30"
-            />
-          </div>
+          {isGM && (
+            <div>
+              <label className="text-terminal-text-dimmer text-xs block mb-1">
+                GM NOTES (hidden):
+              </label>
+              <textarea
+                value={currentNote.gm_notes || ""}
+                onChange={(e) => updateNote({ gm_notes: e.target.value })}
+                placeholder="Secret GM information..."
+                className="terminal-input text-sm min-h-[80px] resize-y border-terminal-warning-alt/30"
+              />
+            </div>
+          )}
 
           {/* GM Only Toggle */}
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={currentNote.gm_only || false}
-              onChange={(e) => updateNote({ gm_only: e.target.checked })}
-              className="accent-terminal-warning-alt"
-            />
-            <span className="text-terminal-warning-alt text-xs">
-              Entire note is GM-only
-            </span>
-          </label>
+          {isGM && (
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={currentNote.gm_only || false}
+                onChange={(e) => updateNote({ gm_only: e.target.checked })}
+                className="accent-terminal-warning-alt"
+              />
+              <span className="text-terminal-warning-alt text-xs">
+                Entire note is GM-only
+              </span>
+            </label>
+          )}
 
           {/* Last Visited */}
           {currentNote.last_visited && (
@@ -156,6 +167,7 @@ export function CampaignNotesPanel() {
             {isSavingNote ? "SAVING..." : "SAVE NOTES"}
           </button>
         </div>
+        )
       ) : (
         <div className="text-center py-8 text-terminal-text-dimmer">
           <p>Select a world to view or add notes</p>
