@@ -21,7 +21,6 @@ import {
 } from 'lucide-react';
 import { useCampaign } from '@/contexts/CampaignContext';
 import { roll2d6, rollDamageExpression } from '@/lib/dice';
-import { PRE_MADE_SHIPS } from '@/data/shipConstruction/preMadeShips';
 import {
   COMBAT_PHASE_LABELS,
   COMBAT_PHASES,
