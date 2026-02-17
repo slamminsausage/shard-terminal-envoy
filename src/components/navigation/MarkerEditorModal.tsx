@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { X } from "lucide-react";
 import { useJumpPlanner } from "@/contexts/JumpPlannerContext";
+import { useCampaign } from "@/contexts/CampaignContext";
 import { getAllMarkerTypes, MARKER_ICONS } from "@/config/markerTypes";
 import type { HexMarker, MarkerType } from "@/types/navigation";
 
@@ -20,6 +21,7 @@ export function MarkerEditorModal({
   hex,
 }: MarkerEditorModalProps) {
   const { saveMarker, isSavingMarker } = useJumpPlanner();
+  const { isGM } = useCampaign();
   const markerTypes = getAllMarkerTypes();
 
   const [formData, setFormData] = useState<Partial<HexMarker>>({
@@ -246,21 +248,23 @@ export function MarkerEditorModal({
             </div>
 
             {/* GM Notes */}
-            <div>
-              <label className="block text-sm text-terminal-text-dimmer mb-2">
-                GM NOTES
-              </label>
-              <textarea
-                className="terminal-input w-full min-h-[80px] resize-y font-mono text-sm border-terminal-warning"
-                value={formData.gm_notes}
-                onChange={(e) => setFormData({ ...formData, gm_notes: e.target.value })}
-                placeholder="GM-only information (for future GM mode)..."
-                maxLength={500}
-              />
-              <div className="text-xs text-terminal-warning mt-1">
-                For future GM mode • {formData.gm_notes?.length || 0} / 500
+            {isGM && (
+              <div>
+                <label className="block text-sm text-terminal-text-dimmer mb-2">
+                  GM NOTES
+                </label>
+                <textarea
+                  className="terminal-input w-full min-h-[80px] resize-y font-mono text-sm border-terminal-warning"
+                  value={formData.gm_notes}
+                  onChange={(e) => setFormData({ ...formData, gm_notes: e.target.value })}
+                  placeholder="GM-only information (for future GM mode)..."
+                  maxLength={500}
+                />
+                <div className="text-xs text-terminal-warning mt-1">
+                  For future GM mode • {formData.gm_notes?.length || 0} / 500
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Options */}
             <div className="space-y-2 border-t border-terminal-bg-border pt-4">

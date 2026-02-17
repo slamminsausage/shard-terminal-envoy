@@ -8,12 +8,20 @@ import { StandingPanel } from '../piracy/StandingPanel';
 import { SpoilsCalculator } from '../piracy/SpoilsCalculator';
 import { PreyEncounterPanel } from '../piracy/PreyEncounterPanel';
 import { PrizeShipPanel } from '../piracy/PrizeShipPanel';
+import { useCampaign } from '@/contexts/CampaignContext';
 
 export const PiracyInterface: React.FC = () => {
+  const { isGM } = useCampaign();
   const [activeSubTab, setActiveSubTab] = useState(() => {
     if (typeof window === "undefined") return "ports";
     return localStorage.getItem("piracy_active_subtab") || "ports";
   });
+
+  React.useEffect(() => {
+    if (!isGM && activeSubTab === 'prey') {
+      setActiveSubTab('ports');
+    }
+  }, [activeSubTab, isGM]);
 
   React.useEffect(() => {
     if (typeof window !== "undefined") {
@@ -34,7 +42,7 @@ export const PiracyInterface: React.FC = () => {
 
       <div className="interface-content">
         <Tabs value={activeSubTab} onValueChange={setActiveSubTab} className="w-full">
-          <TabsList className="terminal-tabs-list grid-cols-7 mb-4">
+          <TabsList className={`terminal-tabs-list ${isGM ? 'grid-cols-7' : 'grid-cols-6'} mb-4`}>
             <TabsTrigger value="ports" className="terminal-tab-trigger">
               <Anchor className="h-4 w-4" />
               <span className="hidden sm:inline">Ports</span>
@@ -55,10 +63,12 @@ export const PiracyInterface: React.FC = () => {
               <Coins className="h-4 w-4" />
               <span className="hidden sm:inline">Spoils</span>
             </TabsTrigger>
-            <TabsTrigger value="prey" className="terminal-tab-trigger">
-              <Crosshair className="h-4 w-4" />
-              <span className="hidden sm:inline">Prey</span>
-            </TabsTrigger>
+            {isGM && (
+              <TabsTrigger value="prey" className="terminal-tab-trigger">
+                <Crosshair className="h-4 w-4" />
+                <span className="hidden sm:inline">Prey</span>
+              </TabsTrigger>
+            )}
             <TabsTrigger value="prizes" className="terminal-tab-trigger">
               <Ship className="h-4 w-4" />
               <span className="hidden sm:inline">Prizes</span>
@@ -85,9 +95,11 @@ export const PiracyInterface: React.FC = () => {
             <SpoilsCalculator />
           </TabsContent>
 
-          <TabsContent value="prey" className="mt-0">
-            <PreyEncounterPanel />
-          </TabsContent>
+          {isGM && (
+            <TabsContent value="prey" className="mt-0">
+              <PreyEncounterPanel />
+            </TabsContent>
+          )}
 
           <TabsContent value="prizes" className="mt-0">
             <PrizeShipPanel />

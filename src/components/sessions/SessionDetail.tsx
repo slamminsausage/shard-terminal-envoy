@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { ArrowLeft, Plus, Clock, User, MapPin } from 'lucide-react';
 import { format } from 'date-fns';
 import { SessionStatus, LogEntryType } from '@/types/session';
+import { useCampaign } from '@/contexts/CampaignContext';
 
 interface SessionDetailProps {
   sessionId: string;
@@ -19,6 +20,7 @@ interface SessionDetailProps {
 }
 
 export const SessionDetail: React.FC<SessionDetailProps> = ({ sessionId, onClose }) => {
+  const { isGM } = useCampaign();
   const { getSession, getSessionLogs, addLogEntry, updateSession } = useSession();
   const [session, setSession] = useState<Session | null>(null);
   const [logs, setLogs] = useState<SessionLogEntry[]>([]);
@@ -268,7 +270,7 @@ export const SessionDetail: React.FC<SessionDetailProps> = ({ sessionId, onClose
         <TabsContent value="details" className="flex-1 mt-4">
           <Card className="bg-black border-terminal-primary/30">
             <CardContent className="pt-4 space-y-4">
-              {session.notes && (
+              {isGM && session.notes && (
                 <div>
                   <h3 className="text-sm font-semibold text-terminal-primary mb-2">GM Notes</h3>
                   <p className="text-terminal-primary/80 whitespace-pre-wrap">{session.notes}</p>

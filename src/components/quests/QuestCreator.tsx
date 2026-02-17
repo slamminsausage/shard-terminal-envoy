@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { X, Save } from 'lucide-react';
+import { useCampaign } from '@/contexts/CampaignContext';
 
 interface QuestCreatorProps {
   onClose: () => void;
@@ -14,6 +15,7 @@ interface QuestCreatorProps {
 
 export const QuestCreator: React.FC<QuestCreatorProps> = ({ onClose }) => {
   const { createQuest } = useQuest();
+  const { isGM } = useCampaign();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [questGiver, setQuestGiver] = useState('');
@@ -46,7 +48,7 @@ export const QuestCreator: React.FC<QuestCreatorProps> = ({ onClose }) => {
       reward_items: rewardItems || undefined,
       reward_other: rewardOther || undefined,
       notes: notes || undefined,
-      gm_notes: gmNotes || undefined,
+      gm_notes: isGM ? gmNotes || undefined : undefined,
       date_accepted: new Date().toISOString(),
     });
 
@@ -247,18 +249,20 @@ export const QuestCreator: React.FC<QuestCreatorProps> = ({ onClose }) => {
           />
         </div>
 
-        <div>
-          <label className="text-xs text-terminal-primary/70 uppercase mb-1 block">
-            GM Notes
-          </label>
-          <Textarea
-            placeholder="Private notes for the GM..."
-            value={gmNotes}
-            onChange={(e) => setGmNotes(e.target.value)}
-            rows={2}
-            className="bg-black border-terminal-primary/50 text-terminal-primary resize-none"
-          />
-        </div>
+        {isGM && (
+          <div>
+            <label className="text-xs text-terminal-primary/70 uppercase mb-1 block">
+              GM Notes
+            </label>
+            <Textarea
+              placeholder="Private notes for the GM..."
+              value={gmNotes}
+              onChange={(e) => setGmNotes(e.target.value)}
+              rows={2}
+              className="bg-black border-terminal-primary/50 text-terminal-primary resize-none"
+            />
+          </div>
+        )}
 
         {/* Actions */}
         <div className="flex gap-2">

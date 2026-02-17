@@ -123,7 +123,7 @@ export default function TerminalInterface() {
 
   // Password authentication for terminal access
   const terminalPasswordAuth = usePasswordAuth({
-    correctPassword: session.activeTerminal?.password || '',
+    correctPassword: '',
     maxAttempts: 3,
     onSuccess: () => {
       session.setTerminalPasswordRequired(false);
@@ -315,12 +315,7 @@ export default function TerminalInterface() {
       console.error('Failed to save unlocked terminal:', error);
     }
 
-    // Check if terminal requires password (after roll gate)
-    if (terminal.password) {
-      session.setTerminalPasswordRequired(true);
-    } else {
-      loadTerminalLogs();
-    }
+    loadTerminalLogs();
   };
 
   // Helper function to show log content or nested audio logs
