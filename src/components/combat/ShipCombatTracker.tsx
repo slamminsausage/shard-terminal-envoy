@@ -20,7 +20,7 @@ import {
   Zap,
 } from 'lucide-react';
 import { useCampaign } from '@/contexts/CampaignContext';
-import { roll2d6, rollDamageExpression } from '@/lib/dice';
+import { roll2d6, roll1d6, rollDamageExpression } from '@/lib/dice';
 import {
   COMBAT_PHASE_LABELS,
   COMBAT_PHASES,
@@ -36,6 +36,7 @@ import {
   type ShipRangeBand,
   SHIP_WEAPON_PRESETS,
 } from '@/lib/bridge/shipCombatRules';
+import { PRE_MADE_SHIPS } from '@/data/shipConstruction';
 
 interface ShipCombatant {
   id: string;
@@ -133,7 +134,8 @@ const getDefaultAttackState = (): AttackState => ({ targetId: '', weaponId: SHIP
 const getDefaultRepairState = (): RepairState => ({ location: '' });
 
 function pickRandomCriticalLocation(): CriticalLocation {
-  return CRITICAL_LOCATIONS[Math.floor(Math.random() * CRITICAL_LOCATIONS.length)];
+  const roll = roll2d6();
+  return CRITICAL_LOCATIONS[roll - 2]; // 2D result 2–12 maps to index 0–10
 }
 
 function getCriticalSeverity(ship: ShipCombatant, location: CriticalLocation): number {
@@ -535,7 +537,8 @@ export const ShipCombatTracker: React.FC = () => {
       + getBridgeCriticalPenalty(ship)
       + getCrewCriticalPenalty(ship)
       + Math.min(getEffectiveThrust(ship), ship.movementAllocation)
-      - Math.min(3, boardingPressure[ship.id] ?? 0);
+      - Math.min(3, boardingPressure[ship.id] ?? 0)
+      - 2; // DM-2 for the ship attempting to dock per rules
     const defender = roll2d6()
       + target.pilotSkill
       + getPilotCriticalPenalty(target)
@@ -545,13 +548,13 @@ export const ShipCombatTracker: React.FC = () => {
       - Math.min(3, boardingPressure[target.id] ?? 0);
 
     if (actor <= defender) {
-      addLog(`${ship.name} fails to ${plan.mode} with ${target.name} (${actor} vs ${defender}).`, true);
+      addLog(`${ship.name} fails to ${plan.mode} with ${target.name} (${actor} [incl. DM-2 docker] vs ${defender}).`, true);
       return;
     }
 
     setDockedWith((prev) => ({ ...prev, [ship.id]: target.id, [target.id]: ship.id }));
     if (plan.mode === 'dock') {
-      addLog(`${ship.name} docks with ${target.name} (${actor} vs ${defender}).`, true);
+      addLog(`${ship.name} docks with ${target.name} (${actor} [incl. DM-2 docker] vs ${defender}).`, true);
       return;
     }
 
@@ -647,7 +650,8 @@ export const ShipCombatTracker: React.FC = () => {
     const calledShotEligible = plan.calledShotLocation !== 'none' && weapon.id !== 'missile_rack' && canCallShot;
     const calledShotPenalty = calledShotEligible ? -2 : 0;
     const dogfightMod = dogfightAttackModifiers[attacker.id] ?? 0;
-    const sandPenalty = Math.max(0, target.sandScreen);
+    const isLaserWeapon = weapon.id === 'pulse_laser' || weapon.id === 'beam_laser';
+    const sandPenalty = isLaserWeapon ? Math.max(0, target.sandScreen) : 0;
     const total = dice + attackerGunnerSkill + assistBonus + rangeMod + weapon.attackModifier + sizeMod + plan.situationalDM + calledShotPenalty + dogfightMod - evasivePenalty - sandPenalty;
     const lockBonus = sensorLocks[attacker.id] === target.id ? 2 : 0;
     const grandTotal = total + lockBonus;
@@ -667,13 +671,14 @@ export const ShipCombatTracker: React.FC = () => {
         addLog(`${attacker.name} sandcaster is reloading (${attacker.sandReloadRounds} round(s) remaining).`, true);
         return;
       }
+      const sandValue = roll1d6() + Math.max(0, effect);
       upsertShip(attacker.id, (current) => ({
         ...current,
         sandAmmo: Math.max(0, current.sandAmmo - 1),
         sandReloadRounds: 1,
-        sandScreen: 2,
+        sandScreen: sandValue,
       }));
-      addLog(`${attacker.name} deploys sand screen (DM-2 against incoming fire this round).`, true);
+      addLog(`${attacker.name} deploys sand screen (DM-${sandValue} against laser attacks this round, 1D+${Math.max(0, effect)} effect).`, true);
       return;
     }
 
@@ -682,8 +687,9 @@ export const ShipCombatTracker: React.FC = () => {
         addLog(`${attacker.name} cannot fire missiles: magazine empty.`, true);
         return;
       }
-      upsertShip(attacker.id, (current) => ({ ...current, missileAmmo: Math.max(0, current.missileAmmo - 1) }));
-      const missiles = Math.min(6, 1 + Math.max(0, effect));
+      const desiredMissiles = Math.min(6, 1 + Math.max(0, effect));
+      const missiles = Math.min(desiredMissiles, attacker.missileAmmo);
+      upsertShip(attacker.id, (current) => ({ ...current, missileAmmo: Math.max(0, current.missileAmmo - missiles) }));
       const roundsToImpact = getMissileFlightRounds(target.rangeBand);
       setMissileSalvos((prev) => [
         {
@@ -1183,9 +1189,9 @@ export const ShipCombatTracker: React.FC = () => {
                         </div>
                       )}
 
-                      {isGM && phase === 'attack' && targets.length > 0 && (
+                      {isGM && phase === 'attack' && attackTargets.length > 0 && (
                         <div className="grid grid-cols-1 md:grid-cols-6 gap-2 text-xs">
-                          <div className="space-y-1"><span className="text-terminal-primary/70">Target</span><Select value={plan.targetId} onValueChange={(value) => updateAttackPlan(ship.id, { targetId: value })}><SelectTrigger className="h-8 bg-black border-terminal-primary/40 text-terminal-primary"><SelectValue placeholder="Target" /></SelectTrigger><SelectContent className="bg-black border-terminal-primary/50 text-terminal-primary">{targets.map((target) => (<SelectItem key={target.id} value={target.id}>{target.name}</SelectItem>))}</SelectContent></Select></div>
+                          <div className="space-y-1"><span className="text-terminal-primary/70">Target</span><Select value={plan.targetId} onValueChange={(value) => updateAttackPlan(ship.id, { targetId: value })}><SelectTrigger className="h-8 bg-black border-terminal-primary/40 text-terminal-primary"><SelectValue placeholder="Target" /></SelectTrigger><SelectContent className="bg-black border-terminal-primary/50 text-terminal-primary">{attackTargets.map((target) => (<SelectItem key={target.id} value={target.id}>{target.name}</SelectItem>))}</SelectContent></Select></div>
                           <div className="space-y-1"><span className="text-terminal-primary/70">Weapon</span><Select value={plan.weaponId} onValueChange={(value) => updateAttackPlan(ship.id, { weaponId: value })}><SelectTrigger className="h-8 bg-black border-terminal-primary/40 text-terminal-primary"><SelectValue /></SelectTrigger><SelectContent className="bg-black border-terminal-primary/50 text-terminal-primary">{SHIP_WEAPON_PRESETS.map((weapon) => (<SelectItem key={weapon.id} value={weapon.id}>{weapon.name}</SelectItem>))}</SelectContent></Select></div>
                           <div className="space-y-1"><span className="text-terminal-primary/70">Situational DM</span><Input className="h-8 bg-black border-terminal-primary/40 text-terminal-primary" type="number" value={plan.situationalDM} onChange={(e) => updateAttackPlan(ship.id, { situationalDM: parseInt(e.target.value, 10) || 0 })} /></div>
                           <div className="space-y-1"><span className="text-terminal-primary/70">Called Shot</span><Select value={plan.calledShotLocation} onValueChange={(value) => updateAttackPlan(ship.id, { calledShotLocation: value as CriticalLocation | 'none' })}><SelectTrigger className="h-8 bg-black border-terminal-primary/40 text-terminal-primary"><SelectValue placeholder="None" /></SelectTrigger><SelectContent className="bg-black border-terminal-primary/50 text-terminal-primary"><SelectItem value="none">None</SelectItem>{CRITICAL_LOCATIONS.map((loc) => (<SelectItem key={loc} value={loc}>{CRITICAL_LOCATION_LABELS[loc]}</SelectItem>))}</SelectContent></Select></div>
