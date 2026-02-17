@@ -237,6 +237,7 @@ export const ShipCombatTracker: React.FC = () => {
   const [newTacticsEffect, setNewTacticsEffect] = useState('0');
   const [newShipIsPlayer, setNewShipIsPlayer] = useState(true);
   const [newRangeBand, setNewRangeBand] = useState<ShipRangeBand>('very_long');
+  const [selectedPreMadeShipId, setSelectedPreMadeShipId] = useState<string>('custom');
 
   const initiativeOrder = useMemo(() => [...ships].sort((a, b) => (b.initiative ?? -999) - (a.initiative ?? -999)), [ships]);
 
@@ -302,6 +303,20 @@ export const ShipCombatTracker: React.FC = () => {
     addLog(`${source} deals ${rawDamage} damage.`);
   };
 
+  const applyPreMadeShip = (shipId: string) => {
+    setSelectedPreMadeShipId(shipId);
+    if (shipId === 'custom') return;
+
+    const preset = PRE_MADE_SHIPS.find((entry) => entry.id === shipId);
+    if (!preset) return;
+
+    setNewShipName(`${preset.name}${preset.designation ? ` (${preset.designation})` : ''}`);
+    setNewShipHull(String(Math.max(1, Math.round(preset.hullPoints / 2))));
+    setNewShipArmor(String(Math.max(0, preset.design.armorProtection ?? 0)));
+    setNewShipTonnage(String(Math.max(1, Math.round(preset.tonnage))));
+    setNewShipThrust(String(Math.max(0, preset.design.manoeuvreRating ?? 0)));
+  };
+
   const addShip = () => {
     if (!newShipName.trim()) return;
 
@@ -351,6 +366,7 @@ export const ShipCombatTracker: React.FC = () => {
     setDockingPlans((prev) => ({ ...prev, [newShip.id]: { targetId: '', mode: 'dock' } }));
     addLog(`Added ${newShip.name} (${newShip.isPlayerShip ? 'Player' : 'Hostile'}) at ${RANGE_BAND_LABELS[newShip.rangeBand]}.`, true);
     setNewShipName('');
+    setSelectedPreMadeShipId('custom');
     setShowAddShip(false);
   };
 
@@ -1016,27 +1032,43 @@ export const ShipCombatTracker: React.FC = () => {
           <Card className="bg-black border-terminal-primary/50">
             <CardHeader><CardTitle className="text-terminal-primary text-sm flex items-center gap-2"><Settings className="h-4 w-4" /> Encounter Setup</CardTitle></CardHeader>
             <CardContent className="space-y-3">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-                <Input placeholder="Ship name" value={newShipName} onChange={(e) => setNewShipName(e.target.value)} className="bg-black border-terminal-primary/50 text-terminal-primary md:col-span-4" />
-                <Input type="number" min="1" value={newShipHull} onChange={(e) => setNewShipHull(e.target.value)} className="bg-black border-terminal-primary/50 text-terminal-primary" placeholder="Hull" />
-                <Input type="number" min="0" value={newShipArmor} onChange={(e) => setNewShipArmor(e.target.value)} className="bg-black border-terminal-primary/50 text-terminal-primary" placeholder="Armor" />
-                <Input type="number" min="1" value={newShipTonnage} onChange={(e) => setNewShipTonnage(e.target.value)} className="bg-black border-terminal-primary/50 text-terminal-primary" placeholder="Tonnage" />
-                <Input type="number" min="0" value={newShipThrust} onChange={(e) => setNewShipThrust(e.target.value)} className="bg-black border-terminal-primary/50 text-terminal-primary" placeholder="Thrust" />
-                <Input type="number" value={newPilotSkill} onChange={(e) => setNewPilotSkill(e.target.value)} className="bg-black border-terminal-primary/50 text-terminal-primary" placeholder="Pilot skill" />
-                <Input type="number" value={newGunnerSkill} onChange={(e) => setNewGunnerSkill(e.target.value)} className="bg-black border-terminal-primary/50 text-terminal-primary" placeholder="Gunner skill" />
-                <Input type="number" value={newEngineerSkill} onChange={(e) => setNewEngineerSkill(e.target.value)} className="bg-black border-terminal-primary/50 text-terminal-primary" placeholder="Engineer skill" />
-                <Input type="number" value={newSensorSkill} onChange={(e) => setNewSensorSkill(e.target.value)} className="bg-black border-terminal-primary/50 text-terminal-primary" placeholder="Sensor skill" />
-                <Input type="number" value={newCaptainSkill} onChange={(e) => setNewCaptainSkill(e.target.value)} className="bg-black border-terminal-primary/50 text-terminal-primary" placeholder="Captain skill" />
-                <Input type="number" value={newTacticsEffect} onChange={(e) => setNewTacticsEffect(e.target.value)} className="bg-black border-terminal-primary/50 text-terminal-primary" placeholder="Tactics effect" />
-                <Select value={newRangeBand} onValueChange={(value: ShipRangeBand) => setNewRangeBand(value)}>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-3 text-xs">
+                <div className="md:col-span-2 space-y-1">
+                  <span className="text-terminal-primary/70">Load Ship Preset</span>
+                  <Select value={selectedPreMadeShipId} onValueChange={applyPreMadeShip}>
+                    <SelectTrigger className="bg-black border-terminal-primary/50 text-terminal-primary"><SelectValue placeholder="Custom / Manual" /></SelectTrigger>
+                    <SelectContent className="bg-black border-terminal-primary/50 text-terminal-primary max-h-64">
+                      <SelectItem value="custom">Custom / Manual</SelectItem>
+                      {PRE_MADE_SHIPS.map((preset) => (
+                        <SelectItem key={preset.id} value={preset.id}>{preset.name}{preset.designation ? ` (${preset.designation})` : ''}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="md:col-span-2 space-y-1">
+                  <span className="text-terminal-primary/70">Ship Name</span>
+                  <Input placeholder="Enter ship name" value={newShipName} onChange={(e) => setNewShipName(e.target.value)} className="bg-black border-terminal-primary/50 text-terminal-primary" />
+                </div>
+
+                <div className="space-y-1"><span className="text-terminal-primary/70">Hull Points</span><Input type="number" min="1" value={newShipHull} onChange={(e) => setNewShipHull(e.target.value)} className="bg-black border-terminal-primary/50 text-terminal-primary" /></div>
+                <div className="space-y-1"><span className="text-terminal-primary/70">Armor</span><Input type="number" min="0" value={newShipArmor} onChange={(e) => setNewShipArmor(e.target.value)} className="bg-black border-terminal-primary/50 text-terminal-primary" /></div>
+                <div className="space-y-1"><span className="text-terminal-primary/70">Tonnage</span><Input type="number" min="1" value={newShipTonnage} onChange={(e) => setNewShipTonnage(e.target.value)} className="bg-black border-terminal-primary/50 text-terminal-primary" /></div>
+                <div className="space-y-1"><span className="text-terminal-primary/70">Thrust</span><Input type="number" min="0" value={newShipThrust} onChange={(e) => setNewShipThrust(e.target.value)} className="bg-black border-terminal-primary/50 text-terminal-primary" /></div>
+
+                <div className="space-y-1"><span className="text-terminal-primary/70">Pilot Skill</span><Input type="number" value={newPilotSkill} onChange={(e) => setNewPilotSkill(e.target.value)} className="bg-black border-terminal-primary/50 text-terminal-primary" /></div>
+                <div className="space-y-1"><span className="text-terminal-primary/70">Gunner Skill</span><Input type="number" value={newGunnerSkill} onChange={(e) => setNewGunnerSkill(e.target.value)} className="bg-black border-terminal-primary/50 text-terminal-primary" /></div>
+                <div className="space-y-1"><span className="text-terminal-primary/70">Engineer Skill</span><Input type="number" value={newEngineerSkill} onChange={(e) => setNewEngineerSkill(e.target.value)} className="bg-black border-terminal-primary/50 text-terminal-primary" /></div>
+                <div className="space-y-1"><span className="text-terminal-primary/70">Sensor Skill</span><Input type="number" value={newSensorSkill} onChange={(e) => setNewSensorSkill(e.target.value)} className="bg-black border-terminal-primary/50 text-terminal-primary" /></div>
+
+                <div className="space-y-1"><span className="text-terminal-primary/70">Captain Skill</span><Input type="number" value={newCaptainSkill} onChange={(e) => setNewCaptainSkill(e.target.value)} className="bg-black border-terminal-primary/50 text-terminal-primary" /></div>
+                <div className="space-y-1"><span className="text-terminal-primary/70">Tactics Effect</span><Input type="number" value={newTacticsEffect} onChange={(e) => setNewTacticsEffect(e.target.value)} className="bg-black border-terminal-primary/50 text-terminal-primary" /></div>
+                <div className="space-y-1"><span className="text-terminal-primary/70">Starting Range Band</span><Select value={newRangeBand} onValueChange={(value: ShipRangeBand) => setNewRangeBand(value)}>
                   <SelectTrigger className="bg-black border-terminal-primary/50 text-terminal-primary"><SelectValue /></SelectTrigger>
                   <SelectContent className="bg-black border-terminal-primary/50 text-terminal-primary">
                     {RANGE_BAND_RULES.map((band) => (<SelectItem key={band.key} value={band.key}>{band.label}</SelectItem>))}
                   </SelectContent>
-                </Select>
-                <label className="text-xs text-terminal-primary/80 flex items-center gap-2 border border-terminal-primary/40 rounded px-3 py-2 md:col-span-2">
-                  <input type="checkbox" checked={newShipIsPlayer} onChange={(e) => setNewShipIsPlayer(e.target.checked)} /> Player Ship
-                </label>
+                </Select></div>
+                <div className="space-y-1"><span className="text-terminal-primary/70">Role</span><label className="text-xs text-terminal-primary/80 flex items-center gap-2 border border-terminal-primary/40 rounded px-3 h-10"><input type="checkbox" checked={newShipIsPlayer} onChange={(e) => setNewShipIsPlayer(e.target.checked)} /> Player Ship</label></div>
               </div>
               <div className="flex gap-2">
                 <Button onClick={addShip} disabled={!newShipName.trim()} size="sm" className="bg-terminal-primary/20 hover:bg-terminal-primary/30 text-terminal-primary">Add</Button>
