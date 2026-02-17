@@ -1,14 +1,12 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { getCorsHeaders } from '../_shared/cors.ts'
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
-
-const EMAIL_DOMAIN = 'eclipse-shard.local'
+const EMAIL_DOMAIN = Deno.env.get('AUTH_EMAIL_DOMAIN') ?? 'eclipse-shard.local'
 
 serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req)
+
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
@@ -48,7 +46,7 @@ serve(async (req) => {
     const controller = new AbortController()
     const timeout = setTimeout(() => controller.abort(), 8000)
 
-    let authResult: any
+    let authResult: Record<string, unknown>
     try {
       const authResponse = await fetch(`${supabaseUrl}/auth/v1/token?grant_type=password`, {
         method: 'POST',
@@ -71,9 +69,9 @@ serve(async (req) => {
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
         )
       }
-    } catch (fetchErr: any) {
+    } catch (fetchErr: unknown) {
       clearTimeout(timeout)
-      if (fetchErr.name === 'AbortError') {
+      if (fetchErr instanceof Error && fetchErr.name === 'AbortError') {
         console.error('GoTrue auth request aborted after 8s timeout')
         return new Response(
           JSON.stringify({ error: 'Authentication timed out. Please try again.' }),
@@ -99,7 +97,7 @@ serve(async (req) => {
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey)
 
     // Try lookup by auth_user_id first, fall back to access_code if column missing or no match
-    let player: any = null
+    let player: Record<string, unknown> | null = null
     const { data: p1, error: playerError } = await supabaseAdmin
       .from('players')
       .select('*')

@@ -1,15 +1,13 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { getCorsHeaders } from '../_shared/cors.ts'
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
-
-const CAMPAIGN_CODE = 'TRAVELLER2024'
-const EMAIL_DOMAIN = 'eclipse-shard.local'
+const CAMPAIGN_CODE = (Deno.env.get('CAMPAIGN_CODE') ?? '').trim().toUpperCase()
+const EMAIL_DOMAIN = Deno.env.get('AUTH_EMAIL_DOMAIN') ?? 'eclipse-shard.local'
 
 serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req)
+
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
@@ -25,6 +23,13 @@ serve(async (req) => {
     const { campaign_code, username, password, display_name } = await req.json()
 
     // 1. Validate campaign code
+    if (!CAMPAIGN_CODE) {
+      return new Response(
+        JSON.stringify({ error: 'Server campaign code is not configured.' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+      )
+    }
+
     if (!campaign_code || campaign_code.toUpperCase() !== CAMPAIGN_CODE) {
       return new Response(
         JSON.stringify({ error: 'Invalid campaign code.' }),
@@ -92,7 +97,7 @@ serve(async (req) => {
     const email = `${trimmedUsername}@${EMAIL_DOMAIN}`
     const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers()
     const emailTaken = existingUsers?.users?.some(
-      (u: any) => u.email?.toLowerCase() === email.toLowerCase()
+      (u: { email?: string | null }) => u.email?.toLowerCase() === email.toLowerCase()
     )
 
     if (emailTaken) {
@@ -143,8 +148,8 @@ serve(async (req) => {
     }
 
     // 8. Create player record (try with auth_user_id, fall back without if column missing)
-    let player: any = null
-    let playerError: any = null
+    let player: Record<string, unknown> | null = null
+    let playerError: { message?: string; code?: string } | null = null
 
     const { data: p1, error: e1 } = await supabaseAdmin
       .from('players')

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useBridge } from "@/contexts/BridgeContext";
 import { useJumpPlanner } from "@/contexts/JumpPlannerContext";
 import { useCampaign } from "@/contexts/CampaignContext";
@@ -13,6 +13,7 @@ import { ScanModal } from "./ScanModal";
 import { DamageCalculator } from "./DamageCalculator";
 import { ShipCombatTracker } from "@/components/combat/ShipCombatTracker";
 import type { BridgeMessage, Contact, NewContact } from "@/lib/bridge/bridgeTypes";
+import { toast } from "sonner";
 
 export function BridgeConsole() {
   const {
@@ -103,6 +104,14 @@ export function BridgeConsole() {
   const handleAlertChange = async (level: "normal" | "elevated" | "combat" | "emergency") => {
     await updateAlertLevel(level);
   };
+
+
+
+  const damageTarget = useMemo(() => {
+    if (selectedContact) return selectedContact;
+    if (playerShip) return playerShip;
+    return null;
+  }, [playerShip, selectedContact]);
 
   const handleShipChange = async (vehicleId: string) => {
     setSelectedVehicleId(vehicleId);
@@ -301,9 +310,24 @@ export function BridgeConsole() {
         <DamageCalculator
           isOpen={showDamageCalc}
           onClose={() => setShowDamageCalc(false)}
-          onApplyDamage={(damage, location) => {
-            console.log(`Apply ${damage} damage to ${location || 'hull'}`);
-            // TODO: Apply damage to selected contact
+          onApplyDamage={async (damage, location) => {
+            if (!damageTarget) {
+              toast.error('Select a ship contact before applying damage.');
+              return;
+            }
+
+            const currentHull = damageTarget.hullCurrent ?? damageTarget.hullMax ?? 0;
+            const nextHull = Math.max(0, currentHull - damage);
+            const nextStatus = nextHull <= 0
+              ? 'derelict'
+              : damageTarget.status;
+
+            await updateContactFields(damageTarget.id, {
+              hullCurrent: nextHull,
+              status: nextStatus,
+            });
+
+            toast.success(`Applied ${damage} damage to ${damageTarget.name}${location ? ` (${location})` : ''}. Hull now ${nextHull}.`);
           }}
         />
       )}
