@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
 import { CalendarEvent, ImperialDate } from '@/types/calendar';
 import { dbHelpers } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
@@ -54,13 +54,22 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({ children }) 
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
+  // Mount guard to prevent setState on unmounted provider
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    return () => { mountedRef.current = false; };
+  }, []);
+
   // Load current date and events on mount
   useEffect(() => {
+    let cancelled = false;
+
     const loadInitialData = async () => {
       setIsLoading(true);
       try {
         // Load current campaign date
         const dateData = await dbHelpers.getCurrentCampaignDate();
+        if (cancelled) return;
         if (dateData) {
           const parsed = parseImperialDate(dateData.imperial_date);
           if (parsed) {
@@ -74,34 +83,50 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({ children }) 
             defaultDate.day,
             defaultDate.year
           );
+          if (cancelled) return;
           setCurrentDateState(defaultDate);
         }
 
         // Load all events
         const eventsData = await dbHelpers.getAllCalendarEvents();
+        if (cancelled) return;
         setEvents(eventsData as CalendarEvent[]);
       } catch (error) {
+        if (cancelled) return;
         console.error('Failed to load calendar data:', error);
         // Fallback to default date
         setCurrentDateState(getCurrentImperialDate(1105));
       } finally {
-        setIsLoading(false);
+        if (!cancelled) setIsLoading(false);
       }
     };
 
     loadInitialData();
+    return () => { cancelled = true; };
   }, []);
 
   // Load upcoming events when current date changes
   useEffect(() => {
-    if (currentDate) {
-      getUpcomingEvents(10);
-    }
+    if (!currentDate) return;
+    let cancelled = false;
+
+    const loadUpcoming = async () => {
+      try {
+        const data = await dbHelpers.getUpcomingCalendarEvents(currentDate.formatted, 10);
+        if (!cancelled) setUpcomingEvents(data as CalendarEvent[]);
+      } catch (error) {
+        if (!cancelled) console.error('Failed to fetch upcoming events:', error);
+      }
+    };
+
+    loadUpcoming();
+    return () => { cancelled = true; };
   }, [currentDate]);
 
   const setCurrentDate = useCallback(async (date: ImperialDate) => {
     try {
       await dbHelpers.setCurrentCampaignDate(date.formatted, date.day, date.year);
+      if (!mountedRef.current) return;
       setCurrentDateState(date);
 
       toast({
@@ -109,6 +134,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({ children }) 
         description: `Current date set to ${date.formatted}`,
       });
     } catch (error) {
+      if (!mountedRef.current) return;
       console.error('Failed to set current date:', error);
       toast({
         title: "Error",
@@ -126,11 +152,14 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({ children }) 
   }, [currentDate, setCurrentDate]);
 
   const getAllEvents = useCallback(async () => {
+    if (!mountedRef.current) return;
     setIsLoading(true);
     try {
       const data = await dbHelpers.getAllCalendarEvents();
+      if (!mountedRef.current) return;
       setEvents(data as CalendarEvent[]);
     } catch (error) {
+      if (!mountedRef.current) return;
       console.error('Failed to fetch events:', error);
       toast({
         title: "Error",
@@ -138,18 +167,18 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({ children }) 
         variant: "destructive",
       });
     } finally {
-      setIsLoading(false);
+      if (mountedRef.current) setIsLoading(false);
     }
   }, [toast]);
 
   const getUpcomingEvents = useCallback(async (limit: number = 10) => {
-    if (!currentDate) return;
+    if (!currentDate || !mountedRef.current) return;
 
     try {
       const data = await dbHelpers.getUpcomingCalendarEvents(currentDate.formatted, limit);
-      setUpcomingEvents(data as CalendarEvent[]);
+      if (mountedRef.current) setUpcomingEvents(data as CalendarEvent[]);
     } catch (error) {
-      console.error('Failed to fetch upcoming events:', error);
+      if (mountedRef.current) console.error('Failed to fetch upcoming events:', error);
     }
   }, [currentDate]);
 
@@ -168,6 +197,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({ children }) 
       };
 
       const saved = await dbHelpers.saveCalendarEvent(newEvent);
+      if (!mountedRef.current) return null;
       const savedEvent = saved as CalendarEvent;
 
       setEvents(prev => [...prev, savedEvent]);
@@ -179,6 +209,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({ children }) 
 
       return savedEvent;
     } catch (error) {
+      if (!mountedRef.current) return null;
       console.error('Failed to create event:', error);
       toast({
         title: "Error",
@@ -195,6 +226,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({ children }) 
   ): Promise<CalendarEvent | null> => {
     try {
       const updated = await dbHelpers.saveCalendarEvent({ id: eventId, ...updates });
+      if (!mountedRef.current) return null;
       const updatedEvent = updated as CalendarEvent;
 
       setEvents(prev =>
@@ -208,6 +240,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({ children }) 
 
       return updatedEvent;
     } catch (error) {
+      if (!mountedRef.current) return null;
       console.error('Failed to update event:', error);
       toast({
         title: "Error",
@@ -221,6 +254,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({ children }) 
   const deleteEvent = useCallback(async (eventId: string): Promise<boolean> => {
     try {
       await dbHelpers.deleteCalendarEvent(eventId);
+      if (!mountedRef.current) return false;
 
       setEvents(prev => prev.filter(e => e.id !== eventId));
       setUpcomingEvents(prev => prev.filter(e => e.id !== eventId));
@@ -232,6 +266,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({ children }) 
 
       return true;
     } catch (error) {
+      if (!mountedRef.current) return false;
       console.error('Failed to delete event:', error);
       toast({
         title: "Error",
