@@ -220,7 +220,15 @@ export function useBridgeState() {
       return;
     }
 
-    setContacts((data ?? []).map(mapDbContactToUi));
+    // Merge DB data with existing contacts so combat-only fields are preserved
+    setContacts(prev => {
+      const dbContacts = (data ?? []).map(mapDbContactToUi);
+      const prevMap = new Map(prev.map(c => [c.id, c]));
+      return dbContacts.map(dc => {
+        const existing = prevMap.get(dc.id);
+        return existing ? { ...existing, ...dc } : dc;
+      });
+    });
   }, [sb]);
 
   const loadMessages = useCallback(async (bridgeStateId: string) => {
@@ -342,7 +350,9 @@ export function useBridgeState() {
         if (payload.eventType === "INSERT") {
           setContacts(prev => [...prev, mapDbContactToUi(payload.new)]);
         } else if (payload.eventType === "UPDATE") {
-          setContacts(prev => prev.map(c => c.id === payload.new.id ? mapDbContactToUi(payload.new) : c));
+          // Merge DB data with existing contact so combat-only fields are preserved
+          const dbContact = mapDbContactToUi(payload.new);
+          setContacts(prev => prev.map(c => c.id === dbContact.id ? { ...c, ...dbContact } : c));
         } else if (payload.eventType === "DELETE") {
           setContacts(prev => prev.filter(c => c.id !== payload.old.id));
         }

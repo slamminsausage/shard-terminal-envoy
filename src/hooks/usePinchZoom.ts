@@ -175,10 +175,26 @@ export function usePinchZoom<T extends HTMLElement>(
     });
   };
 
+  const zoomIn = () => {
+    setTransform(prev => ({
+      ...prev,
+      scale: Math.min(maxScale, prev.scale * 1.3)
+    }));
+  };
+
+  const zoomOut = () => {
+    setTransform(prev => ({
+      ...prev,
+      scale: Math.max(minScale, prev.scale / 1.3)
+    }));
+  };
+
   return {
     ref,
     transform,
     resetZoom,
+    zoomIn,
+    zoomOut,
     style: {
       transform: `translate(${transform.translateX}px, ${transform.translateY}px) scale(${transform.scale})`,
       transformOrigin: 'center',

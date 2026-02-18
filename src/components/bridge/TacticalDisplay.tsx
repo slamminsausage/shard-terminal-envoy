@@ -4,6 +4,7 @@ import type { CombatPhase } from "@/lib/bridge/shipCombatRules";
 import { hexDistance, hexDistanceToRangeBand, RANGE_BAND_HEX_COLORS, getHexesInRange } from "@/lib/bridge/hexCombatUtils";
 import { RANGE_BAND_LABELS } from "@/lib/bridge/shipCombatRules";
 import { usePinchZoom } from "@/hooks/usePinchZoom";
+import { ZoomIn, ZoomOut, Maximize2 } from "lucide-react";
 
 interface TacticalDisplayProps {
   contacts: Contact[];
@@ -30,7 +31,7 @@ export function TacticalDisplay({
   movementRange,
 }: TacticalDisplayProps) {
   const [hoveredHex, setHoveredHex] = useState<{ q: number; r: number } | null>(null);
-  const { ref, style: zoomStyle, transform } = usePinchZoom<HTMLDivElement>({
+  const { ref, style: zoomStyle, transform, zoomIn, zoomOut, resetZoom } = usePinchZoom<HTMLDivElement>({
     minScale: 0.3,
     maxScale: 4,
   });
@@ -190,9 +191,37 @@ export function TacticalDisplay({
         )}
       </div>
 
+      <div className="relative flex-1 overflow-hidden">
+        {/* Zoom controls */}
+        <div className="absolute top-2 right-2 z-10 flex flex-col gap-1">
+          <button
+            onClick={zoomIn}
+            className="p-1.5 bg-terminal-bg-dark/80 border border-terminal-bg-border rounded hover:bg-terminal-primary/10 hover:border-terminal-primary/40 transition-colors"
+            title="Zoom in"
+          >
+            <ZoomIn className="h-4 w-4 text-terminal-text-dimmer" />
+          </button>
+          <button
+            onClick={zoomOut}
+            className="p-1.5 bg-terminal-bg-dark/80 border border-terminal-bg-border rounded hover:bg-terminal-primary/10 hover:border-terminal-primary/40 transition-colors"
+            title="Zoom out"
+          >
+            <ZoomOut className="h-4 w-4 text-terminal-text-dimmer" />
+          </button>
+          <button
+            onClick={resetZoom}
+            className="p-1.5 bg-terminal-bg-dark/80 border border-terminal-bg-border rounded hover:bg-terminal-primary/10 hover:border-terminal-primary/40 transition-colors"
+            title="Reset zoom"
+          >
+            <Maximize2 className="h-4 w-4 text-terminal-text-dimmer" />
+          </button>
+          {transform.scale !== 1 && (
+            <span className="text-[0.55rem] text-terminal-text-dimmer text-center font-mono">{Math.round(transform.scale * 100)}%</span>
+          )}
+        </div>
       <div
         ref={ref}
-        className="flex-1 flex items-center justify-center p-2 md:p-4 overflow-hidden touch-none"
+        className="flex-1 flex items-center justify-center p-2 md:p-4 overflow-hidden touch-none h-full"
         style={{ background: "radial-gradient(ellipse at center, rgba(0, 255, 136, 0.02) 0%, transparent 70%)" }}
       >
         <svg viewBox={`0 0 ${viewBoxSize} ${viewBoxSize}`} className="w-full h-full" style={zoomStyle}>
@@ -386,6 +415,7 @@ export function TacticalDisplay({
             );
           })()}
         </svg>
+      </div>
       </div>
 
       <div className="flex justify-center gap-4 md:gap-8 py-2 border-t border-terminal-bg-border text-xs flex-wrap">
