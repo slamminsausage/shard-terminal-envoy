@@ -28,10 +28,13 @@ export interface ArmorCatalogItem extends CatalogItem {
   rad: number;
   requiredSkill?: string;
   requiredSkillLevel?: number;
-  laserProtection?: number;  // Special protection vs lasers (Reflec, Ablat)
-  isFullBodySuit: boolean;   // Determines compatibility with chameleon options
-  hasLifeSupport: boolean;   // Vacc suit, HEV, combat armour, battle dress
-  isPowered: boolean;        // Battle dress - mass doesn't count when worn
+  laserProtection?: number;   // Special protection vs lasers (Reflec, Ablat)
+  energyProtection?: number;  // Special protection vs fire/lasers/energy weapons (CSC)
+  plasmaProtection?: number;  // Special protection vs plasma weapons (CSC)
+  psionicProtection?: number; // Special protection vs psionic attacks (CSC)
+  isFullBodySuit: boolean;    // Determines compatibility with chameleon options
+  hasLifeSupport: boolean;    // Vacc suit, HEV, combat armour, battle dress
+  isPowered: boolean;         // Battle dress - mass doesn't count when worn
 }
 
 /** An option/upgrade that can be added to armor */
