@@ -15,6 +15,19 @@ export interface BridgeState {
 
 export type ContactStatus = "friendly" | "unknown" | "enemy" | "derelict";
 
+export type CriticalLocationKey =
+  | 'sensors'
+  | 'power_plant'
+  | 'fuel'
+  | 'weapon'
+  | 'armor'
+  | 'hull'
+  | 'm_drive'
+  | 'cargo'
+  | 'jump_drive'
+  | 'crew'
+  | 'bridge';
+
 export interface Contact {
   id: string;
   name: string;
@@ -30,6 +43,40 @@ export interface Contact {
   vehicleId?: string | null;
   isHidden?: boolean;
   scanDc?: number | null;
+
+  // === Combat fields (populated when contact enters combat) ===
+  isInCombat?: boolean;
+  preMadeShipId?: string;
+  thrust?: number;
+  armor?: number;
+  pilotSkill?: number;
+  gunnerSkill?: number;
+  engineerSkill?: number;
+  sensorSkill?: number;
+  captainSkill?: number;
+  tacticsEffect?: number;
+  initiative?: number;
+  initiativeDetail?: string;
+  surprised?: boolean;
+  movementAllocation?: number;
+  evasiveAllocation?: number;
+  maneuverIntent?: 'hold' | 'close' | 'open';
+  criticals?: Partial<Record<CriticalLocationKey, number>>;
+  sustainedDamageCounter?: number;
+  repairProgress?: Partial<Record<CriticalLocationKey, number>>;
+  pendingThrustBoost?: number;
+  activeThrustBoost?: number;
+  pendingPowerBypass?: boolean;
+  activePowerBypass?: boolean;
+  overloadDrivePenalty?: number;
+  overloadPlantPenalty?: number;
+  missileAmmo?: number;
+  sandAmmo?: number;
+  sandReloadRounds?: number;
+  sandScreen?: number;
+  jumpChargeRounds?: number;
+  jumpCommitted?: boolean;
+  weapons?: Array<{ id: string; name: string; damage: string; maxRange: string; attackModifier: number }>;
 }
 
 export type MessagePriority = "normal" | "priority" | "emergency";
@@ -60,6 +107,18 @@ export interface NewContact {
   vehicleId?: string;
   isHidden?: boolean;
   scanDc?: number;
+  // Combat fields for ship addition
+  thrust?: number;
+  armor?: number;
+  pilotSkill?: number;
+  gunnerSkill?: number;
+  engineerSkill?: number;
+  sensorSkill?: number;
+  captainSkill?: number;
+  preMadeShipId?: string;
+  missileAmmo?: number;
+  sandAmmo?: number;
+  weapons?: Array<{ id: string; name: string; damage: string; maxRange: string; attackModifier: number }>;
 }
 
 export interface NewMessage {

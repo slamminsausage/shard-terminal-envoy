@@ -5,9 +5,10 @@ interface ActionBarProps {
   onHailClick: () => void;
   onDamageCalcClick?: () => void;
   onShipCombatClick?: () => void;
+  combatActive?: boolean;
 }
 
-export function ActionBar({ alertLevel, onAlertChange, onScanClick, onHailClick, onDamageCalcClick, onShipCombatClick }: ActionBarProps) {
+export function ActionBar({ alertLevel, onAlertChange, onScanClick, onHailClick, onDamageCalcClick, onShipCombatClick, combatActive }: ActionBarProps) {
   const cycleAlert = () => {
     const levels: Array<"normal" | "elevated" | "combat" | "emergency"> = ["normal", "elevated", "combat", "emergency"];
     const currentIndex = levels.indexOf(alertLevel);
@@ -58,9 +59,13 @@ export function ActionBar({ alertLevel, onAlertChange, onScanClick, onHailClick,
       {onShipCombatClick && (
         <button
           onClick={onShipCombatClick}
-          className="flex-1 py-2.5 px-4 rounded text-xs font-mono transition-all border border-terminal-warning-alt text-terminal-warning-alt bg-terminal-warning-alt/5 hover:bg-terminal-warning-alt/10 hover:text-terminal-warning-light hover:border-terminal-warning-light"
+          className={`flex-1 py-2.5 px-4 rounded text-xs font-mono transition-all border ${
+            combatActive
+              ? "border-terminal-warning-alt text-terminal-warning-alt bg-terminal-warning-alt/15 hover:bg-terminal-warning-alt/25 shadow-[0_0_8px_rgba(255,200,0,0.2)]"
+              : "border-terminal-warning-alt text-terminal-warning-alt bg-terminal-warning-alt/5 hover:bg-terminal-warning-alt/10 hover:text-terminal-warning-light hover:border-terminal-warning-light"
+          }`}
         >
-          COMBAT
+          {combatActive ? "EXIT COMBAT" : "COMBAT"}
         </button>
       )}
     </div>

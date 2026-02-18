@@ -1,5 +1,6 @@
 import { createContext, useContext, ReactNode } from "react";
 import { useBridgeState } from "@/hooks/useBridgeState";
+import { useShipCombat } from "@/hooks/useShipCombat";
 import type { BridgeState, Contact, BridgeMessage, BridgeScan } from "@/lib/bridge/bridgeTypes";
 
 interface BridgeContextValue {
@@ -25,13 +26,23 @@ interface BridgeContextValue {
   updateAlertLevel: ReturnType<typeof useBridgeState>["updateAlertLevel"];
   updateNavigation: ReturnType<typeof useBridgeState>["updateNavigation"];
   setMode: ReturnType<typeof useBridgeState>["setMode"];
+  combat: ReturnType<typeof useShipCombat>;
 }
 
 const BridgeContext = createContext<BridgeContextValue | undefined>(undefined);
 
 export function BridgeProvider({ children }: { children: ReactNode }) {
   const bridge = useBridgeState();
-  return <BridgeContext.Provider value={bridge}>{children}</BridgeContext.Provider>;
+  const combat = useShipCombat({
+    contacts: bridge.contacts,
+    updateContactFields: bridge.updateContactFields,
+    moveShip: bridge.moveShip,
+  });
+  return (
+    <BridgeContext.Provider value={{ ...bridge, combat }}>
+      {children}
+    </BridgeContext.Provider>
+  );
 }
 
 export function useBridge() {

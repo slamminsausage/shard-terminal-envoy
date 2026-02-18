@@ -11,8 +11,10 @@ import { MessageComposer } from "./MessageComposer";
 import { AddContactModal } from "./AddContactModal";
 import { ScanModal } from "./ScanModal";
 import { DamageCalculator } from "./DamageCalculator";
-import { ShipCombatTracker } from "@/components/combat/ShipCombatTracker";
+import { AddShipToCombatModal } from "./AddShipToCombatModal";
+import { CombatSidebar } from "./combat/CombatSidebar";
 import type { BridgeMessage, Contact, NewContact } from "@/lib/bridge/bridgeTypes";
+import { getEffectiveThrust } from "@/hooks/useShipCombat";
 import { toast } from "sonner";
 
 export function BridgeConsole() {
@@ -31,7 +33,8 @@ export function BridgeConsole() {
     updateAlertLevel,
     runScan,
     setPlayerShip,
-    isOnline
+    isOnline,
+    combat,
   } = useBridge();
 
   // Navigation data from Jump Planner
@@ -46,10 +49,18 @@ export function BridgeConsole() {
   const [selectedMessage, setSelectedMessage] = useState<BridgeMessage | null>(null);
   const [showScan, setShowScan] = useState(false);
   const [showDamageCalc, setShowDamageCalc] = useState(false);
-  const [showShipCombat, setShowShipCombat] = useState(false);
+  const [combatMode, setCombatMode] = useState(false);
+  const [showAddShipToCombat, setShowAddShipToCombat] = useState(false);
   const [selectedVehicleId, setSelectedVehicleId] = useState<string>("");
 
   const playerShip = contacts.find(c => c.isPlayerShip);
+
+  // Sync combat mode with combat engine active state
+  useEffect(() => {
+    if (combat.isActive && !combatMode) {
+      setCombatMode(true);
+    }
+  }, [combat.isActive, combatMode]);
 
   // Get linked vehicle data for the player ship
   const linkedVehicle = playerShip?.vehicleId
@@ -65,18 +76,11 @@ export function BridgeConsole() {
 
   // Derive navigation display values from Jump Planner
   const currentPosition = playerLocation?.worldName || playerLocation?.hex || "UNKNOWN";
-
-  // Get destination from route (last leg in the route array)
   const destination = route.length > 0
     ? route[route.length - 1]?.name || route[route.length - 1]?.hex || "---"
     : undefined;
-
-  // Calculate ETA as number of jumps × 7 days
-  // Route includes start world, so jumps = route.length - 1
   const jumpCount = route.length > 1 ? route.length - 1 : 0;
-  const eta = jumpCount > 0
-    ? `${jumpCount * 7} DAYS`
-    : undefined;
+  const eta = jumpCount > 0 ? `${jumpCount * 7} DAYS` : undefined;
 
   const handleShipSelect = (contact: Contact) => setSelectedContact(contact);
 
@@ -101,11 +105,30 @@ export function BridgeConsole() {
     setShowAddContact(false);
   };
 
+  const handleAddCombatShip = async (contact: NewContact) => {
+    const created = await addContact(contact);
+    if (created?.id && combat.isActive) {
+      await combat.addToCombat(created.id);
+    }
+    setShowAddShipToCombat(false);
+  };
+
   const handleAlertChange = async (level: "normal" | "elevated" | "combat" | "emergency") => {
     await updateAlertLevel(level);
   };
 
-
+  const handleCombatToggle = () => {
+    if (combatMode) {
+      // Don't exit combat mode if combat is active - user must end combat first
+      if (combat.isActive) {
+        toast.info("End combat first before leaving combat mode.");
+        return;
+      }
+      setCombatMode(false);
+    } else {
+      setCombatMode(true);
+    }
+  };
 
   const damageTarget = useMemo(() => {
     if (selectedContact) return selectedContact;
@@ -117,7 +140,6 @@ export function BridgeConsole() {
     setSelectedVehicleId(vehicleId);
     if (!vehicleId) return;
 
-    // Find existing contact for this vehicle or create one
     const existing = contacts.find(c => c.vehicleId === vehicleId);
     let contactId = existing?.id;
 
@@ -125,7 +147,6 @@ export function BridgeConsole() {
       const vehicle = vehicles.find(v => v.id === vehicleId);
       if (!vehicle) return;
 
-      // Create new contact for this vehicle, positioned at center (0,0)
       const created = await addContact({
         name: vehicle.name,
         shipClass: vehicle.class_type ?? vehicle.vehicle_type ?? "Ship",
@@ -141,7 +162,6 @@ export function BridgeConsole() {
       });
       contactId = created?.id;
     } else {
-      // Update existing contact to be player ship
       await updateContactFields(existing.id, { isPlayerShip: true, status: "friendly", vehicleId });
     }
 
@@ -149,6 +169,11 @@ export function BridgeConsole() {
       await setPlayerShip(contactId, vehicleId);
     }
   };
+
+  // Compute movement range for selected contact
+  const movementRange = combatMode && combat.isActive && selectedContact?.isInCombat
+    ? getEffectiveThrust(selectedContact)
+    : undefined;
 
   return (
     <div className="interface-container min-h-screen md:h-screen md:max-h-screen crt-container overflow-hidden bridge-console">
@@ -178,11 +203,17 @@ export function BridgeConsole() {
             />
             <span className="uppercase text-terminal-primary-light">{bridgeState.alertLevel}</span>
           </div>
+          {combatMode && combat.isActive && (
+            <span className="text-terminal-warning-alt font-['Orbitron'] text-xs tracking-wider animate-pulse">
+              COMBAT ACTIVE
+            </span>
+          )}
           <div className="font-['Orbitron'] text-terminal-primary-light">
             {new Date().toLocaleTimeString("en-US", { hour12: false })}
           </div>
         </div>
       </header>
+
       <div className="px-3 md:px-6 3xl:px-8 pb-2 flex flex-col md:flex-row gap-2 md:gap-0 justify-between items-start md:items-center">
         {/* Ship Selector */}
         <div className="flex items-center gap-2 md:gap-3 w-full md:w-auto">
@@ -208,7 +239,7 @@ export function BridgeConsole() {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 grid grid-cols-1 md:grid-cols-[1fr_340px] 3xl:grid-cols-[1fr_480px] gap-3 p-2 md:p-3 3xl:p-4 min-h-0 overflow-y-auto md:overflow-hidden">
+      <div className={`flex-1 grid grid-cols-1 ${combatMode ? 'md:grid-cols-[1fr_400px] 3xl:grid-cols-[1fr_480px]' : 'md:grid-cols-[1fr_340px] 3xl:grid-cols-[1fr_480px]'} gap-3 p-2 md:p-3 3xl:p-4 min-h-0 overflow-y-auto md:overflow-hidden`}>
         {/* Left: Tactical Display */}
         <div className="flex flex-col gap-3 min-h-0 overflow-hidden order-1">
           <TacticalDisplay
@@ -217,58 +248,76 @@ export function BridgeConsole() {
             onShipSelect={handleShipSelect}
             onShipMove={handleShipMove}
             showHidden={false}
+            combatActive={combatMode && combat.isActive}
+            combatPhase={combat.phase}
+            gridRadius={combatMode ? 12 : undefined}
+            movementRange={movementRange}
           />
 
-          {/* Navigation Info Bar */}
-          <div className="nav-info grid grid-cols-1 md:grid-cols-3 bg-terminal-bg-panel-alt border border-terminal-bg-border rounded">
-            <div className="p-2 md:p-3 text-center border-b md:border-b-0 md:border-r border-terminal-bg-border">
-              <div className="text-[0.6rem] text-terminal-text-dimmer tracking-[2px] mb-1">CURRENT POSITION</div>
-              <div className="font-['Orbitron'] font-bold text-sm md:text-base 3xl:text-lg text-terminal-secondary drop-shadow-[0_0_10px_var(--secondary)] uppercase">
-                {currentPosition}
+          {/* Navigation Info Bar - hide during active combat to give grid more space */}
+          {!combat.isActive && (
+            <div className="nav-info grid grid-cols-1 md:grid-cols-3 bg-terminal-bg-panel-alt border border-terminal-bg-border rounded">
+              <div className="p-2 md:p-3 text-center border-b md:border-b-0 md:border-r border-terminal-bg-border">
+                <div className="text-[0.6rem] text-terminal-text-dimmer tracking-[2px] mb-1">CURRENT POSITION</div>
+                <div className="font-['Orbitron'] font-bold text-sm md:text-base 3xl:text-lg text-terminal-secondary drop-shadow-[0_0_10px_var(--secondary)] uppercase">
+                  {currentPosition}
+                </div>
+              </div>
+              <div className="p-2 md:p-3 3xl:p-4 text-center border-b md:border-b-0 md:border-r border-terminal-bg-border">
+                <div className="text-[0.6rem] 3xl:text-xs text-terminal-text-dimmer tracking-[2px] mb-1">DESTINATION</div>
+                <div className="font-['Orbitron'] font-bold text-sm md:text-base 3xl:text-lg text-terminal-secondary drop-shadow-[0_0_10px_var(--secondary)] uppercase">
+                  {destination || "---"}
+                </div>
+              </div>
+              <div className="p-2 md:p-3 3xl:p-4 text-center">
+                <div className="text-[0.6rem] 3xl:text-xs text-terminal-text-dimmer tracking-[2px] mb-1">ETA</div>
+                <div className="font-['Orbitron'] font-bold text-sm md:text-base 3xl:text-lg text-terminal-secondary drop-shadow-[0_0_10px_var(--secondary)]">
+                  {eta || "---"}
+                </div>
               </div>
             </div>
-            <div className="p-2 md:p-3 3xl:p-4 text-center border-b md:border-b-0 md:border-r border-terminal-bg-border">
-              <div className="text-[0.6rem] 3xl:text-xs text-terminal-text-dimmer tracking-[2px] mb-1">DESTINATION</div>
-              <div className="font-['Orbitron'] font-bold text-sm md:text-base 3xl:text-lg text-terminal-secondary drop-shadow-[0_0_10px_var(--secondary)] uppercase">
-                {destination || "---"}
-              </div>
-            </div>
-            <div className="p-2 md:p-3 3xl:p-4 text-center">
-              <div className="text-[0.6rem] 3xl:text-xs text-terminal-text-dimmer tracking-[2px] mb-1">ETA</div>
-              <div className="font-['Orbitron'] font-bold text-sm md:text-base 3xl:text-lg text-terminal-secondary drop-shadow-[0_0_10px_var(--secondary)]">
-                {eta || "---"}
-              </div>
-            </div>
-          </div>
+          )}
         </div>
 
-        {/* Right: Sidebar */}
+        {/* Right: Sidebar - switches between normal and combat mode */}
         <div className="flex flex-col gap-3 min-h-0 overflow-hidden order-2">
-          <CommunicationsPanel
-            messages={messages}
-            unreadCount={unreadCount}
-            selectedMessage={selectedMessage}
-            onMessageClick={handleMessageClick}
-            onComposeClick={() => setShowMessageComposer(true)}
-            onCloseMessage={() => setSelectedMessage(null)}
-          />
+          {combatMode ? (
+            <div className="flex-1 flex flex-col bg-terminal-bg-panel-alt border border-terminal-bg-border rounded overflow-hidden">
+              <CombatSidebar
+                selectedContact={selectedContact}
+                onSelectContact={handleShipSelect}
+                onAddShipClick={() => setShowAddShipToCombat(true)}
+              />
+            </div>
+          ) : (
+            <>
+              <CommunicationsPanel
+                messages={messages}
+                unreadCount={unreadCount}
+                selectedMessage={selectedMessage}
+                onMessageClick={handleMessageClick}
+                onComposeClick={() => setShowMessageComposer(true)}
+                onCloseMessage={() => setSelectedMessage(null)}
+              />
 
-          <ContactsList
-            contacts={contacts}
-            selectedContact={selectedContact}
-            onContactClick={handleShipSelect}
-            onAddClick={() => setShowAddContact(true)}
-            onRemoveContact={removeContact}
-            onUpdateStatus={updateContactStatus}
-            showHidden={false}
-          />
+              <ContactsList
+                contacts={contacts}
+                selectedContact={selectedContact}
+                onContactClick={handleShipSelect}
+                onAddClick={() => setShowAddContact(true)}
+                onRemoveContact={removeContact}
+                onUpdateStatus={updateContactStatus}
+                showHidden={false}
+              />
 
-          {playerShip && (
-            <ShipStatusMini
-              ship={playerShip}
-              linkedVehicle={linkedVehicle}
-              alertLevel={bridgeState.alertLevel}
-            />
+              {playerShip && (
+                <ShipStatusMini
+                  ship={playerShip}
+                  linkedVehicle={linkedVehicle}
+                  alertLevel={bridgeState.alertLevel}
+                />
+              )}
+            </>
           )}
         </div>
       </div>
@@ -279,7 +328,8 @@ export function BridgeConsole() {
         onScanClick={() => setShowScan(true)}
         onHailClick={() => setShowMessageComposer(true)}
         onDamageCalcClick={() => setShowDamageCalc(true)}
-        onShipCombatClick={() => setShowShipCombat(true)}
+        onShipCombatClick={handleCombatToggle}
+        combatActive={combatMode}
       />
 
       {showMessageComposer && (
@@ -332,19 +382,12 @@ export function BridgeConsole() {
         />
       )}
 
-      {showShipCombat && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="relative w-full max-w-6xl max-h-[90vh] overflow-hidden rounded-lg border border-terminal-primary/50 shadow-[0_0_32px_rgba(0,255,0,0.2)]">
-            <button
-              onClick={() => setShowShipCombat(false)}
-              className="absolute top-4 right-4 z-10 px-4 py-2 bg-terminal-bg-panel-alt border border-terminal-primary/50 text-terminal-primary hover:bg-terminal-primary/10 rounded text-xs font-mono"
-            >
-              CLOSE
-            </button>
-            <ShipCombatTracker />
-          </div>
-        </div>
-      )}
+      <AddShipToCombatModal
+        isOpen={showAddShipToCombat}
+        onClose={() => setShowAddShipToCombat(false)}
+        onAdd={handleAddCombatShip}
+        vehicles={vehicles}
+      />
     </div>
   );
 }
