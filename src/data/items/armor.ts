@@ -866,6 +866,108 @@ export const ARMOR_CATALOG: ArmorCatalogItem[] = [
     isPowered: false,
     description: 'A heavy vacc suit designed for emergency situations such as damage control or entering a damaged spacecraft. Very tough; some models are sold as boarding suits. Carries oxygen tanks with a six-hour capacity and a variety of emergency tools. Mainly designed to protect against physical hazards like torn wreckage and debris, plus radiation.',
   },
+
+  // ── Powered Armour (CSC) ─────────────────────────────────────────
+  // While powered and active, the suit's mass does not count against encumbrance.
+  // When unpowered: mass counts normally, STR bonus is lost, and any DEX penalty is doubled.
+  // All powered armour comes equipped with the electronics suite appropriate to its Tech Level.
+  {
+    id: 'mechanical-carapace-tl9',
+    name: 'Mechanical Carapace (TL9)',
+    category: 'armor',
+    tl: 9,
+    protection: 8,
+    rad: 30,
+    mass_kg: 30,
+    cost: 15000,
+    requiredSkill: 'Vacc Suit',
+    requiredSkillLevel: 2,
+    isFullBodySuit: true,
+    hasLifeSupport: true,
+    isPowered: true,
+    description: 'A suit of sealed carapace plates on a simple framework of mechanical ratchets and pneumatics. Fuelled for up to 10 hours (Cr25 to refuel). While active: STR +1, DEX -1. When unpowered: STR bonus lost, DEX -2.',
+  },
+  {
+    id: 'mechanical-carapace-tl12',
+    name: 'Mechanical Carapace (TL12)',
+    category: 'armor',
+    tl: 12,
+    protection: 10,
+    rad: 60,
+    mass_kg: 25,
+    cost: 30000,
+    requiredSkill: 'Vacc Suit',
+    requiredSkillLevel: 1,
+    isFullBodySuit: true,
+    hasLifeSupport: true,
+    isPowered: true,
+    description: 'An improved mechanical carapace using advanced materials for better protection at reduced weight. Fuelled for up to 10 hours (Cr25 to refuel). While active: STR +1, DEX -1. When unpowered: STR bonus lost, DEX -2.',
+  },
+  {
+    id: 'powered-plate-tl10',
+    name: 'Powered Plate (TL10)',
+    category: 'armor',
+    tl: 10,
+    protection: 14,
+    rad: 120,
+    mass_kg: 40,
+    cost: 50000,
+    requiredSkill: 'Vacc Suit',
+    requiredSkillLevel: 1,
+    isFullBodySuit: true,
+    hasLifeSupport: true,
+    isPowered: true,
+    description: 'A large and bulky suit of insulated powered armour made up of metallic plates forming a complete body shell. 100-hour power cell (Cr250 to replace). While active: STR +2, DEX -2. When unpowered: STR bonus lost, DEX -4.',
+  },
+  {
+    id: 'powered-plate-tl14',
+    name: 'Powered Plate (TL14)',
+    category: 'armor',
+    tl: 14,
+    protection: 18,
+    rad: 200,
+    mass_kg: 30,
+    cost: 85000,
+    requiredSkill: 'Vacc Suit',
+    requiredSkillLevel: 0,
+    isFullBodySuit: true,
+    hasLifeSupport: true,
+    isPowered: true,
+    description: 'A refined powered plate suit with a 200-hour power cell (Cr250 to replace). While active: STR +3, DEX -1. When unpowered: STR bonus lost, DEX -2.',
+  },
+  {
+    id: 'ceramic-powered-plate',
+    name: 'Ceramic Powered Plate',
+    category: 'armor',
+    tl: 13,
+    protection: 16,
+    rad: 175,
+    mass_kg: 35,
+    cost: 90000,
+    requiredSkill: 'Vacc Suit',
+    requiredSkillLevel: 1,
+    energyProtection: 20,
+    isFullBodySuit: true,
+    hasLifeSupport: true,
+    isPowered: true,
+    description: 'An advanced powered plate of ceramic-metal hybrid alloys giving higher protection against lasers, flamethrowers and heat/fire-based attacks (+20 vs fire, lasers & energy). 85-hour power cell (Cr250 to replace). While active: STR +2, DEX -2. When unpowered: STR bonus lost, DEX -4.',
+  },
+  {
+    id: 'grav-enhanced-powered-plate',
+    name: 'Grav-Enhanced Powered Plate',
+    category: 'armor',
+    tl: 15,
+    protection: 20,
+    rad: 220,
+    mass_kg: 32,
+    cost: 120000,
+    requiredSkill: 'Vacc Suit',
+    requiredSkillLevel: 0,
+    isFullBodySuit: true,
+    hasLifeSupport: true,
+    isPowered: true,
+    description: 'Powered plate with gravitic gyros in its limbs and torso. 500-hour power cell (Cr750 to replace). While active: STR +3, no DEX penalty, +50% movement speed. When unpowered: STR bonus lost, DEX -1.',
+  },
 ];
 
 // ─── Armor Options / Upgrades ────────────────────────────────────────
@@ -1057,6 +1159,158 @@ export const ARMOR_OPTIONS: ArmorOption[] = [
       },
     ],
   },
+
+  // ── CSC Modifications ─────────────────────────────────────────────
+  {
+    id: 'additional-padding',
+    name: 'Additional Padding',
+    description: 'Layers of furs, cotton and hides added onto existing armour. Somewhat hinders movement but improves protection from physical attacks. Imposes DM-1 to all checks involving DEX, but adds +1 to the armour\'s Protection.',
+    variants: [
+      {
+        tl: 1,
+        cost: 50,
+        effect: 'Protection +1; DM-1 to all DEX checks',
+      },
+    ],
+  },
+  {
+    id: 'camouflage',
+    name: 'Camouflage',
+    description: 'Natural or artificial material that breaks up distinctive outlines of the Traveller or equipment. Grants DM+2 to Stealth checks made against visual searches. Defeated by infrared and other sensors operating beyond the visual spectrum.',
+    variants: [
+      {
+        tl: 3,
+        cost: 25,
+        effect: 'DM+2 to Stealth vs visual searches (defeated by IR/sensors)',
+      },
+    ],
+  },
+  {
+    id: 'coolant-rig',
+    name: 'Coolant Rig',
+    description: 'A web of tubing filled with chemical coolant that makes wearing heavy armour in hot environments comfortable and tolerable. Allows the Traveller to comfortably endure temperatures up to 50°C without suffering damage.',
+    variants: [
+      {
+        tl: 8,
+        cost: 100,
+        effect: 'No damage from temperatures up to 50°C',
+      },
+    ],
+  },
+  {
+    id: 'environment-reader',
+    name: 'Environment Reader',
+    description: 'An external colour-changing sensor adhered where the Traveller can see it. Displays atmospheric status in hues: green (oxygen), blue (methane), red (radiation), black (airborne toxins).',
+    variants: [
+      {
+        tl: 8,
+        cost: 100,
+        effect: 'Real-time atmospheric status display (O₂, methane, radiation, toxins)',
+      },
+    ],
+  },
+  {
+    id: 'friend-or-foe-hud',
+    name: 'Friend or Foe HUD',
+    description: 'Scanners and cameras implanted in the armour track registered friendly transponders and mark targets without transponders as potential enemies on a visor-based HUD. Shows exact locations of allies and enemies within line of sight or up to 1km. Grants DM+1 to Tactics (military) checks. Extra transponders cost Cr100 for 20 units.',
+    variants: [
+      {
+        tl: 11,
+        cost: 4000,
+        effect: 'Tracks allies/enemies via HUD; DM+1 to Tactics (military)',
+      },
+    ],
+  },
+  {
+    id: 'gyro-stabilizer-rig',
+    name: 'Gyro-Stabilizer Rig',
+    description: 'A localised motion-pivot at the waist that counters the effects of weapon recoil. Requires an Average (8+) Mechanics check (1D minutes, EDU) to attach to a heavy weapon or rifle. Removes all penalties for Bulky weapons. The TL14 version also removes penalties for Very Bulky weapons.',
+    variants: [
+      {
+        tl: 12,
+        cost: 10000,
+        effect: 'Removes Bulky weapon penalties',
+      },
+      {
+        tl: 14,
+        cost: 50000,
+        effect: 'Removes Bulky and Very Bulky weapon penalties',
+      },
+    ],
+  },
+  {
+    id: 'minefield-boots',
+    name: 'Minefield Boots',
+    description: 'Used by troops in regions with risk from anti-personnel mines and booby traps. Gives complete protection against routine hazards such as snakes, and grants +4 Protection against sharpened stakes and anti-personnel mines. No additional protection against combat hazards unless shot deliberately in the foot.',
+    variants: [
+      {
+        tl: 8,
+        cost: 250,
+        effect: '+4 Protection vs mines and sharpened stakes; immune to snakes',
+      },
+    ],
+  },
+  {
+    id: 'null-shield',
+    name: 'Null Shield',
+    description: 'An expensive and rare modification that coats the armour with substances similar to those found in anti-psion ammunition and psi-sedatives. Grants the Traveller complete immunity to any psionic power targeting them.',
+    variants: [
+      {
+        tl: 17,
+        cost: 150000,
+        effect: 'Complete immunity to psionic powers targeting the Traveller',
+      },
+    ],
+  },
+  {
+    id: 'personalised-image',
+    name: 'Personalised Image',
+    description: 'Using hardened enamels and pigments, any armour can be artistically altered to reflect the individuality of the Traveller, a military affiliation, or other associations.',
+    variants: [
+      {
+        tl: 2,
+        cost: 10,
+        effect: 'Custom artistic livery (cosmetic only)',
+      },
+    ],
+  },
+  {
+    id: 'psionic-shield-helmet',
+    name: 'Psionic Shield Helmet',
+    description: 'Can be built into existing armour or worn as a separate unit. Acts as a shield against psionic influences, automatically blocking all telepathy powers.',
+    variants: [
+      {
+        tl: 12,
+        cost: 4000,
+        effect: 'Automatically blocks all telepathy powers',
+      },
+    ],
+  },
+  {
+    id: 'submarine-functionality',
+    name: 'Submarine Functionality',
+    description: 'Only available on sealed armours (vacc suits, combat armour, powered armour). Adds oxygenators, pressure valves, flow venting fins and small turbines. Allows the suit to completely ignore penalties for being submerged for as long as it has life support. Cost is Cr200 × the armour\'s Protection value.',
+    variants: [
+      {
+        tl: 9,
+        cost: 0, // Variable: Cr200 × armour Protection value
+        effect: 'Ignore all submersion penalties while life support active (cost = Cr200 × Protection)',
+        compatibleWith: undefined, // Sealed armours only — enforced by hasLifeSupport check
+      },
+    ],
+  },
+  {
+    id: 'tactical-video-suite',
+    name: 'Tactical Video Suite',
+    description: 'Small cameras and microphones attached to high-visibility areas of armour or clothing. Monitors and records everything for later viewing on a 10-hour hard drive. Can be rigged to transmit in real-time to a command hub, granting DM+1 to Tactics (military) checks made by viewers. Real-time transmission version costs Cr25 extra.',
+    variants: [
+      {
+        tl: 7,
+        cost: 75,
+        effect: '10-hour recording; optional real-time broadcast (+Cr25) grants DM+1 to Tactics (military)',
+      },
+    ],
+  },
 ];
 
 // ─── Utility Functions ───────────────────────────────────────────────
@@ -1096,8 +1350,8 @@ export function isOptionCompatible(
     if (!armor.isFullBodySuit) return false;
   }
 
-  // Extended life support requires life support
-  if (option.id === 'extended-life-support') {
+  // Extended life support and submarine functionality require sealed life support
+  if (option.id === 'extended-life-support' || option.id === 'submarine-functionality') {
     if (!armor.hasLifeSupport) return false;
   }
 
