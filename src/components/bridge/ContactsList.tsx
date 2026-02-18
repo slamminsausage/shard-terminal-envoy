@@ -8,6 +8,7 @@ interface ContactsListProps {
   onRemoveContact: (contactId: string) => void;
   onUpdateStatus: (contactId: string, status: "friendly" | "unknown" | "enemy" | "derelict") => void;
   showHidden?: boolean;
+  isGM?: boolean;
 }
 
 export function ContactsList({
@@ -17,7 +18,8 @@ export function ContactsList({
   onAddClick,
   onRemoveContact,
   onUpdateStatus,
-  showHidden = false
+  showHidden = false,
+  isGM = false
 }: ContactsListProps) {
   const calculateBearing = (q: number, r: number): string => {
     if (q === 0 && r === 0) return "--";
@@ -38,12 +40,14 @@ export function ContactsList({
         <span className="font-['Orbitron'] text-xs tracking-[3px] text-terminal-text-dimmer">CONTACTS</span>
         <div className="flex items-center gap-3">
           <span className="text-xs text-terminal-primary-light">{contacts.length} DETECTED</span>
-          <button
-            onClick={onAddClick}
-            className="text-xs text-terminal-primary-light hover:text-white transition-colors"
-          >
-            + ADD
-          </button>
+          {isGM && (
+            <button
+              onClick={onAddClick}
+              className="text-xs text-terminal-primary-light hover:text-white transition-colors"
+            >
+              + ADD
+            </button>
+          )}
         </div>
       </div>
 
@@ -116,15 +120,17 @@ export function ContactsList({
                 >
                   D
                 </button>
-                <button
-                  className="hover:text-terminal-danger-alt"
-                  onClick={e => {
-                    e.stopPropagation();
-                    onRemoveContact(contact.id);
-                  }}
-                >
-                  x
-                </button>
+                {isGM && (
+                  <button
+                    className="hover:text-terminal-danger-alt"
+                    onClick={e => {
+                      e.stopPropagation();
+                      onRemoveContact(contact.id);
+                    }}
+                  >
+                    x
+                  </button>
+                )}
               </div>
             </div>
           );

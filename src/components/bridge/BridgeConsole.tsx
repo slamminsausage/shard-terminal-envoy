@@ -40,8 +40,8 @@ export function BridgeConsole() {
   // Navigation data from Jump Planner
   const { playerLocation, route, selectedWorld } = useJumpPlanner();
 
-  // Vehicle data from Campaign context
-  const { vehicles } = useCampaign();
+  // Vehicle data and role from Campaign context
+  const { vehicles, isGM } = useCampaign();
 
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
   const [showMessageComposer, setShowMessageComposer] = useState(false);
@@ -308,6 +308,7 @@ export function BridgeConsole() {
                 onRemoveContact={removeContact}
                 onUpdateStatus={updateContactStatus}
                 showHidden={false}
+                isGM={isGM}
               />
 
               {playerShip && (
