@@ -68,10 +68,14 @@ export function SetupPanel({
                 {c.name}
               </span>
               <button
-                onClick={() => onRemoveFromCombat(c.id)}
-                className="text-terminal-text-dimmer hover:text-terminal-danger-alt transition-colors"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onRemoveFromCombat(c.id);
+                }}
+                className="p-1 text-terminal-text-dimmer hover:text-terminal-danger-alt hover:bg-terminal-danger-alt/10 rounded transition-colors"
+                title="Remove from combat"
               >
-                <Trash2 className="h-3 w-3" />
+                <Trash2 className="h-3.5 w-3.5" />
               </button>
             </div>
           ))}
