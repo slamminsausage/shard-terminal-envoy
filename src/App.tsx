@@ -25,7 +25,6 @@ import NotFound from "./pages/NotFound";
 import CharacterView from "./components/crew/CharacterView";
 import VehicleView from "./components/crew/VehicleView";
 import { useParams } from "react-router-dom";
-import AdminBridge from "./pages/AdminBridge";
 import AdminNotes from "./pages/AdminNotes";
 import { lazyWithRetry } from "@/lib/lazyWithRetry";
 
@@ -69,7 +68,6 @@ const App = () => (
                 <Route path="/" element={<Index />} />
                 <Route path="/character-view/:id" element={<CharacterViewRoute />} />
                 <Route path="/vehicle-view/:id" element={<VehicleViewRoute />} />
-                <Route path="/admin/bridge" element={<AdminBridge />} />
                 <Route path="/admin/notes" element={<AdminNotes />} />
                 <Route path="/presenter" element={<Suspense fallback={<div className="bg-black min-h-screen" />}><VTTPresenterView /></Suspense>} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
