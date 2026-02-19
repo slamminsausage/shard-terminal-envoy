@@ -420,7 +420,151 @@ export const COMPUTERS_EQUIPMENT: EquipmentCatalogItem[] = [
     mass_kg: 0,
     cost: 5,
     effect: 'Standard data storage medium',
-    description: 'The standard medium of information storage \u2013 a rectangle of hardened plastic about the size of a credit card. TL10 versions use memory diamond with information encoded in carbon atom structures. Higher TL versions use more exotic storage. Standardised interface across the Imperium.',
+    description: 'The standard medium of information storage — a rectangle of hardened plastic about the size of a credit card. TL10 versions use memory diamond with information encoded in carbon atom structures. Higher TL versions use more exotic storage. Standardised interface across the Imperium.',
+  },
+
+  // ── Mainframes ───────────────────────────────────────────────────
+
+  {
+    id: 'mainframe-tl5',
+    name: 'Mainframe (TL5)',
+    category: 'equipment',
+    equipmentType: 'electronics',
+    tl: 5,
+    mass_kg: 5000,
+    cost: 2000000,
+    effect: 'Computer/0; 5-tonne installation',
+    description: 'An early mainframe computer requiring significant cooling, power supply and physical space — 5 tonnes of machinery. Represents the cutting edge of computation at this tech level. Most often accessed by dedicated computer terminals. Generally used by militaries and corporations for tasks beyond the abilities of more generalised computers.',
+  },
+  {
+    id: 'mainframe-tl6',
+    name: 'Mainframe (TL6)',
+    category: 'equipment',
+    equipmentType: 'electronics',
+    tl: 6,
+    mass_kg: 4000,
+    cost: 4000000,
+    effect: 'Computer/1; 4-tonne installation',
+    description: 'A TL6 mainframe with Computer/1 processing power. Requires a 4-tonne installation of hardware, cooling and power infrastructure. Accessed by dedicated terminals. Used by large organisations for critical data processing tasks.',
+  },
+  {
+    id: 'mainframe-tl7',
+    name: 'Mainframe (TL7)',
+    category: 'equipment',
+    equipmentType: 'electronics',
+    tl: 7,
+    mass_kg: 1000,
+    cost: 5000000,
+    effect: 'Computer/2; 1-tonne installation',
+    description: 'A TL7 mainframe with Computer/2 processing power, reduced to a 1-tonne installation thanks to improved miniaturisation. Still requires dedicated space and cooling but far more compact than earlier models.',
+  },
+
+  // ── Holographic Projectors ────────────────────────────────────────
+
+  {
+    id: 'holographic-projector-tl11',
+    name: 'Holographic Projector (TL11)',
+    category: 'equipment',
+    equipmentType: 'electronics',
+    tl: 11,
+    mass_kg: 16,
+    cost: 1000,
+    effect: '3D image projection up to 3m range; obviously artificial',
+    description: 'A briefcase-sized box that projects three-dimensional images in the space around it, up to 3 metres range. Images are obviously not real at this tech level and are most often used for communication or presentation purposes. Can be connected to any TL10+ computer, comm or transceiver.',
+  },
+  {
+    id: 'holographic-projector-tl12',
+    name: 'Holographic Projector (TL12)',
+    category: 'equipment',
+    equipmentType: 'electronics',
+    tl: 12,
+    mass_kg: 12,
+    cost: 2000,
+    effect: '3D image projection; realistic enough to fool observers failing an INT check',
+    description: 'An improved holographic projector producing images realistic enough to fool observers who fail an INT check. Lighter than the TL11 model. Used for deception, training simulations and communication. Can be connected to any TL10+ computer, comm or transceiver.',
+  },
+  {
+    id: 'holographic-projector-tl13',
+    name: 'Holographic Projector (TL13)',
+    category: 'equipment',
+    equipmentType: 'electronics',
+    tl: 13,
+    mass_kg: 4,
+    cost: 10000,
+    effect: '3D image projection; true-to-life quality',
+    description: 'An advanced holographic projector producing true-to-life images. Significantly lighter than previous versions. Images are indistinguishable from reality without careful examination or sensor equipment. Can be connected to any TL10+ computer, comm or transceiver.',
+  },
+  {
+    id: 'holographic-projector-tl15',
+    name: 'Holographic Projector (TL15)',
+    category: 'equipment',
+    equipmentType: 'electronics',
+    tl: 15,
+    mass_kg: 0,
+    cost: 25000,
+    effect: '3D image projection; negligible mass, perfect quality',
+    description: 'The pinnacle of holographic projection — virtually weightless and producing flawless true-to-life images. A handheld or wearable device at this tech level. Can be connected to any TL10+ computer, comm or transceiver.',
+  },
+
+  // ── Personal HUD ─────────────────────────────────────────────────
+
+  {
+    id: 'personal-hud',
+    name: 'Personal HUD',
+    category: 'equipment',
+    equipmentType: 'electronics',
+    tl: 9,
+    mass_kg: 0,
+    cost: 1500,
+    effect: 'Heads-up display from comm, computer or weapon; Cr100 + 1 hour per linked device',
+    description: 'A personal Heads-Up Display fitted to goggles, shades, a monocle or helmet faceplate. Displays data from linked devices — incoming messages, video from a personal comm, data from a hand computer, or weapon aiming reticules. Each device must be calibrated to the HUD (1 hour, Cr100). Military HUDs use fibre-optic cable rather than wireless to avoid detectable radio emissions.',
+  },
+
+  // ── Wrist Watches ─────────────────────────────────────────────────
+
+  {
+    id: 'wrist-watch-tl4',
+    name: 'Wrist Watch (TL4)',
+    category: 'equipment',
+    equipmentType: 'electronics',
+    tl: 4,
+    mass_kg: 0,
+    cost: 100,
+    effect: 'Mechanical timepiece',
+    description: 'A mechanical wrist-mounted timepiece keeping accurate local time. Purely mechanical with no electronics. Prestige models cost Cr1,000 or more but provide no additional functionality.',
+  },
+  {
+    id: 'wrist-watch-tl7',
+    name: 'Wrist Watch (TL7)',
+    category: 'equipment',
+    equipmentType: 'electronics',
+    tl: 7,
+    mass_kg: 0,
+    cost: 10,
+    effect: 'Electronic watch; stopwatch, alarm, timer, timezone display',
+    description: 'A cheap, mass-produced electronic watch with stopwatch, alarm, timer and multiple timezone functions. Available everywhere at this tech level.',
+  },
+  {
+    id: 'wrist-watch-tl9',
+    name: 'Wrist Watch (TL9)',
+    category: 'equipment',
+    equipmentType: 'electronics',
+    tl: 9,
+    mass_kg: 0,
+    cost: 150,
+    effect: 'Smart watch with Computer/0; supports standard upgrades (e.g. holographic projector)',
+    description: 'A smart watch with Computer/0 capable of fitting standard computer upgrades such as miniature holographic projectors. Links to personal comms and hand computers for notifications and data display.',
+  },
+  {
+    id: 'wrist-watch-tl10',
+    name: 'Wrist Watch (TL10)',
+    category: 'equipment',
+    equipmentType: 'electronics',
+    tl: 10,
+    mass_kg: 0,
+    cost: 200,
+    effect: 'Smart watch with Computer/1',
+    description: 'An advanced smart watch with Computer/1 processing. Can run lightweight software packages and serve as a standalone computer for basic tasks. Links seamlessly to all personal electronics.',
   },
 ];
 
@@ -462,8 +606,8 @@ export const SOFTWARE_EQUIPMENT: EquipmentCatalogItem[] = [
     tl: 8,
     mass_kg: 0,
     cost: 0,
-    effect: 'Bandwidth 0. Average (8+) Electronics (computers) to bypass. Included.',
-    description: 'Basic security software that defends against intrusion. Requires an Average (8+) Electronics (computers) check to bypass. Included with all computers.',
+    effect: 'Bandwidth 0. Difficult (10+) Electronics (computers) to bypass. Included.',
+    description: 'Basic security software installed freely on all computers. Requires a Difficult (10+) Electronics (computers) check to bypass.',
   },
   {
     id: 'software-security-1',
@@ -473,8 +617,8 @@ export const SOFTWARE_EQUIPMENT: EquipmentCatalogItem[] = [
     tl: 10,
     mass_kg: 0,
     cost: 200,
-    effect: 'Bandwidth 1. Difficult (10+) Electronics (computers) to bypass.',
-    description: 'Improved security software. Requires a Difficult (10+) Electronics (computers) check to bypass.',
+    effect: 'Bandwidth 1. Very Difficult (12+) Electronics (computers) to bypass.',
+    description: 'Improved security software. Requires a Very Difficult (12+) Electronics (computers) check to bypass.',
   },
   {
     id: 'software-security-2',
@@ -484,8 +628,8 @@ export const SOFTWARE_EQUIPMENT: EquipmentCatalogItem[] = [
     tl: 11,
     mass_kg: 0,
     cost: 1000,
-    effect: 'Bandwidth 2. Very Difficult (12+) Electronics (computers) to bypass.',
-    description: 'Advanced security software. Requires a Very Difficult (12+) Electronics (computers) check to bypass.',
+    effect: 'Bandwidth 2. Formidable (14+) Electronics (computers) to bypass.',
+    description: 'Advanced security software. Requires a Formidable (14+) Electronics (computers) check to bypass.',
   },
   {
     id: 'software-security-3',
@@ -495,8 +639,8 @@ export const SOFTWARE_EQUIPMENT: EquipmentCatalogItem[] = [
     tl: 12,
     mass_kg: 0,
     cost: 20000,
-    effect: 'Bandwidth 3. Formidable (14+) Electronics (computers) to bypass.',
-    description: 'Military-grade security software. Requires a Formidable (14+) Electronics (computers) check to bypass.',
+    effect: 'Bandwidth 3. Impossible (16+) Electronics (computers) to bypass.',
+    description: 'Military-grade security software. Requires an Impossible (16+) Electronics (computers) check to bypass.',
   },
 
   // ── Intrusion ────────────────────────────────────────────────────
@@ -612,9 +756,9 @@ export const SOFTWARE_EQUIPMENT: EquipmentCatalogItem[] = [
     equipmentType: 'software',
     tl: 7,
     mass_kg: 0,
-    cost: 10, // Cr10-10000 depending on content
-    effect: 'Bandwidth 0. Searchable information store on a specific topic.',
-    description: 'A large store of information on a topic that can be searched with an Electronics (computers) check or using an Agent program. Cost varies from Cr10 for common topics to Cr10,000 for specialised or restricted databases.',
+    cost: 10000,
+    effect: 'Bandwidth 1. Comprehensive auto-updating searchable knowledge base.',
+    description: 'A collection of databases that can be searched with an Electronics (computers) check or using an Agent program. Automatically updates itself whenever in range of a TL9+ server or network, and can usually answer any factual or reference question. Specialised or restricted databases may cost more.',
   },
 
   // ── Agent ────────────────────────────────────────────────────────
@@ -696,6 +840,84 @@ export const SOFTWARE_EQUIPMENT: EquipmentCatalogItem[] = [
     cost: 200000,
     effect: 'Bandwidth 3. Can use 3 Expert systems simultaneously.',
     description: 'A top-tier artificial intelligence capable of running three Expert programs simultaneously. The closest thing to a true AI available at this technology level.',
+  },
+
+  // ── Decryptor ────────────────────────────────────────────────────
+
+  {
+    id: 'software-decryptor-1',
+    name: 'Decryptor/1',
+    category: 'equipment',
+    equipmentType: 'software',
+    tl: 10,
+    mass_kg: 0,
+    cost: 5000,
+    effect: 'Bandwidth 1. Very Difficult (12+) Electronics (comms) check; DM+1 per TL below sender.',
+    description: 'Decryptor software that analyses intercepted transmissions and decrypts them in real-time. Requires a Very Difficult (12+) Electronics (comms) check, with DM+1 for every TL the transmitting device is below the intercepting computer. Spending 1D hours on analysis grants DM+2 but is no longer real-time. Cannot decrypt transmissions from higher-TL devices in any practical timeframe.',
+  },
+  {
+    id: 'software-decryptor-2',
+    name: 'Decryptor/2',
+    category: 'equipment',
+    equipmentType: 'software',
+    tl: 12,
+    mass_kg: 0,
+    cost: 10000,
+    effect: 'Bandwidth 2. Very Difficult (12+) Electronics (comms) check; DM+1 per TL below sender.',
+    description: 'Improved decryptor software capable of analysing more sophisticated encrypted transmissions in real-time. Same mechanics as Decryptor/1 but handles higher-bandwidth encrypted signals.',
+  },
+  {
+    id: 'software-decryptor-3',
+    name: 'Decryptor/3',
+    category: 'equipment',
+    equipmentType: 'software',
+    tl: 14,
+    mass_kg: 0,
+    cost: 20000,
+    effect: 'Bandwidth 3. Very Difficult (12+) Electronics (comms) check; DM+1 per TL below sender.',
+    description: 'Advanced decryptor software for breaking high-security encrypted communications in real-time. Handles the most sophisticated encryption systems of its era. Cannot decrypt transmissions from higher-TL devices in any practical timeframe.',
+  },
+
+  // ── Digital Friend ────────────────────────────────────────────────
+
+  {
+    id: 'software-digital-friend',
+    name: 'Digital Friend',
+    category: 'equipment',
+    equipmentType: 'software',
+    tl: 12,
+    mass_kg: 0,
+    cost: 1750,
+    effect: 'Bandwidth 2. Intelligent Interface with user-defined adjustable personality.',
+    description: 'An Intelligent Interface package given a definable and adjustable personality — typically named by its owner. Designed for Travellers who want more humanity in their computers and those who spend long periods in isolation (scouts, belters, solo operators). Also used for therapeutic purposes and has been useful in resolving long-standing psychological issues.',
+  },
+
+  // ── Personal Trainer ──────────────────────────────────────────────
+
+  {
+    id: 'software-personal-trainer',
+    name: 'Personal Trainer',
+    category: 'equipment',
+    equipmentType: 'software',
+    tl: 8,
+    mass_kg: 0,
+    cost: 2000,
+    effect: 'Bandwidth 1. DM+1 to checks made to gain/improve a specific skill during post-career education.',
+    description: 'Often created from a modified Digital Friend package, the Personal Trainer is a dedicated educational aid for a single skill. Grants DM+1 to all checks made to gain or improve that skill during post-career education. A separate package must be purchased for each skill being studied.',
+  },
+
+  // ── Universal Translator ──────────────────────────────────────────
+
+  {
+    id: 'software-universal-translator',
+    name: 'Universal Translator',
+    category: 'equipment',
+    equipmentType: 'software',
+    tl: 12,
+    mass_kg: 0,
+    cost: 25000,
+    effect: 'Bandwidth 3. Real-time analysis and translation of any language including previously unknown ones.',
+    description: 'Sophisticated software using a massive database of known languages combined with multi-tiered analytical algorithms. Unlike standard Translator packages, the Universal Translator can analyse and translate previously unknown languages in real-time by recognising linguistic patterns. Handles both written and spoken language and auto-updates when in range of a TL9+ network.',
   },
 ];
 
@@ -1017,6 +1239,53 @@ export const SENSORS_EQUIPMENT: EquipmentCatalogItem[] = [
     effect: 'Detect neural activity up to 500m, estimate intelligence',
     description: 'The Neural Activity Scanner consists of a backpack and detachable handheld unit and can detect neural activity up to 500 metres away. The device can also give a rough estimation of the intelligence level of organisms based on brainwave patterns.',
   },
+
+  // ── CSC Vision & Detection ─────────────────────────────────────────
+
+  {
+    id: 'chemi-view-goggles',
+    name: 'Chemi-View Goggles',
+    category: 'equipment',
+    equipmentType: 'sensors',
+    tl: 13,
+    mass_kg: 0,
+    cost: 5000,
+    effect: 'Visually highlight any traces of a targeted chemical compound, protein or DNA',
+    description: 'An advanced set of goggles linked to a wrist-mounted sniffer unit. The sniffer takes a sample of a target substance — a chemical compound, protein strand, elemental presence or specific DNA strand — and the goggles then brightly highlight any traces of that compound in the Traveller\'s visual field. Extremely useful for locating drugs, explosives, or specific organisms. Can be set to specific DNA strands if a tissue sample is available.',
+  },
+  {
+    id: 'geiger-counter-tl8',
+    name: 'Geiger Counter (TL8)',
+    category: 'equipment',
+    equipmentType: 'sensors',
+    tl: 8,
+    mass_kg: 0,
+    cost: 400,
+    effect: 'Radiation detection with source identification and direction finding',
+    description: 'An advanced miniaturised radiation detector. Unlike the TL5 model, this version can determine exactly what element is producing the radiation and the direction it is coming from. Negligible mass — small enough to clip to a belt or integrate into other equipment.',
+  },
+  {
+    id: 'pris-goggles',
+    name: 'PRIS Goggles',
+    category: 'equipment',
+    equipmentType: 'sensors',
+    tl: 12,
+    mass_kg: 0,
+    cost: 4000,
+    effect: 'Multi-spectrum close-range imaging; detect stress fractures and material defects',
+    description: 'PRIS (Portable Radiation Imaging System) goggles using the same multi-spectrum imaging as PRIS binoculars but designed for close-range magnification rather than distance observation. Used by engineers and technicians to see stress fractures and material defects long before they become visible to the naked eye. Can view in optical, infrared, ultraviolet, radio and X-ray wavelengths with composite imaging modes.',
+  },
+  {
+    id: 'psi-finder-binoculars',
+    name: 'Psi-Finder Binoculars',
+    category: 'equipment',
+    equipmentType: 'sensors',
+    tl: 16,
+    mass_kg: 1,
+    cost: 10000,
+    effect: 'PRIS binoculars + psionic aura detection; nimbus brightness indicates Psi strength',
+    description: 'PRIS binoculars with an additional psionic detection filter. When activated, the filter surrounds any being with a Psi score with a luminescent nimbus — the brighter and stronger the nimbus, the more powerful the psionic ability. All standard PRIS binocular functions (multi-spectrum imaging) are also available.',
+  },
 ];
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -1256,6 +1525,31 @@ export const SURVIVAL_EQUIPMENT: EquipmentCatalogItem[] = [
     cost: 2000,
     effect: 'Auto-repair small breaches in seconds',
     description: 'An upgrade for tents, habitat modules and other basic structures. Small breaches and rips are automatically fixed in seconds.',
+  },
+
+  // ── Light Sources (CSC) ───────────────────────────────────────────
+
+  {
+    id: 'cold-light-lantern',
+    name: 'Cold Light Lantern',
+    category: 'equipment',
+    equipmentType: 'survival',
+    tl: 6,
+    mass_kg: 0.25,
+    cost: 20,
+    effect: 'Wide cone 18m/6m-radius, tight beam 36m/1m-radius, or 10m area; 3-day battery',
+    description: 'A fuel-cell powered lantern with a 3-day continuous battery life. Switchable between three modes: a wide cone of light up to 18 metres (6-metre radius at end), a tight beam up to 36 metres (1-metre radius), or general illumination of a 10-metre radius. Far longer-lasting than a standard electric torch.',
+  },
+  {
+    id: 'ir-electric-torch',
+    name: 'Infrared Electric Torch',
+    category: 'equipment',
+    equipmentType: 'survival',
+    tl: 7,
+    mass_kg: 0,
+    cost: 50,
+    effect: 'IR illumination invisible to naked eye; requires IR goggles to see; 6-hour rechargeable battery',
+    description: 'A torch emitting infrared rather than visible-spectrum light. Only those equipped with IR goggles or thermal vision aids can see the illumination — ideal for covert operations where visible light would reveal a position. Integral rechargeable battery provides 6 hours of continuous operation.',
   },
 
   // ── Aerial Environments ────────────────────────────────────────────
@@ -2431,6 +2725,20 @@ export const TOOLS_EQUIPMENT: EquipmentCatalogItem[] = [
     cost: 2000,
     effect: 'DM+2 in one social science speciality; unskilled can attempt up to Very Difficult (12+)',
     description: 'A dedicated computer tablet running Intellect and Expert software in a social science speciality (economics, history, linguistics, philosophy, psychology or sophontology). Contains extensive qualitative and quantitative databases. Provides DM+2 to checks in the speciality for skilled users. Unskilled Travellers may attempt checks up to Very Difficult (12+) with effective skill level 1.',
+  },
+
+  // ── Micro-Tools ───────────────────────────────────────────────────
+
+  {
+    id: 'ring-laser',
+    name: 'Ring Laser',
+    category: 'equipment',
+    equipmentType: 'tools',
+    tl: 16,
+    mass_kg: 0,
+    cost: 1000,
+    effect: 'Miniaturised cutting/welding laser in a ring; 10 min continuous battery',
+    description: 'A miniaturised tool laser built into a finger ring. Too weak to serve as a weapon but useful for small cutting or welding jobs — can cut thin wire, score metal, or fuse small joints. Integral battery provides up to 10 minutes of continuous operation. Can also serve as a painful close-contact intimidation device.',
   },
 ];
 
