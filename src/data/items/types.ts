@@ -142,9 +142,12 @@ export type AugmentType =
   | 'physical'      // STR, DEX, END augmentations
   | 'cognitive'     // INT augmentation
   | 'neural'        // Neural Comm, Wafer Jack
-  | 'sensory'       // Enhanced Vision
+  | 'sensory'       // Enhanced Vision, Ballistic Tracking Lenses
   | 'skill'         // Skill Augmentation
-  | 'protective';   // Subdermal Armour
+  | 'protective'    // Subdermal Armour
+  | 'cyberlimb'     // Prosthetics, Combat Arms, Weapon Implants, Mobility systems
+  | 'biotech'       // Biological augmentations: organ packages, symbiotes, muscular bridging
+  | 'implant';      // Internal implants: power ports, auto-injectors, smuggling containers
 
 /** Human-readable labels for augment type groups */
 export const AUGMENT_TYPE_LABELS: Record<AugmentType, string> = {
@@ -154,6 +157,9 @@ export const AUGMENT_TYPE_LABELS: Record<AugmentType, string> = {
   sensory: 'Sensory Augmentation',
   skill: 'Skill Augmentation',
   protective: 'Protective Augmentation',
+  cyberlimb: 'Cyberlimbs & Prosthetics',
+  biotech: 'Biotech Augmentation',
+  implant: 'Internal Implants',
 };
 
 export interface AugmentCatalogItem extends CatalogItem {
