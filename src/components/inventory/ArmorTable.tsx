@@ -10,12 +10,14 @@ import { Input } from "@/components/ui/input";
 import { Trash2, ChevronDown, ChevronUp } from "lucide-react";
 import {
   ARMOR_CATALOG,
+  ARMOR_OPTIONS,
   getArmorById,
+  getCompatibleOptions,
   formatProtection,
-  getEffectiveMass,
 } from "@/data/items";
 import type { ArmorCatalogItem } from "@/data/items";
 import { CatalogItemPicker, type CatalogPickerItem } from "./CatalogItemPicker";
+import { OptionsPicker, type OptionEntry } from "./OptionsPicker";
 
 export type ArmourRow = {
   catalogId?: string;
@@ -23,7 +25,7 @@ export type ArmourRow = {
   rad: string;
   protection: string;
   kg: string;
-  options: string;
+  options: string[];
   total: string;
   notes?: string;
 };
@@ -54,6 +56,39 @@ function buildArmorPickerItems(): CatalogPickerItem[] {
   }));
 }
 
+/** Build OptionEntry list for the given armor catalog ID (or all options if custom). */
+function buildArmorOptionEntries(catalogId?: string): OptionEntry[] {
+  if (!catalogId) {
+    // Custom armor — show all options (no compatibility filter)
+    return ARMOR_OPTIONS.flatMap((option) =>
+      option.variants.map((v, i) => ({
+        key: option.variants.length > 1 ? `${option.id}:${i}` : option.id,
+        optionId: option.id,
+        variantIndex: i,
+        name: option.variants.length > 1 ? `${option.name} (TL${v.tl})` : option.name,
+        tl: v.tl,
+        cost: v.cost,
+        effect: v.effect,
+        description: option.description,
+      })),
+    );
+  }
+  const armor = getArmorById(catalogId);
+  if (!armor) return [];
+  return getCompatibleOptions(armor).flatMap(({ option, compatibleVariants }) =>
+    compatibleVariants.map(({ index, variant }) => ({
+      key: option.variants.length > 1 ? `${option.id}:${index}` : option.id,
+      optionId: option.id,
+      variantIndex: index,
+      name: option.variants.length > 1 ? `${option.name} (TL${variant.tl})` : option.name,
+      tl: variant.tl,
+      cost: variant.cost,
+      effect: variant.effect,
+      description: option.description,
+    })),
+  );
+}
+
 function catalogToRow(armor: ArmorCatalogItem): ArmourRow {
   return {
     catalogId: armor.id,
@@ -61,13 +96,19 @@ function catalogToRow(armor: ArmorCatalogItem): ArmourRow {
     rad: armor.rad > 0 ? String(armor.rad) : "-",
     protection: formatProtection(armor),
     kg: armor.mass_kg > 0 ? String(armor.mass_kg) : "-",
-    options: "",
+    options: [],
     total: formatProtection(armor),
   };
 }
 
 function emptyRow(): ArmourRow {
-  return { type: "", rad: "", protection: "", kg: "", options: "", total: "" };
+  return { type: "", rad: "", protection: "", kg: "", options: [], total: "" };
+}
+
+/** Coerce legacy string options (old data) to string array */
+function coerceOptions(options: unknown): string[] {
+  if (Array.isArray(options)) return options as string[];
+  return [];
 }
 
 export function ArmorTable({ armour, onChange }: ArmorTableProps) {
@@ -99,9 +140,18 @@ export function ArmorTable({ armour, onChange }: ArmorTableProps) {
   );
 
   const handleFieldChange = useCallback(
-    (index: number, field: keyof ArmourRow, value: string) => {
+    (index: number, field: Exclude<keyof ArmourRow, "options">, value: string) => {
       const next = [...armour];
       next[index] = { ...next[index], [field]: value };
+      onChange(next);
+    },
+    [armour, onChange],
+  );
+
+  const handleOptionsChange = useCallback(
+    (index: number, opts: string[]) => {
+      const next = [...armour];
+      next[index] = { ...next[index], options: opts };
       onChange(next);
     },
     [armour, onChange],
@@ -158,6 +208,8 @@ export function ArmorTable({ armour, onChange }: ArmorTableProps) {
                 const originalIndex = armour.indexOf(row);
                 const detail = getDetail(row);
                 const isExpanded = expandedRow === idx;
+                const selectedOptions = coerceOptions(row.options);
+                const availableOptions = buildArmorOptionEntries(row.catalogId);
 
                 return (
                   <>
@@ -222,14 +274,11 @@ export function ArmorTable({ armour, onChange }: ArmorTableProps) {
                           }
                         />
                       </td>
-                      <td className="p-1">
-                        <Input
-                          className="h-7 text-xs"
-                          value={row.options}
-                          onChange={(e) =>
-                            handleFieldChange(originalIndex, "options", e.target.value)
-                          }
-                          placeholder="Options..."
+                      <td className="p-1 min-w-[140px]">
+                        <OptionsPicker
+                          available={availableOptions}
+                          selected={selectedOptions}
+                          onChange={(opts) => handleOptionsChange(originalIndex, opts)}
                         />
                       </td>
                       <td className="p-1 w-6">

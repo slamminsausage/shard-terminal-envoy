@@ -112,6 +112,7 @@ export interface WeaponOption {
 export interface WeaponOptionVariant {
   tl: number;
   cost: number;
+  mass_kg?: number;   // Physical weight added when attached
   effect: string;
   /** Which weapon types this can be added to. If empty/undefined, compatible with all. */
   compatibleWeaponTypes?: WeaponType[];

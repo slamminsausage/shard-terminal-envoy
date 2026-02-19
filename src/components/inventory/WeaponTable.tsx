@@ -12,14 +12,17 @@ import { Button } from "@/components/ui/button";
 import { Trash2, ChevronDown, ChevronUp } from "lucide-react";
 import {
   WEAPON_CATALOG,
+  WEAPON_OPTIONS,
   WEAPON_TYPE_LABELS,
   getWeaponById,
+  getCompatibleWeaponOptions,
   formatDamage,
   formatMagazine,
   formatMagazineCost,
 } from "@/data/items";
-import type { WeaponType, WeaponCatalogItem } from "@/data/items";
+import type { WeaponCatalogItem } from "@/data/items";
 import { CatalogItemPicker, type CatalogPickerItem } from "./CatalogItemPicker";
+import { OptionsPicker, type OptionEntry } from "./OptionsPicker";
 
 export type WeaponRow = {
   catalogId?: string;
@@ -30,6 +33,7 @@ export type WeaponRow = {
   kg: string;
   magazine: string;
   traits: string;
+  options?: string[];
   notes?: string;
 };
 
@@ -57,6 +61,41 @@ function buildWeaponPickerItems(): CatalogPickerItem[] {
   }));
 }
 
+/** Build OptionEntry list for the given weapon catalog ID (or all options if custom). */
+function buildWeaponOptionEntries(catalogId?: string): OptionEntry[] {
+  if (!catalogId) {
+    // Custom weapon — show all options (no compatibility filter)
+    return WEAPON_OPTIONS.flatMap((option) =>
+      option.variants.map((v, i) => ({
+        key: option.variants.length > 1 ? `${option.id}:${i}` : option.id,
+        optionId: option.id,
+        variantIndex: i,
+        name: option.variants.length > 1 ? `${option.name} (TL${v.tl})` : option.name,
+        tl: v.tl,
+        cost: v.cost,
+        mass_kg: v.mass_kg,
+        effect: v.effect,
+        description: option.description,
+      })),
+    );
+  }
+  const weapon = getWeaponById(catalogId);
+  if (!weapon) return [];
+  return getCompatibleWeaponOptions(weapon).flatMap(({ option, compatibleVariants }) =>
+    compatibleVariants.map(({ index, variant }) => ({
+      key: option.variants.length > 1 ? `${option.id}:${index}` : option.id,
+      optionId: option.id,
+      variantIndex: index,
+      name: option.variants.length > 1 ? `${option.name} (TL${variant.tl})` : option.name,
+      tl: variant.tl,
+      cost: variant.cost,
+      mass_kg: variant.mass_kg,
+      effect: variant.effect,
+      description: option.description,
+    })),
+  );
+}
+
 /** Create a WeaponRow from a catalog item */
 function catalogToRow(weapon: WeaponCatalogItem): WeaponRow {
   return {
@@ -68,6 +107,7 @@ function catalogToRow(weapon: WeaponCatalogItem): WeaponRow {
     kg: weapon.mass_kg > 0 ? String(weapon.mass_kg) : "-",
     magazine: formatMagazine(weapon),
     traits: weapon.traits.join(", "),
+    options: [],
   };
 }
 
@@ -81,7 +121,14 @@ function emptyRow(): WeaponRow {
     kg: "",
     magazine: "",
     traits: "",
+    options: [],
   };
+}
+
+/** Coerce legacy undefined/null options to string array */
+function coerceOptions(options: unknown): string[] {
+  if (Array.isArray(options)) return options as string[];
+  return [];
 }
 
 export function WeaponTable({
@@ -124,9 +171,18 @@ export function WeaponTable({
   );
 
   const handleFieldChange = useCallback(
-    (index: number, field: keyof WeaponRow, value: string) => {
+    (index: number, field: Exclude<keyof WeaponRow, "options">, value: string) => {
       const next = [...weapons];
       next[index] = { ...next[index], [field]: value };
+      onChange(next);
+    },
+    [weapons, onChange],
+  );
+
+  const handleOptionsChange = useCallback(
+    (index: number, opts: string[]) => {
+      const next = [...weapons];
+      next[index] = { ...next[index], options: opts };
       onChange(next);
     },
     [weapons, onChange],
@@ -199,6 +255,8 @@ export function WeaponTable({
                 const originalIndex = weapons.indexOf(row);
                 const detail = getDetail(row);
                 const isExpanded = expandedRow === idx;
+                const selectedOptions = coerceOptions(row.options);
+                const availableOptions = buildWeaponOptionEntries(row.catalogId);
 
                 return (
                   <>
@@ -314,7 +372,7 @@ export function WeaponTable({
                     </tr>
                     {isExpanded && (
                       <tr key={`detail-${idx}`} className="bg-primary/5">
-                        <td colSpan={10} className="px-4 py-2">
+                        <td colSpan={10} className="px-4 py-2 space-y-2">
                           {detail ? (
                             <div className="space-y-1 text-xs">
                               <div className="text-primary/80">
@@ -343,7 +401,19 @@ export function WeaponTable({
                               Custom weapon (no catalog data)
                             </div>
                           )}
-                          <div className="mt-1">
+                          {/* Options / upgrades picker */}
+                          <div>
+                            <div className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">
+                              Options &amp; Upgrades
+                            </div>
+                            <OptionsPicker
+                              available={availableOptions}
+                              selected={selectedOptions}
+                              onChange={(opts) => handleOptionsChange(originalIndex, opts)}
+                            />
+                          </div>
+                          {/* Notes */}
+                          <div>
                             <Input
                               className="h-7 text-xs"
                               value={row.notes || ""}

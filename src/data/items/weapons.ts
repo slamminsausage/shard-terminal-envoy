@@ -2674,6 +2674,195 @@ export const WEAPON_OPTIONS: WeaponOption[] = [
       },
     ],
   },
+
+  // ── CSC Chapter 15 Sighting Aids & Accessories ──────────────────────
+
+  {
+    id: 'bayonet',
+    name: 'Bayonet',
+    description: 'A blade attached to the muzzle of a rifle for use as a melee weapon. While attached the firearm cannot be used.',
+    variants: [
+      {
+        tl: 3,
+        cost: 20,
+        mass_kg: 1,
+        effect: 'Melee attachment: 2D+2 damage, Blade, cannot fire while attached',
+        compatibleWeaponTypes: ['slug_rifle', 'energy_rifle'],
+      },
+    ],
+  },
+  {
+    id: 'chaindrive-bayonet',
+    name: 'Chaindrive Bayonet',
+    description: 'A motorised chainsaw blade attached to the muzzle of a rifle. While attached the firearm cannot be used, but the weapon causes horrific melee wounds.',
+    variants: [
+      {
+        tl: 9,
+        cost: 1000,
+        mass_kg: 3,
+        effect: 'Melee attachment: 4D damage, AP 4, Bulky, cannot fire while attached',
+        compatibleWeaponTypes: ['slug_rifle'],
+      },
+    ],
+  },
+  {
+    id: 'bipod',
+    name: 'Bipod',
+    description: 'A two-legged support that can be folded out to steady a weapon on the ground. Removes the Bulky or Very Bulky trait when deployed.',
+    variants: [
+      {
+        tl: 4,
+        cost: 50,
+        mass_kg: 1,
+        effect: 'When deployed on a stable surface: removes Bulky/Very Bulky trait',
+        compatibleWeaponTypes: ['slug_rifle', 'energy_rifle', 'heavy'],
+      },
+    ],
+  },
+  {
+    id: 'fof-safety',
+    name: 'Friend-or-Foe Safety',
+    description: 'A system linked to IFF transponders that prevents the weapon from firing at friendly units. Requires each friendly unit to carry a compatible transponder.',
+    variants: [
+      {
+        tl: 9,
+        cost: 250,
+        mass_kg: 0,
+        effect: 'Weapon will not fire at units broadcasting correct IFF transponder signal',
+      },
+    ],
+  },
+  {
+    id: 'heavy-tripod',
+    name: 'Heavy Tripod',
+    description: 'A three-legged support mount for heavy weapons. Reduces the effective bulk of a weapon and provides a stable firing platform.',
+    variants: [
+      {
+        tl: 4,
+        cost: 100,
+        mass_kg: 5,
+        effect: 'When deployed: reduces Very Bulky to Bulky; Bulky weapons can be fired without penalty',
+        compatibleWeaponTypes: ['heavy'],
+      },
+    ],
+  },
+  {
+    id: 'high-capacity-magazine',
+    name: 'High Capacity Magazine',
+    description: 'An extended magazine that doubles the ammunition capacity of the weapon. The larger magazine adds weight and may make the weapon slightly more awkward.',
+    variants: [
+      {
+        tl: 4,
+        cost: 100,
+        mass_kg: 1,
+        effect: 'Doubles magazine capacity; adds 1kg',
+      },
+    ],
+  },
+  {
+    id: 'holographic-sights',
+    name: 'Holographic Sights',
+    description: 'Advanced holographic targeting system that projects a reticle onto the target. Combines scope capability with close-range accuracy enhancement.',
+    variants: [
+      {
+        tl: 10,
+        cost: 2000,
+        mass_kg: 0.5,
+        effect: 'Scope trait + DM+1 to attacks at 50m or more',
+      },
+    ],
+  },
+  {
+    id: 'p-hud',
+    name: 'Personal HUD',
+    description: 'A targeting system that links the weapon to the user\'s combat helmet HUD, displaying range, windage, and shot-placement data. Requires a compatible helmet.',
+    variants: [
+      {
+        tl: 9,
+        cost: 1500,
+        mass_kg: 0.5,
+        effect: 'DM+1 to all attacks when used with a compatible HUD helmet',
+      },
+      {
+        tl: 11,
+        cost: 2500,
+        mass_kg: 0,
+        effect: 'DM+1 to all attacks; integrated directly into weapon (no external hardware)',
+      },
+    ],
+  },
+  {
+    id: 'psi-enhanced-targeting',
+    name: 'Psi-Enhanced Targeting',
+    description: 'A sophisticated system that reads the user\'s psionic bio-rhythms to time firing for peak mental clarity. Only works for characters with a PSI characteristic.',
+    variants: [
+      {
+        tl: 16,
+        cost: 3000,
+        mass_kg: 0.5,
+        effect: 'Add PSI modifier to non-Auto attack rolls (requires PSI characteristic)',
+      },
+    ],
+  },
+  {
+    id: 'scan-jammer',
+    name: 'Scan Jammer',
+    description: 'An electronic system that scatters sensor returns, making the weapon very difficult to detect with electronic scanning equipment.',
+    variants: [
+      {
+        tl: 8,
+        cost: 2500,
+        mass_kg: 0,
+        effect: 'DM-4 to Electronics (sensors) checks made to detect the weapon',
+      },
+    ],
+  },
+  {
+    id: 'shoulder-stock',
+    name: 'Shoulder Stock',
+    description: 'A folding or fixed shoulder stock that converts a pistol into a more stable carbine-like weapon, extending effective range.',
+    variants: [
+      {
+        tl: 4,
+        cost: 75,
+        mass_kg: 1,
+        effect: 'Increases effective range by 25% when shouldered',
+        compatibleWeaponTypes: ['slug_pistol', 'energy_pistol'],
+      },
+    ],
+  },
+  {
+    id: 'smart-tracker',
+    name: 'Smart Tracker',
+    description: 'An electronic targeting aid that \"paints\" a target with a laser designator, allowing the next shot to be taken with improved accuracy.',
+    variants: [
+      {
+        tl: 11,
+        cost: 500,
+        mass_kg: 0,
+        effect: 'As a Minor Action, paint a target; next attack roll against that target gains DM+2',
+      },
+    ],
+  },
+  {
+    id: 'x-ray-outlining-aid',
+    name: 'X-Ray Outlining Aid',
+    description: 'Combines a low-power x-ray emitter with smart imaging software to outline targets behind thin cover, allowing the shooter to aim more effectively.',
+    variants: [
+      {
+        tl: 9,
+        cost: 300,
+        mass_kg: 0.5,
+        effect: 'Outlines targets behind light cover; DM+1 when firing through light cover',
+      },
+      {
+        tl: 11,
+        cost: 500,
+        mass_kg: 0.5,
+        effect: 'Outlines targets behind light or standard cover; DM+1 when firing through cover',
+      },
+    ],
+  },
 ];
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -2745,11 +2934,23 @@ export function isWeaponOptionCompatible(
     if (weapon.traits.some(t => t.startsWith('Auto'))) return false;
   }
 
+  // Bipod: only useful on weapons that actually have a Bulky/Very Bulky trait
+  if (option.id === 'bipod') {
+    if (!weapon.traits.includes('Bulky') && !weapon.traits.includes('Very Bulky')) return false;
+  }
+
+  // High-capacity magazine: only for weapons with a defined magazine (not unlimited, not zero)
+  if (option.id === 'high-capacity-magazine') {
+    if (weapon.magazine == null || weapon.magazine <= 0) return false;
+  }
+
   // Melee and archaic weapons generally don't take modern ranged weapon options
   if (weapon.weaponType === 'melee' || weapon.weaponType === 'archaic') {
     const rangedOnlyOptions = [
       'auxiliary-grenade-launcher', 'gyrostabiliser', 'laser-sight',
-      'scope', 'suppressor',
+      'scope', 'suppressor', 'bipod', 'holographic-sights', 'p-hud',
+      'psi-enhanced-targeting', 'smart-tracker', 'x-ray-outlining-aid',
+      'high-capacity-magazine', 'heavy-tripod',
     ];
     if (rangedOnlyOptions.includes(option.id)) return false;
   }
