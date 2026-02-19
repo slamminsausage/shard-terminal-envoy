@@ -73,7 +73,8 @@ export type WeaponType =
   | 'energy_rifle'
   | 'grenade'
   | 'heavy'
-  | 'explosive';
+  | 'explosive'
+  | 'archaic';   // Bows, crossbows, slings, and primitive throwing weapons
 
 /** Human-readable labels for weapon type groups */
 export const WEAPON_TYPE_LABELS: Record<WeaponType, string> = {
@@ -85,6 +86,7 @@ export const WEAPON_TYPE_LABELS: Record<WeaponType, string> = {
   grenade: 'Grenades',
   heavy: 'Heavy Weapons',
   explosive: 'Explosives',
+  archaic: 'Archaic Weapons',
 };
 
 export interface WeaponCatalogItem extends CatalogItem {
@@ -110,6 +112,7 @@ export interface WeaponOption {
 export interface WeaponOptionVariant {
   tl: number;
   cost: number;
+  mass_kg?: number;   // Physical weight added when attached
   effect: string;
   /** Which weapon types this can be added to. If empty/undefined, compatible with all. */
   compatibleWeaponTypes?: WeaponType[];
@@ -142,9 +145,12 @@ export type AugmentType =
   | 'physical'      // STR, DEX, END augmentations
   | 'cognitive'     // INT augmentation
   | 'neural'        // Neural Comm, Wafer Jack
-  | 'sensory'       // Enhanced Vision
+  | 'sensory'       // Enhanced Vision, Ballistic Tracking Lenses
   | 'skill'         // Skill Augmentation
-  | 'protective';   // Subdermal Armour
+  | 'protective'    // Subdermal Armour
+  | 'cyberlimb'     // Prosthetics, Combat Arms, Weapon Implants, Mobility systems
+  | 'biotech'       // Biological augmentations: organ packages, symbiotes, muscular bridging
+  | 'implant';      // Internal implants: power ports, auto-injectors, smuggling containers
 
 /** Human-readable labels for augment type groups */
 export const AUGMENT_TYPE_LABELS: Record<AugmentType, string> = {
@@ -154,6 +160,9 @@ export const AUGMENT_TYPE_LABELS: Record<AugmentType, string> = {
   sensory: 'Sensory Augmentation',
   skill: 'Skill Augmentation',
   protective: 'Protective Augmentation',
+  cyberlimb: 'Cyberlimbs & Prosthetics',
+  biotech: 'Biotech Augmentation',
+  implant: 'Internal Implants',
 };
 
 export interface AugmentCatalogItem extends CatalogItem {
