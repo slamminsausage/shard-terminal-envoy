@@ -28,10 +28,17 @@ export interface ArmorCatalogItem extends CatalogItem {
   rad: number;
   requiredSkill?: string;
   requiredSkillLevel?: number;
-  laserProtection?: number;  // Special protection vs lasers (Reflec, Ablat)
-  isFullBodySuit: boolean;   // Determines compatibility with chameleon options
-  hasLifeSupport: boolean;   // Vacc suit, HEV, combat armour, battle dress
-  isPowered: boolean;        // Battle dress - mass doesn't count when worn
+  laserProtection?: number;   // Special protection vs lasers (Reflec, Ablat)
+  energyProtection?: number;  // Special protection vs fire/lasers/energy weapons (CSC)
+  plasmaProtection?: number;  // Special protection vs plasma weapons (CSC)
+  psionicProtection?: number; // Special protection vs psionic attacks (CSC)
+  strBonus?: number;          // STR bonus when powered/active (positive = bonus)
+  dexBonus?: number;          // DEX modifier when powered/active (positive = bonus, negative = penalty)
+  equipmentSlots?: number;    // Battle dress equipment slots for modifications
+  isBattleDress?: boolean;    // Distinguishes battle dress from other powered suits
+  isFullBodySuit: boolean;    // Determines compatibility with chameleon options
+  hasLifeSupport: boolean;    // Vacc suit, HEV, combat armour, battle dress
+  isPowered: boolean;         // Mass doesn't count when worn (battle dress / powered plate)
 }
 
 /** An option/upgrade that can be added to armor */
@@ -47,6 +54,8 @@ export interface ArmorOptionVariant {
   tl: number;
   cost: number;
   effect: string;
+  /** Equipment slots consumed on battle dress (undefined = not a BD modification) */
+  slotsRequired?: number;
   /** Which armor types this can be added to. If empty/undefined, compatible with all. */
   compatibleWith?: string[];
   /** Which armor types this CANNOT be added to */
