@@ -73,7 +73,8 @@ export type WeaponType =
   | 'energy_rifle'
   | 'grenade'
   | 'heavy'
-  | 'explosive';
+  | 'explosive'
+  | 'archaic';   // Bows, crossbows, slings, and primitive throwing weapons
 
 /** Human-readable labels for weapon type groups */
 export const WEAPON_TYPE_LABELS: Record<WeaponType, string> = {
@@ -85,6 +86,7 @@ export const WEAPON_TYPE_LABELS: Record<WeaponType, string> = {
   grenade: 'Grenades',
   heavy: 'Heavy Weapons',
   explosive: 'Explosives',
+  archaic: 'Archaic Weapons',
 };
 
 export interface WeaponCatalogItem extends CatalogItem {
