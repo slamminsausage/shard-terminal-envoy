@@ -1,9 +1,9 @@
 /**
- * Converts a PreMadeShip or PreMadeVehicle from the catalog into
- * partial Vehicle data suitable for saving via CampaignContext.
+ * Converts a PreMadeShip, PreMadeVehicle, or custom ShipDesign from the catalog
+ * or ship creator into partial Vehicle data suitable for saving via CampaignContext.
  */
 
-import type { PreMadeShip } from "@/data/shipConstruction/types";
+import type { PreMadeShip, ShipDesign, ShipCalculations } from "@/data/shipConstruction/types";
 import type { PreMadeVehicle } from "@/data/vehicleCatalog/types";
 import type { Vehicle } from "@/types/database";
 
@@ -153,6 +153,138 @@ export function preMadeShipToVehicle(ship: PreMadeShip): Partial<Vehicle> {
  * Converts a PreMadeVehicle from the vehicle catalog into
  * partial Vehicle data suitable for saving via CampaignContext.
  */
+/**
+ * Converts a custom ShipDesign (from the ship creator wizard) into
+ * partial Vehicle data suitable for saving via CampaignContext.
+ */
+export function shipDesignToVehicle(
+  design: ShipDesign,
+  calc: ShipCalculations
+): Partial<Vehicle> {
+  // Build crew requirements (all unassigned)
+  const crewReqs: Record<string, string> = {};
+  for (const [role, count] of Object.entries(calc.crewPositions)) {
+    if (count <= 0) continue;
+    if (count === 1) {
+      crewReqs[role] = "Unassigned";
+    } else {
+      for (let i = 1; i <= count; i++) {
+        crewReqs[`${role}${i}`] = "Unassigned";
+      }
+    }
+  }
+
+  // Sensor suite info
+  const sensorMap: Record<string, string> = {
+    basic: "-4",
+    civilian: "-2",
+    military: "+0",
+    improved: "+1",
+    advanced: "+2",
+  };
+  const sensors = [
+    { type: design.sensorSuiteId, dm: sensorMap[design.sensorSuiteId] ?? "+0" },
+  ];
+
+  // Power requirements
+  const powerRequirements = [
+    { label: "Basic Ship Systems", value: String(calc.powerBasicSystems) },
+    { label: "Manoeuvre Drive", value: String(calc.powerManoeuvreDrive) },
+    ...(design.jumpRating > 0 ? [{ label: "Jump Drive", value: String(calc.powerJumpDrive) }] : []),
+    ...(calc.powerSensors > 0 ? [{ label: "Sensors", value: String(calc.powerSensors) }] : []),
+    ...(calc.powerWeapons > 0 ? [{ label: "Weapons", value: String(calc.powerWeapons) }] : []),
+    ...(calc.powerEquipment > 0 ? [{ label: "Equipment", value: String(calc.powerEquipment) }] : []),
+  ];
+
+  // Critical hits template
+  const criticalHits = [
+    { label: "Armour", boxes: [false, false, false, false, false, false] },
+    { label: "Bridge", boxes: [false, false, false, false, false, false] },
+    { label: "Cargo", boxes: [false, false, false, false, false, false] },
+    { label: "Crew", boxes: [false, false, false, false, false, false] },
+    { label: "Fuel", boxes: [false, false, false, false, false, false] },
+    { label: "Hull", boxes: [false, false, false, false, false, false] },
+    { label: "J-Drive", boxes: [false, false, false, false, false, false] },
+    { label: "M-Drive", boxes: [false, false, false, false, false, false] },
+    { label: "Power Plant", boxes: [false, false, false, false, false, false] },
+    { label: "Sensors", boxes: [false, false, false, false, false, false] },
+    { label: "Weapons", boxes: [false, false, false, false, false, false] },
+  ];
+
+  const systems: string[] = [];
+  if (design.hullConfiguration) {
+    const configNames: Record<string, string> = {
+      standard: 'Standard Hull',
+      streamlined: 'Streamlined Hull',
+      sphere: 'Sphere Hull',
+      close_structure: 'Close Structure',
+      dispersed: 'Dispersed Structure',
+      planetoid: 'Planetoid Hull',
+      buffered_planetoid: 'Buffered Planetoid',
+    };
+    systems.push(configNames[design.hullConfiguration] ?? design.hullConfiguration);
+  }
+  if (design.specialisedHull && design.specialisedHull !== 'none') {
+    const specNames: Record<string, string> = {
+      reinforced: 'Reinforced Hull',
+      light: 'Light Hull',
+      military: 'Military Hull',
+      non_gravity: 'Non-Gravity Hull',
+    };
+    systems.push(specNames[design.specialisedHull] ?? design.specialisedHull);
+  }
+  for (const optId of design.hullOptions ?? []) {
+    systems.push(optId.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()));
+  }
+
+  return {
+    name: design.name,
+    vehicle_type: design.tonnage <= 100 && design.jumpRating === 0 ? "Small Craft" : "Ship",
+    class_type: design.designation
+      ? `${design.name} (${design.designation})`
+      : design.name,
+    tech_level: design.techLevel,
+    tonnage: design.tonnage,
+    cost: calc.totalCost,
+    hull: calc.hullPoints,
+    hull_current: calc.hullPoints,
+    structure: calc.hullPoints,
+    armor: design.armorProtection,
+    maneuver_drive: design.manoeuvreRating,
+    jump_drive: design.jumpRating,
+    power_plant: design.powerPlantTons,
+    acceleration: design.manoeuvreRating,
+    top_speed: 0,
+    jump_rating: design.jumpRating,
+    fuel_capacity: calc.fuelTons,
+    cargo_capacity: design.cargoTons,
+    passenger_capacity:
+      design.standardStaterooms +
+      design.highStaterooms +
+      design.luxuryStaterooms +
+      design.lowBerths,
+    weapons: {},
+    screens: {},
+    computer_rating: parseInt(design.computerId.replace("computer_", ""), 10),
+    sensors: 1,
+    communications: 1,
+    maintenance_cost: calc.maintenanceCostPerMonth,
+    life_support: calc.totalCrew * 2000,
+    salaries: calc.monthlySalaries,
+    crew_requirements: crewReqs,
+    specifications: {
+      notes: `Custom designed ship. TL${design.techLevel}.`,
+      software: [],
+      systems,
+      sensors,
+      powerRequirements,
+      cargo: [{ description: "General Cargo", tons: String(design.cargoTons) }],
+      criticalHits,
+      customDesign: true,
+    },
+  };
+}
+
 export function preMadeVehicleToVehicle(
   vehicle: PreMadeVehicle
 ): Partial<Vehicle> {

@@ -16,12 +16,16 @@ import type {
 
 import {
   HULL_CONFIGURATIONS,
+  SPECIALISED_HULL_TYPES,
+  HULL_OPTIONS,
   ARMOR_MATERIALS,
   calculateHullPoints,
   calculateHullCost,
   calculateArmorTonnage,
   calculateArmorCost,
   getMaxProtection,
+  calculateHullOptionCost,
+  calculateHullOptionTonnage,
 } from './hulls';
 
 import {
@@ -104,6 +108,10 @@ export function calculateShipDesign(design: ShipDesign): ShipCalculations {
     (c) => c.id === design.hullConfiguration
   )!;
 
+  const specialisedHull = design.specialisedHull
+    ? SPECIALISED_HULL_TYPES.find((s) => s.id === design.specialisedHull)
+    : undefined;
+
   const armorMaterial = design.armorMaterial
     ? ARMOR_MATERIALS.find((a) => a.id === design.armorMaterial)
     : undefined;
@@ -121,16 +129,30 @@ export function calculateShipDesign(design: ShipDesign): ShipCalculations {
   )!;
 
   // ── Step 1: Hull ──────────────────────────────────────────────────
-  const hullPoints = calculateHullPoints(design.tonnage, hullConfig);
-  const hullCost = calculateHullCost(design.tonnage, hullConfig);
+  const hullPoints = calculateHullPoints(design.tonnage, hullConfig, specialisedHull);
+  const hullCost = calculateHullCost(design.tonnage, hullConfig, specialisedHull);
+
+  // Hull options cost and tonnage
+  let hullOptionsCost = 0;
+  let hullOptionsTons = 0;
+  if (design.hullOptions) {
+    for (const optionId of design.hullOptions) {
+      const option = HULL_OPTIONS.find((o) => o.id === optionId);
+      if (option) {
+        hullOptionsCost += calculateHullOptionCost(option, design.tonnage);
+        hullOptionsTons += calculateHullOptionTonnage(option, design.tonnage);
+      }
+    }
+  }
 
   let hullArmorTons = 0;
   let armorCost = 0;
+  const isMilitary = design.specialisedHull === 'military';
   if (armorMaterial && design.armorProtection > 0) {
     if (!hullConfig.canHaveArmor) {
-      errors.push('Dispersed structure ships cannot have armour.');
+      errors.push('This hull configuration cannot have armour.');
     } else {
-      const maxProt = getMaxProtection(armorMaterial, design.techLevel);
+      const maxProt = getMaxProtection(armorMaterial, design.techLevel, isMilitary);
       if (design.armorProtection > maxProt) {
         errors.push(
           `Armour protection ${design.armorProtection} exceeds maximum ${maxProt} for ${armorMaterial.name} at TL${design.techLevel}.`
@@ -143,6 +165,7 @@ export function calculateShipDesign(design: ShipDesign): ShipCalculations {
       }
       hullArmorTons = calculateArmorTonnage(
         design.tonnage,
+        hullConfig,
         armorMaterial,
         design.armorProtection
       );
@@ -365,6 +388,7 @@ export function calculateShipDesign(design: ShipDesign): ShipCalculations {
   // ── Tonnage Totals ────────────────────────────────────────────────
   const totalTonnageUsed =
     hullArmorTons +
+    hullOptionsTons +
     manoeuvreDriveTons +
     jumpDriveTons +
     powerPlantTons +
@@ -394,6 +418,7 @@ export function calculateShipDesign(design: ShipDesign): ShipCalculations {
   // ── Cost Totals ───────────────────────────────────────────────────
   const totalCost =
     hullCost +
+    hullOptionsCost +
     armorCost +
     manoeuvreDriveCost +
     jumpDriveCost +
@@ -573,6 +598,8 @@ export function createEmptyShipDesign(): ShipDesign {
     techLevel: 12,
     tonnage: 100,
     hullConfiguration: 'standard',
+    specialisedHull: 'none',
+    hullOptions: [],
     armorProtection: 0,
     manoeuvreRating: 1,
     jumpRating: 1,

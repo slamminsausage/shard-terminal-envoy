@@ -9,12 +9,21 @@
 //  HULL (Step 1)
 // ═══════════════════════════════════════════════════════════════════════
 
-export type HullConfigType = 'standard' | 'streamlined' | 'dispersed';
+export type HullConfigType =
+  | 'standard'
+  | 'streamlined'
+  | 'sphere'
+  | 'close_structure'
+  | 'dispersed'
+  | 'planetoid'
+  | 'buffered_planetoid';
 
 export interface HullConfiguration {
   id: HullConfigType;
   name: string;
   streamlined: boolean | 'partial';
+  /** Modifier applied to armour volume (e.g. 1.2 for streamlined = +20%) */
+  armourVolumeModifier: number;
   /** Multiplier applied to hull points (e.g. 0.9 for dispersed = -10%) */
   hullPointModifier: number;
   /** Multiplier applied to hull cost (e.g. 1.2 for streamlined = +20%) */
@@ -22,10 +31,58 @@ export interface HullConfiguration {
   canHaveArmor: boolean;
   /** Streamlined ships get free fuel scoops */
   freeFuelScoops: boolean;
+  /** Whether this config can use specialised hull types */
+  canUseSpecialisedHulls: boolean;
+  /** Base armour protection from hull (planetoid/buffered) */
+  baseArmourProtection: number;
+  /** Examples from rulebook */
+  examples: string;
   description: string;
 }
 
-export type ArmorMaterialId = 'crystaliron' | 'bonded_superdense';
+/** Specialised hull type modifiers */
+export type SpecialisedHullType = 'none' | 'reinforced' | 'light' | 'military' | 'non_gravity';
+
+export interface SpecialisedHullDef {
+  id: SpecialisedHullType;
+  name: string;
+  /** Multiplier applied to hull cost after configuration (e.g. 1.5 for reinforced = +50%) */
+  costModifier: number;
+  /** Multiplier applied to hull points (e.g. 1.1 for reinforced = +10%) */
+  hullPointModifier: number;
+  /** Minimum hull tonnage required (0 = no minimum) */
+  minTonnage: number;
+  /** Maximum hull tonnage (Infinity = no limit) */
+  maxTonnage: number;
+  /** Special notes about this hull type */
+  notes: string;
+  description: string;
+}
+
+/** Hull options that can be installed */
+export type HullOptionId =
+  | 'heat_shielding'
+  | 'radiation_shielding'
+  | 'reflec'
+  | 'stealth_basic'
+  | 'stealth_improved'
+  | 'stealth_enhanced'
+  | 'stealth_advanced';
+
+export interface HullOptionDef {
+  id: HullOptionId;
+  name: string;
+  tl: number;
+  /** Cost per ton of hull in Credits */
+  costPerHullTon: number;
+  /** Percentage of hull consumed (0 for most) */
+  hullPercent: number;
+  /** Conflicts with these other options */
+  conflictsWith: HullOptionId[];
+  description: string;
+}
+
+export type ArmorMaterialId = 'titanium_steel' | 'crystaliron' | 'bonded_superdense' | 'molecular_bonded';
 
 export interface ArmorMaterial {
   id: ArmorMaterialId;
@@ -33,10 +90,12 @@ export interface ArmorMaterial {
   tl: number;
   /** Percentage of hull tonnage consumed per point of Protection */
   tonnagePercent: number;
-  /** Percentage of hull cost per point of Protection */
-  costPercent: number;
+  /** Cost per ton of armour in Credits */
+  costPerTon: number;
   /** Maximum protection is TL of ship or this cap, whichever is less */
   maxProtectionCap: number | null; // null = no cap beyond TL
+  /** Special traits */
+  traits?: string;
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -270,6 +329,8 @@ export interface ShipDesign {
   // ── Step 1: Hull ──
   tonnage: number;
   hullConfiguration: HullConfigType;
+  specialisedHull: SpecialisedHullType;
+  hullOptions: HullOptionId[];
   armorMaterial?: ArmorMaterialId;
   armorProtection: number;
 
