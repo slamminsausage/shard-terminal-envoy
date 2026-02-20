@@ -65,11 +65,22 @@ import {
 import {
   TURRET_WEAPONS,
   WEAPON_MOUNTS,
+  BARBETTE_WEAPONS,
+  SMALL_BAY_WEAPONS,
+  MEDIUM_BAY_WEAPONS,
+  LARGE_BAY_WEAPONS,
+  SPINAL_WEAPONS,
+  POINT_DEFENCE_WEAPONS,
+  SCREENS,
   calculateHardpoints,
   calculateFirmpoints,
   calculateWeaponInstallationTons,
   calculateWeaponInstallationCostMCr,
   calculateWeaponInstallationPower,
+  calculateSpinalMountTons,
+  calculateSpinalMountCostMCr,
+  calculateSpinalMountPower,
+  calculateSpinalMountHardpoints,
 } from './weapons';
 
 import {
@@ -274,7 +285,7 @@ export function calculateShipDesign(design: ShipDesign): ShipCalculations {
     );
   }
 
-  // ── Step 8: Weapons ───────────────────────────────────────────────
+  // ── Step 8: Weapons & Screens ────────────────────────────────────
   const hardpoints = calculateHardpoints(design.tonnage);
   const firmpoints = calculateFirmpoints(design.tonnage);
 
@@ -284,6 +295,7 @@ export function calculateShipDesign(design: ShipDesign): ShipCalculations {
   let usedHardpoints = 0;
   let usedFirmpoints = 0;
 
+  // Turret weapons
   for (const installation of design.weapons) {
     const mount = WEAPON_MOUNTS.find(
       (m) => m.id === installation.mountType
@@ -312,6 +324,81 @@ export function calculateShipDesign(design: ShipDesign): ShipCalculations {
     } else {
       usedHardpoints++;
     }
+  }
+
+  // Barbettes (5 tons each, 1 hardpoint each)
+  for (const inst of (design.barbettes || [])) {
+    const barbette = BARBETTE_WEAPONS.find((b) => b.id === inst.weaponId);
+    if (!barbette) {
+      errors.push(`Unknown barbette: ${inst.weaponId}`);
+      continue;
+    }
+    weaponsTons += barbette.tons * inst.quantity;
+    weaponsCostMCr += barbette.cost * inst.quantity;
+    weaponsPower += barbette.power * inst.quantity;
+    usedHardpoints += inst.quantity;
+  }
+
+  // Bay weapons
+  for (const inst of (design.bays || [])) {
+    const bayArray =
+      inst.size === 'small' ? SMALL_BAY_WEAPONS :
+      inst.size === 'medium' ? MEDIUM_BAY_WEAPONS :
+      LARGE_BAY_WEAPONS;
+    const bay = bayArray.find((b) => b.id === inst.weaponId);
+    if (!bay) {
+      errors.push(`Unknown bay weapon: ${inst.weaponId} (${inst.size})`);
+      continue;
+    }
+    weaponsTons += bay.tons * inst.quantity;
+    weaponsCostMCr += bay.cost * inst.quantity;
+    weaponsPower += bay.power * inst.quantity;
+    usedHardpoints += bay.hardpoints * inst.quantity;
+  }
+
+  // Spinal mount (usually only one)
+  if (design.spinalMount) {
+    const spinal = SPINAL_WEAPONS.find((s) => s.id === design.spinalMount!.weaponId);
+    if (!spinal) {
+      errors.push(`Unknown spinal weapon: ${design.spinalMount.weaponId}`);
+    } else {
+      const mult = design.spinalMount.multiple;
+      weaponsTons += calculateSpinalMountTons(spinal, mult);
+      weaponsCostMCr += calculateSpinalMountCostMCr(spinal, mult);
+      weaponsPower += calculateSpinalMountPower(spinal, mult);
+      usedHardpoints += calculateSpinalMountHardpoints(spinal, mult);
+      const maxSpinalTons = design.tonnage / 2;
+      if (calculateSpinalMountTons(spinal, mult) > maxSpinalTons) {
+        errors.push(
+          `Spinal mount tonnage exceeds half ship tonnage (max ${maxSpinalTons}t).`
+        );
+      }
+    }
+  }
+
+  // Point-defence batteries (1 hardpoint, 20 tons each)
+  for (const inst of (design.pointDefence || [])) {
+    const pd = POINT_DEFENCE_WEAPONS.find((p) => p.id === inst.weaponId);
+    if (!pd) {
+      errors.push(`Unknown point-defence weapon: ${inst.weaponId}`);
+      continue;
+    }
+    weaponsTons += pd.tons * inst.quantity;
+    weaponsCostMCr += pd.cost * inst.quantity;
+    weaponsPower += pd.power * inst.quantity;
+    usedHardpoints += inst.quantity;
+  }
+
+  // Screens (no hardpoints used)
+  for (const inst of (design.screens || [])) {
+    const screen = SCREENS.find((s) => s.id === inst.screenId);
+    if (!screen) {
+      errors.push(`Unknown screen: ${inst.screenId}`);
+      continue;
+    }
+    weaponsTons += screen.tons * inst.quantity;
+    weaponsCostMCr += screen.cost * inst.quantity;
+    weaponsPower += screen.power * inst.quantity;
   }
 
   const weaponsCost = weaponsCostMCr * 1_000_000;
@@ -462,9 +549,10 @@ export function calculateShipDesign(design: ShipDesign): ShipCalculations {
   const drivesAndPPTons =
     manoeuvreDriveTons + jumpDriveTons + powerPlantTons;
 
-  const turretCount = design.weapons.filter(
-    (w) => w.mountType !== 'fixed_mount'
-  ).length;
+  const turretCount =
+    design.weapons.filter((w) => w.mountType !== 'fixed_mount').length +
+    (design.barbettes || []).reduce((sum, b) => sum + b.quantity, 0) +
+    (design.pointDefence || []).reduce((sum, p) => sum + p.quantity, 0);
 
   // Estimate passenger capacity (high/middle/low)
   const totalPassengerCapacity =
@@ -614,6 +702,11 @@ export function createEmptyShipDesign(): ShipDesign {
     sensorSuiteId: 'civilian',
     additionalSensorStations: 0,
     weapons: [],
+    barbettes: [],
+    bays: [],
+    spinalMount: undefined,
+    pointDefence: [],
+    screens: [],
     equipment: [],
     standardStaterooms: 2,
     doubleOccupancyStaterooms: 0,

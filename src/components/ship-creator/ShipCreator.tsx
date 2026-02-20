@@ -28,6 +28,13 @@ import {
   type HullOptionId,
   type ArmorMaterialId,
   type PowerPlantTier,
+  type BarbetteWeaponId,
+  type BayWeaponId,
+  type BaySize,
+  type SpinalWeaponId,
+  type PointDefenceWeaponId,
+  type ScreenId,
+  type MountTypeId,
   HULL_CONFIGURATIONS,
   SPECIALISED_HULL_TYPES,
   HULL_OPTIONS,
@@ -39,6 +46,18 @@ import {
   COMPUTER_MODELS,
   COCKPIT_OPTIONS,
   STATEROOM_TYPES,
+  TURRET_WEAPONS,
+  WEAPON_MOUNTS,
+  BARBETTE_WEAPONS,
+  SMALL_BAY_WEAPONS,
+  MEDIUM_BAY_WEAPONS,
+  LARGE_BAY_WEAPONS,
+  SPINAL_WEAPONS,
+  POINT_DEFENCE_WEAPONS,
+  SCREENS,
+  calculateHardpoints,
+  calculateFirmpoints,
+  calculateSpinalMountTons,
   createEmptyShipDesign,
   calculateShipDesign,
   formatCredits,
@@ -76,6 +95,7 @@ const STEP_LABELS = [
   'Bridge',
   'Computer',
   'Sensors',
+  'Weapons',
   'Quarters',
   'Finalise',
 ];
@@ -967,14 +987,398 @@ export default function ShipCreator({ onComplete, onCancel }: ShipCreatorProps) 
     );
   };
 
-  const renderStep10_Quarters = () => {
+  // ═══════════════════════════════════════════════════════════════════
+  //  STEP 10: WEAPONS & SCREENS
+  // ═══════════════════════════════════════════════════════════════════
+
+  const renderStep10_Weapons = () => {
+    const availableHardpoints = calculateHardpoints(design.tonnage);
+    const availableFirmpoints = calculateFirmpoints(design.tonnage);
+    const isSmallCraft = design.tonnage < 100;
+
+    const availableTurrets = TURRET_WEAPONS.filter(
+      (w) => w.id !== 'particle_barbette' && design.techLevel >= w.tl
+    );
+    const availableBarbettes = BARBETTE_WEAPONS.filter((b) => design.techLevel >= b.tl);
+    const availableSmallBays = SMALL_BAY_WEAPONS.filter((b) => design.techLevel >= b.tl);
+    const availableMediumBays = MEDIUM_BAY_WEAPONS.filter((b) => design.techLevel >= b.tl);
+    const availableLargeBays = LARGE_BAY_WEAPONS.filter((b) => design.techLevel >= b.tl);
+    const availableSpinal = SPINAL_WEAPONS.filter((s) => design.techLevel >= s.tl);
+    const availablePD = POINT_DEFENCE_WEAPONS.filter((p) => design.techLevel >= p.tl);
+    const availableScreens = SCREENS.filter((s) => design.techLevel >= s.tl);
+
+    // Helper: add a turret mount
+    const addTurretMount = (mountId: MountTypeId) => {
+      const mount = WEAPON_MOUNTS.find((m) => m.id === mountId)!;
+      if (mount.tl > design.techLevel) return;
+      updateDesign({
+        weapons: [...design.weapons, { mountType: mountId, weapons: [], isFirmpoint: isSmallCraft }],
+      });
+    };
+
+    const removeTurretMount = (idx: number) => {
+      const next = [...design.weapons];
+      next.splice(idx, 1);
+      updateDesign({ weapons: next });
+    };
+
+    const addWeaponToMount = (mountIdx: number, weaponId: string) => {
+      const next = design.weapons.map((inst, i) => {
+        if (i !== mountIdx) return inst;
+        const mount = WEAPON_MOUNTS.find((m) => m.id === inst.mountType)!;
+        if (inst.weapons.length >= mount.maxWeapons) return inst;
+        return { ...inst, weapons: [...inst.weapons, weaponId as any] };
+      });
+      updateDesign({ weapons: next });
+    };
+
+    const removeWeaponFromMount = (mountIdx: number, weaponIdx: number) => {
+      const next = design.weapons.map((inst, i) => {
+        if (i !== mountIdx) return inst;
+        const w = [...inst.weapons];
+        w.splice(weaponIdx, 1);
+        return { ...inst, weapons: w };
+      });
+      updateDesign({ weapons: next });
+    };
+
+    // Barbette helpers
+    const addBarbette = (id: BarbetteWeaponId) => {
+      const existing = design.barbettes.find((b) => b.weaponId === id);
+      if (existing) {
+        updateDesign({ barbettes: design.barbettes.map((b) => b.weaponId === id ? { ...b, quantity: b.quantity + 1 } : b) });
+      } else {
+        updateDesign({ barbettes: [...design.barbettes, { weaponId: id, quantity: 1 }] });
+      }
+    };
+    const removeBarbette = (id: BarbetteWeaponId) => {
+      updateDesign({ barbettes: design.barbettes.filter((b) => b.weaponId !== id || b.quantity > 1).map((b) => b.weaponId === id ? { ...b, quantity: b.quantity - 1 } : b) });
+    };
+
+    // Bay helpers
+    const addBay = (id: BayWeaponId, size: BaySize) => {
+      const existing = design.bays.find((b) => b.weaponId === id && b.size === size);
+      if (existing) {
+        updateDesign({ bays: design.bays.map((b) => (b.weaponId === id && b.size === size) ? { ...b, quantity: b.quantity + 1 } : b) });
+      } else {
+        updateDesign({ bays: [...design.bays, { weaponId: id, size, quantity: 1 }] });
+      }
+    };
+    const removeBay = (id: BayWeaponId, size: BaySize) => {
+      updateDesign({ bays: design.bays.filter((b) => !(b.weaponId === id && b.size === size) || b.quantity > 1).map((b) => (b.weaponId === id && b.size === size) ? { ...b, quantity: b.quantity - 1 } : b) });
+    };
+
+    // PD helpers
+    const addPD = (id: PointDefenceWeaponId) => {
+      const existing = design.pointDefence.find((p) => p.weaponId === id);
+      if (existing) {
+        updateDesign({ pointDefence: design.pointDefence.map((p) => p.weaponId === id ? { ...p, quantity: p.quantity + 1 } : p) });
+      } else {
+        updateDesign({ pointDefence: [...design.pointDefence, { weaponId: id, quantity: 1 }] });
+      }
+    };
+    const removePD = (id: PointDefenceWeaponId) => {
+      updateDesign({ pointDefence: design.pointDefence.filter((p) => p.weaponId !== id || p.quantity > 1).map((p) => p.weaponId === id ? { ...p, quantity: p.quantity - 1 } : p) });
+    };
+
+    // Screen helpers
+    const addScreen = (id: ScreenId) => {
+      const existing = design.screens.find((s) => s.screenId === id);
+      if (existing) {
+        updateDesign({ screens: design.screens.map((s) => s.screenId === id ? { ...s, quantity: s.quantity + 1 } : s) });
+      } else {
+        updateDesign({ screens: [...design.screens, { screenId: id, quantity: 1 }] });
+      }
+    };
+    const removeScreen = (id: ScreenId) => {
+      updateDesign({ screens: design.screens.filter((s) => s.screenId !== id || s.quantity > 1).map((s) => s.screenId === id ? { ...s, quantity: s.quantity - 1 } : s) });
+    };
+
+    const statBadge = (label: string, value: string) => (
+      <span key={label} className="text-xs font-mono px-1.5 py-0.5 rounded" style={{ background: 'rgba(0,255,0,0.08)', border: '1px solid rgba(0,255,0,0.2)', color: 'var(--text-dim)' }}>
+        {label}: {value}
+      </span>
+    );
+
+    return (
+      <div className="space-y-6 fade-in">
+        <SectionHeader step={10} title="WEAPONS & SCREENS" subtitle="Turrets, barbettes, bays, spinal mounts, and defensive screens" />
+
+        {/* Hardpoint summary */}
+        <div className="p-3 rounded text-xs font-mono" style={{ background: 'rgba(0,255,0,0.05)', border: '1px solid rgba(0,255,0,0.2)' }}>
+          {isSmallCraft ? (
+            <span style={{ color: 'var(--text-dim)' }}>
+              FIRMPOINTS available: {calc.firmpoints - calc.usedFirmpoints}/{calc.firmpoints} (small craft)
+            </span>
+          ) : (
+            <span style={{ color: 'var(--text-dim)' }}>
+              HARDPOINTS available: {calc.hardpoints - calc.usedHardpoints}/{calc.hardpoints} &nbsp;|&nbsp;
+              Weapons tonnage: {calc.weaponsTons}t &nbsp;|&nbsp;
+              Power draw: {calc.powerWeapons}
+            </span>
+          )}
+        </div>
+
+        {/* ── TURRET MOUNTS ── */}
+        <div>
+          <FieldLabel>Turret & Fixed Mounts</FieldLabel>
+          <div className="text-xs mb-2" style={{ color: 'var(--text-dimmer)' }}>
+            Each mount uses 1 hardpoint/firmpoint. Up to {isSmallCraft ? availableFirmpoints : availableHardpoints} available.
+          </div>
+          {/* Add mount buttons */}
+          <div className="flex flex-wrap gap-2 mb-3">
+            {WEAPON_MOUNTS.filter((m) => m.tl <= design.techLevel).map((m) => (
+              <button key={m.id} className="terminal-btn" style={{ fontSize: '0.65rem', padding: '3px 8px' }}
+                onClick={() => addTurretMount(m.id as MountTypeId)}>
+                + {m.name} (TL{m.tl}, MCr{m.cost}, {m.tons}t)
+              </button>
+            ))}
+          </div>
+
+          {/* Installed mounts */}
+          {design.weapons.length === 0 && (
+            <div className="text-xs" style={{ color: 'var(--text-dimmer)' }}>No mounts installed.</div>
+          )}
+          <div className="space-y-2">
+            {design.weapons.map((inst, mountIdx) => {
+              const mount = WEAPON_MOUNTS.find((m) => m.id === inst.mountType)!;
+              return (
+                <div key={mountIdx} className="p-3 rounded" style={{ background: 'rgba(0,255,0,0.04)', border: '1px solid rgba(0,255,0,0.2)' }}>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-mono font-bold" style={{ color: 'var(--primary)' }}>
+                      {mount.name} {inst.isFirmpoint ? '(Firmpoint)' : '(Hardpoint)'}
+                    </span>
+                    <button className="terminal-btn" style={{ fontSize: '0.6rem', padding: '2px 6px', color: 'var(--danger)', borderColor: 'var(--danger)' }}
+                      onClick={() => removeTurretMount(mountIdx)}>
+                      REMOVE
+                    </button>
+                  </div>
+                  {/* Weapons in this mount */}
+                  <div className="flex flex-wrap gap-1 mb-2">
+                    {inst.weapons.map((wId, wIdx) => {
+                      const wd = TURRET_WEAPONS.find((w) => w.id === wId);
+                      return (
+                        <span key={wIdx} className="text-xs font-mono flex items-center gap-1 px-2 py-0.5 rounded"
+                          style={{ background: 'rgba(0,255,0,0.1)', border: '1px solid rgba(0,255,0,0.3)', color: 'var(--primary)' }}>
+                          {wd?.name ?? wId}
+                          <button style={{ color: 'var(--danger)', fontWeight: 'bold', background: 'none', border: 'none', cursor: 'pointer', padding: '0 2px', fontSize: '0.7rem' }}
+                            onClick={() => removeWeaponFromMount(mountIdx, wIdx)}>×</button>
+                        </span>
+                      );
+                    })}
+                  </div>
+                  {/* Add weapon dropdown */}
+                  {inst.weapons.length < mount.maxWeapons && (
+                    <select className="terminal-input" style={{ fontSize: '0.7rem', padding: '3px 6px' }}
+                      value=""
+                      onChange={(e) => { if (e.target.value) addWeaponToMount(mountIdx, e.target.value); }}>
+                      <option value="">Add weapon...</option>
+                      {availableTurrets.map((w) => (
+                        <option key={w.id} value={w.id}>
+                          {w.name} (TL{w.tl}, {w.range}, {w.damage}, {w.power}pwr, MCr{w.cost}{w.traits.length ? ', ' + w.traits.join('/') : ''})
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* ── BARBETTES ── */}
+        {!isSmallCraft && (
+          <div>
+            <FieldLabel>Barbettes (5 tons, 1 hardpoint, Damage ×3)</FieldLabel>
+            <div className="text-xs mb-2" style={{ color: 'var(--text-dimmer)' }}>Military-grade heavy weapon mounts. One gunner each.</div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {availableBarbettes.map((b) => {
+                const inst = design.barbettes.find((x) => x.weaponId === b.id);
+                const qty = inst?.quantity ?? 0;
+                return (
+                  <div key={b.id} className="p-2 rounded flex items-center justify-between"
+                    style={{ background: qty > 0 ? 'rgba(0,255,0,0.08)' : 'rgba(0,255,0,0.03)', border: `1px solid ${qty > 0 ? 'var(--primary)' : 'rgba(0,255,0,0.15)'}` }}>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs font-mono font-bold truncate" style={{ color: qty > 0 ? 'var(--primary)' : 'var(--text-dim)' }}>{b.name}</div>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {[`TL${b.tl}`, b.range, b.damage, `${b.power}pwr`, `MCr${b.cost}`, ...b.traits].map((t) => statBadge('', t))}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1 ml-2 shrink-0">
+                      {qty > 0 && <button className="terminal-btn" style={{ fontSize: '0.65rem', padding: '2px 6px' }} onClick={() => removeBarbette(b.id)}>−</button>}
+                      <span className="text-xs font-mono w-4 text-center" style={{ color: 'var(--primary)' }}>{qty || ''}</span>
+                      <button className="terminal-btn" style={{ fontSize: '0.65rem', padding: '2px 6px' }} onClick={() => addBarbette(b.id)}>+</button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* ── BAY WEAPONS ── */}
+        {!isSmallCraft && design.tonnage >= 500 && (
+          <div>
+            <FieldLabel>Bay Weapons (Military only)</FieldLabel>
+            <div className="text-xs mb-2" style={{ color: 'var(--text-dimmer)' }}>Small (50t, ×10) · Medium (100t, ×20) · Large (500t, 5 hardpoints, ×100)</div>
+            {(['small', 'medium', 'large'] as BaySize[]).map((size) => {
+              const bays = size === 'small' ? availableSmallBays : size === 'medium' ? availableMediumBays : availableLargeBays;
+              const minTonnage = size === 'large' ? 2000 : 500;
+              if (design.tonnage < minTonnage) return null;
+              return (
+                <div key={size} className="mb-3">
+                  <div className="text-xs font-mono mb-1 uppercase" style={{ color: 'var(--secondary)' }}>{size} Bays</div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {bays.map((b) => {
+                      const inst = design.bays.find((x) => x.weaponId === b.id && x.size === size);
+                      const qty = inst?.quantity ?? 0;
+                      return (
+                        <div key={b.id} className="p-2 rounded flex items-center justify-between"
+                          style={{ background: qty > 0 ? 'rgba(0,255,0,0.08)' : 'rgba(0,255,0,0.03)', border: `1px solid ${qty > 0 ? 'var(--primary)' : 'rgba(0,255,0,0.15)'}` }}>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-xs font-mono font-bold truncate" style={{ color: qty > 0 ? 'var(--primary)' : 'var(--text-dim)' }}>{b.name}</div>
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {[`TL${b.tl}`, b.range, b.damage, `${b.power}pwr`, `MCr${b.cost}`, `${b.tons}t`, ...b.traits].map((t, i) => statBadge(`${i}`, t))}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1 ml-2 shrink-0">
+                            {qty > 0 && <button className="terminal-btn" style={{ fontSize: '0.65rem', padding: '2px 6px' }} onClick={() => removeBay(b.id, size)}>−</button>}
+                            <span className="text-xs font-mono w-4 text-center" style={{ color: 'var(--primary)' }}>{qty || ''}</span>
+                            <button className="terminal-btn" style={{ fontSize: '0.65rem', padding: '2px 6px' }} onClick={() => addBay(b.id, size)}>+</button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* ── SPINAL MOUNT ── */}
+        {!isSmallCraft && design.tonnage >= 2000 && (
+          <div>
+            <FieldLabel>Spinal Mount (Damage ×1,000)</FieldLabel>
+            <div className="text-xs mb-2" style={{ color: 'var(--text-dimmer)' }}>
+              One spinal mount per ship. Tonnage = Base × Multiple. Max half ship tonnage.
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
+              {availableSpinal.map((s) => {
+                const isSelected = design.spinalMount?.weaponId === s.id;
+                return (
+                  <div key={s.id} className="p-2 rounded cursor-pointer"
+                    style={{ background: isSelected ? 'rgba(0,255,0,0.12)' : 'rgba(0,255,0,0.03)', border: `1px solid ${isSelected ? 'var(--primary)' : 'rgba(0,255,0,0.15)'}` }}
+                    onClick={() => updateDesign({ spinalMount: isSelected ? undefined : { weaponId: s.id, multiple: 1 } })}>
+                    <div className="text-xs font-mono font-bold" style={{ color: isSelected ? 'var(--primary)' : 'var(--text-dim)' }}>
+                      {isSelected ? '◉' : '○'} {s.name}
+                    </div>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {[`TL${s.tl}`, s.range, `Base ${s.baseSizeTons}t`, `+${s.powerPerMultiple}pwr/×`, `MCr${s.costPerMultiple}/×`, ...s.traits].map((t, i) => statBadge(`${i}`, t))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            {design.spinalMount && (() => {
+              const spinal = SPINAL_WEAPONS.find((s) => s.id === design.spinalMount!.weaponId)!;
+              const mult = design.spinalMount.multiple;
+              const totalTons = calculateSpinalMountTons(spinal, mult);
+              const maxMult = Math.floor(spinal.maxSizeTons / spinal.baseSizeTons);
+              return (
+                <div className="p-3 rounded" style={{ background: 'rgba(0,255,0,0.06)', border: '1px solid rgba(0,255,0,0.3)' }}>
+                  <div className="text-xs font-mono font-bold mb-2" style={{ color: 'var(--primary)' }}>
+                    {spinal.name} — {mult}× ({totalTons}t of {Math.floor(design.tonnage / 2)}t max)
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <FieldLabel>Multiple (1–{maxMult})</FieldLabel>
+                    <input type="number" className="terminal-input" style={{ width: '80px' }}
+                      value={mult} min={1} max={maxMult}
+                      onChange={(e) => {
+                        const v = Math.max(1, Math.min(maxMult, parseInt(e.target.value) || 1));
+                        updateDesign({ spinalMount: { ...design.spinalMount!, multiple: v } });
+                      }} />
+                    <span className="text-xs font-mono" style={{ color: 'var(--text-dimmer)' }}>
+                      MCr{(spinal.costPerMultiple * mult).toFixed(0)} | {spinal.powerPerMultiple * mult} pwr
+                    </span>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+        )}
+
+        {/* ── POINT DEFENCE ── */}
+        {!isSmallCraft && (
+          <div>
+            <FieldLabel>Point-Defence Batteries (1 hardpoint, 20 tons each)</FieldLabel>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {availablePD.map((p) => {
+                const inst = design.pointDefence.find((x) => x.weaponId === p.id);
+                const qty = inst?.quantity ?? 0;
+                return (
+                  <div key={p.id} className="p-2 rounded flex items-center justify-between"
+                    style={{ background: qty > 0 ? 'rgba(0,255,0,0.08)' : 'rgba(0,255,0,0.03)', border: `1px solid ${qty > 0 ? 'var(--primary)' : 'rgba(0,255,0,0.15)'}` }}>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs font-mono font-bold truncate" style={{ color: qty > 0 ? 'var(--primary)' : 'var(--text-dim)' }}>
+                        {p.name}
+                      </div>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {[`TL${p.tl}`, `Intercept ${p.intercept}`, `${p.power}pwr`, `MCr${p.cost}`, p.pdType === 'gauss' ? 'Gauss' : 'Laser'].map((t, i) => statBadge(`${i}`, t))}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1 ml-2 shrink-0">
+                      {qty > 0 && <button className="terminal-btn" style={{ fontSize: '0.65rem', padding: '2px 6px' }} onClick={() => removePD(p.id)}>−</button>}
+                      <span className="text-xs font-mono w-4 text-center" style={{ color: 'var(--primary)' }}>{qty || ''}</span>
+                      <button className="terminal-btn" style={{ fontSize: '0.65rem', padding: '2px 6px' }} onClick={() => addPD(p.id)}>+</button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* ── SCREENS ── */}
+        <div>
+          <FieldLabel>Defensive Screens</FieldLabel>
+          <div className="grid grid-cols-1 gap-2">
+            {availableScreens.map((s) => {
+              const inst = design.screens.find((x) => x.screenId === s.id);
+              const qty = inst?.quantity ?? 0;
+              return (
+                <div key={s.id} className="p-3 rounded flex items-start justify-between gap-3"
+                  style={{ background: qty > 0 ? 'rgba(0,255,0,0.08)' : 'rgba(0,255,0,0.03)', border: `1px solid ${qty > 0 ? 'var(--primary)' : 'rgba(0,255,0,0.15)'}` }}>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs font-mono font-bold" style={{ color: qty > 0 ? 'var(--primary)' : 'var(--text-dim)' }}>{s.name}</div>
+                    <div className="flex flex-wrap gap-1 mt-1 mb-1">
+                      {[`TL${s.tl}`, `${s.tons}t`, `${s.power}pwr`, `MCr${s.cost}`].map((t, i) => statBadge(`${i}`, t))}
+                    </div>
+                    <div className="text-xs" style={{ color: 'var(--text-dimmer)' }}>{s.effect}</div>
+                    {s.notes && <div className="text-xs mt-1 italic" style={{ color: 'var(--text-dimmer)', opacity: 0.7 }}>{s.notes}</div>}
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0">
+                    {qty > 0 && <button className="terminal-btn" style={{ fontSize: '0.65rem', padding: '2px 6px' }} onClick={() => removeScreen(s.id)}>−</button>}
+                    <span className="text-xs font-mono w-4 text-center" style={{ color: 'var(--primary)' }}>{qty || ''}</span>
+                    <button className="terminal-btn" style={{ fontSize: '0.65rem', padding: '2px 6px' }} onClick={() => addScreen(s.id)}>+</button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderStep11_Quarters = () => {
     const recommendedCommon = Math.floor(
       (design.standardStaterooms * 4 + design.highStaterooms * 6 + design.luxuryStaterooms * 10) * 0.25
     );
 
     return (
       <div className="space-y-6 fade-in">
-        <SectionHeader step={10} title="QUARTERS & CREW" subtitle="Staterooms, low berths, and common areas" />
+        <SectionHeader step={11} title="QUARTERS & CREW" subtitle="Staterooms, low berths, and common areas" />
 
         {/* Staterooms */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -1048,13 +1452,13 @@ export default function ShipCreator({ onComplete, onCancel }: ShipCreatorProps) 
     );
   };
 
-  const renderStep11_Finalise = () => {
+  const renderStep12_Finalise = () => {
     const costMCr = calc.totalCost / 1_000_000;
     const buildDays = constructionTimeDays(calc.totalCost);
 
     return (
       <div className="space-y-6 fade-in">
-        <SectionHeader step={11} title="FINALISE DESIGN" subtitle="Allocate cargo and review ship specifications" />
+        <SectionHeader step={12} title="FINALISE DESIGN" subtitle="Allocate cargo and review ship specifications" />
 
         {/* Cargo */}
         <div>
@@ -1213,8 +1617,9 @@ export default function ShipCreator({ onComplete, onCancel }: ShipCreatorProps) 
       case 7: return renderStep7_Bridge();
       case 8: return renderStep8_Computer();
       case 9: return renderStep9_Sensors();
-      case 10: return renderStep10_Quarters();
-      case 11: return renderStep11_Finalise();
+      case 10: return renderStep10_Weapons();
+      case 11: return renderStep11_Quarters();
+      case 12: return renderStep12_Finalise();
       default: return null;
     }
   };

@@ -14,7 +14,14 @@ import {
 import { useCampaign } from "@/contexts/CampaignContext";
 import { Vehicle } from "@/types/database";
 import { rollDamageExpression } from "@/lib/dice";
-import { TURRET_WEAPONS, WEAPON_MOUNTS } from "@/data/shipConstruction/weapons";
+import {
+  TURRET_WEAPONS,
+  WEAPON_MOUNTS,
+  BARBETTE_WEAPONS,
+  SMALL_BAY_WEAPONS,
+  POINT_DEFENCE_WEAPONS,
+  SCREENS,
+} from "@/data/shipConstruction/weapons";
 import { ALL_SOFTWARE, STANDARD_SOFTWARE, JUMP_CONTROL_SOFTWARE, COMBAT_SOFTWARE, UTILITY_SOFTWARE } from "@/data/shipConstruction/software";
 import { SENSOR_SUITES } from "@/data/shipConstruction/bridges";
 import { SPACECRAFT_EQUIPMENT } from "@/data/shipConstruction/equipment";
@@ -250,17 +257,38 @@ const VehicleSheet = ({ vehicleId }: VehicleSheetProps) => {
   };
 
   const handleWeaponSelect = (index: number, weaponId: string) => {
-    const weaponDef = TURRET_WEAPONS.find(w => w.id === weaponId);
+    // Search across all weapon categories
+    const allWeapons = [
+      ...TURRET_WEAPONS,
+      ...BARBETTE_WEAPONS,
+      ...SMALL_BAY_WEAPONS,
+      ...POINT_DEFENCE_WEAPONS,
+    ];
+    const screenDef = SCREENS.find(s => s.id === weaponId);
+    const weaponDef = allWeapons.find(w => w.id === weaponId);
+
     if (weaponDef) {
       setWeapons(prev => prev.map((entry, idx) =>
         idx === index ? {
           ...entry,
           weapon: weaponDef.name,
           tl: weaponDef.tl.toString(),
-          range: weaponDef.range,
-          damage: weaponDef.damage,
-          traits: weaponDef.traits.join(', '),
+          range: (weaponDef as any).range ?? '',
+          damage: (weaponDef as any).damage ?? (weaponDef as any).intercept ?? '',
+          traits: ((weaponDef as any).traits ?? []).join(', '),
           ammunition: weaponDef.id === 'missile_rack' ? '12' : weaponDef.id === 'sandcaster' ? '20' : '',
+        } : entry
+      ));
+    } else if (screenDef) {
+      setWeapons(prev => prev.map((entry, idx) =>
+        idx === index ? {
+          ...entry,
+          weapon: screenDef.name,
+          tl: screenDef.tl.toString(),
+          range: 'Screen',
+          damage: '—',
+          traits: '',
+          ammunition: '',
         } : entry
       ));
     }
@@ -372,10 +400,18 @@ const VehicleSheet = ({ vehicleId }: VehicleSheetProps) => {
     return suite?.id || "";
   };
 
-  // Find matching weapon ID from a weapon name (for backward compat)
+  // Find matching weapon ID from a weapon name (searches all categories)
   const findWeaponId = (weaponName: string): string => {
-    const weapon = TURRET_WEAPONS.find(w => w.name === weaponName || w.id === weaponName);
-    return weapon?.id || "";
+    const allWeapons = [
+      ...TURRET_WEAPONS,
+      ...BARBETTE_WEAPONS,
+      ...SMALL_BAY_WEAPONS,
+      ...POINT_DEFENCE_WEAPONS,
+    ];
+    const weapon = allWeapons.find(w => w.name === weaponName || w.id === weaponName);
+    if (weapon) return weapon.id;
+    const screen = SCREENS.find(s => s.name === weaponName || s.id === weaponName);
+    return screen?.id || "";
   };
 
   // Find matching mount ID from a mount name (for backward compat)
@@ -688,11 +724,46 @@ const VehicleSheet = ({ vehicleId }: VehicleSheetProps) => {
                       </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
-                      {TURRET_WEAPONS.map(w => (
-                        <SelectItem key={w.id} value={w.id} className="text-xs">
-                          {w.name} <span className="text-muted-foreground ml-1">TL{w.tl} | {w.damage} | {w.range}</span>
-                        </SelectItem>
-                      ))}
+                      <SelectGroup>
+                        <SelectLabel className="text-xs">Turret Weapons</SelectLabel>
+                        {TURRET_WEAPONS.filter(w => w.id !== 'particle_barbette').map(w => (
+                          <SelectItem key={w.id} value={w.id} className="text-xs">
+                            {w.name} <span className="text-muted-foreground ml-1">TL{w.tl} | {w.damage} | {w.range}</span>
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                      <SelectGroup>
+                        <SelectLabel className="text-xs">Barbettes (×3 dmg)</SelectLabel>
+                        {BARBETTE_WEAPONS.map(b => (
+                          <SelectItem key={b.id} value={b.id} className="text-xs">
+                            {b.name} <span className="text-muted-foreground ml-1">TL{b.tl} | {b.damage} | {b.range}</span>
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                      <SelectGroup>
+                        <SelectLabel className="text-xs">Small Bay Weapons (50t, ×10 dmg)</SelectLabel>
+                        {SMALL_BAY_WEAPONS.map(b => (
+                          <SelectItem key={`small_${b.id}`} value={b.id} className="text-xs">
+                            {b.name} <span className="text-muted-foreground ml-1">TL{b.tl} | {b.damage} | {b.range}</span>
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                      <SelectGroup>
+                        <SelectLabel className="text-xs">Point Defence</SelectLabel>
+                        {POINT_DEFENCE_WEAPONS.map(p => (
+                          <SelectItem key={p.id} value={p.id} className="text-xs">
+                            {p.name} <span className="text-muted-foreground ml-1">TL{p.tl} | {p.intercept}</span>
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                      <SelectGroup>
+                        <SelectLabel className="text-xs">Screens</SelectLabel>
+                        {SCREENS.map(s => (
+                          <SelectItem key={s.id} value={s.id} className="text-xs">
+                            {s.name} <span className="text-muted-foreground ml-1">TL{s.tl} | {s.tons}t</span>
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
                     </SelectContent>
                   </Select>
                 </div>

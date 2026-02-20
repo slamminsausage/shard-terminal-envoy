@@ -184,10 +184,15 @@ export interface SensorSuite {
 
 export type TurretWeaponId =
   | 'beam_laser'
+  | 'fusion_gun'
+  | 'laser_drill'
   | 'missile_rack'
-  | 'particle_barbette'
+  | 'particle_beam'
+  | 'plasma_gun'
   | 'pulse_laser'
-  | 'sandcaster';
+  | 'railgun'
+  | 'sandcaster'
+  | 'particle_barbette'; // legacy – kept for backward compat
 
 export interface TurretWeaponDef {
   id: TurretWeaponId;
@@ -213,6 +218,248 @@ export interface WeaponMountDef {
   cost: number; // MCr
   /** Maximum number of weapons that can be installed */
   maxWeapons: number;
+}
+
+// ── Barbettes ────────────────────────────────────────────────────────
+
+export type BarbetteWeaponId =
+  | 'beam_laser_barbette'
+  | 'fusion_barbette'
+  | 'ion_cannon_barbette'
+  | 'missile_barbette'
+  | 'particle_barbette_bay'
+  | 'plasma_barbette'
+  | 'pulse_laser_barbette'
+  | 'railgun_barbette'
+  | 'torpedo_barbette';
+
+export interface BarbetteWeaponDef {
+  id: BarbetteWeaponId;
+  name: string;
+  tl: number;
+  range: string;
+  power: number;
+  damage: string;
+  cost: number; // MCr
+  traits: string[];
+  tons: number; // typically 5
+  /** Damage multiple applied after armour reduction – always 3 for barbettes */
+  damageMultiple: 3;
+}
+
+// ── Bay Weapons ──────────────────────────────────────────────────────
+
+export type BaySize = 'small' | 'medium' | 'large';
+
+export type BayWeaponId =
+  | 'fusion_gun_bay'
+  | 'ion_cannon_bay'
+  | 'mass_driver_bay'
+  | 'meson_gun_bay'
+  | 'missile_bay'
+  | 'orbital_strike_mass_driver_bay'
+  | 'orbital_strike_missile_bay'
+  | 'particle_beam_bay'
+  | 'railgun_bay'
+  | 'repulsor_bay'
+  | 'torpedo_bay';
+
+export interface BayWeaponDef {
+  id: BayWeaponId;
+  name: string;
+  tl: number;
+  range: string;
+  /** Power draw for this bay at this size */
+  power: number;
+  damage: string;
+  cost: number; // MCr
+  traits: string[];
+  size: BaySize;
+  /** Tonnage consumed by the bay */
+  tons: number;
+  /** Hardpoints used (1 for small/medium, 5 for large) */
+  hardpoints: number;
+  /** Minimum crew positions required */
+  crew: number;
+  /** Damage multiple after armour (10/20/100) */
+  damageMultiple: number;
+}
+
+// ── Spinal Mount Weapons ─────────────────────────────────────────────
+
+export type SpinalWeaponId =
+  | 'mass_driver_spinal'
+  | 'meson_spinal'
+  | 'particle_spinal'
+  | 'railgun_spinal';
+
+export interface SpinalWeaponDef {
+  id: SpinalWeaponId;
+  name: string;
+  tl: number;
+  range: string;
+  /** Base tonnage (minimum size at lowest TL available) */
+  baseSizeTons: number;
+  /** Additional power consumed per multiple of base size */
+  powerPerMultiple: number;
+  /** Additional damage dice gained per multiple (e.g. '+4D') */
+  damagePerMultiple: string;
+  /** Additional cost in MCr per multiple of base size */
+  costPerMultiple: number; // MCr
+  /** Maximum total tonnage this weapon can reach */
+  maxSizeTons: number;
+  traits: string[];
+  /** Damage multiple – always 1,000 for spinal mounts */
+  damageMultiple: 1000;
+}
+
+// ── Point-Defence Weapons ────────────────────────────────────────────
+
+export type PointDefenceWeaponId =
+  | 'pdl_type1'
+  | 'pdl_type2'
+  | 'pdl_type3'
+  | 'pdg_type1'
+  | 'pdg_type2'
+  | 'pdg_type3';
+
+export type PointDefenceType = 'laser' | 'gauss';
+
+export interface PointDefenceWeaponDef {
+  id: PointDefenceWeaponId;
+  name: string;
+  tl: number;
+  /** Dice rolled for interception, e.g. '+2D' */
+  intercept: string;
+  power: number;
+  tons: number;
+  cost: number; // MCr
+  pdType: PointDefenceType;
+  notes?: string;
+}
+
+// ── Screens ──────────────────────────────────────────────────────────
+
+export type ScreenId =
+  | 'meson_screen'
+  | 'nuclear_damper'
+  | 'black_globe_generator';
+
+export interface ScreenDef {
+  id: ScreenId;
+  name: string;
+  tl: number;
+  power: number;
+  tons: number;
+  cost: number; // MCr
+  effect: string;
+  notes?: string;
+}
+
+// ── Missiles ─────────────────────────────────────────────────────────
+
+export type MissileId =
+  | 'missile_advanced'
+  | 'missile_antimatter'
+  | 'missile_anti_torpedo'
+  | 'missile_decoy'
+  | 'missile_fragmentation'
+  | 'missile_ion'
+  | 'missile_jumpbreaker'
+  | 'missile_long_range'
+  | 'missile_multi_warhead'
+  | 'missile_nuclear'
+  | 'missile_ortillery'
+  | 'missile_shockwave'
+  | 'missile_standard';
+
+export interface MissileDef {
+  id: MissileId;
+  name: string;
+  tl: number;
+  thrust: number;
+  damage: string;
+  /** Cost for 12 missiles in Credits */
+  costPer12: number;
+  traits: string[];
+  notes?: string;
+}
+
+// ── Sandcaster Canisters ─────────────────────────────────────────────
+
+export type CanisterId =
+  | 'canister_anti_personnel'
+  | 'canister_chaff'
+  | 'canister_pebble'
+  | 'canister_sand'
+  | 'canister_sandcutter';
+
+export interface CanisterDef {
+  id: CanisterId;
+  name: string;
+  tl: number;
+  /** Cost for 20 canisters in Credits */
+  costPer20: number;
+  traits: string[];
+  notes?: string;
+}
+
+// ── Torpedoes ────────────────────────────────────────────────────────
+
+export type TorpedoId =
+  | 'torpedo_advanced'
+  | 'torpedo_antimatter'
+  | 'torpedo_antimatter_bomb_pumped'
+  | 'torpedo_antiradiation'
+  | 'torpedo_bomb_pumped'
+  | 'torpedo_ion'
+  | 'torpedo_multi_warhead_antimatter'
+  | 'torpedo_multi_warhead_standard'
+  | 'torpedo_multi_warhead_nuclear'
+  | 'torpedo_nuclear'
+  | 'torpedo_ortillery'
+  | 'torpedo_plasma'
+  | 'torpedo_standard';
+
+export interface TorpedoDef {
+  id: TorpedoId;
+  name: string;
+  tl: number;
+  thrust: number;
+  damage: string;
+  /** Cost per torpedo in Credits */
+  costPerTorpedo: number;
+  traits: string[];
+  notes?: string;
+}
+
+// ── Installation types for ShipDesign ───────────────────────────────
+
+export interface BarbetteInstallation {
+  weaponId: BarbetteWeaponId;
+  quantity: number;
+}
+
+export interface BayWeaponInstallation {
+  weaponId: BayWeaponId;
+  size: BaySize;
+  quantity: number;
+}
+
+export interface SpinalWeaponInstallation {
+  weaponId: SpinalWeaponId;
+  /** How many multiples of base size (min 1) */
+  multiple: number;
+}
+
+export interface ScreenInstallation {
+  screenId: ScreenId;
+  quantity: number;
+}
+
+export interface PointDefenceInstallation {
+  weaponId: PointDefenceWeaponId;
+  quantity: number;
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -360,8 +607,13 @@ export interface ShipDesign {
   sensorSuiteId: string;
   additionalSensorStations: number;
 
-  // ── Step 8: Weapons ──
+  // ── Step 8: Weapons & Screens ──
   weapons: ShipWeaponInstallation[];
+  barbettes: BarbetteInstallation[];
+  bays: BayWeaponInstallation[];
+  spinalMount?: SpinalWeaponInstallation;
+  pointDefence: PointDefenceInstallation[];
+  screens: ScreenInstallation[];
 
   // ── Step 9: Equipment ──
   equipment: ShipEquipmentInstallation[];
