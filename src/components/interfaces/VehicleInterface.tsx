@@ -8,10 +8,12 @@ import VehicleSheet from "@/components/crew/VehicleSheet";
 import CrewAssignmentDialog from "@/components/crew/CrewAssignmentDialog";
 import PreMadeShipSelector from "@/components/crew/PreMadeShipSelector";
 import PreMadeVehicleSelector from "@/components/crew/PreMadeVehicleSelector";
+import ShipCreator from "@/components/ship-creator/ShipCreator";
 import { useCampaign } from "@/contexts/CampaignContext";
 import { Vehicle } from "@/types/database";
-import { preMadeShipToVehicle, preMadeVehicleToVehicle } from "@/lib/shipConversion";
-import type { PreMadeShip } from "@/data/shipConstruction";
+import { preMadeShipToVehicle, preMadeVehicleToVehicle, shipDesignToVehicle } from "@/lib/shipConversion";
+import type { PreMadeShip, ShipDesign } from "@/data/shipConstruction";
+import { calculateShipDesign } from "@/data/shipConstruction";
 import type { PreMadeVehicle } from "@/data/vehicleCatalog";
 
 export default function VehicleInterface() {
@@ -22,6 +24,7 @@ export default function VehicleInterface() {
   const [selectedVehicleForCrew, setSelectedVehicleForCrew] = useState<Vehicle | null>(null);
   const [showShipCatalog, setShowShipCatalog] = useState(false);
   const [showVehicleCatalog, setShowVehicleCatalog] = useState(false);
+  const [showShipCreator, setShowShipCreator] = useState(false);
   const { createNewVehicle, saveVehicle, vehicles, deleteVehicle } = useCampaign();
 
   useEffect(() => {
@@ -84,6 +87,17 @@ export default function VehicleInterface() {
     console.log(`Crew assignment completed for vehicle ${vehicleId}:`, assignedCrew);
   };
 
+  const handleShipDesignComplete = async (design: ShipDesign) => {
+    const calc = calculateShipDesign(design);
+    const vehicleData = shipDesignToVehicle(design, calc);
+    const saved = await saveVehicle(vehicleData);
+    if (saved) {
+      setShowShipCreator(false);
+      setSelectedVehicleId(saved.id);
+      setShowVehicleSheet(true);
+    }
+  };
+
   const handleDeleteVehicle = async (vehicleId: string) => {
     try {
       const success = await deleteVehicle(vehicleId);
@@ -95,6 +109,15 @@ export default function VehicleInterface() {
       console.error('Error deleting vehicle:', error);
     }
   };
+
+  if (showShipCreator) {
+    return (
+      <ShipCreator
+        onComplete={handleShipDesignComplete}
+        onCancel={() => setShowShipCreator(false)}
+      />
+    );
+  }
 
   if (showVehicleSheet) {
     return (
@@ -227,8 +250,11 @@ export default function VehicleInterface() {
                       <button className="terminal-btn flex-1" onClick={() => setShowShipCatalog(true)}>
                         Deploy from Catalog
                       </button>
+                      <button className="terminal-btn secondary flex-1" onClick={() => setShowShipCreator(true)}>
+                        Design Ship
+                      </button>
                       <button className="terminal-btn flex-1" onClick={() => handleRegisterNewVehicle("Ship")}>
-                        Custom Spacecraft
+                        Blank Sheet
                       </button>
                     </div>
                   </div>

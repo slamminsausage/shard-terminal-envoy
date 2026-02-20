@@ -23,6 +23,10 @@
 export type {
   HullConfigType,
   HullConfiguration,
+  SpecialisedHullType,
+  SpecialisedHullDef,
+  HullOptionId,
+  HullOptionDef,
   ArmorMaterialId,
   ArmorMaterial,
   DriveRatingEntry,
@@ -55,16 +59,31 @@ export type {
 // ── Hull Data (Step 1) ──────────────────────────────────────────────
 export {
   HULL_COST_PER_TON,
+  PLANETOID_COST_PER_TON,
   TONS_PER_HULL_POINT,
   SELF_SEALING_TL,
+  MIN_HULL_TONNAGE,
+  MIN_JUMP_TONNAGE,
   HULL_CONFIGURATIONS,
+  SPECIALISED_HULL_TYPES,
+  HULL_OPTIONS,
   ARMOR_MATERIALS,
+  ARMOUR_TONNAGE_MULTIPLIERS,
+  getTonsPerHullPoint,
   calculateHullPoints,
   calculateBaseHullCost,
   calculateHullCost,
+  getUseableTonnagePercent,
+  getArmourTonnageMultiplier,
   calculateArmorTonnage,
   calculateArmorCost,
   getMaxProtection,
+  calculateHullOptionCost,
+  calculateHullOptionTonnage,
+  getHullConfig,
+  getSpecialisedHull,
+  getHullOption,
+  getArmourMaterial,
 } from './hulls';
 
 // ── Drives Data (Step 2) ────────────────────────────────────────────
