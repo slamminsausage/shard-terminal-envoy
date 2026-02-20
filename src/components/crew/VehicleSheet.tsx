@@ -2,9 +2,23 @@ import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useCampaign } from "@/contexts/CampaignContext";
 import { Vehicle } from "@/types/database";
 import { rollDamageExpression } from "@/lib/dice";
+import { TURRET_WEAPONS, WEAPON_MOUNTS } from "@/data/shipConstruction/weapons";
+import { ALL_SOFTWARE, STANDARD_SOFTWARE, JUMP_CONTROL_SOFTWARE, COMBAT_SOFTWARE, UTILITY_SOFTWARE } from "@/data/shipConstruction/software";
+import { SENSOR_SUITES } from "@/data/shipConstruction/bridges";
+import { SPACECRAFT_EQUIPMENT } from "@/data/shipConstruction/equipment";
+import { X, Plus } from "lucide-react";
 
 interface PowerRequirementEntry {
   label: string;
@@ -67,6 +81,25 @@ const CRITICAL_TRACKS: CriticalTrack[] = [
   { label: "Sensors", boxes: 6 },
   { label: "Weapons", boxes: 6 }
 ];
+
+// Group equipment by category for the dropdown
+const EQUIPMENT_BY_CATEGORY = SPACECRAFT_EQUIPMENT.reduce((acc, equip) => {
+  const cat = equip.category;
+  if (!acc[cat]) acc[cat] = [];
+  acc[cat].push(equip);
+  return acc;
+}, {} as Record<string, typeof SPACECRAFT_EQUIPMENT>);
+
+const EQUIPMENT_CATEGORY_LABELS: Record<string, string> = {
+  cargo: "Cargo",
+  fuel: "Fuel Systems",
+  defense: "Defense",
+  drones: "Drones",
+  science: "Science & Medical",
+  accommodation: "Accommodation",
+  operations: "Operations",
+  stealth: "Stealth",
+};
 
 interface VehicleSheetProps {
   vehicleId?: string;
@@ -171,12 +204,41 @@ const VehicleSheet = ({ vehicleId }: VehicleSheetProps) => {
     setSoftwarePackages(prev => prev.map((entry, idx) => (idx === index ? value : entry)));
   };
 
+  const removeSoftware = (index: number) => {
+    setSoftwarePackages(prev => prev.filter((_, idx) => idx !== index));
+  };
+
+  const addSoftwareSlot = () => {
+    setSoftwarePackages(prev => [...prev, ""]);
+  };
+
   const updateSystem = (index: number, value: string) => {
     setSystems(prev => prev.map((entry, idx) => (idx === index ? value : entry)));
   };
 
+  const removeSystem = (index: number) => {
+    setSystems(prev => prev.filter((_, idx) => idx !== index));
+  };
+
+  const addSystemSlot = () => {
+    setSystems(prev => [...prev, ""]);
+  };
+
   const updateSensor = (index: number, field: "type" | "dm", value: string) => {
     setSensors(prev => prev.map((entry, idx) => (idx === index ? { ...entry, [field]: value } : entry)));
+  };
+
+  const handleSensorSelect = (index: number, sensorId: string) => {
+    const suite = SENSOR_SUITES.find(s => s.id === sensorId);
+    if (suite) {
+      setSensors(prev => prev.map((entry, idx) =>
+        idx === index ? { type: suite.name, dm: suite.dm.toString() } : entry
+      ));
+    }
+  };
+
+  const removeSensor = (index: number) => {
+    setSensors(prev => prev.filter((_, idx) => idx !== index));
   };
 
   const updatePowerRequirement = (index: number, value: string) => {
@@ -185,6 +247,40 @@ const VehicleSheet = ({ vehicleId }: VehicleSheetProps) => {
 
   const updateWeaponRow = (index: number, field: keyof WeaponEntry, value: string) => {
     setWeapons(prev => prev.map((entry, idx) => (idx === index ? { ...entry, [field]: value } : entry)));
+  };
+
+  const handleWeaponSelect = (index: number, weaponId: string) => {
+    const weaponDef = TURRET_WEAPONS.find(w => w.id === weaponId);
+    if (weaponDef) {
+      setWeapons(prev => prev.map((entry, idx) =>
+        idx === index ? {
+          ...entry,
+          weapon: weaponDef.name,
+          tl: weaponDef.tl.toString(),
+          range: weaponDef.range,
+          damage: weaponDef.damage,
+          traits: weaponDef.traits.join(', '),
+          ammunition: weaponDef.id === 'missile_rack' ? '12' : weaponDef.id === 'sandcaster' ? '20' : '',
+        } : entry
+      ));
+    }
+  };
+
+  const handleMountSelect = (index: number, mountId: string) => {
+    const mountDef = WEAPON_MOUNTS.find(m => m.id === mountId);
+    if (mountDef) {
+      setWeapons(prev => prev.map((entry, idx) =>
+        idx === index ? { ...entry, mount: mountDef.name } : entry
+      ));
+    }
+  };
+
+  const addWeaponSlot = () => {
+    setWeapons(prev => [...prev, { weapon: "", mount: "", tl: "", range: "", damage: "", ammunition: "", traits: "" }]);
+  };
+
+  const removeWeapon = (index: number) => {
+    setWeapons(prev => prev.filter((_, idx) => idx !== index));
   };
 
   const updateCargoRow = (index: number, field: keyof CargoEntry, value: string) => {
@@ -270,6 +366,36 @@ const VehicleSheet = ({ vehicleId }: VehicleSheetProps) => {
     setCargo(prev => [...prev, { description: "", tons: "" }]);
   };
 
+  // Find matching sensor suite ID from a sensor type name (for backward compat)
+  const findSensorSuiteId = (typeName: string): string => {
+    const suite = SENSOR_SUITES.find(s => s.name === typeName || s.id === typeName);
+    return suite?.id || "";
+  };
+
+  // Find matching weapon ID from a weapon name (for backward compat)
+  const findWeaponId = (weaponName: string): string => {
+    const weapon = TURRET_WEAPONS.find(w => w.name === weaponName || w.id === weaponName);
+    return weapon?.id || "";
+  };
+
+  // Find matching mount ID from a mount name (for backward compat)
+  const findMountId = (mountName: string): string => {
+    const mount = WEAPON_MOUNTS.find(m => m.name === mountName || m.id === mountName);
+    return mount?.id || "";
+  };
+
+  // Find matching software ID from a software name (for backward compat)
+  const findSoftwareId = (softwareName: string): string => {
+    const sw = ALL_SOFTWARE.find(s => s.name === softwareName || s.id === softwareName);
+    return sw?.id || "";
+  };
+
+  // Find matching equipment ID from an equipment name (for backward compat)
+  const findEquipmentId = (equipmentName: string): string => {
+    const equip = SPACECRAFT_EQUIPMENT.find(e => e.name === equipmentName || e.id === equipmentName);
+    return equip?.id || "";
+  };
+
   return (
     <div className="space-y-6 text-sm max-h-[80vh] overflow-y-auto pb-20 font-mono">
       <section className="panel">
@@ -292,14 +418,74 @@ const VehicleSheet = ({ vehicleId }: VehicleSheetProps) => {
       </section>
 
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* SOFTWARE - Dropdown selection */}
         <div className="panel">
           <div className="panel-header">
             <span className="panel-title">SHIP'S COMPUTER</span>
           </div>
           <div className="panel-content space-y-2">
             {softwarePackages.map((entry, index) => (
-              <Input key={index} value={entry} onChange={event => updateSoftware(index, event.target.value)} className="terminal-input h-8" placeholder="Software Package" />
+              <div key={index} className="flex items-center gap-1">
+                <Select
+                  value={findSoftwareId(entry) || "__custom__"}
+                  onValueChange={(val) => {
+                    if (val === "__custom__") return;
+                    const sw = ALL_SOFTWARE.find(s => s.id === val);
+                    if (sw) updateSoftware(index, sw.name);
+                  }}
+                >
+                  <SelectTrigger className="h-8 flex-1 text-xs">
+                    <SelectValue placeholder="Select Software">
+                      {entry || "Select Software"}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectLabel>Standard (Included)</SelectLabel>
+                      {STANDARD_SOFTWARE.map(sw => (
+                        <SelectItem key={sw.id} value={sw.id} className="text-xs">
+                          {sw.name} <span className="text-muted-foreground ml-1">TL{sw.tl}</span>
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                    <SelectGroup>
+                      <SelectLabel>Jump Control</SelectLabel>
+                      {JUMP_CONTROL_SOFTWARE.map(sw => (
+                        <SelectItem key={sw.id} value={sw.id} className="text-xs">
+                          {sw.name} <span className="text-muted-foreground ml-1">TL{sw.tl} | P:{sw.processing}</span>
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                    <SelectGroup>
+                      <SelectLabel>Combat</SelectLabel>
+                      {COMBAT_SOFTWARE.map(sw => (
+                        <SelectItem key={sw.id} value={sw.id} className="text-xs">
+                          {sw.name} <span className="text-muted-foreground ml-1">TL{sw.tl} | P:{sw.processing}</span>
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                    <SelectGroup>
+                      <SelectLabel>Utility</SelectLabel>
+                      {UTILITY_SOFTWARE.map(sw => (
+                        <SelectItem key={sw.id} value={sw.id} className="text-xs">
+                          {sw.name} <span className="text-muted-foreground ml-1">TL{sw.tl} | P:{sw.processing}</span>
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+                <button
+                  className="text-primary/50 hover:text-destructive p-1"
+                  onClick={() => removeSoftware(index)}
+                  title="Remove"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
             ))}
+            <button className="terminal-btn w-full flex items-center justify-center gap-1" onClick={addSoftwareSlot}>
+              <Plus className="w-3 h-3" /> Add Software
+            </button>
           </div>
         </div>
         <div className="panel">
@@ -315,31 +501,101 @@ const VehicleSheet = ({ vehicleId }: VehicleSheetProps) => {
             ))}
           </div>
         </div>
+
+        {/* SENSORS - Dropdown selection */}
         <div className="panel">
           <div className="panel-header">
             <span className="panel-title">SENSORS</span>
           </div>
           <div className="panel-content space-y-2">
             {sensors.map((entry, index) => (
-              <div key={index} className="grid grid-cols-[2fr_1fr] gap-2">
-                <Input value={entry.type} onChange={event => updateSensor(index, "type", event.target.value)} placeholder="Type" className="terminal-input h-8" />
-                <Input value={entry.dm} onChange={event => updateSensor(index, "dm", event.target.value)} placeholder="DM" className="terminal-input h-8" />
+              <div key={index} className="flex items-center gap-1">
+                <div className="grid grid-cols-[2fr_1fr] gap-2 flex-1">
+                  <Select
+                    value={findSensorSuiteId(entry.type) || "__custom__"}
+                    onValueChange={(val) => {
+                      if (val === "__custom__") return;
+                      handleSensorSelect(index, val);
+                    }}
+                  >
+                    <SelectTrigger className="h-8 text-xs">
+                      <SelectValue placeholder="Select Sensor">
+                        {entry.type || "Select Sensor"}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {SENSOR_SUITES.map(suite => (
+                        <SelectItem key={suite.id} value={suite.id} className="text-xs">
+                          {suite.name} <span className="text-muted-foreground ml-1">TL{suite.tl} | DM{suite.dm >= 0 ? '+' : ''}{suite.dm}</span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Input value={entry.dm} onChange={event => updateSensor(index, "dm", event.target.value)} placeholder="DM" className="terminal-input h-8" />
+                </div>
+                <button
+                  className="text-primary/50 hover:text-destructive p-1"
+                  onClick={() => removeSensor(index)}
+                  title="Remove"
+                >
+                  <X className="w-3 h-3" />
+                </button>
               </div>
             ))}
-            <button className="terminal-btn w-full" onClick={() => setSensors(prev => [...prev, { type: "", dm: "" }])}>Add Sensor</button>
+            <button className="terminal-btn w-full flex items-center justify-center gap-1" onClick={() => setSensors(prev => [...prev, { type: "", dm: "" }])}>
+              <Plus className="w-3 h-3" /> Add Sensor
+            </button>
           </div>
         </div>
       </section>
 
       <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* SYSTEMS/EQUIPMENT - Dropdown selection */}
         <div className="panel">
           <div className="panel-header">
             <span className="panel-title">SYSTEMS</span>
           </div>
           <div className="panel-content space-y-2">
             {systems.map((entry, index) => (
-              <Input key={index} value={entry} onChange={event => updateSystem(index, event.target.value)} placeholder="System" className="terminal-input h-8" />
+              <div key={index} className="flex items-center gap-1">
+                <Select
+                  value={findEquipmentId(entry) || "__custom__"}
+                  onValueChange={(val) => {
+                    if (val === "__custom__") return;
+                    const equip = SPACECRAFT_EQUIPMENT.find(e => e.id === val);
+                    if (equip) updateSystem(index, equip.name);
+                  }}
+                >
+                  <SelectTrigger className="h-8 flex-1 text-xs">
+                    <SelectValue placeholder="Select System">
+                      {entry || "Select System"}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(EQUIPMENT_BY_CATEGORY).map(([cat, items]) => (
+                      <SelectGroup key={cat}>
+                        <SelectLabel>{EQUIPMENT_CATEGORY_LABELS[cat] || cat}</SelectLabel>
+                        {items.map(equip => (
+                          <SelectItem key={equip.id} value={equip.id} className="text-xs">
+                            {equip.name} <span className="text-muted-foreground ml-1">TL{equip.tl}</span>
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <button
+                  className="text-primary/50 hover:text-destructive p-1"
+                  onClick={() => removeSystem(index)}
+                  title="Remove"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
             ))}
+            <button className="terminal-btn w-full flex items-center justify-center gap-1" onClick={addSystemSlot}>
+              <Plus className="w-3 h-3" /> Add System
+            </button>
           </div>
         </div>
         <div className="panel">
@@ -392,6 +648,7 @@ const VehicleSheet = ({ vehicleId }: VehicleSheetProps) => {
         </div>
       </section>
 
+      {/* WEAPONS - Dropdown selection for weapon type and mount */}
       <section className="panel">
         <div className="panel-header">
           <span className="panel-title">WEAPONS</span>
@@ -401,43 +658,108 @@ const VehicleSheet = ({ vehicleId }: VehicleSheetProps) => {
             </div>
           )}
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs">
-            <thead className="bg-primary/20 text-primary-foreground">
-              <tr>
-                {['Weapon', 'Mount', 'TL', 'Range', 'Damage', 'Ammunition', 'Traits', 'Roll'].map(header => (
-                  <th key={header} className="px-2 py-1 text-left uppercase tracking-wide font-semibold">
-                    {header}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {weapons.map((entry, index) => (
-                <tr key={index} className="border-t border-primary/20">
-                  {(['weapon', 'mount', 'tl', 'range', 'damage', 'ammunition', 'traits'] as (keyof WeaponEntry)[]).map(field => (
-                    <td key={String(field)} className="p-1">
-                      <Input
-                        className="h-8"
-                        value={entry[field]}
-                        onChange={event => updateWeaponRow(index, field, event.target.value)}
-                      />
-                    </td>
-                  ))}
-                  <td className="p-1">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="h-8 w-full"
-                      onClick={() => handleWeaponDamageRoll(index)}
-                    >
-                      Roll
-                    </Button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="panel-content space-y-3">
+          {weapons.map((entry, index) => (
+            <div key={index} className="border border-primary/20 rounded p-2 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs uppercase tracking-wide text-primary/60">Weapon {index + 1}</span>
+                <button
+                  className="text-primary/50 hover:text-destructive p-1"
+                  onClick={() => removeWeapon(index)}
+                  title="Remove Weapon"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {/* Weapon Type Dropdown */}
+                <div className="space-y-1">
+                  <span className="text-[10px] uppercase tracking-wide text-primary/60">Weapon</span>
+                  <Select
+                    value={findWeaponId(entry.weapon) || "__custom__"}
+                    onValueChange={(val) => {
+                      if (val === "__custom__") return;
+                      handleWeaponSelect(index, val);
+                    }}
+                  >
+                    <SelectTrigger className="h-8 text-xs">
+                      <SelectValue placeholder="Select Weapon">
+                        {entry.weapon || "Select Weapon"}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {TURRET_WEAPONS.map(w => (
+                        <SelectItem key={w.id} value={w.id} className="text-xs">
+                          {w.name} <span className="text-muted-foreground ml-1">TL{w.tl} | {w.damage} | {w.range}</span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                {/* Mount Type Dropdown */}
+                <div className="space-y-1">
+                  <span className="text-[10px] uppercase tracking-wide text-primary/60">Mount</span>
+                  <Select
+                    value={findMountId(entry.mount) || "__custom__"}
+                    onValueChange={(val) => {
+                      if (val === "__custom__") return;
+                      handleMountSelect(index, val);
+                    }}
+                  >
+                    <SelectTrigger className="h-8 text-xs">
+                      <SelectValue placeholder="Select Mount">
+                        {entry.mount || "Select Mount"}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {WEAPON_MOUNTS.map(m => (
+                        <SelectItem key={m.id} value={m.id} className="text-xs">
+                          {m.name} <span className="text-muted-foreground ml-1">TL{m.tl} | Max:{m.maxWeapons}</span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              {/* Auto-filled stats row */}
+              <div className="grid grid-cols-5 gap-2">
+                <div className="space-y-1">
+                  <span className="text-[10px] uppercase tracking-wide text-primary/60">TL</span>
+                  <Input className="h-7 text-xs text-center" value={entry.tl} onChange={e => updateWeaponRow(index, 'tl', e.target.value)} />
+                </div>
+                <div className="space-y-1">
+                  <span className="text-[10px] uppercase tracking-wide text-primary/60">Range</span>
+                  <Input className="h-7 text-xs" value={entry.range} onChange={e => updateWeaponRow(index, 'range', e.target.value)} />
+                </div>
+                <div className="space-y-1">
+                  <span className="text-[10px] uppercase tracking-wide text-primary/60">Damage</span>
+                  <Input className="h-7 text-xs" value={entry.damage} onChange={e => updateWeaponRow(index, 'damage', e.target.value)} />
+                </div>
+                <div className="space-y-1">
+                  <span className="text-[10px] uppercase tracking-wide text-primary/60">Ammo</span>
+                  <Input className="h-7 text-xs text-center" value={entry.ammunition} onChange={e => updateWeaponRow(index, 'ammunition', e.target.value)} />
+                </div>
+                <div className="space-y-1">
+                  <span className="text-[10px] uppercase tracking-wide text-primary/60">Traits</span>
+                  <Input className="h-7 text-xs" value={entry.traits} onChange={e => updateWeaponRow(index, 'traits', e.target.value)} />
+                </div>
+              </div>
+              <div className="flex justify-end">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-xs"
+                  onClick={() => handleWeaponDamageRoll(index)}
+                  disabled={!entry.damage}
+                >
+                  Roll Damage
+                </Button>
+              </div>
+            </div>
+          ))}
+          <button className="terminal-btn w-full flex items-center justify-center gap-1" onClick={addWeaponSlot}>
+            <Plus className="w-3 h-3" /> Add Weapon
+          </button>
         </div>
       </section>
 
