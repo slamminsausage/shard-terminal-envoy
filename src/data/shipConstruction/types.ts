@@ -192,7 +192,8 @@ export type TurretWeaponId =
   | 'pulse_laser'
   | 'railgun'
   | 'sandcaster'
-  | 'particle_barbette'; // legacy – kept for backward compat
+  | 'particle_barbette' // legacy – kept for backward compat
+  | 'plasma_pulse_cannon_turret'; // High Guard exotic
 
 export interface TurretWeaponDef {
   id: TurretWeaponId;
@@ -207,7 +208,7 @@ export interface TurretWeaponDef {
   tons: number;
 }
 
-export type MountTypeId = 'fixed_mount' | 'single_turret' | 'double_turret' | 'triple_turret';
+export type MountTypeId = 'fixed_mount' | 'single_turret' | 'double_turret' | 'triple_turret' | 'quad_turret';
 
 export interface WeaponMountDef {
   id: MountTypeId;
@@ -231,7 +232,9 @@ export type BarbetteWeaponId =
   | 'plasma_barbette'
   | 'pulse_laser_barbette'
   | 'railgun_barbette'
-  | 'torpedo_barbette';
+  | 'torpedo_barbette'
+  | 'plasma_pulse_barbette'     // High Guard exotic
+  | 'tachyon_cannon_barbette';  // High Guard exotic
 
 export interface BarbetteWeaponDef {
   id: BarbetteWeaponId;
@@ -262,7 +265,10 @@ export type BayWeaponId =
   | 'particle_beam_bay'
   | 'railgun_bay'
   | 'repulsor_bay'
-  | 'torpedo_bay';
+  | 'torpedo_bay'
+  | 'neutron_laser_bay'   // High Guard exotic
+  | 'plasma_pulse_bay'    // High Guard exotic
+  | 'tachyon_cannon_bay'; // High Guard exotic
 
 export interface BayWeaponDef {
   id: BayWeaponId;
@@ -291,7 +297,11 @@ export type SpinalWeaponId =
   | 'mass_driver_spinal'
   | 'meson_spinal'
   | 'particle_spinal'
-  | 'railgun_spinal';
+  | 'railgun_spinal'
+  | 'antimatter_spinal'       // High Guard exotic
+  | 'neutron_laser_spinal'    // High Guard exotic
+  | 'super_laser_spinal'      // High Guard exotic
+  | 'tachyon_cannon_spinal';  // High Guard exotic
 
 export interface SpinalWeaponDef {
   id: SpinalWeaponId;
@@ -343,7 +353,12 @@ export interface PointDefenceWeaponDef {
 export type ScreenId =
   | 'meson_screen'
   | 'nuclear_damper'
-  | 'black_globe_generator';
+  | 'black_globe_generator'
+  | 'deflector_screens'        // High Guard exotic
+  | 'energy_shields'           // High Guard exotic
+  | 'improved_energy_shields'  // High Guard exotic
+  | 'advanced_energy_shields'  // High Guard exotic
+  | 'white_globe_generator';   // High Guard exotic
 
 export interface ScreenDef {
   id: ScreenId;
@@ -474,7 +489,9 @@ export type EquipmentCategory =
   | 'science'
   | 'accommodation'
   | 'operations'
-  | 'stealth';
+  | 'stealth'
+  | 'exotic'   // High Guard exotic technology
+  | 'psionic'; // High Guard psionic technology
 
 export interface SpacecraftEquipment {
   id: string;
