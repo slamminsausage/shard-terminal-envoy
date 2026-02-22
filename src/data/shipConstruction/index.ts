@@ -267,5 +267,7 @@ export {
   PRE_MADE_SHIPS,
   getPreMadeShip,
   getShipsByCategory,
+  SHIP_SOURCE_LABELS,
+  getShipSource,
   getFullCostMCr,
 } from './preMadeShips';
