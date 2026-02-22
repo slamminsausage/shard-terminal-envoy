@@ -2165,6 +2165,455 @@ export const PASSENGER_SHUTTLE: PreMadeShip = {
   },
 };
 
+
+// ═══════════════════════════════════════════════════════════════════════
+//  SHIPS OF THE REACH (ADDITIONAL PRE-MADE SHIPS)
+// ═══════════════════════════════════════════════════════════════════════
+
+const SOTR_COMMON_SOFTWARE = ['library', 'manoeuvre_0'];
+
+export const FAST_TRADER_A3: PreMadeShip = {
+  id: 'fast_trader_a3', source: 'ships_of_the_reach', name: 'Fast Trader', designation: 'Type A3', category: 'trader', tl: 12, tonnage: 200,
+  description: 'A stripped-down Type-A variant that trades cargo volume for better speed and agility, popular in dangerous trade lanes and among pirates.',
+  hullPoints: 80, purchaseCostMCr: 76.5, maintenanceCostCrPerMonth: 6375,
+  crew: ['Pilot', 'Astrogator', 'Engineer', 'Medic', 'Steward'],
+  powerRequirements: [{ system: 'Basic Ship Systems', power: 40 }, { system: 'Manoeuvre Drive', power: 80 }, { system: 'Jump Drive', power: 40 }, { system: 'Sensors', power: 1 }],
+  components: [{ category: 'Hull', name: '200 tons, Streamlined', tons: null, costMCr: 12 }, { category: 'M-Drive', name: 'Thrust 4', tons: 8, costMCr: 16 }, { category: 'J-Drive', name: 'Jump-2', tons: 15, costMCr: 22.5 }, { category: 'Cargo', name: 'Cargo', tons: 36, costMCr: null }],
+  softwareIds: [...SOTR_COMMON_SOFTWARE, 'jump_control_2'],
+  design: { name: 'Fast Trader', designation: 'Type A3', techLevel: 12, tonnage: 200, hullConfiguration: 'streamlined', armorMaterial: 'crystaliron', armorProtection: 2, manoeuvreRating: 4, jumpRating: 2, isReactionDrive: false, powerPlantTier: 'fusion_tl12', powerPlantTons: 9, additionalFuelWeeks: 0, useCockpit: false, holographicControls: false, computerId: 'computer_5', computerBis: true, sensorSuiteId: 'civilian', additionalSensorStations: 0, weapons: [], equipment: [{ equipmentId: 'fuel_processor', tons: 1, quantity: 1 }, { equipmentId: 'cargo_crane', tons: 3, quantity: 1 }], standardStaterooms: 10, doubleOccupancyStaterooms: 0, highStaterooms: 0, luxuryStaterooms: 0, lowBerths: 20, commonAreaTons: 11, cargoTons: 36 },
+};
+
+export const STAR_RAY_INTERCEPTOR: PreMadeShip = { id: 'star_ray_interceptor', source: 'ships_of_the_reach', name: 'Star Ray-class Interceptor', category: 'military', tl: 12, tonnage: 200, description: 'A low-cost pirate interceptor from Theev with grappling gear and integral light fighter docking.', hullPoints: 80, purchaseCostMCr: 87.75, maintenanceCostCrPerMonth: 7312, crew: ['Pilot', 'Astrogator', 'Engineer', 'Gunners x2'], powerRequirements: [{ system: 'Basic Ship Systems', power: 40 }, { system: 'Manoeuvre Drive', power: 60 }, { system: 'Jump Drive', power: 20 }, { system: 'Sensors', power: 3 }], components: [{ category: 'Hull', name: '200 tons, Streamlined', tons: null, costMCr: 12 }, { category: 'Weapons', name: 'Double Turrets (beam lasers) x2', tons: 2, costMCr: 3 }, { category: 'Cargo', name: 'Cargo', tons: 44, costMCr: null }], softwareIds: [...SOTR_COMMON_SOFTWARE, 'jump_control_1'], design: { name: 'Star Ray-class Interceptor', techLevel: 12, tonnage: 200, hullConfiguration: 'streamlined', armorMaterial: 'crystaliron', armorProtection: 4, manoeuvreRating: 3, jumpRating: 1, isReactionDrive: false, powerPlantTier: 'fusion_tl15', powerPlantTons: 7, additionalFuelWeeks: 0, useCockpit: false, holographicControls: false, computerId: 'computer_10', computerBis: false, sensorSuiteId: 'improved', additionalSensorStations: 0, weapons: [{ mountType: 'double_turret', weapons: ['beam_laser', 'beam_laser'] }, { mountType: 'double_turret', weapons: ['beam_laser', 'beam_laser'] }], equipment: [{ equipmentId: 'fuel_processor', tons: 1, quantity: 1 }, { equipmentId: 'docking_space', tons: 11, quantity: 1 }], standardStaterooms: 8, doubleOccupancyStaterooms: 0, highStaterooms: 0, luxuryStaterooms: 0, lowBerths: 6, commonAreaTons: 6, cargoTons: 44 } };
+
+export const HERALD_FAST_MESSENGER: PreMadeShip = { id: 'herald_fast_messenger', source: 'ships_of_the_reach', name: 'Herald-class Fast Messenger', category: 'passenger', tl: 15, tonnage: 300, description: 'Elegant jump-4 courier for wealthy clients, emphasizing speed and comfort over combat power.', hullPoints: 120, purchaseCostMCr: 140.127, maintenanceCostCrPerMonth: 11677, crew: ['Pilot', 'Astrogator', 'Engineer', 'Steward'], powerRequirements: [{ system: 'Basic Ship Systems', power: 60 }, { system: 'Manoeuvre Drive', power: 120 }, { system: 'Jump Drive', power: 120 }, { system: 'Sensors', power: 1 }], components: [{ category: 'Hull', name: '300 tons, Streamlined', tons: null, costMCr: 18 }, { category: 'Cargo', name: 'Cargo', tons: 14.4, costMCr: null }], softwareIds: [...SOTR_COMMON_SOFTWARE, 'jump_control_4', 'evade_2', 'intellect_0'], design: { name: 'Herald-class Fast Messenger', techLevel: 15, tonnage: 300, hullConfiguration: 'streamlined', armorMaterial: 'bonded_superdense', armorProtection: 4, manoeuvreRating: 2, jumpRating: 4, isReactionDrive: false, powerPlantTier: 'fusion_tl15', powerPlantTons: 10, additionalFuelWeeks: 2, useCockpit: false, holographicControls: false, computerId: 'computer_15', computerBis: true, sensorSuiteId: 'civilian', additionalSensorStations: 0, weapons: [{ mountType: 'double_turret', weapons: ['missile_rack', 'sandcaster'] }], equipment: [{ equipmentId: 'docking_space', tons: 22, quantity: 1 }], standardStaterooms: 4, doubleOccupancyStaterooms: 0, highStaterooms: 2, luxuryStaterooms: 2, lowBerths: 0, commonAreaTons: 10, cargoTons: 14.4 } };
+
+export const INDIGO_PIRATE_CARRIER: PreMadeShip = { id: 'indigo_pirate_carrier', source: 'ships_of_the_reach', name: 'Indigo-class Pirate Carrier', category: 'military', tl: 15, tonnage: 300, description: 'Tiny carrier used by raiders, fielding ten externally clamped light fighters.', hullPoints: 108, purchaseCostMCr: 184.96, maintenanceCostCrPerMonth: 15413, crew: ['Pilot', 'Astrogator', 'Engineer', 'Gunners x3'], powerRequirements: [{ system: 'Basic Ship Systems', power: 60 }, { system: 'Manoeuvre Drive', power: 80 }, { system: 'Jump Drive', power: 80 }, { system: 'Sensors', power: 2 }], components: [{ category: 'Hull', name: '300 tons, Dispersed', tons: null, costMCr: 7.5 }, { category: 'Cargo', name: 'Cargo', tons: 65, costMCr: null }], softwareIds: [...SOTR_COMMON_SOFTWARE, 'jump_control_2'], design: { name: 'Indigo-class Pirate Carrier', techLevel: 15, tonnage: 300, hullConfiguration: 'dispersed', armorProtection: 0, manoeuvreRating: 1, jumpRating: 2, isReactionDrive: false, powerPlantTier: 'fusion_tl12', powerPlantTons: 10, additionalFuelWeeks: 0, useCockpit: false, holographicControls: false, computerId: 'computer_10', computerBis: false, sensorSuiteId: 'military', additionalSensorStations: 0, weapons: [{ mountType: 'triple_turret', weapons: ['beam_laser', 'beam_laser', 'missile_rack'] }, { mountType: 'triple_turret', weapons: ['beam_laser', 'beam_laser', 'missile_rack'] }, { mountType: 'triple_turret', weapons: ['beam_laser', 'beam_laser', 'missile_rack'] }], equipment: [{ equipmentId: 'fuel_processor', tons: 1, quantity: 1 }], standardStaterooms: 10, doubleOccupancyStaterooms: 0, highStaterooms: 0, luxuryStaterooms: 0, lowBerths: 8, commonAreaTons: 24, cargoTons: 65 } };
+
+export const BUCCANEER_BLOCKADE_RUNNER: PreMadeShip = { id: 'buccaneer_blockade_runner', source: 'ships_of_the_reach', name: 'Buccaneer-class Blockade Runner', category: 'military', tl: 15, tonnage: 400, description: 'Fast courier-smuggler with auxiliary high-burn thruster for short 6G breakout burns.', hullPoints: 160, purchaseCostMCr: 160.187, maintenanceCostCrPerMonth: 13348, crew: ['Pilot', 'Astrogator', 'Engineer x2', 'Gunners x4'], powerRequirements: [{ system: 'Basic Ship Systems', power: 80 }, { system: 'Manoeuvre Drive', power: 80 }, { system: 'Jump Drive', power: 80 }, { system: 'Sensors', power: 3 }], components: [{ category: 'Hull', name: '400 tons, Streamlined', tons: null, costMCr: 24 }, { category: 'Cargo', name: 'Cargo', tons: 62, costMCr: null }], softwareIds: [...SOTR_COMMON_SOFTWARE, 'jump_control_2'], design: { name: 'Buccaneer-class Blockade Runner', techLevel: 15, tonnage: 400, hullConfiguration: 'streamlined', armorMaterial: 'bonded_superdense', armorProtection: 5, manoeuvreRating: 3, jumpRating: 2, isReactionDrive: false, powerPlantTier: 'fusion_tl15', powerPlantTons: 15, additionalFuelWeeks: 0, useCockpit: false, holographicControls: false, computerId: 'computer_5', computerBis: true, sensorSuiteId: 'improved', additionalSensorStations: 0, weapons: [{ mountType: 'double_turret', weapons: ['pulse_laser', 'pulse_laser'] }, { mountType: 'double_turret', weapons: ['pulse_laser', 'pulse_laser'] }], equipment: [{ equipmentId: 'fuel_processor', tons: 5, quantity: 1 }, { equipmentId: 'docking_space', tons: 22, quantity: 1 }], standardStaterooms: 8, doubleOccupancyStaterooms: 0, highStaterooms: 0, luxuryStaterooms: 0, lowBerths: 0, commonAreaTons: 17, cargoTons: 62 } };
+
+export const FIERY_GUNSHIP: PreMadeShip = { id: 'fiery_gunship', source: 'ships_of_the_reach', name: 'Fiery-class Gunship', category: 'military', tl: 12, tonnage: 400, description: 'Assault gunship built to close, batter, and board hostile vessels.', hullPoints: 160, purchaseCostMCr: 208.65, maintenanceCostCrPerMonth: 17387, crew: ['Captain', 'Pilot', 'Astrogator', 'Engineer x2', 'Gunners x4', 'Marines x30'], powerRequirements: [{ system: 'Basic Ship Systems', power: 80 }, { system: 'Manoeuvre Drive', power: 240 }, { system: 'Jump Drive', power: 80 }, { system: 'Sensors', power: 3 }], components: [{ category: 'Hull', name: '400 tons, Streamlined', tons: null, costMCr: 24 }, { category: 'Weapons', name: 'Small Fusion Gun Bay', tons: 50, costMCr: 8 }, { category: 'Cargo', name: 'Cargo', tons: 6, costMCr: null }], softwareIds: [...SOTR_COMMON_SOFTWARE, 'jump_control_2', 'evade_2', 'fire_control_3'], design: { name: 'Fiery-class Gunship', techLevel: 12, tonnage: 400, hullConfiguration: 'streamlined', armorMaterial: 'crystaliron', armorProtection: 6, manoeuvreRating: 6, jumpRating: 2, isReactionDrive: false, powerPlantTier: 'fusion_tl12', powerPlantTons: 35, additionalFuelWeeks: 0, useCockpit: false, holographicControls: true, computerId: 'computer_20', computerBis: true, sensorSuiteId: 'military', additionalSensorStations: 0, weapons: [{ mountType: 'double_turret', weapons: ['beam_laser', 'beam_laser'] }, { mountType: 'triple_turret', weapons: ['sandcaster', 'sandcaster', 'beam_laser'] }], equipment: [{ equipmentId: 'fuel_processor', tons: 2, quantity: 1 }, { equipmentId: 'armoury', tons: 6, quantity: 1 }], standardStaterooms: 9, doubleOccupancyStaterooms: 0, highStaterooms: 0, luxuryStaterooms: 0, lowBerths: 0, commonAreaTons: 3, cargoTons: 6 } };
+
+export const GHOST_OF_THE_REACH: PreMadeShip = { id: 'ghost_of_the_reach', source: 'ships_of_the_reach', name: 'The Ghost of the Reach', category: 'exploration', tl: 15, tonnage: 400, description: 'Zhodani heavy scout with stealth hull treatment and advanced electronic warfare suite.', hullPoints: 160, purchaseCostMCr: 625.142, maintenanceCostCrPerMonth: 52095, crew: ['Captain', 'Pilot', 'Astrogator', 'Sensor Operator', 'Medic', 'Engineers x2', 'Gunners x4', 'Marines x6'], powerRequirements: [{ system: 'Basic Ship Systems', power: 80 }, { system: 'Manoeuvre Drive', power: 120 }, { system: 'Jump Drive', power: 120 }, { system: 'Sensors', power: 5 }], components: [{ category: 'Hull', name: '400 tons, Streamlined + Superior Stealth', tons: null, costMCr: 424 }, { category: 'Cargo', name: 'Cargo', tons: 36.8, costMCr: null }], softwareIds: [...SOTR_COMMON_SOFTWARE, 'jump_control_3', 'evade_2', 'fire_control_3'], design: { name: 'The Ghost of the Reach', techLevel: 15, tonnage: 400, hullConfiguration: 'streamlined', armorMaterial: 'bonded_superdense', armorProtection: 6, manoeuvreRating: 3, jumpRating: 3, isReactionDrive: false, powerPlantTier: 'fusion_tl15', powerPlantTons: 18, additionalFuelWeeks: 0, useCockpit: false, holographicControls: true, computerId: 'computer_15', computerBis: true, sensorSuiteId: 'advanced', additionalSensorStations: 1, weapons: [{ mountType: 'double_turret', weapons: ['beam_laser', 'beam_laser'] }, { mountType: 'double_turret', weapons: ['beam_laser', 'beam_laser'] }, { mountType: 'double_turret', weapons: ['beam_laser', 'beam_laser'] }, { mountType: 'double_turret', weapons: ['beam_laser', 'beam_laser'] }], equipment: [{ equipmentId: 'fuel_processor', tons: 6, quantity: 1 }, { equipmentId: 'armoury', tons: 2, quantity: 1 }, { equipmentId: 'docking_space', tons: 33, quantity: 1 }], standardStaterooms: 10, doubleOccupancyStaterooms: 0, highStaterooms: 0, luxuryStaterooms: 0, lowBerths: 0, commonAreaTons: 22, cargoTons: 36.8 } };
+
+export const SUBSIDISED_MERCHANT_RQ: PreMadeShip = { id: 'subsidised_merchant_rq', source: 'ships_of_the_reach', name: 'Subsidised Merchant (Type RQ)', category: 'trader', tl: 12, tonnage: 400, description: 'Q-ship variant of the subsidised merchant, concealing heavy defenses and carried fighters.', hullPoints: 160, purchaseCostMCr: 227.65, maintenanceCostCrPerMonth: 18970, crew: ['Captain', 'Pilots x5', 'Astrogator', 'Engineer', 'Medic', 'Gunners x4', 'Marines x16'], powerRequirements: [{ system: 'Basic Ship Systems', power: 80 }, { system: 'Manoeuvre Drive', power: 160 }, { system: 'Jump Drive', power: 40 }, { system: 'Sensors', power: 4 }], components: [{ category: 'Hull', name: '400 tons, Streamlined', tons: null, costMCr: 24 }, { category: 'Weapons', name: 'Pop-up Triple Turrets x4', tons: 8, costMCr: 20 }, { category: 'Cargo', name: 'Cargo', tons: 76, costMCr: null }], softwareIds: [...SOTR_COMMON_SOFTWARE, 'jump_control_1', 'evade_2', 'fire_control_4'], design: { name: 'Subsidised Merchant (Type RQ)', techLevel: 12, tonnage: 400, hullConfiguration: 'streamlined', armorMaterial: 'crystaliron', armorProtection: 8, manoeuvreRating: 4, jumpRating: 1, isReactionDrive: false, powerPlantTier: 'fusion_tl12', powerPlantTons: 21, additionalFuelWeeks: 0, useCockpit: false, holographicControls: false, computerId: 'computer_20', computerBis: false, sensorSuiteId: 'improved', additionalSensorStations: 0, weapons: [{ mountType: 'triple_turret', weapons: ['pulse_laser', 'pulse_laser', 'pulse_laser'] }], equipment: [{ equipmentId: 'fuel_processor', tons: 1, quantity: 1 }, { equipmentId: 'docking_space', tons: 44, quantity: 1 }], standardStaterooms: 14, doubleOccupancyStaterooms: 0, highStaterooms: 0, luxuryStaterooms: 0, lowBerths: 10, commonAreaTons: 10, cargoTons: 76 } };
+
+export const VULTURE_SALVAGE_HAULER: PreMadeShip = { id: 'vulture_salvage_hauler', source: 'ships_of_the_reach', name: 'Vulture-class Salvage Hauler', category: 'mining', tl: 15, tonnage: 400, description: 'Salvage specialist with prow grappling arms and a cargo bay optimized for tearing down derelicts.', hullPoints: 160, purchaseCostMCr: 98.822, maintenanceCostCrPerMonth: 8235, crew: ['Captain', 'Pilot', 'Astrogator', 'Engineer', 'Gunner'], powerRequirements: [{ system: 'Basic Ship Systems', power: 80 }, { system: 'Manoeuvre Drive', power: 80 }, { system: 'Jump Drive', power: 80 }, { system: 'Sensors', power: 1 }], components: [{ category: 'Hull', name: '400 tons, Standard', tons: null, costMCr: 20 }, { category: 'Cargo', name: 'Cargo', tons: 199, costMCr: null }], softwareIds: [...SOTR_COMMON_SOFTWARE, 'jump_control_2'], design: { name: 'Vulture-class Salvage Hauler', techLevel: 15, tonnage: 400, hullConfiguration: 'standard', armorProtection: 0, manoeuvreRating: 1, jumpRating: 2, isReactionDrive: false, powerPlantTier: 'fusion_tl12', powerPlantTons: 9, additionalFuelWeeks: 4, useCockpit: false, holographicControls: false, computerId: 'computer_5', computerBis: true, sensorSuiteId: 'civilian', additionalSensorStations: 0, weapons: [{ mountType: 'double_turret', weapons: ['pulse_laser', 'pulse_laser'] }], equipment: [{ equipmentId: 'fuel_processor', tons: 2, quantity: 1 }, { equipmentId: 'probe_drones', tons: 1, quantity: 1 }, { equipmentId: 'docking_space', tons: 22, quantity: 1 }], standardStaterooms: 4, doubleOccupancyStaterooms: 0, highStaterooms: 0, luxuryStaterooms: 0, lowBerths: 0, commonAreaTons: 5, cargoTons: 199 } };
+
+export const WATCHDOG_FLEET_PICKET: PreMadeShip = { id: 'watchdog_fleet_picket', source: 'ships_of_the_reach', name: 'Watchdog-class Fleet Picket', category: 'military', tl: 13, tonnage: 500, description: 'Long-endurance fleet sensor picket with powerful jump capability and EW support systems.', hullPoints: 200, purchaseCostMCr: 245.837, maintenanceCostCrPerMonth: 20486, crew: ['Captain', 'Pilot', 'Astrogator', 'Sensor Operator', 'Engineers x3', 'Gunners x5'], powerRequirements: [{ system: 'Basic Ship Systems', power: 100 }, { system: 'Manoeuvre Drive', power: 150 }, { system: 'Jump Drive', power: 200 }, { system: 'Sensors', power: 10 }], components: [{ category: 'Hull', name: '500 tons, Standard', tons: null, costMCr: 25 }, { category: 'Cargo', name: 'Cargo', tons: 16.8, costMCr: null }], softwareIds: [...SOTR_COMMON_SOFTWARE, 'jump_control_4'], design: { name: 'Watchdog-class Fleet Picket', techLevel: 13, tonnage: 500, hullConfiguration: 'standard', armorMaterial: 'crystaliron', armorProtection: 8, manoeuvreRating: 3, jumpRating: 4, isReactionDrive: false, powerPlantTier: 'fusion_tl12', powerPlantTons: 22, additionalFuelWeeks: 8, useCockpit: false, holographicControls: false, computerId: 'computer_20', computerBis: true, sensorSuiteId: 'improved', additionalSensorStations: 1, weapons: [{ mountType: 'triple_turret', weapons: ['beam_laser', 'beam_laser', 'beam_laser'] }], equipment: [{ equipmentId: 'fuel_processor', tons: 3, quantity: 1 }, { equipmentId: 'docking_space', tons: 22, quantity: 1 }], standardStaterooms: 8, doubleOccupancyStaterooms: 0, highStaterooms: 0, luxuryStaterooms: 0, lowBerths: 8, commonAreaTons: 30, cargoTons: 16.8 } };
+
+export const CORSAIR_REACH: PreMadeShip = { id: 'corsair_reach', source: 'ships_of_the_reach', name: 'Corsair', category: 'military', tl: 15, tonnage: 600, description: 'Large pirate corsair with configurable profile and substantial cargo handling for raiding operations.', hullPoints: 240, purchaseCostMCr: 228.51, maintenanceCostCrPerMonth: 19042, crew: ['Captain', 'Pilot', 'Astrogator', 'Engineer x4', 'Medic', 'Gunners x3', 'Boarding Party x5'], powerRequirements: [{ system: 'Basic Ship Systems', power: 120 }, { system: 'Manoeuvre Drive', power: 180 }, { system: 'Jump Drive', power: 120 }, { system: 'Sensors', power: 2 }], components: [{ category: 'Hull', name: '600 tons, Streamlined', tons: null, costMCr: 36 }, { category: 'Cargo', name: 'Cargo', tons: 279, costMCr: null }], softwareIds: ['library', 'manoeuvre_0', 'jump_control_2', 'evade_1', 'fire_control_2', 'auto_repair_1'], design: { name: 'Corsair', techLevel: 15, tonnage: 600, hullConfiguration: 'streamlined', armorProtection: 0, manoeuvreRating: 3, jumpRating: 2, isReactionDrive: false, powerPlantTier: 'fusion_tl15', powerPlantTons: 33, additionalFuelWeeks: 4, useCockpit: false, holographicControls: false, computerId: 'computer_10', computerBis: false, sensorSuiteId: 'military', additionalSensorStations: 0, weapons: [{ mountType: 'triple_turret', weapons: ['beam_laser', 'beam_laser', 'beam_laser'] }], equipment: [{ equipmentId: 'fuel_processor', tons: 7, quantity: 1 }, { equipmentId: 'armoury', tons: 2, quantity: 1 }], standardStaterooms: 10, doubleOccupancyStaterooms: 0, highStaterooms: 0, luxuryStaterooms: 0, lowBerths: 20, commonAreaTons: 10, cargoTons: 279 } };
+
+
+export const MAGENTA_REPAIR_SHIP: PreMadeShip = {
+  id: 'magenta_repair_ship',
+  source: 'ships_of_the_reach',
+  name: 'Magenta-class Repair Ship',
+  category: 'exploration',
+  tl: 12,
+  tonnage: 700,
+  description:
+    'A heavy-duty repair and recovery vessel built to stabilize crippled ships, tow them to port, or perform major engineering work in its large internal hangar.',
+  hullPoints: 280,
+  purchaseCostMCr: 258.992,
+  maintenanceCostCrPerMonth: 21582,
+  crew: ['Captain', 'Pilot', 'Astrogator', 'Engineers x6', 'Maintenance x2', 'Medic', 'Gunner'],
+  powerRequirements: [
+    { system: 'Basic Ship Systems', power: 140 },
+    { system: 'Manoeuvre Drive', power: 210 },
+    { system: 'Jump Drive', power: 70 },
+    { system: 'Sensors', power: 1 },
+  ],
+  components: [
+    { category: 'Hull', name: '700 tons, Streamlined, Radiation Shielding', tons: null, costMCr: 59.5 },
+    { category: 'M-Drive', name: 'Thrust 1', tons: 7, costMCr: 14 },
+    { category: 'J-Drive', name: 'Jump-3', tons: 57.5, costMCr: 86.25 },
+    { category: 'Systems', name: 'Full Hangar (100 tons)', tons: 200, costMCr: 40 },
+    { category: 'Cargo', name: 'Cargo', tons: 19.75, costMCr: null },
+  ],
+  softwareIds: ['library', 'manoeuvre_0', 'jump_control_3', 'auto_repair_1'],
+  design: {
+    name: 'Magenta-class Repair Ship',
+    techLevel: 12,
+    tonnage: 700,
+    hullConfiguration: 'streamlined',
+    armorMaterial: 'crystaliron',
+    armorProtection: 1,
+    manoeuvreRating: 1,
+    jumpRating: 3,
+    isReactionDrive: false,
+    powerPlantTier: 'fusion_tl12',
+    powerPlantTons: 16,
+    additionalFuelWeeks: 8,
+    useCockpit: false,
+    holographicControls: false,
+    computerId: 'computer_10',
+    computerBis: true,
+    sensorSuiteId: 'civilian',
+    additionalSensorStations: 0,
+    weapons: [{ mountType: 'double_turret', weapons: ['pulse_laser', 'pulse_laser'] }],
+    equipment: [
+      { equipmentId: 'fuel_processor', tons: 4, quantity: 1 },
+      { equipmentId: 'repair_drones', tons: 7, quantity: 1 },
+      { equipmentId: 'workshop', tons: 12, quantity: 1 },
+      { equipmentId: 'docking_space', tons: 22, quantity: 1 },
+    ],
+    standardStaterooms: 16,
+    doubleOccupancyStaterooms: 0,
+    highStaterooms: 0,
+    luxuryStaterooms: 0,
+    lowBerths: 10,
+    commonAreaTons: 4,
+    cargoTons: 19.75,
+  },
+};
+
+export const PATROL_TENDER: PreMadeShip = {
+  id: 'patrol_tender',
+  source: 'ships_of_the_reach',
+  name: 'Patrol Tender',
+  category: 'military',
+  tl: 15,
+  tonnage: 1000,
+  description:
+    'Imperial Navy logistics ship for front-line patrol support, carrying cargo, spare parts, and a slow pinnace for container transfer work.',
+  hullPoints: 400,
+  purchaseCostMCr: 377.297,
+  maintenanceCostCrPerMonth: 31441,
+  crew: ['Captain', 'Pilot', 'Astrogator', 'Engineers x5', 'Gunners x6', 'Pinnace Pilot'],
+  powerRequirements: [
+    { system: 'Basic Ship Systems', power: 200 },
+    { system: 'Manoeuvre Drive', power: 400 },
+    { system: 'Jump Drive', power: 200 },
+    { system: 'Sensors', power: 2 },
+  ],
+  components: [
+    { category: 'Hull', name: '1,000 tons, Standard', tons: null, costMCr: 50 },
+    { category: 'Weapons', name: 'Triple Turret (beam lasers) x3', tons: 3, costMCr: 7.5 },
+    { category: 'Weapons', name: 'Triple Turret (sandcasters) x3', tons: 3, costMCr: 5.25 },
+    { category: 'Cargo', name: 'Cargo', tons: 238.5, costMCr: null },
+  ],
+  softwareIds: ['library', 'manoeuvre_0', 'jump_control_4'],
+  design: {
+    name: 'Patrol Tender',
+    techLevel: 15,
+    tonnage: 1000,
+    hullConfiguration: 'standard',
+    armorMaterial: 'crystaliron',
+    armorProtection: 4,
+    manoeuvreRating: 2,
+    jumpRating: 4,
+    isReactionDrive: false,
+    powerPlantTier: 'fusion_tl15',
+    powerPlantTons: 30,
+    additionalFuelWeeks: 0,
+    useCockpit: false,
+    holographicControls: false,
+    computerId: 'computer_15',
+    computerBis: true,
+    sensorSuiteId: 'military',
+    additionalSensorStations: 0,
+    weapons: [
+      { mountType: 'triple_turret', weapons: ['beam_laser', 'beam_laser', 'beam_laser'] },
+      { mountType: 'triple_turret', weapons: ['sandcaster', 'sandcaster', 'sandcaster'] },
+    ],
+    equipment: [{ equipmentId: 'fuel_processor', tons: 5, quantity: 1 }],
+    standardStaterooms: 9,
+    doubleOccupancyStaterooms: 0,
+    highStaterooms: 0,
+    luxuryStaterooms: 0,
+    lowBerths: 10,
+    commonAreaTons: 30,
+    cargoTons: 238.5,
+  },
+};
+
+export const QUEEN_ELIZABETH_LINER: PreMadeShip = {
+  id: 'queen_elizabeth_liner',
+  source: 'ships_of_the_reach',
+  name: 'Queen Elizabeth-class Liner',
+  category: 'passenger',
+  tl: 12,
+  tonnage: 1200,
+  description:
+    'A luxury mobile hotel liner designed for elite charters, scenic cruising, and atmospheric operation on suitable worlds.',
+  hullPoints: 480,
+  purchaseCostMCr: 396.137,
+  maintenanceCostCrPerMonth: 33011,
+  crew: ['Captain', 'Pilot', 'Astrogator', 'Engineers x5', 'Medic', 'Shuttle Pilot', 'Stewards x3', 'Administrator'],
+  powerRequirements: [
+    { system: 'Basic Ship Systems', power: 240 },
+    { system: 'Manoeuvre Drive', power: 360 },
+    { system: 'Jump Drive', power: 120 },
+    { system: 'Sensors', power: 1 },
+  ],
+  components: [
+    { category: 'Hull', name: '1,200 tons, Streamlined', tons: null, costMCr: 72 },
+    { category: 'Systems', name: 'Docking Space (95 tons)', tons: 105, costMCr: 26.25 },
+    { category: 'Cargo', name: 'Cargo', tons: 5, costMCr: null },
+  ],
+  softwareIds: ['library', 'manoeuvre_0', 'jump_control_3'],
+  design: {
+    name: 'Queen Elizabeth-class Liner',
+    techLevel: 12,
+    tonnage: 1200,
+    hullConfiguration: 'streamlined',
+    armorProtection: 0,
+    manoeuvreRating: 1,
+    jumpRating: 3,
+    isReactionDrive: false,
+    powerPlantTier: 'fusion_tl12',
+    powerPlantTons: 40,
+    additionalFuelWeeks: 0,
+    useCockpit: false,
+    holographicControls: false,
+    computerId: 'computer_10',
+    computerBis: true,
+    sensorSuiteId: 'civilian',
+    additionalSensorStations: 0,
+    weapons: [],
+    equipment: [{ equipmentId: 'fuel_processor', tons: 5, quantity: 1 }],
+    standardStaterooms: 78,
+    doubleOccupancyStaterooms: 0,
+    highStaterooms: 10,
+    luxuryStaterooms: 4,
+    lowBerths: 10,
+    commonAreaTons: 92,
+    cargoTons: 5,
+  },
+};
+
+export const ULFHEDNAR_ESCORT_CARRIER: PreMadeShip = {
+  id: 'ulfhednar_escort_carrier',
+  source: 'ships_of_the_reach',
+  name: 'Ulfhednar-class Escort Carrier',
+  category: 'military',
+  tl: 13,
+  tonnage: 2000,
+  description:
+    'Fleet escort carrier fielding a full light-fighter squadron with launch and recovery facilities.',
+  hullPoints: 800,
+  purchaseCostMCr: 1091.7,
+  maintenanceCostCrPerMonth: 90975,
+  crew: ['Captain', 'Pilot', 'Astrogator', 'Officer x2', 'Engineers x13', 'Maintenance x4', 'Sensor Operators x2', 'Medic', 'Gunners x10', 'Fighter Pilots x12'],
+  powerRequirements: [
+    { system: 'Basic Ship Systems', power: 400 },
+    { system: 'Manoeuvre Drive', power: 800 },
+    { system: 'Jump Drive', power: 800 },
+    { system: 'Sensors', power: 7 },
+  ],
+  components: [
+    { category: 'Hull', name: '2,000 tons, Standard', tons: null, costMCr: 100 },
+    { category: 'Weapons', name: 'Triple Turrets (beam lasers) x10', tons: 10, costMCr: 25 },
+    { category: 'Systems', name: 'Full Hangar (120 tons)', tons: 240, costMCr: 48 },
+    { category: 'Cargo', name: 'Cargo', tons: 7, costMCr: null },
+  ],
+  softwareIds: ['library', 'manoeuvre_0', 'jump_control_4', 'battle_system_1'],
+  design: {
+    name: 'Ulfhednar-class Escort Carrier',
+    techLevel: 13,
+    tonnage: 2000,
+    hullConfiguration: 'standard',
+    armorMaterial: 'crystaliron',
+    armorProtection: 4,
+    manoeuvreRating: 4,
+    jumpRating: 4,
+    isReactionDrive: false,
+    powerPlantTier: 'fusion_tl12',
+    powerPlantTons: 147,
+    additionalFuelWeeks: 0,
+    useCockpit: false,
+    holographicControls: true,
+    computerId: 'computer_20',
+    computerBis: true,
+    sensorSuiteId: 'improved',
+    additionalSensorStations: 2,
+    weapons: [{ mountType: 'triple_turret', weapons: ['beam_laser', 'beam_laser', 'beam_laser'] }],
+    equipment: [{ equipmentId: 'medical_bay', tons: 4, quantity: 1 }],
+    standardStaterooms: 25,
+    doubleOccupancyStaterooms: 0,
+    highStaterooms: 0,
+    luxuryStaterooms: 0,
+    lowBerths: 0,
+    commonAreaTons: 20,
+    cargoTons: 7,
+  },
+};
+
+export const RITCHEY_ESCORT: PreMadeShip = {
+  id: 'ritchey_escort',
+  source: 'ships_of_the_reach',
+  name: 'Ritchey-class Escort',
+  category: 'military',
+  tl: 13,
+  tonnage: 8000,
+  description:
+    'Large fleet escort optimized for screening friendly ships against missiles, fighters, and smaller attack craft.',
+  hullPoints: 800,
+  purchaseCostMCr: 4442.134,
+  maintenanceCostCrPerMonth: 3701778,
+  crew: ['Captain', 'Pilots x2', 'Astrogator', 'Officers x21', 'Engineers x59', 'Maintenance x16', 'Medics x2', 'Gunners x70', 'Pinnace Pilots x2', 'Administrators x8', 'Marines x12'],
+  powerRequirements: [
+    { system: 'Basic Ship Systems', power: 1600 },
+    { system: 'Manoeuvre Drive', power: 3200 },
+    { system: 'Jump Drive', power: 4800 },
+    { system: 'Sensors', power: 11 },
+  ],
+  components: [
+    { category: 'Hull', name: '8,000 tons, Standard', tons: null, costMCr: 400 },
+    { category: 'Screens', name: 'Meson Screens x5, Nuclear Dampers x5', tons: 100, costMCr: 150 },
+    { category: 'Weapons', name: 'Small Missile Bays x10, Particle Barbettes x10, Triple Turrets x40', tons: 590, costMCr: 300 },
+    { category: 'Cargo', name: 'Cargo', tons: 83.7, costMCr: null },
+  ],
+  softwareIds: ['library', 'manoeuvre_0', 'jump_control_4', 'evade_1', 'auto_repair_2'],
+  design: {
+    name: 'Ritchey-class Escort',
+    techLevel: 13,
+    tonnage: 8000,
+    hullConfiguration: 'standard',
+    armorMaterial: 'crystaliron',
+    armorProtection: 6,
+    manoeuvreRating: 6,
+    jumpRating: 4,
+    isReactionDrive: false,
+    powerPlantTier: 'fusion_tl12',
+    powerPlantTons: 718,
+    additionalFuelWeeks: 0,
+    useCockpit: false,
+    holographicControls: true,
+    computerId: 'computer_40',
+    computerBis: true,
+    sensorSuiteId: 'improved',
+    additionalSensorStations: 0,
+    weapons: [],
+    equipment: [
+      { equipmentId: 'repair_drones', tons: 80, quantity: 1 },
+      { equipmentId: 'medical_bay', tons: 8, quantity: 1 },
+    ],
+    standardStaterooms: 110,
+    doubleOccupancyStaterooms: 0,
+    highStaterooms: 0,
+    luxuryStaterooms: 0,
+    lowBerths: 0,
+    commonAreaTons: 110,
+    cargoTons: 83.7,
+  },
+};
+
+export const GALOOF_MEGAFREIGHTER: PreMadeShip = {
+  id: 'galoof_megafreighter',
+  source: 'ships_of_the_reach',
+  name: 'Galoof-class Megafreighter',
+  category: 'trader',
+  tl: 12,
+  tonnage: 30000,
+  description:
+    'A corporate capital-scale freighter for bulk logistics across the Imperium, with cavernous cargo capacity and support craft facilities.',
+  hullPoints: 15000,
+  purchaseCostMCr: 7287.77,
+  maintenanceCostCrPerMonth: 6073145,
+  crew: ['Captain', 'Pilot', 'Astrogator', 'Officers x8', 'Engineers x102', 'Maintenance x30', 'Administrators x15', 'Medics x2', 'Shuttle Pilots x5'],
+  powerRequirements: [
+    { system: 'Basic Ship Systems', power: 6000 },
+    { system: 'Manoeuvre Drive', power: 9000 },
+    { system: 'Jump Drive', power: 3000 },
+    { system: 'Sensors', power: 1 },
+  ],
+  components: [
+    { category: 'Hull', name: '30,000 tons, Standard', tons: null, costMCr: 1500 },
+    { category: 'Systems', name: 'Full Hangar (475 tons), Shuttles x5', tons: 950, costMCr: 265.735 },
+    { category: 'Cargo', name: 'Cargo', tons: 15248, costMCr: null },
+  ],
+  softwareIds: ['library', 'manoeuvre_0', 'jump_control_3'],
+  design: {
+    name: 'Galoof-class Megafreighter',
+    techLevel: 12,
+    tonnage: 30000,
+    hullConfiguration: 'standard',
+    armorProtection: 0,
+    manoeuvreRating: 1,
+    jumpRating: 3,
+    isReactionDrive: false,
+    powerPlantTier: 'fusion_tl12',
+    powerPlantTons: 1000,
+    additionalFuelWeeks: 0,
+    useCockpit: false,
+    holographicControls: false,
+    computerId: 'computer_10',
+    computerBis: true,
+    sensorSuiteId: 'civilian',
+    additionalSensorStations: 0,
+    weapons: [],
+    equipment: [{ equipmentId: 'medical_bay', tons: 4, quantity: 1 }],
+    standardStaterooms: 87,
+    doubleOccupancyStaterooms: 0,
+    highStaterooms: 1,
+    luxuryStaterooms: 0,
+    lowBerths: 0,
+    commonAreaTons: 320,
+    cargoTons: 15248,
+  },
+};
+
+export const PLANET_HEAVY_CRUISER: PreMadeShip = {
+  id: 'planet_heavy_cruiser',
+  source: 'ships_of_the_reach',
+  name: 'Planet-class Heavy Cruiser',
+  category: 'military',
+  tl: 15,
+  tonnage: 75000,
+  description:
+    'Imperial Navy fleet heavy cruiser built around an advanced spinal particle weapon and massive missile/fusion secondary batteries.',
+  hullPoints: 41250,
+  purchaseCostMCr: 45425.141,
+  maintenanceCostCrPerMonth: 37854284,
+  crew: ['Captain', 'Officers x110', 'Pilots x3', 'Astrogator', 'Engineers x485', 'Maintenance x150', 'Medics x9', 'Gunners x240', 'Administrators x75', 'Troop Transport Pilots x6', 'Marines x6'],
+  powerRequirements: [
+    { system: 'Basic Ship Systems', power: 15000 },
+    { system: 'Manoeuvre Drive', power: 30000 },
+    { system: 'Jump Drive', power: 45000 },
+    { system: 'Systems, Weapons & Screens', power: 3230 },
+    { system: 'Sensors', power: 28 },
+  ],
+  components: [
+    { category: 'Hull', name: '75,000 tons, Standard, Reinforced', tons: null, costMCr: 5625 },
+    { category: 'Weapons', name: 'Spinal Mount: Improved Particle (2DD)', tons: 5600, costMCr: 2600 },
+    { category: 'Weapons', name: 'Small Missile Bays x60, Fusion Barbettes x16, Turret batteries', tons: 3170, costMCr: 899 },
+    { category: 'Screens', name: 'Meson Screens x10, Nuclear Dampers x10', tons: 200, costMCr: 300 },
+    { category: 'Cargo', name: 'Cargo', tons: 376.8, costMCr: null },
+  ],
+  softwareIds: ['library', 'manoeuvre_0', 'jump_control_4', 'intellect_0', 'evade_3', 'fire_control_5', 'auto_repair_2'],
+  design: {
+    name: 'Planet-class Heavy Cruiser',
+    techLevel: 15,
+    tonnage: 75000,
+    hullConfiguration: 'standard',
+    specialisedHull: 'reinforced',
+    armorMaterial: 'bonded_superdense',
+    armorProtection: 15,
+    manoeuvreRating: 6,
+    jumpRating: 4,
+    isReactionDrive: false,
+    powerPlantTier: 'fusion_tl15',
+    powerPlantTons: 5000,
+    additionalFuelWeeks: 4,
+    useCockpit: false,
+    holographicControls: true,
+    computerId: 'computer_100',
+    computerBis: false,
+    sensorSuiteId: 'advanced',
+    additionalSensorStations: 0,
+    weapons: [],
+    equipment: [{ equipmentId: 'fuel_processor', tons: 200, quantity: 1 }],
+    standardStaterooms: 600,
+    doubleOccupancyStaterooms: 0,
+    highStaterooms: 3,
+    luxuryStaterooms: 0,
+    lowBerths: 0,
+    commonAreaTons: 540,
+    cargoTons: 376.8,
+  },
+};
+
 // ═══════════════════════════════════════════════════════════════════════
 //  ALL PRE-MADE SHIPS
 // ═══════════════════════════════════════════════════════════════════════
@@ -2185,6 +2634,25 @@ export const PRE_MADE_SHIPS: PreMadeShip[] = [
   SURVEY_SCOUT_DONOSEV,
   SUBSIDISED_LINER,
   MERCENARY_CRUISER,
+  // Ships of the Reach
+  FAST_TRADER_A3,
+  STAR_RAY_INTERCEPTOR,
+  HERALD_FAST_MESSENGER,
+  INDIGO_PIRATE_CARRIER,
+  BUCCANEER_BLOCKADE_RUNNER,
+  FIERY_GUNSHIP,
+  GHOST_OF_THE_REACH,
+  SUBSIDISED_MERCHANT_RQ,
+  VULTURE_SALVAGE_HAULER,
+  WATCHDOG_FLEET_PICKET,
+  CORSAIR_REACH,
+  MAGENTA_REPAIR_SHIP,
+  PATROL_TENDER,
+  QUEEN_ELIZABETH_LINER,
+  ULFHEDNAR_ESCORT_CARRIER,
+  RITCHEY_ESCORT,
+  GALOOF_MEGAFREIGHTER,
+  PLANET_HEAVY_CRUISER,
   // Small Craft
   LIGHT_FIGHTER,
   GIG,
@@ -2205,6 +2673,16 @@ export const PRE_MADE_SHIPS: PreMadeShip[] = [
 /** Get a pre-made ship by ID */
 export function getPreMadeShip(id: string): PreMadeShip | undefined {
   return PRE_MADE_SHIPS.find((s) => s.id === id);
+}
+
+export const SHIP_SOURCE_LABELS: Record<NonNullable<PreMadeShip['source']>, string> = {
+  core: 'Core Rulebook',
+  ships_of_the_reach: 'Ships of the Reach',
+  aslan: 'Aslan Ships',
+};
+
+export function getShipSource(ship: PreMadeShip): NonNullable<PreMadeShip['source']> {
+  return ship.source ?? 'core';
 }
 
 /** Get all pre-made ships in a category */
