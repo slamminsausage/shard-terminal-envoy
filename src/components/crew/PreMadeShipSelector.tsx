@@ -8,7 +8,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { PRE_MADE_SHIPS, type PreMadeShip, type ShipCategory } from "@/data/shipConstruction";
+import { PRE_MADE_SHIPS, SHIP_SOURCE_LABELS, getShipSource, type PreMadeShip, type ShipCategory } from "@/data/shipConstruction";
 import { formatCredits } from "@/data/shipConstruction";
 
 interface PreMadeShipSelectorProps {
@@ -50,7 +50,11 @@ export default function PreMadeShipSelector({
       selectedCategory === "all"
         ? PRE_MADE_SHIPS
         : PRE_MADE_SHIPS.filter((s) => s.category === selectedCategory);
-    return ships.sort((a, b) => a.tonnage - b.tonnage);
+    return ships.sort((a, b) => {
+      const sourceCompare = getShipSource(a).localeCompare(getShipSource(b));
+      if (sourceCompare !== 0) return sourceCompare;
+      return a.tonnage - b.tonnage;
+    });
   }, [selectedCategory]);
 
   const availableCategories = useMemo(() => {
@@ -111,7 +115,17 @@ export default function PreMadeShipSelector({
           {/* Ship list */}
           <ScrollArea className="w-1/2 pr-2">
             <div className="space-y-1">
-              {filteredShips.map((ship) => (
+              {filteredShips.map((ship, index) => {
+                const source = getShipSource(ship);
+                const prevSource = index > 0 ? getShipSource(filteredShips[index - 1]) : null;
+                const showSourceHeader = source !== prevSource;
+                return (
+                <React.Fragment key={ship.id}>
+                  {showSourceHeader && (
+                    <div className="pt-2 pb-1 text-[10px] uppercase tracking-wider text-terminal-primary/60 border-b border-terminal-border/20">
+                      {SHIP_SOURCE_LABELS[source]}
+                    </div>
+                  )}
                 <button
                   key={ship.id}
                   onClick={() => setSelectedShip(ship)}
@@ -134,7 +148,9 @@ export default function PreMadeShipSelector({
                     </Badge>
                   </div>
                 </button>
-              ))}
+                </React.Fragment>
+              );
+              })}
             </div>
           </ScrollArea>
 
