@@ -509,7 +509,11 @@ export default function RiftjawTerminal({ onBack }: RiftjawTerminalProps) {
                   className="bg-green-400 text-black font-mono px-4 py-2 rounded hover:bg-green-500 mt-2 w-full sm:w-auto"
                   onClick={() => {
                     audioManager.playEffect('typing-sound', 0.2);
-                    onBack ? onBack() : navigate("/");
+                    if (onBack) {
+                      onBack();
+                    } else {
+                      navigate("/");
+                    }
                   }}
                 >
                   Back to Terminal
@@ -617,7 +621,11 @@ export default function RiftjawTerminal({ onBack }: RiftjawTerminalProps) {
                     className="bg-green-400 text-black font-mono px-4 py-2 rounded hover:bg-green-500 w-full sm:w-auto"
               onClick={() => {
                 audioManager.playEffect('typing-sound', 0.2);
-                onBack ? onBack() : navigate("/");
+                if (onBack) {
+                  onBack();
+                } else {
+                  navigate("/");
+                }
               }}
                   >
                     Back
