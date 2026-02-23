@@ -2614,12 +2614,227 @@ export const PLANET_HEAVY_CRUISER: PreMadeShip = {
   },
 };
 
+
+// ═══════════════════════════════════════════════════════════════════════
+//  ASLAN SHIPS (SHIPS OF THE REACH)
+// ═══════════════════════════════════════════════════════════════════════
+
+export const HRAYE_SCOUT: PreMadeShip = {
+  id: 'hraye_scout',
+  source: 'aslan',
+  name: 'Hraye-class Scout',
+  category: 'scout',
+  tl: 13,
+  tonnage: 100,
+  description: 'Aslan exploration scout with a Shrine to Heroes and modest courier/transporter utility for small colonies.',
+  hullPoints: 40,
+  purchaseCostMCr: 39.045,
+  maintenanceCostCrPerMonth: 3253,
+  crew: ['Pilot', 'Engineer/Astrogator'],
+  powerRequirements: [
+    { system: 'Basic Ship Systems', power: 20 },
+    { system: 'Manoeuvre Drive', power: 20 },
+    { system: 'Jump Drive', power: 20 },
+    { system: 'Sensors', power: 1 },
+  ],
+  components: [
+    { category: 'Hull', name: '100 tons, Streamlined', tons: null, costMCr: 6 },
+    { category: 'Systems', name: 'Shrine to Heroes', tons: 4, costMCr: 0.5 },
+    { category: 'Cargo', name: 'Cargo', tons: 15, costMCr: null },
+  ],
+  softwareIds: ['jump_control_2', 'library', 'manoeuvre_0'],
+  design: {
+    name: 'Hraye-class Scout',
+    techLevel: 13,
+    tonnage: 100,
+    hullConfiguration: 'streamlined',
+    armorMaterial: 'crystaliron',
+    armorProtection: 4,
+    manoeuvreRating: 2,
+    jumpRating: 2,
+    isReactionDrive: false,
+    powerPlantTier: 'fusion_tl12',
+    powerPlantTons: 3,
+    additionalFuelWeeks: 8,
+    useCockpit: false,
+    holographicControls: false,
+    computerId: 'computer_5',
+    computerBis: true,
+    sensorSuiteId: 'civilian',
+    additionalSensorStations: 0,
+    weapons: [{ mountType: 'double_turret', weapons: ['pulse_laser', 'missile_rack'] }],
+    equipment: [{ equipmentId: 'fuel_processor', tons: 1, quantity: 1 }, { equipmentId: 'probe_drones', tons: 1, quantity: 1 }, { equipmentId: 'cabin_space', tons: 4, quantity: 1 }],
+    standardStaterooms: 4,
+    doubleOccupancyStaterooms: 0,
+    highStaterooms: 0,
+    luxuryStaterooms: 0,
+    lowBerths: 0,
+    commonAreaTons: 8,
+    cargoTons: 15,
+  },
+};
+
+export const IHATEISHO_SCOUT: PreMadeShip = {
+  id: 'ihateisho_scout', source: 'aslan', name: 'Ihateisho-class Scout', category: 'scout', tl: 13, tonnage: 100,
+  description: 'Iconic long-range Aslan ihatei scout with unusually high automation for male-operated expeditions.',
+  hullPoints: 40, purchaseCostMCr: 58.51, maintenanceCostCrPerMonth: 4876,
+  crew: ['Pilot'],
+  powerRequirements: [{ system: 'Basic Ship Systems', power: 20 }, { system: 'Manoeuvre Drive', power: 40 }, { system: 'Jump Drive', power: 40 }, { system: 'Sensors', power: 2 }],
+  components: [{ category: 'Hull', name: '100 tons, Streamlined', tons: null, costMCr: 6 }, { category: 'Systems', name: 'Shrine to Heroes', tons: 4, costMCr: 0.5 }, { category: 'Cargo', name: 'Cargo', tons: 4.5, costMCr: null }],
+  softwareIds: ['jump_control_4', 'library', 'manoeuvre_0', 'fire_control_3', 'intellect_0'],
+  design: { name: 'Ihateisho-class Scout', techLevel: 13, tonnage: 100, hullConfiguration: 'streamlined', armorProtection: 0, manoeuvreRating: 2, jumpRating: 4, isReactionDrive: false, powerPlantTier: 'fusion_tl12', powerPlantTons: 4, additionalFuelWeeks: 8, useCockpit: false, holographicControls: false, computerId: 'computer_15', computerBis: true, sensorSuiteId: 'military', additionalSensorStations: 0, weapons: [{ mountType: 'triple_turret', weapons: ['pulse_laser', 'pulse_laser', 'pulse_laser'] }], equipment: [{ equipmentId: 'fuel_processor', tons: 1, quantity: 1 }, { equipmentId: 'docking_space', tons: 5, quantity: 1 }], standardStaterooms: 1, doubleOccupancyStaterooms: 0, highStaterooms: 0, luxuryStaterooms: 0, lowBerths: 1, commonAreaTons: 4, cargoTons: 4.5 },
+};
+
+export const KTIYHUI_COURIER: PreMadeShip = {
+  id: 'ktiyhui_courier', source: 'aslan', name: 'Ktiyhui-class Courier', category: 'military', tl: 12, tonnage: 200,
+  description: 'Armoured Aslan diplomatic courier used to move nobles, dignitaries, and sensitive dispatches between clan territories.',
+  hullPoints: 80, purchaseCostMCr: 103.905, maintenanceCostCrPerMonth: 8659,
+  crew: ['Pilot', 'Purser', 'Astrogator', 'Engineer', 'Gunners x2'],
+  powerRequirements: [{ system: 'Basic Ship Systems', power: 40 }, { system: 'Manoeuvre Drive', power: 60 }, { system: 'Jump Drive', power: 60 }, { system: 'Sensors', power: 3 }],
+  components: [{ category: 'Hull', name: '200 tons, Streamlined', tons: null, costMCr: 12 }, { category: 'Armour', name: 'Crystaliron, Armour 12', tons: 30, costMCr: 10.8 }, { category: 'Systems', name: 'Shrine to Heroes', tons: 4, costMCr: 0.5 }, { category: 'Cargo', name: 'Cargo', tons: 3, costMCr: null }],
+  softwareIds: ['jump_control_3', 'library', 'manoeuvre_0', 'fire_control_2'],
+  design: { name: 'Ktiyhui-class Courier', techLevel: 12, tonnage: 200, hullConfiguration: 'streamlined', armorMaterial: 'crystaliron', armorProtection: 12, manoeuvreRating: 4, jumpRating: 3, isReactionDrive: false, powerPlantTier: 'fusion_tl12', powerPlantTons: 9, additionalFuelWeeks: 0, useCockpit: false, holographicControls: false, computerId: 'computer_10', computerBis: true, sensorSuiteId: 'improved', additionalSensorStations: 0, weapons: [{ mountType: 'double_turret', weapons: ['pulse_laser', 'missile_rack'] }, { mountType: 'double_turret', weapons: ['sandcaster', 'missile_rack'] }], equipment: [{ equipmentId: 'fuel_processor', tons: 2, quantity: 1 }], standardStaterooms: 6, doubleOccupancyStaterooms: 0, highStaterooms: 0, luxuryStaterooms: 1, lowBerths: 0, commonAreaTons: 12, cargoTons: 3 },
+};
+
+export const KTEIROA_SEEKER: PreMadeShip = {
+  id: 'kteiroa_seeker', source: 'aslan', name: 'Kteiroa-class Seeker', category: 'mining', tl: 11, tonnage: 200,
+  description: 'Asteroid-belt Aslan prospecting ship with dedicated mining drones and extra accommodation for transport duties.',
+  hullPoints: 80, purchaseCostMCr: 57.495, maintenanceCostCrPerMonth: 4791,
+  crew: ['Captain', 'Pilot', 'Astrogator', 'Engineer'],
+  powerRequirements: [{ system: 'Basic Ship Systems', power: 40 }, { system: 'Manoeuvre Drive', power: 40 }, { system: 'Jump Drive', power: 40 }, { system: 'Sensors', power: 1 }],
+  components: [{ category: 'Hull', name: '200 tons, Streamlined', tons: null, costMCr: 12 }, { category: 'Systems', name: 'Mining Drones x20', tons: 40, costMCr: 4 }, { category: 'Systems', name: 'Shrine to Heroes', tons: 4, costMCr: 0.5 }, { category: 'Cargo', name: 'Cargo', tons: 61, costMCr: null }],
+  softwareIds: ['jump_control_2', 'library', 'manoeuvre_0'],
+  design: { name: 'Kteiroa-class Seeker', techLevel: 11, tonnage: 200, hullConfiguration: 'streamlined', armorProtection: 0, manoeuvreRating: 2, jumpRating: 2, isReactionDrive: false, powerPlantTier: 'fusion_tl8', powerPlantTons: 9, additionalFuelWeeks: 0, useCockpit: false, holographicControls: false, computerId: 'computer_5', computerBis: true, sensorSuiteId: 'civilian', additionalSensorStations: 0, weapons: [], equipment: [{ equipmentId: 'fuel_processor', tons: 1, quantity: 1 }, { equipmentId: 'mining_drones', tons: 40, quantity: 1 }], standardStaterooms: 4, doubleOccupancyStaterooms: 0, highStaterooms: 0, luxuryStaterooms: 0, lowBerths: 0, commonAreaTons: 2, cargoTons: 61 },
+};
+
+export const IYELIY_MESSENGER: PreMadeShip = {
+  id: 'iyeliy_messenger', source: 'aslan', name: 'Iyeliy-class Messenger', category: 'scout', tl: 14, tonnage: 200,
+  description: 'Aslan high-jump communications courier, analogous to the Imperial X-boat but optimized for jump-5 relay routes.',
+  hullPoints: 80, purchaseCostMCr: 99.85, maintenanceCostCrPerMonth: 8238,
+  crew: ['Pilot', 'Astrogator', 'Purser', 'Engineer', 'Gunners x2'],
+  powerRequirements: [{ system: 'Basic Ship Systems', power: 40 }, { system: 'Manoeuvre Drive', power: 100 }, { system: 'Jump Drive', power: 20 }, { system: 'Sensors', power: 2 }],
+  components: [{ category: 'Hull', name: '200 tons, Standard', tons: null, costMCr: 10 }, { category: 'Systems', name: 'Mail Distribution Array (TL13)', tons: 20, costMCr: 10 }, { category: 'Systems', name: 'Shrine to Heroes', tons: 4, costMCr: 0.5 }, { category: 'Cargo', name: 'Cargo', tons: 8, costMCr: null }],
+  softwareIds: ['jump_control_5', 'library', 'manoeuvre_0', 'intellect_0'],
+  design: { name: 'Iyeliy-class Messenger', techLevel: 14, tonnage: 200, hullConfiguration: 'standard', armorProtection: 0, manoeuvreRating: 1, jumpRating: 5, isReactionDrive: false, powerPlantTier: 'fusion_tl12', powerPlantTons: 10, additionalFuelWeeks: 0, useCockpit: false, holographicControls: false, computerId: 'computer_20', computerBis: true, sensorSuiteId: 'military', additionalSensorStations: 0, weapons: [{ mountType: 'triple_turret', weapons: ['pulse_laser', 'pulse_laser', 'pulse_laser'] }], equipment: [{ equipmentId: 'cabin_space', tons: 4, quantity: 1 }], standardStaterooms: 2, doubleOccupancyStaterooms: 0, highStaterooms: 0, luxuryStaterooms: 0, lowBerths: 0, commonAreaTons: 4, cargoTons: 8 },
+};
+
+export const AOAIW_LIGHT_TRADER: PreMadeShip = {
+  id: 'aoaiw_light_trader', source: 'aslan', name: "Aoa'iw-class Light Trader", category: 'trader', tl: 11, tonnage: 300,
+  description: 'Versatile Aslan border trader nicknamed the Pouncer, carrying passengers, cargo, and enough weaponry for raiding or defense.',
+  hullPoints: 120, purchaseCostMCr: 91.777, maintenanceCostCrPerMonth: 7648,
+  crew: ['Pilot', 'Astrogator', 'Purser', 'Engineer'],
+  powerRequirements: [{ system: 'Basic Ship Systems', power: 60 }, { system: 'Manoeuvre Drive', power: 60 }, { system: 'Jump Drive', power: 60 }, { system: 'Sensors', power: 1 }],
+  components: [{ category: 'Hull', name: '300 tons, Streamlined', tons: null, costMCr: 18 }, { category: 'Armour', name: 'Crystaliron, Armour 4', tons: 15, costMCr: 3.6 }, { category: 'Systems', name: 'Shrine to Heroes', tons: 4, costMCr: 0.5 }, { category: 'Cargo', name: 'Cargo', tons: 86, costMCr: null }],
+  softwareIds: ['jump_control_2', 'library', 'manoeuvre_0'],
+  design: { name: "Aoa'iw-class Light Trader", techLevel: 11, tonnage: 300, hullConfiguration: 'streamlined', armorMaterial: 'crystaliron', armorProtection: 4, manoeuvreRating: 1, jumpRating: 2, isReactionDrive: false, powerPlantTier: 'fusion_tl8', powerPlantTons: 13, additionalFuelWeeks: 0, useCockpit: false, holographicControls: false, computerId: 'computer_10', computerBis: false, sensorSuiteId: 'civilian', additionalSensorStations: 0, weapons: [{ mountType: 'double_turret', weapons: ['beam_laser', 'beam_laser'] }, { mountType: 'double_turret', weapons: ['beam_laser', 'beam_laser'] }, { mountType: 'double_turret', weapons: ['missile_rack', 'sandcaster'] }], equipment: [{ equipmentId: 'docking_space', tons: 5, quantity: 1 }, { equipmentId: 'docking_space', tons: 22, quantity: 1 }], standardStaterooms: 8, doubleOccupancyStaterooms: 0, highStaterooms: 0, luxuryStaterooms: 0, lowBerths: 12, commonAreaTons: 6, cargoTons: 86 },
+};
+
+export const EAKHAU_TRADER: PreMadeShip = {
+  id: 'eakhau_trader', source: 'aslan', name: 'Eakhau-class Trader', category: 'trader', tl: 12, tonnage: 400,
+  description: 'Aslan family tramp trader, often one vessel among a nomadic pride-fleet searching for future territories.',
+  hullPoints: 160, purchaseCostMCr: 95.145, maintenanceCostCrPerMonth: 7928,
+  crew: ['Pilot', 'Astrogator', 'Purser', 'Engineer'],
+  powerRequirements: [{ system: 'Basic Ship Systems', power: 80 }, { system: 'Manoeuvre Drive', power: 80 }, { system: 'Jump Drive', power: 80 }, { system: 'Sensors', power: 1 }],
+  components: [{ category: 'Hull', name: '400 tons, Streamlined', tons: null, costMCr: 24 }, { category: 'Systems', name: 'Shrine to Heroes', tons: 4, costMCr: 0.5 }, { category: 'Cargo', name: 'Cargo', tons: 173.5, costMCr: null }],
+  softwareIds: ['jump_control_2', 'library', 'manoeuvre_0'],
+  design: { name: 'Eakhau-class Trader', techLevel: 12, tonnage: 400, hullConfiguration: 'streamlined', armorProtection: 0, manoeuvreRating: 1, jumpRating: 2, isReactionDrive: false, powerPlantTier: 'fusion_tl12', powerPlantTons: 11, additionalFuelWeeks: 0, useCockpit: false, holographicControls: false, computerId: 'computer_5', computerBis: true, sensorSuiteId: 'civilian', additionalSensorStations: 0, weapons: [], equipment: [{ equipmentId: 'fuel_processor', tons: 1, quantity: 1 }], standardStaterooms: 13, doubleOccupancyStaterooms: 0, highStaterooms: 0, luxuryStaterooms: 0, lowBerths: 16, commonAreaTons: 12, cargoTons: 173.5 },
+};
+
+export const HKIYRERAO_RESEARCHER: PreMadeShip = {
+  id: 'hkiyrerao_researcher', source: 'aslan', name: 'Hkiyrerao-class Researcher', category: 'exploration', tl: 14, tonnage: 400,
+  description: 'Aslan scientific survey ship with full laboratories, extended endurance, and carried craft for field operations.',
+  hullPoints: 160, purchaseCostMCr: 157.832, maintenanceCostCrPerMonth: 13153,
+  crew: ['Captain', 'Pilot', 'Executive Officer/Head Scientist', 'Astrogator', 'Engineers x2'],
+  powerRequirements: [{ system: 'Basic Ship Systems', power: 80 }, { system: 'Manoeuvre Drive', power: 120 }, { system: 'Jump Drive', power: 40 }, { system: 'Sensors', power: 3 }],
+  components: [{ category: 'Hull', name: '400 tons, Streamlined', tons: null, costMCr: 24 }, { category: 'Systems', name: 'Laboratories', tons: 40, costMCr: 10 }, { category: 'Systems', name: 'Shrine to Heroes', tons: 4, costMCr: 0.5 }, { category: 'Cargo', name: 'Cargo', tons: 28, costMCr: null }],
+  softwareIds: ['jump_control_3', 'library', 'manoeuvre_0', 'intellect_0'],
+  design: { name: 'Hkiyrerao-class Researcher', techLevel: 14, tonnage: 400, hullConfiguration: 'streamlined', armorProtection: 0, manoeuvreRating: 1, jumpRating: 3, isReactionDrive: false, powerPlantTier: 'fusion_tl12', powerPlantTons: 16, additionalFuelWeeks: 12, useCockpit: false, holographicControls: false, computerId: 'computer_25', computerBis: false, sensorSuiteId: 'improved', additionalSensorStations: 0, weapons: [], equipment: [{ equipmentId: 'fuel_processor', tons: 3, quantity: 1 }, { equipmentId: 'laboratory', tons: 40, quantity: 1 }, { equipmentId: 'docking_space', tons: 44, quantity: 1 }], standardStaterooms: 15, doubleOccupancyStaterooms: 0, highStaterooms: 0, luxuryStaterooms: 0, lowBerths: 10, commonAreaTons: 10, cargoTons: 28 },
+};
+
+export const KHTUKHAO_CLAN_TRANSPORT: PreMadeShip = {
+  id: 'khtukhao_clan_transport', source: 'aslan', name: 'Khtukhao-class Clan Transport', category: 'passenger', tl: 12, tonnage: 600,
+  description: 'Large Aslan clan passenger/freight transport with a carried shuttle for cargo transfer and system-side operations.',
+  hullPoints: 240, purchaseCostMCr: 187.662, maintenanceCostCrPerMonth: 15639,
+  crew: ['Pilot', 'Astrogator', 'Purser', 'Engineers x2'],
+  powerRequirements: [{ system: 'Basic Ship Systems', power: 120 }, { system: 'Manoeuvre Drive', power: 120 }, { system: 'Jump Drive', power: 120 }, { system: 'Sensors', power: 1 }],
+  components: [{ category: 'Hull', name: '600 tons, Standard', tons: null, costMCr: 30 }, { category: 'Systems', name: 'Shrine to Heroes', tons: 4, costMCr: 0.5 }, { category: 'Systems', name: 'Docking Space (95 tons) + Shuttle', tons: 105, costMCr: 41.417 }, { category: 'Cargo', name: 'Cargo', tons: 149, costMCr: null }],
+  softwareIds: ['jump_control_2', 'library', 'manoeuvre_0'],
+  design: { name: 'Khtukhao-class Clan Transport', techLevel: 12, tonnage: 600, hullConfiguration: 'standard', armorProtection: 0, manoeuvreRating: 2, jumpRating: 2, isReactionDrive: false, powerPlantTier: 'fusion_tl12', powerPlantTons: 17, additionalFuelWeeks: 0, useCockpit: false, holographicControls: false, computerId: 'computer_5', computerBis: true, sensorSuiteId: 'civilian', additionalSensorStations: 0, weapons: [], equipment: [{ equipmentId: 'docking_space', tons: 105, quantity: 1 }], standardStaterooms: 25, doubleOccupancyStaterooms: 0, highStaterooms: 0, luxuryStaterooms: 0, lowBerths: 30, commonAreaTons: 20, cargoTons: 149 },
+};
+
+export const OWATARL_TENDER: PreMadeShip = {
+  id: 'owatarl_tender', source: 'aslan', name: 'Owatarl-class Tender', category: 'military', tl: 12, tonnage: 600,
+  description: 'Aslan military/corporate tender with defensive turret battery, heavy cargo volume, and a carried shuttle.',
+  hullPoints: 216, purchaseCostMCr: 165.027, maintenanceCostCrPerMonth: 13752,
+  crew: ['Captain', 'Pilot', 'Astrogator', 'Purser/Executive Officer', 'Pilot', 'Engineers x2', 'Gunners x3'],
+  powerRequirements: [{ system: 'Basic Ship Systems', power: 120 }, { system: 'Manoeuvre Drive', power: 120 }, { system: 'Jump Drive', power: 60 }, { system: 'Sensors', power: 2 }],
+  components: [{ category: 'Hull', name: '600 tons, Dispersed', tons: null, costMCr: 15 }, { category: 'Weapons', name: 'Triple Turrets (beam lasers x2, sandcaster) x3', tons: 3, costMCr: 6.75 }, { category: 'Systems', name: 'Shrine to Heroes', tons: 4, costMCr: 0.5 }, { category: 'Cargo', name: 'Cargo', tons: 211, costMCr: null }],
+  softwareIds: ['jump_control_2', 'library', 'manoeuvre_0', 'fire_control_2'],
+  design: { name: 'Owatarl-class Tender', techLevel: 12, tonnage: 600, hullConfiguration: 'dispersed', armorMaterial: 'crystaliron', armorProtection: 4, manoeuvreRating: 1, jumpRating: 2, isReactionDrive: false, powerPlantTier: 'fusion_tl12', powerPlantTons: 17, additionalFuelWeeks: 0, useCockpit: false, holographicControls: false, computerId: 'computer_10', computerBis: false, sensorSuiteId: 'military', additionalSensorStations: 0, weapons: [{ mountType: 'triple_turret', weapons: ['beam_laser', 'beam_laser', 'sandcaster'] }, { mountType: 'triple_turret', weapons: ['beam_laser', 'beam_laser', 'sandcaster'] }, { mountType: 'triple_turret', weapons: ['beam_laser', 'beam_laser', 'sandcaster'] }], equipment: [{ equipmentId: 'docking_space', tons: 105, quantity: 1 }], standardStaterooms: 10, doubleOccupancyStaterooms: 0, highStaterooms: 0, luxuryStaterooms: 0, lowBerths: 0, commonAreaTons: 4, cargoTons: 211 },
+};
+
+
+export const EKAWSIYKUA_ESCORT: PreMadeShip = {
+  id: 'ekawsiykua_escort', source: 'aslan', name: 'Ekawsiykua-class Escort', category: 'military', tl: 13, tonnage: 800,
+  description: 'Aslan dispersed-hull escort used for patrol and convoy protection, carrying pinnaces and fighters for scouting and interception.',
+  hullPoints: 288, purchaseCostMCr: 400.464, maintenanceCostCrPerMonth: 33372,
+  crew: ['Captain', 'Pilot', 'Astrogator', 'Purser/Executive Officer', 'Officers x3', 'Pilots x7', 'Medic', 'Engineers x5', 'Maintenance', 'Gunners x10', 'Marines x10'],
+  powerRequirements: [{ system: 'Basic Ship Systems', power: 160 }, { system: 'Manoeuvre Drive', power: 320 }, { system: 'Jump Drive', power: 320 }, { system: 'Sensors', power: 3 }],
+  components: [{ category: 'Hull', name: '800 tons, Dispersed', tons: null, costMCr: 20 }, { category: 'Weapons', name: 'Triple turrets x8 (pulse lasers x3, missile racks x3, sandcasters x2)', tons: 8, costMCr: 25.25 }, { category: 'Systems', name: 'Shrine to Heroes', tons: 4, costMCr: 0.5 }, { category: 'Cargo', name: 'Cargo', tons: 19, costMCr: null }],
+  softwareIds: ['jump_control_4', 'library', 'manoeuvre_0', 'fire_control_4'],
+  design: { name: 'Ekawsiykua-class Escort', techLevel: 13, tonnage: 800, hullConfiguration: 'dispersed', armorProtection: 0, manoeuvreRating: 4, jumpRating: 4, isReactionDrive: false, powerPlantTier: 'fusion_tl12', powerPlantTons: 36, additionalFuelWeeks: 0, useCockpit: false, holographicControls: false, computerId: 'computer_20', computerBis: false, sensorSuiteId: 'improved', additionalSensorStations: 0, weapons: [{ mountType: 'triple_turret', weapons: ['pulse_laser','pulse_laser','pulse_laser'] }, { mountType: 'triple_turret', weapons: ['missile_rack','missile_rack','missile_rack'] }, { mountType: 'triple_turret', weapons: ['sandcaster','sandcaster','sandcaster'] }], equipment: [{ equipmentId: 'docking_space', tons: 88, quantity: 2 }, { equipmentId: 'docking_space', tons: 55, quantity: 5 }], standardStaterooms: 20, doubleOccupancyStaterooms: 0, highStaterooms: 0, luxuryStaterooms: 0, lowBerths: 0, commonAreaTons: 14, cargoTons: 19 },
+};
+
+export const AOSITAOH_CRUISER: PreMadeShip = {
+  id: 'aositaoh_cruiser', source: 'aslan', name: 'Aositaoh-class Cruiser', category: 'military', tl: 12, tonnage: 1000,
+  description: 'Clan combat/troop cruiser with extensive carried vehicles and pinnaces for orbital deployment operations.',
+  hullPoints: 400, purchaseCostMCr: 467.48, maintenanceCostCrPerMonth: 38957,
+  crew: ['Captain', 'Pilot', 'Astrogator', 'Purser/Executive Officer', 'Pilots x2', 'Engineers x5', 'Maintenance x2', 'Gunners x10', 'Marines x80'],
+  powerRequirements: [{ system: 'Basic Ship Systems', power: 200 }, { system: 'Manoeuvre Drive', power: 300 }, { system: 'Jump Drive', power: 400 }, { system: 'Sensors', power: 3 }],
+  components: [{ category: 'Hull', name: '1,000 tons, Streamlined', tons: null, costMCr: 60 }, { category: 'Armour', name: 'Crystaliron, Armour 6', tons: 75, costMCr: 18 }, { category: 'Weapons', name: 'Triple turrets x10', tons: 10, costMCr: 35.5 }, { category: 'Cargo', name: 'Cargo', tons: 13, costMCr: null }],
+  softwareIds: ['jump_control_3', 'library', 'manoeuvre_0', 'fire_control_4'],
+  design: { name: 'Aositaoh-class Cruiser', techLevel: 12, tonnage: 1000, hullConfiguration: 'streamlined', armorMaterial: 'crystaliron', armorProtection: 6, manoeuvreRating: 4, jumpRating: 3, isReactionDrive: false, powerPlantTier: 'fusion_tl12', powerPlantTons: 47, additionalFuelWeeks: 0, useCockpit: false, holographicControls: true, computerId: 'computer_20', computerBis: false, sensorSuiteId: 'improved', additionalSensorStations: 0, weapons: [{ mountType: 'triple_turret', weapons: ['pulse_laser','pulse_laser','pulse_laser'] }, { mountType: 'triple_turret', weapons: ['missile_rack','missile_rack','missile_rack'] }, { mountType: 'triple_turret', weapons: ['sandcaster','sandcaster','sandcaster'] }], equipment: [{ equipmentId: 'fuel_processor', tons: 3, quantity: 1 }, { equipmentId: 'docking_space', tons: 88, quantity: 2 }, { equipmentId: 'docking_space', tons: 44, quantity: 4 }], standardStaterooms: 54, doubleOccupancyStaterooms: 0, highStaterooms: 0, luxuryStaterooms: 0, lowBerths: 0, commonAreaTons: 18, cargoTons: 13 },
+};
+
+export const HKISYELEAA_SLAVER: PreMadeShip = {
+  id: 'hkisyeleaa_slaver', source: 'aslan', name: 'Hkisyeleaa-class Slaver', category: 'military', tl: 12, tonnage: 1000,
+  description: 'Converted agricultural transport infamous as a slave-raiding platform, fitted with massive low berth capacity.',
+  hullPoints: 400, purchaseCostMCr: 302.327, maintenanceCostCrPerMonth: 25194,
+  crew: ['Captain', 'Pilot', 'Astrogator', 'Purser', 'Pilot', 'Engineers x4', 'Maintenance', 'Gunners x3'],
+  powerRequirements: [{ system: 'Basic Ship Systems', power: 200 }, { system: 'Manoeuvre Drive', power: 200 }, { system: 'Jump Drive', power: 200 }, { system: 'Sensors', power: 2 }],
+  components: [{ category: 'Hull', name: '1,000 tons, Streamlined', tons: null, costMCr: 60 }, { category: 'Weapons', name: 'Triple turret (beam laser, missile rack, sandcaster) x3', tons: 3, costMCr: 7.5 }, { category: 'Low Berths', name: 'Low Berths x750', tons: 375, costMCr: 37.5 }, { category: 'Cargo', name: 'Cargo', tons: 114, costMCr: null }],
+  softwareIds: ['jump_control_2', 'library', 'manoeuvre_0'],
+  design: { name: 'Hkisyeleaa-class Slaver', techLevel: 12, tonnage: 1000, hullConfiguration: 'streamlined', armorProtection: 0, manoeuvreRating: 2, jumpRating: 2, isReactionDrive: false, powerPlantTier: 'fusion_tl12', powerPlantTons: 34, additionalFuelWeeks: 0, useCockpit: false, holographicControls: false, computerId: 'computer_5', computerBis: true, sensorSuiteId: 'military', additionalSensorStations: 0, weapons: [{ mountType: 'triple_turret', weapons: ['beam_laser','missile_rack','sandcaster'] }, { mountType: 'triple_turret', weapons: ['beam_laser','missile_rack','sandcaster'] }, { mountType: 'triple_turret', weapons: ['beam_laser','missile_rack','sandcaster'] }], equipment: [{ equipmentId: 'fuel_processor', tons: 3, quantity: 1 }, { equipmentId: 'docking_space', tons: 88, quantity: 8 }], standardStaterooms: 12, doubleOccupancyStaterooms: 0, highStaterooms: 0, luxuryStaterooms: 0, lowBerths: 750, commonAreaTons: 24, cargoTons: 114 },
+};
+
+export const HALAHEIKE_POCKET_WARSHIP: PreMadeShip = {
+  id: 'halaheike_pocket_warship', source: 'aslan', name: 'Halaheike-class Pocket Warship', category: 'military', tl: 14, tonnage: 1200,
+  description: 'Multi-role Aslan pocket warship with bay weapons, heavy turret battery, and internal fighter/launch capacity.',
+  hullPoints: 528, purchaseCostMCr: 720.864, maintenanceCostCrPerMonth: 60072,
+  crew: ['Captain', 'Pilots x14', 'Astrogator', 'Executive Officer', 'Officers x3', 'Engineers x5', 'Maintenance x3', 'Gunners x12'],
+  powerRequirements: [{ system: 'Basic Ship Systems', power: 240 }, { system: 'Manoeuvre Drive', power: 360 }, { system: 'Jump Drive', power: 360 }, { system: 'Sensors', power: 4 }],
+  components: [{ category: 'Hull', name: '1,200 tons, Streamlined, Reinforced', tons: null, costMCr: 108 }, { category: 'Armour', name: 'Bonded Superdense, Armour 10', tons: 96, costMCr: 86.4 }, { category: 'Weapons', name: 'Small particle beam bays x2 + turret batteries', tons: 110, costMCr: 66.5 }, { category: 'Cargo', name: 'Cargo', tons: 65, costMCr: null }],
+  softwareIds: ['jump_control_3', 'library', 'manoeuvre_0', 'fire_control_5'],
+  design: { name: 'Halaheike-class Pocket Warship', techLevel: 14, tonnage: 1200, hullConfiguration: 'streamlined', specialisedHull: 'reinforced', armorMaterial: 'bonded_superdense', armorProtection: 10, manoeuvreRating: 3, jumpRating: 3, isReactionDrive: false, powerPlantTier: 'fusion_tl12', powerPlantTons: 48, additionalFuelWeeks: 0, useCockpit: false, holographicControls: true, computerId: 'computer_30', computerBis: true, sensorSuiteId: 'improved', additionalSensorStations: 0, weapons: [{ mountType: 'triple_turret', weapons: ['beam_laser','beam_laser','beam_laser'] }, { mountType: 'triple_turret', weapons: ['missile_rack','missile_rack','sandcaster'] }], bays: [{ weaponId: 'particle_beam', size: 'small', quantity: 2 }], equipment: [{ equipmentId: 'fuel_processor', tons: 3, quantity: 1 }, { equipmentId: 'docking_space', tons: 110, quantity: 10 }, { equipmentId: 'docking_space', tons: 44, quantity: 2 }], standardStaterooms: 30, doubleOccupancyStaterooms: 0, highStaterooms: 0, luxuryStaterooms: 0, lowBerths: 0, commonAreaTons: 20, cargoTons: 65 },
+};
+
+export const SAKHAI_ASSAULT_CARRIER: PreMadeShip = {
+  id: 'sakhai_assault_carrier', source: 'aslan', name: 'Sakhai-class Assault Carrier', category: 'military', tl: 12, tonnage: 2000,
+  description: 'Heavy invasion carrier with marine barracks, low berth troop capacity, and a central fusion gun bay for siege operations.',
+  hullPoints: 880, purchaseCostMCr: 857.15, maintenanceCostCrPerMonth: 71429,
+  crew: ['Captain', 'Pilot', 'Astrogator', 'Purser/Executive Officer', 'Officers x18', 'Pilots x2', 'Engineers x5', 'Maintenance x4', 'Gunners x18', 'Marines x160'],
+  powerRequirements: [{ system: 'Basic Ship Systems', power: 400 }, { system: 'Manoeuvre Drive', power: 600 }, { system: 'Jump Drive', power: 600 }, { system: 'Sensors', power: 4 }],
+  components: [{ category: 'Hull', name: '2,000 tons, Streamlined, Reinforced', tons: null, costMCr: 180 }, { category: 'Armour', name: 'Crystaliron, Armour 8', tons: 200, costMCr: 72 }, { category: 'Weapons', name: 'Medium fusion gun bay, missile bays, barbettes and turrets', tons: 226, costMCr: 87.75 }, { category: 'Cargo', name: 'Cargo', tons: 6, costMCr: null }],
+  softwareIds: ['jump_control_2', 'library', 'manoeuvre_0', 'fire_control_5'],
+  design: { name: 'Sakhai-class Assault Carrier', techLevel: 12, tonnage: 2000, hullConfiguration: 'streamlined', specialisedHull: 'reinforced', armorMaterial: 'crystaliron', armorProtection: 8, manoeuvreRating: 3, jumpRating: 3, isReactionDrive: false, powerPlantTier: 'fusion_tl12', powerPlantTons: 100, additionalFuelWeeks: 0, useCockpit: false, holographicControls: false, computerId: 'computer_25', computerBis: false, sensorSuiteId: 'improved', additionalSensorStations: 0, weapons: [{ mountType: 'triple_turret', weapons: ['beam_laser','beam_laser','beam_laser'] }, { mountType: 'triple_turret', weapons: ['sandcaster','sandcaster','sandcaster'] }], barbettes: [{ weaponId: 'particle_barbette_bay', quantity: 3 }], bays: [{ weaponId: 'fusion_gun_bay', size: 'medium', quantity: 1 }, { weaponId: 'missile_bay', size: 'small', quantity: 2 }], equipment: [{ equipmentId: 'fuel_processor', tons: 6, quantity: 1 }, { equipmentId: 'armoury', tons: 32, quantity: 1 }], standardStaterooms: 17, doubleOccupancyStaterooms: 0, highStaterooms: 0, luxuryStaterooms: 0, lowBerths: 200, commonAreaTons: 12, cargoTons: 6 },
+};
+
 // ═══════════════════════════════════════════════════════════════════════
 //  ALL PRE-MADE SHIPS
 // ═══════════════════════════════════════════════════════════════════════
 
 export const PRE_MADE_SHIPS: PreMadeShip[] = [
-  // Starships
+  // Core Rulebook Ships
   SCOUT_COURIER,
   SEEKER_MINING_SHIP,
   FREE_TRADER,
@@ -2653,6 +2868,22 @@ export const PRE_MADE_SHIPS: PreMadeShip[] = [
   RITCHEY_ESCORT,
   GALOOF_MEGAFREIGHTER,
   PLANET_HEAVY_CRUISER,
+  // Aslan Ships
+  HRAYE_SCOUT,
+  IHATEISHO_SCOUT,
+  KTIYHUI_COURIER,
+  KTEIROA_SEEKER,
+  IYELIY_MESSENGER,
+  AOAIW_LIGHT_TRADER,
+  EAKHAU_TRADER,
+  HKIYRERAO_RESEARCHER,
+  KHTUKHAO_CLAN_TRANSPORT,
+  OWATARL_TENDER,
+  EKAWSIYKUA_ESCORT,
+  AOSITAOH_CRUISER,
+  HKISYELEAA_SLAVER,
+  HALAHEIKE_POCKET_WARSHIP,
+  SAKHAI_ASSAULT_CARRIER,
   // Small Craft
   LIGHT_FIGHTER,
   GIG,
