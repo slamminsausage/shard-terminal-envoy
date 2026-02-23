@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { PRE_MADE_SHIPS, getShipsByCategory } from '@/data/shipConstruction';
+import { PRE_MADE_SHIPS, SHIP_SOURCE_LABELS, getShipSource, getShipsByCategory } from '@/data/shipConstruction';
 import type { PreMadeShip, ShipCategory } from '@/data/shipConstruction';
 import type { NewContact, ContactStatus } from '@/lib/bridge/bridgeTypes';
 import type { Vehicle } from '@/types/database';
@@ -59,8 +59,12 @@ export function AddShipToCombatModal({ isOpen, onClose, onAdd, vehicles }: AddSh
   const [selectedVehicleId, setSelectedVehicleId] = useState('');
 
   const filteredShips = useMemo(() => {
-    if (categoryFilter === 'all') return PRE_MADE_SHIPS;
-    return getShipsByCategory(categoryFilter);
+    const ships = categoryFilter === 'all' ? PRE_MADE_SHIPS : getShipsByCategory(categoryFilter);
+    return [...ships].sort((a, b) => {
+      const sourceCompare = getShipSource(a).localeCompare(getShipSource(b));
+      if (sourceCompare !== 0) return sourceCompare;
+      return a.tonnage - b.tonnage;
+    });
   }, [categoryFilter]);
 
   const selectedPreMadeShip = useMemo(() => {
@@ -187,9 +191,16 @@ export function AddShipToCombatModal({ isOpen, onClose, onAdd, vehicles }: AddSh
             </div>
 
             <div className="max-h-48 overflow-y-auto space-y-1 border border-terminal-bg-border rounded p-2">
-              {filteredShips.map(ship => (
+              {filteredShips.map((ship, index) => {
+                const source = getShipSource(ship);
+                const prevSource = index > 0 ? getShipSource(filteredShips[index - 1]) : null;
+                const showSourceHeader = source !== prevSource;
+                return (
+                <div key={ship.id}>
+                  {showSourceHeader && (
+                    <div className="pt-2 pb-1 text-[10px] uppercase tracking-wider text-terminal-primary/60 border-b border-terminal-primary/20">{SHIP_SOURCE_LABELS[source]}</div>
+                  )}
                 <button
-                  key={ship.id}
                   onClick={() => applyPreMadeShip(ship.id)}
                   className={`w-full text-left px-3 py-2 rounded text-xs font-mono transition-all ${
                     selectedPreMadeId === ship.id
@@ -205,7 +216,9 @@ export function AddShipToCombatModal({ isOpen, onClose, onAdd, vehicles }: AddSh
                     </Badge>
                   </span>
                 </button>
-              ))}
+                </div>
+              );
+              })}
             </div>
 
             {selectedPreMadeShip && (
