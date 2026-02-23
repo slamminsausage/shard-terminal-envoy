@@ -32,12 +32,13 @@ export function useKeyboardShortcuts(shortcuts: KeyboardShortcut[], enabled = tr
 
       for (const shortcut of shortcuts) {
         const keyMatch = e.key === shortcut.key || e.key.toLowerCase() === shortcut.key.toLowerCase();
-        const ctrlMatch = shortcut.ctrl ? e.ctrlKey || e.metaKey : !e.ctrlKey && !e.metaKey;
+        const ctrlOrMetaPressed = e.ctrlKey || e.metaKey;
+        const ctrlMatch = shortcut.ctrl ? ctrlOrMetaPressed : !e.ctrlKey;
         const altMatch = shortcut.alt ? e.altKey : !e.altKey;
         const shiftMatch = shortcut.shift ? e.shiftKey : !e.shiftKey;
         const metaMatch = shortcut.meta ? e.metaKey : !e.metaKey;
 
-        if (keyMatch && ctrlMatch && altMatch && shiftMatch) {
+        if (keyMatch && ctrlMatch && altMatch && shiftMatch && metaMatch) {
           if (shortcut.preventDefault) {
             e.preventDefault();
           }
