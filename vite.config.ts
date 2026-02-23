@@ -15,6 +15,31 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes("node_modules")) return;
+
+          if (id.includes("react") || id.includes("scheduler")) {
+            return "vendor-react";
+          }
+
+          if (id.includes("react-router")) {
+            return "vendor-router";
+          }
+
+          if (id.includes("@radix-ui") || id.includes("class-variance-authority") || id.includes("tailwind-merge")) {
+            return "vendor-ui";
+          }
+
+          if (id.includes("@supabase") || id.includes("@tanstack/react-query")) {
+            return "vendor-data";
+          }
+        },
+      },
+    },
+  },
   test: {
     environment: "jsdom",
     globals: true,

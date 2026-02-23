@@ -18,17 +18,17 @@ import { PiracyProvider } from "@/contexts/PiracyContext";
 import { VTTProvider } from "@/contexts/VTTContext";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import CRTOverlay from "@/components/ui/CRTOverlay";
-import { GlobalSearch } from "@/components/GlobalSearch";
-import { KeyboardShortcutsHelp } from "@/components/KeyboardShortcutsHelp";
-import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
-import CharacterView from "./components/crew/CharacterView";
-import VehicleView from "./components/crew/VehicleView";
 import { useParams } from "react-router-dom";
-import AdminNotes from "./pages/AdminNotes";
 import { lazyWithRetry } from "@/lib/lazyWithRetry";
 
 const VTTPresenterView = lazyWithRetry(() => import("./components/vtt/VTTPresenterView"));
+const Index = lazyWithRetry(() => import("./pages/Index"));
+const AdminNotes = lazyWithRetry(() => import("./pages/AdminNotes"));
+const CharacterView = lazyWithRetry(() => import("./components/crew/CharacterView"));
+const VehicleView = lazyWithRetry(() => import("./components/crew/VehicleView"));
+const GlobalSearch = lazyWithRetry(() => import("@/components/GlobalSearch").then((m) => ({ default: m.GlobalSearch })));
+const KeyboardShortcutsHelp = lazyWithRetry(() => import("@/components/KeyboardShortcutsHelp").then((m) => ({ default: m.KeyboardShortcutsHelp })));
 
 const CharacterViewRoute = () => {
   const { id } = useParams<{ id: string }>();
@@ -62,17 +62,19 @@ const App = () => (
             <Toaster />
             <Sonner />
             <BrowserRouter>
-              <GlobalSearch />
-              <KeyboardShortcutsHelp />
-              <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="/character-view/:id" element={<CharacterViewRoute />} />
-                <Route path="/vehicle-view/:id" element={<VehicleViewRoute />} />
-                <Route path="/admin/notes" element={<AdminNotes />} />
-                <Route path="/presenter" element={<Suspense fallback={<div className="bg-black min-h-screen" />}><VTTPresenterView /></Suspense>} />
-                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                <Route path="*" element={<NotFound />} />
-              </Routes>
+              <Suspense fallback={<div className="bg-black min-h-screen" />}>
+                <GlobalSearch />
+                <KeyboardShortcutsHelp />
+                <Routes>
+                  <Route path="/" element={<Index />} />
+                  <Route path="/character-view/:id" element={<CharacterViewRoute />} />
+                  <Route path="/vehicle-view/:id" element={<VehicleViewRoute />} />
+                  <Route path="/admin/notes" element={<AdminNotes />} />
+                  <Route path="/presenter" element={<VTTPresenterView />} />
+                  {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </Suspense>
             </BrowserRouter>
                           </BridgeProvider>
                           </VTTProvider>
