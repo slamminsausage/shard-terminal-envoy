@@ -2834,7 +2834,7 @@ export const SAKHAI_ASSAULT_CARRIER: PreMadeShip = {
 // ═══════════════════════════════════════════════════════════════════════
 
 export const PRE_MADE_SHIPS: PreMadeShip[] = [
-  // Starships
+  // Core Rulebook Ships
   SCOUT_COURIER,
   SEEKER_MINING_SHIP,
   FREE_TRADER,
