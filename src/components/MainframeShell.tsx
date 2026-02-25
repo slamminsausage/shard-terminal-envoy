@@ -6,6 +6,7 @@ import TerminalLoadingSkeleton from "./TerminalLoadingSkeleton";
 import { useTabNavigationShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { KeyboardShortcutOverlay } from "./KeyboardShortcutOverlay";
 import { lazyWithRetry, lazyNamedWithRetry } from "@/lib/lazyWithRetry";
+import ErrorBoundary from "@/components/ErrorBoundary";
 
 // Lazy-loaded tab interfaces with automatic retry on stale chunk errors
 const TerminalInterface = lazyWithRetry(() => import("./interfaces/TerminalInterface"));
@@ -81,7 +82,7 @@ export default function MainframeShell() {
           {activeTab === "terminal" && <TerminalInterface />}
           {activeTab === "crew" && <CrewInterface />}
           {activeTab === "vehicles" && <VehicleInterface />}
-          {activeTab === "bridge" && <BridgeConsole />}
+          {activeTab === "bridge" && <ErrorBoundary fallbackMessage="Bridge console offline"><BridgeConsole /></ErrorBoundary>}
           {activeTab === "navigation" && <JumpPlannerInterface />}
           {activeTab === "campaign" && <CampaignInterface />}
           {activeTab === "piracy" && <PiracyInterface />}

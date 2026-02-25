@@ -56,28 +56,28 @@ const App = () => (
                       <JumpPlannerProvider>
                         <NotesProvider>
                           <PiracyProvider>
-                          <VTTProvider>
-                          <BridgeProvider>
-            <CRTOverlay />
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
-              <Suspense fallback={<div className="bg-black min-h-screen" />}>
-                <GlobalSearch />
-                <KeyboardShortcutsHelp />
-                <Routes>
-                  <Route path="/" element={<Index />} />
-                  <Route path="/character-view/:id" element={<CharacterViewRoute />} />
-                  <Route path="/vehicle-view/:id" element={<VehicleViewRoute />} />
-                  <Route path="/admin/notes" element={<AdminNotes />} />
-                  <Route path="/presenter" element={<VTTPresenterView />} />
-                  {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </Suspense>
-            </BrowserRouter>
-                          </BridgeProvider>
-                          </VTTProvider>
+                            <VTTProvider>
+                              <BridgeProvider>
+                                <CRTOverlay />
+                                <Toaster />
+                                <Sonner />
+                                <BrowserRouter>
+                                  <Suspense fallback={<div className="bg-black min-h-screen" />}>
+                                    <GlobalSearch />
+                                    <KeyboardShortcutsHelp />
+                                    <Routes>
+                                      <Route path="/" element={<Index />} />
+                                      <Route path="/character-view/:id" element={<CharacterViewRoute />} />
+                                      <Route path="/vehicle-view/:id" element={<VehicleViewRoute />} />
+                                      <Route path="/admin/notes" element={<AdminNotes />} />
+                                      <Route path="/presenter" element={<VTTPresenterView />} />
+                                      {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                                      <Route path="*" element={<NotFound />} />
+                                    </Routes>
+                                  </Suspense>
+                                </BrowserRouter>
+                              </BridgeProvider>
+                            </VTTProvider>
                           </PiracyProvider>
                         </NotesProvider>
                       </JumpPlannerProvider>

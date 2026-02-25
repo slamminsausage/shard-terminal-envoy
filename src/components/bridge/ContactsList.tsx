@@ -76,6 +76,11 @@ export function ContactsList({
               />
               <span className="flex-1 truncate" style={{ color: statusColor }}>
                 {contact.name} {contact.isHidden ? "(hidden)" : ""}
+                {contact.jumpCommitted && (
+                  <span className="ml-1 text-[9px] text-terminal-secondary font-['Orbitron'] animate-pulse">
+                    JUMP{contact.jumpChargeRounds ? ` T-${contact.jumpChargeRounds}` : ''}
+                  </span>
+                )}
               </span>
               <span className="text-terminal-text-dimmer w-12 text-right">
                 {calculateRange(contact.hexQ, contact.hexR)}

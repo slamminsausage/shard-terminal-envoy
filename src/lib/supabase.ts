@@ -1009,7 +1009,7 @@ export const dbHelpers = {
       const fileName = `${handoutId}.${fileExt}`;
       const filePath = `${fileName}`;
 
-      console.log(`Uploading handout media: ${filePath} (${(file.size / 1024).toFixed(2)} KB)`);
+      if (isDev) console.log(`Uploading handout media: ${filePath} (${(file.size / 1024).toFixed(2)} KB)`);
 
       const { data, error } = await supabase.storage
         .from('handouts')
@@ -1028,7 +1028,7 @@ export const dbHelpers = {
         .from('handouts')
         .getPublicUrl(filePath);
 
-      console.log('Upload successful, public URL:', publicUrl);
+      if (isDev) console.log('Upload successful, public URL:', publicUrl);
       return publicUrl;
     } catch (error) {
       console.error('Failed to upload handout media:', error);
@@ -1049,12 +1049,12 @@ export const dbHelpers = {
 
         // If no error, file was deleted
         if (!error) {
-          console.log(`Deleted handout media: ${filePath}`);
+          if (isDev) console.log(`Deleted handout media: ${filePath}`);
           return true;
         }
       }
 
-      console.log('No handout media found to delete for:', handoutId);
+      if (isDev) console.log('No handout media found to delete for:', handoutId);
       return true;
     } catch (error) {
       console.error('Failed to delete handout media:', error);
@@ -1072,7 +1072,7 @@ export const dbHelpers = {
       const fileExt = mimeType.split('/')[1] || 'jpg';
       const fileName = `${handoutId}.${fileExt}`;
 
-      console.log(`Uploading handout from data URL: ${fileName} (${(blob.size / 1024).toFixed(2)} KB)`);
+      if (isDev) console.log(`Uploading handout from data URL: ${fileName} (${(blob.size / 1024).toFixed(2)} KB)`);
 
       const { data, error } = await supabase.storage
         .from('handouts')
@@ -1092,7 +1092,7 @@ export const dbHelpers = {
         .from('handouts')
         .getPublicUrl(fileName);
 
-      console.log('Upload successful, public URL:', publicUrl);
+      if (isDev) console.log('Upload successful, public URL:', publicUrl);
       return publicUrl;
     } catch (error) {
       console.error('Failed to upload handout from data URL:', error);
@@ -1246,7 +1246,7 @@ export const dbHelpers = {
       const fileName = `note_${noteId}.${fileExt}`;
       const filePath = `${fileName}`;
 
-      console.log(`Uploading player note thumbnail: ${filePath} (${(file.size / 1024).toFixed(2)} KB)`);
+      if (isDev) console.log(`Uploading player note thumbnail: ${filePath} (${(file.size / 1024).toFixed(2)} KB)`);
 
       const { data, error } = await supabase.storage
         .from('player_note_thumbnails')
@@ -1265,7 +1265,7 @@ export const dbHelpers = {
         .from('player_note_thumbnails')
         .getPublicUrl(filePath);
 
-      console.log('Upload successful, public URL:', publicUrl);
+      if (isDev) console.log('Upload successful, public URL:', publicUrl);
       return publicUrl;
     } catch (error) {
       console.error('Failed to upload player note thumbnail:', error);
@@ -1283,7 +1283,7 @@ export const dbHelpers = {
       const fileExt = mimeType.split('/')[1] || 'jpg';
       const fileName = `note_${noteId}.${fileExt}`;
 
-      console.log(`Uploading player note thumbnail from data URL: ${fileName} (${(blob.size / 1024).toFixed(2)} KB)`);
+      if (isDev) console.log(`Uploading player note thumbnail from data URL: ${fileName} (${(blob.size / 1024).toFixed(2)} KB)`);
 
       const { data, error } = await supabase.storage
         .from('player_note_thumbnails')
@@ -1303,7 +1303,7 @@ export const dbHelpers = {
         .from('player_note_thumbnails')
         .getPublicUrl(fileName);
 
-      console.log('Upload successful, public URL:', publicUrl);
+      if (isDev) console.log('Upload successful, public URL:', publicUrl);
       return publicUrl;
     } catch (error) {
       console.error('Failed to upload player note thumbnail from data URL:', error);
@@ -1324,12 +1324,12 @@ export const dbHelpers = {
 
         // If no error, file was deleted
         if (!error) {
-          console.log(`Deleted player note thumbnail: ${filePath}`);
+          if (isDev) console.log(`Deleted player note thumbnail: ${filePath}`);
           return true;
         }
       }
 
-      console.log('No player note thumbnail found to delete for:', noteId);
+      if (isDev) console.log('No player note thumbnail found to delete for:', noteId);
       return true;
     } catch (error) {
       console.error('Failed to delete player note thumbnail:', error);
@@ -1344,7 +1344,7 @@ export const dbHelpers = {
       const fileName = `character_${characterId}.${fileExt}`;
       const filePath = `${fileName}`;
 
-      console.log(`Uploading character thumbnail: ${filePath} (${(file.size / 1024).toFixed(2)} KB)`);
+      if (isDev) console.log(`Uploading character thumbnail: ${filePath} (${(file.size / 1024).toFixed(2)} KB)`);
 
       const { data, error } = await supabase.storage
         .from('character_thumbnails')
@@ -1363,7 +1363,7 @@ export const dbHelpers = {
         .from('character_thumbnails')
         .getPublicUrl(filePath);
 
-      console.log('Upload successful, public URL:', publicUrl);
+      if (isDev) console.log('Upload successful, public URL:', publicUrl);
       return publicUrl;
     } catch (error) {
       console.error('Failed to upload character thumbnail:', error);
@@ -1381,7 +1381,7 @@ export const dbHelpers = {
       const fileExt = mimeType.split('/')[1] || 'jpg';
       const fileName = `character_${characterId}.${fileExt}`;
 
-      console.log(`Uploading character thumbnail from data URL: ${fileName} (${(blob.size / 1024).toFixed(2)} KB)`);
+      if (isDev) console.log(`Uploading character thumbnail from data URL: ${fileName} (${(blob.size / 1024).toFixed(2)} KB)`);
 
       const { data, error } = await supabase.storage
         .from('character_thumbnails')

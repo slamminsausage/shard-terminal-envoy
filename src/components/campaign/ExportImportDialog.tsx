@@ -126,7 +126,7 @@ export function ExportImportDialog({ isOpen, onClose }: ExportImportDialogProps)
       }
 
       // Import world notes
-      for (const note of importedData.worldNotes) {
+      for (const note of (importedData.worldNotes ?? [])) {
         try {
           const { id, created_at, updated_at, ...noteData } = note;
           await dbHelpers.saveWorldNote(noteData);
@@ -138,7 +138,7 @@ export function ExportImportDialog({ isOpen, onClose }: ExportImportDialogProps)
       }
 
       // Import hex markers
-      for (const marker of importedData.hexMarkers) {
+      for (const marker of (importedData.hexMarkers ?? [])) {
         try {
           const { id, created_at, updated_at, ...markerData } = marker;
           await saveMarker(markerData);

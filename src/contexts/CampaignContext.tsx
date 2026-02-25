@@ -585,6 +585,7 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
       weapons: {},
       armor: {},
       augments: {},
+      character_type: 'pc',
     };
 
     return await saveCharacter(newCharacterData);
