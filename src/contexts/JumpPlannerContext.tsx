@@ -370,6 +370,33 @@ export function JumpPlannerProvider({ children }: { children: React.ReactNode })
     }
   }, [state.currentLocation, state.jumpRating]);
 
+  // ===== Note Actions (declared before selectJumpWorld which depends on loadNote) =====
+
+  const loadNote = useCallback(async (sector: string, hex: string) => {
+    const paddedHex = padHex(hex);
+    setState((prev) => ({ ...prev, isLoadingNote: true }));
+
+    try {
+      const note = await dbHelpers.getWorldNote(sector, paddedHex);
+      setState((prev) => ({
+        ...prev,
+        currentNote: note || {
+          sector,
+          hex: paddedHex,
+          status: "UNKNOWN",
+        },
+        isLoadingNote: false,
+      }));
+    } catch (error) {
+      console.error("Failed to load note:", error);
+      setState((prev) => ({
+        ...prev,
+        currentNote: { sector, hex: paddedHex, status: "UNKNOWN" },
+        isLoadingNote: false,
+      }));
+    }
+  }, []);
+
   const selectJumpWorld = useCallback((world: JumpWorld) => {
     const paddedHex = padHex(world.hex);
     setState((prev) => ({
@@ -445,33 +472,6 @@ export function JumpPlannerProvider({ children }: { children: React.ReactNode })
       }));
     }
   }, [state.routeStart, state.routeEnd, state.jumpRating, state.routeOptions]);
-
-  // ===== Note Actions =====
-
-  const loadNote = useCallback(async (sector: string, hex: string) => {
-    const paddedHex = padHex(hex);
-    setState((prev) => ({ ...prev, isLoadingNote: true }));
-
-    try {
-      const note = await dbHelpers.getWorldNote(sector, paddedHex);
-      setState((prev) => ({
-        ...prev,
-        currentNote: note || {
-          sector,
-          hex: paddedHex,
-          status: "UNKNOWN",
-        },
-        isLoadingNote: false,
-      }));
-    } catch (error) {
-      console.error("Failed to load note:", error);
-      setState((prev) => ({
-        ...prev,
-        currentNote: { sector, hex: paddedHex, status: "UNKNOWN" },
-        isLoadingNote: false,
-      }));
-    }
-  }, []);
 
   const loadAllNotes = useCallback(async () => {
     try {
