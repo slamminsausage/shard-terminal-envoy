@@ -270,7 +270,7 @@ const CharacterSheet = ({ characterId }: CharacterSheetProps = {}) => {
         setHeader({
           name: character.name,
           rads: character.rads || "",
-          age: character.age.toString(),
+          age: (character.age ?? 0).toString(),
           species: character.species,
           speciesTraits: character.species_traits || "",
           homeworld: character.homeworld

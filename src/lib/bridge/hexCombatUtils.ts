@@ -106,9 +106,11 @@ export function hexStepToward(
     const stepQ = dq > 0 ? 1 : -1;
     // Choose r step that keeps us on the hex grid closest to target
     if (dr !== 0 && adr >= ads) {
-      return { q: q1 + stepQ, r: r1 + (dr > 0 ? 0 : 0) };
+      // Diagonal step: move q and adjust r toward target
+      return { q: q1 + stepQ, r: r1 - stepQ };
     }
-    return { q: q1 + stepQ, r: r1 + (ds > 0 ? 0 : 0) };
+    // Pure q step: change s, keep r
+    return { q: q1 + stepQ, r: r1 };
   }
   if (adr >= adq && adr >= ads) {
     const stepR = dr > 0 ? 1 : -1;

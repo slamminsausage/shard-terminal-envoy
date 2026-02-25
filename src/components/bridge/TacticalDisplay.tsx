@@ -79,16 +79,21 @@ export function TacticalDisplay({
   // Find the player ship for range band calculations
   const playerShip = contacts.find(c => c.isPlayerShip);
 
-  // Compute range band color for a hex based on distance from selected/player ship
-  const getHexRangeBandFill = (q: number, r: number): string | null => {
+  // Precompute range band colors for all hexes (memoized on ref ship position)
+  const rangeBandFills = useMemo(() => {
     if (!combatActive) return null;
-    const refShip = selectedContact || playerShip;
-    if (!refShip) return null;
-    const dist = hexDistance(refShip.hexQ, refShip.hexR, q, r);
-    if (dist === 0) return null;
-    const band = hexDistanceToRangeBand(dist);
-    return RANGE_BAND_HEX_COLORS[band];
-  };
+    const ref = selectedContact || playerShip;
+    if (!ref) return null;
+    const fills = new Map<string, string>();
+    for (const { q, r } of hexGrid) {
+      const dist = hexDistance(ref.hexQ, ref.hexR, q, r);
+      if (dist === 0) continue;
+      const band = hexDistanceToRangeBand(dist);
+      const color = RANGE_BAND_HEX_COLORS[band];
+      if (color) fills.set(`${q},${r}`, color);
+    }
+    return fills;
+  }, [combatActive, selectedContact, playerShip, hexGrid]);
 
   // Movement range highlighting
   const validMoveHexes = useMemo(() => {
@@ -175,8 +180,9 @@ export function TacticalDisplay({
     return `${RANGE_BAND_LABELS[band]} (${dist} hex)`;
   }, [combatActive, hoveredHex, selectedContact, playerShip]);
 
-  const refShipPos = (selectedContact || playerShip)
-    ? hexToPixel((selectedContact || playerShip)!.hexQ, (selectedContact || playerShip)!.hexR)
+  const refShip = selectedContact || playerShip;
+  const refShipPos = refShip
+    ? hexToPixel(refShip.hexQ, refShip.hexR)
     : null;
 
   return (
@@ -270,7 +276,7 @@ export function TacticalDisplay({
               const { x, y } = hexToPixel(q, r);
               const isHovered = hoveredHex?.q === q && hoveredHex?.r === r;
               const hasShip = contacts.some(c => c.hexQ === q && c.hexR === r);
-              const rangeFill = getHexRangeBandFill(q, r);
+              const rangeFill = rangeBandFills?.get(`${q},${r}`) ?? null;
               const isValidMove = validMoveHexes?.has(`${q},${r}`);
 
               let fill = "transparent";

@@ -164,6 +164,8 @@ export function useJumpPlanner(): JumpPlannerContextValue {
 
 export function JumpPlannerProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<JumpPlannerState>(initialState);
+  const stateRef = useRef(state);
+  useEffect(() => { stateRef.current = state; }, [state]);
   const initialLoadComplete = useRef(false);
 
   // Load player location from Supabase (with localStorage fallback) on mount
@@ -336,7 +338,7 @@ export function JumpPlannerProvider({ children }: { children: React.ReactNode })
   }, []);
 
   const loadJumpWorlds = useCallback(async () => {
-    const { currentLocation, jumpRating } = state;
+    const { currentLocation, jumpRating } = stateRef.current;
     if (!currentLocation) {
       setState((prev) => ({
         ...prev,
@@ -376,7 +378,7 @@ export function JumpPlannerProvider({ children }: { children: React.ReactNode })
     }));
     // Load note for selected world
     loadNote(world.sector, paddedHex);
-  }, []);
+  }, [loadNote]);
 
   // ===== Route Actions =====
 
@@ -407,7 +409,7 @@ export function JumpPlannerProvider({ children }: { children: React.ReactNode })
   }, []);
 
   const planRoute = useCallback(async () => {
-    const { routeStart, routeEnd, jumpRating, routeOptions } = state;
+    const { routeStart, routeEnd, jumpRating, routeOptions } = stateRef.current;
 
     if (!routeStart || !routeEnd) {
       setState((prev) => ({
