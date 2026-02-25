@@ -1,8 +1,8 @@
-import { useEffect } from "react";
+import { useEffect, useRef, useCallback } from "react";
 import { useCampaign } from "@/contexts/CampaignContext";
 import CharacterSheet from "./CharacterSheet";
 import { Button } from "@/components/ui/button";
-import { useRef } from "react";
+import { Printer } from "lucide-react";
 
 interface CharacterViewProps {
   characterId: string;
@@ -15,13 +15,15 @@ const CharacterView = ({ characterId }: CharacterViewProps) => {
   useEffect(() => {
     if (hasRefreshed.current) return;
     hasRefreshed.current = true;
-    // Ensure latest data when opening in new tab (one-time)
     refreshData();
   }, [characterId, refreshData]);
 
   const character = characters.find(c => c.id === characterId);
 
-  // Show loading state while data is being fetched and we have no character yet
+  const handlePrint = useCallback(() => {
+    window.print();
+  }, []);
+
   if (isLoading && !character) {
     return (
       <div className="min-h-screen bg-background text-foreground p-8">
@@ -49,11 +51,17 @@ const CharacterView = ({ characterId }: CharacterViewProps) => {
   return (
     <div className="min-h-screen bg-background text-foreground overflow-y-auto">
       <div className="max-w-6xl mx-auto p-6 space-y-4">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between print:hidden">
           <h1 className="text-lg font-mono tracking-[0.2em] text-primary">CHARACTER SHEET</h1>
-          <Button variant="outline" onClick={refreshData} size="sm">
-            Refresh
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={handlePrint} size="sm" className="gap-1">
+              <Printer className="w-4 h-4" />
+              Print
+            </Button>
+            <Button variant="outline" onClick={refreshData} size="sm">
+              Refresh
+            </Button>
+          </div>
         </div>
         <CharacterSheet characterId={characterId} />
       </div>
