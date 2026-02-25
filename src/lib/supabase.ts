@@ -283,6 +283,14 @@ export const dbHelpers = {
     // Thumbnail
     if (characterData.thumbnail_url !== undefined) dbPayload.thumbnail_url = characterData.thumbnail_url;
 
+    // Character classification
+    if (characterData.character_type !== undefined) dbPayload.character_type = characterData.character_type;
+    if (characterData.npc_role !== undefined) dbPayload.npc_role = characterData.npc_role;
+
+    // Crew assignment
+    if (characterData.crew_id !== undefined) dbPayload.crew_id = characterData.crew_id;
+    if (characterData.crew_position !== undefined) dbPayload.crew_position = characterData.crew_position;
+
     try {
       if (characterData.id) {
         // Update existing character
@@ -434,9 +442,129 @@ export const dbHelpers = {
       .from('vehicles')
       .delete()
       .eq('id', vehicleId)
-    
+
     if (error) throw error
     return true
+  },
+
+  // Crew Groups
+  async getAllCrewGroups() {
+    if (supabaseDisabled) {
+      try {
+        const raw = localStorage.getItem('traveller_crew_groups');
+        return raw ? JSON.parse(raw) : [];
+      } catch { return []; }
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('crew_groups')
+        .select('*')
+        .order('created_at', { ascending: true });
+
+      if (error) {
+        console.error('Database error fetching crew groups:', error);
+        // Fallback to localStorage
+        try {
+          const raw = localStorage.getItem('traveller_crew_groups');
+          return raw ? JSON.parse(raw) : [];
+        } catch { return []; }
+      }
+      return data || [];
+    } catch (error) {
+      console.error('Failed to fetch crew groups:', error);
+      try {
+        const raw = localStorage.getItem('traveller_crew_groups');
+        return raw ? JSON.parse(raw) : [];
+      } catch { return []; }
+    }
+  },
+
+  async saveCrewGroup(groupData: Record<string, unknown>) {
+    if (supabaseDisabled) {
+      const now = new Date().toISOString();
+      const group = {
+        ...groupData,
+        id: groupData.id || `crew_${Date.now()}`,
+        created_at: groupData.created_at || now,
+        updated_at: now,
+      };
+      try {
+        const raw = localStorage.getItem('traveller_crew_groups');
+        const groups = raw ? JSON.parse(raw) : [];
+        const idx = groups.findIndex((g: any) => g.id === group.id);
+        if (idx >= 0) {
+          groups[idx] = group;
+        } else {
+          groups.push(group);
+        }
+        localStorage.setItem('traveller_crew_groups', JSON.stringify(groups));
+      } catch { /* ignore */ }
+      return group;
+    }
+
+    try {
+      if (groupData.id) {
+        const { data, error } = await supabase
+          .from('crew_groups')
+          .update({
+            name: groupData.name,
+            color: groupData.color,
+            ship_id: groupData.ship_id || null,
+            description: groupData.description || null,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', groupData.id)
+          .select()
+          .single();
+
+        if (error) { console.error('Database error:', error); throw error; }
+        return data;
+      } else {
+        const { data, error } = await supabase
+          .from('crew_groups')
+          .insert([{
+            player_id: groupData.player_id || 'campaign',
+            name: groupData.name,
+            color: groupData.color,
+            ship_id: groupData.ship_id || null,
+            description: groupData.description || null,
+          }])
+          .select()
+          .single();
+
+        if (error) { console.error('Database error:', error); throw error; }
+        return data;
+      }
+    } catch (error) {
+      console.error('Failed to save crew group:', error);
+      throw error;
+    }
+  },
+
+  async deleteCrewGroup(groupId: string) {
+    if (supabaseDisabled) {
+      try {
+        const raw = localStorage.getItem('traveller_crew_groups');
+        const groups = raw ? JSON.parse(raw) : [];
+        const filtered = groups.filter((g: any) => g.id !== groupId);
+        localStorage.setItem('traveller_crew_groups', JSON.stringify(filtered));
+      } catch { /* ignore */ }
+      return true;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('crew_groups')
+        .delete()
+        .eq('id', groupId);
+
+      if (error) throw error;
+      return true;
+    } catch (error) {
+      console.error('Failed to delete crew group:', error);
+      throw error;
+    }
   },
 
   // Unlocked Terminals

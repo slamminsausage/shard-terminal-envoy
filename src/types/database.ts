@@ -90,9 +90,46 @@ export interface Character {
   character_type?: 'pc' | 'npc';
   npc_role?: 'crew' | 'enemy' | 'contact' | 'patron';
 
+  // Crew assignment
+  crew_id?: string;        // references CrewGroup.id
+  crew_position?: string;  // job aboard ship (e.g. 'Pilot', 'Engineer', custom)
+
   created_at: string;
   updated_at: string;
 }
+
+// Crew group — an independent, color-coded team optionally linked to a ship
+export interface CrewGroup {
+  id: string;
+  player_id: string;
+  name: string;
+  color: string;          // hex color, e.g. '#ff4444'
+  ship_id?: string;       // optional vehicle ID this crew operates
+  description?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export const CREW_POSITION_PRESETS = [
+  'Captain',
+  'Pilot',
+  'Astrogator',
+  'Engineer',
+  'Medic',
+  'Gunner',
+  'Marine',
+  'Steward',
+  'Sensor Operator',
+] as const;
+
+export const CREW_COLOR_PRESETS = [
+  { name: 'Red', color: '#ff4444' },
+  { name: 'Blue', color: '#4488ff' },
+  { name: 'Green', color: '#44ff88' },
+  { name: 'Gold', color: '#ffcc00' },
+  { name: 'Purple', color: '#bb77ff' },
+  { name: 'Cyan', color: '#00ccff' },
+] as const;
 
 export interface Vehicle {
   id: string;

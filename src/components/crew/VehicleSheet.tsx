@@ -25,7 +25,7 @@ import {
 import { ALL_SOFTWARE, STANDARD_SOFTWARE, JUMP_CONTROL_SOFTWARE, COMBAT_SOFTWARE, UTILITY_SOFTWARE } from "@/data/shipConstruction/software";
 import { SENSOR_SUITES } from "@/data/shipConstruction/bridges";
 import { SPACECRAFT_EQUIPMENT } from "@/data/shipConstruction/equipment";
-import { X, Plus } from "lucide-react";
+import { X, Plus, Users } from "lucide-react";
 
 interface PowerRequirementEntry {
   label: string;
@@ -113,7 +113,7 @@ interface VehicleSheetProps {
 }
 
 const VehicleSheet = ({ vehicleId }: VehicleSheetProps) => {
-  const { saveVehicle, vehicles } = useCampaign();
+  const { saveVehicle, vehicles, characters, crewGroups } = useCampaign();
   const [currentVehicleId, setCurrentVehicleId] = useState<string | undefined>(vehicleId);
   const [shipInfo, setShipInfo] = useState({
     name: "",
@@ -862,6 +862,72 @@ const VehicleSheet = ({ vehicleId }: VehicleSheetProps) => {
           </button>
         </div>
       </section>
+
+      {/* Crew Manifest */}
+      {currentVehicleId && (() => {
+        // Find crew groups linked to this ship
+        const linkedCrews = crewGroups.filter(g => g.ship_id === currentVehicleId);
+        // Find characters assigned to those crews
+        const crewMembers = characters.filter(c =>
+          linkedCrews.some(g => g.id === c.crew_id)
+        );
+
+        if (linkedCrews.length === 0 && crewMembers.length === 0) return null;
+
+        return (
+          <section className="panel">
+            <div className="panel-header">
+              <span className="panel-title flex items-center gap-2">
+                <Users className="h-4 w-4" />
+                CREW MANIFEST
+              </span>
+              <span className="panel-status">{crewMembers.length} ABOARD</span>
+            </div>
+            <div className="panel-content">
+              {linkedCrews.map(crew => {
+                const members = characters.filter(c => c.crew_id === crew.id);
+                return (
+                  <div key={crew.id} className="mb-3 last:mb-0">
+                    <div
+                      className="flex items-center gap-2 px-2 py-1 rounded text-xs font-mono font-bold border mb-1"
+                      style={{
+                        borderColor: crew.color + '60',
+                        backgroundColor: crew.color + '10',
+                        color: crew.color,
+                      }}
+                    >
+                      <span className="w-2 h-2 rounded-full" style={{ backgroundColor: crew.color, boxShadow: `0 0 4px ${crew.color}` }} />
+                      {crew.name}
+                      <span className="ml-auto font-normal text-[var(--text-dimmer)]">{members.length} members</span>
+                    </div>
+                    {members.length > 0 ? (
+                      <div className="space-y-1">
+                        {members.map(m => {
+                          const typeColor = (m.character_type || 'pc') === 'pc' ? '#00ff00' : '#00ccff';
+                          return (
+                            <div key={m.id} className="flex items-center gap-2 px-3 py-1 text-xs font-mono border border-primary/10 rounded bg-background/30">
+                              <span className="text-[0.55rem] font-bold px-1 py-0.5 rounded border uppercase"
+                                style={{ color: typeColor, borderColor: typeColor + '60' }}>
+                                {(m.character_type || 'pc').toUpperCase()}
+                              </span>
+                              <span className="text-primary">{m.name}</span>
+                              {m.crew_position && (
+                                <span className="text-[var(--text-dimmer)] ml-auto">{m.crew_position}</span>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className="text-xs font-mono text-[var(--text-dimmer)] text-center py-1">No members assigned</div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        );
+      })()}
 
       <div className="flex justify-end gap-3">
         <Button variant="outline" className="terminal-btn">Reset Sheet</Button>

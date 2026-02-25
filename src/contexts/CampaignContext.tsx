@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback, ReactNode } from 'react';
-import { Character, Vehicle, Player } from '@/types/database';
+import { Character, Vehicle, Player, CrewGroup } from '@/types/database';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from "@/integrations/supabase/client";
 import { dbHelpers, supabaseDisabled } from '@/lib/supabase';
@@ -90,6 +90,7 @@ interface CampaignContextType {
   // Campaign data
   characters: Character[];
   vehicles: Vehicle[];
+  crewGroups: CrewGroup[];
 
   // Authentication methods
   checkAuthentication: () => boolean;
@@ -113,6 +114,11 @@ interface CampaignContextType {
   claimCharacter: (characterId: string) => Promise<boolean>;
   deleteCharacter: (characterId: string) => Promise<boolean>;
   deleteVehicle: (vehicleId: string) => Promise<boolean>;
+
+  // Crew group management
+  saveCrewGroup: (groupData: Partial<CrewGroup>) => Promise<CrewGroup | null>;
+  deleteCrewGroup: (groupId: string) => Promise<boolean>;
+  assignCharacterToCrew: (characterId: string, crewId: string | null, position?: string) => Promise<boolean>;
 }
 
 const CampaignContext = createContext<CampaignContextType | undefined>(undefined);
@@ -134,6 +140,7 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
   const [currentPlayer, setCurrentPlayer] = useState<Player | null>(getStoredPlayer);
   const [characters, setCharacters] = useState<Character[]>([]);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [crewGroups, setCrewGroups] = useState<CrewGroup[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
@@ -142,10 +149,12 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
   // Refs to track latest state (avoids stale closures in callbacks)
   const charactersRef = useRef<Character[]>([]);
   const vehiclesRef = useRef<Vehicle[]>([]);
+  const crewGroupsRef = useRef<CrewGroup[]>([]);
   const currentPlayerRef = useRef<Player | null>(currentPlayer);
 
   useEffect(() => { charactersRef.current = characters; }, [characters]);
   useEffect(() => { vehiclesRef.current = vehicles; }, [vehicles]);
+  useEffect(() => { crewGroupsRef.current = crewGroups; }, [crewGroups]);
   useEffect(() => { currentPlayerRef.current = currentPlayer; }, [currentPlayer]);
 
   // ─── Timeout helper ─────────────────────────────────────────────
@@ -330,6 +339,7 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
     setCurrentPlayer(null);
     setCharacters([]);
     setVehicles([]);
+    setCrewGroups([]);
     localStorage.removeItem('traveller_authenticated');
     localStorage.removeItem('traveller_session');
     localStorage.removeItem(PLAYER_STORAGE_KEY);
@@ -363,6 +373,9 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
 
       const vehiclesData = await dbHelpers.getAllVehicles();
       setVehicles(vehiclesData as Vehicle[]);
+
+      const crewGroupsData = await dbHelpers.getAllCrewGroups();
+      setCrewGroups(crewGroupsData as CrewGroup[]);
     } catch (error) {
       console.error('Failed to refresh data:', error);
 
@@ -751,6 +764,124 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
     }
   };
 
+  // ─── Crew group operations ─────────────────────────────────────
+
+  const saveCrewGroup = async (groupData: Partial<CrewGroup>): Promise<CrewGroup | null> => {
+    try {
+      const savedGroup = await dbHelpers.saveCrewGroup(groupData as Record<string, unknown>);
+
+      if (groupData.id) {
+        setCrewGroups(prev => prev.map(g => g.id === savedGroup.id ? savedGroup as CrewGroup : g));
+      } else {
+        setCrewGroups(prev => [...prev, savedGroup as CrewGroup]);
+      }
+
+      const currentGroups = crewGroupsRef.current;
+      const updatedGroups = groupData.id
+        ? currentGroups.map(g => g.id === savedGroup.id ? savedGroup as CrewGroup : g)
+        : [...currentGroups, savedGroup as CrewGroup];
+      localStorage.setItem('traveller_crew_groups', JSON.stringify(updatedGroups));
+
+      toast({
+        title: "Crew Group Saved",
+        description: `${savedGroup.name} has been saved.`,
+      });
+
+      return savedGroup as CrewGroup;
+    } catch (error) {
+      console.error('Failed to save crew group:', error);
+
+      const groupWithId = {
+        ...groupData,
+        id: groupData.id || `crew_${Date.now()}`,
+        player_id: groupData.player_id || 'campaign',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      } as CrewGroup;
+
+      if (groupData.id) {
+        setCrewGroups(prev => prev.map(g => g.id === groupData.id ? groupWithId : g));
+      } else {
+        setCrewGroups(prev => [...prev, groupWithId]);
+      }
+
+      const updatedGroups = groupData.id
+        ? crewGroupsRef.current.map(g => g.id === groupData.id ? groupWithId : g)
+        : [...crewGroupsRef.current, groupWithId];
+      localStorage.setItem('traveller_crew_groups', JSON.stringify(updatedGroups));
+
+      toast({
+        title: "Crew Group Saved Locally",
+        description: `${groupWithId.name} saved to local storage.`,
+      });
+
+      return groupWithId;
+    }
+  };
+
+  const deleteCrewGroup = async (groupId: string): Promise<boolean> => {
+    const player = currentPlayerRef.current;
+    if (player && player.role !== 'gm') {
+      toast({
+        title: "Permission Denied",
+        description: "Only the Game Master can delete crew groups.",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    try {
+      await dbHelpers.deleteCrewGroup(groupId);
+
+      // Unassign all characters in this crew
+      const affectedChars = charactersRef.current.filter(c => c.crew_id === groupId);
+      for (const char of affectedChars) {
+        await saveCharacter({ id: char.id, crew_id: undefined, crew_position: undefined });
+      }
+
+      setCrewGroups(prev => prev.filter(g => g.id !== groupId));
+
+      toast({
+        title: "Crew Group Deleted",
+        description: "Crew group has been deleted and members unassigned.",
+      });
+      return true;
+    } catch (error) {
+      console.error('Failed to delete crew group:', error);
+      toast({
+        title: "Delete Error",
+        description: "Failed to delete crew group.",
+        variant: "destructive",
+      });
+      return false;
+    }
+  };
+
+  const assignCharacterToCrew = async (
+    characterId: string,
+    crewId: string | null,
+    position?: string,
+  ): Promise<boolean> => {
+    try {
+      const updateData: Partial<Character> = {
+        id: characterId,
+        crew_id: crewId || undefined,
+        crew_position: position || undefined,
+      };
+
+      await saveCharacter(updateData);
+      return true;
+    } catch (error) {
+      console.error('Failed to assign character to crew:', error);
+      toast({
+        title: "Assignment Error",
+        description: "Failed to update crew assignment.",
+        variant: "destructive",
+      });
+      return false;
+    }
+  };
+
   const value: CampaignContextType = {
     isAuthenticated,
     isLoading,
@@ -758,6 +889,7 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
     isGM,
     characters,
     vehicles,
+    crewGroups,
     checkAuthentication,
     login,
     register,
@@ -771,6 +903,9 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
     claimCharacter,
     deleteCharacter,
     deleteVehicle,
+    saveCrewGroup,
+    deleteCrewGroup,
+    assignCharacterToCrew,
   };
 
   return (
