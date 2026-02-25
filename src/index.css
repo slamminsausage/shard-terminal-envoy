@@ -507,10 +507,12 @@
    PRINT STYLES - Character & Ship Sheets
    =================================== */
 @media print {
-  /* Reset to paper-friendly colors */
+  /* Base reset: transparent backgrounds, kill effects on all elements.
+     Do NOT set background:#fff here — that turns overlay pseudo-elements
+     into opaque white sheets that cover real content. */
   *, *::before, *::after {
     color: #000 !important;
-    background: #fff !important;
+    background: transparent !important;
     box-shadow: none !important;
     text-shadow: none !important;
     filter: none !important;
@@ -519,7 +521,9 @@
     transition: none !important;
   }
 
-  body {
+  /* White background only on the page itself */
+  html, body {
+    background: #fff !important;
     font-size: 10pt;
     line-height: 1.3;
     margin: 0;
@@ -530,10 +534,24 @@
     min-height: auto;
   }
 
-  /* Hide CRT effects, overlays, and non-content elements */
+  /* === KILL ALL OVERLAYS ===
+     CRTOverlay is position:fixed z-index:9999 with ::before (scanlines)
+     and ::after (vignette) covering the entire viewport. Must be hidden. */
+  .crt-overlay,
+  .crt-overlay::before,
+  .crt-overlay::after {
+    display: none !important;
+  }
+
   .crt-container::before,
   .crt-container::after,
   .terminal-scanlines::before {
+    display: none !important;
+  }
+
+  /* Hide toasters/notifications */
+  [data-sonner-toaster],
+  [role="status"] {
     display: none !important;
   }
 
@@ -547,10 +565,10 @@
     display: none !important;
   }
 
-  /* But keep form content visible (inputs as text) */
+  /* But keep form content visible (inputs as flat text) */
   input[type="text"],
   input[type="number"],
-  input,
+  input:not([type="checkbox"]),
   textarea {
     display: inline-block !important;
     border: none !important;
