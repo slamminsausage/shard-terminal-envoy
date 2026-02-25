@@ -813,7 +813,7 @@ const customGroups = skillDefinitions.filter(def => def.isCustomGroup);
                   </div>
                 </div>
               )}
-              <div className="flex-1">
+              <div className="flex-1 print:hidden">
                 <label className="cursor-pointer">
                   <input
                     type="file"
@@ -864,7 +864,7 @@ const customGroups = skillDefinitions.filter(def => def.isCustomGroup);
           </div>
 
           {/* Crew Assignment Section */}
-          <div className="mt-4 pt-3 border-t border-primary/20">
+          <div className="mt-4 pt-3 border-t border-primary/20 print:hidden">
             <div className="flex items-center gap-2 mb-2">
               <Users className="h-4 w-4 text-[var(--text-dimmer)]" />
               <span className="text-xs font-mono font-semibold text-[var(--text-dimmer)] uppercase tracking-wider">Crew Assignment</span>
@@ -979,9 +979,9 @@ const customGroups = skillDefinitions.filter(def => def.isCustomGroup);
         <div className="panel-header flex-col gap-3">
           <div className="flex items-center justify-between w-full">
             <span className="panel-title">SKILLS</span>
-            <span className="panel-status">Trained skills bubble to the top</span>
+            <span className="panel-status print:hidden">Trained skills bubble to the top</span>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs print:hidden">
             <label className="flex items-center gap-2">
               <span className="uppercase tracking-wide">Difficulty</span>
               <Input
@@ -1022,7 +1022,7 @@ const customGroups = skillDefinitions.filter(def => def.isCustomGroup);
             )}
           </div>
         </div>
-        <div className="panel-content max-h-[420px] overflow-y-auto divide-y divide-border p-0">
+        <div className="panel-content max-h-[420px] overflow-y-auto divide-y divide-border p-0 print-skills-content">
           {sortedBaseSkills.trained.length > 0 && (
             <div className="bg-primary/5 px-3 py-2 text-[11px] font-mono text-primary">
               TRAINED SKILLS
@@ -1037,18 +1037,20 @@ const customGroups = skillDefinitions.filter(def => def.isCustomGroup);
             </div>
           ))}
 
-          <div className="bg-primary/5 px-3 py-2 text-[11px] font-mono text-primary">
-            OTHER SKILLS
-          </div>
-          {sortedBaseSkills.untrained.map(def => (
-            <div key={def.key}>
-              {renderSkillEntry(def)}
-              {skillDefinitions
-                .filter(child => child.parentKey === def.key)
-                .map(child => renderSkillEntry(child))}
+          <div className="print:hidden">
+            <div className="bg-primary/5 px-3 py-2 text-[11px] font-mono text-primary">
+              OTHER SKILLS
             </div>
-          ))}
-          {customGroups.map(def => renderCustomGroup(def))}
+            {sortedBaseSkills.untrained.map(def => (
+              <div key={def.key}>
+                {renderSkillEntry(def)}
+                {skillDefinitions
+                  .filter(child => child.parentKey === def.key)
+                  .map(child => renderSkillEntry(child))}
+              </div>
+            ))}
+            {customGroups.map(def => renderCustomGroup(def))}
+          </div>
         </div>
       </section>
 
