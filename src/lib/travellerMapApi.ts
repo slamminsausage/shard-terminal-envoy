@@ -55,13 +55,13 @@ export async function getSectorCoordinates(
   // Check cache first
   if (sectorCoordinatesCache.has(sectorKey)) {
     const cached = sectorCoordinatesCache.get(sectorKey)!;
-    console.log(`[Sector Coords] Using cached coordinates for "${sector}": sx=${cached.sx}, sy=${cached.sy}`);
+    if (import.meta.env.DEV) console.log(`[Sector Coords] Using cached coordinates for "${sector}": sx=${cached.sx}, sy=${cached.sy}`);
     return cached;
   }
 
   try {
     const sectorFull = getSectorFullName(sector);
-    console.log(`[Sector Coords] Fetching metadata for "${sector}" (full name: "${sectorFull}")`);
+    if (import.meta.env.DEV) console.log(`[Sector Coords] Fetching metadata for "${sector}" (full name: "${sectorFull}")`);
 
     const url = new URL("/api/metadata", TRAVELLER_MAP_BASE_URL);
     url.searchParams.set("sector", sectorFull);
@@ -89,7 +89,7 @@ export async function getSectorCoordinates(
     }
 
     const coords = { sx, sy };
-    console.log(`[Sector Coords] Fetched coordinates for "${sector}": sx=${sx}, sy=${sy}`);
+    if (import.meta.env.DEV) console.log(`[Sector Coords] Fetched coordinates for "${sector}": sx=${sx}, sy=${sy}`);
     sectorCoordinatesCache.set(sectorKey, coords);
     return coords;
   } catch (error) {
@@ -394,7 +394,7 @@ export async function calculateRoute(
       url.searchParams.set("im", "1");
     }
 
-    console.log("Route API URL:", url.toString());
+    if (import.meta.env.DEV) console.log("Route API URL:", url.toString());
 
     const response = await fetch(url.toString(), {
       headers: {
@@ -446,7 +446,7 @@ export async function getCoordinates(
     url.searchParams.set("x", x.toString());
     url.searchParams.set("y", y.toString());
 
-    console.log("Fetching coordinates for:", { x, y, url: url.toString() });
+    if (import.meta.env.DEV) console.log("Fetching coordinates for:", { x, y, url: url.toString() });
 
     const response = await fetch(url.toString(), {
       headers: {
@@ -461,7 +461,7 @@ export async function getCoordinates(
     }
 
     const data = await response.json();
-    console.log("Coordinates API response:", JSON.stringify(data, null, 2));
+    if (import.meta.env.DEV) console.log("Coordinates API response:", JSON.stringify(data, null, 2));
 
     // Construct hex from hx/hy coordinates
     // hx and hy are separate numbers (e.g., hx=19, hy=10 → "1910")
@@ -476,11 +476,11 @@ export async function getCoordinates(
     // It only returns sx, sy (numeric sector coordinates)
     // We need to look up the sector name via the Metadata API
     if (!data.Sector && data.sx !== undefined && data.sy !== undefined) {
-      console.log("Looking up sector name for sx:", data.sx, "sy:", data.sy);
+      if (import.meta.env.DEV) console.log("Looking up sector name for sx:", data.sx, "sy:", data.sy);
       const sectorName = await getSectorNameFromCoords(data.sx, data.sy);
       if (sectorName) {
         data.Sector = sectorName;
-        console.log("Resolved sector name:", sectorName);
+        if (import.meta.env.DEV) console.log("Resolved sector name:", sectorName);
       } else {
         console.error("Could not resolve sector name from coordinates sx:", data.sx, "sy:", data.sy);
       }

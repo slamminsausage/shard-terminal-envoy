@@ -40,7 +40,7 @@ export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         // Check if this handout has a base64 media URL that needs migration
         if (handout.mediaUrl &&
             (handout.mediaUrl.startsWith('data:image/') || handout.mediaUrl.startsWith('data:video/'))) {
-          console.log(`Migrating handout "${handout.title}" to Supabase Storage...`);
+          if (import.meta.env.DEV) console.log(`Migrating handout "${handout.title}" to Supabase Storage...`);
 
           const mimeType = handout.mediaUrl.split(';')[0].split(':')[1];
           const uploadedUrl = await dbHelpers.uploadHandoutMediaFromDataURL(
@@ -52,7 +52,7 @@ export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           if (uploadedUrl) {
             migratedHandouts.push({ ...handout, mediaUrl: uploadedUrl });
             anyMigrated = true;
-            console.log(`Successfully migrated "${handout.title}" to Supabase Storage`);
+            if (import.meta.env.DEV) console.log(`Successfully migrated "${handout.title}" to Supabase Storage`);
           } else {
             console.warn(`Failed to migrate "${handout.title}", keeping original`);
             migratedHandouts.push(handout);
@@ -66,7 +66,7 @@ export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     };
 
     const migratePlayerNotesToDatabase = async (localNotes: PlayerNote[]) => {
-      console.log(`Migrating ${localNotes.length} player notes to database...`);
+      if (import.meta.env.DEV) console.log(`Migrating ${localNotes.length} player notes to database...`);
       let migratedCount = 0;
 
       for (const note of localNotes) {
@@ -78,7 +78,7 @@ export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         }
       }
 
-      console.log(`Successfully migrated ${migratedCount}/${localNotes.length} player notes to database`);
+      if (import.meta.env.DEV) console.log(`Successfully migrated ${migratedCount}/${localNotes.length} player notes to database`);
       return migratedCount > 0;
     };
 
@@ -100,7 +100,7 @@ export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           if (savedPlayerNotes) {
             const localNotes = JSON.parse(savedPlayerNotes);
             if (localNotes.length > 0) {
-              console.log('Found player notes in localStorage, migrating to database...');
+              if (import.meta.env.DEV) console.log('Found player notes in localStorage, migrating to database...');
               const migrated = await migratePlayerNotesToDatabase(localNotes);
 
               if (migrated) {
@@ -120,7 +120,7 @@ export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
                 // Clear localStorage after successful migration
                 localStorage.removeItem('traveller_player_notes');
-                console.log('Player notes migration complete!');
+                if (import.meta.env.DEV) console.log('Player notes migration complete!');
               }
             }
           }
@@ -151,12 +151,12 @@ export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           );
 
           if (hasMigrationNeeded) {
-            console.log('Found handouts with base64 data, migrating to Supabase Storage...');
+            if (import.meta.env.DEV) console.log('Found handouts with base64 data, migrating to Supabase Storage...');
             const { handouts: migratedHandouts, migrated } = await migrateHandoutsToStorage(loadedHandouts);
             setHandouts(migratedHandouts);
 
             if (migrated) {
-              console.log('Migration complete! Handouts now use Supabase Storage.');
+              if (import.meta.env.DEV) console.log('Migration complete! Handouts now use Supabase Storage.');
             }
           } else {
             setHandouts(loadedHandouts);
@@ -204,13 +204,13 @@ export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     // If there's a thumbnail URL and it's a data URL (base64), upload it to Supabase Storage
     if (thumbnailUrl && thumbnailUrl.startsWith('data:image/')) {
-      console.log('Uploading player note thumbnail to Supabase Storage...');
+      if (import.meta.env.DEV) console.log('Uploading player note thumbnail to Supabase Storage...');
       const mimeType = thumbnailUrl.split(';')[0].split(':')[1];
       const uploadedUrl = await dbHelpers.uploadPlayerNoteThumbnailFromDataURL(thumbnailUrl, noteId, mimeType);
 
       if (uploadedUrl) {
         thumbnailUrl = uploadedUrl;
-        console.log('Player note thumbnail uploaded successfully to Supabase Storage');
+        if (import.meta.env.DEV) console.log('Player note thumbnail uploaded successfully to Supabase Storage');
       } else {
         console.warn('Failed to upload player note thumbnail to Supabase Storage, keeping data URL');
       }
@@ -241,13 +241,13 @@ export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     // If there's a new thumbnail URL and it's a data URL (base64), upload it to Supabase Storage
     if (thumbnailUrl && thumbnailUrl.startsWith('data:image/')) {
-      console.log('Uploading updated player note thumbnail to Supabase Storage...');
+      if (import.meta.env.DEV) console.log('Uploading updated player note thumbnail to Supabase Storage...');
       const mimeType = thumbnailUrl.split(';')[0].split(':')[1];
       const uploadedUrl = await dbHelpers.uploadPlayerNoteThumbnailFromDataURL(thumbnailUrl, id, mimeType);
 
       if (uploadedUrl) {
         thumbnailUrl = uploadedUrl;
-        console.log('Player note thumbnail updated successfully in Supabase Storage');
+        if (import.meta.env.DEV) console.log('Player note thumbnail updated successfully in Supabase Storage');
       } else {
         console.warn('Failed to upload player note thumbnail to Supabase Storage, keeping data URL');
       }
@@ -294,13 +294,13 @@ export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     // If there's a media URL and it's a data URL (base64), upload it to Supabase Storage
     if (mediaUrl && (mediaUrl.startsWith('data:image/') || mediaUrl.startsWith('data:video/'))) {
-      console.log('Uploading media to Supabase Storage...');
+      if (import.meta.env.DEV) console.log('Uploading media to Supabase Storage...');
       const mimeType = mediaUrl.split(';')[0].split(':')[1];
       const uploadedUrl = await dbHelpers.uploadHandoutMediaFromDataURL(mediaUrl, handoutId, mimeType);
 
       if (uploadedUrl) {
         mediaUrl = uploadedUrl;
-        console.log('Media uploaded successfully to Supabase Storage');
+        if (import.meta.env.DEV) console.log('Media uploaded successfully to Supabase Storage');
       } else {
         console.warn('Failed to upload media to Supabase Storage, keeping data URL');
       }

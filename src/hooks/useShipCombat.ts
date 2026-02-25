@@ -330,6 +330,10 @@ export function useShipCombat({ contacts, updateContactFields, moveShip }: UseSh
       criticals,
       status: hullCurrent <= 0 ? 'derelict' : contact.status,
     });
+    // Clear sensor locks involving destroyed ships
+    if (hullCurrent <= 0) {
+      setSensorLocks(prev => Object.fromEntries(Object.entries(prev).filter(([k, v]) => k !== contactId && v !== contactId)));
+    }
     addLog(`${source} deals ${rawDamage} damage.`);
   }, [contacts, updateContactFields, addLog]);
 

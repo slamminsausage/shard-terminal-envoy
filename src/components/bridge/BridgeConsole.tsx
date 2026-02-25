@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useBridge } from "@/contexts/BridgeContext";
 import { useJumpPlanner } from "@/contexts/JumpPlannerContext";
 import { useCampaign } from "@/contexts/CampaignContext";
@@ -84,9 +84,17 @@ export function BridgeConsole() {
 
   const handleShipSelect = (contact: Contact) => setSelectedContact(contact);
 
-  const handleShipMove = async (contactId: string, hexQ: number, hexR: number) => {
-    await moveShip(contactId, hexQ, hexR);
-  };
+  // Debounce ship movement to prevent rapid DB writes on fast clicks
+  const moveTimeoutRef = useRef<number | null>(null);
+  const handleShipMove = useCallback((contactId: string, hexQ: number, hexR: number) => {
+    if (moveTimeoutRef.current !== null) {
+      clearTimeout(moveTimeoutRef.current);
+    }
+    moveTimeoutRef.current = window.setTimeout(() => {
+      moveShip(contactId, hexQ, hexR);
+      moveTimeoutRef.current = null;
+    }, 150);
+  }, [moveShip]);
 
   const handleMessageClick = async (message: BridgeMessage) => {
     setSelectedMessage(message);
