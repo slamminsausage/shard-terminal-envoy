@@ -5,7 +5,9 @@ import { Button } from "@/components/ui/button";
 import { useCampaign } from "@/contexts/CampaignContext";
 import { performSkillCheck, rollDamageExpression, getCharacteristicDM, getSkillDM } from "@/lib/dice";
 import { dbHelpers } from "@/lib/supabase";
-import { Upload, X, Crop } from "lucide-react";
+import { Upload, X, Crop, Users, Ship } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { CREW_POSITION_PRESETS } from "@/types/database";
 import { ThumbnailCropper } from "@/components/ui/ThumbnailCropper";
 import { WeaponTable, type WeaponRow } from "@/components/inventory/WeaponTable";
 import { ArmorTable, type ArmourRow } from "@/components/inventory/ArmorTable";
@@ -214,7 +216,7 @@ const initialAugments: AugmentRow[] = Array.from({ length: 4 }, () => ({
 }));
 
 const CharacterSheet = ({ characterId }: CharacterSheetProps = {}) => {
-  const { saveCharacter, characters } = useCampaign();
+  const { saveCharacter, characters, crewGroups, vehicles } = useCampaign();
   const [currentCharacterId, setCurrentCharacterId] = useState<string | undefined>(characterId);
   const [header, setHeader] = useState({
     name: "",
@@ -261,6 +263,8 @@ const CharacterSheet = ({ characterId }: CharacterSheetProps = {}) => {
   const [isUploadingThumbnail, setIsUploadingThumbnail] = useState(false);
   const [cropperOpen, setCropperOpen] = useState(false);
   const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
+  const [crewId, setCrewId] = useState<string>('');
+  const [crewPosition, setCrewPosition] = useState<string>('');
 
   // Load character data if editing an existing character
   useEffect(() => {
@@ -391,6 +395,10 @@ const CharacterSheet = ({ characterId }: CharacterSheetProps = {}) => {
 
         // Load thumbnail
         if (typeof character.thumbnail_url === "string") setThumbnailUrl(character.thumbnail_url);
+
+        // Load crew assignment
+        setCrewId(character.crew_id || '');
+        setCrewPosition(character.crew_position || '');
       }
     }
   }, [currentCharacterId, characters]);
@@ -547,6 +555,8 @@ const CharacterSheet = ({ characterId }: CharacterSheetProps = {}) => {
         armor: armourRows,
         augments: augments,
         thumbnail_url: finalThumbnailUrl || null,
+        crew_id: crewId || undefined,
+        crew_position: crewPosition || undefined,
       };
 
       await saveCharacter(characterData);
@@ -851,6 +861,77 @@ const customGroups = skillDefinitions.filter(def => def.isCustomGroup);
           onChange={value => handleHeaderChange("homeworld", value)}
           className="md:col-span-3"
         />
+          </div>
+
+          {/* Crew Assignment Section */}
+          <div className="mt-4 pt-3 border-t border-primary/20">
+            <div className="flex items-center gap-2 mb-2">
+              <Users className="h-4 w-4 text-[var(--text-dimmer)]" />
+              <span className="text-xs font-mono font-semibold text-[var(--text-dimmer)] uppercase tracking-wider">Crew Assignment</span>
+            </div>
+            {crewGroups.length > 0 ? (
+              <div className="flex gap-3 flex-wrap items-center">
+                {/* Crew group selector */}
+                <Select value={crewId || 'none'} onValueChange={v => { setCrewId(v === 'none' ? '' : v); if (v === 'none') setCrewPosition(''); }}>
+                  <SelectTrigger className="h-8 text-xs font-mono w-48 border-primary/30">
+                    <SelectValue placeholder="No crew" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No Crew</SelectItem>
+                    {crewGroups.map(g => {
+                      const ship = vehicles.find(v => v.id === g.ship_id);
+                      return (
+                        <SelectItem key={g.id} value={g.id}>
+                          <span className="flex items-center gap-1.5">
+                            <span className="w-2 h-2 rounded-full inline-block" style={{ backgroundColor: g.color }} />
+                            {g.name}
+                            {ship && <span className="opacity-50 text-[0.6rem]">({ship.name})</span>}
+                          </span>
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+
+                {/* Position selector */}
+                {crewId && (
+                  <Select value={crewPosition || 'none'} onValueChange={v => setCrewPosition(v === 'none' ? '' : v)}>
+                    <SelectTrigger className="h-8 text-xs font-mono w-40 border-primary/30">
+                      <SelectValue placeholder="Position" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">-- Position --</SelectItem>
+                      {CREW_POSITION_PRESETS.map(pos => (
+                        <SelectItem key={pos} value={pos}>{pos}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+
+                {/* Display current assignment */}
+                {crewId && (() => {
+                  const crew = crewGroups.find(g => g.id === crewId);
+                  if (!crew) return null;
+                  const ship = vehicles.find(v => v.id === crew.ship_id);
+                  return (
+                    <span className="flex items-center gap-1.5 text-xs font-mono">
+                      <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: crew.color, boxShadow: `0 0 5px ${crew.color}` }} />
+                      <span style={{ color: crew.color }}>{crew.name}</span>
+                      {ship && (
+                        <span className="text-[var(--text-dimmer)] flex items-center gap-0.5">
+                          <Ship className="h-3 w-3" /> {ship.name}
+                        </span>
+                      )}
+                      {crewPosition && <span className="text-[var(--text-dimmer)]">— {crewPosition}</span>}
+                    </span>
+                  );
+                })()}
+              </div>
+            ) : (
+              <div className="text-xs font-mono text-[var(--text-dimmer)]">
+                No crew groups defined. Create crews in the Crew tab.
+              </div>
+            )}
           </div>
         </div>
       </section>

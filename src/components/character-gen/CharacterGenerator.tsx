@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Dices, User, Briefcase, Award, Save, ArrowRight, AlertCircle, RefreshCw, ChevronDown, ChevronUp, Star } from 'lucide-react';
+import { Dices, User, Briefcase, Award, Save, ArrowRight, AlertCircle, RefreshCw, ChevronDown, ChevronUp, Star, Ship, Users } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useCampaign } from '@/contexts/CampaignContext';
 import { ALL_CAREERS, BACKGROUND_SKILLS, getPreCareerEvent, CAREER_PRISONER, rollInitialParoleThreshold, CAREER_PSION, performPsiTesting, PSIONIC_TALENTS, type PsiTestResult } from './careers';
@@ -18,6 +18,7 @@ import { SpecialtySelector, needsSpecialtySelection, getBaseSkillName } from './
 import { MusteringOut } from './MusteringOut';
 import { RACES, getRaceById, applyRaceModifiers, type Race, type RaceTrait } from './races';
 import { getCareerTheme, getCareerCardStyle, getCareerTextStyle, type CareerTheme } from './careerThemes';
+import { CREW_POSITION_PRESETS } from '@/types/database';
 
 // ============================================================================
 // TYPE DEFINITIONS (Component-specific)
@@ -288,8 +289,12 @@ const getRankTitle = (
 // ============================================================================
 
 export const CharacterGenerator: React.FC = () => {
-  const { saveCharacter } = useCampaign();
+  const { saveCharacter, crewGroups, vehicles } = useCampaign();
   const [step, setStep] = useState(1);
+
+  // Crew selection state for the final save step
+  const [selectedCrewId, setSelectedCrewId] = useState<string>('');
+  const [selectedPosition, setSelectedPosition] = useState<string>('');
   const [characterData, setCharacterData] = useState<CharacterData>({
     name: '',
     species: 'Human',
@@ -2830,6 +2835,9 @@ export const CharacterGenerator: React.FC = () => {
         armor: characterData.armor,
         augments: characterData.augments,
         thumbnail_url: null,
+        // Crew assignment
+        crew_id: selectedCrewId || undefined,
+        crew_position: selectedPosition || undefined,
       };
 
       await saveCharacter(finalCharacterData);
@@ -5848,6 +5856,76 @@ export const CharacterGenerator: React.FC = () => {
                           </div>
                         </CardContent>
                       )}
+                    </Card>
+                  )}
+
+                  {/* Crew Assignment */}
+                  {crewGroups.length > 0 && (
+                    <Card className="border-terminal-primary/30 bg-black/50">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-terminal-primary text-sm flex items-center gap-2">
+                          <Users className="h-4 w-4" />
+                          CREW ASSIGNMENT
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        <p className="text-terminal-primary/60 text-xs">
+                          Assign this character to a crew group (optional — can be changed later).
+                        </p>
+                        <div className="flex gap-2 flex-wrap">
+                          {/* Crew selector */}
+                          <Select value={selectedCrewId || 'none'} onValueChange={v => { setSelectedCrewId(v === 'none' ? '' : v); if (v === 'none') setSelectedPosition(''); }}>
+                            <SelectTrigger className="h-8 text-xs font-mono w-48 border-terminal-primary/30">
+                              <SelectValue placeholder="No crew" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="none">Skip — assign later</SelectItem>
+                              {crewGroups.map(g => {
+                                const ship = vehicles.find(v => v.id === g.ship_id);
+                                return (
+                                  <SelectItem key={g.id} value={g.id}>
+                                    <span className="flex items-center gap-1.5">
+                                      <span className="w-2 h-2 rounded-full inline-block" style={{ backgroundColor: g.color }} />
+                                      {g.name}
+                                      {ship && <span className="opacity-50 text-[0.6rem]">({ship.name})</span>}
+                                    </span>
+                                  </SelectItem>
+                                );
+                              })}
+                            </SelectContent>
+                          </Select>
+
+                          {/* Position selector (only if crew chosen) */}
+                          {selectedCrewId && (
+                            <Select value={selectedPosition || 'none'} onValueChange={v => setSelectedPosition(v === 'none' ? '' : v)}>
+                              <SelectTrigger className="h-8 text-xs font-mono w-40 border-terminal-primary/30">
+                                <SelectValue placeholder="Position" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="none">-- Position --</SelectItem>
+                                {CREW_POSITION_PRESETS.map(pos => (
+                                  <SelectItem key={pos} value={pos}>{pos}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          )}
+                        </div>
+
+                        {/* Show selected crew color badge */}
+                        {selectedCrewId && (() => {
+                          const crew = crewGroups.find(g => g.id === selectedCrewId);
+                          if (!crew) return null;
+                          return (
+                            <div className="flex items-center gap-2 text-xs font-mono">
+                              <span className="w-3 h-3 rounded-full" style={{ backgroundColor: crew.color, boxShadow: `0 0 6px ${crew.color}` }} />
+                              <span style={{ color: crew.color }}>{crew.name}</span>
+                              {selectedPosition && (
+                                <span className="text-terminal-primary/50">— {selectedPosition}</span>
+                              )}
+                            </div>
+                          );
+                        })()}
+                      </CardContent>
                     </Card>
                   )}
 
