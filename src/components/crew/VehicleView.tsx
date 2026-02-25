@@ -1,7 +1,8 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useCallback } from "react";
 import { useCampaign } from "@/contexts/CampaignContext";
 import VehicleSheet from "./VehicleSheet";
 import { Button } from "@/components/ui/button";
+import { Printer } from "lucide-react";
 
 interface VehicleViewProps {
   vehicleId: string;
@@ -19,7 +20,10 @@ const VehicleView = ({ vehicleId }: VehicleViewProps) => {
 
   const vehicle = vehicles.find(v => v.id === vehicleId);
 
-  // Show loading state while data is being fetched
+  const handlePrint = useCallback(() => {
+    window.print();
+  }, []);
+
   if (isLoading && !vehicle) {
     return (
       <div className="h-screen bg-background text-foreground p-8 overflow-auto">
@@ -47,11 +51,17 @@ const VehicleView = ({ vehicleId }: VehicleViewProps) => {
   return (
     <div className="h-screen bg-background text-foreground overflow-auto">
       <div className="max-w-6xl mx-auto p-6 space-y-4">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between print:hidden">
           <h1 className="text-lg font-mono tracking-[0.2em] text-primary">VEHICLE SHEET</h1>
-          <Button variant="outline" onClick={refreshData} size="sm">
-            Refresh
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={handlePrint} size="sm" className="gap-1">
+              <Printer className="w-4 h-4" />
+              Print
+            </Button>
+            <Button variant="outline" onClick={refreshData} size="sm">
+              Refresh
+            </Button>
+          </div>
         </div>
         <VehicleSheet vehicleId={vehicleId} />
       </div>
