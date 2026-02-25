@@ -907,4 +907,150 @@
   .text-lg {
     font-size: 9pt !important;
   }
+
+  /* ============================
+     COMPACT PRINT HEADER
+     Profile + Characteristics side-by-side
+     ============================ */
+  .print-compact-header {
+    border: 0.5pt solid #999 !important;
+    padding: 4pt !important;
+    margin-bottom: 4pt !important;
+    page-break-inside: avoid;
+  }
+
+  .print-header-grid {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 6pt !important;
+  }
+
+  .print-header-left {
+    border-right: 0.5pt solid #ccc !important;
+    padding-right: 6pt !important;
+  }
+
+  .print-char-title {
+    font-size: 12pt !important;
+    font-weight: bold !important;
+    letter-spacing: 0.15em !important;
+    text-transform: uppercase !important;
+    border-bottom: 1pt solid #000 !important;
+    padding-bottom: 2pt !important;
+    margin-bottom: 3pt !important;
+  }
+
+  .print-info-row {
+    display: flex !important;
+    gap: 6pt !important;
+    align-items: flex-start !important;
+    margin-bottom: 4pt !important;
+  }
+
+  .print-portrait {
+    width: 56px !important;
+    height: 56px !important;
+    max-width: 56px !important;
+    max-height: 56px !important;
+    object-fit: cover !important;
+    border: 0.5pt solid #999 !important;
+    flex-shrink: 0 !important;
+  }
+
+  .print-info-fields {
+    flex: 1 !important;
+    min-width: 0 !important;
+  }
+
+  .print-info-line {
+    font-size: 7pt !important;
+    line-height: 1.4 !important;
+    color: #000 !important;
+  }
+
+  .print-label {
+    font-weight: bold !important;
+    font-size: 6pt !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.05em !important;
+  }
+
+  .print-section-label {
+    font-size: 6pt !important;
+    font-weight: bold !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.1em !important;
+    border-bottom: 0.5pt solid #999 !important;
+    padding-bottom: 1pt !important;
+    margin-bottom: 2pt !important;
+    margin-top: 3pt !important;
+    color: #000 !important;
+  }
+
+  .print-finance-row {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 2pt 8pt !important;
+    font-size: 7pt !important;
+    color: #000 !important;
+  }
+
+  .print-finance-row b {
+    font-size: 6pt !important;
+    text-transform: uppercase !important;
+  }
+
+  /* Characteristics table: compact */
+  .print-char-table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    font-size: 8pt !important;
+    margin: 0 !important;
+  }
+
+  .print-char-table th {
+    font-size: 6pt !important;
+    font-weight: bold !important;
+    text-transform: uppercase !important;
+    text-align: center !important;
+    padding: 1pt 3pt !important;
+    border-bottom: 0.5pt solid #999 !important;
+    display: table-cell !important;
+  }
+
+  .print-char-table td {
+    text-align: center !important;
+    padding: 1.5pt 3pt !important;
+    font-size: 8pt !important;
+    border-bottom: 0.5pt solid #ddd !important;
+    display: table-cell !important;
+  }
+
+  .print-char-table .print-stat-label {
+    text-align: left !important;
+    font-weight: bold !important;
+    font-size: 7pt !important;
+    letter-spacing: 0.05em !important;
+  }
+
+  /* Restore first-child visibility for print-only tables */
+  .print-char-table td:first-child,
+  .print-char-table th:first-child {
+    display: table-cell !important;
+  }
+
+  .print-relationships {
+    font-size: 7pt !important;
+    line-height: 1.3 !important;
+    color: #000 !important;
+  }
+
+  .print-relationships b {
+    font-size: 6pt !important;
+    text-transform: uppercase !important;
+  }
+
+  .print-relationships div {
+    margin-bottom: 1pt !important;
+  }
 }

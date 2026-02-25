@@ -773,9 +773,108 @@ const customGroups = skillDefinitions.filter(def => def.isCustomGroup);
     return { trained, untrained };
   }, [baseSkills, skills]);
 
+  const charShortLabels: Record<string, string> = {
+    strength: "STR", dexterity: "DEX", endurance: "END",
+    intellect: "INT", education: "EDU", social: "SOC", psionics: "PSI"
+  };
+
   return (
     <div className="space-y-6 text-sm max-h-[80vh] overflow-y-auto font-mono">
-      <section className="panel">
+      {/* ==============================
+          PRINT-ONLY COMPACT HEADER
+          Profile + Characteristics side-by-side, finances/study inline
+          ============================== */}
+      <div className="hidden print:block print-compact-header">
+        <div className="print-header-grid">
+          {/* Left column: portrait + character info */}
+          <div className="print-header-left">
+            <div className="print-char-title">{header.name || "UNNAMED"}</div>
+            <div className="print-info-row">
+              {thumbnailUrl && (
+                <img src={thumbnailUrl} alt="" className="print-portrait" />
+              )}
+              <div className="print-info-fields">
+                <div className="print-info-line"><span className="print-label">Species:</span> {header.species || "—"}</div>
+                <div className="print-info-line"><span className="print-label">Age:</span> {header.age || "—"}</div>
+                <div className="print-info-line"><span className="print-label">Homeworld:</span> {header.homeworld || "—"}</div>
+                {header.speciesTraits && <div className="print-info-line"><span className="print-label">Traits:</span> {header.speciesTraits}</div>}
+                {header.rads && <div className="print-info-line"><span className="print-label">Rads:</span> {header.rads}</div>}
+              </div>
+            </div>
+            {/* Finances inline */}
+            <div className="print-section-label">FINANCES</div>
+            <div className="print-finance-row">
+              {finances.cashOnHand && <span><b>Cash:</b> Cr{finances.cashOnHand}</span>}
+              {finances.pension && <span><b>Pension:</b> Cr{finances.pension}</span>}
+              {finances.debt && <span><b>Debt:</b> Cr{finances.debt}</span>}
+              {finances.shipPayments && <span><b>Ship Pay:</b> Cr{finances.shipPayments}</span>}
+              {finances.livingCost && <span><b>Living:</b> Cr{finances.livingCost}</span>}
+            </div>
+            {/* Study period inline */}
+            {studyPeriod.skill && (
+              <div className="print-finance-row">
+                <span><b>Studying:</b> {studyPeriod.skill}</span>
+                {studyPeriod.weeks && <span><b>Weeks:</b> {studyPeriod.weeks}</span>}
+                {studyPeriod.complete && <span><b>Complete:</b> {studyPeriod.complete}</span>}
+              </div>
+            )}
+          </div>
+          {/* Right column: characteristics table */}
+          <div className="print-header-right">
+            <div className="print-section-label">CHARACTERISTICS</div>
+            <table className="print-char-table">
+              <thead>
+                <tr>
+                  <th>Stat</th>
+                  <th>Max</th>
+                  <th>Cur</th>
+                  <th>DM</th>
+                </tr>
+              </thead>
+              <tbody>
+                {characteristicKeys.map(key => {
+                  const val = characteristics[key];
+                  const cur = Number(val.current || val.total || 0);
+                  const dm = getCharacteristicDMTable(cur);
+                  const dmStr = dm >= 0 ? `+${dm}` : `${dm}`;
+                  return (
+                    <tr key={key}>
+                      <td className="print-stat-label">{charShortLabels[key]}</td>
+                      <td>{val.total || "—"}</td>
+                      <td>{val.current || val.total || "—"}</td>
+                      <td>{dmStr}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+            {/* Relationships compact */}
+            {(relationships.allies || relationships.contacts || relationships.rivals || relationships.enemies) && (
+              <>
+                <div className="print-section-label" style={{ marginTop: '3pt' }}>RELATIONSHIPS</div>
+                <div className="print-relationships">
+                  {relationships.allies && <div><b>Allies:</b> {relationships.allies}</div>}
+                  {relationships.contacts && <div><b>Contacts:</b> {relationships.contacts}</div>}
+                  {relationships.rivals && <div><b>Rivals:</b> {relationships.rivals}</div>}
+                  {relationships.enemies && <div><b>Enemies:</b> {relationships.enemies}</div>}
+                </div>
+              </>
+            )}
+            {/* Notes compact */}
+            {notes && (
+              <>
+                <div className="print-section-label" style={{ marginTop: '3pt' }}>NOTES</div>
+                <div className="print-relationships">{notes}</div>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* ==============================
+          SCREEN-ONLY: Original Profile & Characteristics sections
+          ============================== */}
+      <section className="panel print:hidden">
         <div className="panel-header">
           <span className="panel-title">CHARACTER PROFILE</span>
         </div>
@@ -936,7 +1035,7 @@ const customGroups = skillDefinitions.filter(def => def.isCustomGroup);
         </div>
       </section>
 
-      <section className="panel">
+      <section className="panel print:hidden">
         <div className="panel-header">
           <span className="panel-title">CHARACTERISTICS</span>
         </div>
@@ -1085,7 +1184,7 @@ const customGroups = skillDefinitions.filter(def => def.isCustomGroup);
         />
       </section>
 
-      <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <section className="grid grid-cols-1 lg:grid-cols-2 gap-6 print:hidden">
         <div className="panel">
           <div className="panel-header">
             <span className="panel-title">FINANCES</span>
