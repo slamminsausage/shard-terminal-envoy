@@ -52,8 +52,10 @@ export function AttackPanel({
 
         const hitRawStr = manualHitRolls[ship.id] ?? '';
         const damageRawStr = manualDamageRolls[ship.id] ?? '';
-        const manualHit = hitRawStr !== '' ? parseInt(hitRawStr) : undefined;
-        const manualDamage = damageRawStr !== '' ? parseInt(damageRawStr) : undefined;
+        const parsedHit = parseInt(hitRawStr);
+        const parsedDamage = parseInt(damageRawStr);
+        const manualHit = hitRawStr !== '' && !isNaN(parsedHit) ? parsedHit : undefined;
+        const manualDamage = damageRawStr !== '' && !isNaN(parsedDamage) ? parsedDamage : undefined;
 
         return (
           <div key={ship.id} className="border border-terminal-bg-border rounded p-2 space-y-1.5">
