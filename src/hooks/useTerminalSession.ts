@@ -15,7 +15,7 @@
 import { useState, useCallback, useRef } from 'react';
 import { TerminalDefinition } from '@/lib/terminals';
 
-type ViewType = 'loading' | 'init' | 'terminal' | 'log';
+type ViewType = 'loading' | 'init' | 'connecting' | 'terminal' | 'log';
 
 interface LogEntry {
   title: string;
