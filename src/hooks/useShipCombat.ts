@@ -363,6 +363,7 @@ export function useShipCombat({ contacts, updateContactFields, moveShip }: UseSh
     movementAllocation?: number;
     evasiveAllocation?: number;
     maneuverIntent?: 'hold' | 'close' | 'open';
+    thrust?: number;
   }) => {
     await updateContactFields(contactId, fields);
   }, [updateContactFields]);
@@ -372,25 +373,42 @@ export function useShipCombat({ contacts, updateContactFields, moveShip }: UseSh
 
     for (const ship of combatants) {
       const effectiveThrust = getEffectiveThrust(ship);
-      const totalAllocated = (ship.movementAllocation ?? 0) + (ship.evasiveAllocation ?? 0);
+      const movAlloc = ship.movementAllocation ?? 0;
+      const evaAlloc = ship.evasiveAllocation ?? 0;
+      const totalAllocated = movAlloc + evaAlloc;
+
       if (totalAllocated > effectiveThrust) {
         addLog(`${ship.name} over-allocated thrust (${totalAllocated}/${effectiveThrust}). Allocation reset.`, true);
         await updateContactFields(ship.id, { movementAllocation: 0, evasiveAllocation: 0, maneuverIntent: 'hold' });
         continue;
       }
 
-      // Compute current range to player ship
+      // Log evasive posture
+      if (evaAlloc > 0) {
+        const pilotSkill = ship.pilotSkill ?? 0;
+        const effectiveEvasive = Math.min(evaAlloc, pilotSkill);
+        addLog(`${ship.name} takes evasive action (${evaAlloc} thrust): -${effectiveEvasive} to incoming attacks this round.`);
+      }
+
+      // Compute current range to player ship and apply movement
       if (playerShip && ship.id !== playerShip.id && ship.maneuverIntent && ship.maneuverIntent !== 'hold') {
         const currentRange = getContactRangeBand(ship, playerShip);
         const required = RANGE_BAND_RULES.find(b => b.key === currentRange)?.thrustRequired ?? 1;
-        if ((ship.movementAllocation ?? 0) >= required) {
+        if (movAlloc >= required) {
           const nextRange = getRangeBandShift(currentRange, ship.maneuverIntent);
           if (nextRange !== currentRange) {
-            addLog(`${ship.name} shifts range to ${RANGE_BAND_LABELS[nextRange]}.`);
+            addLog(`${ship.name} maneuvers to ${RANGE_BAND_LABELS[nextRange]} range (used ${movAlloc} thrust, needed ${required}).`);
+          } else {
+            addLog(`${ship.name} holds position at ${RANGE_BAND_LABELS[currentRange]} (already at range limit).`);
           }
+        } else {
+          addLog(`${ship.name} lacks thrust to change range (has ${movAlloc}, needs ${required} for ${RANGE_BAND_LABELS[currentRange]}).`);
         }
+      } else if (movAlloc > 0) {
+        addLog(`${ship.name} uses ${movAlloc} thrust for positional movement.`);
       }
     }
+    addLog('--- Maneuver phase complete. Entering attack phase. ---');
     setPhase('attack');
   }, [combatants, updateContactFields, addLog]);
 
