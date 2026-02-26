@@ -2285,6 +2285,21 @@ export const dbHelpers = {
     }
   },
 
+  async deleteTransaction(transactionId: string) {
+    try {
+      const { error } = await supabase
+        .from('transactions')
+        .delete()
+        .eq('id', transactionId);
+
+      if (error) throw error;
+      return true;
+    } catch (error) {
+      console.error('Failed to delete transaction:', error);
+      throw error;
+    }
+  },
+
   async getPartyFunds() {
     try {
       const { data, error } = await supabase
