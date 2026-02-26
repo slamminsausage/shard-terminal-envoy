@@ -79,8 +79,10 @@ export function AttackPanel({
                         <SelectValue placeholder="Select target" />
                       </SelectTrigger>
                       <SelectContent className="bg-black border-terminal-primary/50 text-terminal-primary">
-                        {combatants.filter(c => c.id !== ship.id).map(c => (
-                          <SelectItem key={c.id} value={c.id} className="text-xs">{c.name}</SelectItem>
+                        {combatants.filter(c => c.id !== ship.id && (c.hullCurrent ?? 1) > 0).map(c => (
+                          <SelectItem key={c.id} value={c.id} className="text-xs">
+                            {c.name} ({c.hullCurrent ?? 0}/{c.hullMax ?? 0} HP)
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>

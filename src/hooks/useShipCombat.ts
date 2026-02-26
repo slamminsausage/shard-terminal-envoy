@@ -237,6 +237,7 @@ export function useShipCombat({ contacts, updateContactFields, moveShip }: UseSh
       movementAllocation: 0,
       evasiveAllocation: 0,
       maneuverIntent: 'hold',
+      surprised: false,
       criticals: {},
       sustainedDamageCounter: 0,
       repairProgress: {},
@@ -620,6 +621,10 @@ export function useShipCombat({ contacts, updateContactFields, moveShip }: UseSh
       addLog(`${ship.name} is already charging jump drive (${ship.jumpChargeRounds} rounds remaining).`, true);
       return;
     }
+    if ((boardingPressure[shipId] ?? 0) > 0) {
+      addLog(`${ship.name} cannot jump while under boarding action (pressure: ${boardingPressure[shipId]}).`, true);
+      return;
+    }
     const jumpDriveSeverity = getCriticalSeverity(ship, 'jump_drive');
     if (jumpDriveSeverity >= 4) {
       addLog(`${ship.name} cannot jump: jump drive critically offline.`, true);
@@ -633,7 +638,7 @@ export function useShipCombat({ contacts, updateContactFields, moveShip }: UseSh
     const charge = jumpDriveSeverity >= 2 ? 3 : 2;
     updateContactFields(shipId, { jumpCommitted: true, jumpChargeRounds: charge });
     addLog(`${ship.name} initiates jump; transition in ${charge} rounds.`, true);
-  }, [contacts, updateContactFields, addLog]);
+  }, [contacts, boardingPressure, updateContactFields, addLog]);
 
   // ── Sensor actions ──
 
@@ -888,6 +893,7 @@ export function useShipCombat({ contacts, updateContactFields, moveShip }: UseSh
       ));
       setGunnerAssist({});
       setDogfightAttackModifiers({});
+      setDogfightMomentum({});
       addLog('New round started.');
       return;
     }

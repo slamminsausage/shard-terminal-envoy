@@ -17,7 +17,7 @@ interface CombatSidebarProps {
 }
 
 export function CombatSidebar({ selectedContact, onSelectContact, onAddShipClick }: CombatSidebarProps) {
-  const { contacts, combat } = useBridge();
+  const { contacts, combat, updateContactFields } = useBridge();
 
   const {
     isActive,
@@ -119,6 +119,7 @@ export function CombatSidebar({ selectedContact, onSelectContact, onAddShipClick
             onAddToCombat={addToCombat}
             onRemoveFromCombat={removeFromCombat}
             onRollInitiative={rollInitiative}
+            onToggleSurprised={(id, val) => updateContactFields(id, { surprised: val })}
           />
         )}
 
