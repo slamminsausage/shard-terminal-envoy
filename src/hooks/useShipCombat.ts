@@ -340,17 +340,18 @@ export function useShipCombat({ contacts, updateContactFields, moveShip }: UseSh
 
   // ── Initiative ──
 
-  const rollInitiative = useCallback(async () => {
+  const rollInitiative = useCallback(async (manualRolls?: Record<string, number>) => {
     for (const ship of combatants) {
-      const dice = roll2d6();
+      const dice = manualRolls?.[ship.id] ?? roll2d6();
       const commandMod = initiativeModifiers[ship.id] ?? 0;
       const pilotScore = (ship.pilotSkill ?? 0) + getPilotCriticalPenalty(ship) + getCrewCriticalPenalty(ship) - Math.min(3, boardingPressure[ship.id] ?? 0);
       const thrustScore = getEffectiveThrust(ship);
       const bridgePenalty = getBridgeCriticalPenalty(ship);
       const total = dice + pilotScore + thrustScore + (ship.tacticsEffect ?? 0) + commandMod + bridgePenalty;
+      const rollLabel = manualRolls?.[ship.id] != null ? `${dice}(manual)` : String(dice);
       await updateContactFields(ship.id, {
         initiative: total,
-        initiativeDetail: `${dice} + Pilot ${pilotScore} + Thrust ${thrustScore} + Tactics ${ship.tacticsEffect ?? 0}${commandMod ? ` + Command ${commandMod}` : ''}${bridgePenalty ? ` ${bridgePenalty}` : ''}`,
+        initiativeDetail: `${rollLabel} + Pilot ${pilotScore} + Thrust ${thrustScore} + Tactics ${ship.tacticsEffect ?? 0}${commandMod ? ` + Command ${commandMod}` : ''}${bridgePenalty ? ` ${bridgePenalty}` : ''}`,
       });
     }
     addLog('Initiative rolled for all ships.');
@@ -415,7 +416,7 @@ export function useShipCombat({ contacts, updateContactFields, moveShip }: UseSh
 
   // ── Attack resolution ──
 
-  const resolveAttack = useCallback((attackerId: string) => {
+  const resolveAttack = useCallback((attackerId: string, manualHitRoll?: number, manualDamageRoll?: number) => {
     const attacker = contacts.find(c => c.id === attackerId);
     const plan = attackPlans[attackerId] ?? getDefaultAttackState();
     const weapon = SHIP_WEAPON_PRESETS.find(w => w.id === plan.weaponId);
@@ -441,7 +442,7 @@ export function useShipCombat({ contacts, updateContactFields, moveShip }: UseSh
       addLog(`${attacker.name} cannot use called shot here (requires non-missile at Short range or closer).`, true);
     }
 
-    const dice = roll2d6();
+    const dice = manualHitRoll ?? roll2d6();
     const rangeMod = RANGE_ATTACK_MODIFIERS[rangeBand];
     const sizeMod = Math.min(6, Math.floor((target.tonnage ?? 100) / 1000));
     const targetPilotSkill = Math.max(0, (target.pilotSkill ?? 0) + getPilotCriticalPenalty(target) + getCrewCriticalPenalty(target));
@@ -457,9 +458,10 @@ export function useShipCombat({ contacts, updateContactFields, moveShip }: UseSh
     const lockBonus = sensorLocks[attacker.id] === target.id ? 2 : 0;
     const grandTotal = total + lockBonus;
     const effect = grandTotal - 8;
+    const rollLabel = manualHitRoll != null ? `${dice}(manual)` : String(dice);
 
     if (grandTotal < 8) {
-      addLog(`${attacker.name} misses ${target.name} with ${weapon.name} (${grandTotal}${sandPenalty ? ` incl. sand -${sandPenalty}` : ''}).`);
+      addLog(`${attacker.name} misses ${target.name} with ${weapon.name} (2d6: ${rollLabel}, total: ${grandTotal}${sandPenalty ? ` incl. sand -${sandPenalty}` : ''}).`);
       return;
     }
 
@@ -507,15 +509,16 @@ export function useShipCombat({ contacts, updateContactFields, moveShip }: UseSh
     }
 
     // Direct fire
-    const baseDamage = rollDamageExpression(weapon.damage).total;
+    const baseDamage = manualDamageRoll ?? rollDamageExpression(weapon.damage).total;
     const modifiedDamage = baseDamage + Math.max(0, effect);
     const effectiveTargetArmor = getEffectiveArmor(target);
     const finalDamage = Math.max(0, modifiedDamage - effectiveTargetArmor);
+    const dmgLabel = manualDamageRoll != null ? `${baseDamage}(manual)` : String(baseDamage);
 
     applyDamageToShip(
       target.id,
       finalDamage,
-      `${attacker.name} hits ${target.name} with ${weapon.name} (roll ${grandTotal}${lockBonus ? ` incl. lock +${lockBonus}` : ''}${assistBonus ? ` incl. aid +${assistBonus}` : ''}${dogfightMod ? ` incl. dogfight ${dogfightMod >= 0 ? '+' : ''}${dogfightMod}` : ''}${sandPenalty ? ` incl. sand -${sandPenalty}` : ''}${calledShotEligible ? ' with called shot' : ''}, effect ${effect}, armor ${effectiveTargetArmor})`,
+      `${attacker.name} hits ${target.name} with ${weapon.name} (2d6: ${rollLabel}, total: ${grandTotal}${lockBonus ? ` lock+${lockBonus}` : ''}${assistBonus ? ` aid+${assistBonus}` : ''}${dogfightMod ? ` dogfight${dogfightMod >= 0 ? '+' : ''}${dogfightMod}` : ''}${sandPenalty ? ` sand-${sandPenalty}` : ''}${calledShotEligible ? ' called-shot' : ''}, effect ${effect}, dmg ${dmgLabel}+${Math.max(0,effect)}, armor ${effectiveTargetArmor})`,
       effect,
       calledShotEligible ? (plan.calledShotLocation as CriticalLocation) : undefined,
     );
@@ -523,7 +526,7 @@ export function useShipCombat({ contacts, updateContactFields, moveShip }: UseSh
 
   // ── Dogfight ──
 
-  const resolveDogfight = useCallback((shipId: string) => {
+  const resolveDogfight = useCallback((shipId: string, manualShipRoll?: number, manualTargetRoll?: number) => {
     const ship = contacts.find(c => c.id === shipId);
     const targetId = dogfightPlans[shipId]?.targetId;
     const target = contacts.find(c => c.id === targetId);
@@ -535,8 +538,8 @@ export function useShipCombat({ contacts, updateContactFields, moveShip }: UseSh
       return;
     }
 
-    const shipRoll = roll2d6();
-    const targetRoll = roll2d6();
+    const shipRoll = manualShipRoll ?? roll2d6();
+    const targetRoll = manualTargetRoll ?? roll2d6();
     const shipScore = shipRoll + (ship.pilotSkill ?? 0) + getPilotCriticalPenalty(ship) + getBridgeCriticalPenalty(ship) + getCrewCriticalPenalty(ship) + getDogfightSizePenalty(ship.tonnage ?? 100) + Math.min(getEffectiveThrust(ship), ship.movementAllocation ?? 0) + (dogfightMomentum[ship.id] ?? 0);
     const targetScore = targetRoll + (target.pilotSkill ?? 0) + getPilotCriticalPenalty(target) + getBridgeCriticalPenalty(target) + getCrewCriticalPenalty(target) + getDogfightSizePenalty(target.tonnage ?? 100) + Math.min(getEffectiveThrust(target), target.movementAllocation ?? 0) + (dogfightMomentum[target.id] ?? 0);
 
@@ -556,7 +559,7 @@ export function useShipCombat({ contacts, updateContactFields, moveShip }: UseSh
 
   // ── Docking / Boarding ──
 
-  const attemptDockOrBoard = useCallback((shipId: string) => {
+  const attemptDockOrBoard = useCallback((shipId: string, manualActorRoll?: number, manualBoardingRoll?: number) => {
     const ship = contacts.find(c => c.id === shipId);
     const plan = dockingPlans[shipId];
     if (!ship || !plan?.targetId) return;
@@ -569,7 +572,8 @@ export function useShipCombat({ contacts, updateContactFields, moveShip }: UseSh
       return;
     }
 
-    const actor = roll2d6() + (ship.pilotSkill ?? 0) + getPilotCriticalPenalty(ship) + getBridgeCriticalPenalty(ship) + getCrewCriticalPenalty(ship) + Math.min(getEffectiveThrust(ship), ship.movementAllocation ?? 0) - Math.min(3, boardingPressure[ship.id] ?? 0) - 2;
+    const actorDice = manualActorRoll ?? roll2d6();
+    const actor = actorDice + (ship.pilotSkill ?? 0) + getPilotCriticalPenalty(ship) + getBridgeCriticalPenalty(ship) + getCrewCriticalPenalty(ship) + Math.min(getEffectiveThrust(ship), ship.movementAllocation ?? 0) - Math.min(3, boardingPressure[ship.id] ?? 0) - 2;
     const defender = roll2d6() + (target.pilotSkill ?? 0) + getPilotCriticalPenalty(target) + getBridgeCriticalPenalty(target) + getCrewCriticalPenalty(target) + Math.min(getEffectiveThrust(target), target.movementAllocation ?? 0) - Math.min(3, boardingPressure[target.id] ?? 0);
 
     if (actor <= defender) {
@@ -583,7 +587,8 @@ export function useShipCombat({ contacts, updateContactFields, moveShip }: UseSh
       return;
     }
 
-    const boardingRoll = roll2d6() + (ship.engineerSkill ?? 0) + (ship.captainSkill ?? 0) + getCrewCriticalPenalty(ship);
+    const boardingDice = manualBoardingRoll ?? roll2d6();
+    const boardingRoll = boardingDice + (ship.engineerSkill ?? 0) + (ship.captainSkill ?? 0) + getCrewCriticalPenalty(ship);
     const defenseRoll = roll2d6() + (target.engineerSkill ?? 0) + (target.captainSkill ?? 0) + getCrewCriticalPenalty(target);
     if (boardingRoll > defenseRoll) {
       const pressureGain = Math.max(1, Math.min(3, boardingRoll - defenseRoll));
@@ -594,7 +599,7 @@ export function useShipCombat({ contacts, updateContactFields, moveShip }: UseSh
     addLog(`${ship.name} fails boarding action on ${target.name} (${boardingRoll} vs ${defenseRoll}).`, true);
   }, [contacts, dockingPlans, boardingPressure, addLog]);
 
-  const attemptRepelBoarders = useCallback((shipId: string) => {
+  const attemptRepelBoarders = useCallback((shipId: string, manualRoll?: number) => {
     const ship = contacts.find(c => c.id === shipId);
     if (!ship) return;
     const pressure = boardingPressure[shipId] ?? 0;
@@ -602,7 +607,7 @@ export function useShipCombat({ contacts, updateContactFields, moveShip }: UseSh
       addLog(`${ship.name} has no active boarding pressure to repel.`, true);
       return;
     }
-    const total = roll2d6() + (ship.engineerSkill ?? 0) + (ship.captainSkill ?? 0) + getCrewCriticalPenalty(ship);
+    const total = (manualRoll ?? roll2d6()) + (ship.engineerSkill ?? 0) + (ship.captainSkill ?? 0) + getCrewCriticalPenalty(ship);
     const relief = total >= 8 ? Math.max(1, total - 8) : 0;
     if (relief <= 0) {
       addLog(`${ship.name} fails to repel boarders (roll ${total}).`, true);
@@ -614,7 +619,7 @@ export function useShipCombat({ contacts, updateContactFields, moveShip }: UseSh
 
   // ── Jump ──
 
-  const attemptJump = useCallback((shipId: string) => {
+  const attemptJump = useCallback((shipId: string, manualRoll?: number) => {
     const ship = contacts.find(c => c.id === shipId);
     if (!ship) return;
     if (ship.jumpCommitted) {
@@ -630,7 +635,7 @@ export function useShipCombat({ contacts, updateContactFields, moveShip }: UseSh
       addLog(`${ship.name} cannot jump: jump drive critically offline.`, true);
       return;
     }
-    const total = roll2d6() + (ship.engineerSkill ?? 0) + (ship.sensorSkill ?? 0) + getBridgeCriticalPenalty(ship) + getCrewCriticalPenalty(ship) - jumpDriveSeverity;
+    const total = (manualRoll ?? roll2d6()) + (ship.engineerSkill ?? 0) + (ship.sensorSkill ?? 0) + getBridgeCriticalPenalty(ship) + getCrewCriticalPenalty(ship) - jumpDriveSeverity;
     if (total < 10) {
       addLog(`${ship.name} fails to initialize jump sequence (roll ${total}).`, true);
       return;
@@ -642,22 +647,23 @@ export function useShipCombat({ contacts, updateContactFields, moveShip }: UseSh
 
   // ── Sensor actions ──
 
-  const attemptSensorLock = useCallback((shipId: string) => {
+  const attemptSensorLock = useCallback((shipId: string, manualRoll?: number) => {
     const ship = contacts.find(c => c.id === shipId);
     const plan = sensorPlans[shipId];
     if (!ship || !plan?.lockTargetId) return;
     const target = contacts.find(c => c.id === plan.lockTargetId);
     if (!target) return;
-    const total = roll2d6() + (ship.sensorSkill ?? 0) + getSensorCriticalPenalty(ship) + getBridgeCriticalPenalty(ship) + getCrewCriticalPenalty(ship);
+    const rollLabel = manualRoll !== undefined ? `${manualRoll}(manual)` : undefined;
+    const total = (manualRoll ?? roll2d6()) + (ship.sensorSkill ?? 0) + getSensorCriticalPenalty(ship) + getBridgeCriticalPenalty(ship) + getCrewCriticalPenalty(ship);
     if (total >= 8) {
       setSensorLocks(prev => ({ ...prev, [shipId]: target.id }));
-      addLog(`${ship.name} establishes sensor lock on ${target.name} (roll ${total}).`, true);
+      addLog(`${ship.name} establishes sensor lock on ${target.name} (2d6: ${rollLabel ?? total - (ship.sensorSkill ?? 0)}, total ${total}).`, true);
       return;
     }
-    addLog(`${ship.name} fails to lock ${target.name} (roll ${total}).`, true);
+    addLog(`${ship.name} fails to lock ${target.name} (2d6: ${rollLabel ?? total - (ship.sensorSkill ?? 0)}, total ${total}).`, true);
   }, [contacts, sensorPlans, addLog]);
 
-  const attemptBreakSensorLock = useCallback((shipId: string) => {
+  const attemptBreakSensorLock = useCallback((shipId: string, manualOwnRoll?: number, manualEnemyRoll?: number) => {
     const ship = contacts.find(c => c.id === shipId);
     const plan = sensorPlans[shipId];
     if (!ship || !plan?.breakLockFromShipId) return;
@@ -668,8 +674,8 @@ export function useShipCombat({ contacts, updateContactFields, moveShip }: UseSh
       addLog(`${ship.name} cannot break lock: ${locker.name} has no active lock.`, true);
       return;
     }
-    const ownRoll = roll2d6() + (ship.sensorSkill ?? 0) + getSensorCriticalPenalty(ship) + getBridgeCriticalPenalty(ship) + getCrewCriticalPenalty(ship);
-    const enemyRoll = roll2d6() + (locker.sensorSkill ?? 0) + getSensorCriticalPenalty(locker) + getBridgeCriticalPenalty(locker) + getCrewCriticalPenalty(locker);
+    const ownRoll = (manualOwnRoll ?? roll2d6()) + (ship.sensorSkill ?? 0) + getSensorCriticalPenalty(ship) + getBridgeCriticalPenalty(ship) + getCrewCriticalPenalty(ship);
+    const enemyRoll = (manualEnemyRoll ?? roll2d6()) + (locker.sensorSkill ?? 0) + getSensorCriticalPenalty(locker) + getBridgeCriticalPenalty(locker) + getCrewCriticalPenalty(locker);
     if (ownRoll > enemyRoll) {
       setSensorLocks(prev => { const n = { ...prev }; delete n[locker.id]; return n; });
       const targetShip = contacts.find(c => c.id === lockedTarget);
@@ -681,19 +687,19 @@ export function useShipCombat({ contacts, updateContactFields, moveShip }: UseSh
 
   // ── Captain / Pilot actions ──
 
-  const attemptImproveInitiative = useCallback((shipId: string) => {
+  const attemptImproveInitiative = useCallback((shipId: string, manualRoll?: number) => {
     const ship = contacts.find(c => c.id === shipId);
     if (!ship) return;
-    const total = roll2d6() + (ship.captainSkill ?? 0) + getBridgeCriticalPenalty(ship) + getCrewCriticalPenalty(ship);
+    const total = (manualRoll ?? roll2d6()) + (ship.captainSkill ?? 0) + getBridgeCriticalPenalty(ship) + getCrewCriticalPenalty(ship);
     const effect = total - 8;
     setInitiativeModifiers(prev => ({ ...prev, [shipId]: effect }));
     addLog(`${ship.name} command check sets next-round initiative modifier to ${effect >= 0 ? '+' : ''}${effect} (roll ${total}).`, true);
   }, [contacts, addLog]);
 
-  const attemptAidGunners = useCallback((shipId: string) => {
+  const attemptAidGunners = useCallback((shipId: string, manualRoll?: number) => {
     const ship = contacts.find(c => c.id === shipId);
     if (!ship) return;
-    const total = roll2d6() + (ship.pilotSkill ?? 0) + getPilotCriticalPenalty(ship) + getBridgeCriticalPenalty(ship) + getCrewCriticalPenalty(ship);
+    const total = (manualRoll ?? roll2d6()) + (ship.pilotSkill ?? 0) + getPilotCriticalPenalty(ship) + getBridgeCriticalPenalty(ship) + getCrewCriticalPenalty(ship);
     if (total < 8) {
       setGunnerAssist(prev => ({ ...prev, [shipId]: 0 }));
       addLog(`${ship.name} fails to aid gunners (roll ${total}).`, true);
@@ -706,10 +712,10 @@ export function useShipCombat({ contacts, updateContactFields, moveShip }: UseSh
 
   // ── Overload actions ──
 
-  const attemptOverloadDrive = useCallback((shipId: string) => {
+  const attemptOverloadDrive = useCallback((shipId: string, manualRoll?: number) => {
     const ship = contacts.find(c => c.id === shipId);
     if (!ship) return;
-    const total = roll2d6() + (ship.engineerSkill ?? 0) - (ship.overloadDrivePenalty ?? 0) + getBridgeCriticalPenalty(ship) + getCrewCriticalPenalty(ship);
+    const total = (manualRoll ?? roll2d6()) + (ship.engineerSkill ?? 0) - (ship.overloadDrivePenalty ?? 0) + getBridgeCriticalPenalty(ship) + getCrewCriticalPenalty(ship);
     const effect = total - 10;
     updateContactFields(shipId, { overloadDrivePenalty: (ship.overloadDrivePenalty ?? 0) + 2 });
     if (total >= 10) {
@@ -726,10 +732,10 @@ export function useShipCombat({ contacts, updateContactFields, moveShip }: UseSh
     addLog(`${ship.name} fails to overload M-drive (roll ${total}).`, true);
   }, [contacts, updateContactFields, addLog]);
 
-  const attemptOverloadPlant = useCallback((shipId: string) => {
+  const attemptOverloadPlant = useCallback((shipId: string, manualRoll?: number) => {
     const ship = contacts.find(c => c.id === shipId);
     if (!ship) return;
-    const total = roll2d6() + (ship.engineerSkill ?? 0) - (ship.overloadPlantPenalty ?? 0) + getBridgeCriticalPenalty(ship) + getCrewCriticalPenalty(ship);
+    const total = (manualRoll ?? roll2d6()) + (ship.engineerSkill ?? 0) - (ship.overloadPlantPenalty ?? 0) + getBridgeCriticalPenalty(ship) + getCrewCriticalPenalty(ship);
     const effect = total - 10;
     updateContactFields(shipId, { overloadPlantPenalty: (ship.overloadPlantPenalty ?? 0) + 2 });
     if (total >= 10) {
@@ -754,7 +760,7 @@ export function useShipCombat({ contacts, updateContactFields, moveShip }: UseSh
 
   // ── Repair ──
 
-  const attemptRepair = useCallback((shipId: string) => {
+  const attemptRepair = useCallback((shipId: string, manualRoll?: number) => {
     const ship = contacts.find(c => c.id === shipId);
     const plan = repairPlans[shipId] ?? getDefaultRepairState();
     if (!ship || !plan.location) return;
@@ -762,7 +768,7 @@ export function useShipCombat({ contacts, updateContactFields, moveShip }: UseSh
     const severity = getCriticalSeverity(ship, location);
     if (severity <= 0) return;
     const progress = ship.repairProgress?.[location as CriticalLocationKey] ?? 0;
-    const dice = roll2d6();
+    const dice = manualRoll ?? roll2d6();
     const total = dice + (ship.engineerSkill ?? 0) + progress - severity;
     if (total >= 8) {
       const nextSeverity = Math.max(0, severity - 1);
@@ -787,12 +793,12 @@ export function useShipCombat({ contacts, updateContactFields, moveShip }: UseSh
 
   // ── Point Defence & Missile EW ──
 
-  const attemptPointDefense = useCallback((shipId: string, salvoId: string) => {
+  const attemptPointDefense = useCallback((shipId: string, salvoId: string, manualRoll?: number) => {
     const ship = contacts.find(c => c.id === shipId);
     if (!ship) return;
     const salvo = missileSalvos.find(s => s.id === salvoId && s.targetId === shipId);
     if (!salvo) return;
-    const total = roll2d6() + (ship.gunnerSkill ?? 0) + getGunnerCriticalPenalty(ship) + getBridgeCriticalPenalty(ship) + getCrewCriticalPenalty(ship);
+    const total = (manualRoll ?? roll2d6()) + (ship.gunnerSkill ?? 0) + getGunnerCriticalPenalty(ship) + getBridgeCriticalPenalty(ship) + getCrewCriticalPenalty(ship);
     if (total < 8) {
       addLog(`${ship.name} point defence fails against incoming missiles (roll ${total}).`, true);
       return;
@@ -804,12 +810,12 @@ export function useShipCombat({ contacts, updateContactFields, moveShip }: UseSh
     addLog(`${ship.name} point defence removes ${removed} missile(s) from incoming salvo (roll ${total}).`, true);
   }, [contacts, missileSalvos, addLog]);
 
-  const attemptMissileEW = useCallback((shipId: string, salvoId: string) => {
+  const attemptMissileEW = useCallback((shipId: string, salvoId: string, manualRoll?: number) => {
     const ship = contacts.find(c => c.id === shipId);
     if (!ship) return;
     const salvo = missileSalvos.find(s => s.id === salvoId && s.targetId === shipId);
     if (!salvo) return;
-    const total = roll2d6() + (ship.sensorSkill ?? 0) + getSensorCriticalPenalty(ship) + getBridgeCriticalPenalty(ship) + getCrewCriticalPenalty(ship);
+    const total = (manualRoll ?? roll2d6()) + (ship.sensorSkill ?? 0) + getSensorCriticalPenalty(ship) + getBridgeCriticalPenalty(ship) + getCrewCriticalPenalty(ship);
     if (total < 10) {
       addLog(`${ship.name} EW fails to disrupt incoming missiles (roll ${total}).`, true);
       return;

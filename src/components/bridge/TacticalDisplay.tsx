@@ -71,9 +71,15 @@ export function TacticalDisplay({
   };
 
   const handleHexClick = (q: number, r: number) => {
-    if (selectedContact) {
-      onShipMove(selectedContact.id, q, r);
+    if (!selectedContact) return;
+    if (combatActive && combatPhase === 'maneuver') {
+      // Only allow clicks within the movement-allocated range
+      if (!validMoveHexes || !validMoveHexes.has(`${q},${r}`)) return;
+    } else if (combatActive && combatPhase && combatPhase !== 'setup') {
+      // No repositioning during attack / actions / end phases
+      return;
     }
+    onShipMove(selectedContact.id, q, r);
   };
 
   // Find the player ship for range band calculations
@@ -279,19 +285,29 @@ export function TacticalDisplay({
               const rangeFill = rangeBandFills?.get(`${q},${r}`) ?? null;
               const isValidMove = validMoveHexes?.has(`${q},${r}`);
 
+              // During maneuver phase with movement range defined, mark out-of-range hexes
+              const isOutOfMoveRange = combatActive && combatPhase === 'maneuver'
+                && movementRange !== undefined && !isValidMove;
+
               let fill = "transparent";
-              if (isHovered) {
+              if (isHovered && (isValidMove || !combatActive || combatPhase === 'setup')) {
                 fill = "rgba(0, 255, 136, 0.15)";
               } else if (isValidMove) {
                 fill = "rgba(0, 255, 136, 0.08)";
+              } else if (isOutOfMoveRange) {
+                fill = "rgba(255, 0, 0, 0.03)"; // subtle red tint on unreachable hexes
               } else if (rangeFill) {
                 fill = rangeFill;
               }
 
               let stroke = hasShip ? "var(--primary-mid)" : "var(--bg-border)";
-              if (isValidMove && !isHovered) {
-                stroke = "var(--primary-mid)";
-              }
+              if (isValidMove && !isHovered) stroke = "var(--primary-mid)";
+              if (isOutOfMoveRange) stroke = "rgba(255,80,80,0.15)";
+
+              // Determine click affordance
+              const isClickable = !combatActive
+                || combatPhase === 'setup'
+                || (combatPhase === 'maneuver' && isValidMove);
 
               return (
                 <polygon
@@ -300,7 +316,7 @@ export function TacticalDisplay({
                   fill={fill}
                   stroke={stroke}
                   strokeWidth="1"
-                  className="cursor-pointer transition-all duration-150"
+                  className={`${isClickable ? 'cursor-pointer' : 'cursor-not-allowed'} transition-all duration-150`}
                   onMouseEnter={() => setHoveredHex({ q, r })}
                   onMouseLeave={() => setHoveredHex(null)}
                   onClick={() => handleHexClick(q, r)}
@@ -469,7 +485,13 @@ export function TacticalDisplay({
             </>
           )}
           <span className="text-terminal-text-dimmer ml-4">
-            {combatActive && combatPhase === 'maneuver' ? 'Click hex to move' : 'Click hex to reposition'}
+            {combatActive && combatPhase === 'maneuver'
+              ? movementRange
+                ? `Click highlighted hex to move (${movementRange} hex range)`
+                : 'Allocate movement thrust in sidebar to move'
+              : combatActive && combatPhase && combatPhase !== 'setup'
+                ? 'No movement outside maneuver phase'
+                : 'Click hex to reposition'}
           </span>
         </div>
       )}

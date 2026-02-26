@@ -1,6 +1,8 @@
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import type { Contact } from '@/lib/bridge/bridgeTypes';
-import { Plus, Gauge, Trash2, AlertTriangle } from 'lucide-react';
+import { Plus, Gauge, Trash2, AlertTriangle, Dice6 } from 'lucide-react';
 
 interface SetupPanelProps {
   combatants: Contact[];
@@ -8,7 +10,7 @@ interface SetupPanelProps {
   onAddShipClick: () => void;
   onAddToCombat: (contactId: string) => void;
   onRemoveFromCombat: (contactId: string) => void;
-  onRollInitiative: () => void;
+  onRollInitiative: (manualRolls?: Record<string, number>) => void;
   onToggleSurprised: (contactId: string, val: boolean) => void;
 }
 
@@ -22,6 +24,24 @@ export function SetupPanel({
   onToggleSurprised,
 }: SetupPanelProps) {
   const nonCombatContacts = contacts.filter(c => !c.isInCombat);
+  // Per-ship initiative roll inputs (empty string = auto-roll)
+  const [initiativeInputs, setInitiativeInputs] = useState<Record<string, string>>({});
+
+  const handleRollInitiative = () => {
+    const manualRolls: Record<string, number> = {};
+    let hasAny = false;
+    for (const [shipId, raw] of Object.entries(initiativeInputs)) {
+      if (raw !== '') {
+        const n = parseInt(raw);
+        if (!isNaN(n)) {
+          manualRolls[shipId] = n;
+          hasAny = true;
+        }
+      }
+    }
+    onRollInitiative(hasAny ? manualRolls : undefined);
+    setInitiativeInputs({});
+  };
 
   return (
     <div className="space-y-3">
@@ -34,7 +54,7 @@ export function SetupPanel({
           <Plus className="h-3 w-3 mr-1" /> Add Ship
         </Button>
         <Button
-          onClick={onRollInitiative}
+          onClick={handleRollInitiative}
           disabled={combatants.length < 2}
           size="sm"
           className="flex-1 bg-blue-500/20 text-blue-300 border border-blue-500/50 hover:bg-blue-500/30 text-xs"
@@ -60,15 +80,35 @@ export function SetupPanel({
         </div>
       )}
 
-      {/* Remove from combat */}
+      {/* Combatants with per-ship controls */}
       {combatants.length > 0 && (
         <div className="space-y-1">
-          <span className="text-terminal-text-dimmer text-[0.6rem] tracking-wider">IN COMBAT ({combatants.length})</span>
+          <div className="flex items-center justify-between">
+            <span className="text-terminal-text-dimmer text-[0.6rem] tracking-wider">IN COMBAT ({combatants.length})</span>
+            <div className="flex items-center gap-1 text-[0.55rem] text-terminal-primary/40">
+              <Dice6 className="h-2.5 w-2.5" />
+              <span>initiative 2d6</span>
+            </div>
+          </div>
           {combatants.map(c => (
             <div key={c.id} className="flex justify-between items-center px-2 py-1 text-xs font-mono gap-1">
-              <span className={`flex-1 ${c.isPlayerShip ? 'text-terminal-primary-light' : c.status === 'enemy' ? 'text-terminal-danger-alt' : 'text-terminal-secondary'}`}>
+              <span className={`flex-1 truncate ${c.isPlayerShip ? 'text-terminal-primary-light' : c.status === 'enemy' ? 'text-terminal-danger-alt' : 'text-terminal-secondary'}`}>
                 {c.name}
               </span>
+
+              {/* Per-ship initiative roll input */}
+              <Input
+                type="number"
+                min={2}
+                max={12}
+                placeholder="auto"
+                value={initiativeInputs[c.id] ?? ''}
+                onChange={e => setInitiativeInputs(prev => ({ ...prev, [c.id]: e.target.value }))}
+                className="h-5 w-10 text-[0.55rem] bg-black border-terminal-primary/30 text-terminal-primary px-1 text-center placeholder:text-terminal-text-dimmer/40"
+                title={`Manual initiative roll for ${c.name} (leave blank to auto-roll)`}
+              />
+
+              {/* Surprised toggle */}
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -84,6 +124,8 @@ export function SetupPanel({
                 <AlertTriangle className="h-2.5 w-2.5" />
                 {c.surprised ? 'SURP' : 'surp'}
               </button>
+
+              {/* Remove from combat */}
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -96,6 +138,11 @@ export function SetupPanel({
               </button>
             </div>
           ))}
+          {combatants.some(c => initiativeInputs[c.id]) && (
+            <p className="text-[0.55rem] text-yellow-300/60 px-2">
+              Ships with values use manual rolls; blank = auto-roll
+            </p>
+          )}
         </div>
       )}
     </div>
