@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -19,6 +19,7 @@ import { MusteringOut } from './MusteringOut';
 import { RACES, getRaceById, applyRaceModifiers, type Race, type RaceTrait } from './races';
 import { getCareerTheme, getCareerCardStyle, getCareerTextStyle, type CareerTheme } from './careerThemes';
 import { CREW_POSITION_PRESETS } from '@/types/database';
+import { AnimatedDiceValue } from './AnimatedDiceValue';
 
 // ============================================================================
 // TYPE DEFINITIONS (Component-specific)
@@ -352,6 +353,27 @@ export const CharacterGenerator: React.FC = () => {
 
   const [characteristicRolls, setCharacteristicRolls] = useState<number[]>([]);
   const [hasRolled, setHasRolled] = useState(false);
+  const [glowingStats, setGlowingStats] = useState<Set<string>>(new Set());
+  const prevCharRef = useRef<Record<string, number>>({});
+  const [rollingStats, setRollingStats] = useState<Set<string>>(new Set());
+
+  // Detect characteristic increases and flash the stat box green
+  useEffect(() => {
+    const stats = ['strength', 'dexterity', 'endurance', 'intellect', 'education', 'social'] as const;
+    const changed: string[] = [];
+    for (const stat of stats) {
+      const newVal = characterData.characteristics[stat].total;
+      const oldVal = prevCharRef.current[stat];
+      if (oldVal !== undefined && newVal > oldVal) {
+        changed.push(stat);
+      }
+      prevCharRef.current[stat] = newVal;
+    }
+    if (changed.length === 0) return;
+    setGlowingStats(new Set(changed));
+    const t = setTimeout(() => setGlowingStats(new Set()), 850);
+    return () => clearTimeout(t);
+  }, [characterData.characteristics]);
   const [selectedRollIndex, setSelectedRollIndex] = useState<number | null>(null);
   const [selectedRace, setSelectedRace] = useState<Race>(RACES[0]); // Default to Human
   const [assignmentMode, setAssignmentMode] = useState<'auto' | 'manual'>('auto');
@@ -557,19 +579,25 @@ export const CharacterGenerator: React.FC = () => {
 
   const rollSingleCharacteristic = (key: keyof Omit<Characteristics, 'psionics'>) => {
     const roll = rollDice(2, 6);
-    setCharacterData(prev => ({
-      ...prev,
-      characteristics: {
-        ...prev.characteristics,
-        [key]: { total: roll, current: roll },
-      },
-    }));
 
-    // Recalculate background skills if education changed
-    if (key === 'education') {
-      const eduDM = getDM(roll);
-      setBackgroundSkillsRemaining(Math.max(0, eduDM + 3));
-    }
+    // Trigger dice spin animation for ~420ms before revealing result
+    setRollingStats(prev => new Set([...prev, key]));
+    setTimeout(() => {
+      setCharacterData(prev => ({
+        ...prev,
+        characteristics: {
+          ...prev.characteristics,
+          [key]: { total: roll, current: roll },
+        },
+      }));
+      setRollingStats(prev => { const next = new Set(prev); next.delete(key); return next; });
+
+      // Recalculate background skills if education changed
+      if (key === 'education') {
+        const eduDM = getDM(roll);
+        setBackgroundSkillsRemaining(Math.max(0, eduDM + 3));
+      }
+    }, 420);
   };
 
   const manuallySetCharacteristic = (key: keyof Omit<Characteristics, 'psionics'>, value: number) => {
@@ -3313,20 +3341,30 @@ export const CharacterGenerator: React.FC = () => {
                             </Button>
                           </div>
                           <div className="flex items-center gap-3">
-                            <Input
-                              type="number"
-                              min="1"
-                              max="18"
-                              value={characterData.characteristics[key].total || ''}
-                              onChange={(e) => {
-                                const val = parseInt(e.target.value) || 0;
-                                if (val >= 0 && val <= 18) {
-                                  manuallySetCharacteristic(key, val);
-                                }
-                              }}
-                              className="bg-black border-terminal-primary/50 text-terminal-primary text-2xl font-bold h-12 w-20 text-center"
-                              placeholder="0"
-                            />
+                            {rollingStats.has(key) ? (
+                              <div className="bg-black border border-terminal-primary/50 text-terminal-primary text-2xl font-bold h-12 w-20 flex items-center justify-center rounded">
+                                <AnimatedDiceValue
+                                  value={characterData.characteristics[key].total}
+                                  isRolling={true}
+                                  className="font-mono text-terminal-primary"
+                                />
+                              </div>
+                            ) : (
+                              <Input
+                                type="number"
+                                min="1"
+                                max="18"
+                                value={characterData.characteristics[key].total || ''}
+                                onChange={(e) => {
+                                  const val = parseInt(e.target.value) || 0;
+                                  if (val >= 0 && val <= 18) {
+                                    manuallySetCharacteristic(key, val);
+                                  }
+                                }}
+                                className="bg-black border-terminal-primary/50 text-terminal-primary text-2xl font-bold h-12 w-20 text-center"
+                                placeholder="0"
+                              />
+                            )}
                             <div className="text-xs text-terminal-primary/60">
                               DM: {getDMDisplay(characterData.characteristics[key].total)}
                             </div>
@@ -4035,7 +4073,7 @@ export const CharacterGenerator: React.FC = () => {
                               : isLow
                               ? 'bg-yellow-500/10 border-yellow-500/50'
                               : 'bg-terminal-primary/10 border-terminal-primary/30'
-                          }`}
+                          } ${glowingStats.has(stat) ? 'stat-glow' : ''}`}
                         >
                           <div className={`text-xs font-bold uppercase ${isCritical ? 'text-red-400' : isLow ? 'text-yellow-400' : 'text-terminal-primary/60'}`}>
                             {stat.slice(0, 3)}

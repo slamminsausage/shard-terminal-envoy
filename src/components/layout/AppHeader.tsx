@@ -81,7 +81,7 @@ export default function AppHeader({
                 key={tab.id}
                 role="tab"
                 aria-selected={isActive}
-                className={cn("tab-button", isActive && "tab-button--active")}
+                className={cn("tab-button phosphor-hover", isActive && "tab-button--active")}
                 onClick={() => onTabChange(tab.id)}
                 title={`${tab.label} (Press ${shortcutNumber})`}
               >

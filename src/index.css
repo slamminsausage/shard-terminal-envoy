@@ -1054,3 +1054,76 @@
     margin-bottom: 1pt !important;
   }
 }
+
+/* ============================================================
+   ANIMATION ENHANCEMENTS
+   ============================================================ */
+
+/* Screen shake — triggered by adding .screen-shake to any element */
+@keyframes screen-shake {
+  0%   { transform: translate(0, 0) rotate(0deg); }
+  15%  { transform: translate(-3px, 1px) rotate(-0.3deg); }
+  30%  { transform: translate(2px, -2px) rotate(0.2deg); }
+  45%  { transform: translate(-2px, 2px) rotate(-0.2deg); }
+  60%  { transform: translate(3px, -1px) rotate(0.3deg); }
+  75%  { transform: translate(-1px, 1px) rotate(-0.1deg); }
+  90%  { transform: translate(1px, -1px) rotate(0.1deg); }
+  100% { transform: translate(0, 0) rotate(0deg); }
+}
+.screen-shake {
+  animation: screen-shake 0.35s ease-in-out;
+}
+
+/* Hull breach — red vignette flash overlay div */
+@keyframes hull-breach-vignette {
+  0%   { opacity: 0; }
+  15%  { opacity: 0.55; }
+  40%  { opacity: 0.35; }
+  65%  { opacity: 0.6; }
+  100% { opacity: 0; }
+}
+.hull-breach-flash {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 30%, rgba(255, 30, 30, 0.55) 100%);
+  animation: hull-breach-vignette 0.7s ease-out forwards;
+  z-index: 9999;
+}
+
+/* Tab content wipe-in */
+@keyframes tab-wipe-in {
+  0%   { opacity: 0; transform: translateY(-6px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+.tab-content-enter {
+  animation: tab-wipe-in 0.18s ease-out forwards;
+}
+
+/* Phosphor hover bloom — apply to interactive terminal elements */
+.phosphor-hover {
+  transition: text-shadow 0.15s ease, color 0.15s ease;
+}
+.phosphor-hover:hover {
+  text-shadow: 0 0 6px currentColor, 0 0 14px currentColor;
+}
+
+/* Stat increase glow — flash on characteristic/skill update */
+@keyframes stat-glow-flash {
+  0%   { background-color: transparent; box-shadow: none; }
+  25%  { background-color: rgba(51, 255, 102, 0.25); box-shadow: 0 0 12px rgba(51, 255, 102, 0.4); }
+  100% { background-color: transparent; box-shadow: none; }
+}
+.stat-glow {
+  animation: stat-glow-flash 0.8s ease-out forwards;
+  border-radius: 4px;
+}
+
+/* Transaction slide-in */
+@keyframes slide-in-right {
+  0%   { opacity: 0; transform: translateX(18px); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+.transaction-enter {
+  animation: slide-in-right 0.22s ease-out forwards;
+}

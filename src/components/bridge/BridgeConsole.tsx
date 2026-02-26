@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import { useScreenShake } from "@/hooks/useScreenShake";
 import { useBridge } from "@/contexts/BridgeContext";
 import { useJumpPlanner } from "@/contexts/JumpPlannerContext";
 import { useCampaign } from "@/contexts/CampaignContext";
@@ -138,6 +139,17 @@ export function BridgeConsole() {
     }
   };
 
+  const { ref: consoleRef, shake } = useScreenShake<HTMLDivElement>();
+  const [hullBreachFlash, setHullBreachFlash] = useState(false);
+
+  const triggerDamageEffects = useCallback((isCritical = false) => {
+    shake();
+    if (isCritical) {
+      setHullBreachFlash(true);
+      setTimeout(() => setHullBreachFlash(false), 700);
+    }
+  }, [shake]);
+
   const damageTarget = useMemo(() => {
     if (selectedContact) return selectedContact;
     if (playerShip) return playerShip;
@@ -184,7 +196,8 @@ export function BridgeConsole() {
     : undefined;
 
   return (
-    <div className="interface-container min-h-screen md:h-screen md:max-h-screen crt-container overflow-hidden bridge-console">
+    <div ref={consoleRef} className="interface-container min-h-screen md:h-screen md:max-h-screen crt-container overflow-hidden bridge-console">
+      {hullBreachFlash && <div className="hull-breach-flash" />}
       {/* Header */}
       <header className="interface-header">
         <div className="ship-identity">
@@ -385,6 +398,9 @@ export function BridgeConsole() {
               hullCurrent: nextHull,
               status: nextStatus,
             });
+
+            // Screen shake on any hit; hull breach flash on critical/derelict
+            triggerDamageEffects(nextHull <= 0 || (damageTarget.hullMax != null && nextHull / damageTarget.hullMax < 0.25));
 
             toast.success(`Applied ${damage} damage to ${damageTarget.name}${location ? ` (${location})` : ''}. Hull now ${nextHull}.`);
           }}

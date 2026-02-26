@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useFinance } from '@/contexts/FinanceContext';
 import { useCampaign } from '@/contexts/CampaignContext';
 import { Transaction } from '@/types/finance';
@@ -24,6 +24,8 @@ export const TransactionLedger: React.FC<TransactionLedgerProps> = ({
   const [filterType, setFilterType] = useState<string>('all');
   const [filterCategory, setFilterCategory] = useState<string>('all');
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const knownIdsRef = useRef<Set<string>>(new Set());
+  const [newIds, setNewIds] = useState<Set<string>>(new Set());
 
   const handleDelete = async (transactionId: string) => {
     setDeletingId(transactionId);
@@ -34,6 +36,27 @@ export const TransactionLedger: React.FC<TransactionLedgerProps> = ({
   useEffect(() => {
     getAllTransactions(characterId);
   }, [characterId, getAllTransactions]);
+
+  // Detect newly added transactions and trigger slide-in animation
+  useEffect(() => {
+    const incoming: string[] = [];
+    for (const t of transactions) {
+      if (!knownIdsRef.current.has(t.id)) {
+        incoming.push(t.id);
+        knownIdsRef.current.add(t.id);
+      }
+    }
+    if (incoming.length === 0) return;
+    setNewIds(prev => new Set([...prev, ...incoming]));
+    const t = setTimeout(() => {
+      setNewIds(prev => {
+        const next = new Set(prev);
+        incoming.forEach(id => next.delete(id));
+        return next;
+      });
+    }, 400);
+    return () => clearTimeout(t);
+  }, [transactions]);
 
   const filteredTransactions = transactions.filter(t => {
     // Party transaction filter
@@ -168,7 +191,7 @@ export const TransactionLedger: React.FC<TransactionLedgerProps> = ({
             {filteredTransactions.map((transaction) => (
               <Card
                 key={transaction.id}
-                className="bg-black border-terminal-primary/30 hover:border-terminal-primary/50 transition-colors"
+                className={`bg-black border-terminal-primary/30 hover:border-terminal-primary/50 transition-colors${newIds.has(transaction.id) ? ' transaction-enter' : ''}`}
               >
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between gap-4">
