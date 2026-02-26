@@ -63,14 +63,16 @@ export default function SiteBootScreen({ onComplete }: SiteBootScreenProps) {
   // Progress bar fills over the full boot duration
   useEffect(() => {
     const startTime = Date.now();
+    let rafId: number;
     const frame = () => {
       const elapsed = Date.now() - startTime;
       const pct = Math.min(100, (elapsed / BOOT_DURATION_MS) * 100);
       setProgress(pct);
-      if (pct < 100) requestAnimationFrame(frame);
+      if (pct < 100) rafId = requestAnimationFrame(frame);
     };
-    const raf = requestAnimationFrame(frame);
-    return () => cancelAnimationFrame(raf);
+    rafId = requestAnimationFrame(frame);
+    // Cancel the latest scheduled frame on unmount (covers skip/fast-exit)
+    return () => cancelAnimationFrame(rafId);
   }, []);
 
   // Auto-complete after boot duration
