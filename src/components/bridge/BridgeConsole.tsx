@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useScreenShake } from "@/hooks/useScreenShake";
+import type { FireTrail } from "./TacticalDisplay";
 import { useBridge } from "@/contexts/BridgeContext";
 import { useJumpPlanner } from "@/contexts/JumpPlannerContext";
 import { useCampaign } from "@/contexts/CampaignContext";
@@ -141,6 +142,36 @@ export function BridgeConsole() {
 
   const { ref: consoleRef, shake } = useScreenShake<HTMLDivElement>();
   const [hullBreachFlash, setHullBreachFlash] = useState(false);
+  const [fireTrails, setFireTrails] = useState<FireTrail[]>([]);
+
+  // Weapon colour by weapon id prefix
+  const weaponColor = useCallback((weaponId: string): string => {
+    if (weaponId?.includes('beam_laser')) return '#00ffff';
+    if (weaponId?.includes('pulse_laser')) return '#00ff88';
+    if (weaponId?.includes('missile')) return '#ff8800';
+    if (weaponId?.includes('particle')) return '#aa44ff';
+    return '#ffffff';
+  }, []);
+
+  const handleAttackFired = useCallback((attackerId: string, targetId: string) => {
+    const attacker = contacts.find(c => c.id === attackerId);
+    const target = contacts.find(c => c.id === targetId);
+    if (!attacker || !target) return;
+    const plan = combat.attackPlans[attackerId];
+    const color = weaponColor(plan?.weaponId ?? '');
+    // Pixel positions will be resolved inside TacticalDisplay
+    // We pass hex coords and let TacticalDisplay convert
+    const trail: FireTrail = {
+      id: `trail-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      fromHexQ: attacker.hexQ,
+      fromHexR: attacker.hexR,
+      toHexQ: target.hexQ,
+      toHexR: target.hexR,
+      color,
+    };
+    setFireTrails(prev => [...prev, trail]);
+    setTimeout(() => setFireTrails(prev => prev.filter(t => t.id !== trail.id)), 800);
+  }, [contacts, combat.attackPlans, weaponColor]);
 
   const triggerDamageEffects = useCallback((isCritical = false) => {
     shake();
@@ -273,6 +304,7 @@ export function BridgeConsole() {
             combatPhase={combat.phase}
             gridRadius={combatMode ? 12 : undefined}
             movementRange={movementRange}
+            fireTrails={fireTrails}
           />
 
           {/* Navigation Info Bar - hide during active combat to give grid more space */}
@@ -308,6 +340,7 @@ export function BridgeConsole() {
                 selectedContact={selectedContact}
                 onSelectContact={handleShipSelect}
                 onAddShipClick={() => setShowAddShipToCombat(true)}
+                onAttackFired={handleAttackFired}
               />
             </div>
           ) : (

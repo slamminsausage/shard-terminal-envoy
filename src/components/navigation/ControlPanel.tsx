@@ -1,8 +1,9 @@
+import { useState, useEffect, useRef } from "react";
 import { useJumpPlanner } from "@/contexts/JumpPlannerContext";
 import { parseUWP, getZoneDescription, type WorldSearchResult } from "@/lib/travellerMapApi";
 import { WorldSearchAutocomplete } from "./WorldSearchAutocomplete";
 import { AccordionPanel } from "./AccordionPanel";
-import { Loader2 } from "lucide-react";
+import { Loader2, Zap } from "lucide-react";
 
 export function ControlPanel() {
   const {
@@ -27,6 +28,38 @@ export function ControlPanel() {
     setCurrentLocation,
     clearError,
   } = useJumpPlanner();
+
+  // Route animation: increment key whenever route changes to re-trigger CSS animations
+  const [routeAnimKey, setRouteAnimKey] = useState(0);
+  const prevRouteLen = useRef(0);
+  useEffect(() => {
+    if (route.length !== prevRouteLen.current) {
+      if (route.length > 0) setRouteAnimKey(k => k + 1);
+      prevRouteLen.current = route.length;
+    }
+  }, [route]);
+
+  // Jump countdown state
+  const [jumpCountdown, setJumpCountdown] = useState<number | null>(null);
+  const [jumpComplete, setJumpComplete] = useState(false);
+  const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const startJumpCountdown = () => {
+    setJumpComplete(false);
+    setJumpCountdown(5);
+    countdownRef.current = setInterval(() => {
+      setJumpCountdown(prev => {
+        if (prev === null || prev <= 1) {
+          clearInterval(countdownRef.current!);
+          setJumpCountdown(null);
+          setJumpComplete(true);
+          setTimeout(() => setJumpComplete(false), 3000);
+          return null;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
 
   return (
     <div className="control-panel flex flex-col gap-3 flex-shrink-0">
@@ -238,11 +271,12 @@ export function ControlPanel() {
                 ROUTE ({route.length} waypoints, {Math.max(0, route.length - 1)} jump{route.length === 2 ? '' : 's'}):
               </div>
               <div className="max-h-48 overflow-y-auto">
-                <ol className="space-y-1">
+                <ol className="space-y-1" key={routeAnimKey}>
                   {route.map((leg, idx) => (
                     <li
                       key={`${leg.sector}-${leg.hex}-${idx}`}
-                      className="flex items-center gap-2 text-sm p-2 border-l-2 border-primary/30 pl-3"
+                      className="route-leg-enter flex items-center gap-2 text-sm p-2 border-l-2 border-primary/30 pl-3"
+                      style={{ animationDelay: `${idx * 60}ms` }}
                     >
                       <span className="text-terminal-secondary font-mono w-6">
                         {idx + 1}.
@@ -265,6 +299,50 @@ export function ControlPanel() {
                   ))}
                 </ol>
               </div>
+
+              {/* Initiate Jump button */}
+              {jumpCountdown === null && !jumpComplete && (
+                <button
+                  onClick={startJumpCountdown}
+                  className="mt-3 w-full terminal-btn flex items-center justify-center gap-2 bg-primary/10 border-primary/60 hover:bg-primary/20 hover:shadow-[0_0_12px_rgba(0,255,0,0.3)] transition-all"
+                >
+                  <Zap className="w-4 h-4" />
+                  INITIATE JUMP
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Jump countdown overlay */}
+          {(jumpCountdown !== null || jumpComplete) && (
+            <div className="mt-3 border border-primary/60 rounded p-4 text-center bg-black/60">
+              {jumpComplete ? (
+                <div className="terminal-severe-flicker">
+                  <div className="text-primary font-['Orbitron'] text-lg tracking-[4px] font-bold">JUMP ENGAGED</div>
+                  <div className="text-primary/60 text-xs mt-1 tracking-wider">TRANSITIONING TO JUMP SPACE</div>
+                </div>
+              ) : (
+                <>
+                  <div className="text-terminal-text-dimmer text-xs tracking-widest mb-2 uppercase">Jump Countdown</div>
+                  <div
+                    className={`font-['Orbitron'] font-bold text-5xl tracking-widest text-primary ${
+                      jumpCountdown! <= 2 ? 'jump-countdown-high' : 'jump-countdown-low'
+                    }`}
+                    style={{ textShadow: `0 0 ${10 + (5 - (jumpCountdown ?? 5)) * 8}px rgba(51,255,102,0.8)` }}
+                  >
+                    {jumpCountdown}
+                  </div>
+                  <div className="text-terminal-text-dimmer text-[0.6rem] mt-2 tracking-widest">
+                    {jumpCountdown! > 3 ? 'SPOOLING JUMP DRIVE...' : jumpCountdown! > 1 ? 'FIELD COHERENCE NOMINAL' : 'JUMP IMMINENT'}
+                  </div>
+                  <button
+                    onClick={() => { clearInterval(countdownRef.current!); setJumpCountdown(null); }}
+                    className="mt-3 text-xs text-terminal-text-dimmer hover:text-red-400 transition-colors"
+                  >
+                    [ABORT]
+                  </button>
+                </>
+              )}
             </div>
           )}
         </div>

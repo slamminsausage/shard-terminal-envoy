@@ -14,9 +14,10 @@ interface CombatSidebarProps {
   selectedContact: Contact | null;
   onSelectContact: (contact: Contact) => void;
   onAddShipClick: () => void;
+  onAttackFired?: (attackerId: string, targetId: string) => void;
 }
 
-export function CombatSidebar({ selectedContact, onSelectContact, onAddShipClick }: CombatSidebarProps) {
+export function CombatSidebar({ selectedContact, onSelectContact, onAddShipClick, onAttackFired }: CombatSidebarProps) {
   const { contacts, combat } = useBridge();
 
   const {
@@ -138,7 +139,11 @@ export function CombatSidebar({ selectedContact, onSelectContact, onAddShipClick
             gunnerAssist={gunnerAssist}
             dogfightAttackModifiers={dogfightAttackModifiers}
             onUpdateAttackPlan={updateAttackPlan}
-            onResolveAttack={resolveAttack}
+            onResolveAttack={(attackerId) => {
+              const targetId = attackPlans[attackerId]?.targetId;
+              if (onAttackFired && targetId) onAttackFired(attackerId, targetId);
+              resolveAttack(attackerId);
+            }}
           />
         )}
 
