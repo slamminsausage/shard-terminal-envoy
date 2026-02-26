@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button';
 import type { Contact } from '@/lib/bridge/bridgeTypes';
-import { Plus, Gauge, Trash2 } from 'lucide-react';
+import { Plus, Gauge, Trash2, AlertTriangle } from 'lucide-react';
 
 interface SetupPanelProps {
   combatants: Contact[];
@@ -9,6 +9,7 @@ interface SetupPanelProps {
   onAddToCombat: (contactId: string) => void;
   onRemoveFromCombat: (contactId: string) => void;
   onRollInitiative: () => void;
+  onToggleSurprised: (contactId: string, val: boolean) => void;
 }
 
 export function SetupPanel({
@@ -18,6 +19,7 @@ export function SetupPanel({
   onAddToCombat,
   onRemoveFromCombat,
   onRollInitiative,
+  onToggleSurprised,
 }: SetupPanelProps) {
   const nonCombatContacts = contacts.filter(c => !c.isInCombat);
 
@@ -63,10 +65,25 @@ export function SetupPanel({
         <div className="space-y-1">
           <span className="text-terminal-text-dimmer text-[0.6rem] tracking-wider">IN COMBAT ({combatants.length})</span>
           {combatants.map(c => (
-            <div key={c.id} className="flex justify-between items-center px-2 py-1 text-xs font-mono">
-              <span className={c.isPlayerShip ? 'text-terminal-primary-light' : c.status === 'enemy' ? 'text-terminal-danger-alt' : 'text-terminal-secondary'}>
+            <div key={c.id} className="flex justify-between items-center px-2 py-1 text-xs font-mono gap-1">
+              <span className={`flex-1 ${c.isPlayerShip ? 'text-terminal-primary-light' : c.status === 'enemy' ? 'text-terminal-danger-alt' : 'text-terminal-secondary'}`}>
                 {c.name}
               </span>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onToggleSurprised(c.id, !c.surprised);
+                }}
+                className={`flex items-center gap-0.5 px-1.5 py-0.5 text-[0.55rem] rounded border transition-colors ${
+                  c.surprised
+                    ? 'border-yellow-500/70 text-yellow-300 bg-yellow-500/15'
+                    : 'border-terminal-bg-border text-terminal-text-dimmer hover:border-yellow-500/40 hover:text-yellow-300/60'
+                }`}
+                title="Toggle surprised (ship cannot attack round 1)"
+              >
+                <AlertTriangle className="h-2.5 w-2.5" />
+                {c.surprised ? 'SURP' : 'surp'}
+              </button>
               <button
                 onClick={(e) => {
                   e.stopPropagation();

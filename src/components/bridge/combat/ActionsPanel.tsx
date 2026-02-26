@@ -65,7 +65,9 @@ export function ActionsPanel({
   onUpdateDockingPlan,
 }: ActionsPanelProps) {
   const [expandedShip, setExpandedShip] = useState<string | null>(null);
-  const [actionTab, setActionTab] = useState<string>('repair');
+  const [actionTabs, setActionTabs] = useState<Record<string, string>>({});
+  const getActionTab = (shipId: string) => actionTabs[shipId] ?? 'repair';
+  const setActionTab = (shipId: string, tab: string) => setActionTabs(prev => ({ ...prev, [shipId]: tab }));
 
   return (
     <div className="space-y-2 max-h-72 overflow-y-auto">
@@ -111,9 +113,9 @@ export function ActionsPanel({
                   ].map(tab => (
                     <button
                       key={tab.key}
-                      onClick={() => setActionTab(tab.key)}
+                      onClick={() => setActionTab(ship.id, tab.key)}
                       className={`px-1.5 py-0.5 text-[0.55rem] rounded border transition-all ${
-                        actionTab === tab.key
+                        getActionTab(ship.id) === tab.key
                           ? 'border-terminal-primary/50 text-terminal-primary bg-terminal-primary/10'
                           : 'border-terminal-bg-border text-terminal-text-dimmer hover:border-terminal-primary/30'
                       }`}
@@ -125,7 +127,7 @@ export function ActionsPanel({
                 </div>
 
                 {/* Repair tab */}
-                {actionTab === 'repair' && (
+                {getActionTab(ship.id) === 'repair' && (
                   <div className="space-y-1">
                     <Select
                       value={repairPlans[ship.id]?.location || ''}
@@ -154,7 +156,7 @@ export function ActionsPanel({
                 )}
 
                 {/* Sensors tab */}
-                {actionTab === 'sensors' && (
+                {getActionTab(ship.id) === 'sensors' && (
                   <div className="space-y-1">
                     <div className="grid grid-cols-2 gap-1">
                       <div className="space-y-0.5">
@@ -167,7 +169,7 @@ export function ActionsPanel({
                             <SelectValue placeholder="—" />
                           </SelectTrigger>
                           <SelectContent className="bg-black border-terminal-primary/50 text-terminal-primary">
-                            {combatants.filter(c => c.id !== ship.id).map(c => (
+                            {combatants.filter(c => c.id !== ship.id && (c.hullCurrent ?? 1) > 0).map(c => (
                               <SelectItem key={c.id} value={c.id} className="text-xs">{c.name}</SelectItem>
                             ))}
                           </SelectContent>
@@ -219,7 +221,7 @@ export function ActionsPanel({
                 )}
 
                 {/* Captain tab */}
-                {actionTab === 'captain' && (
+                {getActionTab(ship.id) === 'captain' && (
                   <div className="space-y-1">
                     <Button onClick={() => onAttemptImproveInitiative(ship.id)} size="sm" className="w-full bg-blue-500/20 text-blue-300 border border-blue-500/50 text-[0.6rem] h-6">
                       Command: Improve Initiative
@@ -236,7 +238,7 @@ export function ActionsPanel({
                 )}
 
                 {/* Engineer tab */}
-                {actionTab === 'engineer' && (
+                {getActionTab(ship.id) === 'engineer' && (
                   <div className="space-y-1">
                     <Button onClick={() => onAttemptOverloadDrive(ship.id)} size="sm" className="w-full bg-yellow-500/20 text-yellow-300 border border-yellow-500/50 text-[0.6rem] h-6">
                       <Zap className="h-2.5 w-2.5 mr-1" /> Overload M-Drive
@@ -255,7 +257,7 @@ export function ActionsPanel({
                 )}
 
                 {/* Combat tab - dogfight, dock, board */}
-                {actionTab === 'combat' && (
+                {getActionTab(ship.id) === 'combat' && (
                   <div className="space-y-1">
                     <div className="space-y-0.5">
                       <label className="text-[0.55rem] text-terminal-primary/50">Dogfight Target</label>
@@ -268,7 +270,7 @@ export function ActionsPanel({
                             <SelectValue placeholder="Select" />
                           </SelectTrigger>
                           <SelectContent className="bg-black border-terminal-primary/50 text-terminal-primary">
-                            {combatants.filter(c => c.id !== ship.id).map(c => (
+                            {combatants.filter(c => c.id !== ship.id && (c.hullCurrent ?? 1) > 0).map(c => (
                               <SelectItem key={c.id} value={c.id} className="text-xs">{c.name}</SelectItem>
                             ))}
                           </SelectContent>
@@ -289,7 +291,7 @@ export function ActionsPanel({
                             <SelectValue placeholder="Select" />
                           </SelectTrigger>
                           <SelectContent className="bg-black border-terminal-primary/50 text-terminal-primary">
-                            {combatants.filter(c => c.id !== ship.id).map(c => (
+                            {combatants.filter(c => c.id !== ship.id && (c.hullCurrent ?? 1) > 0).map(c => (
                               <SelectItem key={c.id} value={c.id} className="text-xs">{c.name}</SelectItem>
                             ))}
                           </SelectContent>
