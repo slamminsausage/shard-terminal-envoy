@@ -27,8 +27,10 @@ import InitScreen from '../terminal/views/InitScreen';
 import TerminalView from '../terminal/views/TerminalView';
 import LogDetailView from '../terminal/views/LogDetailView';
 import AudioLogsPage from '../terminal/views/AudioLogsPage';
+import TerminalBootScreen from '../terminal/views/TerminalBootScreen';
 import PasswordPrompt from '../terminal/SecurityChallenge/PasswordPrompt';
 import RollCheckPrompt from '../terminal/SecurityChallenge/RollCheckPrompt';
+import { getTerminalBootProfile } from '@/lib/terminalBootProfiles';
 
 // New hooks
 import { useTerminalSession } from '@/hooks/useTerminalSession';
@@ -199,6 +201,9 @@ export default function TerminalInterface() {
             typingCancelRef.current();
           }
           session.setView('init');
+        } else if (session.currentView === 'connecting') {
+          // Skip the terminal boot animation and jump straight to terminal view
+          session.setView('terminal');
         } else if (session.currentView === 'log') {
           // Cancel typing animation and reset state
           if (typingCancelRef.current) {
@@ -233,23 +238,30 @@ export default function TerminalInterface() {
     }
   };
 
-  // Load terminal logs
+  // Load terminal logs — shows a themed per-terminal boot screen while loading
   const loadTerminalLogs = async () => {
     if (!session.activeTerminal) return;
+
+    const profile = getTerminalBootProfile(session.activeTerminal.code);
 
     session.setLogsError(null);
     session.setLogsLoading(true);
     session.setLogData(null);
-    session.setView('terminal');
+    session.setView('connecting'); // Show themed boot screen
 
     try {
-      const response = await fetch(session.activeTerminal.logPath);
-      if (!response.ok) {
-        throw new Error(`Failed to load logs: ${response.status}`);
-      }
-      const data = await response.json();
-      // Normalize single-object logs to array format
-      const normalizedData = Array.isArray(data) ? data : [data];
+      // Run minimum display timer and fetch in parallel — user sees full boot animation
+      const minDelay = new Promise<void>((resolve) =>
+        setTimeout(resolve, profile.minDisplayMs)
+      );
+      const fetchData = fetch(session.activeTerminal.logPath)
+        .then((res) => {
+          if (!res.ok) throw new Error(`Failed to load logs: ${res.status}`);
+          return res.json();
+        })
+        .then((data) => (Array.isArray(data) ? data : [data]));
+
+      const [, normalizedData] = await Promise.all([minDelay, fetchData]);
       session.setLogData(normalizedData);
       session.setView('terminal');
     } catch (error) {
@@ -525,12 +537,17 @@ export default function TerminalInterface() {
         soundEnabled={!audioManager.isMuted()}
       />
 
-      {/* Loading View */}
+      {/* Loading View — initial app boot */}
       {session.currentView === 'loading' && (
         <LoadingScreen
           initText={localInitText}
           onSkip={() => session.setView('init')}
         />
+      )}
+
+      {/* Connecting View — per-terminal themed boot screen */}
+      {session.currentView === 'connecting' && session.activeTerminal && (
+        <TerminalBootScreen terminal={session.activeTerminal} />
       )}
 
       {/* Init View */}
