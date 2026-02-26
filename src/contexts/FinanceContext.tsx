@@ -9,6 +9,7 @@ interface FinanceContextType {
   isLoading: boolean;
   getAllTransactions: (characterId?: string) => Promise<void>;
   addTransaction: (transaction: Partial<Transaction>) => Promise<Transaction | null>;
+  deleteTransaction: (transactionId: string) => Promise<boolean>;
 
   // Party funds
   partyFunds: PartyFunds | null;
@@ -57,7 +58,23 @@ export const FinanceProvider: React.FC<FinanceProviderProps> = ({ children }) =>
     setIsLoading(true);
     try {
       const data = await dbHelpers.getAllTransactions(characterId);
-      setTransactions(data as Transaction[]);
+      const loadedTransactions = data as Transaction[];
+      setTransactions(loadedTransactions);
+
+      // Recalculate party funds balance from party transactions if balance is 0
+      // but party transactions exist (handles out-of-sync stored balance)
+      const currentBalance = partyFunds?.balance || 0;
+      if (currentBalance === 0) {
+        const partyTxns = loadedTransactions.filter(t => t.is_party_transaction);
+        if (partyTxns.length > 0) {
+          const recalculated = partyTxns.reduce((sum, t) => {
+            return t.transaction_type === 'income' ? sum + t.amount : sum - t.amount;
+          }, 0);
+          if (recalculated !== 0) {
+            await updatePartyFundsBalance(recalculated);
+          }
+        }
+      }
     } catch (error) {
       console.error('Failed to load transactions:', error);
       toast({
@@ -68,7 +85,7 @@ export const FinanceProvider: React.FC<FinanceProviderProps> = ({ children }) =>
     } finally {
       setIsLoading(false);
     }
-  }, [toast]);
+  }, [toast, partyFunds]);
 
   const addTransaction = useCallback(async (transaction: Partial<Transaction>): Promise<Transaction | null> => {
     try {
@@ -109,6 +126,38 @@ export const FinanceProvider: React.FC<FinanceProviderProps> = ({ children }) =>
       return null;
     }
   }, [toast, partyFunds]);
+
+  const deleteTransaction = useCallback(async (transactionId: string): Promise<boolean> => {
+    try {
+      // Find the transaction before deleting so we can reverse its party fund effect
+      const transaction = transactions.find(t => t.id === transactionId);
+
+      await dbHelpers.deleteTransaction(transactionId);
+      setTransactions(prev => prev.filter(t => t.id !== transactionId));
+
+      // Reverse the party funds balance if this was a party transaction
+      if (transaction?.is_party_transaction) {
+        const amount = transaction.amount || 0;
+        const reversal = transaction.transaction_type === 'income' ? -amount : amount;
+        const currentBalance = partyFunds?.balance || 0;
+        await updatePartyFundsBalance(currentBalance + reversal);
+      }
+
+      toast({
+        title: 'Success',
+        description: 'Transaction deleted',
+      });
+      return true;
+    } catch (error) {
+      console.error('Failed to delete transaction:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to delete transaction',
+        variant: 'destructive',
+      });
+      return false;
+    }
+  }, [toast, transactions, partyFunds]);
 
   const getPartyFunds = useCallback(async () => {
     try {
@@ -277,6 +326,7 @@ export const FinanceProvider: React.FC<FinanceProviderProps> = ({ children }) =>
     isLoading,
     getAllTransactions,
     addTransaction,
+    deleteTransaction,
     partyFunds,
     getPartyFunds,
     updatePartyFundsBalance,

@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useFinance } from '@/contexts/FinanceContext';
+import { useCampaign } from '@/contexts/CampaignContext';
 import { Transaction } from '@/types/finance';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, TrendingUp, TrendingDown, DollarSign, Calendar } from 'lucide-react';
+import { Plus, TrendingUp, TrendingDown, DollarSign, Calendar, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface TransactionLedgerProps {
@@ -18,9 +19,17 @@ export const TransactionLedger: React.FC<TransactionLedgerProps> = ({
   characterId,
   showPartyTransactions = true,
 }) => {
-  const { transactions, getAllTransactions, isLoading } = useFinance();
+  const { transactions, getAllTransactions, deleteTransaction, isLoading } = useFinance();
+  const { isGM } = useCampaign();
   const [filterType, setFilterType] = useState<string>('all');
   const [filterCategory, setFilterCategory] = useState<string>('all');
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const handleDelete = async (transactionId: string) => {
+    setDeletingId(transactionId);
+    await deleteTransaction(transactionId);
+    setDeletingId(null);
+  };
 
   useEffect(() => {
     getAllTransactions(characterId);
@@ -206,11 +215,25 @@ export const TransactionLedger: React.FC<TransactionLedgerProps> = ({
                       )}
                     </div>
 
-                    <div className={`text-xl font-bold ${
-                      transaction.transaction_type === 'income' ? 'text-green-400' : 'text-red-400'
-                    }`}>
-                      {transaction.transaction_type === 'income' ? '+' : '-'}
-                      {transaction.amount.toLocaleString()} Cr
+                    <div className="flex flex-col items-end gap-2">
+                      <div className={`text-xl font-bold ${
+                        transaction.transaction_type === 'income' ? 'text-green-400' : 'text-red-400'
+                      }`}>
+                        {transaction.transaction_type === 'income' ? '+' : '-'}
+                        {transaction.amount.toLocaleString()} Cr
+                      </div>
+                      {isGM && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDelete(transaction.id)}
+                          disabled={deletingId === transaction.id}
+                          className="h-7 w-7 text-red-500/60 hover:text-red-400 hover:bg-red-500/10"
+                          title="Delete transaction"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </CardContent>
