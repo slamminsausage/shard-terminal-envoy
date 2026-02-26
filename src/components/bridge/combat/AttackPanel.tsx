@@ -6,7 +6,7 @@ import type { Contact } from '@/lib/bridge/bridgeTypes';
 import type { AttackState } from '@/types/shipCombatBridge';
 import { SHIP_WEAPON_PRESETS, RANGE_BAND_LABELS, CRITICAL_LOCATIONS, CRITICAL_LOCATION_LABELS, type CriticalLocation } from '@/lib/bridge/shipCombatRules';
 import { hexDistance, hexDistanceToRangeBand } from '@/lib/bridge/hexCombatUtils';
-import { Target } from 'lucide-react';
+import { Target, Dice6 } from 'lucide-react';
 
 interface AttackPanelProps {
   combatants: Contact[];
@@ -15,7 +15,7 @@ interface AttackPanelProps {
   gunnerAssist: Record<string, number>;
   dogfightAttackModifiers: Record<string, number>;
   onUpdateAttackPlan: (shipId: string, updates: Partial<AttackState>) => void;
-  onResolveAttack: (attackerId: string) => void;
+  onResolveAttack: (attackerId: string, manualHitRoll?: number, manualDamageRoll?: number) => void;
 }
 
 export function AttackPanel({
@@ -28,6 +28,9 @@ export function AttackPanel({
   onResolveAttack,
 }: AttackPanelProps) {
   const [expandedShip, setExpandedShip] = useState<string | null>(null);
+  // Per-ship manual roll state: { [shipId]: { hit: string, damage: string } }
+  const [manualHitRolls, setManualHitRolls] = useState<Record<string, string>>({});
+  const [manualDamageRolls, setManualDamageRolls] = useState<Record<string, string>>({});
 
   return (
     <div className="space-y-2 max-h-72 overflow-y-auto">
@@ -46,6 +49,11 @@ export function AttackPanel({
         const hasLock = sensorLocks[ship.id] === plan?.targetId;
         const assist = gunnerAssist[ship.id] ?? 0;
         const dogfightMod = dogfightAttackModifiers[ship.id] ?? 0;
+
+        const hitRawStr = manualHitRolls[ship.id] ?? '';
+        const damageRawStr = manualDamageRolls[ship.id] ?? '';
+        const manualHit = hitRawStr !== '' ? parseInt(hitRawStr) : undefined;
+        const manualDamage = damageRawStr !== '' ? parseInt(damageRawStr) : undefined;
 
         return (
           <div key={ship.id} className="border border-terminal-bg-border rounded p-2 space-y-1.5">
@@ -138,6 +146,39 @@ export function AttackPanel({
                   </div>
                 </div>
 
+                {/* Manual dice rolls */}
+                <div className="border border-terminal-primary/20 rounded px-2 py-1.5 space-y-1 bg-terminal-primary/5">
+                  <div className="flex items-center gap-1 text-[0.55rem] text-terminal-primary/60">
+                    <Dice6 className="h-3 w-3" />
+                    <span>MANUAL DICE (leave blank to auto-roll)</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    <div className="space-y-0.5">
+                      <label className="text-[0.55rem] text-terminal-primary/50">Hit Roll (2d6)</label>
+                      <Input
+                        type="number"
+                        min={2}
+                        max={12}
+                        placeholder="auto"
+                        value={hitRawStr}
+                        onChange={e => setManualHitRolls(prev => ({ ...prev, [ship.id]: e.target.value }))}
+                        className="h-6 text-[0.6rem] bg-black border-terminal-primary/30 text-terminal-primary px-1 placeholder:text-terminal-text-dimmer/50"
+                      />
+                    </div>
+                    <div className="space-y-0.5">
+                      <label className="text-[0.55rem] text-terminal-primary/50">Damage Roll</label>
+                      <Input
+                        type="number"
+                        min={1}
+                        placeholder="auto"
+                        value={damageRawStr}
+                        onChange={e => setManualDamageRolls(prev => ({ ...prev, [ship.id]: e.target.value }))}
+                        className="h-6 text-[0.6rem] bg-black border-terminal-primary/30 text-terminal-primary px-1 placeholder:text-terminal-text-dimmer/50"
+                      />
+                    </div>
+                  </div>
+                </div>
+
                 {/* Info badges */}
                 <div className="flex gap-1 flex-wrap text-[0.55rem]">
                   {rangeBand && (
@@ -169,12 +210,20 @@ export function AttackPanel({
 
                 {/* Fire button */}
                 <Button
-                  onClick={() => onResolveAttack(ship.id)}
+                  onClick={() => {
+                    onResolveAttack(ship.id, manualHit, manualDamage);
+                    // Clear manual roll inputs after firing
+                    setManualHitRolls(prev => { const n = { ...prev }; delete n[ship.id]; return n; });
+                    setManualDamageRolls(prev => { const n = { ...prev }; delete n[ship.id]; return n; });
+                  }}
                   disabled={!plan?.targetId}
                   size="sm"
                   className="w-full bg-red-500/20 text-red-300 border border-red-500/50 hover:bg-red-500/30 text-xs h-7"
                 >
                   <Target className="h-3 w-3 mr-1" /> FIRE {weapon?.name?.toUpperCase()}
+                  {(manualHit !== undefined || manualDamage !== undefined) && (
+                    <span className="ml-1 text-yellow-300/70">[manual]</span>
+                  )}
                 </Button>
               </div>
             )}
