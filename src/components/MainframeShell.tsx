@@ -23,6 +23,7 @@ export default function MainframeShell() {
     if (typeof window === "undefined") return "terminal";
     return localStorage.getItem("mainframe_active_tab") || "terminal";
   });
+  const [tabKey, setTabKey] = useState(0);
 
   const [showShortcuts, setShowShortcuts] = useState(false);
 
@@ -30,6 +31,7 @@ export default function MainframeShell() {
     if (typeof window !== "undefined") {
       localStorage.setItem("mainframe_active_tab", activeTab);
     }
+    setTabKey(k => k + 1);
   }, [activeTab]);
 
   const tabs = [
@@ -78,6 +80,7 @@ export default function MainframeShell() {
       {/* Content */}
       <main className="flex-1">
         <Suspense fallback={<TerminalLoadingSkeleton />}>
+          <div key={tabKey} className="tab-content-enter">
           {activeTab === "terminal" && <TerminalInterface />}
           {activeTab === "crew" && <CrewInterface />}
           {activeTab === "vehicles" && <VehicleInterface />}
@@ -87,6 +90,7 @@ export default function MainframeShell() {
           {activeTab === "piracy" && <PiracyInterface />}
           {activeTab === "combat" && <CombatInterface />}
           {activeTab === "vtt" && <VTTInterface />}
+          </div>
         </Suspense>
       </main>
 

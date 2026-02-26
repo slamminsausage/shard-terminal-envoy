@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useCountUp } from '@/hooks/useCountUp';
 import { useFinance } from '@/contexts/FinanceContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -38,6 +39,7 @@ export const PartyFundsCard: React.FC = () => {
   };
 
   const balance = partyFunds?.balance || 0;
+  const animatedBalance = useCountUp(balance);
 
   return (
     <Card className="bg-black border-terminal-primary/50">
@@ -53,7 +55,7 @@ export const PartyFundsCard: React.FC = () => {
           <div className="text-xs text-terminal-primary/70 mb-1">Current Balance</div>
           <div className="text-3xl font-bold text-terminal-primary flex items-center gap-2">
             <DollarSign className="h-6 w-6" />
-            {balance.toLocaleString()} Cr
+            {animatedBalance.toLocaleString()} Cr
           </div>
         </div>
 
