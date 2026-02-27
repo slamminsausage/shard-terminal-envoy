@@ -13,6 +13,7 @@ import { CrewGroupManager } from "@/components/crew/CrewGroupManager";
 import { useCampaign } from "@/contexts/CampaignContext";
 import { Users, UserPlus, Package, DollarSign, Bot, Ship, Briefcase } from 'lucide-react';
 import { CREW_POSITION_PRESETS } from "@/types/database";
+import { AnimatedList } from "@/components/ui/AnimatedList";
 import type { Character, CrewGroup } from "@/types/database";
 
 type RosterFilter = 'all' | 'pc' | 'npc';
@@ -490,7 +491,9 @@ export default function CrewInterface() {
                     ) : (
                       // Flat view
                       filteredCharacters.length > 0 ? (
-                        filteredCharacters.map(renderCharacterRow)
+                        <AnimatedList className="space-y-2">
+                          {filteredCharacters.map(renderCharacterRow)}
+                        </AnimatedList>
                       ) : (
                         rosterFilter !== 'all' || crewFilter !== 'all' ? (
                           <div className="p-3 border border-primary/20 rounded font-mono text-sm text-[var(--text-dimmer)] bg-background/30 text-center">

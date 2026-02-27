@@ -8,6 +8,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Calendar, Clock, Plus, Eye } from 'lucide-react';
 import { format } from 'date-fns';
 import { SessionCreator } from './SessionCreator';
+import { AnimatedList } from '@/components/ui/AnimatedList';
 import { SessionDetail } from './SessionDetail';
 
 const statusColors: Record<SessionStatus, string> = {
@@ -73,7 +74,7 @@ export const SessionsList: React.FC = () => {
             </CardContent>
           </Card>
         ) : (
-          <div className="space-y-3">
+          <AnimatedList className="space-y-3">
             {sessions.map((session) => (
               <Card
                 key={session.id}
@@ -129,7 +130,7 @@ export const SessionsList: React.FC = () => {
                 </CardContent>
               </Card>
             ))}
-          </div>
+          </AnimatedList>
         )}
       </ScrollArea>
     </div>
