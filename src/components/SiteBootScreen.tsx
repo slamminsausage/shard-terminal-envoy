@@ -25,7 +25,7 @@ const BOOT_LINES = [
   { text: '>> BRIDGE TACTICAL CONSOLE........................ [ONLINE]', dim: true },
   { text: '>> SIGNAL ENCRYPTION.............................. [ACTIVE]', dim: true },
   { text: '>> ALL SYSTEMS NOMINAL.', dim: false },
-  { text: '>> WELCOME, COMMANDER.', dim: false },
+  { text: '>> WELCOME, TRAVELLER.', dim: false },
 ];
 
 // Reveal all lines during the first 72% of the boot duration
