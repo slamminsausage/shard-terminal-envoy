@@ -1127,3 +1127,63 @@
 .transaction-enter {
   animation: slide-in-right 0.22s ease-out forwards;
 }
+
+/* ── Weapon fire trail (SVG line draw + fade) ─────────────────────── */
+@keyframes fire-trail-draw {
+  0%   { stroke-dashoffset: 1; opacity: 0.95; }
+  55%  { stroke-dashoffset: 0; opacity: 0.95; }
+  100% { stroke-dashoffset: 0; opacity: 0; }
+}
+.fire-trail-line {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: fire-trail-draw 0.7s ease-out forwards;
+}
+
+/* ── Contact destruction ring ─────────────────────────────────────── */
+@keyframes destroy-ring-expand {
+  0%   { opacity: 0.9; }
+  100% { opacity: 0; }
+}
+.destroy-ring {
+  animation: destroy-ring-expand 0.65s ease-out forwards;
+}
+.destroy-particle {
+  animation: destroy-ring-expand 0.5s ease-out forwards;
+}
+
+/* ── Route leg staggered reveal ───────────────────────────────────── */
+@keyframes route-leg-reveal {
+  0%   { opacity: 0; transform: translateX(-10px); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+.route-leg-enter {
+  animation: route-leg-reveal 0.2s ease-out forwards;
+  opacity: 0;
+}
+
+/* ── Jump countdown ───────────────────────────────────────────────── */
+@keyframes jump-flicker-low {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.88; }
+}
+@keyframes jump-flicker-high {
+  0%   { opacity: 1;    filter: brightness(1); }
+  20%  { opacity: 0.7;  filter: brightness(1.4) saturate(1.5); }
+  40%  { opacity: 0.95; filter: brightness(0.9); }
+  60%  { opacity: 0.6;  filter: brightness(1.5) saturate(1.8); }
+  80%  { opacity: 0.85; filter: brightness(1.1); }
+  100% { opacity: 1;    filter: brightness(1); }
+}
+.jump-countdown-low  { animation: jump-flicker-low  0.8s infinite; }
+.jump-countdown-high { animation: jump-flicker-high 0.25s infinite; }
+
+/* ── Data incoming flash ──────────────────────────────────────────── */
+@keyframes data-incoming-flash {
+  0%   { box-shadow: none; }
+  30%  { box-shadow: 0 0 14px rgba(51, 255, 102, 0.6), inset 0 0 8px rgba(51, 255, 102, 0.15); }
+  100% { box-shadow: none; }
+}
+.data-incoming-flash {
+  animation: data-incoming-flash 0.7s ease-out forwards;
+}

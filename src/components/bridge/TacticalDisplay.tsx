@@ -1,6 +1,19 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import type { Contact } from "@/lib/bridge/bridgeTypes";
 import type { CombatPhase } from "@/lib/bridge/shipCombatRules";
+
+export interface FireTrail {
+  id: string;
+  fromHexQ: number; fromHexR: number;
+  toHexQ: number; toHexR: number;
+  color: string;
+}
+
+interface DestroyEffect {
+  id: string;
+  hexQ: number; hexR: number;
+  color: string;
+}
 import { hexDistance, hexDistanceToRangeBand, RANGE_BAND_HEX_COLORS, getHexesInRange } from "@/lib/bridge/hexCombatUtils";
 import { RANGE_BAND_LABELS } from "@/lib/bridge/shipCombatRules";
 import { usePinchZoom } from "@/hooks/usePinchZoom";
@@ -17,6 +30,7 @@ interface TacticalDisplayProps {
   combatPhase?: CombatPhase;
   gridRadius?: number;
   movementRange?: number; // max hexes the selected ship can move this phase
+  fireTrails?: FireTrail[];
 }
 
 export function TacticalDisplay({
@@ -29,8 +43,29 @@ export function TacticalDisplay({
   combatPhase,
   gridRadius: gridRadiusProp,
   movementRange,
+  fireTrails = [],
 }: TacticalDisplayProps) {
   const [hoveredHex, setHoveredHex] = useState<{ q: number; r: number } | null>(null);
+
+  // ── Destruction effects: detect when contacts disappear ─────────────
+  const prevContactsRef = useRef<Contact[]>([]);
+  const [destroyEffects, setDestroyEffects] = useState<DestroyEffect[]>([]);
+
+  useEffect(() => {
+    const prev = prevContactsRef.current;
+    const removed = prev.filter(p => !contacts.find(c => c.id === p.id));
+    if (removed.length > 0) {
+      const newEffects: DestroyEffect[] = removed.map(c => {
+        const colorVar = c.status === 'enemy' ? '#ff4444' : c.status === 'friendly' ? '#00ff88' : '#aaaaaa';
+        return { id: `${c.id}-${Date.now()}`, hexQ: c.hexQ, hexR: c.hexR, color: colorVar };
+      });
+      setDestroyEffects(prev => [...prev, ...newEffects]);
+      setTimeout(() => {
+        setDestroyEffects(prev => prev.filter(e => !newEffects.find(n => n.id === e.id)));
+      }, 700);
+    }
+    prevContactsRef.current = contacts;
+  }, [contacts]);
   const { ref, style: zoomStyle, transform, zoomIn, zoomOut, resetZoom } = usePinchZoom<HTMLDivElement>({
     minScale: 0.3,
     maxScale: 4,
@@ -417,6 +452,62 @@ export function TacticalDisplay({
                 </g>
               );
             })}
+
+          {/* ── Weapon fire trails ─────────────────────────────── */}
+          {fireTrails.map(trail => {
+            const from = hexToPixel(trail.fromHexQ, trail.fromHexR);
+            const to   = hexToPixel(trail.toHexQ,   trail.toHexR);
+            return (
+              <line
+                key={trail.id}
+                x1={from.x} y1={from.y}
+                x2={to.x}   y2={to.y}
+                stroke={trail.color}
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                pathLength="1"
+                className="fire-trail-line"
+                style={{ filter: `drop-shadow(0 0 5px ${trail.color})` }}
+              />
+            );
+          })}
+
+          {/* ── Contact destruction effects ─────────────────────── */}
+          {destroyEffects.map(effect => {
+            const { x, y } = hexToPixel(effect.hexQ, effect.hexR);
+            // 6 particles scattered at fixed angles
+            const particles = [0, 60, 120, 180, 240, 300].map((deg, i) => {
+              const rad = (deg * Math.PI) / 180;
+              const dist = 22 + (i % 2) * 8;
+              return { px: x + Math.cos(rad) * dist, py: y + Math.sin(rad) * dist };
+            });
+            return (
+              <g key={effect.id}>
+                <circle
+                  cx={x} cy={y}
+                  r={10}
+                  fill="none"
+                  stroke={effect.color}
+                  strokeWidth="2"
+                  className="destroy-ring"
+                  style={{ filter: `drop-shadow(0 0 6px ${effect.color})` }}
+                >
+                  <animate attributeName="r" values="10;36" dur="0.65s" fill="freeze" />
+                  <animate attributeName="stroke-width" values="2;0.5" dur="0.65s" fill="freeze" />
+                </circle>
+                {particles.map((p, i) => (
+                  <circle
+                    key={i}
+                    cx={p.px} cy={p.py}
+                    r={2}
+                    fill={effect.color}
+                    className="destroy-particle"
+                    style={{ animationDelay: `${i * 30}ms`, filter: `drop-shadow(0 0 3px ${effect.color})` }}
+                  />
+                ))}
+              </g>
+            );
+          })}
 
           {/* Hover target indicator */}
           {selectedContact && hoveredHex && (() => {

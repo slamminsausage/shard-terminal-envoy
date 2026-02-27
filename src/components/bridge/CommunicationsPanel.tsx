@@ -1,4 +1,6 @@
+import { useState, useEffect, useRef } from "react";
 import type { BridgeMessage } from "@/lib/bridge/bridgeTypes";
+import audioManager from "@/lib/audioManager";
 
 interface CommunicationsPanelProps {
   messages: BridgeMessage[];
@@ -17,6 +19,18 @@ export function CommunicationsPanel({
   onComposeClick,
   onCloseMessage
 }: CommunicationsPanelProps) {
+  const prevUnreadRef = useRef(unreadCount);
+  const [incomingFlash, setIncomingFlash] = useState(false);
+
+  useEffect(() => {
+    if (unreadCount > prevUnreadRef.current) {
+      setIncomingFlash(true);
+      audioManager.play('connection', 0.25);
+      setTimeout(() => setIncomingFlash(false), 700);
+    }
+    prevUnreadRef.current = unreadCount;
+  }, [unreadCount]);
+
   const timeAgo = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
@@ -77,9 +91,11 @@ export function CommunicationsPanel({
   }
 
   return (
-    <div className="comms-panel flex flex-col bg-terminal-bg-panel-alt border border-terminal-bg-border rounded overflow-hidden max-h-[400px]">
+    <div className={`comms-panel flex flex-col bg-terminal-bg-panel-alt border border-terminal-bg-border rounded overflow-hidden max-h-[400px]${incomingFlash ? ' data-incoming-flash' : ''}`}>
       <div className="panel-header flex justify-between items-center px-4 py-2 bg-terminal-primary-light/5 border-b border-terminal-bg-border">
-        <span className="font-['Orbitron'] text-xs tracking-[3px] text-terminal-text-dimmer">COMMUNICATIONS</span>
+        <span className="font-['Orbitron'] text-xs tracking-[3px] text-terminal-text-dimmer">
+          COMMUNICATIONS{incomingFlash && <span className="ml-2 text-terminal-primary animate-pulse">▶ INCOMING</span>}
+        </span>
         <div className="flex items-center gap-3">
           {unreadCount > 0 && <span className="text-xs text-terminal-warning-alt">{unreadCount} UNREAD</span>}
           <button
