@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, TrendingUp, TrendingDown, DollarSign, Calendar, Trash2 } from 'lucide-react';
+import { AnimatedList } from '@/components/ui/AnimatedList';
 import { format } from 'date-fns';
 
 interface TransactionLedgerProps {
@@ -187,7 +188,7 @@ export const TransactionLedger: React.FC<TransactionLedgerProps> = ({
             </CardContent>
           </Card>
         ) : (
-          <div className="space-y-2">
+          <AnimatedList className="space-y-2">
             {filteredTransactions.map((transaction) => (
               <Card
                 key={transaction.id}
@@ -262,7 +263,7 @@ export const TransactionLedger: React.FC<TransactionLedgerProps> = ({
                 </CardContent>
               </Card>
             ))}
-          </div>
+          </AnimatedList>
         )}
       </ScrollArea>
     </div>

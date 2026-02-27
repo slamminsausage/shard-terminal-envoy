@@ -8,6 +8,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Plus, Trophy, AlertCircle, Target } from 'lucide-react';
 import { QuestCreator } from './QuestCreator';
 import { QuestDetail } from './QuestDetail';
+import { AnimatedList } from '@/components/ui/AnimatedList';
 
 const statusColors: Record<QuestStatus, string> = {
   active: 'bg-green-500/20 text-green-400 border-green-500/50',
@@ -116,7 +117,7 @@ export const QuestBoard: React.FC = () => {
             </CardContent>
           </Card>
         ) : (
-          <div className="space-y-3">
+          <AnimatedList className="space-y-3">
             {filteredQuests.map((quest) => (
               <Card
                 key={quest.id}
@@ -178,7 +179,7 @@ export const QuestBoard: React.FC = () => {
                 </CardContent>
               </Card>
             ))}
-          </div>
+          </AnimatedList>
         )}
       </ScrollArea>
     </div>

@@ -1,4 +1,5 @@
 import React, { Suspense, useEffect, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Terminal, Users, Radar, Navigation, BookOpen, Swords, Skull, Layout } from "lucide-react";
 import AppHeader from "./layout/AppHeader";
 import AppFooter from "./layout/AppFooter";
@@ -23,7 +24,6 @@ export default function MainframeShell() {
     if (typeof window === "undefined") return "terminal";
     return localStorage.getItem("mainframe_active_tab") || "terminal";
   });
-  const [tabKey, setTabKey] = useState(0);
 
   const [showShortcuts, setShowShortcuts] = useState(false);
 
@@ -31,7 +31,6 @@ export default function MainframeShell() {
     if (typeof window !== "undefined") {
       localStorage.setItem("mainframe_active_tab", activeTab);
     }
-    setTabKey(k => k + 1);
   }, [activeTab]);
 
   const tabs = [
@@ -80,17 +79,25 @@ export default function MainframeShell() {
       {/* Content */}
       <main className="flex-1">
         <Suspense fallback={<TerminalLoadingSkeleton />}>
-          <div key={tabKey} className="tab-content-enter">
-          {activeTab === "terminal" && <TerminalInterface />}
-          {activeTab === "crew" && <CrewInterface />}
-          {activeTab === "vehicles" && <VehicleInterface />}
-          {activeTab === "bridge" && <BridgeConsole />}
-          {activeTab === "navigation" && <JumpPlannerInterface />}
-          {activeTab === "campaign" && <CampaignInterface />}
-          {activeTab === "piracy" && <PiracyInterface />}
-          {activeTab === "combat" && <CombatInterface />}
-          {activeTab === "vtt" && <VTTInterface />}
-          </div>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0, y: -6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 6 }}
+              transition={{ duration: 0.15, ease: "easeOut" }}
+            >
+              {activeTab === "terminal" && <TerminalInterface />}
+              {activeTab === "crew" && <CrewInterface />}
+              {activeTab === "vehicles" && <VehicleInterface />}
+              {activeTab === "bridge" && <BridgeConsole />}
+              {activeTab === "navigation" && <JumpPlannerInterface />}
+              {activeTab === "campaign" && <CampaignInterface />}
+              {activeTab === "piracy" && <PiracyInterface />}
+              {activeTab === "combat" && <CombatInterface />}
+              {activeTab === "vtt" && <VTTInterface />}
+            </motion.div>
+          </AnimatePresence>
         </Suspense>
       </main>
 
