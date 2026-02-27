@@ -120,6 +120,7 @@ export function CombatSidebar({ selectedContact, onSelectContact, onAddShipClick
             onAddToCombat={addToCombat}
             onRemoveFromCombat={removeFromCombat}
             onRollInitiative={rollInitiative}
+            onToggleSurprised={(id, val) => updateContactFields(id, { surprised: val })}
           />
         )}
 

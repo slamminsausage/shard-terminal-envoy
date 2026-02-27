@@ -16,7 +16,6 @@ import { DamageCalculator } from "./DamageCalculator";
 import { AddShipToCombatModal } from "./AddShipToCombatModal";
 import { CombatSidebar } from "./combat/CombatSidebar";
 import type { BridgeMessage, Contact, NewContact } from "@/lib/bridge/bridgeTypes";
-import { getEffectiveThrust } from "@/hooks/useShipCombat";
 import { toast } from "sonner";
 
 export function BridgeConsole() {
@@ -221,10 +220,16 @@ export function BridgeConsole() {
     }
   };
 
-  // Compute movement range for selected contact
-  const movementRange = combatMode && combat.isActive && selectedContact?.isInCombat
-    ? getEffectiveThrust(selectedContact)
-    : undefined;
+  // Compute movement range: during maneuver phase, use the thrust the player allocated
+  // to movement (set in ManeuverPanel). This is the number of hexes they can move.
+  const movementRange = (() => {
+    if (!combatMode || !combat.isActive || !selectedContact?.isInCombat) return undefined;
+    if (combat.phase === 'maneuver') {
+      const alloc = selectedContact.movementAllocation ?? 0;
+      return alloc > 0 ? alloc : undefined;
+    }
+    return undefined; // No hex movement outside maneuver phase
+  })();
 
   return (
     <div ref={consoleRef} className="interface-container min-h-screen md:h-screen md:max-h-screen crt-container overflow-hidden bridge-console">
