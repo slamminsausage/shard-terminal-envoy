@@ -89,7 +89,7 @@ const BOOT_PROFILES: Record<TerminalCategory, TerminalBootProfile> = {
       '>> PARTIAL SYSTEM ACCESS GRANTED',
       '>> [CAUTION] SYSTEM STABILITY NOT GUARANTEED',
     ],
-    minDisplayMs: 4000,
+    minDisplayMs: 6000,
     progressStyle: 'stall',
   },
 
@@ -109,7 +109,7 @@ const BOOT_PROFILES: Record<TerminalCategory, TerminalBootProfile> = {
       '>> UNAUTHORIZED ACCESS IS A CRIMINAL OFFENSE',
       '>> SECURE SESSION ESTABLISHED.',
     ],
-    minDisplayMs: 2500,
+    minDisplayMs: 3750,
     progressStyle: 'fast',
   },
 
@@ -130,7 +130,7 @@ const BOOT_PROFILES: Record<TerminalCategory, TerminalBootProfile> = {
       '>> MULTI-FACTOR AUTHENTICATION COMPLETE',
       '>> SECURE ACCESS GRANTED. SESSION EXPIRES IN 15 MIN.',
     ],
-    minDisplayMs: 3500,
+    minDisplayMs: 5250,
     progressStyle: 'stall',
   },
 
@@ -148,7 +148,7 @@ const BOOT_PROFILES: Record<TerminalCategory, TerminalBootProfile> = {
       '>> WELCOME BACK.',
       '>> LAST ACCESS: 12 DAYS AGO',
     ],
-    minDisplayMs: 2000,
+    minDisplayMs: 3000,
     progressStyle: 'glide',
   },
 
@@ -168,7 +168,7 @@ const BOOT_PROFILES: Record<TerminalCategory, TerminalBootProfile> = {
       '>> COMMS ARRAY..................... ONLINE',
       '>> BRIDGE LINK ESTABLISHED.',
     ],
-    minDisplayMs: 2500,
+    minDisplayMs: 3750,
     progressStyle: 'pulse',
   },
 
@@ -184,7 +184,7 @@ const BOOT_PROFILES: Record<TerminalCategory, TerminalBootProfile> = {
       '>> CONNECTING TO REGIONAL NETWORK...',
       '>> READY.',
     ],
-    minDisplayMs: 1500,
+    minDisplayMs: 2250,
     progressStyle: 'fast',
   },
 
@@ -202,7 +202,7 @@ const BOOT_PROFILES: Record<TerminalCategory, TerminalBootProfile> = {
       '>> SECURE DATA ENVIRONMENT ACTIVE',
       '>> LAB NETWORK READY.',
     ],
-    minDisplayMs: 2000,
+    minDisplayMs: 3000,
     progressStyle: 'fast',
   },
 
@@ -222,7 +222,7 @@ const BOOT_PROFILES: Record<TerminalCategory, TerminalBootProfile> = {
       '>> [WARNING] ACCESS WINDOW: APPROXIMATELY 8 MINUTES',
       '>> PROCEED QUICKLY. LEAVE NO TRACE.',
     ],
-    minDisplayMs: 3000,
+    minDisplayMs: 4500,
     progressStyle: 'stall',
   },
 
@@ -240,7 +240,7 @@ const BOOT_PROFILES: Record<TerminalCategory, TerminalBootProfile> = {
       '>> [WARNING] 4 WARNINGS DETECTED — SEE FAULT LOG',
       '>> SYSTEM DEGRADED — PROCEED WITH CAUTION.',
     ],
-    minDisplayMs: 2000,
+    minDisplayMs: 3000,
     progressStyle: 'pulse',
   },
 
@@ -258,7 +258,7 @@ const BOOT_PROFILES: Record<TerminalCategory, TerminalBootProfile> = {
       '>> THIS SYSTEM IS PROPERTY OF THE IMPERIUM',
       '>> GOVERNMENT NODE READY.',
     ],
-    minDisplayMs: 2500,
+    minDisplayMs: 3750,
     progressStyle: 'fast',
   },
 
@@ -275,7 +275,7 @@ const BOOT_PROFILES: Record<TerminalCategory, TerminalBootProfile> = {
       '>> SYNCHRONIZING DATABASE INDICES...',
       '>> TERMINAL READY.',
     ],
-    minDisplayMs: 2000,
+    minDisplayMs: 3000,
     progressStyle: 'glide',
   },
 };

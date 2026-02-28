@@ -13,6 +13,8 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
+import { AnimatedList } from '@/components/ui/AnimatedList';
+import { getTerminalBootProfile } from '@/lib/terminalBootProfiles';
 import LogListItem from './LogListItem';
 
 interface LogEntry {
@@ -52,15 +54,19 @@ export default function TerminalView({
         </div>
       </div>
 
-      <div className="space-y-2 mb-4">
+      <div className="mb-4">
         {logs.length > 0 ? (
-          logs.map((log, index) => (
-            <LogListItem
-              key={index}
-              log={log}
-              onClick={() => onLogSelect(log)}
-            />
-          ))
+          <AnimatedList className="space-y-2">
+            {logs.map((log, index) => (
+              <LogListItem
+                key={index}
+                log={log}
+                onClick={() => onLogSelect(log)}
+                accentColor={getTerminalBootProfile(terminal.code).accentColor}
+                terminalCode={terminal.code}
+              />
+            ))}
+          </AnimatedList>
         ) : (
           <div style={{ color: 'var(--text-dim)' }} className="font-mono text-sm p-4 text-center">
             No logs available
