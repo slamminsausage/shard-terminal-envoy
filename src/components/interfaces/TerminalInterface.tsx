@@ -680,6 +680,7 @@ export default function TerminalInterface() {
                 displayedText={localDisplayedText}
                 typingComplete={localTypingComplete}
                 onBack={session.goToTerminal}
+                terminalCode={session.activeTerminal?.code || ''}
               />
             )}
 

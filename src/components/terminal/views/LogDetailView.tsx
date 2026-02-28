@@ -6,6 +6,7 @@
  *
  * Features:
  * - Typewriter text display
+ * - Live glitch flickering after typing completes (intensity varies by terminal)
  * - Audio player (if log has audio)
  * - Back button (shown when typing complete)
  * - Whitespace-preserved formatting
@@ -14,6 +15,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import AudioPlayer from '../AudioPlayer';
+import { useGlitchText } from '@/hooks/useGlitchText';
 
 interface LogEntry {
   title: string;
@@ -28,6 +30,7 @@ interface LogDetailViewProps {
   displayedText: string;
   typingComplete: boolean;
   onBack: () => void;
+  terminalCode?: string;
 }
 
 export default function LogDetailView({
@@ -35,7 +38,18 @@ export default function LogDetailView({
   displayedText,
   typingComplete,
   onBack,
+  terminalCode = '',
 }: LogDetailViewProps) {
+  // Once typing completes, start live glitch flicker on the original content
+  const flickeredText = useGlitchText({
+    text: log.content || '',
+    terminalCode,
+    active: typingComplete,
+  });
+
+  // During typing: show the typewriter output; after typing: show flickered version
+  const visibleText = typingComplete ? flickeredText : displayedText;
+
   return (
     <div className="p-4">
       {/* Log header */}
@@ -57,7 +71,7 @@ export default function LogDetailView({
 
       {/* Log content */}
       <div className="whitespace-pre-wrap text-sm font-mono mb-4" style={{ color: 'var(--primary)' }}>
-        {displayedText}
+        {visibleText}
       </div>
 
       {/* Audio player */}

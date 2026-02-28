@@ -123,3 +123,33 @@ const normaliseTerminal = (terminalId: string) =>
   terminalId.includes('/')
     ? terminalId.replace('/logs/', '').replace('.json', '')
     : terminalId;
+
+// ── Per-terminal glitch intensity for live flickering ─────────────────────────
+
+const TERMINAL_GLITCH_INTENSITY: Record<string, number> = {
+  // Corrupted terminals: highest intensity
+  'es1-omegalab':    0.025,
+  'es1-gamma':       0.025,
+  'vennik-personal': 0.02,
+  'blacktalon':      0.02,
+  'sayelle-logs':    0.02,
+
+  // Criminal terminals
+  'blackcircuit01':  0.01,
+  'fuw01':           0.01,
+  'fuwnet':          0.01,
+
+  // Maintenance
+  'waferterm01':     0.008,
+
+  // Ship-systems
+  'vanagandr001':    0.005,
+};
+
+const DEFAULT_GLITCH_INTENSITY = 0.003;
+
+/** Returns the glitch flicker intensity for any terminal (0 = no glitch). */
+export const getGlitchIntensity = (terminalCode: string): number => {
+  const normalized = normaliseTerminal(terminalCode).toLowerCase();
+  return TERMINAL_GLITCH_INTENSITY[normalized] ?? DEFAULT_GLITCH_INTENSITY;
+};

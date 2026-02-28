@@ -25,7 +25,7 @@ interface TerminalBootScreenProps {
 
 // ── Ghost phase ────────────────────────────────────────────────────────────────
 
-const GHOST_DISPLAY_MS = 2600;
+const GHOST_DISPLAY_MS = 3900;
 
 function GhostOverlay({ message, onDone }: { message: string; onDone: () => void }) {
   const [visible, setVisible] = useState(true);
@@ -105,7 +105,7 @@ function ProgressBar({
               borderRadius: '50%',
               background: hex,
               boxShadow: glow,
-              animation: `pulse-dot 1.4s ease-in-out ${i * 0.2}s infinite`,
+              animation: `pulse-dot 2.1s ease-in-out ${i * 0.3}s infinite`,
             }}
           />
         ))}
@@ -157,7 +157,7 @@ function ProgressBar({
             width: '45%',
             background: `linear-gradient(90deg, transparent, ${hex}88, ${hex}, ${hex}88, transparent)`,
             boxShadow: glow,
-            animation: 'boot-glide 2.2s ease-in-out infinite',
+            animation: 'boot-glide 3.3s ease-in-out infinite',
           }}
         />
       ) : (
@@ -166,7 +166,7 @@ function ProgressBar({
             height: '100%',
             background: `linear-gradient(90deg, ${hex}99, ${hex})`,
             boxShadow: glow,
-            animation: `${animationName} 3s ease-out forwards`,
+            animation: `${animationName} 4.5s ease-out forwards`,
           }}
         />
       )}
