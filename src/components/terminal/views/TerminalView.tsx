@@ -1,27 +1,27 @@
 /**
- * TerminalView Component
+ * TerminalView Component — Terminal OS Desktop
  *
- * Displays the list of logs for a connected terminal.
- * Extracted from TerminalInterface.
- *
+ * Displays terminal logs as a fake retro terminal operating system window.
  * Features:
- * - Scrollable log list
- * - Log selection
- * - Back button to return to init screen
- * - Terminal name header
+ * - Title bar with colored dots, header label, disconnect button
+ * - Decorative menu bar (FILE, VIEW, SECURITY, HELP)
+ * - Responsive file icon grid (TerminalFileIcon per log)
+ * - Taskbar footer with terminal metadata
+ * - Full accent-color theming from boot profiles
  */
 
 import React from 'react';
-import { Button } from '@/components/ui/button';
 import { AnimatedList } from '@/components/ui/AnimatedList';
-import { getTerminalBootProfile } from '@/lib/terminalBootProfiles';
-import LogListItem from './LogListItem';
+import { getTerminalBootProfile, getTerminalCategory } from '@/lib/terminalBootProfiles';
+import TerminalFileIcon from './TerminalFileIcon';
 
 interface LogEntry {
   title: string;
   date?: string;
   author?: string;
   security_level?: string;
+  requires_roll?: boolean;
+  roll_check?: { difficulty: number; skill: string };
 }
 
 interface Terminal {
@@ -43,40 +43,152 @@ export default function TerminalView({
   onLogSelect,
   onBack,
 }: TerminalViewProps) {
+  const profile = getTerminalBootProfile(terminal.code);
+  const category = getTerminalCategory(terminal.code);
+  const { accentColor, dimColor, headerLabel } = profile;
+
   return (
-    <div className="p-4">
-      <div className="mb-4">
-        <h2 className="text-lg font-mono font-bold" style={{ color: 'var(--primary)' }}>
-          {terminal.name}
-        </h2>
-        <div className="text-xs font-mono" style={{ color: 'var(--text-dim)' }}>
-          {terminal.code}
+    <div
+      className="terminal-os-window flex flex-col h-full"
+      style={{
+        border: `1px solid ${accentColor}55`,
+        boxShadow: `0 0 24px ${accentColor}18, inset 0 0 40px rgba(0,0,0,0.4)`,
+        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+      }}
+    >
+      {/* ═══ Title Bar ═══ */}
+      <div
+        className="terminal-os-titlebar flex items-center px-3 py-2 shrink-0"
+        style={{
+          borderBottom: `1px solid ${accentColor}33`,
+          background: `linear-gradient(180deg, ${accentColor}14 0%, rgba(0,0,0,0.6) 100%)`,
+        }}
+      >
+        {/* Window dots */}
+        <div className="flex items-center gap-1.5 mr-4">
+          <span className="terminal-os-dot" style={{ backgroundColor: accentColor, opacity: 0.9 }} />
+          <span className="terminal-os-dot" style={{ backgroundColor: accentColor, opacity: 0.5 }} />
+          <span className="terminal-os-dot" style={{ backgroundColor: accentColor, opacity: 0.3 }} />
+        </div>
+
+        {/* Header label */}
+        <div
+          className="flex-1 text-center font-mono text-xs tracking-[0.2em] uppercase truncate"
+          style={{
+            color: accentColor,
+            fontFamily: 'var(--font-display)',
+            textShadow: `0 0 10px ${accentColor}44`,
+          }}
+        >
+          {headerLabel}
+        </div>
+
+        {/* Disconnect button */}
+        <button
+          onClick={onBack}
+          className="font-mono text-xs tracking-wider uppercase px-3 py-1 transition-all duration-150 hover:brightness-150 cursor-pointer shrink-0"
+          style={{
+            color: dimColor,
+            border: `1px solid ${dimColor}44`,
+            backgroundColor: 'transparent',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.color = accentColor;
+            e.currentTarget.style.borderColor = `${accentColor}88`;
+            e.currentTarget.style.boxShadow = `0 0 8px ${accentColor}33`;
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.color = dimColor;
+            e.currentTarget.style.borderColor = `${dimColor}44`;
+            e.currentTarget.style.boxShadow = 'none';
+          }}
+        >
+          ✕ Disconnect
+        </button>
+      </div>
+
+      {/* ═══ Menu Bar ═══ */}
+      <div
+        className="terminal-os-menubar flex items-center justify-between px-3 py-1.5 shrink-0"
+        style={{
+          borderBottom: `1px solid ${accentColor}22`,
+          backgroundColor: `${accentColor}06`,
+        }}
+      >
+        <div className="flex items-center gap-4 font-mono text-xs">
+          {['FILE', 'VIEW', 'SECURITY', 'HELP'].map((label) => (
+            <span
+              key={label}
+              className="tracking-wider cursor-default select-none"
+              style={{ color: dimColor }}
+            >
+              {label}
+            </span>
+          ))}
+        </div>
+        <div className="flex items-center gap-2 font-mono text-xs">
+          <span
+            className="inline-block w-1.5 h-1.5 rounded-full"
+            style={{ backgroundColor: '#00ff00', boxShadow: '0 0 4px #00ff0066' }}
+          />
+          <span style={{ color: dimColor, letterSpacing: '0.05em' }}>SESSION ACTIVE</span>
         </div>
       </div>
 
-      <div className="mb-4">
+      {/* ═══ File Grid Content ═══ */}
+      <div className="flex-1 overflow-auto p-4">
         {logs.length > 0 ? (
-          <AnimatedList className="space-y-2">
+          <AnimatedList
+            className="flex flex-wrap gap-2 justify-start"
+            staggerDelay={0.06}
+          >
             {logs.map((log, index) => (
-              <LogListItem
+              <TerminalFileIcon
                 key={index}
                 log={log}
-                onClick={() => onLogSelect(log)}
-                accentColor={getTerminalBootProfile(terminal.code).accentColor}
+                accentColor={accentColor}
+                dimColor={dimColor}
                 terminalCode={terminal.code}
+                onClick={() => onLogSelect(log)}
               />
             ))}
           </AnimatedList>
         ) : (
-          <div style={{ color: 'var(--text-dim)' }} className="font-mono text-sm p-4 text-center">
-            No logs available
+          <div
+            className="flex items-center justify-center h-full font-mono text-sm"
+            style={{ color: dimColor }}
+          >
+            <div className="text-center">
+              <div className="text-2xl mb-2" style={{ color: `${accentColor}44` }}>□</div>
+              <div>NO FILES FOUND</div>
+              <div className="text-xs mt-1" style={{ color: `${dimColor}88` }}>
+                This directory is empty
+              </div>
+            </div>
           </div>
         )}
       </div>
 
-      <Button variant="outline" size="sm" onClick={onBack}>
-        Back
-      </Button>
+      {/* ═══ Taskbar / Footer ═══ */}
+      <div
+        className="terminal-os-taskbar flex items-center justify-between px-3 py-1.5 shrink-0 font-mono text-xs"
+        style={{
+          borderTop: `1px solid ${accentColor}33`,
+          backgroundColor: `${accentColor}08`,
+          color: dimColor,
+        }}
+      >
+        <div className="flex items-center gap-3">
+          <span style={{ color: accentColor }}>{terminal.code}</span>
+          <span style={{ color: `${dimColor}88` }}>│</span>
+          <span>{logs.length} {logs.length === 1 ? 'FILE' : 'FILES'}</span>
+          <span style={{ color: `${dimColor}88` }}>│</span>
+          <span className="uppercase">{category.replace('-', ' ')}</span>
+        </div>
+        <div style={{ color: `${dimColor}88` }}>
+          {terminal.name}
+        </div>
+      </div>
     </div>
   );
 }

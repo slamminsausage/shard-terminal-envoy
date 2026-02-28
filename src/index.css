@@ -1237,3 +1237,26 @@
   font-family: 'Share Tech Mono', monospace !important;
   letter-spacing: 0.05em;
 }
+
+/* ── Terminal OS Desktop ───────────────────────────────────────────── */
+
+.terminal-os-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.file-icon-glow {
+  filter: brightness(1.1);
+}
+
+.file-icon-critical-pulse {
+  animation: file-icon-pulse 2s ease-in-out infinite;
+}
+
+@keyframes file-icon-pulse {
+  0%, 100% { opacity: 1; filter: brightness(1); }
+  50% { opacity: 0.5; filter: brightness(1.6); }
+}
