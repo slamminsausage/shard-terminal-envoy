@@ -21,16 +21,23 @@ interface LogEntry {
   title: string;
   content?: string;
   audio_file?: string;
+  date?: string;
+  author?: string;
+  location?: string;
+  security_level?: string;
   requires_password?: boolean;
   password?: string;
   attemptsAllowed?: number;
+  requires_roll?: boolean;
   special_roll_check?: {
     difficulty: number;
     skill: string;
   };
   roll_check?: {
     difficulty: number;
+    skill?: string;
   };
+  logs?: any[];
 }
 
 interface TerminalSessionState {

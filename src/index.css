@@ -1260,3 +1260,32 @@
   0%, 100% { opacity: 1; filter: brightness(1); }
   50% { opacity: 0.5; filter: brightness(1.6); }
 }
+
+/* ── Terminal file icon data stream ──────────────────────────────── */
+@keyframes data-stream-scan {
+  0%   { background-position: 0% 0%; }
+  100% { background-position: 100% 0%; }
+}
+
+.data-stream-active {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(0, 255, 136, 0.06) 45%,
+    rgba(0, 255, 136, 0.12) 50%,
+    rgba(0, 255, 136, 0.06) 55%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: data-stream-scan 3s linear infinite;
+}
+
+/* ── Audio log signal pulse ──────────────────────────────────────── */
+@keyframes signal-pulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+
+.signal-pulse-active {
+  animation: signal-pulse 2s ease-in-out infinite;
+}
