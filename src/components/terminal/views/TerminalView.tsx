@@ -4,24 +4,30 @@
  * Displays terminal logs as a fake retro terminal operating system window.
  * Features:
  * - Title bar with colored dots, header label, disconnect button
- * - Decorative menu bar (FILE, VIEW, SECURITY, HELP)
+ * - Menu bar with decorative gauges (FREQ, ADDR, oscilloscope)
  * - Responsive file icon grid (TerminalFileIcon per log)
- * - Taskbar footer with terminal metadata
+ * - Enhanced taskbar with live meters (MEM, CPU, TX/RX indicators)
  * - Full accent-color theming from boot profiles
  */
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { AnimatedList } from '@/components/ui/AnimatedList';
 import { getTerminalBootProfile, getTerminalCategory } from '@/lib/terminalBootProfiles';
 import TerminalFileIcon from './TerminalFileIcon';
+import { TaskbarGauges, MenuBarGauges } from '../TerminalGauges';
 
 interface LogEntry {
   title: string;
   date?: string;
   author?: string;
+  location?: string;
   security_level?: string;
   requires_roll?: boolean;
+  requires_password?: boolean;
   roll_check?: { difficulty: number; skill: string };
+  audio_file?: string;
+  logs?: any[];
+  content?: string;
 }
 
 interface Terminal {
@@ -37,6 +43,15 @@ interface TerminalViewProps {
   onBack: () => void;
 }
 
+/** Generate a pseudo-random uptime string from terminal code */
+function fakeUptime(code: string): string {
+  let h = 0;
+  for (let i = 0; i < code.length; i++) h = (h * 31 + code.charCodeAt(i)) | 0;
+  const days = Math.abs(h) % 365;
+  const hours = Math.abs(h >> 4) % 24;
+  return `${days}d ${hours}h`;
+}
+
 export default function TerminalView({
   terminal,
   logs,
@@ -46,6 +61,25 @@ export default function TerminalView({
   const profile = getTerminalBootProfile(terminal.code);
   const category = getTerminalCategory(terminal.code);
   const { accentColor, dimColor, headerLabel } = profile;
+
+  // Live clock for the taskbar
+  const [clock, setClock] = useState(() => {
+    const d = new Date();
+    return d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  });
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      const d = new Date();
+      setClock(d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+    }, 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  // Count security levels for the status line
+  const securedCount = logs.filter(
+    (l) => l.requires_roll || l.requires_password || l.security_level === 'high' || l.security_level === 'restricted' || l.security_level === 'critical'
+  ).length;
 
   return (
     <div
@@ -126,12 +160,16 @@ export default function TerminalView({
             </span>
           ))}
         </div>
-        <div className="flex items-center gap-2 font-mono text-xs">
-          <span
-            className="inline-block w-1.5 h-1.5 rounded-full"
-            style={{ backgroundColor: '#00ff00', boxShadow: '0 0 4px #00ff0066' }}
-          />
-          <span style={{ color: dimColor, letterSpacing: '0.05em' }}>SESSION ACTIVE</span>
+        {/* Decorative gauges in menu bar */}
+        <div className="flex items-center gap-3">
+          <MenuBarGauges accentColor={accentColor} terminalCode={terminal.code} />
+          <div className="flex items-center gap-2 font-mono text-xs">
+            <span
+              className="inline-block w-1.5 h-1.5 rounded-full"
+              style={{ backgroundColor: '#00ff00', boxShadow: '0 0 4px #00ff0066' }}
+            />
+            <span style={{ color: dimColor, letterSpacing: '0.05em' }}>ACTIVE</span>
+          </div>
         </div>
       </div>
 
@@ -182,11 +220,31 @@ export default function TerminalView({
           <span style={{ color: accentColor }}>{terminal.code}</span>
           <span style={{ color: `${dimColor}88` }}>│</span>
           <span>{logs.length} {logs.length === 1 ? 'FILE' : 'FILES'}</span>
+          {securedCount > 0 && (
+            <>
+              <span style={{ color: `${dimColor}88` }}>│</span>
+              <span style={{ color: '#ffaa00' }}>🔒 {securedCount}</span>
+            </>
+          )}
           <span style={{ color: `${dimColor}88` }}>│</span>
           <span className="uppercase">{category.replace('-', ' ')}</span>
         </div>
-        <div style={{ color: `${dimColor}88` }}>
-          {terminal.name}
+
+        {/* Center: live gauges */}
+        <div className="hidden sm:flex">
+          <TaskbarGauges accentColor={accentColor} terminalCode={terminal.code} />
+        </div>
+
+        <div className="flex items-center gap-3">
+          <span style={{ color: `${dimColor}66`, fontSize: '8px' }}>
+            UPTIME {fakeUptime(terminal.code)}
+          </span>
+          <span
+            className="tabular-nums"
+            style={{ color: accentColor, fontSize: '9px', textShadow: `0 0 6px ${accentColor}33` }}
+          >
+            {clock}
+          </span>
         </div>
       </div>
     </div>
