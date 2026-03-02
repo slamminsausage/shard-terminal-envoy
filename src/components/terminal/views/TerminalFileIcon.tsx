@@ -22,6 +22,7 @@ interface LogEntry {
   requires_password?: boolean;
   roll_check?: { difficulty: number; skill: string };
   audio_file?: string;
+  video_file?: string;
   logs?: any[];
   content?: string;
 }
@@ -47,6 +48,9 @@ const DEFAULT_SECURITY = { color: '#00ff00', icon: '□' };
 
 /** Determine file type from log content */
 function getFileType(log: LogEntry): { label: string; icon: string } {
+  if (log.video_file) {
+    return { label: 'VID', icon: '▶' };
+  }
   if (log.audio_file || (log.logs && log.logs.length > 0)) {
     return { label: 'AUD', icon: '♫' };
   }

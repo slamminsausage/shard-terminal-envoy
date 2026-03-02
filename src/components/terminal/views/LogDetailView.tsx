@@ -16,6 +16,7 @@
 import React, { useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import AudioPlayer from '../AudioPlayer';
+import VideoPlayer from '../VideoPlayer';
 import { useGlitchText } from '@/hooks/useGlitchText';
 import { getTerminalBootProfile } from '@/lib/terminalBootProfiles';
 import { LogDetailGauges } from '../TerminalGauges';
@@ -24,6 +25,7 @@ interface LogEntry {
   title: string;
   content?: string;
   audio_file?: string;
+  video_file?: string;
   date?: string;
   author?: string;
   location?: string;
@@ -53,6 +55,7 @@ const SECURITY_COLORS: Record<string, string> = {
 
 /** Determine file type label from log properties */
 function getFileTypeLabel(log: LogEntry): string {
+  if (log.video_file) return 'VIDEO BROADCAST';
   if (log.audio_file || (log.logs && log.logs.length > 0)) return 'AUDIO LOG';
   if (log.requires_password) return 'ENCRYPTED DOCUMENT';
   if (log.content && log.content.length > 2000) return 'EXTENDED LOG';
@@ -194,6 +197,13 @@ export default function LogDetailView({
               <span className="animate-pulse" style={{ color: accentColor }}>█</span>
             )}
           </div>
+
+          {/* Video player */}
+          {log.video_file && (
+            <div className="mb-4">
+              <VideoPlayer src={log.video_file} label="Holo-Broadcast Playback" accentColor={accentColor} />
+            </div>
+          )}
 
           {/* Audio player */}
           {log.audio_file && (

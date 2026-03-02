@@ -1,0 +1,36 @@
+[
+  {
+    "title": "WELCOME_TO_TORPOL",
+    "location": "Downport Public Concourse",
+    "date": "312-1105",
+    "author": "Torpol Tourism Authority",
+    "content": "TORPOL TOURISM AUTHORITY — BROADCAST LOOP v4.1\nINITIATING IMMERSIVE HOLO-PROJECTION SEQUENCE\n\n[VISUAL: Golden beaches shimmer across the display. Turquoise seas lap\nagainst immaculate white sand. Laughing tourists dive from crystal piers.]\n\n  \"Welcome to Torpol — The Jewel of the Trojan Reach.\"\n  \"A Safe Haven. A Party Without End.\"\n\n[VISUAL: Aerial sweep of the Polar Port. Gleaming spires. Azure skies.]\n\n  \"Refuel. Refresh. Reimagine.\"\n\n[PROJECTION GLITCH — 1 FRAME]\n[Industrial scaffolding in orbit. Half-obscured by static.]\n[PROJECTION RESTORED]\n\n  \"Torpol: Where Even the Storms Know Their Place.\"\n\n──────────────────────────────────────────────────────\n   TORPOL TOURISM AUTHORITY // EST. 1079 IMPERIAL\n──────────────────────────────────────────────────────\n   For assistance, speak to any concourse staff member.\n   Tourist visa extensions: Administration Kiosk, Level 2.\n\n   Note: Atmospheric projection quality may vary\n   near orbital relay arrays.",
+    "video_file": "/video/WELCOME_TO_TORPOL.MP4",
+    "security_level": "unlocked",
+    "requires_roll": false
+  },
+  {
+    "title": "ORBITAL_REFINERY_STATUS",
+    "location": "Downport Public Concourse",
+    "date": "311-1105",
+    "author": "Torpol Infrastructure Bulletin",
+    "content": "PUBLIC INFRASTRUCTURE BULLETIN\nLast Updated: 36 Hours Ago\nClassification: Public\n\n──────────────────────────────────────────────────────\n\nOrbital Chemical Refinery #7 is currently OFFLINE\npending investigation of a reported mechanical incident.\n\nTemporary delays in industrial chemical exports are\nexpected. Affected shipping firms have been notified\nand alternative routing is being coordinated.\n\nNo impact to tourist experience or passenger\nrefueling capacity has been observed at this time.\n\nPublic safety rating remains UNCHANGED.\nDownport operations continue at full capacity.\n\nPassengers are reminded that orbital tours in Sector 7\nare temporarily suspended as a precautionary measure.\n\nWe thank all visitors for their patience during this\nroutine operational review.\n\n    — Torpol Port Authority\n    — Orbital Infrastructure Division\n\n[NOTE: No mention of external interference.\n Incident classified as mechanical failure.]",
+    "security_level": "low",
+    "requires_roll": false
+  },
+  {
+    "title": "DOCKING_REGISTRY_SUMMARY",
+    "location": "Downport Public Concourse",
+    "date": "312-1105",
+    "author": "Torpol Port Authority",
+    "content": "TORPOL POLAR PORT — DOCKING REGISTRY SUMMARY\nDate: 312-1105 // Classification: Routine\n\n══════════════════════════════════════════════════════════\n VESSEL              TRANSPONDER    BERTH              STATUS\n══════════════════════════════════════════════════════════\n Argo 1              Validated      Orbital Fuel Ring  Cleared\n Argo 2              Validated      Orbital Fuel Ring  Cleared\n Misery's Company    Validated      Downport Bay 14    Cleared\n══════════════════════════════════════════════════════════\n\nAll listed vessels departed without incident.\n\nNo crew disembarkation recorded.\nNo crew disembarkation recorded.\n\n  [All cargo manifests verified by automated scan.]\n  [No anomalous docking events in prior 72-hour window.]\n  [Registry maintained by Torpol Orbital Traffic Control.]\n\n──────────────────────────────────────────────────────────\n  END OF PUBLIC REGISTRY EXCERPT\n  Full records available to authorised personnel only.\n──────────────────────────────────────────────────────────",
+    "security_level": "low",
+    "requires_roll": true,
+    "roll_check": {
+      "difficulty": 6,
+      "skill": "Electronics (Computers)",
+      "on_success": "Registry data decrypted and displayed.",
+      "on_failure": "Access denied. Insufficient clearance for registry query."
+    }
+  }
+]

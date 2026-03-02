@@ -21,6 +21,7 @@ interface LogEntry {
   title: string;
   content?: string;
   audio_file?: string;
+  video_file?: string;
   date?: string;
   author?: string;
   location?: string;
