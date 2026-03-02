@@ -31,6 +31,8 @@ export const TERMINALS: TerminalDefinition[] = [
   { code: 'fuwnet', name: 'FUW Network Uplink', logPath: '/logs/fuw-network.json', requiresRoll: 8 },
   { code: 'tobia-jashu01', name: 'Tobia – Jashu Public Info Kiosk', logPath: '/logs/tobia-jashu01.json'},
   { code: 'drinax_gat', name: 'Drinax General Access Terminal', logPath: '/logs/drinax_gat.json', requiresRoll: 8 },
+  { code: 'torpolpub', name: 'Torpol Polar Port – Public Kiosk', logPath: '/logs/torpolpub.json' },
+  { code: 'tppadmin', name: 'Torpol Port Authority – Admin Node', logPath: '/logs/tppadmin.json', requiresRoll: 8 },
   { code: '01-1485-10-4-89-40', name: 'Deep Core Security', logPath: '/logs/01-1485-10-4-89-40.json', requiresSpecialHandler: true }
 ];
 

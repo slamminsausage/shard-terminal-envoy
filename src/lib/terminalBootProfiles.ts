@@ -49,6 +49,7 @@ const TERMINAL_CATEGORIES: Record<string, TerminalCategory> = {
   // Public kiosks
   'caldonis_public': 'public-kiosk',
   'tobia-jashu01':   'public-kiosk',
+  'torpolpub':       'public-kiosk',
 
   // Research / lab
   'lysani01':        'research',
@@ -64,6 +65,7 @@ const TERMINAL_CATEGORIES: Record<string, TerminalCategory> = {
 
   // Government / official
   'drinax_gat':      'government',
+  'tppadmin':        'government',
 };
 
 export const getTerminalCategory = (code: string): TerminalCategory =>
