@@ -5,7 +5,7 @@
     "date": "312-1105",
     "author": "Torpol Tourism Authority",
     "content": "TORPOL TOURISM AUTHORITY — BROADCAST LOOP v4.1\nINITIATING IMMERSIVE HOLO-PROJECTION SEQUENCE\n\n\n\n──────────────────────────────────────────────────────\n   TORPOL TOURISM AUTHORITY // EST. 1079 IMPERIAL\n──────────────────────────────────────────────────────\n   For assistance, speak to any concourse staff member.\n   Tourist visa extensions: Administration Kiosk, Level 2.\n\n   Note: Atmospheric projection quality may vary\n   near orbital relay arrays.",
-    "video_file": "/video/WELCOME_TO_TORPOL.MP4",
+    "video_file": "/video/WELCOME_TO_TORPOL.mp4",
     "security_level": "unlocked",
     "requires_roll": false
   },
