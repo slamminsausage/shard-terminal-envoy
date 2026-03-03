@@ -1,0 +1,44 @@
+[
+  {
+    "title": "Station Commission Record",
+    "location": "Bridge Command Terminal — HG-Borite-XII",
+    "date": "IMPERIAL YEAR 602 (APPROX. 2,043 YEARS PRIOR)",
+    "author": "Fleet Commissioning Office, Sindalian High Guard",
+    "content": "STATION HG-BORITE-XII\nCLASSIFICATION: WATCH OUTPOST, CLASS III\nSTATUS: COMMISSIONED\n\nPrimary function:\n— Hydrogen escort, gas skimming operations\n— Customs inspection, inbound convoy routes\n— Strategic presence, Borite approach corridor\n\nCrew complement: 62 personnel\nCommand authority: Fleet Watch Command, Sindal Prime\n\nThis station exists to remind the outer systems that the Emperor's reach extends to the gutter of his empire.\n\nThe Empire endures in orbit.\n\nEndure with it.",
+    "security_level": "unlocked",
+    "requires_roll": false
+  },
+  {
+    "title": "Commander's Log — Fragment 214",
+    "location": "Bridge Command Terminal — HG-Borite-XII",
+    "date": "IMPERIAL YEAR 619 // TIMESTAMP CORRUPTED",
+    "author": "Commander Aelys Vorne, HG Watch Station XII",
+    "content": "Supply convoy is six weeks overdue.\n\nI have filed eleven incident reports.\nI have received zero responses.\nI have stopped filing incident reports.\n\nMorale is what it is. The gas giant turns. It is a beautiful world. I have started to wonder what it looks like from inside the atmosphere. Whether you would have time to notice before it killed you.\n\nFleet Command assures us that reinforcements are—\n\n[LOG ENDS MID-ENTRY]",
+    "security_level": "unlocked",
+    "requires_roll": false
+  },
+  {
+    "title": "Automated Status Cycle — Year 2,041",
+    "location": "Bridge Command Terminal — HG-Borite-XII",
+    "date": "CURRENT CYCLE (AUTO-GENERATED)",
+    "author": "HG-XII Station Management System",
+    "content": "AUTOMATED REPORT: CYCLE 2,041\n\nHull integrity: 34% nominal.\nAtmospheric retention: Sections 4, 5, 6 only.\nCrew complement: 0.\nOrbital stability: 480–520 years remaining.\n\nThis report has been generated automatically.\nThis report has been transmitted to Fleet Watch Command, Sindal Prime.\nThis report has been transmitted to Fleet Watch Command, Sindal Prime.\nThis report has been transmitted to Fleet Watch Command, Sindal Prime.\n\nNo response received.\n\nAwaiting response.\nAwaiting response.\nAwaiting—",
+    "security_level": "unlocked",
+    "requires_roll": false
+  },
+  {
+    "title": "Final Administrative Filing — Form HG-7",
+    "location": "Bridge Command Terminal — HG-Borite-XII",
+    "date": "IMPERIAL YEAR 621 // EXACT DATE CORRUPTED",
+    "author": "Unknown — Filing Incomplete",
+    "content": "FORM HG-7: FINAL STATION REPORT\n\nStation HG-Borite-XII is hereby noted as INACTIVE.\n\nIts purpose was to watch.\nIt watches still.\n\nThe specimen acquired by the crew in the station's final operational months is not the responsibility of the Imperial Fleet.\nIt was not brought aboard under authorized procedure.\nIt was not catalogued through proper channels.\nWhatever it—\n\n[FORM INCOMPLETE]\n[TRANSMISSION NEVER SENT]\n[NO FURTHER ENTRIES]",
+    "security_level": "restricted",
+    "requires_roll": true,
+    "roll_check": {
+      "difficulty": 10,
+      "skill": "Electronics (computers)",
+      "on_success": "Deep archive access granted. Final filing recovered.",
+      "on_failure": "Access denied. Record flagged as corrupted."
+    }
+  }
+]

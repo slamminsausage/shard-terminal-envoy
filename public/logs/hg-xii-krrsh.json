@@ -1,0 +1,65 @@
+[
+  {
+    "title": "Day One",
+    "location": "Personal Terminal — Krrsh — Section 6",
+    "date": "DAY 1 (KRRSH'S COUNT)",
+    "author": "Krrsh, former captain of the Misery's Company",
+    "content": "They left me the terminal. That's almost funny.\n\nI have rations for eight days if I'm careful. Suit air recycles if I stay in Section 6 and don't move around too much. The habitable sections are still pressurized. I can work with this.\n\nI am going to find a way out of this.\n\nI always find a way.",
+    "security_level": "unlocked",
+    "requires_roll": false
+  },
+  {
+    "title": "Day Three",
+    "location": "Personal Terminal — Krrsh — Section 6",
+    "date": "DAY 3 (KRRSH'S COUNT)",
+    "author": "Krrsh",
+    "content": "There are marks on the walls in Section 2.\n\nI read them all.\n\nThe old ones are from the Imperial crew. I don't understand most of it — the Sindalian dialect is too corrupted. But I understand: 'do not open Section 3.'\n\nThe newer ones — those are from the Brotherhood's castoffs. There are names I recognize. Morev Kasht. The Hauler woman.\n\nNone of them made it.\n\nI am not them.",
+    "security_level": "unlocked",
+    "requires_roll": false
+  },
+  {
+    "title": "Day Five",
+    "location": "Personal Terminal — Krrsh — Section 6",
+    "date": "DAY 5 (KRRSH'S COUNT)",
+    "author": "Krrsh",
+    "content": "I found the suit.\n\nGood quality. Civilian model. The chest plate is gone — not cracked, not torn. Removed. Whatever did it took its time.\n\nThe suit was sized for a human. The acid marks are old. Twenty years, maybe more.\n\nThis is what they leave behind.\n\nI have been thinking about the radio. The beacon in my suit is powerful enough to reach a ship in-system if the ship is already looking. But the system is dead. Nobody looks here.\n\nI need to boost the signal.\n\nI need to boost it enough that someone passing through picks it up.",
+    "security_level": "unlocked",
+    "requires_roll": false
+  },
+  {
+    "title": "Day Six",
+    "location": "Personal Terminal — Krrsh — Section 6",
+    "date": "DAY 6 (KRRSH'S COUNT)",
+    "author": "Krrsh",
+    "content": "I wired the suit communicator to the station dish.\n\nForty-five minutes. Section 4. I ran the whole way back.\n\nI know what this means. I can't use the communicator anymore unless I go back to Section 4 and unplug it. And Section 4 is between me and the thing in Section 5.\n\nI have been calling it a 'thing' this entire time.\n\nI have been trying not to describe it because if I describe it I have to admit that I have seen it.\n\nI have seen it.\n\nIt is large. It is fast. It does not make sounds that I can hear directly. But my suit radio produces static when it is close. I have started tracking it that way.\n\nThe static is my early warning system.\n\nThe static has been getting louder.",
+    "security_level": "unlocked",
+    "requires_roll": false
+  },
+  {
+    "title": "Day Eight",
+    "location": "Personal Terminal — Krrsh — Section 6",
+    "date": "DAY 8 (KRRSH'S COUNT)",
+    "author": "Krrsh",
+    "content": "I think boosting the beacon made things worse.\n\nThe static is constant now. I don't know if it can hear the dish transmitting or if it's something else. I don't know how it works. I don't know anything about it except what I have figured out hiding here in the dark.\n\nBut I think it is drawn to signals. I think the dish is pulling it toward Section 4 instead of Section 6.\n\nI think I accidentally built myself a decoy.\n\nIf someone comes — when someone comes — they will dock near Section 4.\n\nI don't know how to warn them.\n\nI don't have a communicator anymore.",
+    "security_level": "unlocked",
+    "requires_roll": false
+  },
+  {
+    "title": "Day Eleven (Probably)",
+    "location": "Personal Terminal — Krrsh — Section 6",
+    "date": "DAY 11 PROBABLY (KRRSH'S COUNT)",
+    "author": "Krrsh",
+    "content": "I lost count for a while.\n\nThe rations are almost gone. I have been rationing the rationing. This is what I have come to.\n\nKrrsh of the Misery's Company. Four turrets and a crew of eleven. Feared in three systems.\n\nHiding under a panel on a dead station, counting the last of his protein bricks.\n\nThe signal is still going out. Someone will come. Someone always comes for the castoffs — the Brotherhood's tradition is an invitation to rescue, they just don't know it.\n\nThe static is quieter tonight.\n\nI do not know if that is good.",
+    "security_level": "unlocked",
+    "requires_roll": false
+  },
+  {
+    "title": "Final Entry — No Date",
+    "location": "Personal Terminal — Krrsh — Section 6",
+    "date": "UNDATED",
+    "author": "Krrsh",
+    "content": "If you are reading this and I am not here to explain it myself:\n\nThe thing in the vents is real. It is not the station settling. It is not a malfunction.\n\nIt hunts by heat and by life and by radio.\n\nThe dish in Section 4 is keeping it busy. Do not turn the dish off. Do not transmit from Section 4. Do not run — it is faster than you.\n\nI don't know how to kill it. I only know how to hide from it.\n\nIf I am dead, I hid badly.\n\nIf I am alive, find me in Section 6. Behind the secondary wall panel. I will be the Vargr who looks very bad and owes you a very large favour.\n\nHurry. I am almost out of air again.",
+    "security_level": "unlocked",
+    "requires_roll": false
+  }
+]

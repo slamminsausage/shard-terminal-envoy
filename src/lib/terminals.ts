@@ -33,7 +33,10 @@ export const TERMINALS: TerminalDefinition[] = [
   { code: 'drinax_gat', name: 'Drinax General Access Terminal', logPath: '/logs/drinax_gat.json', requiresRoll: 8 },
   { code: 'torpolpub', name: 'Torpol Polar Port – Public Kiosk', logPath: '/logs/torpolpub.json' },
   { code: 'tppadmin', name: 'Torpol Port Authority – Admin Node', logPath: '/logs/tppadmin.json', requiresRoll: 8 },
-  { code: '01-1485-10-4-89-40', name: 'Deep Core Security', logPath: '/logs/01-1485-10-4-89-40.json', requiresSpecialHandler: true }
+  { code: '01-1485-10-4-89-40', name: 'Deep Core Security', logPath: '/logs/01-1485-10-4-89-40.json', requiresSpecialHandler: true },
+  { code: 'hg_xii_bridge', name: 'HG-Borite-XII Bridge Command', logPath: '/logs/hg-xii-bridge.json' },
+  { code: 'hg_xii_general', name: 'HG-Borite-XII General Access', logPath: '/logs/hg-xii-general.json' },
+  { code: 'hg_xii_krrsh', name: 'HG-Borite-XII — Krrsh Personal Terminal', logPath: '/logs/hg-xii-krrsh.json', requiresRoll: 10 }
 ];
 
 export const TERMINAL_MAP = new Map(TERMINALS.map(terminal => [terminal.code.toLowerCase(), terminal]));
