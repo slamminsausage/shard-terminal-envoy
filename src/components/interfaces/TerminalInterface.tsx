@@ -35,7 +35,7 @@ import { getTerminalBootProfile } from '@/lib/terminalBootProfiles';
 // New hooks
 import { useTerminalSession } from '@/hooks/useTerminalSession';
 import { usePasswordAuth } from '@/hooks/usePasswordAuth';
-import { useCharacterSkills } from '@/hooks/useCharacterSkills';
+
 import { useTerminalHistory } from '@/hooks/useTerminalHistory';
 import type { DiceRoll } from '@/lib/dice';
 
@@ -138,8 +138,6 @@ export default function TerminalInterface() {
     },
   });
 
-  // Character skills for roll checks
-  const { getSkillInfo } = useCharacterSkills();
 
   // Reset password auth state when selected log changes
   // This prevents stale attempt counts from carrying over between logs
@@ -617,36 +615,26 @@ export default function TerminalInterface() {
             )}
 
             {/* Special Roll Check */}
-            {session.specialRollCheck && !session.terminalPasswordRequired && !session.showDeepCore && (() => {
-              const skillInfo = getSkillInfo(session.specialRollCheck.skill);
-              return (
+            {session.specialRollCheck && !session.terminalPasswordRequired && !session.showDeepCore && (
                 <RollCheckPrompt
                   difficulty={session.specialRollCheck.difficulty}
                   skill={session.specialRollCheck.skill}
                   subject={session.selectedLog?.title || 'this file'}
-                  skillDM={skillInfo.skillDM}
-                  charDM={skillInfo.charDM}
                   onRollResult={handleSpecialRollCheck}
                   onBack={session.goToTerminal}
                 />
-              );
-            })()}
+            )}
 
             {/* Standard Roll Check */}
-            {session.rollCheck && !session.terminalPasswordRequired && !session.specialRollCheck && !session.showDeepCore && (() => {
-              const skillInfo = getSkillInfo('Electronics (Computers)');
-              return (
+            {session.rollCheck && !session.terminalPasswordRequired && !session.specialRollCheck && !session.showDeepCore && (
                 <RollCheckPrompt
                   difficulty={session.rollCheck.difficulty}
                   skill="Electronics (Computers)"
                   subject={session.selectedLog?.title || 'this file'}
-                  skillDM={skillInfo.skillDM}
-                  charDM={skillInfo.charDM}
                   onRollResult={handleRollCheck}
                   onBack={session.goToTerminal}
                 />
-              );
-            })()}
+            )}
 
             {/* Log Password Prompt */}
             {session.requiresPassword &&
