@@ -2,7 +2,7 @@
   {
     "title": "WELCOME_TO_TORPOL",
     "location": "Downport Public Concourse",
-    "date": "312-1105",
+    "date": "190-1105",
     "author": "Torpol Tourism Authority",
     "content": "TORPOL TOURISM AUTHORITY — BROADCAST LOOP v4.1\nINITIATING IMMERSIVE HOLO-PROJECTION SEQUENCE\n\n\n\n──────────────────────────────────────────────────────\n   TORPOL TOURISM AUTHORITY // EST. 1079 IMPERIAL\n──────────────────────────────────────────────────────\n   For assistance, speak to any concourse staff member.\n   Tourist visa extensions: Administration Kiosk, Level 2.\n\n   Note: Atmospheric projection quality may vary\n   near orbital relay arrays.",
     "video_file": "/video/WELCOME_TO_TORPOL.mp4",
@@ -12,7 +12,7 @@
   {
     "title": "ORBITAL_REFINERY_STATUS",
     "location": "Downport Public Concourse",
-    "date": "311-1105",
+    "date": "189-1105",
     "author": "Torpol Infrastructure Bulletin",
     "content": "PUBLIC INFRASTRUCTURE BULLETIN\nLast Updated: 36 Hours Ago\nClassification: Public\n\n──────────────────────────────────────────────────────\n\nOrbital Chemical Refinery #7 is currently OFFLINE\npending investigation of a reported mechanical incident.\n\nTemporary delays in industrial chemical exports are\nexpected. Affected shipping firms have been notified\nand alternative routing is being coordinated.\n\nNo impact to tourist experience or passenger\nrefueling capacity has been observed at this time.\n\nPublic safety rating remains UNCHANGED.\nDownport operations continue at full capacity.\n\nPassengers are reminded that orbital tours in Sector 7\nare temporarily suspended as a precautionary measure.\n\nWe thank all visitors for their patience during this\nroutine operational review.\n\n    — Torpol Port Authority\n    — Orbital Infrastructure Division\n\n[NOTE: No mention of external interference.\n Incident classified as mechanical failure.]",
     "security_level": "low",
@@ -21,9 +21,9 @@
   {
     "title": "DOCKING_REGISTRY_SUMMARY",
     "location": "Downport Public Concourse",
-    "date": "312-1105",
+    "date": "190-1105",
     "author": "Torpol Port Authority",
-    "content": "TORPOL POLAR PORT — DOCKING REGISTRY SUMMARY\nDate: 312-1105 // Classification: Routine\n\n══════════════════════════════════════════════════════════\n VESSEL              TRANSPONDER    BERTH              STATUS\n══════════════════════════════════════════════════════════\n Argo 1              Validated      Orbital Fuel Ring  Cleared\n Argo 2              Validated      Orbital Fuel Ring  Cleared\n Misery's Company    Validated      Downport Bay 14    Cleared\n══════════════════════════════════════════════════════════\n\nAll listed vessels departed without incident.\n\nNo crew disembarkation recorded.\nNo crew disembarkation recorded.\n\n  [All cargo manifests verified by automated scan.]\n  [No anomalous docking events in prior 72-hour window.]\n  [Registry maintained by Torpol Orbital Traffic Control.]\n\n──────────────────────────────────────────────────────────\n  END OF PUBLIC REGISTRY EXCERPT\n  Full records available to authorised personnel only.\n──────────────────────────────────────────────────────────",
+    "content": "TORPOL POLAR PORT — DOCKING REGISTRY SUMMARY\nDate: 190-1105 // Classification: Routine\n\n══════════════════════════════════════════════════════════\n VESSEL              TRANSPONDER    BERTH              STATUS\n══════════════════════════════════════════════════════════\n Argo 1              Validated      Orbital Fuel Ring  Cleared\n Argo 2              Validated      Orbital Fuel Ring  Cleared\n Misery's Company    Validated      Downport Bay 14    Cleared\n══════════════════════════════════════════════════════════\n\nAll listed vessels departed without incident.\n\nNo crew disembarkation recorded.\nNo crew disembarkation recorded.\n\n  [All cargo manifests verified by automated scan.]\n  [No anomalous docking events in prior 72-hour window.]\n  [Registry maintained by Torpol Orbital Traffic Control.]\n\n──────────────────────────────────────────────────────────\n  END OF PUBLIC REGISTRY EXCERPT\n  Full records available to authorised personnel only.\n──────────────────────────────────────────────────────────",
     "security_level": "low",
     "requires_roll": true,
     "roll_check": {
