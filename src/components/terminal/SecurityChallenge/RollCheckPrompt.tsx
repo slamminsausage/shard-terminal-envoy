@@ -28,8 +28,8 @@ export default function RollCheckPrompt({
   difficulty,
   skill,
   subject,
-  skillDM = -3,  // Default to unproficient
-  charDM = 0,     // Default to no modifier
+  skillDM = 0,   // Default to no modifier
+  charDM = 0,    // Default to no modifier
   onRollResult,
   onBack,
 }: RollCheckPromptProps) {
@@ -46,7 +46,7 @@ export default function RollCheckPrompt({
     setError('');
     const parsedSkill = Number(localSkillDM);
     const parsedChar = Number(localCharDM);
-    const finalSkillDM = Number.isFinite(parsedSkill) ? parsedSkill : -3;
+    const finalSkillDM = Number.isFinite(parsedSkill) ? parsedSkill : 0;
     const finalCharDM = Number.isFinite(parsedChar) ? parsedChar : 0;
     const result = performSkillCheck(difficulty, finalSkillDM, finalCharDM);
     setRollResult(result);
@@ -64,7 +64,7 @@ export default function RollCheckPrompt({
 
     const parsedSkill = Number(localSkillDM);
     const parsedChar = Number(localCharDM);
-    const finalSkillDM = Number.isFinite(parsedSkill) ? parsedSkill : -3;
+    const finalSkillDM = Number.isFinite(parsedSkill) ? parsedSkill : 0;
     const finalCharDM = Number.isFinite(parsedChar) ? parsedChar : 0;
     const result = performSkillCheck(difficulty, finalSkillDM, finalCharDM, roll);
     setRollResult(result);
