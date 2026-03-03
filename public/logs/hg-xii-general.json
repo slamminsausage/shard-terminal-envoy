@@ -1,0 +1,68 @@
+[
+  {
+    "title": "Quartermaster Archive — Station Inventory",
+    "location": "General Access Terminal — HG-Borite-XII",
+    "date": "IMPERIAL YEAR 618",
+    "author": "Quartermaster Devhet Orn",
+    "content": "SECTION 3 — SPECIMEN STORAGE\n\nItem 34-HX:\nDescription: Petrified xenoform specimen. Folded. Roughly 1.2m across.\nOrigin: Foreven Sector (unverified). Acquired via private sale.\nAcquired by: His Grace (personal collection, non-requisitioned).\nBiological activity: None detected.\nClassification: BIOLOGICAL: INERT.\n\n— NOTE, APPENDED (same hand):\nWarm to the touch this morning. Reclassified: BIOLOGICAL: UNCERTAIN.\n\n— NOTE, APPENDED (different hand):\nDo not open Section 3.",
+    "security_level": "unlocked",
+    "requires_roll": false
+  },
+  {
+    "title": "Wall Markings Transcription — Section 2",
+    "location": "General Access Terminal — HG-Borite-XII",
+    "date": "APPROX. 90 YEARS PRIOR (ESTIMATED)",
+    "author": "Unknown — Transcribed from bulkhead panel",
+    "content": "Recovered from bulkhead panel, Section 2. Scratched with a metal shard. Transcription as-is.\n\n'His Grace says it is art.'\n'He says it came from beyond the Reach.'\n'He says it listens.'\n'He talks to it.'\n'He says it twitches.'\n\n[Scratched deeper, different pressure:]\n\n'It moved.'\n\n[Below that, a different hand entirely:]\n\nturn off the radio\nit hears you through the radio\nif we are quiet\nif we are perfectly quiet\n\n[The text continues for 214 lines. A single repeated symbol. Transcription halted.]",
+    "security_level": "unlocked",
+    "requires_roll": false
+  },
+  {
+    "title": "Brotherhood Execution Manifest",
+    "location": "General Access Terminal — HG-Borite-XII",
+    "date": "MULTIPLE DATES — SPANNING APPROX. 60 YEARS",
+    "author": "Brotherhood of the Stripped Hull — Informal Record",
+    "content": "THE STATION JUDGES.\n\nThose found wanting are brought here. No blade. No bullet. No need.\n\nThe Ghost does what needs doing.\n\n—\n\nMorev Kasht. Cowardice at the Tobia run. Did not last the night.\nPell. Theft from crewmates. Lasted three days. Took his own life.\nThe Hauler woman whose name we don't say. Sold our route to the Imperium. We hear she lasted almost a week. We don't know how.\nSandek of the Red Fingers. Gross negligence. One day, maybe less.\n\n—\n\nThey all boost the signal, you know.\nThink someone will come.\n\nSomeone always does.\n\n[Multiple signatures. Dates spanning decades. The last entry has no name.]\n\n'He ordered the attack without authority. You know what that means.'\n'We left him the terminal.'\n'It's more than the others got.'",
+    "security_level": "unlocked",
+    "requires_roll": false
+  },
+  {
+    "title": "Pirate Crew Note — His Grace's People",
+    "location": "General Access Terminal — HG-Borite-XII",
+    "date": "APPROX. 87 YEARS PRIOR",
+    "author": "Unknown crew member (unidentified vessel)",
+    "content": "We told him not to buy it.\n\nMaret told him. Oskel told him. I told him twice.\n\nThe factor at Tobia swore on his children it was stone. Dead for a thousand years. Just a curiosity, he said. Just a conversation piece.\n\nHis Grace said it would be the crown jewel of his collection. He was proud of it. Used to bring visitors to look at it.\n\nI do not know what happened to the visitors.\n\nI do not know what happened to His Grace.\n\nI know that the ones who ran made it to the docking ring.\nI know that three of those did not make it further.\nI know that the thing was faster than anything that size has a right to be.\n\nI know that we sealed the inner doors.\n\nI know that when we jumped, Oskel said she could hear something on the radio. A sound. Not a voice.\n\nShe said it sounded like it was saying goodbye.",
+    "security_level": "unlocked",
+    "requires_roll": false
+  },
+  {
+    "title": "Painting Inventory Note — Section 3 Corridor",
+    "location": "General Access Terminal — HG-Borite-XII",
+    "date": "APPROX. 80 YEARS PRIOR",
+    "author": "Unknown — Pirate era, informal",
+    "content": "Someone asked about the painting on the wall near the old cargo section.\n\nSindalian emperor. Pre-collapse, by the look of it. Full regalia.\nI'm no historian but you can tell this was expensive once.\n\nThe crown is lanthanum-alloy. Even I know that means something.\nThe pearl at the collar — I have never seen one like it.\nThe rings on his hands.\nThe bird.\n\nI asked Reth what it was worth.\nShe said she had no idea but that some of those items were supposed to have survived the collapse. Said there were people who would pay very serious money to know where they ended up.\n\nI asked her if she was serious.\n\nShe said she was always serious about money.\n\n[The entry ends there.]",
+    "security_level": "restricted",
+    "requires_roll": true,
+    "roll_check": {
+      "difficulty": 8,
+      "skill": "Electronics (computers)",
+      "on_success": "Access granted. Informal inventory note recovered.",
+      "on_failure": "Access denied. Section locked."
+    }
+  },
+  {
+    "title": "Radio Spectrum Survey — Automated",
+    "location": "General Access Terminal — HG-Borite-XII",
+    "date": "CURRENT CYCLE (AUTO-GENERATED)",
+    "author": "HG-XII Environmental Monitoring Array",
+    "content": "BACKGROUND RADIO SURVEY — AUTOMATED\n\nCosmic background radiation: within normal parameters.\nExternal signal traffic: none detected.\nInternal source detected: Section 5, ventilation grid.\n\nPattern: Repeating. 17-second interval.\nCharacter: Consistent with distress beacon frequency.\n\nNote: The external distress beacon in Section 4 has been active for 9 days.\n\nNote: The internal pattern in Section 5 predates the external beacon by an estimated 40 years.\n\nConclusion: None available.\n\nAwaiting operator input.\nAwaiting operator input.",
+    "security_level": "restricted",
+    "requires_roll": true,
+    "roll_check": {
+      "difficulty": 12,
+      "skill": "Electronics (comms)",
+      "on_success": "Passive monitoring log accessed. Radio anomaly displayed.",
+      "on_failure": "Signal interference prevents full access."
+    }
+  }
+]
