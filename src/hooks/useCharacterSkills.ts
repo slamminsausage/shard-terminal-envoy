@@ -66,12 +66,12 @@ export function useCharacterSkills() {
     skillName: string,
     characteristicName?: string
   ): CharacterSkillInfo => {
-    // If no active character, return defaults (unproficient)
+    // If no active character, return zero defaults
     if (!characters || characters.length === 0) {
       return {
         proficient: false,
         level: 0,
-        skillDM: -3,
+        skillDM: 0,
         charDM: 0,
       };
     }
