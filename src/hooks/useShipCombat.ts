@@ -9,6 +9,8 @@ import type {
   DockingState,
   MissileSalvo,
   ShipCombatEngineState,
+  CombatReadoutEvent,
+  ReadoutCategory,
 } from '@/types/shipCombatBridge';
 import { getDefaultAttackState, getDefaultRepairState } from '@/types/shipCombatBridge';
 import { roll2d6, roll1d6, rollDamageExpression } from '@/lib/dice';
@@ -172,6 +174,31 @@ export function useShipCombat({ contacts, updateContactFields, moveShip }: UseSh
     ]);
   }, []);
 
+  // ── Combat Readout Queue (for overlay HUD events) ──
+
+  const [readoutQueue, setReadoutQueue] = useState<CombatReadoutEvent[]>([]);
+
+  const pushReadout = useCallback((
+    category: ReadoutCategory,
+    title: string,
+    details: string[],
+    accent: CombatReadoutEvent['accent'] = 'green',
+  ) => {
+    const event: CombatReadoutEvent = {
+      id: `readout-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      category,
+      title,
+      details,
+      accent,
+      timestamp: Date.now(),
+    };
+    setReadoutQueue(prev => [event, ...prev]);
+  }, []);
+
+  const dismissReadout = useCallback((id: string) => {
+    setReadoutQueue(prev => prev.filter(r => r.id !== id));
+  }, []);
+
   // ── Combat lifecycle ──
 
   const startCombat = useCallback(() => {
@@ -296,7 +323,7 @@ export function useShipCombat({ contacts, updateContactFields, moveShip }: UseSh
     if (!contact) return;
 
     let hullCurrent = contact.hullCurrent ?? 0;
-    let damageTaken = Math.min(hullCurrent, rawDamage);
+    const damageTaken = Math.min(hullCurrent, rawDamage);
     hullCurrent = Math.max(0, hullCurrent - rawDamage);
     const threshold = Math.max(1, Math.floor((contact.hullMax ?? 1) * 0.1));
     let sustained = (contact.sustainedDamageCounter ?? 0) + damageTaken;
@@ -307,6 +334,10 @@ export function useShipCombat({ contacts, updateContactFields, moveShip }: UseSh
       const nextSeverity = Math.min(6, Math.max(incomingSeverity, currentSeverity + 1));
       criticals = { ...criticals, [location]: nextSeverity };
       addLog(`${contact.name} takes critical hit at ${CRITICAL_LOCATION_LABELS[location]} (severity ${nextSeverity})${reason ? `: ${reason}` : ''}.`, true);
+      pushReadout('critical', 'CRITICAL HIT', [
+        `${contact.name}: ${CRITICAL_LOCATION_LABELS[location].toUpperCase()}`,
+        `Severity: ${nextSeverity}/6${reason ? ` — ${reason}` : ''}`,
+      ], 'red');
       if (location === 'hull') {
         const hullSplash = rollDamageExpression(`${nextSeverity}d6`).total;
         hullCurrent = Math.max(0, hullCurrent - hullSplash);
@@ -336,7 +367,7 @@ export function useShipCombat({ contacts, updateContactFields, moveShip }: UseSh
       setSensorLocks(prev => Object.fromEntries(Object.entries(prev).filter(([k, v]) => k !== contactId && v !== contactId)));
     }
     addLog(`${source} deals ${rawDamage} damage.`);
-  }, [contacts, updateContactFields, addLog]);
+  }, [contacts, updateContactFields, addLog, pushReadout]);
 
   // ── Initiative ──
 
@@ -355,9 +386,11 @@ export function useShipCombat({ contacts, updateContactFields, moveShip }: UseSh
       });
     }
     addLog('Initiative rolled for all ships.');
+    const sorted = [...combatants].sort((a, b) => (b.initiative ?? 0) - (a.initiative ?? 0));
+    pushReadout('initiative', 'INITIATIVE ORDER', sorted.map((s, i) => `${i + 1}. ${s.name}: ${s.initiative ?? '?'}`), 'cyan');
     setInitiativeModifiers({});
     setPhase('maneuver');
-  }, [combatants, initiativeModifiers, boardingPressure, updateContactFields, addLog]);
+  }, [combatants, initiativeModifiers, boardingPressure, updateContactFields, addLog, pushReadout]);
 
   // ── Maneuver ──
 
@@ -462,6 +495,11 @@ export function useShipCombat({ contacts, updateContactFields, moveShip }: UseSh
 
     if (grandTotal < 8) {
       addLog(`${attacker.name} misses ${target.name} with ${weapon.name} (2d6: ${rollLabel}, total: ${grandTotal}${sandPenalty ? ` incl. sand -${sandPenalty}` : ''}).`);
+      pushReadout('attack_miss', `${weapon.name.toUpperCase()} — MISS`, [
+        `${attacker.name} → ${target.name}`,
+        `Roll: ${rollLabel} | Total: ${grandTotal} | Needed: 8+`,
+        `Range: ${RANGE_BAND_LABELS[rangeBand]}${evasivePenalty ? ` | Evasion: -${evasivePenalty}` : ''}`,
+      ], 'orange');
       return;
     }
 
@@ -482,6 +520,10 @@ export function useShipCombat({ contacts, updateContactFields, moveShip }: UseSh
         sandScreen: sandValue,
       });
       addLog(`${attacker.name} deploys sand screen (DM-${sandValue} against laser attacks this round).`, true);
+      pushReadout('general', 'SAND SCREEN DEPLOYED', [
+        `${attacker.name} deploys countermeasures`,
+        `Laser attack DM: -${sandValue} this round`,
+      ], 'cyan');
       return;
     }
 
@@ -505,6 +547,11 @@ export function useShipCombat({ contacts, updateContactFields, moveShip }: UseSh
         launchedRound: currentRound,
       }, ...prev]);
       addLog(`${attacker.name} launches missile salvo (${missiles}) at ${target.name}; impact ${roundsToImpact === 0 ? 'immediate' : `in ${roundsToImpact} round(s)`}.`, true);
+      pushReadout('missile_launch', 'MISSILES AWAY', [
+        `${attacker.name} → ${target.name}`,
+        `Salvo: ${missiles} missile${missiles > 1 ? 's' : ''}`,
+        `Impact: ${roundsToImpact === 0 ? 'IMMEDIATE' : `${roundsToImpact} round${roundsToImpact > 1 ? 's' : ''}`}`,
+      ], 'orange');
       return;
     }
 
@@ -522,7 +569,21 @@ export function useShipCombat({ contacts, updateContactFields, moveShip }: UseSh
       effect,
       calledShotEligible ? (plan.calledShotLocation as CriticalLocation) : undefined,
     );
-  }, [contacts, attackPlans, currentRound, gunnerAssist, dogfightAttackModifiers, sensorLocks, updateContactFields, addLog, applyDamageToShip]);
+
+    const hullAfter = Math.max(0, (target.hullCurrent ?? 0) - finalDamage);
+    const hullPct = target.hullMax ? Math.round((hullAfter / target.hullMax) * 100) : 0;
+    pushReadout(
+      finalDamage > 0 ? 'attack_hit' : 'attack_miss',
+      `${weapon.name.toUpperCase()} — ${finalDamage > 0 ? 'HIT' : 'ABSORBED'}`,
+      [
+        `${attacker.name} → ${target.name}`,
+        `Roll: ${rollLabel} | Total: ${grandTotal} | Effect: ${effect >= 0 ? '+' : ''}${effect}`,
+        `Damage: ${finalDamage}${effectiveTargetArmor ? ` (${modifiedDamage} − ${effectiveTargetArmor} armor)` : ''}`,
+        `Hull: ${hullAfter}/${target.hullMax ?? '?'} (${hullPct}%)`,
+      ],
+      finalDamage > 0 ? (hullAfter <= 0 ? 'red' : 'yellow') : 'green',
+    );
+  }, [contacts, attackPlans, currentRound, gunnerAssist, dogfightAttackModifiers, sensorLocks, updateContactFields, addLog, applyDamageToShip, pushReadout]);
 
   // ── Dogfight ──
 
@@ -546,6 +607,11 @@ export function useShipCombat({ contacts, updateContactFields, moveShip }: UseSh
     if (shipScore === targetScore) {
       setDogfightAttackModifiers(prev => ({ ...prev, [ship.id]: 0, [target.id]: 0 }));
       addLog(`Dogfight between ${ship.name} and ${target.name} is a draw (${shipScore} vs ${targetScore}).`, true);
+      pushReadout('dogfight', 'DOGFIGHT — DRAW', [
+        `${ship.name} vs ${target.name}`,
+        `Score: ${shipScore} vs ${targetScore}`,
+        'No advantage gained',
+      ], 'orange');
       return;
     }
 
@@ -555,7 +621,12 @@ export function useShipCombat({ contacts, updateContactFields, moveShip }: UseSh
     setDogfightAttackModifiers(prev => ({ ...prev, [winner.id]: 2, [loser.id]: -2 }));
     setDogfightMomentum(prev => ({ ...prev, [winner.id]: diff, [loser.id]: 0 }));
     addLog(`${winner.name} wins dogfight against ${loser.name} (${shipScore} vs ${targetScore}); +2/-2 attack DM this round.`, true);
-  }, [contacts, dogfightPlans, dogfightMomentum, addLog]);
+    pushReadout('dogfight', `DOGFIGHT — ${winner.name.toUpperCase()} WINS`, [
+      `${ship.name} vs ${target.name}`,
+      `Score: ${shipScore} vs ${targetScore}`,
+      `${winner.name}: +2 attack DM | ${loser.name}: -2 attack DM`,
+    ], winner.isPlayerShip ? 'green' : 'red');
+  }, [contacts, dogfightPlans, dogfightMomentum, addLog, pushReadout]);
 
   // ── Docking / Boarding ──
 
@@ -638,12 +709,20 @@ export function useShipCombat({ contacts, updateContactFields, moveShip }: UseSh
     const total = (manualRoll ?? roll2d6()) + (ship.engineerSkill ?? 0) + (ship.sensorSkill ?? 0) + getBridgeCriticalPenalty(ship) + getCrewCriticalPenalty(ship) - jumpDriveSeverity;
     if (total < 10) {
       addLog(`${ship.name} fails to initialize jump sequence (roll ${total}).`, true);
+      pushReadout('jump', 'JUMP DRIVE — FAILED', [
+        `${ship.name}: initialization failed`,
+        `Roll: ${total} vs 10+`,
+      ], 'orange');
       return;
     }
     const charge = jumpDriveSeverity >= 2 ? 3 : 2;
     updateContactFields(shipId, { jumpCommitted: true, jumpChargeRounds: charge });
     addLog(`${ship.name} initiates jump; transition in ${charge} rounds.`, true);
-  }, [contacts, boardingPressure, updateContactFields, addLog]);
+    pushReadout('jump', 'JUMP DRIVE — CHARGING', [
+      `${ship.name}: sequence initiated`,
+      `Transition in ${charge} rounds`,
+    ], 'cyan');
+  }, [contacts, boardingPressure, updateContactFields, addLog, pushReadout]);
 
   // ── Sensor actions ──
 
@@ -658,10 +737,18 @@ export function useShipCombat({ contacts, updateContactFields, moveShip }: UseSh
     if (total >= 8) {
       setSensorLocks(prev => ({ ...prev, [shipId]: target.id }));
       addLog(`${ship.name} establishes sensor lock on ${target.name} (2d6: ${rollLabel ?? total - (ship.sensorSkill ?? 0)}, total ${total}).`, true);
+      pushReadout('sensor', 'SENSOR LOCK — ACQUIRED', [
+        `${ship.name} → ${target.name}`,
+        `Roll: ${total} vs 8+ | +2 attack DM`,
+      ], 'cyan');
       return;
     }
     addLog(`${ship.name} fails to lock ${target.name} (2d6: ${rollLabel ?? total - (ship.sensorSkill ?? 0)}, total ${total}).`, true);
-  }, [contacts, sensorPlans, addLog]);
+    pushReadout('sensor', 'SENSOR LOCK — FAILED', [
+      `${ship.name} → ${target.name}`,
+      `Roll: ${total} vs 8+`,
+    ], 'orange');
+  }, [contacts, sensorPlans, addLog, pushReadout]);
 
   const attemptBreakSensorLock = useCallback((shipId: string, manualOwnRoll?: number, manualEnemyRoll?: number) => {
     const ship = contacts.find(c => c.id === shipId);
@@ -783,13 +870,21 @@ export function useShipCombat({ contacts, updateContactFields, moveShip }: UseSh
         repairProgress: { ...(ship.repairProgress ?? {}), [location]: 0 },
       });
       addLog(`${ship.name} repair success on ${CRITICAL_LOCATION_LABELS[location]} (roll ${total}).`, true);
+      pushReadout('repair', 'REPAIR — SUCCESS', [
+        `${ship.name}: ${CRITICAL_LOCATION_LABELS[location]}`,
+        `Roll: ${total} vs 8+ | Severity: ${severity} → ${nextSeverity}`,
+      ], 'green');
       return;
     }
     updateContactFields(shipId, {
       repairProgress: { ...(ship.repairProgress ?? {}), [location]: Math.min(6, progress + 1) },
     });
     addLog(`${ship.name} repair failed on ${CRITICAL_LOCATION_LABELS[location]} (roll ${total}).`, true);
-  }, [contacts, repairPlans, updateContactFields, addLog]);
+    pushReadout('repair', 'REPAIR — FAILED', [
+      `${ship.name}: ${CRITICAL_LOCATION_LABELS[location]}`,
+      `Roll: ${total} vs 8+ | Progress: ${Math.min(6, progress + 1)}/6`,
+    ], 'orange');
+  }, [contacts, repairPlans, updateContactFields, addLog, pushReadout]);
 
   // ── Point Defence & Missile EW ──
 
@@ -808,7 +903,11 @@ export function useShipCombat({ contacts, updateContactFields, moveShip }: UseSh
       .map(s => s.id === salvoId ? { ...s, missilesRemaining: Math.max(0, s.missilesRemaining - removed) } : s)
       .filter(s => s.missilesRemaining > 0));
     addLog(`${ship.name} point defence removes ${removed} missile(s) from incoming salvo (roll ${total}).`, true);
-  }, [contacts, missileSalvos, addLog]);
+    pushReadout('missile', 'POINT DEFENCE — INTERCEPTED', [
+      `${ship.name} intercepts ${removed} missile${removed > 1 ? 's' : ''}`,
+      `Roll: ${total} vs 8+`,
+    ], 'green');
+  }, [contacts, missileSalvos, addLog, pushReadout]);
 
   const attemptMissileEW = useCallback((shipId: string, salvoId: string, manualRoll?: number) => {
     const ship = contacts.find(c => c.id === shipId);
@@ -841,6 +940,10 @@ export function useShipCombat({ contacts, updateContactFields, moveShip }: UseSh
       const effect = total - 8;
       if (total < 8) {
         addLog(`${attacker.name}'s missile salvo misses ${target.name} (${total}).`, true);
+        pushReadout('missile', 'MISSILE IMPACT — MISS', [
+          `${attacker.name} → ${target.name}`,
+          `Roll: ${total} vs 8+ | ${salvo.missilesRemaining} missile${salvo.missilesRemaining > 1 ? 's' : ''}`,
+        ], 'orange');
         return;
       }
       const baseDamage = rollDamageExpression('4d6').total;
@@ -848,8 +951,13 @@ export function useShipCombat({ contacts, updateContactFields, moveShip }: UseSh
       const effectiveArmor = getEffectiveArmor(target);
       const finalDamage = Math.max(0, baseDamage * multiplier - effectiveArmor);
       applyDamageToShip(target.id, finalDamage, `${attacker.name}'s missiles hit ${target.name} (roll ${total}, x${multiplier}, armor ${effectiveArmor})`, effect);
+      pushReadout('missile', 'MISSILE IMPACT — HIT', [
+        `${attacker.name} → ${target.name}`,
+        `Roll: ${total} | x${multiplier} multiplier`,
+        `Damage: ${finalDamage}${effectiveArmor ? ` (${baseDamage * multiplier} − ${effectiveArmor} armor)` : ''}`,
+      ], 'red');
     });
-  }, [contacts, addLog, applyDamageToShip]);
+  }, [contacts, addLog, applyDamageToShip, pushReadout]);
 
   const advancePhase = useCallback(async () => {
     const currentIdx = COMBAT_PHASES.indexOf(phase);
@@ -992,5 +1100,10 @@ export function useShipCombat({ contacts, updateContactFields, moveShip }: UseSh
     // Utility
     addLog,
     getContactRangeBand,
+
+    // Readout overlay queue
+    readoutQueue,
+    dismissReadout,
+    pushReadout,
   };
 }
