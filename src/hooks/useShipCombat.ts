@@ -649,12 +649,20 @@ export function useShipCombat({ contacts, updateContactFields, moveShip }: UseSh
 
     if (actor <= defender) {
       addLog(`${ship.name} fails to ${plan.mode} with ${target.name} (${actor} vs ${defender}).`, true);
+      pushReadout('boarding', `${plan.mode.toUpperCase()} — FAILED`, [
+        `${ship.name} → ${target.name}`,
+        `Score: ${actor} vs ${defender}`,
+      ], 'orange');
       return;
     }
 
     setDockedWith(prev => ({ ...prev, [ship.id]: target.id, [target.id]: ship.id }));
     if (plan.mode === 'dock') {
       addLog(`${ship.name} docks with ${target.name} (${actor} vs ${defender}).`, true);
+      pushReadout('boarding', 'DOCKING — SUCCESS', [
+        `${ship.name} ↔ ${target.name}`,
+        `Score: ${actor} vs ${defender}`,
+      ], 'cyan');
       return;
     }
 
@@ -665,10 +673,18 @@ export function useShipCombat({ contacts, updateContactFields, moveShip }: UseSh
       const pressureGain = Math.max(1, Math.min(3, boardingRoll - defenseRoll));
       setBoardingPressure(prev => ({ ...prev, [target.id]: Math.min(6, (prev[target.id] ?? 0) + pressureGain) }));
       addLog(`${ship.name} boards ${target.name}; boarding pressure +${pressureGain} (${boardingRoll} vs ${defenseRoll}).`, true);
+      pushReadout('boarding', 'BOARDING — SUCCESS', [
+        `${ship.name} → ${target.name}`,
+        `Score: ${boardingRoll} vs ${defenseRoll} | Pressure: +${pressureGain}`,
+      ], 'red');
       return;
     }
     addLog(`${ship.name} fails boarding action on ${target.name} (${boardingRoll} vs ${defenseRoll}).`, true);
-  }, [contacts, dockingPlans, boardingPressure, addLog]);
+    pushReadout('boarding', 'BOARDING — REPELLED', [
+      `${ship.name} → ${target.name}`,
+      `Score: ${boardingRoll} vs ${defenseRoll}`,
+    ], 'orange');
+  }, [contacts, dockingPlans, boardingPressure, addLog, pushReadout]);
 
   const attemptRepelBoarders = useCallback((shipId: string, manualRoll?: number) => {
     const ship = contacts.find(c => c.id === shipId);
@@ -682,11 +698,19 @@ export function useShipCombat({ contacts, updateContactFields, moveShip }: UseSh
     const relief = total >= 8 ? Math.max(1, total - 8) : 0;
     if (relief <= 0) {
       addLog(`${ship.name} fails to repel boarders (roll ${total}).`, true);
+      pushReadout('boarding', 'REPEL BOARDERS — FAILED', [
+        `${ship.name}: Defense action`,
+        `Roll: ${total} vs 8+`,
+      ], 'orange');
       return;
     }
     setBoardingPressure(prev => ({ ...prev, [shipId]: Math.max(0, (prev[shipId] ?? 0) - relief) }));
     addLog(`${ship.name} repels boarders; boarding pressure -${relief} (roll ${total}).`, true);
-  }, [contacts, boardingPressure, addLog]);
+    pushReadout('boarding', 'REPEL BOARDERS — SUCCESS', [
+      `${ship.name}: Defense action`,
+      `Roll: ${total} vs 8+ | Pressure: -${relief}`,
+    ], 'green');
+  }, [contacts, boardingPressure, addLog, pushReadout]);
 
   // ── Jump ──
 
@@ -767,10 +791,18 @@ export function useShipCombat({ contacts, updateContactFields, moveShip }: UseSh
       setSensorLocks(prev => { const n = { ...prev }; delete n[locker.id]; return n; });
       const targetShip = contacts.find(c => c.id === lockedTarget);
       addLog(`${ship.name} breaks ${locker.name}'s lock${targetShip ? ` on ${targetShip.name}` : ''} (${ownRoll} vs ${enemyRoll}).`, true);
+      pushReadout('sensor', 'SENSOR LOCK — BROKEN', [
+        `${ship.name} disrupts ${locker.name}'s lock`,
+        `Score: ${ownRoll} vs ${enemyRoll}`,
+      ], 'cyan');
       return;
     }
     addLog(`${ship.name} fails to break ${locker.name}'s lock (${ownRoll} vs ${enemyRoll}).`, true);
-  }, [contacts, sensorPlans, sensorLocks, addLog]);
+    pushReadout('sensor', 'BREAK LOCK — FAILED', [
+      `${ship.name} vs ${locker.name}`,
+      `Score: ${ownRoll} vs ${enemyRoll}`,
+    ], 'orange');
+  }, [contacts, sensorPlans, sensorLocks, addLog, pushReadout]);
 
   // ── Captain / Pilot actions ──
 
@@ -781,7 +813,11 @@ export function useShipCombat({ contacts, updateContactFields, moveShip }: UseSh
     const effect = total - 8;
     setInitiativeModifiers(prev => ({ ...prev, [shipId]: effect }));
     addLog(`${ship.name} command check sets next-round initiative modifier to ${effect >= 0 ? '+' : ''}${effect} (roll ${total}).`, true);
-  }, [contacts, addLog]);
+    pushReadout('initiative', `COMMAND — ${effect >= 0 ? 'SUCCESS' : 'POOR RESULT'}`, [
+      `${ship.name}: Captain orders`,
+      `Roll: ${total} vs 8+ | Initiative DM: ${effect >= 0 ? '+' : ''}${effect} next round`,
+    ], effect >= 0 ? 'cyan' : 'orange');
+  }, [contacts, addLog, pushReadout]);
 
   const attemptAidGunners = useCallback((shipId: string, manualRoll?: number) => {
     const ship = contacts.find(c => c.id === shipId);
@@ -790,12 +826,20 @@ export function useShipCombat({ contacts, updateContactFields, moveShip }: UseSh
     if (total < 8) {
       setGunnerAssist(prev => ({ ...prev, [shipId]: 0 }));
       addLog(`${ship.name} fails to aid gunners (roll ${total}).`, true);
+      pushReadout('general', 'AID GUNNERS — FAILED', [
+        `${ship.name}: Pilot assist`,
+        `Roll: ${total} vs 8+`,
+      ], 'orange');
       return;
     }
     const effect = total - 8;
     setGunnerAssist(prev => ({ ...prev, [shipId]: effect }));
     addLog(`${ship.name} aids gunners with DM+${effect} this round (roll ${total}).`, true);
-  }, [contacts, addLog]);
+    pushReadout('general', 'AID GUNNERS — SUCCESS', [
+      `${ship.name}: Pilot assist`,
+      `Roll: ${total} vs 8+ | Gunner DM: +${effect} this round`,
+    ], 'green');
+  }, [contacts, addLog, pushReadout]);
 
   // ── Overload actions ──
 
@@ -808,16 +852,28 @@ export function useShipCombat({ contacts, updateContactFields, moveShip }: UseSh
     if (total >= 10) {
       updateContactFields(shipId, { pendingThrustBoost: Math.max(ship.pendingThrustBoost ?? 0, 1) });
       addLog(`${ship.name} overloads M-drive successfully (roll ${total}); +1 Thrust next round.`, true);
+      pushReadout('general', 'M-DRIVE OVERLOAD — SUCCESS', [
+        `${ship.name}: Engineer action`,
+        `Roll: ${total} vs 10+ | +1 Thrust next round`,
+      ], 'green');
       return;
     }
     if (effect <= -6) {
-      // Apply critical
       const currentSev = getCriticalSeverity(ship, 'm_drive');
       updateContactFields(shipId, { criticals: { ...(ship.criticals ?? {}), m_drive: Math.min(6, currentSev + 1) } });
       addLog(`${ship.name} M-drive critical from overload failure.`, true);
+      pushReadout('critical', 'M-DRIVE OVERLOAD — CRITICAL', [
+        `${ship.name}: Catastrophic overload failure!`,
+        `Roll: ${total} vs 10+ | M-Drive critical hit`,
+      ], 'red');
+    } else {
+      addLog(`${ship.name} fails to overload M-drive (roll ${total}).`, true);
+      pushReadout('general', 'M-DRIVE OVERLOAD — FAILED', [
+        `${ship.name}: Engineer action`,
+        `Roll: ${total} vs 10+`,
+      ], 'orange');
     }
-    addLog(`${ship.name} fails to overload M-drive (roll ${total}).`, true);
-  }, [contacts, updateContactFields, addLog]);
+  }, [contacts, updateContactFields, addLog, pushReadout]);
 
   const attemptOverloadPlant = useCallback((shipId: string, manualRoll?: number) => {
     const ship = contacts.find(c => c.id === shipId);
@@ -828,15 +884,28 @@ export function useShipCombat({ contacts, updateContactFields, moveShip }: UseSh
     if (total >= 10) {
       updateContactFields(shipId, { pendingPowerBypass: true });
       addLog(`${ship.name} overloads power plant (roll ${total}); power penalties bypassed next round.`, true);
+      pushReadout('general', 'POWER PLANT OVERLOAD — SUCCESS', [
+        `${ship.name}: Engineer action`,
+        `Roll: ${total} vs 10+ | Power penalties bypassed next round`,
+      ], 'green');
       return;
     }
     if (effect <= -6) {
       const currentSev = getCriticalSeverity(ship, 'power_plant');
       updateContactFields(shipId, { criticals: { ...(ship.criticals ?? {}), power_plant: Math.min(6, currentSev + 1) } });
       addLog(`${ship.name} power plant critical from overload failure.`, true);
+      pushReadout('critical', 'POWER PLANT OVERLOAD — CRITICAL', [
+        `${ship.name}: Catastrophic overload failure!`,
+        `Roll: ${total} vs 10+ | Power Plant critical hit`,
+      ], 'red');
+    } else {
+      addLog(`${ship.name} fails to overload power plant (roll ${total}).`, true);
+      pushReadout('general', 'POWER PLANT OVERLOAD — FAILED', [
+        `${ship.name}: Engineer action`,
+        `Roll: ${total} vs 10+`,
+      ], 'orange');
     }
-    addLog(`${ship.name} fails to overload power plant (roll ${total}).`, true);
-  }, [contacts, updateContactFields, addLog]);
+  }, [contacts, updateContactFields, addLog, pushReadout]);
 
   const resetOverloadPenalties = useCallback((shipId: string) => {
     const ship = contacts.find(c => c.id === shipId);
@@ -896,6 +965,10 @@ export function useShipCombat({ contacts, updateContactFields, moveShip }: UseSh
     const total = (manualRoll ?? roll2d6()) + (ship.gunnerSkill ?? 0) + getGunnerCriticalPenalty(ship) + getBridgeCriticalPenalty(ship) + getCrewCriticalPenalty(ship);
     if (total < 8) {
       addLog(`${ship.name} point defence fails against incoming missiles (roll ${total}).`, true);
+      pushReadout('missile', 'POINT DEFENCE — FAILED', [
+        `${ship.name}: Defensive fire`,
+        `Roll: ${total} vs 8+`,
+      ], 'orange');
       return;
     }
     const removed = Math.max(1, total - 8);
@@ -917,6 +990,10 @@ export function useShipCombat({ contacts, updateContactFields, moveShip }: UseSh
     const total = (manualRoll ?? roll2d6()) + (ship.sensorSkill ?? 0) + getSensorCriticalPenalty(ship) + getBridgeCriticalPenalty(ship) + getCrewCriticalPenalty(ship);
     if (total < 10) {
       addLog(`${ship.name} EW fails to disrupt incoming missiles (roll ${total}).`, true);
+      pushReadout('sensor', 'MISSILE EW — FAILED', [
+        `${ship.name}: EW countermeasures`,
+        `Roll: ${total} vs 10+`,
+      ], 'orange');
       return;
     }
     const removed = Math.max(1, total - 10);
@@ -924,7 +1001,11 @@ export function useShipCombat({ contacts, updateContactFields, moveShip }: UseSh
       .map(s => s.id === salvoId ? { ...s, missilesRemaining: Math.max(0, s.missilesRemaining - removed) } : s)
       .filter(s => s.missilesRemaining > 0));
     addLog(`${ship.name} EW strips ${removed} missile(s) from incoming salvo (roll ${total}).`, true);
-  }, [contacts, missileSalvos, addLog]);
+    pushReadout('sensor', 'MISSILE EW — SUCCESS', [
+      `${ship.name} jams ${removed} missile${removed > 1 ? 's' : ''}`,
+      `Roll: ${total} vs 10+`,
+    ], 'cyan');
+  }, [contacts, missileSalvos, addLog, pushReadout]);
 
   // ── Phase advancement ──
 

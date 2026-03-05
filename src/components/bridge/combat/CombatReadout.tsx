@@ -5,7 +5,8 @@ import {
   Rocket, Zap, AlertTriangle, Navigation
 } from 'lucide-react';
 
-const READOUT_DURATION = 4500; // ms before auto-dismiss
+const BASE_READOUT_DURATION = 7000; // ms before auto-dismiss
+const STAGGER_DELAY = 2000; // extra ms per queued position so they cascade out
 
 const ACCENT_COLORS: Record<CombatReadoutEvent['accent'], { border: string; glow: string; text: string; bg: string }> = {
   green:  { border: '#00ff88', glow: 'rgba(0,255,136,0.4)',  text: '#00ff88', bg: 'rgba(0,255,136,0.06)' },
@@ -38,9 +39,12 @@ interface CombatReadoutProps {
   onDismiss: (id: string) => void;
 }
 
-function ReadoutCard({ event, onDismiss }: { event: CombatReadoutEvent; onDismiss: (id: string) => void }) {
+function ReadoutCard({ event, onDismiss, index }: { event: CombatReadoutEvent; onDismiss: (id: string) => void; index: number }) {
   const [exiting, setExiting] = useState(false);
   const [progress, setProgress] = useState(100);
+
+  // Cards further down the stack get extra time so the player can read them all
+  const duration = BASE_READOUT_DURATION + index * STAGGER_DELAY;
 
   const handleDismiss = useCallback(() => {
     setExiting(true);
@@ -51,7 +55,7 @@ function ReadoutCard({ event, onDismiss }: { event: CombatReadoutEvent; onDismis
     const start = Date.now();
     const timer = setInterval(() => {
       const elapsed = Date.now() - start;
-      const remaining = Math.max(0, 100 - (elapsed / READOUT_DURATION) * 100);
+      const remaining = Math.max(0, 100 - (elapsed / duration) * 100);
       setProgress(remaining);
       if (remaining <= 0) {
         clearInterval(timer);
@@ -59,7 +63,7 @@ function ReadoutCard({ event, onDismiss }: { event: CombatReadoutEvent; onDismis
       }
     }, 50);
     return () => clearInterval(timer);
-  }, [handleDismiss]);
+  }, [handleDismiss, duration]);
 
   const colors = ACCENT_COLORS[event.accent];
   const Icon = CATEGORY_ICONS[event.category] ?? Zap;
@@ -135,15 +139,15 @@ function ReadoutCard({ event, onDismiss }: { event: CombatReadoutEvent; onDismis
 }
 
 export function CombatReadout({ events, onDismiss }: CombatReadoutProps) {
-  // Only show latest 3 readouts
-  const visible = events.slice(0, 3);
+  // Show up to 5 readouts so burst events (hit + multiple crits) are all visible
+  const visible = events.slice(0, 5);
 
   if (visible.length === 0) return null;
 
   return (
     <div className="combat-readout-container">
-      {visible.map((event) => (
-        <ReadoutCard key={event.id} event={event} onDismiss={onDismiss} />
+      {visible.map((event, i) => (
+        <ReadoutCard key={event.id} event={event} onDismiss={onDismiss} index={i} />
       ))}
     </div>
   );

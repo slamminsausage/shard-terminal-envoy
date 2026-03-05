@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useEffect } from "react";
+import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import type { Contact } from "@/lib/bridge/bridgeTypes";
 import type { CombatPhase } from "@/lib/bridge/shipCombatRules";
 
@@ -16,8 +16,7 @@ interface DestroyEffect {
 }
 import { hexDistance, hexDistanceToRangeBand, RANGE_BAND_HEX_COLORS, getHexesInRange } from "@/lib/bridge/hexCombatUtils";
 import { RANGE_BAND_LABELS } from "@/lib/bridge/shipCombatRules";
-import { usePinchZoom } from "@/hooks/usePinchZoom";
-import { ZoomIn, ZoomOut, Maximize2 } from "lucide-react";
+import { ZoomIn, ZoomOut, Maximize2, LocateFixed } from "lucide-react";
 
 interface TacticalDisplayProps {
   contacts: Contact[];
@@ -47,36 +46,6 @@ export function TacticalDisplay({
 }: TacticalDisplayProps) {
   const [hoveredHex, setHoveredHex] = useState<{ q: number; r: number } | null>(null);
 
-  // ── Auto-recenter on player ship ──────────────────────────────────
-  const playerShipForCenter = contacts.find(c => c.isPlayerShip);
-  const [viewOffset, setViewOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
-
-  // Track previous player position so we know when they move
-  const prevPlayerPosRef = useRef<{ q: number; r: number } | null>(null);
-
-  useEffect(() => {
-    if (!playerShipForCenter) {
-      setViewOffset({ x: 0, y: 0 });
-      prevPlayerPosRef.current = null;
-      return;
-    }
-    const prevPos = prevPlayerPosRef.current;
-    const curQ = playerShipForCenter.hexQ;
-    const curR = playerShipForCenter.hexR;
-    // Update offset whenever player ship position changes
-    if (!prevPos || prevPos.q !== curQ || prevPos.r !== curR) {
-      prevPlayerPosRef.current = { q: curQ, r: curR };
-      // Calculate pixel offset from grid center (hex 0,0)
-      const hexSizeLocal = (gridRadiusProp ?? (combatActive ? 12 : 6)) <= 6 ? 30
-        : (gridRadiusProp ?? (combatActive ? 12 : 6)) <= 10 ? 24
-        : (gridRadiusProp ?? (combatActive ? 12 : 6)) <= 12 ? 20 : 16;
-      const px = hexSizeLocal * (1.5 * curQ);
-      const py = hexSizeLocal * (Math.sqrt(3) / 2 * curQ + Math.sqrt(3) * curR);
-      setViewOffset({ x: px, y: py });
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [playerShipForCenter?.hexQ, playerShipForCenter?.hexR, combatActive, gridRadiusProp]);
-
   // ── Destruction effects: detect when contacts disappear ─────────────
   const prevContactsRef = useRef<Contact[]>([]);
   const [destroyEffects, setDestroyEffects] = useState<DestroyEffect[]>([]);
@@ -89,24 +58,165 @@ export function TacticalDisplay({
         const colorVar = c.status === 'enemy' ? '#ff4444' : c.status === 'friendly' ? '#00ff88' : '#aaaaaa';
         return { id: `${c.id}-${Date.now()}`, hexQ: c.hexQ, hexR: c.hexR, color: colorVar };
       });
-      setDestroyEffects(prev => [...prev, ...newEffects]);
+      setDestroyEffects(prev2 => [...prev2, ...newEffects]);
       setTimeout(() => {
-        setDestroyEffects(prev => prev.filter(e => !newEffects.find(n => n.id === e.id)));
+        setDestroyEffects(prev2 => prev2.filter(e => !newEffects.find(n => n.id === e.id)));
       }, 700);
     }
     prevContactsRef.current = contacts;
   }, [contacts]);
-  const { ref, style: zoomStyle, transform, zoomIn, zoomOut, resetZoom } = usePinchZoom<HTMLDivElement>({
-    minScale: 0.3,
-    maxScale: 4,
-  });
 
-  const radius = gridRadiusProp ?? (combatActive ? 12 : 6);
-  // Scale hex size based on grid radius
-  const hexSize = radius <= 6 ? 30 : radius <= 10 ? 24 : radius <= 12 ? 20 : 16;
-  const hexDrawSize = hexSize - 2; // slightly smaller for gaps
+  // ── Grid sizing — much larger radius for combat to support distant ships ──
+  const radius = gridRadiusProp ?? (combatActive ? 25 : 8);
+  const hexSize = radius <= 6 ? 30 : radius <= 10 ? 24 : radius <= 16 ? 18 : radius <= 25 ? 14 : 10;
+  const hexDrawSize = hexSize - 2;
   const viewBoxSize = Math.ceil(2 * radius * hexSize * 1.8 + 80);
   const center = viewBoxSize / 2;
+
+  // ── Pan & Zoom via SVG viewBox ──────────────────────────────────────
+  // panOffset is in SVG coordinate units; zoom multiplies the visible region
+  const [zoom, setZoom] = useState(1);
+  const [panOffset, setPanOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const isDragging = useRef(false);
+  const dragStart = useRef<{ x: number; y: number; panX: number; panY: number } | null>(null);
+  const svgContainerRef = useRef<HTMLDivElement>(null);
+
+  // Touch pinch state
+  const touchStartDistance = useRef<number | null>(null);
+  const touchStartZoom = useRef(1);
+
+  // Derive the SVG viewBox from pan + zoom
+  const visibleSize = viewBoxSize * zoom;
+  // Center the view at (center + panOffset.x, center + panOffset.y)
+  const vbX = center + panOffset.x - visibleSize / 2;
+  const vbY = center + panOffset.y - visibleSize / 2;
+
+  // ── Center on player ship ─────────────────────────────────────────
+  const playerShipForCenter = contacts.find(c => c.isPlayerShip);
+  const prevPlayerPosRef = useRef<{ q: number; r: number } | null>(null);
+
+  const centerOnPlayerShip = useCallback(() => {
+    if (!playerShipForCenter) return;
+    const px = hexSize * (1.5 * playerShipForCenter.hexQ);
+    const py = hexSize * (Math.sqrt(3) / 2 * playerShipForCenter.hexQ + Math.sqrt(3) * playerShipForCenter.hexR);
+    setPanOffset({ x: px, y: py });
+  }, [playerShipForCenter, hexSize]);
+
+  // Auto-recenter when the player ship moves
+  useEffect(() => {
+    if (!playerShipForCenter) {
+      prevPlayerPosRef.current = null;
+      return;
+    }
+    const curQ = playerShipForCenter.hexQ;
+    const curR = playerShipForCenter.hexR;
+    const prevPos = prevPlayerPosRef.current;
+    if (!prevPos || prevPos.q !== curQ || prevPos.r !== curR) {
+      prevPlayerPosRef.current = { q: curQ, r: curR };
+      centerOnPlayerShip();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [playerShipForCenter?.hexQ, playerShipForCenter?.hexR, centerOnPlayerShip]);
+
+  // ── Mouse-drag pan handler ────────────────────────────────────────
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    // Middle-click or left-click on empty area starts panning
+    if (e.button === 1 || (e.button === 0 && e.shiftKey)) {
+      e.preventDefault();
+      isDragging.current = true;
+      dragStart.current = { x: e.clientX, y: e.clientY, panX: panOffset.x, panY: panOffset.y };
+    }
+  }, [panOffset]);
+
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    if (!isDragging.current || !dragStart.current || !svgContainerRef.current) return;
+    e.preventDefault();
+    const rect = svgContainerRef.current.getBoundingClientRect();
+    // Convert pixel delta to SVG units
+    const svgPerPixel = visibleSize / rect.width;
+    const dx = (e.clientX - dragStart.current.x) * svgPerPixel;
+    const dy = (e.clientY - dragStart.current.y) * svgPerPixel;
+    setPanOffset({ x: dragStart.current.panX - dx, y: dragStart.current.panY - dy });
+  }, [visibleSize]);
+
+  const handleMouseUp = useCallback(() => {
+    isDragging.current = false;
+    dragStart.current = null;
+  }, []);
+
+  // ── Scroll-wheel zoom (no Ctrl required) ──────────────────────────
+  useEffect(() => {
+    const el = svgContainerRef.current;
+    if (!el) return;
+    const handleWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      const delta = e.deltaY > 0 ? 1.12 : 0.88;
+      setZoom(prev => Math.max(0.15, Math.min(3, prev * delta)));
+    };
+    el.addEventListener('wheel', handleWheel, { passive: false });
+    return () => el.removeEventListener('wheel', handleWheel);
+  }, []);
+
+  // ── Touch pinch-zoom ──────────────────────────────────────────────
+  useEffect(() => {
+    const el = svgContainerRef.current;
+    if (!el) return;
+
+    const getTouchDist = (t: TouchList) => {
+      if (t.length < 2) return 0;
+      const dx = t[1].clientX - t[0].clientX;
+      const dy = t[1].clientY - t[0].clientY;
+      return Math.sqrt(dx * dx + dy * dy);
+    };
+
+    const onTouchStart = (e: TouchEvent) => {
+      if (e.touches.length === 2) {
+        e.preventDefault();
+        touchStartDistance.current = getTouchDist(e.touches);
+        touchStartZoom.current = zoom;
+      } else if (e.touches.length === 1) {
+        isDragging.current = true;
+        dragStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY, panX: panOffset.x, panY: panOffset.y };
+      }
+    };
+
+    const onTouchMove = (e: TouchEvent) => {
+      if (e.touches.length === 2 && touchStartDistance.current) {
+        e.preventDefault();
+        const dist = getTouchDist(e.touches);
+        const ratio = touchStartDistance.current / dist;
+        setZoom(Math.max(0.15, Math.min(3, touchStartZoom.current * ratio)));
+      } else if (e.touches.length === 1 && isDragging.current && dragStart.current) {
+        e.preventDefault();
+        const rect = el.getBoundingClientRect();
+        const svgPerPixel = visibleSize / rect.width;
+        const dx = (e.touches[0].clientX - dragStart.current.x) * svgPerPixel;
+        const dy = (e.touches[0].clientY - dragStart.current.y) * svgPerPixel;
+        setPanOffset({ x: dragStart.current.panX - dx, y: dragStart.current.panY - dy });
+      }
+    };
+
+    const onTouchEnd = (e: TouchEvent) => {
+      if (e.touches.length < 2) touchStartDistance.current = null;
+      if (e.touches.length === 0) { isDragging.current = false; dragStart.current = null; }
+    };
+
+    el.addEventListener('touchstart', onTouchStart, { passive: false });
+    el.addEventListener('touchmove', onTouchMove, { passive: false });
+    el.addEventListener('touchend', onTouchEnd);
+    return () => {
+      el.removeEventListener('touchstart', onTouchStart);
+      el.removeEventListener('touchmove', onTouchMove);
+      el.removeEventListener('touchend', onTouchEnd);
+    };
+  }, [zoom, panOffset, visibleSize]);
+
+  const zoomInBtn = useCallback(() => setZoom(prev => Math.max(0.15, prev * 0.75)), []);
+  const zoomOutBtn = useCallback(() => setZoom(prev => Math.min(3, prev * 1.35)), []);
+  const resetView = useCallback(() => {
+    setZoom(1);
+    centerOnPlayerShip();
+  }, [centerOnPlayerShip]);
 
   const hexToPixel = (q: number, r: number) => {
     const x = hexSize * (1.5 * q);
@@ -269,45 +379,56 @@ export function TacticalDisplay({
       </div>
 
       <div className="relative flex-1 overflow-hidden">
-        {/* Zoom controls */}
+        {/* Zoom / pan controls */}
         <div className="absolute top-2 right-2 z-10 flex flex-col gap-1">
           <button
-            onClick={zoomIn}
+            onClick={zoomInBtn}
             className="p-1.5 bg-terminal-bg-dark/80 border border-terminal-bg-border rounded hover:bg-terminal-primary/10 hover:border-terminal-primary/40 transition-colors"
             title="Zoom in"
           >
             <ZoomIn className="h-4 w-4 text-terminal-text-dimmer" />
           </button>
           <button
-            onClick={zoomOut}
+            onClick={zoomOutBtn}
             className="p-1.5 bg-terminal-bg-dark/80 border border-terminal-bg-border rounded hover:bg-terminal-primary/10 hover:border-terminal-primary/40 transition-colors"
             title="Zoom out"
           >
             <ZoomOut className="h-4 w-4 text-terminal-text-dimmer" />
           </button>
           <button
-            onClick={resetZoom}
+            onClick={resetView}
             className="p-1.5 bg-terminal-bg-dark/80 border border-terminal-bg-border rounded hover:bg-terminal-primary/10 hover:border-terminal-primary/40 transition-colors"
-            title="Reset zoom"
+            title="Reset view"
           >
             <Maximize2 className="h-4 w-4 text-terminal-text-dimmer" />
           </button>
-          {transform.scale !== 1 && (
-            <span className="text-[0.55rem] text-terminal-text-dimmer text-center font-mono">{Math.round(transform.scale * 100)}%</span>
+          <button
+            onClick={centerOnPlayerShip}
+            className="p-1.5 bg-terminal-bg-dark/80 border border-terminal-bg-border rounded hover:bg-terminal-primary/10 hover:border-terminal-primary/40 transition-colors"
+            title="Center on player ship"
+          >
+            <LocateFixed className="h-4 w-4 text-terminal-text-dimmer" />
+          </button>
+          {zoom !== 1 && (
+            <span className="text-[0.55rem] text-terminal-text-dimmer text-center font-mono">{Math.round((1 / zoom) * 100)}%</span>
           )}
         </div>
+        <div className="absolute bottom-2 left-2 z-10">
+          <span className="text-[0.5rem] text-terminal-text-dimmer font-mono opacity-60">Scroll: zoom · Shift+drag: pan</span>
+        </div>
       <div
-        ref={ref}
-        className="flex-1 flex items-center justify-center p-2 md:p-4 overflow-hidden touch-none h-full"
+        ref={svgContainerRef}
+        className="flex-1 flex items-center justify-center overflow-hidden touch-none h-full cursor-grab active:cursor-grabbing"
         style={{ background: "radial-gradient(ellipse at center, rgba(0, 255, 136, 0.02) 0%, transparent 70%)" }}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
       >
         <svg
-          viewBox={`${viewOffset.x} ${viewOffset.y} ${viewBoxSize} ${viewBoxSize}`}
+          viewBox={`${vbX} ${vbY} ${visibleSize} ${visibleSize}`}
           className="w-full h-full"
-          style={{
-            ...zoomStyle,
-            transition: 'all 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
-          }}
+          preserveAspectRatio="xMidYMid meet"
         >
           {/* Range band rings */}
           {combatActive && refShipPos ? (
@@ -344,9 +465,17 @@ export function TacticalDisplay({
             </>
           )}
 
-          {/* Crosshair lines */}
-          <line x1={center} y1={50} x2={center} y2={viewBoxSize - 50} stroke="var(--primary-mid)" strokeWidth="1" opacity="0.3" />
-          <line x1={50} y1={center} x2={viewBoxSize - 50} y2={center} stroke="var(--primary-mid)" strokeWidth="1" opacity="0.3" />
+          {/* Crosshair lines — follow player ship, or grid center */}
+          {(() => {
+            const crosshairPos = playerShip ? hexToPixel(playerShip.hexQ, playerShip.hexR) : { x: center, y: center };
+            const arm = viewBoxSize * 0.9; // long enough to span grid
+            return (
+              <>
+                <line x1={crosshairPos.x} y1={crosshairPos.y - arm} x2={crosshairPos.x} y2={crosshairPos.y + arm} stroke="var(--primary-mid)" strokeWidth="1" opacity="0.3" />
+                <line x1={crosshairPos.x - arm} y1={crosshairPos.y} x2={crosshairPos.x + arm} y2={crosshairPos.y} stroke="var(--primary-mid)" strokeWidth="1" opacity="0.3" />
+              </>
+            );
+          })()}
 
           {/* Hex grid */}
           <g className="hex-grid" opacity={combatActive ? 0.6 : 0.4}>
