@@ -63,6 +63,33 @@ export interface ShipCombatEngineState {
   missileSalvos: MissileSalvo[];
 }
 
+export type ReadoutCategory =
+  | 'attack_hit'
+  | 'attack_miss'
+  | 'damage'
+  | 'critical'
+  | 'repair'
+  | 'sensor'
+  | 'dogfight'
+  | 'initiative'
+  | 'maneuver'
+  | 'missile'
+  | 'missile_launch'
+  | 'jump'
+  | 'destroyed'
+  | 'boarding'
+  | 'general';
+
+export interface CombatReadoutEvent {
+  id: string;
+  category: ReadoutCategory;
+  title: string;
+  details: string[];
+  /** Color accent for the readout border/glow: 'green' | 'red' | 'cyan' | 'orange' | 'yellow' */
+  accent: 'green' | 'red' | 'cyan' | 'orange' | 'yellow';
+  timestamp: number;
+}
+
 export const getDefaultAttackState = (): AttackState => ({
   targetId: '',
   weaponId: 'pulse_laser',

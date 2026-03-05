@@ -47,6 +47,36 @@ export function TacticalDisplay({
 }: TacticalDisplayProps) {
   const [hoveredHex, setHoveredHex] = useState<{ q: number; r: number } | null>(null);
 
+  // ── Auto-recenter on player ship ──────────────────────────────────
+  const playerShipForCenter = contacts.find(c => c.isPlayerShip);
+  const [viewOffset, setViewOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+
+  // Track previous player position so we know when they move
+  const prevPlayerPosRef = useRef<{ q: number; r: number } | null>(null);
+
+  useEffect(() => {
+    if (!playerShipForCenter) {
+      setViewOffset({ x: 0, y: 0 });
+      prevPlayerPosRef.current = null;
+      return;
+    }
+    const prevPos = prevPlayerPosRef.current;
+    const curQ = playerShipForCenter.hexQ;
+    const curR = playerShipForCenter.hexR;
+    // Update offset whenever player ship position changes
+    if (!prevPos || prevPos.q !== curQ || prevPos.r !== curR) {
+      prevPlayerPosRef.current = { q: curQ, r: curR };
+      // Calculate pixel offset from grid center (hex 0,0)
+      const hexSizeLocal = (gridRadiusProp ?? (combatActive ? 12 : 6)) <= 6 ? 30
+        : (gridRadiusProp ?? (combatActive ? 12 : 6)) <= 10 ? 24
+        : (gridRadiusProp ?? (combatActive ? 12 : 6)) <= 12 ? 20 : 16;
+      const px = hexSizeLocal * (1.5 * curQ);
+      const py = hexSizeLocal * (Math.sqrt(3) / 2 * curQ + Math.sqrt(3) * curR);
+      setViewOffset({ x: px, y: py });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [playerShipForCenter?.hexQ, playerShipForCenter?.hexR, combatActive, gridRadiusProp]);
+
   // ── Destruction effects: detect when contacts disappear ─────────────
   const prevContactsRef = useRef<Contact[]>([]);
   const [destroyEffects, setDestroyEffects] = useState<DestroyEffect[]>([]);
@@ -271,7 +301,14 @@ export function TacticalDisplay({
         className="flex-1 flex items-center justify-center p-2 md:p-4 overflow-hidden touch-none h-full"
         style={{ background: "radial-gradient(ellipse at center, rgba(0, 255, 136, 0.02) 0%, transparent 70%)" }}
       >
-        <svg viewBox={`0 0 ${viewBoxSize} ${viewBoxSize}`} className="w-full h-full" style={zoomStyle}>
+        <svg
+          viewBox={`${viewOffset.x} ${viewOffset.y} ${viewBoxSize} ${viewBoxSize}`}
+          className="w-full h-full"
+          style={{
+            ...zoomStyle,
+            transition: 'all 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+          }}
+        >
           {/* Range band rings */}
           {combatActive && refShipPos ? (
             rangeBandRings.map(ring => (

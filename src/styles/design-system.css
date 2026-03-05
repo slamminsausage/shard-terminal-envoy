@@ -1506,3 +1506,88 @@ svg,
 input[type="color"] {
   filter: none !important;
 }
+
+/* ===================================
+   COMBAT READOUT OVERLAY
+   =================================== */
+.combat-readout-container {
+  position: absolute;
+  top: 0.75rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  pointer-events: none;
+  width: clamp(260px, 50%, 420px);
+}
+
+.combat-readout-card {
+  position: relative;
+  padding: 0.625rem 0.75rem;
+  border: 1px solid;
+  border-radius: 4px;
+  cursor: pointer;
+  pointer-events: auto;
+  overflow: hidden;
+  backdrop-filter: blur(4px);
+}
+
+.combat-readout-scanlines {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent 0px,
+    transparent 2px,
+    rgba(255,255,255,0.015) 2px,
+    rgba(255,255,255,0.015) 4px
+  );
+}
+
+/* Entry animation */
+.combat-readout-enter {
+  animation: readoutSlideIn 0.35s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* Exit animation */
+.combat-readout-exit {
+  animation: readoutSlideOut 0.3s cubic-bezier(0.55, 0, 1, 0.45) forwards;
+}
+
+@keyframes readoutSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-12px) scaleY(0.9);
+    filter: brightness(2);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scaleY(1);
+    filter: brightness(1);
+  }
+}
+
+@keyframes readoutSlideOut {
+  from {
+    opacity: 1;
+    transform: translateY(0) scaleY(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-8px) scaleY(0.95);
+  }
+}
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+  .combat-readout-container {
+    width: clamp(200px, 70%, 320px);
+    top: 0.5rem;
+  }
+  .combat-readout-card {
+    padding: 0.5rem 0.625rem;
+  }
+}

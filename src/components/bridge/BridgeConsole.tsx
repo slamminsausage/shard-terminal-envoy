@@ -15,6 +15,7 @@ import { ScanModal } from "./ScanModal";
 import { DamageCalculator } from "./DamageCalculator";
 import { AddShipToCombatModal } from "./AddShipToCombatModal";
 import { CombatSidebar } from "./combat/CombatSidebar";
+import { CombatReadout } from "./combat/CombatReadout";
 import type { BridgeMessage, Contact, NewContact } from "@/lib/bridge/bridgeTypes";
 import { toast } from "sonner";
 
@@ -298,7 +299,11 @@ export function BridgeConsole() {
       {/* Main Content */}
       <div className={`flex-1 grid grid-cols-1 ${combatMode ? 'md:grid-cols-[1fr_400px] 3xl:grid-cols-[1fr_480px]' : 'md:grid-cols-[1fr_340px] 3xl:grid-cols-[1fr_480px]'} gap-3 p-2 md:p-3 3xl:p-4 min-h-0 overflow-y-auto md:overflow-hidden`}>
         {/* Left: Tactical Display */}
-        <div className="flex flex-col gap-3 min-h-0 overflow-hidden order-1">
+        <div className="flex flex-col gap-3 min-h-0 overflow-hidden order-1 relative">
+          {/* Combat readout overlay */}
+          {combatMode && combat.isActive && (
+            <CombatReadout events={combat.readoutQueue} onDismiss={combat.dismissReadout} />
+          )}
           <TacticalDisplay
             contacts={contacts}
             selectedContact={selectedContact}
