@@ -25,7 +25,7 @@ export function CommunicationsPanel({
   useEffect(() => {
     if (unreadCount > prevUnreadRef.current) {
       setIncomingFlash(true);
-      audioManager.play('connection', 0.25);
+      audioManager.playEffect('connection', 0.25);
       setTimeout(() => setIncomingFlash(false), 700);
     }
     prevUnreadRef.current = unreadCount;
