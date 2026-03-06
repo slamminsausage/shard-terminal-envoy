@@ -177,7 +177,7 @@ export default function RiftjawTerminal({ onBack }: RiftjawTerminalProps) {
   useEffect(() => {
     isMountedRef.current = true;
     audioManager.preloadSounds();
-    audioManager.playAmbient('terminal-hum');
+    audioManager.playAmbient('terminal');
 
     return () => {
       isMountedRef.current = false;
@@ -194,7 +194,7 @@ export default function RiftjawTerminal({ onBack }: RiftjawTerminalProps) {
   // Play typing sound effect
   const playKeySound = () => {
     if (soundEnabled && Math.random() > 0.5) {
-      audioManager.playEffect('typing-sound', 0.1);
+      audioManager.playEffect('keypress', 0.1);
     }
   };
 
@@ -265,7 +265,7 @@ export default function RiftjawTerminal({ onBack }: RiftjawTerminalProps) {
       const timeoutId = window.setTimeout(() => {
         if (!isMountedRef.current) return;
         if (msg.warning) {
-          audioManager.playEffect('warning-beep', 0.3);
+          audioManager.playEffect('warning', 0.3);
         }
         queueMessage(msg.text, undefined);
       }, msg.delay);
@@ -276,7 +276,7 @@ export default function RiftjawTerminal({ onBack }: RiftjawTerminalProps) {
     const envTimeoutId = window.setTimeout(() => {
       if (!isMountedRef.current) return;
       setEnvironmentalEffects(true);
-      audioManager.playEffect('glitch-sound', 0.5);
+      audioManager.playEffect('glitch', 0.5);
 
       // Screen flicker
       document.body.style.animation = 'powerFlicker 2s ease-out';
@@ -304,7 +304,7 @@ export default function RiftjawTerminal({ onBack }: RiftjawTerminalProps) {
     const blueCircuitsId = window.setTimeout(() => {
       if (!isMountedRef.current) return;
       setBlueCircuits(true);
-      audioManager.playEffect('data-corruption', 0.4);
+      audioManager.playEffect('corruption', 0.4);
     }, 10000);
     timeoutIdsRef.current.push(blueCircuitsId);
 
@@ -313,7 +313,7 @@ export default function RiftjawTerminal({ onBack }: RiftjawTerminalProps) {
       if (!isMountedRef.current) return;
       setCinematicText("");
       setSystemInit(true);
-      audioManager.playAmbient('static-hum');
+      audioManager.playAmbient('static');
       typingQueueRef.current = [];
       isTypingRef.current = false;
 
@@ -342,7 +342,7 @@ export default function RiftjawTerminal({ onBack }: RiftjawTerminalProps) {
     
     if (passwordInput === level.password) {
       // Correct password
-      audioManager.playEffect('success-chime', 0.4);
+      audioManager.playEffect('access_granted', 0.4);
       setShowSuccess(true);
       setSuccessMessage(level.successMessage);
       setPasswordInput("");
@@ -351,7 +351,7 @@ export default function RiftjawTerminal({ onBack }: RiftjawTerminalProps) {
       
       // Play level progression sound
       if (currentLevel < authLevels.length - 1) {
-        audioManager.playEffect('mechanical-key', 0.2);
+        audioManager.playEffect('keypress', 0.2);
       }
 
       // Auto-advance after 2 seconds
@@ -369,14 +369,14 @@ export default function RiftjawTerminal({ onBack }: RiftjawTerminalProps) {
       timeoutIdsRef.current.push(advanceId);
     } else {
       // Wrong password
-      audioManager.playEffect('error-buzz', 0.4);
+      audioManager.playEffect('access_denied', 0.4);
       const attempts = passwordAttempts + 1;
       setPasswordAttempts(attempts);
       setPasswordInput("");
 
       if (attempts >= 3) {
         // Max attempts reached
-        audioManager.playEffect('warning-beep', 0.5);
+        audioManager.playEffect('warning', 0.5);
         setErrorMessage("Maximum attempts exceeded. Access denied.");
         const navigateId = window.setTimeout(() => {
           navigate("/");
@@ -508,7 +508,7 @@ export default function RiftjawTerminal({ onBack }: RiftjawTerminalProps) {
                 <Button
                   className="bg-green-400 text-black font-mono px-4 py-2 rounded hover:bg-green-500 mt-2 w-full sm:w-auto"
                   onClick={() => {
-                    audioManager.playEffect('typing-sound', 0.2);
+                    audioManager.playEffect('keypress', 0.2);
                     if (onBack) {
                       onBack();
                     } else {
@@ -611,7 +611,7 @@ export default function RiftjawTerminal({ onBack }: RiftjawTerminalProps) {
                   <Button
                     className="bg-green-400 text-black font-mono px-4 py-2 rounded hover:bg-green-500 w-full sm:w-auto"
                     onClick={() => {
-                      audioManager.playEffect('typing-sound', 0.2);
+                      audioManager.playEffect('keypress', 0.2);
                       handlePasswordSubmit();
                     }}
                   >
@@ -620,7 +620,7 @@ export default function RiftjawTerminal({ onBack }: RiftjawTerminalProps) {
                   <Button
                     className="bg-green-400 text-black font-mono px-4 py-2 rounded hover:bg-green-500 w-full sm:w-auto"
               onClick={() => {
-                audioManager.playEffect('typing-sound', 0.2);
+                audioManager.playEffect('keypress', 0.2);
                 if (onBack) {
                   onBack();
                 } else {
