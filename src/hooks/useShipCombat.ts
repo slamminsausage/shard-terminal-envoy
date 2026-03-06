@@ -372,6 +372,7 @@ export function useShipCombat({ contacts, updateContactFields, moveShip }: UseSh
   // ── Initiative ──
 
   const rollInitiative = useCallback(async (manualRolls?: Record<string, number>) => {
+    const totals: Record<string, number> = {};
     for (const ship of combatants) {
       const dice = manualRolls?.[ship.id] ?? roll2d6();
       const commandMod = initiativeModifiers[ship.id] ?? 0;
@@ -380,14 +381,15 @@ export function useShipCombat({ contacts, updateContactFields, moveShip }: UseSh
       const bridgePenalty = getBridgeCriticalPenalty(ship);
       const total = dice + pilotScore + thrustScore + (ship.tacticsEffect ?? 0) + commandMod + bridgePenalty;
       const rollLabel = manualRolls?.[ship.id] != null ? `${dice}(manual)` : String(dice);
+      totals[ship.id] = total;
       await updateContactFields(ship.id, {
         initiative: total,
         initiativeDetail: `${rollLabel} + Pilot ${pilotScore} + Thrust ${thrustScore} + Tactics ${ship.tacticsEffect ?? 0}${commandMod ? ` + Command ${commandMod}` : ''}${bridgePenalty ? ` ${bridgePenalty}` : ''}`,
       });
     }
     addLog('Initiative rolled for all ships.');
-    const sorted = [...combatants].sort((a, b) => (b.initiative ?? 0) - (a.initiative ?? 0));
-    pushReadout('initiative', 'INITIATIVE ORDER', sorted.map((s, i) => `${i + 1}. ${s.name}: ${s.initiative ?? '?'}`), 'cyan');
+    const sorted = [...combatants].sort((a, b) => (totals[b.id] ?? 0) - (totals[a.id] ?? 0));
+    pushReadout('initiative', 'INITIATIVE ORDER', sorted.map((s, i) => `${i + 1}. ${s.name}: ${totals[s.id]}`), 'cyan');
     setInitiativeModifiers({});
     setPhase('maneuver');
   }, [combatants, initiativeModifiers, boardingPressure, updateContactFields, addLog, pushReadout]);

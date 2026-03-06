@@ -224,17 +224,23 @@ export function TacticalDisplay({
     return { x: x + center, y: y + center };
   };
 
+  // Find the player ship — used for grid centering, range bands, crosshairs
+  const playerShip = contacts.find(c => c.isPlayerShip);
+
+  // Center the hex grid on the player ship so hexes extend equally around them
   const hexGrid = useMemo(() => {
     const grid: Array<{ q: number; r: number }> = [];
-    for (let q = -radius; q <= radius; q += 1) {
-      for (let r = -radius; r <= radius; r += 1) {
-        if (Math.abs(q + r) <= radius) {
-          grid.push({ q, r });
+    const cq = playerShip?.hexQ ?? 0;
+    const cr = playerShip?.hexR ?? 0;
+    for (let dq = -radius; dq <= radius; dq += 1) {
+      for (let dr = -radius; dr <= radius; dr += 1) {
+        if (Math.abs(dq + dr) <= radius) {
+          grid.push({ q: cq + dq, r: cr + dr });
         }
       }
     }
     return grid;
-  }, [radius]);
+  }, [radius, playerShip?.hexQ, playerShip?.hexR]);
 
   const getHexPoints = (cx: number, cy: number, size = hexDrawSize) => {
     const points = [];
@@ -256,9 +262,6 @@ export function TacticalDisplay({
     }
     onShipMove(selectedContact.id, q, r);
   };
-
-  // Find the player ship for range band calculations
-  const playerShip = contacts.find(c => c.isPlayerShip);
 
   // Precompute range band colors for all hexes (memoized on ref ship position)
   const rangeBandFills = useMemo(() => {
