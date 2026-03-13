@@ -47,6 +47,8 @@ interface WeaponTableProps {
   onRoll?: (index: number) => void;
   /** Last roll log line */
   lastRollLog?: string;
+  /** When true, hide add/remove buttons and disable input editing */
+  readOnly?: boolean;
 }
 
 /** Convert catalog weapons to picker items grouped by weapon type */
@@ -138,6 +140,7 @@ export function WeaponTable({
   onCharModChange,
   onRoll,
   lastRollLog,
+  readOnly,
 }: WeaponTableProps) {
   const [expandedRow, setExpandedRow] = useState<number | null>(null);
   const [showCustomForm, setShowCustomForm] = useState(false);
@@ -204,12 +207,14 @@ export function WeaponTable({
     <section className="panel">
       <div className="panel-header flex items-center gap-2">
         <span className="panel-title flex-1">WEAPONS</span>
-        <CatalogItemPicker
-          items={pickerItems}
-          placeholder="Add Weapon"
-          onSelect={handleAddFromCatalog}
-          onCustom={handleAddCustom}
-        />
+        {!readOnly && (
+          <CatalogItemPicker
+            items={pickerItems}
+            placeholder="Add Weapon"
+            onSelect={handleAddFromCatalog}
+            onCustom={handleAddCustom}
+          />
+        )}
         {lastRollLog && (
           <div className="text-[11px] font-mono text-primary/80">
             {lastRollLog}
@@ -283,6 +288,7 @@ export function WeaponTable({
                           <Input
                             className="h-7 text-xs"
                             value={row.weapon}
+                            disabled={readOnly}
                             onChange={(e) =>
                               handleFieldChange(originalIndex, "weapon", e.target.value)
                             }
@@ -294,6 +300,7 @@ export function WeaponTable({
                         <Input
                           className="h-7 text-xs w-20"
                           value={row.range}
+                          disabled={readOnly}
                           onChange={(e) =>
                             handleFieldChange(originalIndex, "range", e.target.value)
                           }
@@ -303,6 +310,7 @@ export function WeaponTable({
                         <Input
                           className="h-7 text-xs w-16"
                           value={row.damage}
+                          disabled={readOnly}
                           onChange={(e) =>
                             handleFieldChange(originalIndex, "damage", e.target.value)
                           }
@@ -312,6 +320,7 @@ export function WeaponTable({
                         <Input
                           className="h-7 text-xs w-12"
                           value={row.kg}
+                          disabled={readOnly}
                           onChange={(e) =>
                             handleFieldChange(originalIndex, "kg", e.target.value)
                           }
@@ -321,6 +330,7 @@ export function WeaponTable({
                         <Input
                           className="h-7 text-xs w-16"
                           value={row.magazine}
+                          disabled={readOnly}
                           onChange={(e) =>
                             handleFieldChange(originalIndex, "magazine", e.target.value)
                           }
@@ -330,6 +340,7 @@ export function WeaponTable({
                         <Input
                           className="h-7 text-xs"
                           value={row.traits}
+                          disabled={readOnly}
                           onChange={(e) =>
                             handleFieldChange(originalIndex, "traits", e.target.value)
                           }
@@ -339,6 +350,7 @@ export function WeaponTable({
                         <select
                           className="bg-background border border-primary/40 rounded px-2 h-7 text-xs"
                           value={charMods[originalIndex] || "none"}
+                          disabled={readOnly}
                           onChange={(e) =>
                             onCharModChange(originalIndex, e.target.value)
                           }
@@ -361,14 +373,16 @@ export function WeaponTable({
                           </Button>
                         )}
                       </td>
-                      <td className="p-1 w-6">
-                        <button
-                          onClick={() => handleRemove(originalIndex)}
-                          className="text-destructive/60 hover:text-destructive"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </button>
-                      </td>
+                      {!readOnly && (
+                        <td className="p-1 w-6">
+                          <button
+                            onClick={() => handleRemove(originalIndex)}
+                            className="text-destructive/60 hover:text-destructive"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </button>
+                        </td>
+                      )}
                     </tr>
                     {isExpanded && (
                       <tr key={`detail-${idx}`} className="bg-primary/5">
@@ -402,21 +416,24 @@ export function WeaponTable({
                             </div>
                           )}
                           {/* Options / upgrades picker */}
-                          <div>
-                            <div className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">
-                              Options &amp; Upgrades
+                          {!readOnly && (
+                            <div>
+                              <div className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">
+                                Options &amp; Upgrades
+                              </div>
+                              <OptionsPicker
+                                available={availableOptions}
+                                selected={selectedOptions}
+                                onChange={(opts) => handleOptionsChange(originalIndex, opts)}
+                              />
                             </div>
-                            <OptionsPicker
-                              available={availableOptions}
-                              selected={selectedOptions}
-                              onChange={(opts) => handleOptionsChange(originalIndex, opts)}
-                            />
-                          </div>
+                          )}
                           {/* Notes */}
                           <div>
                             <Input
                               className="h-7 text-xs"
                               value={row.notes || ""}
+                              disabled={readOnly}
                               onChange={(e) =>
                                 handleFieldChange(
                                   originalIndex,

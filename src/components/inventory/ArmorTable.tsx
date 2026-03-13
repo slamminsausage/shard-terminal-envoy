@@ -33,6 +33,8 @@ export type ArmourRow = {
 interface ArmorTableProps {
   armour: ArmourRow[];
   onChange: (armour: ArmourRow[]) => void;
+  /** When true, hide add/remove buttons and disable input editing */
+  readOnly?: boolean;
 }
 
 /** Group armor into logical categories for the picker */
@@ -111,7 +113,7 @@ function coerceOptions(options: unknown): string[] {
   return [];
 }
 
-export function ArmorTable({ armour, onChange }: ArmorTableProps) {
+export function ArmorTable({ armour, onChange, readOnly }: ArmorTableProps) {
   const [expandedRow, setExpandedRow] = useState<number | null>(null);
   const pickerItems = useMemo(buildArmorPickerItems, []);
 
@@ -172,12 +174,14 @@ export function ArmorTable({ armour, onChange }: ArmorTableProps) {
     <section className="panel">
       <div className="panel-header flex items-center gap-2">
         <span className="panel-title flex-1">ARMOUR</span>
-        <CatalogItemPicker
-          items={pickerItems}
-          placeholder="Add Armour"
-          onSelect={handleAddFromCatalog}
-          onCustom={handleAddCustom}
-        />
+        {!readOnly && (
+          <CatalogItemPicker
+            items={pickerItems}
+            placeholder="Add Armour"
+            onSelect={handleAddFromCatalog}
+            onCustom={handleAddCustom}
+          />
+        )}
       </div>
 
       {activeArmour.length === 0 && (
@@ -236,6 +240,7 @@ export function ArmorTable({ armour, onChange }: ArmorTableProps) {
                           <Input
                             className="h-7 text-xs"
                             value={row.type}
+                            disabled={readOnly}
                             onChange={(e) =>
                               handleFieldChange(originalIndex, "type", e.target.value)
                             }
@@ -247,6 +252,7 @@ export function ArmorTable({ armour, onChange }: ArmorTableProps) {
                         <Input
                           className="h-7 text-xs w-14"
                           value={row.rad}
+                          disabled={readOnly}
                           onChange={(e) =>
                             handleFieldChange(originalIndex, "rad", e.target.value)
                           }
@@ -256,6 +262,7 @@ export function ArmorTable({ armour, onChange }: ArmorTableProps) {
                         <Input
                           className="h-7 text-xs w-24"
                           value={row.protection}
+                          disabled={readOnly}
                           onChange={(e) =>
                             handleFieldChange(
                               originalIndex,
@@ -269,26 +276,37 @@ export function ArmorTable({ armour, onChange }: ArmorTableProps) {
                         <Input
                           className="h-7 text-xs w-14"
                           value={row.kg}
+                          disabled={readOnly}
                           onChange={(e) =>
                             handleFieldChange(originalIndex, "kg", e.target.value)
                           }
                         />
                       </td>
-                      <td className="p-1 min-w-[140px]">
-                        <OptionsPicker
-                          available={availableOptions}
-                          selected={selectedOptions}
-                          onChange={(opts) => handleOptionsChange(originalIndex, opts)}
-                        />
-                      </td>
-                      <td className="p-1 w-6">
-                        <button
-                          onClick={() => handleRemove(originalIndex)}
-                          className="text-destructive/60 hover:text-destructive"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </button>
-                      </td>
+                      {!readOnly ? (
+                        <td className="p-1 min-w-[140px]">
+                          <OptionsPicker
+                            available={availableOptions}
+                            selected={selectedOptions}
+                            onChange={(opts) => handleOptionsChange(originalIndex, opts)}
+                          />
+                        </td>
+                      ) : (
+                        <td className="p-1 min-w-[140px]">
+                          <span className="text-xs text-muted-foreground">
+                            {selectedOptions.length > 0 ? selectedOptions.join(", ") : "-"}
+                          </span>
+                        </td>
+                      )}
+                      {!readOnly && (
+                        <td className="p-1 w-6">
+                          <button
+                            onClick={() => handleRemove(originalIndex)}
+                            className="text-destructive/60 hover:text-destructive"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </button>
+                        </td>
+                      )}
                     </tr>
                     {isExpanded && (
                       <tr key={`detail-${idx}`} className="bg-primary/5">
@@ -328,6 +346,7 @@ export function ArmorTable({ armour, onChange }: ArmorTableProps) {
                             <Input
                               className="h-7 text-xs"
                               value={row.notes || ""}
+                              disabled={readOnly}
                               onChange={(e) =>
                                 handleFieldChange(
                                   originalIndex,

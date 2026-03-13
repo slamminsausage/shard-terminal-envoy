@@ -17,6 +17,7 @@ import { EncumbranceSummary } from "@/components/inventory/EncumbranceSummary";
 
 interface CharacterSheetProps {
   characterId?: string;
+  readOnly?: boolean;
 }
 
 interface CharacteristicValue {
@@ -215,7 +216,7 @@ const initialAugments: AugmentRow[] = Array.from({ length: 4 }, () => ({
   improvement: ""
 }));
 
-const CharacterSheet = ({ characterId }: CharacterSheetProps = {}) => {
+const CharacterSheet = ({ characterId, readOnly }: CharacterSheetProps = {}) => {
   const { saveCharacter, characters, crewGroups, vehicles } = useCampaign();
   const [currentCharacterId, setCurrentCharacterId] = useState<string | undefined>(characterId);
   const [header, setHeader] = useState({
@@ -647,6 +648,7 @@ const CharacterSheet = ({ characterId }: CharacterSheetProps = {}) => {
           <Checkbox
             checked={state?.proficient}
             onCheckedChange={checked => handleSkillToggle(def.key, Boolean(checked))}
+            disabled={readOnly}
           />
           <span
             className={
@@ -664,6 +666,7 @@ const CharacterSheet = ({ characterId }: CharacterSheetProps = {}) => {
             onChange={event => handleSkillValueChange(def.key, event.target.value)}
             type="number"
             className="w-16 h-8 text-center"
+            disabled={readOnly}
           />
           <SkillDMDisplay proficient={state?.proficient ?? false} rawValue={state?.value} jackState={jackState} isPsionic={def.isPsionic} />
           <Button
@@ -690,6 +693,7 @@ const CharacterSheet = ({ characterId }: CharacterSheetProps = {}) => {
             <Checkbox
               checked={baseState?.proficient}
               onCheckedChange={checked => handleSkillToggle(def.key, Boolean(checked))}
+              disabled={readOnly}
             />
             <span className="font-semibold text-sm uppercase tracking-wide">{def.label}</span>
           </div>
@@ -699,6 +703,7 @@ const CharacterSheet = ({ characterId }: CharacterSheetProps = {}) => {
               onChange={event => handleSkillValueChange(def.key, event.target.value)}
               type="number"
               className="w-16 h-8 text-center"
+              disabled={readOnly}
             />
             <SkillDMDisplay proficient={baseState?.proficient ?? false} rawValue={baseState?.value} jackState={jackState} isPsionic={def.isPsionic} />
           </div>
@@ -713,12 +718,14 @@ const CharacterSheet = ({ characterId }: CharacterSheetProps = {}) => {
                   <Checkbox
                     checked={state?.proficient}
                     onCheckedChange={checked => handleSkillToggle(slotKey, Boolean(checked))}
+                    disabled={readOnly}
                   />
                   <Input
                     value={state?.customLabel ?? ""}
                     onChange={event => handleCustomLabelChange(slotKey, event.target.value)}
                     placeholder={`${def.label} Specialization`}
                     className="h-8"
+                    disabled={readOnly}
                   />
                 </div>
                 <div className="flex items-center gap-2">
@@ -727,6 +734,7 @@ const CharacterSheet = ({ characterId }: CharacterSheetProps = {}) => {
                     onChange={event => handleSkillValueChange(slotKey, event.target.value)}
                     type="number"
                     className="w-16 h-8 text-center"
+                    disabled={readOnly}
                   />
                   <SkillDMDisplay proficient={state?.proficient ?? false} rawValue={state?.value} jackState={jackState} isPsionic={false} />
                 </div>
@@ -780,6 +788,11 @@ const customGroups = skillDefinitions.filter(def => def.isCustomGroup);
 
   return (
     <div className="space-y-6 text-sm max-h-[80vh] overflow-y-auto font-mono">
+      {readOnly && (
+        <div className="border border-yellow-500/50 bg-yellow-500/10 rounded px-4 py-2 text-center">
+          <span className="text-yellow-400 font-mono text-xs uppercase tracking-[0.2em]">View Only — This character belongs to another player</span>
+        </div>
+      )}
       {/* ==============================
           PRINT-ONLY COMPACT HEADER
           Profile + Characteristics side-by-side, finances/study inline
@@ -890,45 +903,49 @@ const customGroups = skillDefinitions.filter(def => def.isCustomGroup);
                     alt="Character Thumbnail"
                     className="w-24 h-24 object-cover rounded border border-primary/30"
                   />
-                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1 rounded">
-                    <Button
-                      onClick={handleEditThumbnail}
-                      size="sm"
-                      variant="outline"
-                      className="h-7 w-7 p-0 border-primary/50 hover:bg-primary/20"
-                      title="Crop/Edit"
-                    >
-                      <Crop className="h-3 w-3 text-primary" />
-                    </Button>
-                    <Button
-                      onClick={handleRemoveThumbnail}
-                      size="sm"
-                      variant="outline"
-                      className="h-7 w-7 p-0 bg-red-500/80 border-red-500 hover:bg-red-600"
-                      title="Remove"
-                    >
-                      <X className="h-3 w-3 text-white" />
-                    </Button>
-                  </div>
+                  {!readOnly && (
+                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1 rounded">
+                      <Button
+                        onClick={handleEditThumbnail}
+                        size="sm"
+                        variant="outline"
+                        className="h-7 w-7 p-0 border-primary/50 hover:bg-primary/20"
+                        title="Crop/Edit"
+                      >
+                        <Crop className="h-3 w-3 text-primary" />
+                      </Button>
+                      <Button
+                        onClick={handleRemoveThumbnail}
+                        size="sm"
+                        variant="outline"
+                        className="h-7 w-7 p-0 bg-red-500/80 border-red-500 hover:bg-red-600"
+                        title="Remove"
+                      >
+                        <X className="h-3 w-3 text-white" />
+                      </Button>
+                    </div>
+                  )}
                 </div>
               )}
-              <div className="flex-1 print:hidden">
-                <label className="cursor-pointer">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleThumbnailUpload}
-                    className="hidden"
-                    disabled={isUploadingThumbnail}
-                  />
-                  <div className="border border-primary/40 rounded p-3 text-center hover:bg-primary/5 transition-colors">
-                    <Upload className="h-5 w-5 mx-auto mb-1 text-primary" />
-                    <span className="text-xs text-primary">
-                      {isUploadingThumbnail ? 'Uploading...' : thumbnailUrl ? 'Change Portrait' : 'Upload Portrait'}
-                    </span>
-                  </div>
-                </label>
-              </div>
+              {!readOnly && (
+                <div className="flex-1 print:hidden">
+                  <label className="cursor-pointer">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleThumbnailUpload}
+                      className="hidden"
+                      disabled={isUploadingThumbnail}
+                    />
+                    <div className="border border-primary/40 rounded p-3 text-center hover:bg-primary/5 transition-colors">
+                      <Upload className="h-5 w-5 mx-auto mb-1 text-primary" />
+                      <span className="text-xs text-primary">
+                        {isUploadingThumbnail ? 'Uploading...' : thumbnailUrl ? 'Change Portrait' : 'Upload Portrait'}
+                      </span>
+                    </div>
+                  </label>
+                </div>
+              )}
             </div>
           </div>
 
@@ -944,21 +961,23 @@ const customGroups = skillDefinitions.filter(def => def.isCustomGroup);
 
           {/* Character Info Fields */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <TextField label="Name" value={header.name} onChange={value => handleHeaderChange("name", value)} />
-        <TextField label="Rads" value={header.rads} onChange={value => handleHeaderChange("rads", value)} />
-        <TextField label="Age" value={header.age} onChange={value => handleHeaderChange("age", value)} />
-        <TextField label="Species" value={header.species} onChange={value => handleHeaderChange("species", value)} />
+        <TextField label="Name" value={header.name} onChange={value => handleHeaderChange("name", value)} disabled={readOnly} />
+        <TextField label="Rads" value={header.rads} onChange={value => handleHeaderChange("rads", value)} disabled={readOnly} />
+        <TextField label="Age" value={header.age} onChange={value => handleHeaderChange("age", value)} disabled={readOnly} />
+        <TextField label="Species" value={header.species} onChange={value => handleHeaderChange("species", value)} disabled={readOnly} />
         <TextField
           label="Species Traits"
           value={header.speciesTraits}
           onChange={value => handleHeaderChange("speciesTraits", value)}
           className="md:col-span-2"
+          disabled={readOnly}
         />
         <TextField
           label="Homeworld"
           value={header.homeworld}
           onChange={value => handleHeaderChange("homeworld", value)}
           className="md:col-span-3"
+          disabled={readOnly}
         />
           </div>
 
@@ -971,7 +990,7 @@ const customGroups = skillDefinitions.filter(def => def.isCustomGroup);
             {crewGroups.length > 0 ? (
               <div className="flex gap-3 flex-wrap items-center">
                 {/* Crew group selector */}
-                <Select value={crewId || 'none'} onValueChange={v => { setCrewId(v === 'none' ? '' : v); if (v === 'none') setCrewPosition(''); }}>
+                <Select value={crewId || 'none'} onValueChange={v => { setCrewId(v === 'none' ? '' : v); if (v === 'none') setCrewPosition(''); }} disabled={readOnly}>
                   <SelectTrigger className="h-8 text-xs font-mono w-48 border-primary/30">
                     <SelectValue placeholder="No crew" />
                   </SelectTrigger>
@@ -994,7 +1013,7 @@ const customGroups = skillDefinitions.filter(def => def.isCustomGroup);
 
                 {/* Position selector */}
                 {crewId && (
-                  <Select value={crewPosition || 'none'} onValueChange={v => setCrewPosition(v === 'none' ? '' : v)}>
+                  <Select value={crewPosition || 'none'} onValueChange={v => setCrewPosition(v === 'none' ? '' : v)} disabled={readOnly}>
                     <SelectTrigger className="h-8 text-xs font-mono w-40 border-primary/30">
                       <SelectValue placeholder="Position" />
                     </SelectTrigger>
@@ -1055,6 +1074,7 @@ const customGroups = skillDefinitions.filter(def => def.isCustomGroup);
                       onChange={event => handleCharacteristicChange(key, "total", event.target.value)}
                       type="number"
                       className="h-8"
+                      disabled={readOnly}
                     />
                   </div>
                   <div className="space-y-1">
@@ -1064,6 +1084,7 @@ const customGroups = skillDefinitions.filter(def => def.isCustomGroup);
                       onChange={event => handleCharacteristicChange(key, "current", event.target.value)}
                       type="number"
                       className="h-8"
+                      disabled={readOnly}
                     />
                   </div>
                 </div>
@@ -1088,6 +1109,7 @@ const customGroups = skillDefinitions.filter(def => def.isCustomGroup);
                 className="h-8 w-20"
                 value={skillRollDifficulty}
                 onChange={e => setSkillRollDifficulty(e.target.value)}
+                disabled={readOnly}
               />
             </label>
             <label className="flex items-center gap-2">
@@ -1096,6 +1118,7 @@ const customGroups = skillDefinitions.filter(def => def.isCustomGroup);
                 className="bg-background border border-primary/40 rounded px-2 h-8 text-xs"
                 value={skillRollCharacteristic}
                 onChange={e => setSkillRollCharacteristic(e.target.value as CharacteristicKey)}
+                disabled={readOnly}
               >
                 <option value="strength">Strength</option>
                 <option value="dexterity">Dexterity</option>
@@ -1112,6 +1135,7 @@ const customGroups = skillDefinitions.filter(def => def.isCustomGroup);
                 className="h-8 w-24"
                 value={skillRollModifier}
                 onChange={e => setSkillRollModifier(e.target.value)}
+                disabled={readOnly}
               />
             </label>
             {lastRollLog && (
@@ -1160,21 +1184,25 @@ const customGroups = skillDefinitions.filter(def => def.isCustomGroup);
         onCharModChange={handleWeaponCharSelect}
         onRoll={handleWeaponDamageRoll}
         lastRollLog={lastWeaponRollLog}
+        readOnly={readOnly}
       />
 
       <ArmorTable
         armour={armourRows}
         onChange={setArmourRows}
+        readOnly={readOnly}
       />
 
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <EquipmentTable
           equipment={equipment}
           onChange={setEquipment}
+          readOnly={readOnly}
         />
         <AugmentTable
           augments={augments}
           onChange={setAugments}
+          readOnly={readOnly}
         />
         <EncumbranceSummary
           weapons={weapons}
@@ -1190,11 +1218,11 @@ const customGroups = skillDefinitions.filter(def => def.isCustomGroup);
             <span className="panel-title">FINANCES</span>
           </div>
           <div className="panel-content space-y-2">
-            <TextField label="Pension" value={finances.pension} onChange={value => setFinances(prev => ({ ...prev, pension: value }))} compact />
-            <TextField label="Debt" value={finances.debt} onChange={value => setFinances(prev => ({ ...prev, debt: value }))} compact />
-            <TextField label="Cash on Hand" value={finances.cashOnHand} onChange={value => setFinances(prev => ({ ...prev, cashOnHand: value }))} compact />
-            <TextField label="Monthly Ship Payments" value={finances.shipPayments} onChange={value => setFinances(prev => ({ ...prev, shipPayments: value }))} compact />
-            <TextField label="Living Cost" value={finances.livingCost} onChange={value => setFinances(prev => ({ ...prev, livingCost: value }))} compact />
+            <TextField label="Pension" value={finances.pension} onChange={value => setFinances(prev => ({ ...prev, pension: value }))} compact disabled={readOnly} />
+            <TextField label="Debt" value={finances.debt} onChange={value => setFinances(prev => ({ ...prev, debt: value }))} compact disabled={readOnly} />
+            <TextField label="Cash on Hand" value={finances.cashOnHand} onChange={value => setFinances(prev => ({ ...prev, cashOnHand: value }))} compact disabled={readOnly} />
+            <TextField label="Monthly Ship Payments" value={finances.shipPayments} onChange={value => setFinances(prev => ({ ...prev, shipPayments: value }))} compact disabled={readOnly} />
+            <TextField label="Living Cost" value={finances.livingCost} onChange={value => setFinances(prev => ({ ...prev, livingCost: value }))} compact disabled={readOnly} />
           </div>
         </div>
         <div className="panel">
@@ -1203,9 +1231,9 @@ const customGroups = skillDefinitions.filter(def => def.isCustomGroup);
           </div>
           <div className="panel-content space-y-4">
             <div className="space-y-2">
-              <TextField label="Training in Skill" value={studyPeriod.skill} onChange={value => setStudyPeriod(prev => ({ ...prev, skill: value }))} compact />
-              <TextField label="Weeks" value={studyPeriod.weeks} onChange={value => setStudyPeriod(prev => ({ ...prev, weeks: value }))} compact />
-              <TextField label="Study Periods Complete" value={studyPeriod.complete} onChange={value => setStudyPeriod(prev => ({ ...prev, complete: value }))} compact />
+              <TextField label="Training in Skill" value={studyPeriod.skill} onChange={value => setStudyPeriod(prev => ({ ...prev, skill: value }))} compact disabled={readOnly} />
+              <TextField label="Weeks" value={studyPeriod.weeks} onChange={value => setStudyPeriod(prev => ({ ...prev, weeks: value }))} compact disabled={readOnly} />
+              <TextField label="Study Periods Complete" value={studyPeriod.complete} onChange={value => setStudyPeriod(prev => ({ ...prev, complete: value }))} compact disabled={readOnly} />
             </div>
             <div className="space-y-3">
               <h4 className="text-xs font-semibold uppercase tracking-wide text-primary">Allies, Contacts, Enemies, Rivals</h4>
@@ -1217,6 +1245,7 @@ const customGroups = skillDefinitions.filter(def => def.isCustomGroup);
                     value={relationships.allies}
                     onChange={e => setRelationships(prev => ({ ...prev, allies: e.target.value }))}
                     placeholder="List allies..."
+                    disabled={readOnly}
                   />
                 </div>
                 <div>
@@ -1226,6 +1255,7 @@ const customGroups = skillDefinitions.filter(def => def.isCustomGroup);
                     value={relationships.contacts}
                     onChange={e => setRelationships(prev => ({ ...prev, contacts: e.target.value }))}
                     placeholder="List contacts..."
+                    disabled={readOnly}
                   />
                 </div>
                 <div>
@@ -1235,6 +1265,7 @@ const customGroups = skillDefinitions.filter(def => def.isCustomGroup);
                     value={relationships.rivals}
                     onChange={e => setRelationships(prev => ({ ...prev, rivals: e.target.value }))}
                     placeholder="List rivals..."
+                    disabled={readOnly}
                   />
                 </div>
                 <div>
@@ -1244,22 +1275,25 @@ const customGroups = skillDefinitions.filter(def => def.isCustomGroup);
                     value={relationships.enemies}
                     onChange={e => setRelationships(prev => ({ ...prev, enemies: e.target.value }))}
                     placeholder="List enemies..."
+                    disabled={readOnly}
                   />
                 </div>
               </div>
             </div>
             <div>
               <label className="text-[10px] text-primary/60 uppercase tracking-wide">Notes</label>
-              <textarea className="terminal-input w-full h-24 text-xs mt-1" value={notes} onChange={event => setNotes(event.target.value)} placeholder="Character notes..." />
+              <textarea className="terminal-input w-full h-24 text-xs mt-1" value={notes} onChange={event => setNotes(event.target.value)} placeholder="Character notes..." disabled={readOnly} />
             </div>
           </div>
         </div>
       </section>
 
-      <div className="flex justify-end gap-3">
-        <Button variant="outline" className="terminal-btn">Reset Sheet</Button>
-        <Button onClick={handleSaveCharacter} className="terminal-btn primary">Save Changes</Button>
-      </div>
+      {!readOnly && (
+        <div className="flex justify-end gap-3">
+          <Button variant="outline" className="terminal-btn">Reset Sheet</Button>
+          <Button onClick={handleSaveCharacter} className="terminal-btn primary">Save Changes</Button>
+        </div>
+      )}
     </div>
   );
 };
@@ -1270,12 +1304,13 @@ interface TextFieldProps {
   onChange: (value: string) => void;
   className?: string;
   compact?: boolean;
+  disabled?: boolean;
 }
 
-const TextField = ({ label, value, onChange, className = "", compact }: TextFieldProps) => (
+const TextField = ({ label, value, onChange, className = "", compact, disabled }: TextFieldProps) => (
   <label className={`flex flex-col gap-1 text-xs uppercase tracking-wide text-primary/80 ${className}`}>
     <span>{label}</span>
-    <Input className={`terminal-input ${compact ? "h-8" : ""}`} value={value} onChange={event => onChange(event.target.value)} />
+    <Input className={`terminal-input ${compact ? "h-8" : ""}`} value={value} onChange={event => onChange(event.target.value)} disabled={disabled} />
   </label>
 );
 
