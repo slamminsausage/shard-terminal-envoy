@@ -28,6 +28,8 @@ export type AugmentRow = {
 interface AugmentTableProps {
   augments: AugmentRow[];
   onChange: (augments: AugmentRow[]) => void;
+  /** When true, hide add/remove buttons and disable input editing */
+  readOnly?: boolean;
 }
 
 function buildAugmentPickerItems(): CatalogPickerItem[] {
@@ -54,7 +56,7 @@ function emptyRow(): AugmentRow {
   return { type: "", tl: "", improvement: "" };
 }
 
-export function AugmentTable({ augments, onChange }: AugmentTableProps) {
+export function AugmentTable({ augments, onChange, readOnly }: AugmentTableProps) {
   const [expandedRow, setExpandedRow] = useState<number | null>(null);
   const pickerItems = useMemo(buildAugmentPickerItems, []);
 
@@ -106,12 +108,14 @@ export function AugmentTable({ augments, onChange }: AugmentTableProps) {
     <div className="panel">
       <div className="panel-header flex items-center gap-2">
         <span className="panel-title flex-1">AUGMENTS</span>
-        <CatalogItemPicker
-          items={pickerItems}
-          placeholder="Add Augment"
-          onSelect={handleAddFromCatalog}
-          onCustom={handleAddCustom}
-        />
+        {!readOnly && (
+          <CatalogItemPicker
+            items={pickerItems}
+            placeholder="Add Augment"
+            onSelect={handleAddFromCatalog}
+            onCustom={handleAddCustom}
+          />
+        )}
       </div>
 
       {activeAugments.length === 0 && (
@@ -166,6 +170,7 @@ export function AugmentTable({ augments, onChange }: AugmentTableProps) {
                           <Input
                             className="h-7 text-xs"
                             value={row.type}
+                            disabled={readOnly}
                             onChange={(e) =>
                               handleFieldChange(originalIndex, "type", e.target.value)
                             }
@@ -177,6 +182,7 @@ export function AugmentTable({ augments, onChange }: AugmentTableProps) {
                         <Input
                           className="h-7 text-xs w-12"
                           value={row.tl}
+                          disabled={readOnly}
                           onChange={(e) =>
                             handleFieldChange(originalIndex, "tl", e.target.value)
                           }
@@ -186,6 +192,7 @@ export function AugmentTable({ augments, onChange }: AugmentTableProps) {
                         <Input
                           className="h-7 text-xs"
                           value={row.improvement}
+                          disabled={readOnly}
                           onChange={(e) =>
                             handleFieldChange(
                               originalIndex,
@@ -195,14 +202,16 @@ export function AugmentTable({ augments, onChange }: AugmentTableProps) {
                           }
                         />
                       </td>
-                      <td className="p-1 w-6">
-                        <button
-                          onClick={() => handleRemove(originalIndex)}
-                          className="text-destructive/60 hover:text-destructive"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </button>
-                      </td>
+                      {!readOnly && (
+                        <td className="p-1 w-6">
+                          <button
+                            onClick={() => handleRemove(originalIndex)}
+                            className="text-destructive/60 hover:text-destructive"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </button>
+                        </td>
+                      )}
                     </tr>
                     {isExpanded && (
                       <tr key={`detail-${idx}`} className="bg-primary/5">
@@ -230,6 +239,7 @@ export function AugmentTable({ augments, onChange }: AugmentTableProps) {
                             <Input
                               className="h-7 text-xs"
                               value={row.notes || ""}
+                              disabled={readOnly}
                               onChange={(e) =>
                                 handleFieldChange(
                                   originalIndex,

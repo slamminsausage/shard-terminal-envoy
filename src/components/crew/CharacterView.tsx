@@ -9,7 +9,7 @@ interface CharacterViewProps {
 }
 
 const CharacterView = ({ characterId }: CharacterViewProps) => {
-  const { characters, isLoading, refreshData } = useCampaign();
+  const { characters, isLoading, refreshData, currentPlayer, isGM } = useCampaign();
   const hasRefreshed = useRef(false);
 
   useEffect(() => {
@@ -48,11 +48,16 @@ const CharacterView = ({ characterId }: CharacterViewProps) => {
     );
   }
 
+  const isOwner = currentPlayer?.id === character.player_id;
+  const isReadOnly = !isGM && !isOwner;
+
   return (
     <div className="min-h-screen bg-background text-foreground overflow-y-auto">
       <div className="max-w-6xl mx-auto p-6 space-y-4">
         <div className="flex items-center justify-between print:hidden">
-          <h1 className="text-lg font-mono tracking-[0.2em] text-primary">CHARACTER SHEET</h1>
+          <h1 className="text-lg font-mono tracking-[0.2em] text-primary">
+            {isReadOnly ? 'CHARACTER SHEET (VIEW ONLY)' : 'CHARACTER SHEET'}
+          </h1>
           <div className="flex gap-2">
             <Button variant="outline" onClick={handlePrint} size="sm" className="gap-1">
               <Printer className="w-4 h-4" />
@@ -63,7 +68,7 @@ const CharacterView = ({ characterId }: CharacterViewProps) => {
             </Button>
           </div>
         </div>
-        <CharacterSheet characterId={characterId} />
+        <CharacterSheet characterId={characterId} readOnly={isReadOnly} />
       </div>
     </div>
   );

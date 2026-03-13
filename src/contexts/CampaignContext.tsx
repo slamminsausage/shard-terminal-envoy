@@ -357,7 +357,7 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
     try {
       const player = currentPlayerRef.current;
 
-      // GM sees all characters; players see their own + NPCs
+      // GM sees all characters; players see all PCs + NPCs (editing controlled at UI level)
       let charactersData: any[];
       if (!player || player.role === 'gm') {
         charactersData = await dbHelpers.getAllCharacters();
@@ -366,7 +366,8 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
         charactersData = allChars.filter((c: any) =>
           c.player_id === player.id ||
           c.player_id === 'campaign' ||
-          c.character_type === 'npc'
+          c.character_type === 'npc' ||
+          (c.character_type || 'pc') === 'pc'
         );
       }
       setCharacters(charactersData as Character[]);
@@ -653,7 +654,9 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
 
     try {
       await dbHelpers.deleteCharacter(characterId);
-      setCharacters(prev => prev.filter(char => char.id !== characterId));
+      const updatedCharacters = charactersRef.current.filter(char => char.id !== characterId);
+      setCharacters(updatedCharacters);
+      localStorage.setItem('traveller_characters', JSON.stringify(updatedCharacters));
 
       toast({
         title: "Character Deleted",

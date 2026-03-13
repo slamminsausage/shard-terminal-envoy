@@ -132,6 +132,7 @@ export default function CrewInterface() {
   const [displayText, setDisplayText] = useState("");
   const [activeCrewMember, setActiveCrewMember] = useState<string | null>(null);
   const [showCharacterSheet, setShowCharacterSheet] = useState(false);
+  const [readOnlySheet, setReadOnlySheet] = useState(false);
   const [activeTab, setActiveTab] = useState("crew");
   const [rosterFilter, setRosterFilter] = useState<RosterFilter>('all');
   const [crewFilter, setCrewFilter] = useState<CrewFilter>('all');
@@ -202,6 +203,7 @@ export default function CrewInterface() {
   const handleBackToCrewInterface = () => {
     setShowCharacterSheet(false);
     setActiveCrewMember(null);
+    setReadOnlySheet(false);
   };
 
   const handleAddNewCrewMember = async () => {
@@ -259,10 +261,17 @@ export default function CrewInterface() {
           />
         </div>
         <div className="flex gap-2 flex-wrap flex-shrink-0">
-          <Button variant="outline" size="sm" className="text-xs" disabled={!canEdit}
-            onClick={() => { setActiveCrewMember(character.id); setShowCharacterSheet(true); }}>
-            Edit
-          </Button>
+          {canEdit ? (
+            <Button variant="outline" size="sm" className="text-xs"
+              onClick={() => { setActiveCrewMember(character.id); setReadOnlySheet(false); setShowCharacterSheet(true); }}>
+              Edit
+            </Button>
+          ) : (
+            <Button variant="outline" size="sm" className="text-xs"
+              onClick={() => { setActiveCrewMember(character.id); setReadOnlySheet(true); setShowCharacterSheet(true); }}>
+              View
+            </Button>
+          )}
           {canClaim && (
             <Button variant="outline" size="sm"
               className="text-xs border-emerald-500 text-emerald-400 hover:bg-emerald-500 hover:text-black"
@@ -272,7 +281,7 @@ export default function CrewInterface() {
           )}
           <Button onClick={() => window.open(`/character-view/${character.id}`, '_blank', 'width=1200,height=800,scrollbars=yes,resizable=yes')}
             variant="secondary" size="sm" className="text-xs">
-            View
+            Pop Out
           </Button>
           {canDelete && (
             <AlertDialog>
@@ -306,13 +315,15 @@ export default function CrewInterface() {
     return (
       <div className="interface-container">
         <header className="interface-header">
-          <h2 className="interface-title">CHARACTER SHEET INTERFACE</h2>
+          <h2 className="interface-title">
+            {readOnlySheet ? 'CHARACTER SHEET (VIEW ONLY)' : 'CHARACTER SHEET INTERFACE'}
+          </h2>
           <button className="terminal-btn text-xs sm:text-sm" onClick={handleBackToCrewInterface}>
             Back to Crew Management
           </button>
         </header>
         <div className="interface-content">
-          <CharacterSheet characterId={activeCrewMember || undefined} />
+          <CharacterSheet characterId={activeCrewMember || undefined} readOnly={readOnlySheet} />
         </div>
       </div>
     );

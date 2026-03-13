@@ -25,6 +25,8 @@ export type EquipmentRow = {
 interface EquipmentTableProps {
   equipment: EquipmentRow[];
   onChange: (equipment: EquipmentRow[]) => void;
+  /** When true, hide add/remove buttons and disable input editing */
+  readOnly?: boolean;
 }
 
 const CATEGORY_LABELS: Record<EquipmentCategory, string> = {
@@ -61,7 +63,7 @@ function emptyRow(): EquipmentRow {
   return { item: "", mass: "" };
 }
 
-export function EquipmentTable({ equipment, onChange }: EquipmentTableProps) {
+export function EquipmentTable({ equipment, onChange, readOnly }: EquipmentTableProps) {
   const [expandedRow, setExpandedRow] = useState<number | null>(null);
   const pickerItems = useMemo(buildEquipmentPickerItems, []);
 
@@ -113,12 +115,14 @@ export function EquipmentTable({ equipment, onChange }: EquipmentTableProps) {
     <div className="panel">
       <div className="panel-header flex items-center gap-2">
         <span className="panel-title flex-1">EQUIPMENT</span>
-        <CatalogItemPicker
-          items={pickerItems}
-          placeholder="Add Equipment"
-          onSelect={handleAddFromCatalog}
-          onCustom={handleAddCustom}
-        />
+        {!readOnly && (
+          <CatalogItemPicker
+            items={pickerItems}
+            placeholder="Add Equipment"
+            onSelect={handleAddFromCatalog}
+            onCustom={handleAddCustom}
+          />
+        )}
       </div>
 
       {activeEquipment.length === 0 && (
@@ -173,6 +177,7 @@ export function EquipmentTable({ equipment, onChange }: EquipmentTableProps) {
                           <Input
                             className="h-7 text-xs"
                             value={row.item}
+                            disabled={readOnly}
                             onChange={(e) =>
                               handleFieldChange(originalIndex, "item", e.target.value)
                             }
@@ -184,19 +189,22 @@ export function EquipmentTable({ equipment, onChange }: EquipmentTableProps) {
                         <Input
                           className="h-7 text-xs w-16"
                           value={row.mass}
+                          disabled={readOnly}
                           onChange={(e) =>
                             handleFieldChange(originalIndex, "mass", e.target.value)
                           }
                         />
                       </td>
-                      <td className="p-1 w-6">
-                        <button
-                          onClick={() => handleRemove(originalIndex)}
-                          className="text-destructive/60 hover:text-destructive"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </button>
-                      </td>
+                      {!readOnly && (
+                        <td className="p-1 w-6">
+                          <button
+                            onClick={() => handleRemove(originalIndex)}
+                            className="text-destructive/60 hover:text-destructive"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </button>
+                        </td>
+                      )}
                     </tr>
                     {isExpanded && (
                       <tr key={`detail-${idx}`} className="bg-primary/5">
@@ -227,6 +235,7 @@ export function EquipmentTable({ equipment, onChange }: EquipmentTableProps) {
                             <Input
                               className="h-7 text-xs"
                               value={row.notes || ""}
+                              disabled={readOnly}
                               onChange={(e) =>
                                 handleFieldChange(
                                   originalIndex,
