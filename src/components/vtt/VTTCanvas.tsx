@@ -100,6 +100,9 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
   // Drag start position for undo history
   const dragStartPosRef = useRef<Point>({ x: 0, y: 0 });
 
+  // Mouse world position for cursor previews (fog brush, etc.)
+  const cursorWorldRef = useRef<Point>({ x: 0, y: 0 });
+
   // Modals
   const [editingToken, setEditingToken] = useState<Token | null>(null);
   const [editingNote, setEditingNote] = useState<{
@@ -395,6 +398,9 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
   const handleMouseMove = useCallback(
     (e: React.MouseEvent) => {
       if (!activeMap) return;
+
+      // Always track world position for cursor previews
+      cursorWorldRef.current = getWorldPos(e);
 
       if (isPanning) {
         const dx = (e.clientX - panStartRef.current.x) / activeMap.zoom;
@@ -917,7 +923,31 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
 
     // Fog brush cursor preview
     if (state.activeTool.startsWith("fog-") && !isFogPainting) {
-      // Drawn after fog so the cursor is visible on top
+      const cx = cursorWorldRef.current.x;
+      const cy = cursorWorldRef.current.y;
+      const r = state.fogBrushSize;
+      ctx.save();
+      ctx.globalAlpha = 0.35;
+      ctx.fillStyle = state.fogBrushMode === "reveal" ? "#00ff00" : "#ff3344";
+      if (state.activeTool === "fog-rect") {
+        ctx.fillRect(cx - r, cy - r, r * 2, r * 2);
+      } else {
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      // Outline
+      ctx.globalAlpha = 0.7;
+      ctx.strokeStyle = state.fogBrushMode === "reveal" ? "#00ff00" : "#ff3344";
+      ctx.lineWidth = 2 / activeMap.zoom;
+      if (state.activeTool === "fog-rect") {
+        ctx.strokeRect(cx - r, cy - r, r * 2, r * 2);
+      } else {
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      ctx.restore();
     }
 
     // Walls (GM overlay)
@@ -1634,7 +1664,7 @@ function drawMeasurement(
   // Distance label
   const midX = (start.x + end.x) / 2;
   const midY = (start.y + end.y) / 2;
-  const label = `${gridDist.toFixed(1)}m`;
+  const label = `${gridDist.toFixed(1)} sq`;
 
   ctx.font = `bold 13px "Share Tech Mono", monospace`;
   ctx.textAlign = "center";

@@ -45,6 +45,14 @@ export default function VTTContextMenu({
     (state.selectedTextIds?.length || 0) > 0 ||
     (state.selectedNoteIds?.length || 0) > 0;
 
+  // Check if any selected item is currently visible/non-gmOnly
+  const selectionVisibleToPlayers = activeMap ? (
+    (state.selectedTokenIds || []).some((id) => activeMap.tokens.find((t) => t.id === id)?.visible) ||
+    (state.selectedStrokeIds || []).some((id) => !activeMap.strokes.find((s) => s.id === id)?.gmOnly) ||
+    (state.selectedTextIds || []).some((id) => !activeMap.texts.find((t) => t.id === id)?.gmOnly) ||
+    (state.selectedNoteIds || []).some((id) => activeMap.notes.find((n) => n.id === id)?.visible)
+  ) : false;
+
   const toggleGmOnlySelection = () => {
     if (!activeMap) return;
     // Toggle gmOnly for all selected items
@@ -246,8 +254,8 @@ export default function VTTContextMenu({
               Selection ({(state.selectedTokenIds?.length || 0) + (state.selectedStrokeIds?.length || 0) + (state.selectedTextIds?.length || 0) + (state.selectedNoteIds?.length || 0)} items)
             </div>
             <MenuItem
-              icon={ShieldAlert}
-              label="Toggle GM Only"
+              icon={selectionVisibleToPlayers ? ShieldAlert : ShieldCheck}
+              label={selectionVisibleToPlayers ? "Hide from Players" : "Show to Players"}
               onClick={toggleGmOnlySelection}
             />
             <Separator />
