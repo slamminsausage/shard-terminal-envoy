@@ -1,18 +1,54 @@
 import { useState, useRef } from "react";
-import { Plus, Trash2, Upload, ImageIcon } from "lucide-react";
+import { Plus, Trash2, Upload, ImageIcon, ChevronDown, ChevronUp } from "lucide-react";
 import { useVTT } from "@/contexts/VTTContext";
 import { toast } from "sonner";
 
+const SIZE_PRESETS = [
+  { label: "Standard (1920×1080)", w: 1920, h: 1080 },
+  { label: "Large (2560×1440)", w: 2560, h: 1440 },
+  { label: "Huge (3840×2160)", w: 3840, h: 2160 },
+  { label: "Square (2000×2000)", w: 2000, h: 2000 },
+] as const;
+
 export default function VTTMapLibrary() {
   const { state, dispatch, addMap, loadMapImage } = useVTT();
+  const [showCreateForm, setShowCreateForm] = useState(false);
   const [newMapName, setNewMapName] = useState("");
+  const [canvasWidth, setCanvasWidth] = useState(1920);
+  const [canvasHeight, setCanvasHeight] = useState(1080);
+  const [gridStyle, setGridStyle] = useState<"square" | "hex">("square");
+  const [gridSize, setGridSize] = useState(50);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [loadingMapId, setLoadingMapId] = useState<string | null>(null);
 
   const handleAddMap = () => {
     const name = newMapName.trim() || `Map ${state.maps.length + 1}`;
-    addMap(name);
+    const map = addMap(name);
+
+    // Apply chosen settings
+    dispatch({
+      type: "SET_CANVAS_SIZE",
+      payload: { mapId: map.id, width: canvasWidth, height: canvasHeight },
+    });
+    dispatch({
+      type: "UPDATE_MAP",
+      payload: {
+        id: map.id,
+        updates: {
+          grid: {
+            enabled: true,
+            size: gridSize,
+            color: "#00ff00",
+            opacity: 0.15,
+            snap: true,
+            style: gridStyle,
+          },
+        },
+      },
+    });
+
     setNewMapName("");
+    setShowCreateForm(false);
     toast.success(`Map "${name}" created`);
   };
 
@@ -49,29 +85,155 @@ export default function VTTMapLibrary() {
     toast.success(`Map "${map?.name}" deleted`);
   };
 
+  const applyPreset = (w: number, h: number) => {
+    setCanvasWidth(w);
+    setCanvasHeight(h);
+  };
+
   return (
     <div className="flex flex-col h-full">
       <div className="p-3 border-b border-terminal-border/30">
         <h3 className="text-terminal-primary text-sm font-mono mb-2 uppercase tracking-wider">
           Map Library
         </h3>
-        <div className="flex gap-1">
-          <input
-            type="text"
-            value={newMapName}
-            onChange={(e) => setNewMapName(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleAddMap()}
-            placeholder="Map name..."
-            className="flex-1 bg-terminal-bg-dark border border-terminal-border/30 text-terminal-primary text-xs px-2 py-1 rounded font-mono placeholder:text-terminal-primary/30 focus:border-terminal-primary/50 focus:outline-none"
-          />
-          <button
-            onClick={handleAddMap}
-            className="flex items-center justify-center w-7 h-7 bg-terminal-primary/10 text-terminal-primary border border-terminal-primary/30 rounded hover:bg-terminal-primary/20 transition-colors"
-            title="Add Map"
-          >
-            <Plus size={14} />
-          </button>
-        </div>
+
+        {/* Toggle create form */}
+        <button
+          onClick={() => setShowCreateForm(!showCreateForm)}
+          className="flex items-center justify-between w-full px-2 py-1.5 text-xs font-mono rounded border border-terminal-primary/30 text-terminal-primary/60 hover:text-terminal-primary hover:bg-terminal-primary/10 transition-colors"
+        >
+          <span className="flex items-center gap-1.5">
+            <Plus size={12} />
+            New Map
+          </span>
+          {showCreateForm ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+        </button>
+
+        {/* Expandable creation form */}
+        {showCreateForm && (
+          <div className="mt-2 space-y-2.5 p-2 rounded border border-terminal-border/20 bg-terminal-bg-dark/50">
+            {/* Map name */}
+            <div>
+              <label className="text-[10px] text-terminal-primary/50 font-mono block mb-0.5">
+                Name
+              </label>
+              <input
+                type="text"
+                value={newMapName}
+                onChange={(e) => setNewMapName(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleAddMap()}
+                placeholder="Map name..."
+                className="w-full bg-terminal-bg-dark border border-terminal-border/30 text-terminal-primary text-xs px-2 py-1 rounded font-mono placeholder:text-terminal-primary/30 focus:border-terminal-primary/50 focus:outline-none"
+              />
+            </div>
+
+            {/* Canvas size presets */}
+            <div>
+              <label className="text-[10px] text-terminal-primary/50 font-mono block mb-1">
+                Canvas Size
+              </label>
+              <div className="grid grid-cols-2 gap-1 mb-1.5">
+                {SIZE_PRESETS.map((preset) => (
+                  <button
+                    key={preset.label}
+                    onClick={() => applyPreset(preset.w, preset.h)}
+                    className={`text-[10px] font-mono py-1 px-1 rounded border transition-colors ${
+                      canvasWidth === preset.w && canvasHeight === preset.h
+                        ? "bg-terminal-primary/20 border-terminal-primary/50 text-terminal-primary"
+                        : "border-terminal-border/30 text-terminal-primary/40 hover:text-terminal-primary/60"
+                    }`}
+                  >
+                    {preset.w}×{preset.h}
+                  </button>
+                ))}
+              </div>
+              <div className="flex gap-1">
+                <div className="flex-1">
+                  <label className="text-[10px] text-terminal-primary/30 font-mono block mb-0.5">
+                    W
+                  </label>
+                  <input
+                    type="number"
+                    min={100}
+                    max={10000}
+                    step={100}
+                    value={canvasWidth}
+                    onChange={(e) => setCanvasWidth(Math.max(100, parseInt(e.target.value) || 1920))}
+                    className="w-full bg-terminal-bg-dark border border-terminal-border/30 text-terminal-primary text-[10px] px-1.5 py-1 rounded font-mono text-center focus:border-terminal-primary/50 focus:outline-none"
+                  />
+                </div>
+                <div className="flex-1">
+                  <label className="text-[10px] text-terminal-primary/30 font-mono block mb-0.5">
+                    H
+                  </label>
+                  <input
+                    type="number"
+                    min={100}
+                    max={10000}
+                    step={100}
+                    value={canvasHeight}
+                    onChange={(e) => setCanvasHeight(Math.max(100, parseInt(e.target.value) || 1080))}
+                    className="w-full bg-terminal-bg-dark border border-terminal-border/30 text-terminal-primary text-[10px] px-1.5 py-1 rounded font-mono text-center focus:border-terminal-primary/50 focus:outline-none"
+                  />
+                </div>
+              </div>
+              <div className="text-[9px] text-terminal-primary/25 font-mono mt-0.5 text-center">
+                {Math.round(canvasWidth / gridSize)}×{Math.round(canvasHeight / gridSize)} cells
+              </div>
+            </div>
+
+            {/* Grid style */}
+            <div>
+              <label className="text-[10px] text-terminal-primary/50 font-mono block mb-1">
+                Grid Style
+              </label>
+              <div className="flex gap-1">
+                {(["square", "hex"] as const).map((style) => (
+                  <button
+                    key={style}
+                    onClick={() => setGridStyle(style)}
+                    className={`flex-1 text-xs font-mono py-1 rounded border transition-colors capitalize ${
+                      gridStyle === style
+                        ? "bg-terminal-primary/20 border-terminal-primary/50 text-terminal-primary"
+                        : "border-terminal-border/30 text-terminal-primary/40 hover:text-terminal-primary/60"
+                    }`}
+                  >
+                    {style}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Grid size */}
+            <div>
+              <div className="flex items-center justify-between mb-0.5">
+                <label className="text-[10px] text-terminal-primary/50 font-mono">
+                  Cell Size
+                </label>
+                <span className="text-[10px] text-terminal-primary/40 font-mono">
+                  {gridSize}px
+                </span>
+              </div>
+              <input
+                type="range"
+                min={10}
+                max={200}
+                step={5}
+                value={gridSize}
+                onChange={(e) => setGridSize(parseInt(e.target.value))}
+                className="w-full accent-green-500 h-1"
+              />
+            </div>
+
+            {/* Create button */}
+            <button
+              onClick={handleAddMap}
+              className="w-full px-2 py-1.5 text-xs font-mono rounded border border-terminal-primary/50 text-terminal-primary bg-terminal-primary/10 hover:bg-terminal-primary/20 transition-colors"
+            >
+              Create Map
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="flex-1 overflow-y-auto p-2 space-y-1.5">
@@ -146,8 +308,7 @@ export default function VTTMapLibrary() {
               </div>
 
               <div className="text-[10px] text-terminal-primary/30 font-mono mt-0.5">
-                {map.width}x{map.height} | {map.tokens.length} tokens |{" "}
-                {map.strokes.length} strokes
+                {map.width}x{map.height} | {map.grid.style} {map.grid.size}px | {map.tokens.length} tokens
               </div>
             </div>
           ))

@@ -118,22 +118,25 @@ export default function VTTToolbar() {
     input.click();
   };
 
+  const btnClass = (active: boolean) =>
+    `flex items-center justify-center w-8 h-8 rounded transition-colors ${
+      active
+        ? "bg-terminal-primary/20 text-terminal-primary border border-terminal-primary/50"
+        : "text-terminal-primary/50 hover:text-terminal-primary hover:bg-terminal-primary/10"
+    }`;
+
   return (
-    <div className="flex flex-col gap-1 p-1 bg-terminal-bg-dark border-r border-terminal-border/30 overflow-y-auto">
-      {/* Tools */}
-      <div className="flex flex-col gap-0.5">
-        <span className="text-[9px] text-terminal-primary/40 uppercase tracking-wider px-1 pt-1">
-          Tools
-        </span>
+    <div className="flex flex-col gap-1 p-1.5 bg-terminal-bg-dark border-r border-terminal-border/30 overflow-y-auto">
+      {/* Tools — 2-column grid */}
+      <span className="text-[9px] text-terminal-primary/40 uppercase tracking-wider px-0.5">
+        Tools
+      </span>
+      <div className="grid grid-cols-2 gap-0.5">
         {tools.map(({ tool, icon, label }) => (
           <button
             key={tool}
             onClick={() => dispatch({ type: "SET_TOOL", payload: tool })}
-            className={`flex items-center justify-center w-8 h-8 rounded transition-colors ${
-              state.activeTool === tool
-                ? "bg-terminal-primary/20 text-terminal-primary border border-terminal-primary/50"
-                : "text-terminal-primary/50 hover:text-terminal-primary hover:bg-terminal-primary/10"
-            }`}
+            className={btnClass(state.activeTool === tool)}
             title={label}
           >
             {icon}
@@ -142,13 +145,13 @@ export default function VTTToolbar() {
       </div>
 
       {/* Separator */}
-      <div className="border-t border-terminal-border/20 my-1" />
+      <div className="border-t border-terminal-border/20 my-0.5" />
 
-      {/* Panels */}
-      <div className="flex flex-col gap-0.5">
-        <span className="text-[9px] text-terminal-primary/40 uppercase tracking-wider px-1">
-          Panels
-        </span>
+      {/* Panels — 2-column grid */}
+      <span className="text-[9px] text-terminal-primary/40 uppercase tracking-wider px-0.5">
+        Panels
+      </span>
+      <div className="grid grid-cols-2 gap-0.5">
         {panels.map(({ panel, icon, label }) => (
           <button
             key={panel}
@@ -158,11 +161,7 @@ export default function VTTToolbar() {
                 payload: state.sidebarPanel === panel ? null : panel,
               })
             }
-            className={`flex items-center justify-center w-8 h-8 rounded transition-colors ${
-              state.sidebarPanel === panel
-                ? "bg-terminal-primary/20 text-terminal-primary border border-terminal-primary/50"
-                : "text-terminal-primary/50 hover:text-terminal-primary hover:bg-terminal-primary/10"
-            }`}
+            className={btnClass(state.sidebarPanel === panel)}
             title={label}
           >
             {icon}
@@ -171,13 +170,13 @@ export default function VTTToolbar() {
       </div>
 
       {/* Separator */}
-      <div className="border-t border-terminal-border/20 my-1" />
+      <div className="border-t border-terminal-border/20 my-0.5" />
 
-      {/* Toggle buttons */}
-      <div className="flex flex-col gap-0.5">
-        <span className="text-[9px] text-terminal-primary/40 uppercase tracking-wider px-1">
-          View
-        </span>
+      {/* View toggles — inline row */}
+      <span className="text-[9px] text-terminal-primary/40 uppercase tracking-wider px-0.5">
+        View
+      </span>
+      <div className="flex gap-0.5">
         <button
           onClick={() => dispatch({ type: "TOGGLE_GRID" })}
           className={`flex items-center justify-center w-8 h-8 rounded transition-colors ${
@@ -202,76 +201,75 @@ export default function VTTToolbar() {
         </button>
       </div>
 
-      {/* Separator */}
-      <div className="border-t border-terminal-border/20 my-1" />
-
-      {/* Map controls */}
+      {/* Map controls — inline row */}
       {activeMap && (
-        <div className="flex flex-col gap-0.5">
-          <span className="text-[9px] text-terminal-primary/40 uppercase tracking-wider px-1">
+        <>
+          <span className="text-[9px] text-terminal-primary/40 uppercase tracking-wider px-0.5 mt-0.5">
             Map
           </span>
-          <button
-            onClick={() =>
-              dispatch({
-                type: "UPDATE_MAP",
-                payload: {
-                  id: activeMap.id,
-                  updates: { rotation: (activeMap.rotation + 90) % 360 },
-                },
-              })
-            }
-            className="flex items-center justify-center w-8 h-8 rounded text-terminal-primary/50 hover:text-terminal-primary hover:bg-terminal-primary/10 transition-colors"
-            title={`Rotate Map (${activeMap.rotation}°)`}
-          >
-            <RotateCw size={16} />
-          </button>
-          <button
-            onClick={() =>
-              dispatch({
-                type: "UPDATE_MAP",
-                payload: {
-                  id: activeMap.id,
-                  updates: { flipH: !activeMap.flipH },
-                },
-              })
-            }
-            className={`flex items-center justify-center w-8 h-8 rounded transition-colors ${
-              activeMap.flipH
-                ? "text-terminal-primary bg-terminal-primary/10"
-                : "text-terminal-primary/50 hover:text-terminal-primary hover:bg-terminal-primary/10"
-            }`}
-            title="Flip Horizontal"
-          >
-            <FlipHorizontal size={16} />
-          </button>
-          <button
-            onClick={() =>
-              dispatch({
-                type: "UPDATE_MAP",
-                payload: {
-                  id: activeMap.id,
-                  updates: { flipV: !activeMap.flipV },
-                },
-              })
-            }
-            className={`flex items-center justify-center w-8 h-8 rounded transition-colors ${
-              activeMap.flipV
-                ? "text-terminal-primary bg-terminal-primary/10"
-                : "text-terminal-primary/50 hover:text-terminal-primary hover:bg-terminal-primary/10"
-            }`}
-            title="Flip Vertical"
-          >
-            <FlipVertical size={16} />
-          </button>
-        </div>
+          <div className="flex gap-0.5">
+            <button
+              onClick={() =>
+                dispatch({
+                  type: "UPDATE_MAP",
+                  payload: {
+                    id: activeMap.id,
+                    updates: { rotation: (activeMap.rotation + 90) % 360 },
+                  },
+                })
+              }
+              className="flex items-center justify-center w-8 h-8 rounded text-terminal-primary/50 hover:text-terminal-primary hover:bg-terminal-primary/10 transition-colors"
+              title={`Rotate Map (${activeMap.rotation}°)`}
+            >
+              <RotateCw size={16} />
+            </button>
+            <button
+              onClick={() =>
+                dispatch({
+                  type: "UPDATE_MAP",
+                  payload: {
+                    id: activeMap.id,
+                    updates: { flipH: !activeMap.flipH },
+                  },
+                })
+              }
+              className={`flex items-center justify-center w-8 h-8 rounded transition-colors ${
+                activeMap.flipH
+                  ? "text-terminal-primary bg-terminal-primary/10"
+                  : "text-terminal-primary/50 hover:text-terminal-primary hover:bg-terminal-primary/10"
+              }`}
+              title="Flip Horizontal"
+            >
+              <FlipHorizontal size={16} />
+            </button>
+            <button
+              onClick={() =>
+                dispatch({
+                  type: "UPDATE_MAP",
+                  payload: {
+                    id: activeMap.id,
+                    updates: { flipV: !activeMap.flipV },
+                  },
+                })
+              }
+              className={`flex items-center justify-center w-8 h-8 rounded transition-colors ${
+                activeMap.flipV
+                  ? "text-terminal-primary bg-terminal-primary/10"
+                  : "text-terminal-primary/50 hover:text-terminal-primary hover:bg-terminal-primary/10"
+              }`}
+              title="Flip Vertical"
+            >
+              <FlipVertical size={16} />
+            </button>
+          </div>
+        </>
       )}
 
       {/* Spacer */}
       <div className="flex-1" />
 
-      {/* Presenter launch */}
-      <div className="flex flex-col gap-0.5">
+      {/* Bottom actions — presenter + session in rows */}
+      <div className="flex gap-0.5 justify-center">
         <button
           onClick={() => window.open("/presenter", "_blank", "popup=true")}
           className="flex items-center justify-center w-8 h-8 rounded text-terminal-primary/50 hover:text-cyan-400 hover:bg-cyan-400/10 transition-colors"
@@ -281,11 +279,9 @@ export default function VTTToolbar() {
         </button>
       </div>
 
-      {/* Separator */}
-      <div className="border-t border-terminal-border/20 my-1" />
+      <div className="border-t border-terminal-border/20 my-0.5" />
 
-      {/* Session actions */}
-      <div className="flex flex-col gap-0.5">
+      <div className="flex gap-0.5">
         <button
           onClick={saveSession}
           className="flex items-center justify-center w-8 h-8 rounded text-terminal-primary/50 hover:text-terminal-primary hover:bg-terminal-primary/10 transition-colors"
