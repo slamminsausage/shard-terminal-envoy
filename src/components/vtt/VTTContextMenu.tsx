@@ -55,42 +55,32 @@ export default function VTTContextMenu({
 
   const toggleGmOnlySelection = () => {
     if (!activeMap) return;
-    // Toggle gmOnly for all selected items
+    // Apply uniform action: if any item is visible, hide all; otherwise show all.
+    // This prevents mixed selections from accidentally revealing GM-only content.
+    const shouldHide = selectionVisibleToPlayers;
     for (const tokenId of state.selectedTokenIds || []) {
-      const t = activeMap.tokens.find((tk) => tk.id === tokenId);
-      if (t) {
-        dispatch({
-          type: "UPDATE_TOKEN",
-          payload: { mapId, tokenId, updates: { visible: !t.visible } },
-        });
-      }
+      dispatch({
+        type: "UPDATE_TOKEN",
+        payload: { mapId, tokenId, updates: { visible: !shouldHide } },
+      });
     }
     for (const strokeId of state.selectedStrokeIds || []) {
-      const s = activeMap.strokes.find((sk) => sk.id === strokeId);
-      if (s) {
-        dispatch({
-          type: "UPDATE_STROKE",
-          payload: { mapId, strokeId, updates: { gmOnly: !s.gmOnly } },
-        });
-      }
+      dispatch({
+        type: "UPDATE_STROKE",
+        payload: { mapId, strokeId, updates: { gmOnly: shouldHide } },
+      });
     }
     for (const textId of state.selectedTextIds || []) {
-      const t = activeMap.texts.find((tk) => tk.id === textId);
-      if (t) {
-        dispatch({
-          type: "UPDATE_TEXT",
-          payload: { mapId, textId, updates: { gmOnly: !t.gmOnly } },
-        });
-      }
+      dispatch({
+        type: "UPDATE_TEXT",
+        payload: { mapId, textId, updates: { gmOnly: shouldHide } },
+      });
     }
     for (const noteId of state.selectedNoteIds || []) {
-      const n = activeMap.notes.find((nk) => nk.id === noteId);
-      if (n) {
-        dispatch({
-          type: "UPDATE_NOTE",
-          payload: { mapId, noteId, updates: { visible: !n.visible } },
-        });
-      }
+      dispatch({
+        type: "UPDATE_NOTE",
+        payload: { mapId, noteId, updates: { visible: !shouldHide } },
+      });
     }
   };
 

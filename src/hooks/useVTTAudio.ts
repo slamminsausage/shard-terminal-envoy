@@ -36,6 +36,10 @@ export function useVTTAudio() {
   // Analyzer for visualization
   const analyzerRef = useRef<AnalyserNode | null>(null);
 
+  // Ref to track current master volume without causing callback identity changes
+  const masterVolumeRef = useRef(state.audio.masterVolume);
+  masterVolumeRef.current = state.audio.masterVolume;
+
   // ─── Initialize AudioContext ──────────────────────────────────────
 
   const ensureContext = useCallback(() => {
@@ -44,7 +48,7 @@ export function useVTTAudio() {
     ctxRef.current = ctx;
 
     const master = ctx.createGain();
-    master.gain.value = state.audio.masterVolume;
+    master.gain.value = masterVolumeRef.current;
     master.connect(ctx.destination);
     masterGainRef.current = master;
 
