@@ -30,6 +30,10 @@ export function useVTTKeyboard() {
         d: "door",
         f: "fog-circle",
         n: "note",
+        c: "aoe-circle",
+        j: "aoe-cone",
+        k: "aoe-line",
+        p: "light",
       };
 
       if (!e.ctrlKey && !e.metaKey && !e.altKey && toolMap[key]) {

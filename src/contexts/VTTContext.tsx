@@ -833,6 +833,11 @@ export function VTTProvider({ children }: { children: React.ReactNode }) {
       const isVideo = file.type.startsWith("video/");
 
       if (isVideo) {
+        // Revoke old objectURL if replacing a video map
+        const oldMap = stateRef.current.maps.find((m) => m.id === mapId);
+        if (oldMap?.isVideo && oldMap.imageDataUrl) {
+          URL.revokeObjectURL(oldMap.imageDataUrl);
+        }
         // Use objectURL for video (dataURL would be too large)
         const url = URL.createObjectURL(file);
         const video = document.createElement("video");

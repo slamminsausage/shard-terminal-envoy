@@ -660,10 +660,23 @@ export default function VTTPlayerView() {
         style={{ display: particles.enabled ? "block" : "none" }}
       />
 
-      {/* Zoom indicator */}
+      {/* Zoom indicator + reset button */}
       {map && localZoom != null && (
-        <div className="absolute top-2 right-2 z-10 text-terminal-primary/30 text-xs font-mono">
-          {Math.round(localZoom * 100)}%
+        <div className="absolute top-2 right-2 z-10 flex items-center gap-2">
+          <span className="text-terminal-primary/30 text-xs font-mono">
+            {Math.round(localZoom * 100)}%
+          </span>
+          <button
+            onClick={() => {
+              if (map) {
+                setLocalScroll({ x: map.scrollX, y: map.scrollY });
+                setLocalZoom(map.zoom);
+              }
+            }}
+            className="text-terminal-primary/40 hover:text-terminal-primary text-[10px] font-mono border border-terminal-primary/20 hover:border-terminal-primary/40 rounded px-1.5 py-0.5 transition-colors"
+          >
+            Reset View
+          </button>
         </div>
       )}
 

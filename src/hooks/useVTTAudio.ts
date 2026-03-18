@@ -63,7 +63,7 @@ export function useVTTAudio() {
     }
 
     return ctx;
-  }, [state.audio.masterVolume]);
+  }, []);
 
   // ─── Master volume sync ───────────────────────────────────────────
 
@@ -84,7 +84,7 @@ export function useVTTAudio() {
   useEffect(() => {
     for (const slot of SLOTS) {
       const gain = ambientGainRefs.current[slot];
-      const track = getTrack(slot);
+      const track = state.audio[`ambient${slot}` as keyof typeof state.audio] as (typeof state.audio.ambientA);
       if (gain) {
         gain.gain.value = track?.volume ?? 0;
       }
@@ -94,7 +94,6 @@ export function useVTTAudio() {
     state.audio.ambientB?.volume,
     state.audio.ambientC?.volume,
     state.audio.ambientD?.volume,
-    getTrack,
   ]);
 
   // ─── Per-channel pan sync ─────────────────────────────────────────
@@ -102,7 +101,7 @@ export function useVTTAudio() {
   useEffect(() => {
     for (const slot of SLOTS) {
       const pan = ambientPanRefs.current[slot];
-      const track = getTrack(slot);
+      const track = state.audio[`ambient${slot}` as keyof typeof state.audio] as (typeof state.audio.ambientA);
       if (pan && track) {
         pan.pan.value = track.pan;
       }
@@ -112,7 +111,6 @@ export function useVTTAudio() {
     state.audio.ambientB?.pan,
     state.audio.ambientC?.pan,
     state.audio.ambientD?.pan,
-    getTrack,
   ]);
 
   // ─── Load ambient track ───────────────────────────────────────────
@@ -263,11 +261,11 @@ export function useVTTAudio() {
     // Dispatch state update (sets all channels at once)
     dispatch({ type: "ACTIVATE_PLAYLIST", payload: playlistId });
 
-    // Re-initialize audio elements for library tracks
+    // Re-initialize audio elements for tracks with URLs
     const ctx = ensureContext();
     for (const slot of SLOTS) {
       const track = playlist.channels[slot];
-      if (track?.isLibrary && track.url) {
+      if (track?.url) {
         const el = new Audio();
         el.crossOrigin = "anonymous";
         el.loop = track.loop;

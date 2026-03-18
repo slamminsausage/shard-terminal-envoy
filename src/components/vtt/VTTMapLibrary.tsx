@@ -41,6 +41,10 @@ export default function VTTMapLibrary() {
 
   const handleDeleteMap = (mapId: string) => {
     const map = state.maps.find((m) => m.id === mapId);
+    // Clean up video objectURL to prevent memory leak
+    if (map?.isVideo && map.imageDataUrl) {
+      URL.revokeObjectURL(map.imageDataUrl);
+    }
     dispatch({ type: "REMOVE_MAP", payload: mapId });
     toast.success(`Map "${map?.name}" deleted`);
   };
