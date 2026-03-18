@@ -1,11 +1,11 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useNotes } from '@/contexts/NotesContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Edit2, Trash2, Save, X, Image as ImageIcon, Video, FileText, Folder, Maximize2, Upload, Crop } from 'lucide-react';
+import { Edit2, Trash2, Save, X, Image as ImageIcon, Video, FileText, Folder, Maximize2, Upload, Crop, Monitor, MonitorOff, Eye, EyeOff } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -14,6 +14,7 @@ import { compressImage } from '@/lib/mediaCompression';
 import { dbHelpers } from '@/lib/supabase';
 import { ThumbnailCropper } from '@/components/ui/ThumbnailCropper';
 import { MediaDialog } from '@/components/ui/MediaDialog';
+import { toast } from 'sonner';
 
 const FOLDERS: { value: NoteFolder; label: string; emoji: string }[] = [
   { value: 'general', label: 'General', emoji: '📝' },
@@ -36,8 +37,27 @@ export const NotesInterface: React.FC<NotesInterfaceProps> = ({ defaultTab = 'no
     updatePlayerNote,
     deletePlayerNote,
     handouts,
+    deleteHandout,
+    toggleHandoutVisibility,
     isGMMode,
   } = useNotes();
+
+  const presenterChannelRef = useRef<BroadcastChannel | null>(null);
+
+  useEffect(() => {
+    presenterChannelRef.current = new BroadcastChannel(PRESENTER_CHANNEL);
+    return () => presenterChannelRef.current?.close();
+  }, []);
+
+  const handleSendToPresenter = (handout: Handout) => {
+    if (!handout.mediaUrl) return;
+    presenterChannelRef.current?.postMessage({
+      type: "show-handout",
+      imageDataUrl: handout.mediaUrl,
+      name: handout.title,
+    });
+    toast.success(`"${handout.title}" sent to VTT presenter`);
+  };
 
   const [editingNote, setEditingNote] = useState<string | null>(null);
   const [newNoteTitle, setNewNoteTitle] = useState('');
@@ -370,24 +390,43 @@ export const NotesInterface: React.FC<NotesInterfaceProps> = ({ defaultTab = 'no
           {/* Handouts Tab */}
           <TabsContent value="handouts" className="space-y-4 mt-4">
             <div className="flex justify-between items-center">
-              <h2 className="text-lg font-semibold">Shared Handouts</h2>
+              <h2 className="text-lg font-semibold">
+                {isGMMode ? 'All Handouts' : 'Shared Handouts'}
+              </h2>
+              {isGMMode && (
+                <span className="text-xs text-terminal-primary/50">
+                  {handouts.length} total &middot; {visibleHandouts.length} visible to players
+                </span>
+              )}
             </div>
 
-            {visibleHandouts.length === 0 ? (
-              <Card className="bg-black border-terminal-primary/30">
-                <CardContent className="p-8 text-center text-terminal-primary/70">
-                  No handouts available yet. Handouts will appear here when revealed.
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="max-h-[calc(100vh-300px)] overflow-y-auto pr-2">
-                <div className="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-                  {visibleHandouts.map((handout) => (
-                    <HandoutCard key={handout.id} handout={handout} />
-                  ))}
+            {(() => {
+              const displayHandouts = isGMMode ? handouts : visibleHandouts;
+              return displayHandouts.length === 0 ? (
+                <Card className="bg-black border-terminal-primary/30">
+                  <CardContent className="p-8 text-center text-terminal-primary/70">
+                    {isGMMode
+                      ? 'No handouts yet. Create handouts in the VTT or here to share with players.'
+                      : 'No handouts available yet. Handouts will appear here when revealed.'}
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="max-h-[calc(100vh-300px)] overflow-y-auto pr-2">
+                  <div className="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+                    {displayHandouts.map((handout) => (
+                      <HandoutCard
+                        key={handout.id}
+                        handout={handout}
+                        isGM={isGMMode}
+                        onToggleVisibility={isGMMode ? toggleHandoutVisibility : undefined}
+                        onDelete={isGMMode ? deleteHandout : undefined}
+                        onSendToPresenter={isGMMode ? handleSendToPresenter : undefined}
+                      />
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
           </TabsContent>
         </Tabs>
       </div>
@@ -675,9 +714,15 @@ const NoteCard: React.FC<NoteCardProps> = ({
 
 interface HandoutCardProps {
   handout: Handout;
+  isGM?: boolean;
+  onToggleVisibility?: (id: string) => void;
+  onDelete?: (id: string) => Promise<void>;
+  onSendToPresenter?: (handout: Handout) => void;
 }
 
-const HandoutCard: React.FC<HandoutCardProps> = ({ handout }) => {
+const PRESENTER_CHANNEL = "shard-vtt-presenter";
+
+const HandoutCard: React.FC<HandoutCardProps> = ({ handout, isGM, onToggleVisibility, onDelete, onSendToPresenter }) => {
   const [showFullSize, setShowFullSize] = useState(false);
 
   return (
@@ -695,7 +740,53 @@ const HandoutCard: React.FC<HandoutCardProps> = ({ handout }) => {
               </CardDescription>
             )}
           </div>
+          {/* GM Controls */}
+          {isGM && (
+            <div className="flex gap-1 flex-shrink-0">
+              {(handout.type === 'image' || handout.type === 'video') && handout.mediaUrl && onSendToPresenter && (
+                <Button
+                  onClick={() => onSendToPresenter(handout)}
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 w-7 p-0 text-cyan-400/60 hover:text-cyan-400 hover:bg-cyan-500/10"
+                  title="Send to VTT Presenter"
+                >
+                  <Monitor className="h-3.5 w-3.5" />
+                </Button>
+              )}
+              {onToggleVisibility && (
+                <Button
+                  onClick={() => onToggleVisibility(handout.id)}
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 w-7 p-0 text-terminal-primary/60 hover:text-terminal-primary hover:bg-terminal-primary/10"
+                  title={handout.isVisible ? 'Hide from players' : 'Show to players'}
+                >
+                  {handout.isVisible ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+                </Button>
+              )}
+              {onDelete && (
+                <Button
+                  onClick={() => onDelete(handout.id)}
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 w-7 p-0 text-red-500/60 hover:text-red-500 hover:bg-red-500/10"
+                  title="Delete handout"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+              )}
+            </div>
+          )}
         </div>
+        {/* Visibility badge */}
+        {isGM && (
+          <Badge className={`mt-1 text-[10px] ${handout.isVisible
+            ? 'bg-green-500/10 text-green-400/70 border-green-500/30'
+            : 'bg-terminal-primary/5 text-terminal-primary/40 border-terminal-primary/20'}`}>
+            {handout.isVisible ? 'Visible to players' : 'Hidden'}
+          </Badge>
+        )}
       </CardHeader>
       <Separator className="bg-terminal-primary/30" />
       <CardContent className="p-3">

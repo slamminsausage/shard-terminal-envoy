@@ -502,7 +502,6 @@ export default function VTTSettingsPanel() {
           </div>
           <div>Initiative entries: {state.initiative.length}</div>
           <div>Clocks: {state.clocks.length}</div>
-          <div>Handouts: {state.handouts.length}</div>
         </div>
       </div>
     </div>

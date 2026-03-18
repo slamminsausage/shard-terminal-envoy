@@ -22,12 +22,13 @@ import type {
   VTTHistoryEntry,
   InitiativeEntry,
   Clock,
-  Handout,
   ParticleConfig,
   FogState,
   AudioState,
   AmbientTrack,
+  AmbientSlot,
   SFXSlot,
+  AudioPlaylist,
 } from "@/types/vtt";
 import {
   createDefaultVTTState,
@@ -99,14 +100,14 @@ type VTTAction =
   | { type: "ADD_CLOCK"; payload: Clock }
   | { type: "REMOVE_CLOCK"; payload: string }
   | { type: "UPDATE_CLOCK"; payload: { id: string; updates: Partial<Clock> } }
-  // Handouts
-  | { type: "ADD_HANDOUT"; payload: Handout }
-  | { type: "REMOVE_HANDOUT"; payload: string }
-  | { type: "TOGGLE_HANDOUT_VISIBILITY"; payload: string }
   // Audio
   | { type: "SET_AUDIO"; payload: Partial<AudioState> }
-  | { type: "SET_AMBIENT_TRACK"; payload: { slot: "A" | "B"; track: AmbientTrack | null } }
+  | { type: "SET_AMBIENT_TRACK"; payload: { slot: AmbientSlot; track: AmbientTrack | null } }
   | { type: "SET_SFX_SLOT"; payload: { index: number; slot: Partial<SFXSlot> } }
+  | { type: "ADD_PLAYLIST"; payload: AudioPlaylist }
+  | { type: "REMOVE_PLAYLIST"; payload: string }
+  | { type: "ACTIVATE_PLAYLIST"; payload: string }
+  | { type: "UPDATE_PLAYLIST"; payload: { id: string; updates: Partial<AudioPlaylist> } }
   // AoE Templates
   | { type: "ADD_AOE"; payload: import("@/types/vtt").AoETemplate }
   | { type: "REMOVE_AOE"; payload: string }
@@ -556,34 +557,19 @@ function vttReducer(state: VTTState, action: VTTAction): VTTState {
         ),
       };
 
-    // Handouts
-    case "ADD_HANDOUT":
-      return { ...state, handouts: [...state.handouts, action.payload] };
-    case "REMOVE_HANDOUT":
-      return {
-        ...state,
-        handouts: state.handouts.filter((h) => h.id !== action.payload),
-      };
-    case "TOGGLE_HANDOUT_VISIBILITY":
-      return {
-        ...state,
-        handouts: state.handouts.map((h) =>
-          h.id === action.payload ? { ...h, visible: !h.visible } : h
-        ),
-      };
-
     // Audio
     case "SET_AUDIO":
       return { ...state, audio: { ...state.audio, ...action.payload } };
-    case "SET_AMBIENT_TRACK":
+    case "SET_AMBIENT_TRACK": {
+      const slotKey = `ambient${action.payload.slot}` as keyof AudioState;
       return {
         ...state,
         audio: {
           ...state.audio,
-          [action.payload.slot === "A" ? "ambientA" : "ambientB"]:
-            action.payload.track,
+          [slotKey]: action.payload.track,
         },
       };
+    }
     case "SET_SFX_SLOT": {
       const slots = [...state.audio.sfxSlots];
       slots[action.payload.index] = {
@@ -592,6 +578,48 @@ function vttReducer(state: VTTState, action: VTTAction): VTTState {
       };
       return { ...state, audio: { ...state.audio, sfxSlots: slots } };
     }
+    case "ADD_PLAYLIST":
+      return {
+        ...state,
+        audio: {
+          ...state.audio,
+          playlists: [...(state.audio.playlists || []), action.payload],
+        },
+      };
+    case "REMOVE_PLAYLIST":
+      return {
+        ...state,
+        audio: {
+          ...state.audio,
+          playlists: (state.audio.playlists || []).filter((p) => p.id !== action.payload),
+          activePlaylistId: state.audio.activePlaylistId === action.payload ? null : state.audio.activePlaylistId,
+        },
+      };
+    case "ACTIVATE_PLAYLIST": {
+      const playlist = (state.audio.playlists || []).find((p) => p.id === action.payload);
+      if (!playlist) return state;
+      return {
+        ...state,
+        audio: {
+          ...state.audio,
+          activePlaylistId: action.payload,
+          ambientA: playlist.channels.A,
+          ambientB: playlist.channels.B,
+          ambientC: playlist.channels.C,
+          ambientD: playlist.channels.D,
+        },
+      };
+    }
+    case "UPDATE_PLAYLIST":
+      return {
+        ...state,
+        audio: {
+          ...state.audio,
+          playlists: (state.audio.playlists || []).map((p) =>
+            p.id === action.payload.id ? { ...p, ...action.payload.updates } : p
+          ),
+        },
+      };
 
     // AoE Templates (per-map)
     case "ADD_AOE":
@@ -741,6 +769,15 @@ export function VTTProvider({ children }: { children: React.ReactNode }) {
             m.imageDataUrl = null;
           }
         }
+        // Migrate audio state: add channels C/D, playlists, remove crossfade
+        const audio = parsed.audio as any;
+        if (audio.ambientC === undefined) audio.ambientC = null;
+        if (audio.ambientD === undefined) audio.ambientD = null;
+        if (!audio.playlists) audio.playlists = [];
+        if (audio.activePlaylistId === undefined) audio.activePlaylistId = null;
+        delete audio.crossfade;
+        // Remove legacy VTT handouts from state (now in NotesContext)
+        delete (parsed as any).handouts;
         return parsed as VTTState;
       }
     } catch (e) {
