@@ -235,12 +235,16 @@ export interface VTTMap {
 export interface AmbientTrack {
   id: string;
   name: string;
-  /** Data URL or object URL from local file */
+  /** Data URL, object URL, or path to built-in file (e.g. "/audio/file.mp3") */
   url: string;
   volume: number;
   pan: number;
   loop: boolean;
+  /** Whether this is a built-in library track (path-based, not data URL) */
+  isLibrary?: boolean;
 }
+
+export type AmbientSlot = "A" | "B" | "C" | "D";
 
 export interface SFXSlot {
   id: number;
@@ -248,8 +252,24 @@ export interface SFXSlot {
   url: string;
   volume: number;
   loop: boolean;
-  /** Keyboard shortcut key (e.g. "1"-"9", "a"-"i") */
+  /** Keyboard shortcut key (e.g. "1"-"9") */
   hotkey?: string;
+  /** Category for organization */
+  category?: string;
+  /** Whether this is a built-in library track */
+  isLibrary?: boolean;
+}
+
+export interface AudioPlaylist {
+  id: string;
+  name: string;
+  /** Which tracks to load into which channels when this playlist is activated */
+  channels: {
+    A: AmbientTrack | null;
+    B: AmbientTrack | null;
+    C: AmbientTrack | null;
+    D: AmbientTrack | null;
+  };
 }
 
 export interface AudioState {
@@ -257,8 +277,11 @@ export interface AudioState {
   muted: boolean;
   ambientA: AmbientTrack | null;
   ambientB: AmbientTrack | null;
-  crossfade: number; // 0 = full A, 1 = full B
+  ambientC: AmbientTrack | null;
+  ambientD: AmbientTrack | null;
   sfxSlots: SFXSlot[];
+  playlists: AudioPlaylist[];
+  activePlaylistId: string | null;
 }
 
 // --- AoE Templates ---
@@ -301,15 +324,6 @@ export interface Clock {
   color: string;
 }
 
-// --- Handouts ---
-
-export interface Handout {
-  id: string;
-  name: string;
-  imageDataUrl: string;
-  visible: boolean;
-}
-
 // --- Measurement ---
 
 export interface Measurement {
@@ -328,7 +342,6 @@ export interface VTTSession {
   audio: AudioState;
   initiative: InitiativeEntry[];
   clocks: Clock[];
-  handouts: Handout[];
   particles: ParticleConfig;
   gridDefaults: GridConfig;
 }
@@ -382,9 +395,6 @@ export interface VTTState {
   // Initiative & Clocks
   initiative: InitiativeEntry[];
   clocks: Clock[];
-
-  // Handouts
-  handouts: Handout[];
 
   // History
   history: VTTHistoryEntry[];
@@ -474,7 +484,8 @@ export function createDefaultAudio(): AudioState {
     muted: false,
     ambientA: null,
     ambientB: null,
-    crossfade: 0.5,
+    ambientC: null,
+    ambientD: null,
     sfxSlots: Array.from({ length: 18 }, (_, i) => ({
       id: i,
       name: "",
@@ -482,6 +493,8 @@ export function createDefaultAudio(): AudioState {
       volume: 0.7,
       loop: false,
     })),
+    playlists: [],
+    activePlaylistId: null,
   };
 }
 
@@ -527,7 +540,6 @@ export function createDefaultVTTState(): VTTState {
     particles: createDefaultParticles(),
     initiative: [],
     clocks: [],
-    handouts: [],
     history: [],
     historyIndex: -1,
     showGrid: true,
