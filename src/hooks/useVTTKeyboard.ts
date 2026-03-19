@@ -93,11 +93,14 @@ export function useVTTKeyboard() {
         return;
       }
 
-      // Delete key - remove selected tokens
+      // Delete key - remove all selected items
       if (key === "delete" || key === "backspace") {
-        const ids = state.selectedTokenIds || [];
-        if (ids.length > 0 && activeMap) {
-          for (const tokenId of ids) {
+        const tokenIds = state.selectedTokenIds || [];
+        const strokeIds = state.selectedStrokeIds || [];
+        const textIds = state.selectedTextIds || [];
+        const noteIds = state.selectedNoteIds || [];
+        if ((tokenIds.length + strokeIds.length + textIds.length + noteIds.length) > 0 && activeMap) {
+          for (const tokenId of tokenIds) {
             const token = activeMap.tokens.find((t) => t.id === tokenId);
             if (token) {
               dispatch({
@@ -114,6 +117,24 @@ export function useVTTKeyboard() {
             dispatch({
               type: "REMOVE_TOKEN",
               payload: { mapId: activeMap.id, tokenId },
+            });
+          }
+          for (const strokeId of strokeIds) {
+            dispatch({
+              type: "REMOVE_STROKE",
+              payload: { mapId: activeMap.id, strokeId },
+            });
+          }
+          for (const textId of textIds) {
+            dispatch({
+              type: "REMOVE_TEXT",
+              payload: { mapId: activeMap.id, textId },
+            });
+          }
+          for (const noteId of noteIds) {
+            dispatch({
+              type: "REMOVE_NOTE",
+              payload: { mapId: activeMap.id, noteId },
             });
           }
           dispatch({ type: "CLEAR_SELECTION" });
