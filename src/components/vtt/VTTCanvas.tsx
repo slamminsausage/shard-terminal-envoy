@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useCallback, useState } from "react";
 import { useVTT } from "@/contexts/VTTContext";
-import { screenToWorld, clamp, findStrokeAt, findTextAt } from "@/lib/vtt/geometry";
+import { screenToWorld, clamp, findStrokeAt, findTextAt, smoothPoints } from "@/lib/vtt/geometry";
 import { renderDynamicLighting } from "@/lib/vtt/raycasting";
 import { useVTTFogBrush } from "@/hooks/useVTTFogBrush";
 import type { Point, Stroke, Token, MapNote, VTTMap, AoETemplate, TextOverlay, Wall } from "@/types/vtt";
@@ -103,6 +103,17 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
 
   // Drag start position for undo history
   const dragStartPosRef = useRef<Point>({ x: 0, y: 0 });
+
+  // Hover state (refs to avoid callback re-creation)
+  const hoveredTokenIdRef = useRef<string | null>(null);
+  const hoveredStrokeIdRef = useRef<string | null>(null);
+  const hoveredTextIdRef = useRef<string | null>(null);
+  const hoveredNoteIdRef = useRef<string | null>(null);
+
+  // Selection handle interaction
+  type HandleType = "resize-tl" | "resize-tr" | "resize-bl" | "resize-br" | "rotate" | null;
+  const [activeHandle, setActiveHandle] = useState<HandleType>(null);
+  const handleStartRef = useRef<{ size: number; rotation: number }>({ size: 1, rotation: 0 });
 
   // Mouse world position for cursor previews (fog brush, etc.)
   const cursorWorldRef = useRef<Point>({ x: 0, y: 0 });
@@ -262,12 +273,45 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
             }
           }
 
-          // Check if clicking on an already-selected item to start group drag
+          // Check selection handles (resize/rotate) for single-selected token
           const tokenIds = state.selectedTokenIds || [];
           const strokeIds = state.selectedStrokeIds || [];
           const textIds = state.selectedTextIds || [];
           const noteIds = state.selectedNoteIds || [];
           const totalSelected = tokenIds.length + strokeIds.length + textIds.length + noteIds.length;
+
+          if (tokenIds.length === 1 && totalSelected === 1 && activeMap) {
+            const selToken = activeMap.tokens.find((t) => t.id === tokenIds[0]);
+            if (selToken && !selToken.locked) {
+              const gridSize = activeMap.grid.size || 50;
+              const halfSize = (selToken.size * gridSize) / 2;
+              const handleSize = 8 / activeMap.zoom; // screen-space 8px
+
+              // Corner handles
+              const corners: { type: HandleType; x: number; y: number }[] = [
+                { type: "resize-tl", x: selToken.x - halfSize, y: selToken.y - halfSize },
+                { type: "resize-tr", x: selToken.x + halfSize, y: selToken.y - halfSize },
+                { type: "resize-bl", x: selToken.x - halfSize, y: selToken.y + halfSize },
+                { type: "resize-br", x: selToken.x + halfSize, y: selToken.y + halfSize },
+              ];
+
+              for (const c of corners) {
+                if (Math.abs(worldPos.x - c.x) <= handleSize && Math.abs(worldPos.y - c.y) <= handleSize) {
+                  setActiveHandle(c.type);
+                  handleStartRef.current = { size: selToken.size, rotation: selToken.rotation };
+                  return;
+                }
+              }
+
+              // Rotation handle (above token)
+              const rotHandleY = selToken.y - halfSize - 25 / activeMap.zoom;
+              if (Math.abs(worldPos.x - selToken.x) <= handleSize && Math.abs(worldPos.y - rotHandleY) <= handleSize) {
+                setActiveHandle("rotate");
+                handleStartRef.current = { size: selToken.size, rotation: selToken.rotation };
+                return;
+              }
+            }
+          }
 
           const token = findTokenAt(worldPos);
           if (token && !token.locked) {
@@ -519,6 +563,35 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
         return;
       }
 
+      // Handle resize/rotate drag
+      if (activeHandle && activeMap) {
+        const worldPos = getWorldPos(e);
+        const tokenIds = state.selectedTokenIds || [];
+        if (tokenIds.length === 1) {
+          const selToken = activeMap.tokens.find((t) => t.id === tokenIds[0]);
+          if (selToken) {
+            if (activeHandle === "rotate") {
+              const angle = Math.atan2(worldPos.y - selToken.y, worldPos.x - selToken.x);
+              const degrees = ((angle * 180) / Math.PI + 90 + 360) % 360; // 0° = up
+              dispatch({
+                type: "UPDATE_TOKEN",
+                payload: { mapId: activeMap.id, tokenId: selToken.id, updates: { rotation: Math.round(degrees) } },
+              });
+            } else {
+              // Resize: compute new size from distance to token center
+              const gridSize = activeMap.grid.size || 50;
+              const dist = Math.max(Math.abs(worldPos.x - selToken.x), Math.abs(worldPos.y - selToken.y));
+              const newSize = Math.max(0.5, Math.round((dist * 2) / gridSize * 4) / 4); // snap to 0.25 increments
+              dispatch({
+                type: "UPDATE_TOKEN",
+                payload: { mapId: activeMap.id, tokenId: selToken.id, updates: { size: newSize } },
+              });
+            }
+          }
+        }
+        return;
+      }
+
       if (isPanning) {
         const dx = (e.clientX - panStartRef.current.x) / activeMap.zoom;
         const dy = (e.clientY - panStartRef.current.y) / activeMap.zoom;
@@ -662,12 +735,50 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
         setSelectionBox({ start: selectionBoxStartRef.current, end: getWorldPos(e) });
         return;
       }
+
+      // Hover detection (only when idle with cursor tool)
+      if (state.activeTool === "cursor" && activeMap) {
+        const wp = cursorWorldRef.current;
+        const hitToken = findTokenAt(wp);
+        hoveredTokenIdRef.current = hitToken?.id ?? null;
+        if (!hitToken) {
+          const hitStroke = findStrokeAt(wp, activeMap.strokes.filter((s) => s.layer !== 0));
+          hoveredStrokeIdRef.current = hitStroke?.id ?? null;
+          if (!hitStroke) {
+            const hitText = findTextAt(wp, activeMap.texts.filter((t) => t.layer !== 0));
+            hoveredTextIdRef.current = hitText?.id ?? null;
+            if (!hitText) {
+              const hitNote = findNoteAt(wp);
+              hoveredNoteIdRef.current = hitNote?.id ?? null;
+            } else {
+              hoveredNoteIdRef.current = null;
+            }
+          } else {
+            hoveredTextIdRef.current = null;
+            hoveredNoteIdRef.current = null;
+          }
+        } else {
+          hoveredStrokeIdRef.current = null;
+          hoveredTextIdRef.current = null;
+          hoveredNoteIdRef.current = null;
+        }
+      } else {
+        hoveredTokenIdRef.current = null;
+        hoveredStrokeIdRef.current = null;
+        hoveredTextIdRef.current = null;
+        hoveredNoteIdRef.current = null;
+      }
     },
-    [activeMap, isPanning, isDraggingImage, dragToken, isGroupDrag, isDrawing, measuring, drawingWall, isFogPainting, placingAoE, selectionBox, state, dispatch, getWorldPos, paintFog]
+    [activeMap, isPanning, isDraggingImage, activeHandle, dragToken, isGroupDrag, isDrawing, measuring, drawingWall, isFogPainting, placingAoE, selectionBox, state, dispatch, getWorldPos, paintFog, findTokenAt, findNoteAt]
   );
 
   const handleMouseUp = useCallback(
     (e: React.MouseEvent) => {
+      if (activeHandle) {
+        setActiveHandle(null);
+        return;
+      }
+
       if (isDraggingImage) {
         setIsDraggingImage(false);
         return;
@@ -717,7 +828,7 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
           tool,
           points:
             tool === "freehand"
-              ? points
+              ? smoothPoints(points)
               : [points[0], points[points.length - 1]],
           color: state.drawColor,
           width: state.drawWidth,
@@ -888,7 +999,7 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
         return;
       }
     },
-    [isDraggingImage, isPanning, isGroupDrag, dragToken, isDrawing, measuring, drawingWall, isFogPainting, placingAoE, selectionBox, activeMap, state, dispatch, exportFogData]
+    [activeHandle, isDraggingImage, isPanning, isGroupDrag, dragToken, isDrawing, measuring, drawingWall, isFogPainting, placingAoE, selectionBox, activeMap, state, dispatch, exportFogData]
   );
 
   // Right-click context menu
@@ -910,7 +1021,9 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
     [activeMap, getWorldPos, findTokenAt, findNoteAt]
   );
 
-  // Prevent scroll wheel from scrolling the page on the canvas (no zoom)
+  // Scroll-wheel zoom toward cursor
+  const activeMapRef = useRef(activeMap);
+  activeMapRef.current = activeMap;
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -918,11 +1031,39 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
     const handleWheel = (e: WheelEvent) => {
       e.preventDefault();
       e.stopPropagation();
+      const map = activeMapRef.current;
+      if (!map) return;
+
+      const rect = canvas.getBoundingClientRect();
+      const cursorScreenX = e.clientX - rect.left;
+      const cursorScreenY = e.clientY - rect.top;
+
+      // World point under cursor before zoom
+      const worldX = map.scrollX + cursorScreenX / map.zoom;
+      const worldY = map.scrollY + cursorScreenY / map.zoom;
+
+      // Compute new zoom (exponential scaling for smooth feel)
+      const zoomFactor = 1 - e.deltaY * 0.001;
+      const newZoom = clamp(map.zoom * zoomFactor, MIN_ZOOM, MAX_ZOOM);
+
+      // Adjust scroll so world point under cursor stays fixed
+      const newScrollX = worldX - cursorScreenX / newZoom;
+      const newScrollY = worldY - cursorScreenY / newZoom;
+
+      dispatch({
+        type: "SET_VIEWPORT",
+        payload: {
+          mapId: map.id,
+          scrollX: newScrollX,
+          scrollY: newScrollY,
+          zoom: newZoom,
+        },
+      });
     };
 
     canvas.addEventListener("wheel", handleWheel, { passive: false });
     return () => canvas.removeEventListener("wheel", handleWheel);
-  }, []);
+  }, [dispatch]);
 
   // ─── Render loop ────────────────────────────────────────────────────
 
@@ -1094,6 +1235,87 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
       drawMeasurement(ctx, measureStartRef.current, measureEndRef.current, activeMap.grid.size);
     }
 
+    // Hover highlights (subtle glow before clicking)
+    const hovTokenId = hoveredTokenIdRef.current;
+    const hovStrokeId = hoveredStrokeIdRef.current;
+    const hovTextId = hoveredTextIdRef.current;
+    const hovNoteId = hoveredNoteIdRef.current;
+
+    if (hovTokenId && !(state.selectedTokenIds || []).includes(hovTokenId)) {
+      const ht = activeMap.tokens.find((t) => t.id === hovTokenId);
+      if (ht && ht.visible) {
+        const halfSize = (ht.size * (activeMap.grid.size || 50)) / 2;
+        ctx.save();
+        ctx.strokeStyle = "#00ff8866";
+        ctx.lineWidth = 2;
+        ctx.shadowColor = "#00ff88";
+        ctx.shadowBlur = 8;
+        ctx.beginPath();
+        ctx.arc(ht.x, ht.y, halfSize + 2, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+
+    if (hovStrokeId && !(state.selectedStrokeIds || []).includes(hovStrokeId)) {
+      const hs = activeMap.strokes.find((s) => s.id === hovStrokeId);
+      if (hs && hs.points.length > 0) {
+        ctx.save();
+        ctx.strokeStyle = "#00ccff44";
+        ctx.lineWidth = hs.width + 6;
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+        if (hs.tool === "freehand" && hs.points.length > 1) {
+          ctx.beginPath();
+          ctx.moveTo(hs.points[0].x, hs.points[0].y);
+          for (let i = 1; i < hs.points.length; i++) ctx.lineTo(hs.points[i].x, hs.points[i].y);
+          ctx.stroke();
+        } else if (hs.tool === "line" && hs.points.length >= 2) {
+          ctx.beginPath();
+          ctx.moveTo(hs.points[0].x, hs.points[0].y);
+          ctx.lineTo(hs.points[1].x, hs.points[1].y);
+          ctx.stroke();
+        } else if (hs.tool === "rect" && hs.points.length >= 2) {
+          ctx.strokeRect(hs.points[0].x, hs.points[0].y, hs.points[1].x - hs.points[0].x, hs.points[1].y - hs.points[0].y);
+        } else if (hs.tool === "circle" && hs.points.length >= 2) {
+          const dx = hs.points[1].x - hs.points[0].x;
+          const dy = hs.points[1].y - hs.points[0].y;
+          ctx.beginPath();
+          ctx.arc(hs.points[0].x, hs.points[0].y, Math.sqrt(dx * dx + dy * dy), 0, Math.PI * 2);
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+    }
+
+    if (hovTextId && !(state.selectedTextIds || []).includes(hovTextId)) {
+      const htxt = activeMap.texts.find((t) => t.id === hovTextId);
+      if (htxt) {
+        ctx.save();
+        ctx.strokeStyle = "#00ccff44";
+        ctx.lineWidth = 1;
+        ctx.font = `${htxt.fontSize}px "${htxt.fontFamily || "Share Tech Mono"}", monospace`;
+        const m = ctx.measureText(htxt.text);
+        ctx.strokeRect(htxt.x - 2, htxt.y - 2, m.width + 4, htxt.fontSize + 4);
+        ctx.restore();
+      }
+    }
+
+    if (hovNoteId && !(state.selectedNoteIds || []).includes(hovNoteId)) {
+      const hn = activeMap.notes.find((n) => n.id === hovNoteId);
+      if (hn) {
+        ctx.save();
+        ctx.strokeStyle = "#00ff8866";
+        ctx.lineWidth = 2;
+        ctx.shadowColor = "#00ff88";
+        ctx.shadowBlur = 6;
+        ctx.beginPath();
+        ctx.arc(hn.x, hn.y, 14, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+
     // Selected token highlights
     const selectedIds = state.selectedTokenIds || [];
     if (selectedIds.length > 0) {
@@ -1112,6 +1334,52 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
         ctx.arc(token.x, token.y, halfSize + 3, 0, Math.PI * 2);
         ctx.stroke();
         ctx.setLineDash([]);
+        ctx.restore();
+      }
+    }
+
+    // Selection handles (resize + rotate) for single-selected token
+    if (selectedIds.length === 1 && (state.selectedStrokeIds?.length || 0) === 0 && (state.selectedTextIds?.length || 0) === 0 && (state.selectedNoteIds?.length || 0) === 0) {
+      const selToken = activeMap.tokens.find((t) => t.id === selectedIds[0]);
+      if (selToken && selToken.visible && !selToken.locked) {
+        const gridSize = activeMap.grid.size || 50;
+        const halfSize = (selToken.size * gridSize) / 2;
+        const hs = 6 / activeMap.zoom; // handle size in world space
+
+        ctx.save();
+        // Corner resize handles
+        const corners = [
+          { x: selToken.x - halfSize, y: selToken.y - halfSize },
+          { x: selToken.x + halfSize, y: selToken.y - halfSize },
+          { x: selToken.x - halfSize, y: selToken.y + halfSize },
+          { x: selToken.x + halfSize, y: selToken.y + halfSize },
+        ];
+        ctx.fillStyle = "#00ff00";
+        ctx.strokeStyle = "#003300";
+        ctx.lineWidth = 1 / activeMap.zoom;
+        for (const c of corners) {
+          ctx.fillRect(c.x - hs, c.y - hs, hs * 2, hs * 2);
+          ctx.strokeRect(c.x - hs, c.y - hs, hs * 2, hs * 2);
+        }
+
+        // Rotation handle (above token)
+        const rotY = selToken.y - halfSize - 25 / activeMap.zoom;
+        ctx.strokeStyle = "#00ff0088";
+        ctx.lineWidth = 1.5 / activeMap.zoom;
+        ctx.setLineDash([3 / activeMap.zoom, 3 / activeMap.zoom]);
+        ctx.beginPath();
+        ctx.moveTo(selToken.x, selToken.y - halfSize);
+        ctx.lineTo(selToken.x, rotY);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        ctx.fillStyle = "#00ccff";
+        ctx.strokeStyle = "#003344";
+        ctx.beginPath();
+        ctx.arc(selToken.x, rotY, hs, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
         ctx.restore();
       }
     }
@@ -1219,6 +1487,37 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
       }
     }
 
+    // Snap-to-grid visual feedback while dragging a token
+    if (dragToken && activeMap.grid.snap && activeMap.grid.enabled) {
+      const draggingToken = activeMap.tokens.find((t) => t.id === dragToken);
+      if (draggingToken) {
+        const gs = activeMap.grid.size;
+        // Highlight the target grid cell
+        const cellX = Math.floor(draggingToken.x / gs) * gs;
+        const cellY = Math.floor(draggingToken.y / gs) * gs;
+        ctx.save();
+        ctx.fillStyle = "#00ff0012";
+        ctx.strokeStyle = "#00ff0044";
+        ctx.lineWidth = 1.5;
+        ctx.fillRect(cellX, cellY, gs, gs);
+        ctx.strokeRect(cellX, cellY, gs, gs);
+        // Crosshair at snap center
+        const cx = cellX + gs / 2;
+        const cy = cellY + gs / 2;
+        ctx.strokeStyle = "#00ff0033";
+        ctx.lineWidth = 1;
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        ctx.moveTo(cx - gs / 2, cy);
+        ctx.lineTo(cx + gs / 2, cy);
+        ctx.moveTo(cx, cy - gs / 2);
+        ctx.lineTo(cx, cy + gs / 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.restore();
+      }
+    }
+
     // Selection box (drag rectangle)
     if (selectionBox) {
       ctx.save();
@@ -1274,14 +1573,20 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
     <div
       ref={containerRef}
       className={`relative w-full h-full overflow-hidden bg-terminal-bg-dark ${className || ""}`}
-      style={{ cursor: getCursor(state.activeTool, isPanning, !!dragToken || isGroupDrag, isDraggingImage, state.activeLayer) }}
+      style={{ cursor: getCursor(state.activeTool, isPanning, !!dragToken || isGroupDrag, isDraggingImage, state.activeLayer, activeHandle) }}
     >
       <canvas
         ref={canvasRef}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
+        onMouseLeave={(e) => {
+          hoveredTokenIdRef.current = null;
+          hoveredStrokeIdRef.current = null;
+          hoveredTextIdRef.current = null;
+          hoveredNoteIdRef.current = null;
+          handleMouseUp(e);
+        }}
         onContextMenu={handleContextMenu}
         className="block w-full h-full vtt-main-canvas"
       />
@@ -1395,7 +1700,12 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
 
 // ─── Drawing helpers ──────────────────────────────────────────────────────
 
-function getCursor(tool: string, isPanning: boolean, isDragging: boolean, isDraggingImage: boolean, activeLayer: number): string {
+function getCursor(tool: string, isPanning: boolean, isDragging: boolean, isDraggingImage: boolean, activeLayer: number, activeHandle?: string | null): string {
+  if (activeHandle === "rotate") return "crosshair";
+  if (activeHandle?.startsWith("resize-")) {
+    if (activeHandle === "resize-tl" || activeHandle === "resize-br") return "nwse-resize";
+    return "nesw-resize";
+  }
   if (isPanning) return "grabbing";
   if (isDraggingImage) return "move";
   if (isDragging) return "move";

@@ -64,6 +64,26 @@ export function useVTTKeyboard() {
           dispatch({ type: "TOGGLE_GRID" });
           return;
         }
+        if (key === "c") {
+          e.preventDefault();
+          dispatch({ type: "COPY_SELECTION" });
+          return;
+        }
+        if (key === "v") {
+          e.preventDefault();
+          if (activeMap) {
+            dispatch({ type: "PASTE_CLIPBOARD", payload: { mapId: activeMap.id } });
+          }
+          return;
+        }
+        if (key === "d") {
+          e.preventDefault();
+          if (activeMap) {
+            dispatch({ type: "COPY_SELECTION" });
+            dispatch({ type: "PASTE_CLIPBOARD", payload: { mapId: activeMap.id } });
+          }
+          return;
+        }
         return;
       }
 

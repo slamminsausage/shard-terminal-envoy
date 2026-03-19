@@ -421,6 +421,9 @@ export interface VTTState {
   fogBrushSize: number;
   fogBrushMode: "reveal" | "conceal";
 
+  // Clipboard
+  clipboard: { tokens: Token[]; strokes: Stroke[]; texts: TextOverlay[]; notes: MapNote[] } | null;
+
   // Sidebar
   sidebarPanel: VTTSidebarPanel | null;
 }
@@ -555,6 +558,7 @@ export function createDefaultVTTState(): VTTState {
     selectedNoteIds: [],
     fogBrushSize: 40,
     fogBrushMode: "reveal",
+    clipboard: null,
     sidebarPanel: "maps",
   };
 }
