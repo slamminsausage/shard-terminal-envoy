@@ -10,8 +10,14 @@ import {
   Unlock,
   StickyNote,
   Copy,
+  Clipboard,
+  ClipboardPaste,
   ShieldAlert,
   ShieldCheck,
+  RotateCw,
+  RotateCcw,
+  ArrowUpToLine,
+  ArrowDownToLine,
 } from "lucide-react";
 
 interface VTTContextMenuProps {
@@ -45,6 +51,8 @@ export default function VTTContextMenu({
     (state.selectedTextIds?.length || 0) > 0 ||
     (state.selectedNoteIds?.length || 0) > 0;
 
+  const hasClipboard = !!state.clipboard;
+
   // Check if any selected item is currently visible/non-gmOnly
   const selectionVisibleToPlayers = activeMap ? (
     (state.selectedTokenIds || []).some((id) => activeMap.tokens.find((t) => t.id === id)?.visible) ||
@@ -55,8 +63,6 @@ export default function VTTContextMenu({
 
   const toggleGmOnlySelection = () => {
     if (!activeMap) return;
-    // Apply uniform action: if any item is visible, hide all; otherwise show all.
-    // This prevents mixed selections from accidentally revealing GM-only content.
     const shouldHide = selectionVisibleToPlayers;
     for (const tokenId of state.selectedTokenIds || []) {
       dispatch({
@@ -89,11 +95,13 @@ export default function VTTContextMenu({
     label,
     onClick,
     danger,
+    shortcut,
   }: {
     icon?: any;
     label: string;
     onClick: () => void;
     danger?: boolean;
+    shortcut?: string;
   }) => (
     <button
       onClick={() => {
@@ -107,7 +115,8 @@ export default function VTTContextMenu({
       }`}
     >
       {Icon && <Icon size={12} />}
-      {label}
+      <span className="flex-1">{label}</span>
+      {shortcut && <span className="text-[10px] text-terminal-primary/30 ml-2">{shortcut}</span>}
     </button>
   );
 
@@ -120,10 +129,10 @@ export default function VTTContextMenu({
 
       {/* Menu */}
       <div
-        className="fixed z-50 bg-terminal-bg-dark border border-terminal-border/40 rounded shadow-xl py-1 min-w-[160px]"
+        className="fixed z-50 bg-terminal-bg-dark border border-terminal-border/40 rounded shadow-xl py-1 min-w-[180px]"
         style={{
-          left: Math.min(x, window.innerWidth - 180),
-          top: Math.min(y, window.innerHeight - 300),
+          left: Math.min(x, window.innerWidth - 200),
+          top: Math.min(y, window.innerHeight - 400),
         }}
       >
         {token && (
@@ -142,11 +151,7 @@ export default function VTTContextMenu({
               onClick={() =>
                 dispatch({
                   type: "UPDATE_TOKEN",
-                  payload: {
-                    mapId,
-                    tokenId: token.id,
-                    updates: { visible: !token.visible },
-                  },
+                  payload: { mapId, tokenId: token.id, updates: { visible: !token.visible } },
                 })
               }
             />
@@ -156,14 +161,53 @@ export default function VTTContextMenu({
               onClick={() =>
                 dispatch({
                   type: "UPDATE_TOKEN",
-                  payload: {
-                    mapId,
-                    tokenId: token.id,
-                    updates: { locked: !token.locked },
-                  },
+                  payload: { mapId, tokenId: token.id, updates: { locked: !token.locked } },
                 })
               }
             />
+            <Separator />
+            <MenuItem
+              icon={RotateCw}
+              label="Rotate 45° CW"
+              onClick={() =>
+                dispatch({
+                  type: "UPDATE_TOKEN",
+                  payload: { mapId, tokenId: token.id, updates: { rotation: (token.rotation + 45) % 360 } },
+                })
+              }
+            />
+            <MenuItem
+              icon={RotateCcw}
+              label="Rotate 45° CCW"
+              onClick={() =>
+                dispatch({
+                  type: "UPDATE_TOKEN",
+                  payload: { mapId, tokenId: token.id, updates: { rotation: (token.rotation - 45 + 360) % 360 } },
+                })
+              }
+            />
+            <Separator />
+            <MenuItem
+              icon={ArrowUpToLine}
+              label="Bring to Front"
+              onClick={() =>
+                dispatch({
+                  type: "REORDER_TOKEN",
+                  payload: { mapId, tokenId: token.id, direction: "front" },
+                })
+              }
+            />
+            <MenuItem
+              icon={ArrowDownToLine}
+              label="Send to Back"
+              onClick={() =>
+                dispatch({
+                  type: "REORDER_TOKEN",
+                  payload: { mapId, tokenId: token.id, direction: "back" },
+                })
+              }
+            />
+            <Separator />
             <MenuItem
               icon={Copy}
               label="Duplicate"
@@ -214,11 +258,7 @@ export default function VTTContextMenu({
               onClick={() =>
                 dispatch({
                   type: "UPDATE_NOTE",
-                  payload: {
-                    mapId,
-                    noteId: note.id,
-                    updates: { visible: !note.visible },
-                  },
+                  payload: { mapId, noteId: note.id, updates: { visible: !note.visible } },
                 })
               }
             />
@@ -237,7 +277,7 @@ export default function VTTContextMenu({
           </>
         )}
 
-        {/* GM Layer toggle for selection */}
+        {/* Selection actions */}
         {hasSelection && (
           <>
             <div className="px-3 py-1 text-[10px] text-terminal-primary/40 font-mono uppercase tracking-wider">
@@ -248,8 +288,45 @@ export default function VTTContextMenu({
               label={selectionVisibleToPlayers ? "Hide from Players" : "Show to Players"}
               onClick={toggleGmOnlySelection}
             />
+            <MenuItem
+              icon={Clipboard}
+              label="Copy"
+              onClick={() => dispatch({ type: "COPY_SELECTION" })}
+              shortcut="Ctrl+C"
+            />
+            <MenuItem
+              icon={Trash2}
+              label="Delete Selection"
+              onClick={() => {
+                if (!activeMap) return;
+                for (const tokenId of state.selectedTokenIds || []) {
+                  dispatch({ type: "REMOVE_TOKEN", payload: { mapId, tokenId } });
+                }
+                for (const strokeId of state.selectedStrokeIds || []) {
+                  dispatch({ type: "REMOVE_STROKE", payload: { mapId, strokeId } });
+                }
+                for (const textId of state.selectedTextIds || []) {
+                  dispatch({ type: "REMOVE_TEXT", payload: { mapId, textId } });
+                }
+                for (const noteId of state.selectedNoteIds || []) {
+                  dispatch({ type: "REMOVE_NOTE", payload: { mapId, noteId } });
+                }
+                dispatch({ type: "CLEAR_SELECTION" });
+              }}
+              danger
+            />
             <Separator />
           </>
+        )}
+
+        {/* Clipboard paste */}
+        {hasClipboard && (
+          <MenuItem
+            icon={ClipboardPaste}
+            label="Paste"
+            onClick={() => dispatch({ type: "PASTE_CLIPBOARD", payload: { mapId } })}
+            shortcut="Ctrl+V"
+          />
         )}
 
         {/* General actions */}

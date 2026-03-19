@@ -86,6 +86,59 @@ export function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
 }
 
+// --- Freehand smoothing ---
+
+/** Decimate points by removing those closer than minDist to the previous kept point */
+export function decimatePoints(points: Point[], minDist = 2): Point[] {
+  if (points.length <= 2) return points;
+  const result: Point[] = [points[0]];
+  for (let i = 1; i < points.length - 1; i++) {
+    if (distance(points[i], result[result.length - 1]) >= minDist) {
+      result.push(points[i]);
+    }
+  }
+  result.push(points[points.length - 1]); // always keep last
+  return result;
+}
+
+/** Catmull-Rom spline smoothing for freehand strokes */
+export function smoothPoints(rawPoints: Point[], tension = 0.5, segments = 4): Point[] {
+  const points = decimatePoints(rawPoints);
+  if (points.length <= 3) return points;
+
+  const result: Point[] = [points[0]];
+
+  for (let i = 0; i < points.length - 1; i++) {
+    const p0 = points[Math.max(i - 1, 0)];
+    const p1 = points[i];
+    const p2 = points[i + 1];
+    const p3 = points[Math.min(i + 2, points.length - 1)];
+
+    for (let t = 1; t <= segments; t++) {
+      const s = t / segments;
+      const s2 = s * s;
+      const s3 = s2 * s;
+
+      const x =
+        0.5 *
+        ((2 * p1.x) +
+          (-p0.x + p2.x) * s * tension * 2 +
+          (2 * p0.x - 5 * p1.x + 4 * p2.x - p3.x) * s2 * tension * 2 +
+          (-p0.x + 3 * p1.x - 3 * p2.x + p3.x) * s3 * tension * 2);
+      const y =
+        0.5 *
+        ((2 * p1.y) +
+          (-p0.y + p2.y) * s * tension * 2 +
+          (2 * p0.y - 5 * p1.y + 4 * p2.y - p3.y) * s2 * tension * 2 +
+          (-p0.y + 3 * p1.y - 3 * p2.y + p3.y) * s3 * tension * 2);
+
+      result.push({ x, y });
+    }
+  }
+
+  return result;
+}
+
 // --- Hit-testing for strokes and texts ---
 
 /** Shortest distance from point p to the line segment a→b */

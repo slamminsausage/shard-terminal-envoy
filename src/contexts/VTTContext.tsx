@@ -126,6 +126,11 @@ type VTTAction =
   | { type: "SET_NOTE_SELECTION"; payload: string[] }
   | { type: "SET_FULL_SELECTION"; payload: { tokenIds: string[]; strokeIds: string[]; textIds: string[]; noteIds: string[] } }
   | { type: "CLEAR_SELECTION" }
+  // Clipboard
+  | { type: "COPY_SELECTION" }
+  | { type: "PASTE_CLIPBOARD"; payload: { mapId: string } }
+  // Token ordering
+  | { type: "REORDER_TOKEN"; payload: { mapId: string; tokenId: string; direction: "front" | "back" } }
   // History
   | { type: "PUSH_HISTORY"; payload: VTTHistoryEntry }
   | { type: "UNDO" }
@@ -678,6 +683,85 @@ function vttReducer(state: VTTState, action: VTTAction): VTTState {
       };
     case "CLEAR_SELECTION":
       return { ...state, selectedTokenIds: [], selectedStrokeIds: [], selectedTextIds: [], selectedNoteIds: [] };
+
+    // Clipboard
+    case "COPY_SELECTION": {
+      const activeMap = state.maps.find((m) => m.id === state.activeMapId);
+      if (!activeMap) return state;
+      return {
+        ...state,
+        clipboard: {
+          tokens: (state.selectedTokenIds || []).map((id) => activeMap.tokens.find((t) => t.id === id)).filter(Boolean) as Token[],
+          strokes: (state.selectedStrokeIds || []).map((id) => activeMap.strokes.find((s) => s.id === id)).filter(Boolean) as Stroke[],
+          texts: (state.selectedTextIds || []).map((id) => activeMap.texts.find((t) => t.id === id)).filter(Boolean) as TextOverlay[],
+          notes: (state.selectedNoteIds || []).map((id) => activeMap.notes.find((n) => n.id === id)).filter(Boolean) as MapNote[],
+        },
+      };
+    }
+    case "PASTE_CLIPBOARD": {
+      const clip = state.clipboard;
+      if (!clip) return state;
+      const mapId = action.payload.mapId;
+      const offset = 30;
+      const newTokenIds: string[] = [];
+      const newStrokeIds: string[] = [];
+      const newTextIds: string[] = [];
+      const newNoteIds: string[] = [];
+      let result = state;
+      for (const t of clip.tokens) {
+        const newId = crypto.randomUUID();
+        newTokenIds.push(newId);
+        result = updateMapInState(result, mapId, (m) => ({
+          ...m,
+          tokens: [...m.tokens, { ...t, id: newId, x: t.x + offset, y: t.y + offset, name: `${t.name}` }],
+        }));
+      }
+      for (const s of clip.strokes) {
+        const newId = crypto.randomUUID();
+        newStrokeIds.push(newId);
+        result = updateMapInState(result, mapId, (m) => ({
+          ...m,
+          strokes: [...m.strokes, { ...s, id: newId, points: s.points.map((p) => ({ x: p.x + offset, y: p.y + offset })) }],
+        }));
+      }
+      for (const t of clip.texts) {
+        const newId = crypto.randomUUID();
+        newTextIds.push(newId);
+        result = updateMapInState(result, mapId, (m) => ({
+          ...m,
+          texts: [...m.texts, { ...t, id: newId, x: t.x + offset, y: t.y + offset }],
+        }));
+      }
+      for (const n of clip.notes) {
+        const newId = crypto.randomUUID();
+        newNoteIds.push(newId);
+        result = updateMapInState(result, mapId, (m) => ({
+          ...m,
+          notes: [...m.notes, { ...n, id: newId, x: n.x + offset, y: n.y + offset }],
+        }));
+      }
+      return {
+        ...result,
+        selectedTokenIds: newTokenIds,
+        selectedStrokeIds: newStrokeIds,
+        selectedTextIds: newTextIds,
+        selectedNoteIds: newNoteIds,
+      };
+    }
+
+    // Token ordering
+    case "REORDER_TOKEN": {
+      const { mapId, tokenId, direction } = action.payload;
+      return updateMapInState(state, mapId, (m) => {
+        const idx = m.tokens.findIndex((t) => t.id === tokenId);
+        if (idx < 0) return m;
+        const tokens = [...m.tokens];
+        const [token] = tokens.splice(idx, 1);
+        if (direction === "front") tokens.push(token);
+        else tokens.unshift(token);
+        return { ...m, tokens };
+      });
+    }
 
     // History
     case "PUSH_HISTORY": {
