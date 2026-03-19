@@ -1,7 +1,6 @@
 import React, { useRef, useEffect, useCallback, useState } from "react";
 import { useVTT } from "@/contexts/VTTContext";
-import { screenToWorld } from "@/lib/vtt/geometry";
-import { clamp } from "@/lib/vtt/geometry";
+import { screenToWorld, clamp, findStrokeAt, findTextAt } from "@/lib/vtt/geometry";
 import { renderDynamicLighting } from "@/lib/vtt/raycasting";
 import { useVTTFogBrush } from "@/hooks/useVTTFogBrush";
 import type { Point, Stroke, Token, MapNote, VTTMap, AoETemplate, TextOverlay, Wall } from "@/types/vtt";
@@ -53,6 +52,11 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
   // Group drag: tracks whether we're dragging a multi-selection
   const [isGroupDrag, setIsGroupDrag] = useState(false);
   const groupDragLastWorldRef = useRef<Point>({ x: 0, y: 0 });
+
+  // Image drag state (Map layer)
+  const [isDraggingImage, setIsDraggingImage] = useState(false);
+  const imageDragStartRef = useRef<Point>({ x: 0, y: 0 });
+  const imageOffsetStartRef = useRef<Point>({ x: 0, y: 0 });
 
   // Fog brush painting state
   const [isFogPainting, setIsFogPainting] = useState(false);
@@ -258,35 +262,35 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
             }
           }
 
+          // Check if clicking on an already-selected item to start group drag
+          const tokenIds = state.selectedTokenIds || [];
+          const strokeIds = state.selectedStrokeIds || [];
+          const textIds = state.selectedTextIds || [];
+          const noteIds = state.selectedNoteIds || [];
+          const totalSelected = tokenIds.length + strokeIds.length + textIds.length + noteIds.length;
+
           const token = findTokenAt(worldPos);
           if (token && !token.locked) {
             // Shift+Click toggles token in/out of selection
             if (e.shiftKey) {
-              const ids = state.selectedTokenIds || [];
-              const isSelected = ids.includes(token.id);
+              const isSelected = tokenIds.includes(token.id);
               dispatch({
                 type: "SET_SELECTION",
                 payload: isSelected
-                  ? ids.filter((id) => id !== token.id)
-                  : [...ids, token.id],
+                  ? tokenIds.filter((id) => id !== token.id)
+                  : [...tokenIds, token.id],
               });
               return;
             }
-            const ids = state.selectedTokenIds || [];
-            const hasMultiSelection =
-              ids.length > 1 ||
-              (state.selectedStrokeIds || []).length > 0 ||
-              (state.selectedTextIds || []).length > 0 ||
-              (state.selectedNoteIds || []).length > 0;
 
-            if (ids.includes(token.id) && hasMultiSelection) {
+            if (tokenIds.includes(token.id) && totalSelected > 1) {
               // Start group drag for all selected items
               setIsGroupDrag(true);
               groupDragLastWorldRef.current = worldPos;
               dragStartPosRef.current = { x: token.x, y: token.y };
             } else {
               // Single token selection + drag
-              if (!ids.includes(token.id)) {
+              if (!tokenIds.includes(token.id)) {
                 dispatch({ type: "SET_SELECTION", payload: [token.id] });
               }
               setDragToken(token.id);
@@ -296,15 +300,110 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
                 y: worldPos.y - token.y,
               };
             }
-          } else if (!token) {
-            // Click empty space: start selection box or deselect
-            if (!e.shiftKey) {
-              dispatch({ type: "CLEAR_SELECTION" });
-            }
-            // Start selection box drag
-            selectionBoxStartRef.current = worldPos;
-            setSelectionBox({ start: worldPos, end: worldPos });
+            return;
           }
+
+          // Click-to-select strokes (skip map layer items)
+          const hitStroke = findStrokeAt(worldPos, activeMap.strokes.filter((s) => s.layer !== 0));
+          if (hitStroke) {
+            if (e.shiftKey) {
+              const isSelected = strokeIds.includes(hitStroke.id);
+              dispatch({
+                type: "SET_FULL_SELECTION",
+                payload: {
+                  tokenIds,
+                  strokeIds: isSelected ? strokeIds.filter((id) => id !== hitStroke.id) : [...strokeIds, hitStroke.id],
+                  textIds,
+                  noteIds,
+                },
+              });
+            } else if (strokeIds.includes(hitStroke.id) && totalSelected > 1) {
+              setIsGroupDrag(true);
+              groupDragLastWorldRef.current = worldPos;
+            } else {
+              dispatch({
+                type: "SET_FULL_SELECTION",
+                payload: { tokenIds: [], strokeIds: [hitStroke.id], textIds: [], noteIds: [] },
+              });
+              setIsGroupDrag(true);
+              groupDragLastWorldRef.current = worldPos;
+            }
+            return;
+          }
+
+          // Click-to-select texts (skip map layer items)
+          const hitText = findTextAt(worldPos, activeMap.texts.filter((t) => t.layer !== 0));
+          if (hitText) {
+            if (e.shiftKey) {
+              const isSelected = textIds.includes(hitText.id);
+              dispatch({
+                type: "SET_FULL_SELECTION",
+                payload: {
+                  tokenIds,
+                  strokeIds,
+                  textIds: isSelected ? textIds.filter((id) => id !== hitText.id) : [...textIds, hitText.id],
+                  noteIds,
+                },
+              });
+            } else if (textIds.includes(hitText.id) && totalSelected > 1) {
+              setIsGroupDrag(true);
+              groupDragLastWorldRef.current = worldPos;
+            } else {
+              dispatch({
+                type: "SET_FULL_SELECTION",
+                payload: { tokenIds: [], strokeIds: [], textIds: [hitText.id], noteIds: [] },
+              });
+              setIsGroupDrag(true);
+              groupDragLastWorldRef.current = worldPos;
+            }
+            return;
+          }
+
+          // Click-to-select notes
+          const hitNote = findNoteAt(worldPos);
+          if (hitNote) {
+            if (e.shiftKey) {
+              const isSelected = noteIds.includes(hitNote.id);
+              dispatch({
+                type: "SET_FULL_SELECTION",
+                payload: {
+                  tokenIds,
+                  strokeIds,
+                  textIds,
+                  noteIds: isSelected ? noteIds.filter((id) => id !== hitNote.id) : [...noteIds, hitNote.id],
+                },
+              });
+            } else if (noteIds.includes(hitNote.id) && totalSelected > 1) {
+              setIsGroupDrag(true);
+              groupDragLastWorldRef.current = worldPos;
+            } else {
+              dispatch({
+                type: "SET_FULL_SELECTION",
+                payload: { tokenIds: [], strokeIds: [], textIds: [], noteIds: [hitNote.id] },
+              });
+              setIsGroupDrag(true);
+              groupDragLastWorldRef.current = worldPos;
+            }
+            return;
+          }
+
+          // Nothing hit — check for image drag on map layer
+          if (state.activeLayer === 0 && activeMap.imageDataUrl) {
+            setIsDraggingImage(true);
+            imageDragStartRef.current = worldPos;
+            imageOffsetStartRef.current = {
+              x: activeMap.imageOffsetX || 0,
+              y: activeMap.imageOffsetY || 0,
+            };
+            return;
+          }
+
+          // Click empty space: start selection box or deselect
+          if (!e.shiftKey) {
+            dispatch({ type: "CLEAR_SELECTION" });
+          }
+          selectionBoxStartRef.current = worldPos;
+          setSelectionBox({ start: worldPos, end: worldPos });
           return;
         }
 
@@ -392,7 +491,7 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
 
       }
     },
-    [activeMap, state.activeTool, state.fogBrushSize, state.fogBrushMode, getWorldPos, findTokenAt, findNoteAt, contextMenu, dispatch, paintFog]
+    [activeMap, state.activeTool, state.activeLayer, state.fogBrushSize, state.fogBrushMode, state.selectedTokenIds, state.selectedStrokeIds, state.selectedTextIds, state.selectedNoteIds, getWorldPos, findTokenAt, findNoteAt, contextMenu, dispatch, paintFog]
   );
 
   const handleMouseMove = useCallback(
@@ -401,6 +500,24 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
 
       // Always track world position for cursor previews
       cursorWorldRef.current = getWorldPos(e);
+
+      // Image drag (Map layer)
+      if (isDraggingImage && activeMap) {
+        const worldPos = getWorldPos(e);
+        const dx = worldPos.x - imageDragStartRef.current.x;
+        const dy = worldPos.y - imageDragStartRef.current.y;
+        dispatch({
+          type: "UPDATE_MAP",
+          payload: {
+            id: activeMap.id,
+            updates: {
+              imageOffsetX: imageOffsetStartRef.current.x + dx,
+              imageOffsetY: imageOffsetStartRef.current.y + dy,
+            },
+          },
+        });
+        return;
+      }
 
       if (isPanning) {
         const dx = (e.clientX - panStartRef.current.x) / activeMap.zoom;
@@ -464,19 +581,14 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
         for (const strokeId of (state.selectedStrokeIds || [])) {
           const stroke = activeMap.strokes.find((s) => s.id === strokeId);
           if (stroke) {
-            const movedPoints = stroke.points.map((p) => ({
-              x: p.x + dx,
-              y: p.y + dy,
-            }));
             dispatch({
-              type: "REMOVE_STROKE",
-              payload: { mapId: activeMap.id, strokeId },
-            });
-            dispatch({
-              type: "ADD_STROKE",
+              type: "UPDATE_STROKE",
               payload: {
                 mapId: activeMap.id,
-                stroke: { ...stroke, points: movedPoints },
+                strokeId,
+                updates: {
+                  points: stroke.points.map((p) => ({ x: p.x + dx, y: p.y + dy })),
+                },
               },
             });
           }
@@ -487,14 +599,11 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
           const text = activeMap.texts.find((t) => t.id === textId);
           if (text) {
             dispatch({
-              type: "REMOVE_TEXT",
-              payload: { mapId: activeMap.id, textId },
-            });
-            dispatch({
-              type: "ADD_TEXT",
+              type: "UPDATE_TEXT",
               payload: {
                 mapId: activeMap.id,
-                text: { ...text, x: text.x + dx, y: text.y + dy },
+                textId,
+                updates: { x: text.x + dx, y: text.y + dy },
               },
             });
           }
@@ -554,11 +663,16 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
         return;
       }
     },
-    [activeMap, isPanning, dragToken, isGroupDrag, isDrawing, measuring, drawingWall, isFogPainting, placingAoE, selectionBox, state, dispatch, getWorldPos, paintFog]
+    [activeMap, isPanning, isDraggingImage, dragToken, isGroupDrag, isDrawing, measuring, drawingWall, isFogPainting, placingAoE, selectionBox, state, dispatch, getWorldPos, paintFog]
   );
 
   const handleMouseUp = useCallback(
     (e: React.MouseEvent) => {
+      if (isDraggingImage) {
+        setIsDraggingImage(false);
+        return;
+      }
+
       if (isPanning) {
         setIsPanning(false);
         return;
@@ -774,7 +888,7 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
         return;
       }
     },
-    [isPanning, isGroupDrag, dragToken, isDrawing, measuring, drawingWall, isFogPainting, placingAoE, selectionBox, activeMap, state, dispatch, exportFogData]
+    [isDraggingImage, isPanning, isGroupDrag, dragToken, isDrawing, measuring, drawingWall, isFogPainting, placingAoE, selectionBox, activeMap, state, dispatch, exportFogData]
   );
 
   // Right-click context menu
@@ -1160,7 +1274,7 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
     <div
       ref={containerRef}
       className={`relative w-full h-full overflow-hidden bg-terminal-bg-dark ${className || ""}`}
-      style={{ cursor: getCursor(state.activeTool, isPanning, !!dragToken || isGroupDrag) }}
+      style={{ cursor: getCursor(state.activeTool, isPanning, !!dragToken || isGroupDrag, isDraggingImage, state.activeLayer) }}
     >
       <canvas
         ref={canvasRef}
@@ -1182,6 +1296,11 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
           {state.activeTool !== "cursor" && state.activeTool !== "pan" && (
             <span className="ml-2 text-terminal-primary/40">
               [{state.activeTool}]
+            </span>
+          )}
+          {state.activeLayer === 0 && (
+            <span className="ml-2 text-yellow-400/60">
+              MAP LAYER — drag to reposition image
             </span>
           )}
         </div>
@@ -1276,10 +1395,12 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
 
 // ─── Drawing helpers ──────────────────────────────────────────────────────
 
-function getCursor(tool: string, isPanning: boolean, isDragging: boolean): string {
+function getCursor(tool: string, isPanning: boolean, isDragging: boolean, isDraggingImage: boolean, activeLayer: number): string {
   if (isPanning) return "grabbing";
+  if (isDraggingImage) return "move";
   if (isDragging) return "move";
   if (tool === "pan") return "grab";
+  if (tool === "cursor" && activeLayer === 0) return "move";
   if (tool === "cursor") return "default";
   if (tool.startsWith("draw-")) return "crosshair";
   if (tool.startsWith("fog-")) return "crosshair";
