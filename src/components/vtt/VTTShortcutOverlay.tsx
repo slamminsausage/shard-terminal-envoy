@@ -37,6 +37,7 @@ const shortcuts = [
   {
     category: "Selection & Editing",
     items: [
+      { key: "Arrow Keys", desc: "Nudge Token (1 cell)" },
       { key: "Shift+Click", desc: "Multi-select" },
       { key: "Ctrl+C", desc: "Copy Selection" },
       { key: "Ctrl+V", desc: "Paste" },
