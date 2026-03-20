@@ -5,7 +5,7 @@ import type { VTTTool } from "@/types/vtt";
 /**
  * VTT keyboard shortcuts. Only active when the VTT tab is focused.
  */
-export function useVTTKeyboard() {
+export function useVTTKeyboard(onToggleShortcuts?: () => void) {
   const { state, dispatch, activeMap, saveSession } = useVTT();
 
   useEffect(() => {
@@ -84,6 +84,13 @@ export function useVTTKeyboard() {
           }
           return;
         }
+        return;
+      }
+
+      // Shortcut overlay toggle
+      if (e.key === "?" && !e.ctrlKey && !e.metaKey) {
+        e.preventDefault();
+        onToggleShortcuts?.();
         return;
       }
 
@@ -211,5 +218,5 @@ export function useVTTKeyboard() {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [state, dispatch, activeMap, saveSession]);
+  }, [state, dispatch, activeMap, saveSession, onToggleShortcuts]);
 }

@@ -14,6 +14,7 @@ import VTTSettingsPanel from "./VTTSettingsPanel";
 import VTTCharacterImport from "./VTTCharacterImport";
 import VTTScenePresets from "./VTTScenePresets";
 import VTTAoEPanel from "./VTTAoEPanel";
+import VTTLayersPanel from "./VTTLayersPanel";
 import { X } from "lucide-react";
 
 export default function VTTSidebar() {
@@ -23,6 +24,7 @@ export default function VTTSidebar() {
 
   const panelLabels: Record<string, string> = {
     maps: "Maps",
+    layers: "Layers",
     tokens: "Tokens",
     characters: "Characters",
     drawing: "Drawing",
@@ -57,6 +59,7 @@ export default function VTTSidebar() {
       {/* Panel content */}
       <div className="flex-1 overflow-hidden">
         {state.sidebarPanel === "maps" && <VTTMapLibrary />}
+        {state.sidebarPanel === "layers" && <VTTLayersPanel />}
         {state.sidebarPanel === "tokens" && <VTTTokenPanel />}
         {state.sidebarPanel === "characters" && <VTTCharacterImport />}
         {state.sidebarPanel === "drawing" && <VTTDrawingPanel />}
