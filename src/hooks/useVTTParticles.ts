@@ -23,7 +23,7 @@ export function useVTTParticles(config: ParticleConfig) {
         x: Math.random() * width,
         y: spawnY,
         vx: c.wind * (0.5 + Math.random()),
-        vy: c.speed * (0.5 + Math.random() * 0.5),
+        vy: (c.gravity < 0 ? -1 : 1) * c.speed * (0.5 + Math.random() * 0.5),
         size: c.size * (0.5 + Math.random()),
         opacity: c.opacity * (0.5 + Math.random() * 0.5),
         life: 0,
