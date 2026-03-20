@@ -15,15 +15,19 @@ export function useVTTParticles(config: ParticleConfig) {
   const spawnParticle = useCallback(
     (width: number, height: number): Particle => {
       const c = configRef.current;
+      // Scale maxLife so slow particles live long enough to cross the screen
+      const baseLife = Math.max(400, 600 / Math.max(c.speed, 0.2));
+      // Embers rise — spawn at bottom; everything else falls from top
+      const spawnY = c.gravity < 0 ? height + 10 : -10;
       return {
         x: Math.random() * width,
-        y: -10,
+        y: spawnY,
         vx: c.wind * (0.5 + Math.random()),
-        vy: c.speed * (0.5 + Math.random() * 0.5) + c.gravity,
+        vy: c.speed * (0.5 + Math.random() * 0.5),
         size: c.size * (0.5 + Math.random()),
         opacity: c.opacity * (0.5 + Math.random() * 0.5),
         life: 0,
-        maxLife: 200 + Math.random() * 300,
+        maxLife: baseLife + Math.random() * baseLife * 0.5,
         color: c.color,
         rotation: Math.random() * Math.PI * 2,
         phase: Math.random() * Math.PI * 2,
@@ -64,12 +68,15 @@ export function useVTTParticles(config: ParticleConfig) {
     // Update & draw
     const alive: Particle[] = [];
     for (const p of particlesRef.current) {
+      // Apply gravity as continuous acceleration each frame
+      p.vy += c.gravity * 0.02;
+      p.vx += c.wind * 0.005;
       p.x += p.vx;
       p.y += p.vy;
       p.life++;
 
       // Respawn if off screen or expired
-      if (p.y > h + 20 || p.x > w + 20 || p.x < -20 || p.life > p.maxLife) {
+      if (p.y > h + 20 || p.y < -30 || p.x > w + 20 || p.x < -20 || p.life > p.maxLife) {
         const np = spawnParticle(w, h);
         alive.push(np);
         continue;
