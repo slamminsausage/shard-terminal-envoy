@@ -3,7 +3,10 @@ import { useVTT } from "@/contexts/VTTContext";
 import { screenToWorld, clamp, findStrokeAt, findTextAt, smoothPoints } from "@/lib/vtt/geometry";
 import { renderDynamicLighting } from "@/lib/vtt/raycasting";
 import { useVTTFogBrush } from "@/hooks/useVTTFogBrush";
-import type { Point, Stroke, Token, MapNote, VTTMap, AoETemplate, TextOverlay, Wall } from "@/types/vtt";
+import { getTokenBoundingBox, getStrokeBoundingBox, getTextBoundingBox, getNoteBoundingBox, getUnionBoundingBox } from "@/lib/vtt/boundingBox";
+import { renderBoundingBoxHandles, hitTestHandles, computeRotationFromHandle } from "@/lib/vtt/selectionHandles";
+import type { HandleType } from "@/lib/vtt/selectionHandles";
+import type { Point, Stroke, Token, MapNote, VTTMap, AoETemplate, TextOverlay, Wall, BoundingBox } from "@/types/vtt";
 import VTTContextMenu from "./VTTContextMenu";
 import VTTTokenEditModal from "./VTTTokenEditModal";
 import VTTNoteModal from "./VTTNoteModal";
@@ -75,10 +78,16 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
   } | null>(null);
   const textInputRef = useRef<HTMLInputElement>(null);
 
-  // Measurement state
+  // Measurement state (multi-point waypoints)
   const [measuring, setMeasuring] = useState(false);
   const measureStartRef = useRef<Point>({ x: 0, y: 0 });
   const measureEndRef = useRef<Point>({ x: 0, y: 0 });
+  const measurePointsRef = useRef<Point[]>([]);
+
+  // Static layer cache for performance optimization
+  const staticCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const staticDirtyRef = useRef(true);
+  const dirtyRef = useRef(true);
 
   // Wall drawing state
   const [drawingWall, setDrawingWall] = useState(false);
@@ -111,9 +120,8 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
   const hoveredNoteIdRef = useRef<string | null>(null);
 
   // Selection handle interaction
-  type HandleType = "resize-tl" | "resize-tr" | "resize-bl" | "resize-br" | "rotate" | null;
   const [activeHandle, setActiveHandle] = useState<HandleType>(null);
-  const handleStartRef = useRef<{ size: number; rotation: number }>({ size: 1, rotation: 0 });
+  const handleStartRef = useRef<{ size: number; rotation: number; bbox: BoundingBox | null; objectType: string; objectId: string }>({ size: 1, rotation: 0, bbox: null, objectType: "", objectId: "" });
 
   // Mouse world position for cursor previews (fog brush, etc.)
   const cursorWorldRef = useRef<Point>({ x: 0, y: 0 });
@@ -273,48 +281,59 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
             }
           }
 
-          // Check selection handles (resize/rotate) for single-selected token
+          // Check selection handles (resize/rotate) for any single selected object
           const tokenIds = state.selectedTokenIds || [];
           const strokeIds = state.selectedStrokeIds || [];
           const textIds = state.selectedTextIds || [];
           const noteIds = state.selectedNoteIds || [];
           const totalSelected = tokenIds.length + strokeIds.length + textIds.length + noteIds.length;
 
-          if (tokenIds.length === 1 && totalSelected === 1 && activeMap) {
-            const selToken = activeMap.tokens.find((t) => t.id === tokenIds[0]);
-            if (selToken && !selToken.locked) {
-              const gridSize = activeMap.grid.size || 50;
-              const halfSize = (selToken.size * gridSize) / 2;
-              const handleSize = 8 / activeMap.zoom; // screen-space 8px
+          if (totalSelected === 1 && activeMap) {
+            const gridSize = activeMap.grid.size || 50;
+            let bbox: BoundingBox | null = null;
+            let objType = "";
+            let objId = "";
+            let objSize = 1;
+            let objRotation = 0;
 
-              // Corner handles
-              const corners: { type: HandleType; x: number; y: number }[] = [
-                { type: "resize-tl", x: selToken.x - halfSize, y: selToken.y - halfSize },
-                { type: "resize-tr", x: selToken.x + halfSize, y: selToken.y - halfSize },
-                { type: "resize-bl", x: selToken.x - halfSize, y: selToken.y + halfSize },
-                { type: "resize-br", x: selToken.x + halfSize, y: selToken.y + halfSize },
-              ];
-
-              for (const c of corners) {
-                if (Math.abs(worldPos.x - c.x) <= handleSize && Math.abs(worldPos.y - c.y) <= handleSize) {
-                  setActiveHandle(c.type);
-                  handleStartRef.current = { size: selToken.size, rotation: selToken.rotation };
-                  return;
-                }
+            if (tokenIds.length === 1) {
+              const selToken = activeMap.tokens.find((t) => t.id === tokenIds[0]);
+              if (selToken && !selToken.locked) {
+                bbox = getTokenBoundingBox(selToken, gridSize);
+                objType = "token"; objId = selToken.id; objSize = selToken.size; objRotation = selToken.rotation;
               }
+            } else if (strokeIds.length === 1) {
+              const selStroke = activeMap.strokes.find((s) => s.id === strokeIds[0]);
+              if (selStroke) {
+                bbox = getStrokeBoundingBox(selStroke);
+                objType = "stroke"; objId = selStroke.id; objRotation = selStroke.rotation ?? 0;
+              }
+            } else if (textIds.length === 1) {
+              const selText = activeMap.texts.find((t) => t.id === textIds[0]);
+              if (selText) {
+                bbox = getTextBoundingBox(selText);
+                objType = "text"; objId = selText.id; objRotation = selText.rotation ?? 0;
+              }
+            } else if (noteIds.length === 1) {
+              const selNote = activeMap.notes.find((n) => n.id === noteIds[0]);
+              if (selNote) {
+                bbox = getNoteBoundingBox(selNote);
+                objType = "note"; objId = selNote.id; objRotation = selNote.rotation ?? 0;
+              }
+            }
 
-              // Rotation handle (above token)
-              const rotHandleY = selToken.y - halfSize - 25 / activeMap.zoom;
-              if (Math.abs(worldPos.x - selToken.x) <= handleSize && Math.abs(worldPos.y - rotHandleY) <= handleSize) {
-                setActiveHandle("rotate");
-                handleStartRef.current = { size: selToken.size, rotation: selToken.rotation };
+            if (bbox) {
+              const handle = hitTestHandles(worldPos, bbox, activeMap.zoom);
+              if (handle) {
+                setActiveHandle(handle);
+                handleStartRef.current = { size: objSize, rotation: objRotation, bbox, objectType: objType, objectId: objId };
                 return;
               }
             }
           }
 
           const token = findTokenAt(worldPos);
-          if (token && !token.locked) {
+          if (token && !token.locked && !(state.layerStates?.[token.layer]?.locked)) {
             // Shift+Click toggles token in/out of selection
             if (e.shiftKey) {
               const isSelected = tokenIds.includes(token.id);
@@ -347,8 +366,8 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
             return;
           }
 
-          // Click-to-select strokes (skip map layer items)
-          const hitStroke = findStrokeAt(worldPos, activeMap.strokes.filter((s) => s.layer !== 0));
+          // Click-to-select strokes (skip map layer items, skip locked layers)
+          const hitStroke = findStrokeAt(worldPos, activeMap.strokes.filter((s) => s.layer !== 0 && !(state.layerStates?.[s.layer]?.locked)));
           if (hitStroke) {
             if (e.shiftKey) {
               const isSelected = strokeIds.includes(hitStroke.id);
@@ -375,8 +394,8 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
             return;
           }
 
-          // Click-to-select texts (skip map layer items)
-          const hitText = findTextAt(worldPos, activeMap.texts.filter((t) => t.layer !== 0));
+          // Click-to-select texts (skip map layer items, skip locked layers)
+          const hitText = findTextAt(worldPos, activeMap.texts.filter((t) => t.layer !== 0 && !(state.layerStates?.[t.layer]?.locked)));
           if (hitText) {
             if (e.shiftKey) {
               const isSelected = textIds.includes(hitText.id);
@@ -473,11 +492,23 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
           return;
         }
 
-        // Measurement tool
+        // Measurement tool (multi-point waypoints)
         if (state.activeTool === "measure") {
-          setMeasuring(true);
-          measureStartRef.current = worldPos;
-          measureEndRef.current = worldPos;
+          if (e.detail === 2) {
+            // Double-click finishes measurement
+            setMeasuring(false);
+            measurePointsRef.current = [];
+            return;
+          }
+          if (!measuring) {
+            setMeasuring(true);
+            measurePointsRef.current = [worldPos];
+            measureStartRef.current = worldPos;
+            measureEndRef.current = worldPos;
+          } else {
+            // Add waypoint
+            measurePointsRef.current.push(worldPos);
+          }
           return;
         }
 
@@ -563,29 +594,50 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
         return;
       }
 
-      // Handle resize/rotate drag
+      // Handle resize/rotate drag (universal for all object types)
       if (activeHandle && activeMap) {
         const worldPos = getWorldPos(e);
-        const tokenIds = state.selectedTokenIds || [];
-        if (tokenIds.length === 1) {
-          const selToken = activeMap.tokens.find((t) => t.id === tokenIds[0]);
-          if (selToken) {
-            if (activeHandle === "rotate") {
-              const angle = Math.atan2(worldPos.y - selToken.y, worldPos.x - selToken.x);
-              const degrees = ((angle * 180) / Math.PI + 90 + 360) % 360; // 0° = up
-              dispatch({
-                type: "UPDATE_TOKEN",
-                payload: { mapId: activeMap.id, tokenId: selToken.id, updates: { rotation: Math.round(degrees) } },
-              });
-            } else {
-              // Resize: compute new size from distance to token center
-              const gridSize = activeMap.grid.size || 50;
+        const { objectType, objectId, bbox } = handleStartRef.current;
+
+        if (activeHandle.startsWith("rotate-")) {
+          // Rotation for any object type
+          const center = bbox ? { x: bbox.cx, y: bbox.cy } : worldPos;
+          const degrees = computeRotationFromHandle(center, worldPos);
+
+          if (objectType === "token") {
+            dispatch({ type: "UPDATE_TOKEN", payload: { mapId: activeMap.id, tokenId: objectId, updates: { rotation: Math.round(degrees) } } });
+          } else if (objectType === "stroke") {
+            dispatch({ type: "UPDATE_STROKE", payload: { mapId: activeMap.id, strokeId: objectId, updates: { rotation: Math.round(degrees) } } });
+          } else if (objectType === "text") {
+            dispatch({ type: "UPDATE_TEXT", payload: { mapId: activeMap.id, textId: objectId, updates: { rotation: Math.round(degrees) } } });
+          } else if (objectType === "note") {
+            dispatch({ type: "UPDATE_NOTE", payload: { mapId: activeMap.id, noteId: objectId, updates: { rotation: Math.round(degrees) } } });
+          }
+        } else if (activeHandle.startsWith("resize-")) {
+          // Resize based on object type
+          if (objectType === "token") {
+            const gridSize = activeMap.grid.size || 50;
+            const selToken = activeMap.tokens.find((t) => t.id === objectId);
+            if (selToken) {
               const dist = Math.max(Math.abs(worldPos.x - selToken.x), Math.abs(worldPos.y - selToken.y));
-              const newSize = Math.max(0.5, Math.round((dist * 2) / gridSize * 4) / 4); // snap to 0.25 increments
-              dispatch({
-                type: "UPDATE_TOKEN",
-                payload: { mapId: activeMap.id, tokenId: selToken.id, updates: { size: newSize } },
-              });
+              const newSize = Math.max(0.5, Math.round((dist * 2) / gridSize * 4) / 4);
+              dispatch({ type: "UPDATE_TOKEN", payload: { mapId: activeMap.id, tokenId: objectId, updates: { size: newSize } } });
+            }
+          } else if (objectType === "stroke" && bbox) {
+            const dist = Math.max(Math.abs(worldPos.x - bbox.cx), Math.abs(worldPos.y - bbox.cy));
+            const origHalf = Math.max(bbox.width, bbox.height) / 2;
+            const scale = origHalf > 0 ? Math.max(0.1, dist / origHalf) : 1;
+            dispatch({ type: "UPDATE_STROKE", payload: { mapId: activeMap.id, strokeId: objectId, updates: { scaleX: scale, scaleY: scale } } });
+          } else if (objectType === "text" && bbox) {
+            const dist = Math.max(Math.abs(worldPos.x - bbox.cx), Math.abs(worldPos.y - bbox.cy));
+            const origHalf = Math.max(bbox.width, bbox.height) / 2;
+            const scale = origHalf > 0 ? Math.max(0.1, dist / origHalf) : 1;
+            dispatch({ type: "UPDATE_TEXT", payload: { mapId: activeMap.id, textId: objectId, updates: { scaleX: scale, scaleY: scale } } });
+          } else if (objectType === "note") {
+            const selNote = activeMap.notes.find((n) => n.id === objectId);
+            if (selNote) {
+              const dist = Math.sqrt((worldPos.x - selNote.x) ** 2 + (worldPos.y - selNote.y) ** 2);
+              dispatch({ type: "UPDATE_NOTE", payload: { mapId: activeMap.id, noteId: objectId, updates: { scale: Math.max(0.2, dist / 16) } } });
             }
           }
         }
@@ -736,20 +788,21 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
         return;
       }
 
-      // Hover detection (only when idle with cursor tool)
+      // Hover detection (only when idle with cursor tool, respect layer locks)
       if (state.activeTool === "cursor" && activeMap) {
         const wp = cursorWorldRef.current;
+        const ls = state.layerStates;
         const hitToken = findTokenAt(wp);
-        hoveredTokenIdRef.current = hitToken?.id ?? null;
-        if (!hitToken) {
-          const hitStroke = findStrokeAt(wp, activeMap.strokes.filter((s) => s.layer !== 0));
+        hoveredTokenIdRef.current = (hitToken && !(ls?.[hitToken.layer]?.locked)) ? hitToken.id : null;
+        if (!hoveredTokenIdRef.current) {
+          const hitStroke = findStrokeAt(wp, activeMap.strokes.filter((s) => s.layer !== 0 && !(ls?.[s.layer]?.locked)));
           hoveredStrokeIdRef.current = hitStroke?.id ?? null;
           if (!hitStroke) {
-            const hitText = findTextAt(wp, activeMap.texts.filter((t) => t.layer !== 0));
+            const hitText = findTextAt(wp, activeMap.texts.filter((t) => t.layer !== 0 && !(ls?.[t.layer]?.locked)));
             hoveredTextIdRef.current = hitText?.id ?? null;
             if (!hitText) {
               const hitNote = findNoteAt(wp);
-              hoveredNoteIdRef.current = hitNote?.id ?? null;
+              hoveredNoteIdRef.current = (hitNote && !(ls?.[2]?.locked)) ? hitNote.id : null;
             } else {
               hoveredNoteIdRef.current = null;
             }
@@ -855,7 +908,7 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
       }
 
       if (measuring) {
-        setMeasuring(false);
+        // Measurement continues until double-click or escape
         return;
       }
 
@@ -952,7 +1005,7 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
         if (maxX - minX > 5 || maxY - minY > 5) {
           const gridSize = activeMap.grid.size || 50;
 
-          // Select tokens (not on map layer, not locked)
+          // Select tokens (not on map layer, not locked, not on locked layer)
           const tokenIds = activeMap.tokens
             .filter((t) => {
               const halfSize = (t.size * gridSize) / 2;
@@ -961,32 +1014,36 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
                 t.x - halfSize <= maxX &&
                 t.y + halfSize >= minY &&
                 t.y - halfSize <= maxY &&
-                !t.locked
+                !t.locked &&
+                !(state.layerStates?.[t.layer]?.locked)
               );
             })
             .map((t) => t.id);
 
-          // Select strokes (non-map layer) by checking if any point is within box
+          // Select strokes (non-map layer, not on locked layer)
           const strokeIds = activeMap.strokes
             .filter((s) => {
-              if (s.layer === 0) return false; // skip map layer
+              if (s.layer === 0) return false;
+              if (state.layerStates?.[s.layer]?.locked) return false;
               return s.points.some(
                 (p) => p.x >= minX && p.x <= maxX && p.y >= minY && p.y <= maxY
               );
             })
             .map((s) => s.id);
 
-          // Select text overlays (non-map layer)
+          // Select text overlays (non-map layer, not on locked layer)
           const textIds = activeMap.texts
             .filter((t) => {
               if (t.layer === 0) return false;
+              if (state.layerStates?.[t.layer]?.locked) return false;
               return t.x >= minX && t.x <= maxX && t.y >= minY && t.y <= maxY;
             })
             .map((t) => t.id);
 
-          // Select notes
+          // Select notes (not on locked GM layer)
           const noteIds = activeMap.notes
             .filter((n) => {
+              if (state.layerStates?.[2]?.locked) return false;
               return n.x >= minX && n.x <= maxX && n.y >= minY && n.y <= maxY;
             })
             .map((n) => n.id);
@@ -1131,12 +1188,14 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
       drawGrid(ctx, activeMap);
     }
 
-    // Strokes
-    drawStrokes(ctx, activeMap.strokes);
+    // Strokes (filtered by layer visibility)
+    const visibleStrokes = activeMap.strokes.filter((s) => state.layerStates?.[s.layer]?.visible !== false);
+    drawStrokes(ctx, visibleStrokes);
 
-    // Text overlays
-    if (activeMap.texts.length > 0) {
-      drawTextOverlays(ctx, activeMap.texts);
+    // Text overlays (filtered by layer visibility)
+    const visibleTexts = activeMap.texts.filter((t) => state.layerStates?.[t.layer]?.visible !== false);
+    if (visibleTexts.length > 0) {
+      drawTextOverlays(ctx, visibleTexts);
     }
 
     // In-progress stroke preview
@@ -1144,8 +1203,8 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
       drawStrokePreview(ctx, currentStrokeRef.current, state.drawColor, state.drawWidth, state.activeTool);
     }
 
-    // Tokens (with image support)
-    drawTokens(ctx, activeMap, state.showTokenNames);
+    // Tokens (with image support, filtered by layer visibility)
+    drawTokens(ctx, activeMap, state.showTokenNames, state.layerStates);
 
     // AoE templates (per-map)
     if ((activeMap.aoeTemplates || []).length > 0) {
@@ -1230,9 +1289,9 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
     // Notes
     drawNotes(ctx, activeMap.notes);
 
-    // Measurement overlay
+    // Measurement overlay (multi-point waypoints)
     if (measuring) {
-      drawMeasurement(ctx, measureStartRef.current, measureEndRef.current, activeMap.grid.size);
+      drawMultiPointMeasurement(ctx, measurePointsRef.current, measureEndRef.current, activeMap.grid.size);
     }
 
     // Hover highlights (subtle glow before clicking)
@@ -1338,49 +1397,35 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
       }
     }
 
-    // Selection handles (resize + rotate) for single-selected token
-    if (selectedIds.length === 1 && (state.selectedStrokeIds?.length || 0) === 0 && (state.selectedTextIds?.length || 0) === 0 && (state.selectedNoteIds?.length || 0) === 0) {
-      const selToken = activeMap.tokens.find((t) => t.id === selectedIds[0]);
-      if (selToken && selToken.visible && !selToken.locked) {
-        const gridSize = activeMap.grid.size || 50;
-        const halfSize = (selToken.size * gridSize) / 2;
-        const hs = 6 / activeMap.zoom; // handle size in world space
+    // Universal selection handles (resize + rotate) for any single-selected object
+    {
+      const selTokenIds = state.selectedTokenIds || [];
+      const selStrokeIds = state.selectedStrokeIds || [];
+      const selTextIds = state.selectedTextIds || [];
+      const selNoteIds = state.selectedNoteIds || [];
+      const total = selTokenIds.length + selStrokeIds.length + selTextIds.length + selNoteIds.length;
 
-        ctx.save();
-        // Corner resize handles
-        const corners = [
-          { x: selToken.x - halfSize, y: selToken.y - halfSize },
-          { x: selToken.x + halfSize, y: selToken.y - halfSize },
-          { x: selToken.x - halfSize, y: selToken.y + halfSize },
-          { x: selToken.x + halfSize, y: selToken.y + halfSize },
-        ];
-        ctx.fillStyle = "#00ff00";
-        ctx.strokeStyle = "#003300";
-        ctx.lineWidth = 1 / activeMap.zoom;
-        for (const c of corners) {
-          ctx.fillRect(c.x - hs, c.y - hs, hs * 2, hs * 2);
-          ctx.strokeRect(c.x - hs, c.y - hs, hs * 2, hs * 2);
+      if (total === 1) {
+        const gridSize = activeMap.grid.size || 50;
+        let bbox: BoundingBox | null = null;
+
+        if (selTokenIds.length === 1) {
+          const t = activeMap.tokens.find((tk) => tk.id === selTokenIds[0]);
+          if (t && t.visible && !t.locked) bbox = getTokenBoundingBox(t, gridSize);
+        } else if (selStrokeIds.length === 1) {
+          const s = activeMap.strokes.find((sk) => sk.id === selStrokeIds[0]);
+          if (s) bbox = getStrokeBoundingBox(s);
+        } else if (selTextIds.length === 1) {
+          const t = activeMap.texts.find((tx) => tx.id === selTextIds[0]);
+          if (t) bbox = getTextBoundingBox(t);
+        } else if (selNoteIds.length === 1) {
+          const n = activeMap.notes.find((nt) => nt.id === selNoteIds[0]);
+          if (n) bbox = getNoteBoundingBox(n);
         }
 
-        // Rotation handle (above token)
-        const rotY = selToken.y - halfSize - 25 / activeMap.zoom;
-        ctx.strokeStyle = "#00ff0088";
-        ctx.lineWidth = 1.5 / activeMap.zoom;
-        ctx.setLineDash([3 / activeMap.zoom, 3 / activeMap.zoom]);
-        ctx.beginPath();
-        ctx.moveTo(selToken.x, selToken.y - halfSize);
-        ctx.lineTo(selToken.x, rotY);
-        ctx.stroke();
-        ctx.setLineDash([]);
-
-        ctx.fillStyle = "#00ccff";
-        ctx.strokeStyle = "#003344";
-        ctx.beginPath();
-        ctx.arc(selToken.x, rotY, hs, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.stroke();
-
-        ctx.restore();
+        if (bbox) {
+          renderBoundingBoxHandles(ctx, bbox, activeMap.zoom);
+        }
       }
     }
 
@@ -1868,12 +1913,14 @@ function drawStrokePreview(
 function drawTokens(
   ctx: CanvasRenderingContext2D,
   map: VTTMap,
-  showNames: boolean
+  showNames: boolean,
+  layerStates?: Record<number, { visible: boolean; locked: boolean }>
 ) {
   const gridSize = map.grid.size || 50;
 
   for (const t of map.tokens) {
     if (!t.visible) continue;
+    if (layerStates?.[t.layer]?.visible === false) continue;
     const pixelSize = t.size * gridSize;
     const halfSize = pixelSize / 2;
 
@@ -2073,7 +2120,6 @@ function drawMeasurement(
   const pixelDist = Math.sqrt(dx * dx + dy * dy);
   const gridDist = pixelDist / gridSize;
 
-  // Line
   ctx.strokeStyle = "#ffcc00";
   ctx.lineWidth = 2;
   ctx.setLineDash([6, 4]);
@@ -2083,7 +2129,6 @@ function drawMeasurement(
   ctx.stroke();
   ctx.setLineDash([]);
 
-  // Endpoints
   ctx.fillStyle = "#ffcc00";
   ctx.beginPath();
   ctx.arc(start.x, start.y, 4, 0, Math.PI * 2);
@@ -2092,7 +2137,6 @@ function drawMeasurement(
   ctx.arc(end.x, end.y, 4, 0, Math.PI * 2);
   ctx.fill();
 
-  // Distance label
   const midX = (start.x + end.x) / 2;
   const midY = (start.y + end.y) / 2;
   const label = `${gridDist.toFixed(1)} sq`;
@@ -2101,18 +2145,84 @@ function drawMeasurement(
   ctx.textAlign = "center";
   ctx.textBaseline = "bottom";
 
-  // Background
   const metrics = ctx.measureText(label);
   ctx.fillStyle = "#000000cc";
-  ctx.fillRect(
-    midX - metrics.width / 2 - 4,
-    midY - 18,
-    metrics.width + 8,
-    18
-  );
-
+  ctx.fillRect(midX - metrics.width / 2 - 4, midY - 18, metrics.width + 8, 18);
   ctx.fillStyle = "#ffcc00";
   ctx.fillText(label, midX, midY - 2);
+}
+
+/** Multi-point waypoint measurement */
+function drawMultiPointMeasurement(
+  ctx: CanvasRenderingContext2D,
+  waypoints: Point[],
+  currentEnd: Point,
+  gridSize: number
+) {
+  if (waypoints.length === 0) return;
+
+  const allPoints = [...waypoints, currentEnd];
+  let totalDist = 0;
+  const colors = ["#ffcc00", "#ff8800"];
+
+  for (let i = 0; i < allPoints.length - 1; i++) {
+    const a = allPoints[i];
+    const b = allPoints[i + 1];
+    const dx = b.x - a.x;
+    const dy = b.y - a.y;
+    const segDist = Math.sqrt(dx * dx + dy * dy);
+    const gridDist = segDist / gridSize;
+    totalDist += gridDist;
+
+    const color = colors[i % 2];
+
+    // Segment line
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.setLineDash([6, 4]);
+    ctx.beginPath();
+    ctx.moveTo(a.x, a.y);
+    ctx.lineTo(b.x, b.y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Segment distance label
+    const midX = (a.x + b.x) / 2;
+    const midY = (a.y + b.y) / 2;
+    const segLabel = `${gridDist.toFixed(1)} sq`;
+
+    ctx.font = `11px "Share Tech Mono", monospace`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "bottom";
+    const m = ctx.measureText(segLabel);
+    ctx.fillStyle = "#000000aa";
+    ctx.fillRect(midX - m.width / 2 - 3, midY - 16, m.width + 6, 16);
+    ctx.fillStyle = color;
+    ctx.fillText(segLabel, midX, midY - 2);
+  }
+
+  // Waypoint dots
+  for (let i = 0; i < allPoints.length; i++) {
+    const p = allPoints[i];
+    ctx.fillStyle = i === 0 ? "#ffcc00" : i === allPoints.length - 1 ? "#ff4444" : "#ff8800";
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Total distance at the end point
+  if (allPoints.length > 2 || totalDist > 0) {
+    const endP = allPoints[allPoints.length - 1];
+    const totalLabel = `Total: ${totalDist.toFixed(1)} sq`;
+    ctx.font = `bold 13px "Share Tech Mono", monospace`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "top";
+    const tm = ctx.measureText(totalLabel);
+    ctx.fillStyle = "#000000cc";
+    ctx.fillRect(endP.x - tm.width / 2 - 4, endP.y + 8, tm.width + 8, 20);
+    ctx.fillStyle = "#ffcc00";
+    ctx.fillText(totalLabel, endP.x, endP.y + 10);
+  }
 }
 
 function drawTextOverlays(ctx: CanvasRenderingContext2D, texts: TextOverlay[]) {

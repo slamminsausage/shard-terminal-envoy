@@ -17,6 +17,7 @@ import type {
   LightSource,
   VTTTool,
   LayerIndex,
+  LayerState,
   VTTSidebarPanel,
   VTTSession,
   VTTHistoryEntry,
@@ -131,6 +132,11 @@ type VTTAction =
   | { type: "PASTE_CLIPBOARD"; payload: { mapId: string } }
   // Token ordering
   | { type: "REORDER_TOKEN"; payload: { mapId: string; tokenId: string; direction: "front" | "back" } }
+  // Layers
+  | { type: "TOGGLE_LAYER_VISIBILITY"; payload: LayerIndex }
+  | { type: "TOGGLE_LAYER_LOCK"; payload: LayerIndex }
+  // Alignment
+  | { type: "ALIGN_SELECTION"; payload: { mapId: string; alignment: "left" | "right" | "top" | "bottom" | "center-h" | "center-v" | "distribute-h" | "distribute-v" } }
   // History
   | { type: "PUSH_HISTORY"; payload: VTTHistoryEntry }
   | { type: "UNDO" }
@@ -313,6 +319,39 @@ function applyHistoryForward(state: VTTState, entry: VTTHistoryEntry): VTTState 
     default:
       return state;
   }
+}
+
+// ─── Alignment helper ────────────────────────────────────────────────────────
+
+type AlignItem = { type: "token" | "stroke" | "text" | "note"; id: string };
+
+function applyAlignDelta(state: VTTState, mapId: string, item: AlignItem, dx: number, dy: number): VTTState {
+  if (dx === 0 && dy === 0) return state;
+  if (item.type === "token") {
+    return updateMapInState(state, mapId, (m) => ({
+      ...m,
+      tokens: m.tokens.map((t) => t.id === item.id ? { ...t, x: t.x + dx, y: t.y + dy } : t),
+    }));
+  }
+  if (item.type === "stroke") {
+    return updateMapInState(state, mapId, (m) => ({
+      ...m,
+      strokes: m.strokes.map((s) => s.id === item.id ? { ...s, points: s.points.map((p) => ({ x: p.x + dx, y: p.y + dy })) } : s),
+    }));
+  }
+  if (item.type === "text") {
+    return updateMapInState(state, mapId, (m) => ({
+      ...m,
+      texts: m.texts.map((t) => t.id === item.id ? { ...t, x: t.x + dx, y: t.y + dy } : t),
+    }));
+  }
+  if (item.type === "note") {
+    return updateMapInState(state, mapId, (m) => ({
+      ...m,
+      notes: m.notes.map((n) => n.id === item.id ? { ...n, x: n.x + dx, y: n.y + dy } : n),
+    }));
+  }
+  return state;
 }
 
 // ─── Reducer ────────────────────────────────────────────────────────────────
@@ -763,6 +802,116 @@ function vttReducer(state: VTTState, action: VTTAction): VTTState {
       });
     }
 
+    // Layers
+    case "TOGGLE_LAYER_VISIBILITY": {
+      const layer = action.payload;
+      const current = state.layerStates?.[layer] ?? { visible: true, locked: false };
+      return {
+        ...state,
+        layerStates: {
+          ...state.layerStates,
+          [layer]: { ...current, visible: !current.visible },
+        },
+      };
+    }
+    case "TOGGLE_LAYER_LOCK": {
+      const layer = action.payload;
+      const current = state.layerStates?.[layer] ?? { visible: true, locked: false };
+      return {
+        ...state,
+        layerStates: {
+          ...state.layerStates,
+          [layer]: { ...current, locked: !current.locked },
+        },
+      };
+    }
+
+    // Alignment
+    case "ALIGN_SELECTION": {
+      const { mapId, alignment } = action.payload;
+      const map = state.maps.find((m) => m.id === mapId);
+      if (!map) return state;
+
+      const gridSize = map.grid.size || 50;
+      type ItemBox = { type: "token" | "stroke" | "text" | "note"; id: string; left: number; right: number; top: number; bottom: number; cx: number; cy: number };
+      const items: ItemBox[] = [];
+
+      for (const id of (state.selectedTokenIds || [])) {
+        const t = map.tokens.find((tk) => tk.id === id);
+        if (!t) continue;
+        const hs = (t.size * gridSize) / 2;
+        items.push({ type: "token", id, left: t.x - hs, right: t.x + hs, top: t.y - hs, bottom: t.y + hs, cx: t.x, cy: t.y });
+      }
+      for (const id of (state.selectedStrokeIds || [])) {
+        const s = map.strokes.find((sk) => sk.id === id);
+        if (!s || s.points.length === 0) continue;
+        let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+        for (const p of s.points) { minX = Math.min(minX, p.x); maxX = Math.max(maxX, p.x); minY = Math.min(minY, p.y); maxY = Math.max(maxY, p.y); }
+        items.push({ type: "stroke", id, left: minX, right: maxX, top: minY, bottom: maxY, cx: (minX + maxX) / 2, cy: (minY + maxY) / 2 });
+      }
+      for (const id of (state.selectedTextIds || [])) {
+        const t = map.texts.find((tx) => tx.id === id);
+        if (!t) continue;
+        const w = t.text.length * t.fontSize * 0.6;
+        items.push({ type: "text", id, left: t.x, right: t.x + w, top: t.y, bottom: t.y + t.fontSize, cx: t.x + w / 2, cy: t.y + t.fontSize / 2 });
+      }
+      for (const id of (state.selectedNoteIds || [])) {
+        const n = map.notes.find((nt) => nt.id === id);
+        if (!n) continue;
+        items.push({ type: "note", id, left: n.x - 8, right: n.x + 8, top: n.y - 8, bottom: n.y + 8, cx: n.x, cy: n.y });
+      }
+
+      if (items.length < 2) return state;
+
+      let result = state;
+      const allLeft = Math.min(...items.map((i) => i.left));
+      const allRight = Math.max(...items.map((i) => i.right));
+      const allTop = Math.min(...items.map((i) => i.top));
+      const allBottom = Math.max(...items.map((i) => i.bottom));
+      const allCenterH = (allLeft + allRight) / 2;
+      const allCenterV = (allTop + allBottom) / 2;
+
+      for (const item of items) {
+        let dx = 0, dy = 0;
+        switch (alignment) {
+          case "left": dx = allLeft - item.left; break;
+          case "right": dx = allRight - item.right; break;
+          case "top": dy = allTop - item.top; break;
+          case "bottom": dy = allBottom - item.bottom; break;
+          case "center-h": dx = allCenterH - item.cx; break;
+          case "center-v": dy = allCenterV - item.cy; break;
+          case "distribute-h":
+          case "distribute-v":
+            continue; // handled below
+        }
+        if (dx === 0 && dy === 0) continue;
+        result = applyAlignDelta(result, mapId, item, dx, dy);
+      }
+
+      if (alignment === "distribute-h" && items.length >= 3) {
+        const sorted = [...items].sort((a, b) => a.cx - b.cx);
+        const totalSpan = sorted[sorted.length - 1].cx - sorted[0].cx;
+        const spacing = totalSpan / (sorted.length - 1);
+        for (let i = 1; i < sorted.length - 1; i++) {
+          const targetCx = sorted[0].cx + spacing * i;
+          const dx = targetCx - sorted[i].cx;
+          result = applyAlignDelta(result, mapId, sorted[i], dx, 0);
+        }
+      }
+      if (alignment === "distribute-v" && items.length >= 3) {
+        const sorted = [...items].sort((a, b) => a.cy - b.cy);
+        const totalSpan = sorted[sorted.length - 1].cy - sorted[0].cy;
+        const spacing = totalSpan / (sorted.length - 1);
+        for (let i = 1; i < sorted.length - 1; i++) {
+          const targetCy = sorted[0].cy + spacing * i;
+          const dy = targetCy - sorted[i].cy;
+          result = applyAlignDelta(result, mapId, sorted[i], 0, dy);
+        }
+      }
+
+      return result;
+    }
+
     // History
     case "PUSH_HISTORY": {
       const trimmed = state.history.slice(0, state.historyIndex + 1);
@@ -862,6 +1011,14 @@ export function VTTProvider({ children }: { children: React.ReactNode }) {
         delete audio.crossfade;
         // Remove legacy VTT handouts from state (now in NotesContext)
         delete (parsed as any).handouts;
+        // Migrate: ensure layerStates exist
+        if (!(parsed as any).layerStates) {
+          (parsed as any).layerStates = {
+            0: { visible: true, locked: false },
+            1: { visible: true, locked: false },
+            2: { visible: true, locked: false },
+          };
+        }
         return parsed as VTTState;
       }
     } catch (e) {

@@ -24,6 +24,21 @@ export const LAYER_TOKEN = 1;
 export const LAYER_GM = 2;
 export type LayerIndex = typeof LAYER_MAP | typeof LAYER_TOKEN | typeof LAYER_GM;
 
+export interface LayerState {
+  visible: boolean;
+  locked: boolean;
+}
+
+// --- Bounding Box ---
+
+export interface BoundingBox {
+  cx: number;
+  cy: number;
+  width: number;
+  height: number;
+  rotation: number; // degrees
+}
+
 // --- Tools ---
 
 export type VTTTool =
@@ -57,6 +72,11 @@ export interface Stroke {
   layer: LayerIndex;
   opacity?: number;
   gmOnly?: boolean;
+  rotation?: number;
+  scaleX?: number;
+  scaleY?: number;
+  originX?: number;
+  originY?: number;
 }
 
 // --- Text Overlays ---
@@ -71,6 +91,9 @@ export interface TextOverlay {
   fontFamily?: string;
   layer: LayerIndex;
   gmOnly?: boolean;
+  rotation?: number;
+  scaleX?: number;
+  scaleY?: number;
 }
 
 // --- Notes (GM Pins) ---
@@ -84,6 +107,8 @@ export interface MapNote {
   color: string;
   icon?: string;
   visible: boolean;
+  rotation?: number;
+  scale?: number;
 }
 
 // --- Tokens ---
@@ -424,12 +449,28 @@ export interface VTTState {
   // Clipboard
   clipboard: { tokens: Token[]; strokes: Stroke[]; texts: TextOverlay[]; notes: MapNote[] } | null;
 
+  // Layers
+  layerStates: Record<number, LayerState>;
+
   // Sidebar
   sidebarPanel: VTTSidebarPanel | null;
 }
 
+// --- Object Grouping ---
+
+export interface ObjectGroup {
+  id: string;
+  name: string;
+  tokenIds: string[];
+  strokeIds: string[];
+  textIds: string[];
+  noteIds: string[];
+  locked: boolean;
+}
+
 export type VTTSidebarPanel =
   | "maps"
+  | "layers"
   | "tokens"
   | "characters"
   | "drawing"
@@ -558,6 +599,11 @@ export function createDefaultVTTState(): VTTState {
     selectedNoteIds: [],
     fogBrushSize: 40,
     fogBrushMode: "reveal",
+    layerStates: {
+      0: { visible: true, locked: false },
+      1: { visible: true, locked: false },
+      2: { visible: true, locked: false },
+    },
     clipboard: null,
     sidebarPanel: "maps",
   };

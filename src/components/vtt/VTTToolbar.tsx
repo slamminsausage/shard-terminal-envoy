@@ -32,6 +32,7 @@ import {
   FlipVertical,
   UserPlus,
   Sparkles,
+  Layers,
 } from "lucide-react";
 import { useVTT } from "@/contexts/VTTContext";
 import type { VTTTool, VTTSidebarPanel } from "@/types/vtt";
@@ -69,6 +70,7 @@ interface PanelDef {
 
 const panels: PanelDef[] = [
   { panel: "maps", icon: <Map size={16} />, label: "Maps" },
+  { panel: "layers", icon: <Layers size={16} />, label: "Layers" },
   { panel: "tokens", icon: <Users size={16} />, label: "Tokens" },
   { panel: "characters", icon: <UserPlus size={16} />, label: "Import Characters" },
   { panel: "drawing", icon: <Paintbrush size={16} />, label: "Drawing" },
