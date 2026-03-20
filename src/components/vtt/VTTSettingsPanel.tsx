@@ -89,7 +89,7 @@ export default function VTTSettingsPanel() {
                   },
                 });
                 // Keep showGrid in sync with grid.enabled
-                if (state.showGrid !== !grid.enabled) {
+                if (state.showGrid === grid.enabled) {
                   dispatch({ type: "TOGGLE_GRID" });
                 }
               }}

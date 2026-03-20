@@ -27,7 +27,6 @@ const CHANNEL_NAME = "shard-vtt-presenter";
  */
 export function usePresenterController(state: VTTState, activeMap: VTTMap | null) {
   const channelRef = useRef<BroadcastChannel | null>(null);
-  const lastSentRef = useRef<string>("");
 
   useEffect(() => {
     channelRef.current = new BroadcastChannel(CHANNEL_NAME);
@@ -67,14 +66,6 @@ export function usePresenterController(state: VTTState, activeMap: VTTMap | null
   // Send map updates when active map changes
   useEffect(() => {
     if (!channelRef.current) return;
-
-    // Throttle: only send if state actually changed
-    const key = activeMap
-      ? `${activeMap.id}-${activeMap.tokens.length}-${activeMap.strokes.length}-${activeMap.texts.length}-${activeMap.scrollX}-${activeMap.scrollY}-${activeMap.zoom}-${activeMap.fog.enabled}-${activeMap.fog.dataUrl?.length || 0}-${activeMap.lights.length}-${activeMap.walls.length}-${activeMap.walls.filter(w => w.type === "door" && w.doorOpen).length}-${(activeMap.aoeTemplates || []).length}-${activeMap.notes.length}`
-      : "null";
-
-    if (key === lastSentRef.current) return;
-    lastSentRef.current = key;
 
     channelRef.current.postMessage({
       type: "sync-map",

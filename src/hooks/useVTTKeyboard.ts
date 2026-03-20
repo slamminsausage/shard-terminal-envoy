@@ -169,6 +169,34 @@ export function useVTTKeyboard(onToggleShortcuts?: () => void) {
         return;
       }
 
+      // Arrow key movement — nudge selected tokens one grid cell
+      if (
+        (key === "arrowup" || key === "arrowdown" || key === "arrowleft" || key === "arrowright") &&
+        !e.ctrlKey && !e.metaKey
+      ) {
+        const tokenIds = state.selectedTokenIds || [];
+        if (tokenIds.length > 0 && activeMap) {
+          e.preventDefault();
+          const step = activeMap.grid.size || 50;
+          const dx = key === "arrowleft" ? -step : key === "arrowright" ? step : 0;
+          const dy = key === "arrowup" ? -step : key === "arrowdown" ? step : 0;
+          for (const tokenId of tokenIds) {
+            const token = activeMap.tokens.find((t) => t.id === tokenId);
+            if (token) {
+              dispatch({
+                type: "UPDATE_TOKEN",
+                payload: {
+                  mapId: activeMap.id,
+                  tokenId,
+                  updates: { x: token.x + dx, y: token.y + dy },
+                },
+              });
+            }
+          }
+        }
+        return;
+      }
+
       // Zoom controls
       if (key === "=" || key === "+") {
         if (activeMap) {

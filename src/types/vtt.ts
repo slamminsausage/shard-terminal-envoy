@@ -195,6 +195,8 @@ export interface Particle {
   life: number;
   maxLife: number;
   color: string;
+  rotation: number;
+  phase: number;
 }
 
 export interface ParticleConfig {
