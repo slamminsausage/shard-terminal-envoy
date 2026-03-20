@@ -8,7 +8,6 @@ interface ScenePreset {
   name: string;
   description: string;
   particles: { preset: WeatherPresetName } & Record<string, unknown>;
-  fog?: { enabled: boolean; opacity: number; color: string };
   gridColor?: string;
 }
 
@@ -24,21 +23,18 @@ const SCENE_PRESETS: ScenePreset[] = [
     name: "Rainstorm",
     description: "Heavy rain with dim lighting",
     particles: { preset: "rain" as WeatherPresetName },
-    fog: { enabled: true, opacity: 0.3, color: "#0a0a1a" },
   },
   {
     id: "blizzard",
     name: "Blizzard",
-    description: "Dense snowfall with white fog",
+    description: "Dense snowfall with particle fog",
     particles: { preset: "snow" as WeatherPresetName },
-    fog: { enabled: true, opacity: 0.25, color: "#1a1a2e" },
   },
   {
     id: "dungeon",
     name: "Dark Dungeon",
-    description: "Thick fog, no particles",
-    particles: { preset: "none" as WeatherPresetName },
-    fog: { enabled: true, opacity: 0.9, color: "#000000" },
+    description: "Thick particle fog, no weather",
+    particles: { preset: "fog" as WeatherPresetName },
     gridColor: "#33333366",
   },
   {
@@ -46,21 +42,18 @@ const SCENE_PRESETS: ScenePreset[] = [
     name: "Volcanic",
     description: "Glowing embers and ash",
     particles: { preset: "embers" as WeatherPresetName },
-    fog: { enabled: true, opacity: 0.2, color: "#1a0500" },
   },
   {
     id: "sandstorm",
     name: "Sandstorm",
-    description: "Dust and low visibility",
+    description: "Dust and wind",
     particles: { preset: "dust" as WeatherPresetName },
-    fog: { enabled: true, opacity: 0.35, color: "#1a1500" },
   },
   {
     id: "misty-forest",
     name: "Misty Forest",
     description: "Light fog drifting through",
     particles: { preset: "fog" as WeatherPresetName },
-    fog: { enabled: true, opacity: 0.15, color: "#0a1a0a" },
     gridColor: "#00ff0015",
   },
   {
@@ -70,7 +63,6 @@ const SCENE_PRESETS: ScenePreset[] = [
     particles: {
       preset: "custom" as WeatherPresetName,
     },
-    fog: { enabled: false, opacity: 0, color: "#000000" },
     gridColor: "#ffffff08",
   },
   {
@@ -78,7 +70,6 @@ const SCENE_PRESETS: ScenePreset[] = [
     name: "Ashfall",
     description: "Drifting ash with gray haze",
     particles: { preset: "ash" as WeatherPresetName },
-    fog: { enabled: true, opacity: 0.2, color: "#1a1a1a" },
   },
 ];
 
@@ -120,17 +111,6 @@ export default function VTTScenePresets() {
           },
         });
       }
-    }
-
-    // Apply fog if map is active
-    if (activeMap && preset.fog) {
-      dispatch({
-        type: "UPDATE_FOG",
-        payload: {
-          mapId: activeMap.id,
-          fog: preset.fog,
-        },
-      });
     }
 
     // Apply grid color if specified
