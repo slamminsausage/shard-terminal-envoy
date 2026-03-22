@@ -505,6 +505,36 @@ export default function VTTPlayerView() {
         });
       }
 
+      // Elevation badge
+      if (t.elevation && t.elevation !== 0) {
+        const elevLabel = (t.elevation > 0 ? "+" : "") + t.elevation;
+        const badgeColor = t.elevation > 0 ? "#00ccff" : "#ff8800";
+        const badgeX = t.x + halfSize - 2;
+        const badgeY = t.y - halfSize - 2;
+        ctx.save();
+        ctx.font = `bold 9px "Share Tech Mono", monospace`;
+        const bm = ctx.measureText(elevLabel);
+        const bw = bm.width + 6;
+        const bh = 12;
+        ctx.fillStyle = "#000000";
+        ctx.globalAlpha = 0.8;
+        ctx.beginPath();
+        ctx.roundRect(badgeX - bw / 2, badgeY - bh / 2, bw, bh, 3);
+        ctx.fill();
+        ctx.strokeStyle = badgeColor;
+        ctx.lineWidth = 1;
+        ctx.globalAlpha = 0.9;
+        ctx.beginPath();
+        ctx.roundRect(badgeX - bw / 2, badgeY - bh / 2, bw, bh, 3);
+        ctx.stroke();
+        ctx.fillStyle = badgeColor;
+        ctx.globalAlpha = 1;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(elevLabel, badgeX, badgeY);
+        ctx.restore();
+      }
+
       // Active turn indicator
       if (initiative.length > 0 && initiative[0].tokenId === t.id) {
         const pulse = 0.4 + 0.6 * Math.abs(Math.sin(Date.now() / 400));
@@ -581,15 +611,23 @@ export default function VTTPlayerView() {
       }
     }
 
-    // Dynamic lighting
-    if (map.lights.length > 0 && map.walls.length > 0) {
-      renderDynamicLighting(
-        ctx,
-        map.lights,
-        map.walls,
-        map.width,
-        map.height
-      );
+    // Dynamic lighting (combine map lights + token-emitted lights)
+    if (map.walls.length > 0) {
+      const tokenLights = map.tokens
+        .filter((t) => t.visible && (t.lightBrightRadius ?? 0) > 0)
+        .map((t) => ({
+          id: t.id + "-light",
+          x: t.x,
+          y: t.y,
+          radius: (t.lightBrightRadius ?? 0) * (map.grid.size || 50),
+          color: t.lightColor || "#ffaa44",
+          intensity: 1.0,
+          flickering: false,
+        }));
+      const allLights = [...map.lights, ...tokenLights];
+      if (allLights.length > 0) {
+        renderDynamicLighting(ctx, allLights, map.walls, map.width, map.height);
+      }
     }
 
     // GM pings

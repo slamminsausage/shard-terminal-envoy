@@ -24,6 +24,11 @@ export default function VTTTokenEditModal({
   const [auraColor, setAuraColor] = useState(token.auraColor);
   const [showName, setShowName] = useState(token.showName);
   const [showHpBar, setShowHpBar] = useState(token.showHpBar);
+  const [moveSpeed, setMoveSpeed] = useState(token.moveSpeed ?? 6);
+  const [elevation, setElevation] = useState(token.elevation ?? 0);
+  const [lightBrightRadius, setLightBrightRadius] = useState(token.lightBrightRadius ?? 0);
+  const [lightDimRadius, setLightDimRadius] = useState(token.lightDimRadius ?? 0);
+  const [lightColor, setLightColor] = useState(token.lightColor || "#ffaa44");
   const [conditionInput, setConditionInput] = useState("");
 
   const update = (updates: Partial<Token>) => {
@@ -44,6 +49,11 @@ export default function VTTTokenEditModal({
       auraColor,
       showName,
       showHpBar,
+      moveSpeed,
+      elevation,
+      lightBrightRadius,
+      lightDimRadius,
+      lightColor,
     });
     onClose();
   };
@@ -180,6 +190,71 @@ export default function VTTTokenEditModal({
                 value={rotation}
                 onChange={(e) => setRotation(parseInt(e.target.value) || 0)}
                 className="w-full bg-terminal-bg-dark border border-terminal-border/30 text-terminal-primary text-xs px-2 py-1 rounded font-mono text-center focus:border-terminal-primary/50 focus:outline-none"
+              />
+            </div>
+          </div>
+
+          {/* Move Speed & Elevation */}
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="text-[10px] text-terminal-primary/50 uppercase tracking-wider font-mono block mb-1">
+                Move Speed
+              </label>
+              <input
+                type="number"
+                min={0}
+                max={30}
+                value={moveSpeed}
+                onChange={(e) => setMoveSpeed(Math.max(0, parseInt(e.target.value) || 0))}
+                className="w-full bg-terminal-bg-dark border border-terminal-border/30 text-terminal-primary text-xs px-2 py-1 rounded font-mono text-center focus:border-terminal-primary/50 focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="text-[10px] text-terminal-primary/50 uppercase tracking-wider font-mono block mb-1">
+                Elevation
+              </label>
+              <input
+                type="number"
+                value={elevation}
+                onChange={(e) => setElevation(parseInt(e.target.value) || 0)}
+                className="w-full bg-terminal-bg-dark border border-terminal-border/30 text-terminal-primary text-xs px-2 py-1 rounded font-mono text-center focus:border-terminal-primary/50 focus:outline-none"
+              />
+            </div>
+          </div>
+
+          {/* Light Emission */}
+          <div>
+            <label className="text-[10px] text-terminal-primary/50 uppercase tracking-wider font-mono block mb-1">
+              Light Emission
+            </label>
+            <div className="flex items-center gap-2">
+              <div className="flex-1">
+                <span className="text-[9px] text-terminal-primary/30 font-mono">Bright</span>
+                <input
+                  type="number"
+                  min={0}
+                  max={30}
+                  value={lightBrightRadius}
+                  onChange={(e) => setLightBrightRadius(Math.max(0, parseFloat(e.target.value) || 0))}
+                  className="w-full bg-terminal-bg-dark border border-terminal-border/30 text-terminal-primary text-xs px-2 py-1 rounded font-mono text-center focus:border-terminal-primary/50 focus:outline-none"
+                />
+              </div>
+              <div className="flex-1">
+                <span className="text-[9px] text-terminal-primary/30 font-mono">Dim</span>
+                <input
+                  type="number"
+                  min={0}
+                  max={30}
+                  value={lightDimRadius}
+                  onChange={(e) => setLightDimRadius(Math.max(0, parseFloat(e.target.value) || 0))}
+                  className="w-full bg-terminal-bg-dark border border-terminal-border/30 text-terminal-primary text-xs px-2 py-1 rounded font-mono text-center focus:border-terminal-primary/50 focus:outline-none"
+                />
+              </div>
+              <input
+                type="color"
+                value={lightColor}
+                onChange={(e) => setLightColor(e.target.value)}
+                className="w-8 h-6 rounded border border-terminal-border/30 bg-transparent cursor-pointer mt-3"
               />
             </div>
           </div>

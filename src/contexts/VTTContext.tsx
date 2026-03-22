@@ -120,6 +120,7 @@ type VTTAction =
   | { type: "SET_CANVAS_SIZE"; payload: { mapId: string; width: number; height: number } }
   // Presenter toggles
   | { type: "TOGGLE_INITIATIVE_PRESENTER" }
+  | { type: "TOGGLE_FOLLOW_ACTIVE_TURN" }
   // Selection
   | { type: "SET_SELECTION"; payload: string[] }
   | { type: "SET_STROKE_SELECTION"; payload: string[] }
@@ -702,6 +703,8 @@ function vttReducer(state: VTTState, action: VTTAction): VTTState {
     // Presenter toggles
     case "TOGGLE_INITIATIVE_PRESENTER":
       return { ...state, showInitiativeOnPresenter: !(state.showInitiativeOnPresenter ?? false) };
+    case "TOGGLE_FOLLOW_ACTIVE_TURN":
+      return { ...state, followActiveTurn: !(state.followActiveTurn ?? false) };
 
     // Selection
     case "SET_SELECTION":
@@ -983,6 +986,9 @@ export function VTTProvider({ children }: { children: React.ReactNode }) {
         // Ensure new state fields exist
         if (parsed.showInitiativeOnPresenter === undefined) {
           (parsed as any).showInitiativeOnPresenter = false;
+        }
+        if (parsed.followActiveTurn === undefined) {
+          (parsed as any).followActiveTurn = false;
         }
         if (!parsed.selectedTokenIds) {
           (parsed as any).selectedTokenIds = [];

@@ -136,6 +136,13 @@ export interface Token {
   showHpBar: boolean;
   locked: boolean;
   visible: boolean; // GM can hide tokens from presenter
+  // Movement & positioning
+  moveSpeed?: number; // grid cells of normal movement (default 6)
+  elevation?: number; // vertical position for 3D combat
+  // Token light emission
+  lightBrightRadius?: number; // grid units of bright light
+  lightDimRadius?: number; // grid units of dim light
+  lightColor?: string; // light color (default #ffaa44)
 }
 
 // --- Fog of War ---
@@ -437,6 +444,7 @@ export interface VTTState {
 
   // Presenter toggles
   showInitiativeOnPresenter: boolean;
+  followActiveTurn: boolean;
 
   // Selection
   selectedTokenIds: string[];

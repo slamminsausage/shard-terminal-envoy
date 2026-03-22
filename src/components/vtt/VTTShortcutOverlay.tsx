@@ -45,6 +45,8 @@ const shortcuts = [
       { key: "Delete", desc: "Delete Selected" },
       { key: "Ctrl+Z", desc: "Undo" },
       { key: "Ctrl+Shift+Z", desc: "Redo" },
+      { key: "Shift+Scroll", desc: "Adjust HP (over token)" },
+      { key: "Dbl-Click HP", desc: "Inline HP Edit" },
     ],
   },
   {
@@ -52,7 +54,7 @@ const shortcuts = [
     items: [
       { key: "Ctrl+S", desc: "Save Session" },
       { key: "?", desc: "Toggle This Overlay" },
-      { key: "Ctrl+Click", desc: "GM Ping" },
+      { key: "Ctrl+Click", desc: "GM Ping (labeled)" },
       { key: "Middle-Click", desc: "Pan Canvas" },
     ],
   },
