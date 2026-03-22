@@ -233,6 +233,14 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
     return () => observer.disconnect();
   }, []);
 
+  // Reset measurement state when switching away from measure tool
+  useEffect(() => {
+    if (state.activeTool !== "measure" && measuring) {
+      setMeasuring(false);
+      measurePointsRef.current = [];
+    }
+  }, [state.activeTool, measuring]);
+
   // ─── Coordinate helpers ─────────────────────────────────────────────
 
   const getWorldPos = useCallback(
