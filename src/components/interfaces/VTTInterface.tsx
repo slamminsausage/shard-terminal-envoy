@@ -42,7 +42,7 @@ export default function VTTInterface() {
 
   const campaignData = useMemo<PresenterCampaignData>(() => ({
     notes: (notesCtx?.playerNotes || []).map((n: any) => ({
-      id: n.id, title: n.title, content: n.content || "", category: n.category, createdAt: n.created_at,
+      id: n.id, title: n.title, content: n.content || "", folder: n.folder, thumbnailUrl: n.thumbnailUrl, createdAt: n.createdAt,
     })),
     sessions: (sessionCtx?.sessions || []).map((s: any) => ({
       id: s.id, title: s.title, summary: s.summary, date: s.session_date, number: s.session_number,
