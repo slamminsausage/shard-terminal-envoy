@@ -919,26 +919,63 @@ function PresenterCampaignSidebar({
             {data.notes.length === 0 ? (
               <EmptyState label="No notes available" />
             ) : (
-              data.notes.map((note) => (
-                <button
-                  key={note.id}
-                  onClick={() => setExpandedId(expandedId === note.id ? null : note.id)}
-                  className="w-full text-left rounded border border-terminal-border/15 bg-terminal-primary/[0.02] hover:bg-terminal-primary/[0.05] transition-colors"
-                >
-                  <div className="flex items-center gap-2 px-3 py-2">
-                    <FileText size={10} className="text-terminal-primary/40 flex-shrink-0" />
-                    <span className="text-[11px] font-mono text-terminal-primary/70 truncate flex-1">{note.title}</span>
-                    {note.category && (
-                      <span className="text-[8px] font-mono text-terminal-primary/30 bg-terminal-primary/5 px-1.5 py-0.5 rounded">{note.category}</span>
+              data.notes.map((note) => {
+                const FOLDER_MAP: Record<string, { label: string; emoji: string }> = {
+                  general: { label: "General", emoji: "📝" },
+                  planets: { label: "Planets", emoji: "🌍" },
+                  locations: { label: "Locations", emoji: "📍" },
+                  npcs: { label: "NPCs", emoji: "👤" },
+                  quests: { label: "Quests", emoji: "⚔️" },
+                  items: { label: "Items", emoji: "🎒" },
+                  other: { label: "Other", emoji: "📦" },
+                };
+                const folderInfo = FOLDER_MAP[note.folder || "general"] || FOLDER_MAP.general;
+                const isExpanded = expandedId === note.id;
+                return (
+                  <div
+                    key={note.id}
+                    className="rounded border border-terminal-border/20 bg-terminal-primary/[0.02] hover:border-terminal-border/40 transition-colors overflow-hidden"
+                  >
+                    {/* Header */}
+                    <button
+                      onClick={() => setExpandedId(isExpanded ? null : note.id)}
+                      className="w-full text-left px-3 py-2"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="text-base flex-shrink-0">{folderInfo.emoji}</span>
+                        <span className="text-[12px] font-mono text-terminal-primary/80 flex-1 truncate font-medium">{note.title}</span>
+                        <ChevronRight size={10} className={`text-terminal-primary/30 flex-shrink-0 transition-transform ${isExpanded ? "rotate-90" : ""}`} />
+                      </div>
+                      <div className="flex items-center gap-2 mt-0.5 pl-6">
+                        <span className="text-[9px] font-mono text-terminal-primary/30 bg-terminal-primary/5 px-1.5 py-0.5 rounded">{folderInfo.label}</span>
+                        {note.createdAt && (
+                          <span className="text-[9px] font-mono text-terminal-primary/20">
+                            {new Date(note.createdAt).toLocaleDateString()}
+                          </span>
+                        )}
+                      </div>
+                    </button>
+
+                    {/* Expanded body */}
+                    {isExpanded && (
+                      <div className="border-t border-terminal-border/10 px-3 py-3 space-y-2">
+                        {note.thumbnailUrl && (
+                          <img
+                            src={note.thumbnailUrl}
+                            alt={note.title}
+                            className="w-24 h-24 object-cover rounded border border-terminal-primary/30"
+                          />
+                        )}
+                        {note.content && (
+                          <p className="text-[11px] font-mono text-terminal-primary/60 whitespace-pre-wrap leading-relaxed">
+                            {note.content}
+                          </p>
+                        )}
+                      </div>
                     )}
                   </div>
-                  {expandedId === note.id && note.content && (
-                    <div className="px-3 pb-2 text-[10px] font-mono text-terminal-primary/50 whitespace-pre-wrap border-t border-terminal-border/10 pt-2">
-                      {note.content.slice(0, 500)}{note.content.length > 500 ? "..." : ""}
-                    </div>
-                  )}
-                </button>
-              ))
+                );
+              })
             )}
           </>
         )}

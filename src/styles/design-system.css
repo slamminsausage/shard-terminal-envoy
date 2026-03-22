@@ -259,7 +259,7 @@
    LAYOUT: APP HEADER + TABS
    =================================== */
 .app-shell-header {
-  border-bottom: 2px solid var(--border);
+  border-bottom: 1px solid var(--border);
   background: var(--header-gradient);
   box-shadow: var(--header-shadow);
 }
@@ -267,39 +267,33 @@
 .app-shell-title {
   font-family: var(--font-display);
   color: var(--primary);
-  text-shadow: 0 0 10px rgba(0, 255, 0, 0.4);
-  letter-spacing: 0.08em;
+  text-shadow: 0 0 8px rgba(0, 255, 0, 0.35);
+  letter-spacing: 0.12em;
 }
 
 .app-shell-subtitle {
-  margin-top: 4px;
   font-family: var(--font-mono);
   color: var(--text-dim);
   letter-spacing: 0.12em;
-  font-size: 0.75rem;
-}
-
-.app-shell-tabs {
-  display: grid;
-  grid-template-columns: repeat(4, auto);
-  gap: 0.35rem 0.75rem;
+  font-size: 0.7rem;
 }
 
 .tab-button {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  padding: 0.65rem 1.25rem;
-  border: 2px solid transparent;
-  border-radius: 0.25rem;
+  gap: 0.3rem;
+  padding: 0.25rem 0.6rem;
+  border: 1px solid transparent;
+  border-radius: 0.2rem;
   font-family: var(--font-display);
-  font-size: 0.78rem;
-  letter-spacing: 0.14em;
+  font-size: 0.65rem;
+  letter-spacing: 0.12em;
   color: var(--text-dim);
   background: transparent;
   text-transform: uppercase;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
   position: relative;
+  white-space: nowrap;
 }
 
 .tab-button:focus-visible {
@@ -312,7 +306,7 @@
   border-color: var(--tab-border);
   background: var(--tab-bg);
   color: var(--primary);
-  box-shadow: 0 0 8px rgba(0, 255, 0, 0.25);
+  box-shadow: 0 0 6px rgba(0, 255, 0, 0.2);
 }
 
 @keyframes tab-active-pulse {
@@ -335,12 +329,12 @@
 .tab-button--active::after {
   content: '';
   position: absolute;
-  bottom: -2px;
-  left: 20%;
-  right: 20%;
-  height: 2px;
+  bottom: -1px;
+  left: 15%;
+  right: 15%;
+  height: 1px;
   background: var(--primary);
-  box-shadow: 0 0 8px var(--primary);
+  box-shadow: 0 0 6px var(--primary);
   border-radius: 1px;
 }
 
@@ -773,53 +767,13 @@ textarea.terminal-input {
     border-bottom: none !important;
   }
 
-  /* Header responsive layout */
-  .app-shell-header .container {
-    padding-left: 0.75rem !important;
-    padding-right: 0.75rem !important;
-  }
-
-  .app-shell-title {
-    font-size: 1.25rem !important;
-  }
-
-  .app-shell-subtitle {
-    font-size: 0.65rem !important;
-  }
-
-  /* Mobile tab navigation - horizontal scroll strip */
-  .app-shell-tabs {
-    display: flex !important;
-    overflow-x: auto !important;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-    gap: 0.25rem !important;
-    padding-bottom: 2px;
-    width: 100%;
-  }
-
-  .app-shell-tabs::-webkit-scrollbar {
-    display: none;
-  }
-
-  /* Smaller tabs on mobile - icon + short label */
+  /* Mobile: tabs scroll horizontally, show only icons */
   .tab-button {
-    padding: 0.5rem 0.6rem !important;
-    font-size: 0.6rem !important;
-    white-space: nowrap;
-    flex-shrink: 0;
-    min-height: 44px;
-    min-width: 44px;
+    padding: 0.2rem 0.45rem !important;
+    min-width: 36px;
     justify-content: center;
   }
 
-  .tab-button svg,
-  .tab-button span[aria-hidden] {
-    width: 14px !important;
-    height: 14px !important;
-  }
-
-  /* On mobile < 768px: show only icons by default */
   .tab-button .tab-label {
     display: none;
   }
@@ -924,21 +878,6 @@ textarea.terminal-input {
     letter-spacing: 1px !important;
   }
 
-  .app-shell-title {
-    font-size: 1rem !important;
-    letter-spacing: 0.05em !important;
-  }
-
-  .app-shell-subtitle {
-    font-size: 0.6rem !important;
-  }
-
-  .tab-button {
-    padding: 0.45rem 0.5rem !important;
-    font-size: 0.6rem !important;
-    gap: 0.2rem !important;
-  }
-
   .panel-header {
     font-size: 0.6rem;
     padding: 6px 10px;
@@ -982,26 +921,12 @@ textarea.terminal-input {
    LARGE DISPLAY - TV / 40"+ (1920px+)
    =================================== */
 @media (min-width: 1920px) {
-  /* Scale up header */
-  .app-shell-title {
-    font-size: 2rem !important;
-    letter-spacing: 0.12em !important;
-  }
-
-  .app-shell-subtitle {
-    font-size: 1rem !important;
-  }
-
-  /* Scale up tab buttons */
-  .app-shell-tabs {
-    gap: 0.5rem 1rem;
-  }
-
+  /* Scale up header slightly on large displays */
   .tab-button {
-    padding: 0.85rem 1.75rem !important;
-    font-size: 1rem !important;
-    letter-spacing: 0.16em;
-    gap: 0.5rem;
+    padding: 0.3rem 0.8rem !important;
+    font-size: 0.72rem !important;
+    letter-spacing: 0.14em;
+    gap: 0.35rem;
   }
 
   .tab-button svg {

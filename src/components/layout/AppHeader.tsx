@@ -32,72 +32,74 @@ export default function AppHeader({
 
   return (
     <header className="app-shell-header">
-      <div className="container mx-auto px-4 sm:px-6 py-3 sm:py-4 3xl:py-5">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-6">
-          <div className="flex items-center justify-between sm:block">
-            <div>
-              <h1 className="app-shell-title">{title}</h1>
-              <div className="flex items-center gap-3">
-                <p className="app-shell-subtitle">{subtitle}</p>
-                {currentDate && (
-                  <div className="flex items-center gap-1 text-terminal-primary/70 text-xs border border-terminal-primary/30 px-2 py-0.5 rounded">
-                    <Calendar size={12} />
-                    <span>{currentDate.formatted}</span>
-                  </div>
-                )}
-                <CrtThemePicker />
-              </div>
-            </div>
-          </div>
+      <div className="flex items-center gap-3 px-4 h-10 min-w-0">
 
-          <div className="flex items-center gap-4">
-            {/* Player info + logout */}
-            {currentPlayer && (
-              <div className="flex items-center gap-2 text-xs font-mono">
-                <div className="flex items-center gap-1.5 text-terminal-primary/80 border border-terminal-primary/30 px-2 py-1 rounded">
-                  {isGM ? <Shield size={12} className="text-yellow-400" /> : <User size={12} />}
-                  <span className={isGM ? "text-yellow-400" : ""}>{currentPlayer.name}</span>
-                  {isGM && <span className="text-yellow-400/60 text-[10px]">GM</span>}
-                </div>
-                <button
-                  onClick={logout}
-                  className="flex items-center gap-1 text-terminal-primary/50 hover:text-red-400 transition-colors px-1.5 py-1 rounded border border-transparent hover:border-red-400/30"
-                  title="Log out"
-                >
-                  <LogOut size={12} />
-                </button>
-              </div>
-            )}
-          </div>
+        {/* Brand */}
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <span className="app-shell-title text-sm tracking-widest whitespace-nowrap">
+            {title.toUpperCase()}
+          </span>
+          {currentDate && (
+            <div className="hidden sm:flex items-center gap-1 text-terminal-primary/60 text-[10px] font-mono border border-terminal-primary/20 px-1.5 py-0.5 rounded">
+              <Calendar size={9} />
+              <span>{currentDate.formatted}</span>
+            </div>
+          )}
+          <CrtThemePicker />
         </div>
 
-        <nav className="app-shell-tabs mt-2" role="tablist" aria-label="Mainframe views">
+        {/* Divider */}
+        <div className="w-px h-5 bg-terminal-primary/20 flex-shrink-0" />
+
+        {/* Tabs — scrollable single row */}
+        <nav
+          className="flex-1 flex items-center gap-0.5 overflow-x-auto scrollbar-none min-w-0"
+          role="tablist"
+          aria-label="Mainframe views"
+        >
           {tabs.map((tab, index) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
-            const shortcutNumber = index + 1;
             return (
               <button
                 key={tab.id}
                 role="tab"
                 aria-selected={isActive}
-                className={cn("tab-button phosphor-hover", isActive && "tab-button--active")}
+                className={cn("tab-button phosphor-hover flex-shrink-0", isActive && "tab-button--active")}
                 onClick={() => onTabChange(tab.id)}
-                title={`${tab.label} (Press ${shortcutNumber})`}
+                title={`${tab.label} (Press ${index + 1})`}
               >
                 {tab.emoji ? (
-                  <span className="opacity-70 text-sm leading-none" style={{ fontSize: '14px' }} aria-hidden>{tab.emoji}</span>
+                  <span className="opacity-70 leading-none" style={{ fontSize: "11px" }} aria-hidden>{tab.emoji}</span>
                 ) : Icon ? (
-                  <Icon size={14} aria-hidden className="opacity-70" />
+                  <Icon size={11} aria-hidden className="opacity-70" />
                 ) : null}
                 <span className="tab-label">{tab.label.toUpperCase()}</span>
-                <span className="text-[10px] opacity-50 ml-1 hidden sm:inline" aria-label={`Shortcut: ${shortcutNumber}`}>
-                  {shortcutNumber}
-                </span>
               </button>
             );
           })}
         </nav>
+
+        {/* Divider */}
+        <div className="w-px h-5 bg-terminal-primary/20 flex-shrink-0" />
+
+        {/* Player info + logout */}
+        {currentPlayer && (
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            <div className="flex items-center gap-1 text-[11px] font-mono text-terminal-primary/80 border border-terminal-primary/25 px-2 py-0.5 rounded whitespace-nowrap">
+              {isGM ? <Shield size={10} className="text-yellow-400" /> : <User size={10} />}
+              <span className={isGM ? "text-yellow-400" : ""}>{currentPlayer.name}</span>
+              {isGM && <span className="text-yellow-400/60 text-[9px]">GM</span>}
+            </div>
+            <button
+              onClick={logout}
+              className="flex items-center text-terminal-primary/40 hover:text-red-400 transition-colors p-1 rounded border border-transparent hover:border-red-400/30"
+              title="Log out"
+            >
+              <LogOut size={11} />
+            </button>
+          </div>
+        )}
       </div>
     </header>
   );

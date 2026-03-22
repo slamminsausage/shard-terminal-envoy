@@ -18,7 +18,7 @@ export interface PresenterAudioState {
  * Campaign data sent to presenter for the player sidebar.
  */
 export interface PresenterCampaignData {
-  notes: { id: string; title: string; content: string; category?: string; createdAt?: string }[];
+  notes: { id: string; title: string; content: string; folder?: string; thumbnailUrl?: string; createdAt?: string }[];
   sessions: { id: string; title: string; summary?: string; date?: string; number?: number }[];
   handouts: { id: string; title: string; imageUrl?: string; content?: string; visible?: boolean }[];
   quests: { id: string; title: string; description?: string; status?: string; objectives?: any[] }[];
