@@ -8,7 +8,6 @@ import {
   Minus,
   Square,
   Circle,
-  Type,
   ChevronUp,
   ChevronDown,
   Plus,
@@ -16,8 +15,12 @@ import {
   VolumeX,
   Eraser,
   Undo2,
+  Play,
+  Pause,
+  Zap,
 } from "lucide-react";
-import type { InitiativeEntry, Point } from "@/types/vtt";
+import type { InitiativeEntry, Point, AmbientTrack, AmbientSlot, SFXSlot } from "@/types/vtt";
+import type { PresenterAudioState, PresenterMessage } from "@/hooks/useVTTPresenter";
 
 const CHANNEL_NAME = "shard-vtt-presenter";
 
@@ -37,9 +40,15 @@ interface RollResult {
 
 // ─── Player Toolbar Component ──────────────────────────────────────────────
 
+export type PlayerTool = "none" | "draw-freehand" | "draw-line" | "draw-rect" | "draw-circle" | "draw-text";
+
 interface VTTPlayerToolbarProps {
   initiative: InitiativeEntry[];
   onDrawingChange?: (strokes: PlayerStroke[]) => void;
+  onPlayerToolChange?: (tool: PlayerTool) => void;
+  onDrawSettingsChange?: (color: string, width: number) => void;
+  audioState?: PresenterAudioState | null;
+  sendToController?: (msg: PresenterMessage) => void;
 }
 
 export interface PlayerStroke {
@@ -50,13 +59,27 @@ export interface PlayerStroke {
   width: number;
 }
 
-type PlayerTool = "none" | "draw-freehand" | "draw-line" | "draw-rect" | "draw-circle" | "draw-text";
 type PanelId = "dice" | "initiative" | "audio" | "fx" | "draw" | null;
 
 const DRAW_COLORS = ["#00ff00", "#00ccff", "#ff6600", "#ff3344", "#ffcc00", "#ffffff"];
 const DRAW_WIDTHS = [2, 3, 5, 8];
 
-export default function VTTPlayerToolbar({ initiative, onDrawingChange }: VTTPlayerToolbarProps) {
+const AMBIENT_SLOTS: AmbientSlot[] = ["A", "B", "C", "D"];
+const SLOT_LABEL_COLORS: Record<AmbientSlot, string> = {
+  A: "text-green-400",
+  B: "text-cyan-400",
+  C: "text-amber-400",
+  D: "text-purple-400",
+};
+
+export default function VTTPlayerToolbar({
+  initiative,
+  onDrawingChange,
+  onPlayerToolChange,
+  onDrawSettingsChange,
+  audioState,
+  sendToController,
+}: VTTPlayerToolbarProps) {
   const [expanded, setExpanded] = useState(false);
   const [activePanel, setActivePanel] = useState<PanelId>(null);
   const channelRef = useRef<BroadcastChannel | null>(null);
@@ -78,6 +101,15 @@ export default function VTTPlayerToolbar({ initiative, onDrawingChange }: VTTPla
     channelRef.current = new BroadcastChannel(CHANNEL_NAME);
     return () => channelRef.current?.close();
   }, []);
+
+  // Notify parent when tool changes
+  useEffect(() => {
+    onPlayerToolChange?.(playerTool);
+  }, [playerTool, onPlayerToolChange]);
+
+  useEffect(() => {
+    onDrawSettingsChange?.(drawColor, drawWidth);
+  }, [drawColor, drawWidth, onDrawSettingsChange]);
 
   const togglePanel = (panel: PanelId) => {
     if (activePanel === panel) {
@@ -146,6 +178,10 @@ export default function VTTPlayerToolbar({ initiative, onDrawingChange }: VTTPla
 
   // ─── Drawing ────────────────────────────────────────────────────────
 
+  const selectPlayerTool = (tool: PlayerTool) => {
+    setPlayerTool(playerTool === tool ? "none" : tool);
+  };
+
   const undoLastStroke = () => {
     setPlayerStrokes((prev) => {
       const next = prev.slice(0, -1);
@@ -159,15 +195,27 @@ export default function VTTPlayerToolbar({ initiative, onDrawingChange }: VTTPla
     onDrawingChange?.([]);
   };
 
-  // ─── Audio mute ─────────────────────────────────────────────────────
+  // ─── Audio controls ───────────────────────────────────────────────
 
   const toggleMute = () => {
     const newMuted = !muted;
     setMuted(newMuted);
-    // Mute/unmute all audio elements on the page
     document.querySelectorAll("audio").forEach((el) => {
       (el as HTMLAudioElement).muted = newMuted;
     });
+  };
+
+  const getTrack = (slot: AmbientSlot): AmbientTrack | null => {
+    if (!audioState) return null;
+    return audioState[`ambient${slot}` as keyof PresenterAudioState] as AmbientTrack | null;
+  };
+
+  const sendAudioCommand = (command: "play" | "pause" | "stop", slot: AmbientSlot) => {
+    sendToController?.({ type: "player-audio-command", command, slot });
+  };
+
+  const triggerSfx = (index: number) => {
+    sendToController?.({ type: "player-sfx-trigger", index });
   };
 
   const toolbarBtnClass = (active: boolean) =>
@@ -181,7 +229,7 @@ export default function VTTPlayerToolbar({ initiative, onDrawingChange }: VTTPla
     <div className="absolute bottom-0 left-1/2 -translate-x-1/2 z-40 flex flex-col items-center">
       {/* Expanded panel content */}
       {expanded && activePanel && (
-        <div className="mb-1 bg-[#0a0f0a]/95 border border-terminal-border/30 rounded-t-lg shadow-lg shadow-black/50 backdrop-blur-sm min-w-[280px] max-w-[400px] max-h-[300px] overflow-y-auto">
+        <div className="mb-1 bg-[#0a0f0a]/95 border border-terminal-border/30 rounded-t-lg shadow-lg shadow-black/50 backdrop-blur-sm min-w-[280px] max-w-[440px] max-h-[350px] overflow-y-auto">
           {activePanel === "dice" && (
             <div className="p-3 space-y-2">
               <div className="text-[10px] text-terminal-primary/50 font-mono uppercase tracking-wider mb-1">Dice Roller</div>
@@ -236,14 +284,76 @@ export default function VTTPlayerToolbar({ initiative, onDrawingChange }: VTTPla
 
           {activePanel === "audio" && (
             <div className="p-3 space-y-2">
-              <div className="text-[10px] text-terminal-primary/50 font-mono uppercase tracking-wider mb-1">Audio</div>
+              <div className="text-[10px] text-terminal-primary/50 font-mono uppercase tracking-wider mb-1">Audio Controls</div>
+
+              {/* Mute toggle */}
               <button onClick={toggleMute} className={`vtt-btn w-full justify-center ${muted ? "danger" : ""}`}>
                 {muted ? <VolumeX size={12} /> : <Volume2 size={12} />}
                 {muted ? "Unmute Audio" : "Mute Audio"}
               </button>
-              <div className="text-[9px] text-terminal-primary/30 font-mono text-center">
-                Audio is controlled by the GM
-              </div>
+
+              {/* Ambient channel controls */}
+              <div className="text-[9px] text-terminal-primary/40 font-mono uppercase tracking-wider mt-2">Ambient Channels</div>
+              {AMBIENT_SLOTS.map((slot) => {
+                const track = getTrack(slot);
+                return (
+                  <div key={slot} className="flex items-center gap-1.5 px-1 py-1 rounded border border-terminal-border/10">
+                    <span className={`text-[10px] font-mono font-bold w-4 ${SLOT_LABEL_COLORS[slot]}`}>{slot}</span>
+                    {track ? (
+                      <>
+                        <span className="text-[9px] text-terminal-primary/60 font-mono truncate flex-1 min-w-0">
+                          {track.name}
+                        </span>
+                        <button
+                          onClick={() => sendAudioCommand("play", slot)}
+                          className="p-0.5 text-terminal-primary/40 hover:text-green-400 transition-colors"
+                          title="Play"
+                        >
+                          <Play size={10} />
+                        </button>
+                        <button
+                          onClick={() => sendAudioCommand("pause", slot)}
+                          className="p-0.5 text-terminal-primary/40 hover:text-yellow-400 transition-colors"
+                          title="Pause"
+                        >
+                          <Pause size={10} />
+                        </button>
+                        <button
+                          onClick={() => sendAudioCommand("stop", slot)}
+                          className="p-0.5 text-terminal-primary/40 hover:text-red-400 transition-colors"
+                          title="Stop"
+                        >
+                          <Square size={8} />
+                        </button>
+                      </>
+                    ) : (
+                      <span className="text-[9px] text-terminal-primary/20 font-mono flex-1">Empty</span>
+                    )}
+                  </div>
+                );
+              })}
+
+              {/* SFX Soundboard */}
+              {audioState && audioState.sfxSlots.some((s) => s.url || s.name) && (
+                <>
+                  <div className="text-[9px] text-terminal-primary/40 font-mono uppercase tracking-wider mt-2">SFX Soundboard</div>
+                  <div className="grid grid-cols-3 gap-1">
+                    {audioState.sfxSlots.filter((s) => s.url || s.name).map((slot, i) => {
+                      const realIndex = audioState.sfxSlots.indexOf(slot);
+                      return (
+                        <button
+                          key={realIndex}
+                          onClick={() => triggerSfx(realIndex)}
+                          className="rounded border border-terminal-primary/30 bg-terminal-primary/5 hover:bg-terminal-primary/15 px-1 py-1.5 text-[9px] font-mono text-terminal-primary/60 truncate transition-all active:scale-95"
+                        >
+                          <Zap size={8} className="inline mr-0.5 text-yellow-400/60" />
+                          {slot.name || `SFX ${realIndex + 1}`}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
             </div>
           )}
 
@@ -268,7 +378,7 @@ export default function VTTPlayerToolbar({ initiative, onDrawingChange }: VTTPla
                 ].map(({ tool, icon, label }) => (
                   <button
                     key={tool}
-                    onClick={() => setPlayerTool(playerTool === tool ? "none" : tool)}
+                    onClick={() => selectPlayerTool(tool)}
                     className={`vtt-btn flex-1 justify-center ${playerTool === tool ? "vtt-option--active" : ""}`}
                   >
                     {icon}
@@ -306,6 +416,11 @@ export default function VTTPlayerToolbar({ initiative, onDrawingChange }: VTTPla
                 <button onClick={undoLastStroke} disabled={playerStrokes.length === 0} className="vtt-btn flex-1 justify-center"><Undo2 size={10} /> Undo</button>
                 <button onClick={clearDrawings} disabled={playerStrokes.length === 0} className="vtt-btn danger flex-1 justify-center"><Eraser size={10} /> Clear</button>
               </div>
+              {playerTool !== "none" && (
+                <div className="text-[8px] text-terminal-primary/30 font-mono text-center">
+                  Click and drag on the map to draw. Right-click or press Escape to deselect.
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -351,6 +466,20 @@ export default function VTTPlayerToolbar({ initiative, onDrawingChange }: VTTPla
           <Pencil size={14} />
           <span className="text-[7px] font-mono">DRAW</span>
         </button>
+
+        {/* Active draw tool indicator */}
+        {playerTool !== "none" && (
+          <>
+            <div className="w-px h-5 bg-terminal-border/20 mx-0.5" />
+            <button
+              onClick={() => setPlayerTool("none")}
+              className="text-[8px] font-mono text-yellow-400/70 hover:text-yellow-400 px-1 py-0.5"
+              title="Click to deselect draw tool"
+            >
+              {playerTool.replace("draw-", "").toUpperCase()}
+            </button>
+          </>
+        )}
       </div>
     </div>
   );

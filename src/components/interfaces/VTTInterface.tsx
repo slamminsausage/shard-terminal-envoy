@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import VTTCanvas from "@/components/vtt/VTTCanvas";
 import VTTToolbar from "@/components/vtt/VTTToolbar";
 import VTTRightToolbar from "@/components/vtt/VTTRightToolbar";
@@ -10,9 +10,18 @@ import { useVTT } from "@/contexts/VTTContext";
 import { useVTTParticles } from "@/hooks/useVTTParticles";
 import { useVTTKeyboard } from "@/hooks/useVTTKeyboard";
 import { usePresenterController } from "@/hooks/useVTTPresenter";
+import type { PresenterCampaignData } from "@/hooks/useVTTPresenter";
 import { useVTTAudio } from "@/hooks/useVTTAudio";
 import { VTTAudioProvider } from "@/contexts/VTTAudioContext";
 import { useCampaign } from "@/contexts/CampaignContext";
+
+// Safely import campaign contexts for presenter sync
+let useNotesHook: any = null;
+let useSessionHook: any = null;
+let useQuestsHook: any = null;
+try { useNotesHook = require("@/contexts/NotesContext").useNotes; } catch {}
+try { useSessionHook = require("@/contexts/SessionContext").useSession; } catch {}
+try { useQuestsHook = require("@/contexts/QuestContext").useQuests; } catch {}
 
 export default function VTTInterface() {
   const { isGM } = useCampaign();
@@ -28,11 +37,46 @@ export default function VTTInterface() {
   // Keyboard shortcuts (GM only)
   useVTTKeyboard(toggleShortcuts);
 
-  // Presenter mode broadcast (GM only)
-  const { broadcastPing } = usePresenterController(state, activeMap);
-
   // Audio - hoisted here so it persists across sidebar panel changes
   const audioApi = useVTTAudio();
+
+  // Gather campaign data for presenter sync
+  const notesCtx = useNotesHook?.();
+  const sessionCtx = useSessionHook?.();
+  const questsCtx = useQuestsHook?.();
+
+  const campaignData = useMemo<PresenterCampaignData>(() => ({
+    notes: (notesCtx?.playerNotes || []).map((n: any) => ({
+      id: n.id, title: n.title, content: n.content || "", category: n.category, createdAt: n.created_at,
+    })),
+    sessions: (sessionCtx?.sessions || []).map((s: any) => ({
+      id: s.id, title: s.title, summary: s.summary || s.description, date: s.date || s.session_date, number: s.number || s.session_number,
+    })),
+    handouts: (notesCtx?.handouts || []).map((h: any) => ({
+      id: h.id, title: h.title, imageUrl: h.image_url || h.imageUrl, content: h.content, visible: h.visible !== false,
+    })),
+    quests: (questsCtx?.quests || []).map((q: any) => ({
+      id: q.id, title: q.title, description: q.description, status: q.status, objectives: q.objectives,
+    })),
+  }), [notesCtx?.playerNotes, notesCtx?.handouts, sessionCtx?.sessions, questsCtx?.quests]);
+
+  // Player audio command handlers
+  const onPlayerAudioCommand = useCallback((command: "play" | "pause" | "stop", slot: any) => {
+    if (command === "play") audioApi.playAmbient(slot);
+    else if (command === "pause") audioApi.pauseAmbient(slot);
+    else if (command === "stop") audioApi.stopAmbient(slot);
+  }, [audioApi]);
+
+  const onPlayerSfxTrigger = useCallback((index: number) => {
+    audioApi.playSFX(index);
+  }, [audioApi]);
+
+  // Presenter mode broadcast (GM only)
+  const { broadcastPing } = usePresenterController(state, activeMap, {
+    campaignData,
+    onPlayerAudioCommand,
+    onPlayerSfxTrigger,
+  });
 
   // Resize particle canvas to match container
   useEffect(() => {

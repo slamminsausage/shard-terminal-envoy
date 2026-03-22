@@ -1,5 +1,28 @@
 import { useEffect, useRef, useCallback } from "react";
-import type { VTTState, VTTMap, ParticleConfig, Clock, InitiativeEntry } from "@/types/vtt";
+import type { VTTState, VTTMap, ParticleConfig, Clock, InitiativeEntry, AmbientTrack, AmbientSlot, SFXSlot } from "@/types/vtt";
+
+/**
+ * Lightweight audio state sent to presenter (only serializable fields).
+ */
+export interface PresenterAudioState {
+  masterVolume: number;
+  muted: boolean;
+  ambientA: AmbientTrack | null;
+  ambientB: AmbientTrack | null;
+  ambientC: AmbientTrack | null;
+  ambientD: AmbientTrack | null;
+  sfxSlots: SFXSlot[];
+}
+
+/**
+ * Campaign data sent to presenter for the player sidebar.
+ */
+export interface PresenterCampaignData {
+  notes: { id: string; title: string; content: string; category?: string; createdAt?: string }[];
+  sessions: { id: string; title: string; summary?: string; date?: string; number?: number }[];
+  handouts: { id: string; title: string; imageUrl?: string; content?: string; visible?: boolean }[];
+  quests: { id: string; title: string; description?: string; status?: string; objectives?: any[] }[];
+}
 
 /**
  * Messages sent over BroadcastChannel between controller and presenter.
@@ -13,10 +36,14 @@ export type PresenterMessage =
   | { type: "sync-viewport"; mapId: string; scrollX: number; scrollY: number; zoom: number }
   | { type: "sync-clocks"; clocks: Clock[] }
   | { type: "sync-initiative"; initiative: InitiativeEntry[]; showOnPresenter: boolean }
+  | { type: "sync-audio"; audio: PresenterAudioState }
+  | { type: "sync-campaign"; campaign: PresenterCampaignData }
   | { type: "show-handout"; imageDataUrl: string; name: string }
   | { type: "hide-handout" }
   | { type: "dice-roll"; label: string; dice: number[]; total: number; modifier: number }
   | { type: "gm-ping"; x: number; y: number; label?: string; color?: string }
+  | { type: "player-audio-command"; command: "play" | "pause" | "stop"; slot: AmbientSlot }
+  | { type: "player-sfx-trigger"; index: number }
   | { type: "ping" }
   | { type: "pong" };
 
@@ -25,13 +52,23 @@ const CHANNEL_NAME = "shard-vtt-presenter";
 /**
  * Hook for the controller side. Sends state to presenter window(s).
  */
-export function usePresenterController(state: VTTState, activeMap: VTTMap | null) {
+export function usePresenterController(
+  state: VTTState,
+  activeMap: VTTMap | null,
+  options?: {
+    campaignData?: PresenterCampaignData;
+    onPlayerAudioCommand?: (command: "play" | "pause" | "stop", slot: AmbientSlot) => void;
+    onPlayerSfxTrigger?: (index: number) => void;
+  }
+) {
   const channelRef = useRef<BroadcastChannel | null>(null);
+  const optionsRef = useRef(options);
+  optionsRef.current = options;
 
   useEffect(() => {
     channelRef.current = new BroadcastChannel(CHANNEL_NAME);
 
-    // Respond to pings from presenter
+    // Respond to pings from presenter and handle player commands
     channelRef.current.onmessage = (e: MessageEvent<PresenterMessage>) => {
       if (e.data.type === "ping") {
         channelRef.current?.postMessage({ type: "pong" } satisfies PresenterMessage);
@@ -54,7 +91,31 @@ export function usePresenterController(state: VTTState, activeMap: VTTMap | null
             initiative: state.initiative,
             showOnPresenter: state.showInitiativeOnPresenter ?? false,
           } satisfies PresenterMessage);
+          // Send audio state on connect
+          channelRef.current?.postMessage({
+            type: "sync-audio",
+            audio: {
+              masterVolume: state.audio.masterVolume,
+              muted: state.audio.muted,
+              ambientA: state.audio.ambientA,
+              ambientB: state.audio.ambientB,
+              ambientC: state.audio.ambientC,
+              ambientD: state.audio.ambientD,
+              sfxSlots: state.audio.sfxSlots,
+            },
+          } satisfies PresenterMessage);
+          // Send campaign data on connect
+          if (optionsRef.current?.campaignData) {
+            channelRef.current?.postMessage({
+              type: "sync-campaign",
+              campaign: optionsRef.current.campaignData,
+            } satisfies PresenterMessage);
+          }
         }
+      } else if (e.data.type === "player-audio-command") {
+        optionsRef.current?.onPlayerAudioCommand?.(e.data.command, e.data.slot);
+      } else if (e.data.type === "player-sfx-trigger") {
+        optionsRef.current?.onPlayerSfxTrigger?.(e.data.index);
       }
     };
 
@@ -97,6 +158,32 @@ export function usePresenterController(state: VTTState, activeMap: VTTMap | null
       showOnPresenter: state.showInitiativeOnPresenter ?? false,
     } satisfies PresenterMessage);
   }, [state.initiative, state.showInitiativeOnPresenter]);
+
+  // Send audio state updates
+  useEffect(() => {
+    channelRef.current?.postMessage({
+      type: "sync-audio",
+      audio: {
+        masterVolume: state.audio.masterVolume,
+        muted: state.audio.muted,
+        ambientA: state.audio.ambientA,
+        ambientB: state.audio.ambientB,
+        ambientC: state.audio.ambientC,
+        ambientD: state.audio.ambientD,
+        sfxSlots: state.audio.sfxSlots,
+      },
+    } satisfies PresenterMessage);
+  }, [state.audio.masterVolume, state.audio.muted, state.audio.ambientA, state.audio.ambientB, state.audio.ambientC, state.audio.ambientD, state.audio.sfxSlots]);
+
+  // Send campaign data updates
+  useEffect(() => {
+    if (options?.campaignData) {
+      channelRef.current?.postMessage({
+        type: "sync-campaign",
+        campaign: options.campaignData,
+      } satisfies PresenterMessage);
+    }
+  }, [options?.campaignData]);
 
   const showHandout = useCallback((imageDataUrl: string, name: string) => {
     channelRef.current?.postMessage({
@@ -141,6 +228,19 @@ export function usePresenterController(state: VTTState, activeMap: VTTMap | null
 /**
  * Hook for the presenter side. Receives state from controller.
  */
+export interface PresenterReceiverCallbacks {
+  onMapSync: (map: VTTMap | null) => void;
+  onParticlesSync: (particles: ParticleConfig) => void;
+  onShowHandout: (imageDataUrl: string, name: string) => void;
+  onHideHandout: () => void;
+  onDiceRoll?: (label: string, dice: number[], total: number, modifier: number) => void;
+  onClocksSync?: (clocks: Clock[]) => void;
+  onInitiativeSync?: (initiative: InitiativeEntry[], showOnPresenter: boolean) => void;
+  onGmPing?: (x: number, y: number, label?: string, color?: string) => void;
+  onAudioSync?: (audio: PresenterAudioState) => void;
+  onCampaignSync?: (campaign: PresenterCampaignData) => void;
+}
+
 export function usePresenterReceiver(
   onMapSync: (map: VTTMap | null) => void,
   onParticlesSync: (particles: ParticleConfig) => void,
@@ -149,38 +249,51 @@ export function usePresenterReceiver(
   onDiceRoll?: (label: string, dice: number[], total: number, modifier: number) => void,
   onClocksSync?: (clocks: Clock[]) => void,
   onInitiativeSync?: (initiative: InitiativeEntry[], showOnPresenter: boolean) => void,
-  onGmPing?: (x: number, y: number, label?: string, color?: string) => void
+  onGmPing?: (x: number, y: number, label?: string, color?: string) => void,
+  onAudioSync?: (audio: PresenterAudioState) => void,
+  onCampaignSync?: (campaign: PresenterCampaignData) => void
 ) {
   const channelRef = useRef<BroadcastChannel | null>(null);
+
+  // Use refs for callbacks to avoid re-creating the channel on every render
+  const callbacksRef = useRef({ onMapSync, onParticlesSync, onShowHandout, onHideHandout, onDiceRoll, onClocksSync, onInitiativeSync, onGmPing, onAudioSync, onCampaignSync });
+  callbacksRef.current = { onMapSync, onParticlesSync, onShowHandout, onHideHandout, onDiceRoll, onClocksSync, onInitiativeSync, onGmPing, onAudioSync, onCampaignSync };
 
   useEffect(() => {
     channelRef.current = new BroadcastChannel(CHANNEL_NAME);
 
     channelRef.current.onmessage = (e: MessageEvent<PresenterMessage>) => {
+      const cb = callbacksRef.current;
       switch (e.data.type) {
         case "sync-map":
-          onMapSync(e.data.map);
+          cb.onMapSync(e.data.map);
           break;
         case "sync-particles":
-          onParticlesSync(e.data.particles);
+          cb.onParticlesSync(e.data.particles);
           break;
         case "show-handout":
-          onShowHandout(e.data.imageDataUrl, e.data.name);
+          cb.onShowHandout(e.data.imageDataUrl, e.data.name);
           break;
         case "hide-handout":
-          onHideHandout();
+          cb.onHideHandout();
           break;
         case "dice-roll":
-          onDiceRoll?.(e.data.label, e.data.dice, e.data.total, e.data.modifier);
+          cb.onDiceRoll?.(e.data.label, e.data.dice, e.data.total, e.data.modifier);
           break;
         case "sync-clocks":
-          onClocksSync?.(e.data.clocks);
+          cb.onClocksSync?.(e.data.clocks);
           break;
         case "sync-initiative":
-          onInitiativeSync?.(e.data.initiative, e.data.showOnPresenter);
+          cb.onInitiativeSync?.(e.data.initiative, e.data.showOnPresenter);
           break;
         case "gm-ping":
-          onGmPing?.(e.data.x, e.data.y, e.data.label, e.data.color);
+          cb.onGmPing?.(e.data.x, e.data.y, e.data.label, e.data.color);
+          break;
+        case "sync-audio":
+          cb.onAudioSync?.(e.data.audio);
+          break;
+        case "sync-campaign":
+          cb.onCampaignSync?.(e.data.campaign);
           break;
         case "pong":
           // Controller is alive
@@ -194,5 +307,14 @@ export function usePresenterReceiver(
     return () => {
       channelRef.current?.close();
     };
-  }, [onMapSync, onParticlesSync, onShowHandout, onHideHandout, onDiceRoll, onClocksSync, onInitiativeSync, onGmPing]);
+  }, []);
+
+  /**
+   * Send a message back to the controller (player→GM direction).
+   */
+  const sendToController = useCallback((msg: PresenterMessage) => {
+    channelRef.current?.postMessage(msg);
+  }, []);
+
+  return { sendToController };
 }
