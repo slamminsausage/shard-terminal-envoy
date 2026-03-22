@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useVTT } from "@/contexts/VTTContext";
 import type { Token } from "@/types/vtt";
 import { X, Trash2, Lock, Unlock, Eye, EyeOff } from "lucide-react";
+import { dbHelpers } from "@/lib/supabase";
 
 interface VTTTokenEditModalProps {
   token: Token;
@@ -62,9 +63,18 @@ export default function VTTTokenEditModal({
     const input = document.createElement("input");
     input.type = "file";
     input.accept = "image/*";
-    input.onchange = (e) => {
+    input.onchange = async (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (!file) return;
+
+      // Try uploading to Supabase Storage first
+      const publicUrl = await dbHelpers.uploadVTTTokenImage(file, token.id);
+      if (publicUrl) {
+        update({ imageDataUrl: publicUrl });
+        return;
+      }
+
+      // Fallback: store as data URL
       const reader = new FileReader();
       reader.onload = (ev) => {
         update({ imageDataUrl: ev.target?.result as string });

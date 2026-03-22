@@ -139,28 +139,52 @@ export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           })));
         }
 
-        // Load handouts from localStorage (with migration support)
-        const savedHandouts = localStorage.getItem('traveller_handouts');
-        if (savedHandouts) {
-          const loadedHandouts = JSON.parse(savedHandouts);
+        // Load handouts from Supabase DB
+        const dbHandouts = await dbHelpers.getAllHandouts();
 
-          // Check if migration is needed
-          const hasMigrationNeeded = loadedHandouts.some(
-            (h: Handout) => h.mediaUrl &&
-              (h.mediaUrl.startsWith('data:image/') || h.mediaUrl.startsWith('data:video/'))
-          );
+        if (dbHandouts.length === 0) {
+          // Check localStorage for existing handouts to migrate
+          const savedHandouts = localStorage.getItem('traveller_handouts');
+          if (savedHandouts) {
+            const localHandouts: Handout[] = JSON.parse(savedHandouts);
+            if (localHandouts.length > 0) {
+              if (import.meta.env.DEV) console.log(`Migrating ${localHandouts.length} handouts to Supabase DB...`);
 
-          if (hasMigrationNeeded) {
-            if (import.meta.env.DEV) console.log('Found handouts with base64 data, migrating to Supabase Storage...');
-            const { handouts: migratedHandouts, migrated } = await migrateHandoutsToStorage(loadedHandouts);
-            setHandouts(migratedHandouts);
+              // Migrate any remaining base64 media URLs to Storage first
+              const { handouts: migratedHandouts } = await migrateHandoutsToStorage(localHandouts);
 
-            if (migrated) {
-              if (import.meta.env.DEV) console.log('Migration complete! Handouts now use Supabase Storage.');
+              // Save each to DB
+              let migratedCount = 0;
+              for (const handout of migratedHandouts) {
+                try {
+                  await dbHelpers.saveHandout(handout);
+                  migratedCount++;
+                } catch (err) {
+                  console.error(`Failed to migrate handout "${handout.title}":`, err);
+                }
+              }
+
+              if (import.meta.env.DEV) console.log(`Migrated ${migratedCount}/${migratedHandouts.length} handouts to DB`);
+              setHandouts(migratedHandouts);
+              localStorage.removeItem('traveller_handouts');
             }
-          } else {
-            setHandouts(loadedHandouts);
           }
+        } else {
+          // Map DB row format → Handout interface
+          const mapped: Handout[] = dbHandouts.map((row: any) => ({
+            id: row.id,
+            title: row.title,
+            description: row.description || '',
+            type: row.type,
+            content: row.content || undefined,
+            mediaUrl: row.media_url || undefined,
+            thumbnailUrl: row.thumbnail_url || undefined,
+            isVisible: row.is_visible ?? false,
+            tags: row.tags || [],
+            createdAt: row.created_at,
+            updatedAt: row.updated_at,
+          }));
+          setHandouts(mapped);
         }
       } catch (error) {
         console.error('Error loading data:', error);
@@ -170,32 +194,7 @@ export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     loadData();
   }, []);
 
-  // Player notes are now saved to database, no need for localStorage sync
-
-  // Save handouts to localStorage (only metadata, media is in Supabase Storage)
-  useEffect(() => {
-    try {
-      const handoutsJSON = JSON.stringify(handouts);
-
-      // Check for any remaining base64 data URLs (shouldn't happen, but just in case)
-      const hasBase64 = handouts.some(
-        h => h.mediaUrl && (h.mediaUrl.startsWith('data:image/') || h.mediaUrl.startsWith('data:video/'))
-      );
-
-      if (hasBase64 && import.meta.env?.DEV) {
-        console.warn('Warning: Some handouts still contain base64 data. This may cause storage issues.');
-      }
-
-      localStorage.setItem('traveller_handouts', handoutsJSON);
-    } catch (error) {
-      if (error instanceof DOMException && error.name === 'QuotaExceededError') {
-        console.error('localStorage quota exceeded! This should not happen with Supabase Storage.');
-        alert('Storage limit exceeded! Please contact support - media should be stored in cloud storage.');
-      } else {
-        console.error('Error saving handouts to localStorage:', error);
-      }
-    }
-  }, [handouts]);
+  // Player notes and handouts are now saved to Supabase DB — no localStorage sync needed
 
   // Player notes functions
   const addPlayerNote = useCallback(async (note: Omit<PlayerNote, 'id' | 'createdAt' | 'updatedAt'>) => {
@@ -312,38 +311,54 @@ export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       mediaUrl,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-      // Ensure isVisible is explicitly set (defaults to false if not provided)
       isVisible: handout.isVisible ?? false,
     };
+
+    try {
+      await dbHelpers.saveHandout(newHandout);
+    } catch (error) {
+      console.error('Failed to save handout to DB:', error);
+    }
     setHandouts(prev => [...prev, newHandout]);
   }, []);
 
   const updateHandout = useCallback((id: string, updates: Partial<Handout>) => {
-    setHandouts(prev =>
-      prev.map(handout =>
+    setHandouts(prev => {
+      const updated = prev.map(handout =>
         handout.id === id
           ? { ...handout, ...updates, updatedAt: new Date().toISOString() }
           : handout
-      )
-    );
+      );
+      const changed = updated.find(h => h.id === id);
+      if (changed) {
+        dbHelpers.saveHandout(changed).catch(err => console.error('Failed to save handout update:', err));
+      }
+      return updated;
+    });
   }, []);
 
   const deleteHandout = useCallback(async (id: string) => {
-    // Delete media from Supabase Storage first
-    await dbHelpers.deleteHandoutMedia(id);
-
-    // Then remove from state
+    // Delete media from Supabase Storage and metadata from DB
+    await Promise.all([
+      dbHelpers.deleteHandoutMedia(id),
+      dbHelpers.deleteHandout(id),
+    ]);
     setHandouts(prev => prev.filter(handout => handout.id !== id));
   }, []);
 
   const toggleHandoutVisibility = useCallback((id: string) => {
-    setHandouts(prev =>
-      prev.map(h =>
+    setHandouts(prev => {
+      const updated = prev.map(h =>
         h.id === id
           ? { ...h, isVisible: !h.isVisible, updatedAt: new Date().toISOString() }
           : h
-      )
-    );
+      );
+      const changed = updated.find(h => h.id === id);
+      if (changed) {
+        dbHelpers.saveHandout(changed).catch(err => console.error('Failed to save handout visibility:', err));
+      }
+      return updated;
+    });
   }, []);
 
   return (

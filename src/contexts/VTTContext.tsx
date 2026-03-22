@@ -6,6 +6,7 @@ import React, {
   useEffect,
   useRef,
 } from "react";
+import { dbHelpers } from "@/lib/supabase";
 import type {
   VTTState,
   VTTMap,
@@ -1075,7 +1076,60 @@ export function VTTProvider({ children }: { children: React.ReactNode }) {
     stateRef.current = state;
   }, [state]);
 
-  // Autosave every 2 minutes (strip non-persistent data like blob URLs)
+  // On mount: load from Supabase (overrides localStorage-based initial state),
+  // and migrate any existing base64 map images to Supabase Storage
+  useEffect(() => {
+    const loadAndMigrate = async () => {
+      try {
+        const dbState = await dbHelpers.loadVTTSession();
+        if (dbState) {
+          // Apply same migrations as the lazy initializer
+          if (!dbState.selectedTokenIds) dbState.selectedTokenIds = [];
+          if (!dbState.selectedStrokeIds) dbState.selectedStrokeIds = [];
+          if (!dbState.selectedTextIds) dbState.selectedTextIds = [];
+          if (!dbState.selectedNoteIds) dbState.selectedNoteIds = [];
+          if (!dbState.layerStates) {
+            dbState.layerStates = {
+              0: { visible: true, locked: false },
+              1: { visible: true, locked: false },
+              2: { visible: true, locked: false },
+            };
+          }
+          for (const m of dbState.maps || []) {
+            if (!m.aoeTemplates) m.aoeTemplates = [];
+            if (m.imageScale === undefined) m.imageScale = 1;
+            if (m.imageOffsetX === undefined) m.imageOffsetX = 0;
+            if (m.imageOffsetY === undefined) m.imageOffsetY = 0;
+            if (m.imageNaturalWidth === undefined) m.imageNaturalWidth = 0;
+            if (m.imageNaturalHeight === undefined) m.imageNaturalHeight = 0;
+            // Clear stale blob URLs
+            if (m.isVideo && m.imageDataUrl?.startsWith("blob:")) {
+              m.imageDataUrl = null;
+            }
+          }
+          dispatch({ type: "LOAD_SESSION", payload: dbState });
+        } else {
+          // No Supabase state yet — migrate any base64 images from the localStorage state
+          const current = stateRef.current;
+          for (const m of current.maps) {
+            if (m.imageDataUrl && m.imageDataUrl.startsWith("data:image/")) {
+              const mimeType = m.imageDataUrl.split(";")[0].split(":")[1];
+              const url = await dbHelpers.uploadVTTMapImageFromDataURL(m.imageDataUrl, m.id, mimeType);
+              if (url) {
+                dispatch({ type: "SET_MAP_IMAGE", payload: { mapId: m.id, dataUrl: url, width: m.width, height: m.height } });
+              }
+            }
+          }
+        }
+      } catch (e) {
+        console.warn("Failed to load VTT session from Supabase:", e);
+      }
+    };
+    loadAndMigrate();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Autosave every 2 minutes — write to Supabase + keep localStorage as fallback
   useEffect(() => {
     const interval = setInterval(() => {
       try {
@@ -1091,6 +1145,9 @@ export function VTTProvider({ children }: { children: React.ReactNode }) {
         toSave.selectedStrokeIds = [];
         toSave.selectedTextIds = [];
         toSave.selectedNoteIds = [];
+        // Primary: save to Supabase
+        dbHelpers.saveVTTSession(toSave).catch(e => console.warn("VTT Supabase autosave failed:", e));
+        // Fallback: keep localStorage copy
         localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
       } catch (e) {
         console.warn("VTT autosave failed:", e);
@@ -1162,6 +1219,37 @@ export function VTTProvider({ children }: { children: React.ReactNode }) {
         });
       }
 
+      // Upload to Supabase Storage, fall back to data URL if upload fails
+      let imageUrl: string | null = null;
+      try {
+        imageUrl = await dbHelpers.uploadVTTMapImage(file, mapId);
+      } catch (e) {
+        console.warn("Failed to upload map image to Supabase, falling back to data URL:", e);
+      }
+
+      if (imageUrl) {
+        return new Promise<void>((resolve, reject) => {
+          const img = new Image();
+          img.onload = () => {
+            const currentMap = stateRef.current.maps.find((m) => m.id === mapId);
+            const canvasW = currentMap?.width || 1920;
+            const canvasH = currentMap?.height || 1080;
+            const fitScale = Math.min(canvasW / img.naturalWidth, canvasH / img.naturalHeight);
+            dispatch({ type: "SET_MAP_IMAGE", payload: { mapId, dataUrl: imageUrl!, width: canvasW, height: canvasH } });
+            dispatch({
+              type: "UPDATE_MAP",
+              payload: {
+                id: mapId,
+                updates: { isVideo: false, imageScale: fitScale, imageOffsetX: 0, imageOffsetY: 0, imageNaturalWidth: img.naturalWidth, imageNaturalHeight: img.naturalHeight },
+              },
+            });
+            resolve();
+          };
+          img.onerror = () => reject(new Error("Failed to load image from URL"));
+          img.src = imageUrl!;
+        });
+      }
+
       return new Promise<void>((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = (e) => {
@@ -1225,6 +1313,8 @@ export function VTTProvider({ children }: { children: React.ReactNode }) {
       toSave.selectedStrokeIds = [];
       toSave.selectedTextIds = [];
       toSave.selectedNoteIds = [];
+      // Save to Supabase (primary) and localStorage (fallback)
+      dbHelpers.saveVTTSession(toSave).catch(e => console.warn("VTT Supabase save failed:", e));
       localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
     } catch (e) {
       console.warn("VTT save failed:", e);
