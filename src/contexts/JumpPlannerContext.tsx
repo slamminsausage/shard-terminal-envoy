@@ -186,6 +186,27 @@ export function JumpPlannerProvider({ children }: { children: React.ReactNode })
     loadPlayerLocation();
   }, []);
 
+  // If playerLocation is set without a worldName (timing race or loaded from storage),
+  // try to look up the world name so the YAH marker can be shown correctly.
+  useEffect(() => {
+    if (!state.playerLocation || state.playerLocation.worldName) return;
+
+    const { sector, hex } = state.playerLocation;
+    getWorldData(sector, hex)
+      .then((worldData) => {
+        if (!worldData) return;
+        setState((prev) => {
+          // Only update if still the same player location
+          if (prev.playerLocation?.sector !== sector || prev.playerLocation?.hex !== hex) return prev;
+          return {
+            ...prev,
+            playerLocation: { ...prev.playerLocation, worldName: worldData.name },
+          };
+        });
+      })
+      .catch(() => {/* empty hex or API error — leave worldName undefined */});
+  }, [state.playerLocation?.sector, state.playerLocation?.hex]);
+
   // Save player location to Supabase (with localStorage backup) when it changes
   useEffect(() => {
     // Skip the initial save - only save after user interactions
