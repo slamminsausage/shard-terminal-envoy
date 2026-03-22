@@ -14,14 +14,9 @@ import type { PresenterCampaignData } from "@/hooks/useVTTPresenter";
 import { useVTTAudio } from "@/hooks/useVTTAudio";
 import { VTTAudioProvider } from "@/contexts/VTTAudioContext";
 import { useCampaign } from "@/contexts/CampaignContext";
-
-// Safely import campaign contexts for presenter sync
-let useNotesHook: any = null;
-let useSessionHook: any = null;
-let useQuestsHook: any = null;
-try { useNotesHook = require("@/contexts/NotesContext").useNotes; } catch {}
-try { useSessionHook = require("@/contexts/SessionContext").useSession; } catch {}
-try { useQuestsHook = require("@/contexts/QuestContext").useQuests; } catch {}
+import { useNotes } from "@/contexts/NotesContext";
+import { useSession } from "@/contexts/SessionContext";
+import { useQuest } from "@/contexts/QuestContext";
 
 export default function VTTInterface() {
   const { isGM } = useCampaign();
@@ -41,19 +36,19 @@ export default function VTTInterface() {
   const audioApi = useVTTAudio();
 
   // Gather campaign data for presenter sync
-  const notesCtx = useNotesHook?.();
-  const sessionCtx = useSessionHook?.();
-  const questsCtx = useQuestsHook?.();
+  const notesCtx = useNotes();
+  const sessionCtx = useSession();
+  const questsCtx = useQuest();
 
   const campaignData = useMemo<PresenterCampaignData>(() => ({
     notes: (notesCtx?.playerNotes || []).map((n: any) => ({
       id: n.id, title: n.title, content: n.content || "", category: n.category, createdAt: n.created_at,
     })),
     sessions: (sessionCtx?.sessions || []).map((s: any) => ({
-      id: s.id, title: s.title, summary: s.summary || s.description, date: s.date || s.session_date, number: s.number || s.session_number,
+      id: s.id, title: s.title, summary: s.summary, date: s.session_date, number: s.session_number,
     })),
     handouts: (notesCtx?.handouts || []).map((h: any) => ({
-      id: h.id, title: h.title, imageUrl: h.image_url || h.imageUrl, content: h.content, visible: h.visible !== false,
+      id: h.id, title: h.title, imageUrl: h.mediaUrl, content: h.content, visible: h.isVisible !== false,
     })),
     quests: (questsCtx?.quests || []).map((q: any) => ({
       id: q.id, title: q.title, description: q.description, status: q.status, objectives: q.objectives,
