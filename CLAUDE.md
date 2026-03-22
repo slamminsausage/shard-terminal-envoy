@@ -18,7 +18,6 @@ This file provides guidance for AI assistants working on the Shard Terminal Envo
 - **Routing**: React Router DOM 6
 - **Animations**: Framer Motion
 - **Icons**: Lucide React
-- **Platform**: Lovable.dev (auto-commits and publishes)
 
 ## Commands
 
