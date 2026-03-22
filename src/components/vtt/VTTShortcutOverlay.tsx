@@ -82,20 +82,20 @@ export default function VTTShortcutOverlay({ onClose }: VTTShortcutOverlayProps)
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center"
+      className="vtt-shortcut-overlay"
       onClick={onClose}
     >
       <div
-        className="bg-terminal-bg-dark/95 border border-terminal-border/50 rounded-lg p-6 max-w-3xl max-h-[80vh] overflow-y-auto"
+        className="vtt-shortcut-panel"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-terminal-primary font-mono text-sm uppercase tracking-wider">
+          <h2 className="vtt-sidebar-title text-sm">
             Keyboard Shortcuts
           </h2>
           <button
             onClick={onClose}
-            className="text-terminal-primary/50 hover:text-terminal-primary"
+            className="vtt-btn-icon"
           >
             <X size={16} />
           </button>
@@ -104,16 +104,16 @@ export default function VTTShortcutOverlay({ onClose }: VTTShortcutOverlayProps)
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
           {shortcuts.map(({ category, items }) => (
             <div key={category}>
-              <h3 className="text-terminal-primary/70 text-xs font-mono uppercase tracking-wider mb-2 border-b border-terminal-border/20 pb-1">
+              <h3 className="vtt-section-label mb-2 pb-1 border-b border-[rgba(0,255,0,0.12)]">
                 {category}
               </h3>
               <div className="space-y-1">
                 {items.map(({ key, desc }) => (
                   <div key={key + desc} className="flex items-center gap-2 text-xs">
-                    <kbd className="bg-terminal-primary/10 text-terminal-primary border border-terminal-border/30 rounded px-1.5 py-0.5 font-mono text-[10px] min-w-[2rem] text-center">
+                    <kbd className="vtt-kbd">
                       {key}
                     </kbd>
-                    <span className="text-terminal-primary/50">{desc}</span>
+                    <span className="text-[rgba(0,255,0,0.5)] font-mono text-xs">{desc}</span>
                   </div>
                 ))}
               </div>
@@ -121,7 +121,7 @@ export default function VTTShortcutOverlay({ onClose }: VTTShortcutOverlayProps)
           ))}
         </div>
 
-        <div className="mt-4 text-center text-[10px] text-terminal-primary/30">
+        <div className="mt-4 text-center text-[10px] text-[rgba(0,255,0,0.25)] font-mono">
           Press ? or Esc to close
         </div>
       </div>

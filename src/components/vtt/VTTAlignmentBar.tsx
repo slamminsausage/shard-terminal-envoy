@@ -35,7 +35,7 @@ export default function VTTAlignmentBar() {
   if (totalSelected < 2 || !activeMap) return null;
 
   return (
-    <div className="absolute top-10 left-1/2 -translate-x-1/2 z-10 flex gap-0.5 bg-terminal-bg-dark/90 border border-terminal-border/30 rounded-md px-1.5 py-1 shadow-lg">
+    <div className="absolute top-10 left-1/2 -translate-x-1/2 z-10 flex gap-0.5 vtt-hud px-1.5 py-1">
       {buttons.map(({ alignment, icon, label }) => (
         <button
           key={alignment}
@@ -45,7 +45,7 @@ export default function VTTAlignmentBar() {
               payload: { mapId: activeMap.id, alignment },
             })
           }
-          className="flex items-center justify-center w-7 h-7 rounded text-terminal-primary/50 hover:text-terminal-primary hover:bg-terminal-primary/10 transition-colors"
+          className="vtt-btn-icon"
           title={label}
         >
           {icon}

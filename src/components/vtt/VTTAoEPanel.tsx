@@ -8,13 +8,13 @@ export default function VTTAoEPanel() {
   return (
     <div className="flex flex-col h-full p-3 space-y-3">
       <div className="flex items-center justify-between">
-        <span className="text-[10px] text-terminal-primary/50 uppercase tracking-wider font-mono">
+        <span className="vtt-section-label">
           AoE Templates
         </span>
         {templates.length > 0 && (
           <button
             onClick={() => dispatch({ type: "CLEAR_AOE" })}
-            className="flex items-center gap-1 px-2 py-0.5 text-[10px] font-mono rounded border border-red-500/30 text-red-400/60 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+            className="vtt-btn danger"
           >
             <X size={10} /> Clear All
           </button>
@@ -23,7 +23,7 @@ export default function VTTAoEPanel() {
 
       {/* Tool shortcuts */}
       <div>
-        <label className="text-[10px] text-terminal-primary/50 font-mono block mb-1.5">
+        <label className="vtt-section-label block mb-1.5">
           Place AoE
         </label>
         <div className="grid grid-cols-3 gap-1">
@@ -35,10 +35,10 @@ export default function VTTAoEPanel() {
             <button
               key={tool}
               onClick={() => dispatch({ type: "SET_TOOL", payload: tool })}
-              className={`flex items-center justify-center gap-1 px-2 py-1.5 text-xs font-mono rounded border transition-colors ${
+              className={`vtt-option justify-center py-1.5 ${
                 state.activeTool === tool
-                  ? `bg-terminal-primary/10 ${color}`
-                  : `border-terminal-border/30 text-terminal-primary/40 hover:text-terminal-primary/60`
+                  ? `vtt-option--active ${color}`
+                  : ""
               }`}
             >
               <Target size={10} /> {label}
@@ -50,7 +50,7 @@ export default function VTTAoEPanel() {
       {/* Active templates list */}
       <div className="flex-1 overflow-y-auto space-y-1">
         {templates.length === 0 ? (
-          <div className="text-terminal-primary/20 text-xs font-mono text-center py-6">
+          <div className="vtt-empty py-6">
             No active AoE templates.
             <br />
             <span className="text-[10px]">
@@ -61,7 +61,7 @@ export default function VTTAoEPanel() {
           templates.map((aoe) => (
             <div
               key={aoe.id}
-              className="flex items-center gap-2 p-2 rounded bg-terminal-bg-dark/50 border border-terminal-border/20 group"
+              className="vtt-list-item group"
             >
               <div
                 className="w-4 h-4 rounded-sm flex-shrink-0"

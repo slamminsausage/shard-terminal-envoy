@@ -59,7 +59,7 @@ export default function VTTTokenHUD({ token, mapId, screenX, screenY }: VTTToken
       }}
       onMouseDown={(e) => e.stopPropagation()}
     >
-      <div className="bg-black/90 border border-terminal-border/50 rounded-lg px-2 py-1.5 flex flex-col gap-1.5 shadow-lg backdrop-blur-sm min-w-[180px]">
+      <div className="vtt-hud px-2 py-1.5 flex flex-col gap-1.5 min-w-[180px]">
         {/* HP row */}
         <div className="flex items-center gap-1.5 justify-center">
           <button
@@ -68,7 +68,7 @@ export default function VTTTokenHUD({ token, mapId, screenX, screenY }: VTTToken
           >
             <Minus size={10} />
           </button>
-          <span className="text-terminal-primary font-mono text-xs font-bold min-w-[50px] text-center">
+          <span className="text-[var(--primary)] font-mono text-xs font-bold min-w-[50px] text-center">
             {token.hp} / {token.maxHp}
           </span>
           <button
@@ -77,14 +77,14 @@ export default function VTTTokenHUD({ token, mapId, screenX, screenY }: VTTToken
           >
             <Plus size={10} />
           </button>
-          <div className="w-px h-4 bg-terminal-border/30 mx-0.5" />
+          <div className="w-px h-4 bg-[rgba(0,255,0,0.15)] mx-0.5" />
           {/* Elevation */}
-          <span className="text-[9px] text-terminal-primary/40 font-mono">ELV</span>
+          <span className="text-[9px] text-[rgba(0,255,0,0.4)] font-mono">ELV</span>
           <input
             type="number"
             value={token.elevation ?? 0}
             onChange={(e) => update({ elevation: parseInt(e.target.value) || 0 })}
-            className="w-10 bg-terminal-bg-dark border border-terminal-border/30 text-terminal-primary text-[10px] px-1 py-0 rounded font-mono text-center focus:border-terminal-primary/50 focus:outline-none"
+            className="vtt-input w-10 text-center !text-[10px] !py-0 !px-1"
           />
           {/* Torch toggle */}
           <button
@@ -92,7 +92,7 @@ export default function VTTTokenHUD({ token, mapId, screenX, screenY }: VTTToken
             className={`w-5 h-5 flex items-center justify-center rounded transition-colors ${
               (token.lightBrightRadius ?? 0) > 0
                 ? "bg-orange-500/30 text-orange-400"
-                : "bg-terminal-bg-dark text-terminal-primary/30 hover:text-terminal-primary/50"
+                : "bg-[var(--bg-dark)] text-[rgba(0,255,0,0.3)] hover:text-[rgba(0,255,0,0.5)]"
             }`}
             title="Toggle torch (bright 4 / dim 8)"
           >
@@ -111,7 +111,7 @@ export default function VTTTokenHUD({ token, mapId, screenX, screenY }: VTTToken
                 className={`px-1.5 py-0 text-[9px] font-mono rounded border transition-colors ${
                   active
                     ? "border-current bg-current/10"
-                    : "border-terminal-border/20 text-terminal-primary/30 hover:text-terminal-primary/50"
+                    : "border-[rgba(0,255,0,0.1)] text-[rgba(0,255,0,0.3)] hover:text-[rgba(0,255,0,0.5)]"
                 }`}
                 style={active ? { color: cond.color, borderColor: cond.color + "66" } : undefined}
               >
@@ -123,7 +123,7 @@ export default function VTTTokenHUD({ token, mapId, screenX, screenY }: VTTToken
       </div>
       {/* Arrow pointing down to token */}
       <div className="flex justify-center">
-        <div className="w-0 h-0 border-l-[6px] border-r-[6px] border-t-[6px] border-l-transparent border-r-transparent border-t-terminal-border/50" />
+        <div className="w-0 h-0 border-l-[6px] border-r-[6px] border-t-[6px] border-l-transparent border-r-transparent border-t-[rgba(0,255,0,0.35)]" />
       </div>
     </div>
   );

@@ -90,16 +90,10 @@ export default function VTTToolbar() {
   };
 
   const btnClass = (active: boolean) =>
-    `flex items-center justify-center w-7 h-7 rounded transition-colors ${
-      active
-        ? "bg-terminal-primary/20 text-terminal-primary border border-terminal-primary/50"
-        : "text-terminal-primary/50 hover:text-terminal-primary hover:bg-terminal-primary/10"
-    }`;
-
-  const smallBtn = "flex items-center justify-center w-7 h-7 rounded text-terminal-primary/40 hover:text-terminal-primary hover:bg-terminal-primary/10 transition-colors";
+    `vtt-btn-icon ${active ? "vtt-btn-icon--active" : ""}`;
 
   return (
-    <div className="flex flex-col items-center py-1 px-0.5 bg-terminal-bg-dark border-r border-terminal-border/30 select-none" style={{ width: 38 }}>
+    <div className="vtt-toolbar border-r" style={{ width: 38 }}>
       {/* Drawing tools */}
       {tools.map(({ tool, icon, label, shortcut }) => (
         <button
@@ -112,8 +106,7 @@ export default function VTTToolbar() {
         </button>
       ))}
 
-      {/* Separator */}
-      <div className="w-5 border-t border-terminal-border/25 my-1" />
+      <div className="vtt-separator" />
 
       {/* Map building tools */}
       {mapTools.map(({ tool, icon, label, shortcut }) => (
@@ -127,8 +120,7 @@ export default function VTTToolbar() {
         </button>
       ))}
 
-      {/* Separator */}
-      <div className="w-5 border-t border-terminal-border/25 my-1" />
+      <div className="vtt-separator" />
 
       {/* AoE tools */}
       {aoeTools.map(({ tool, icon, label, shortcut }) => (
@@ -142,8 +134,7 @@ export default function VTTToolbar() {
         </button>
       ))}
 
-      {/* Separator */}
-      <div className="w-5 border-t border-terminal-border/25 my-1" />
+      <div className="vtt-separator" />
 
       {/* View toggles */}
       <button
@@ -164,7 +155,7 @@ export default function VTTToolbar() {
       {/* Map controls */}
       {activeMap && (
         <>
-          <div className="w-5 border-t border-terminal-border/25 my-1" />
+          <div className="vtt-separator" />
           <button
             onClick={() =>
               dispatch({
@@ -175,7 +166,7 @@ export default function VTTToolbar() {
                 },
               })
             }
-            className={smallBtn}
+            className="vtt-btn-icon"
             title={`Rotate Map (${activeMap.rotation}°)`}
           >
             <RotateCw size={13} />
@@ -190,7 +181,7 @@ export default function VTTToolbar() {
                 },
               })
             }
-            className={`${smallBtn} ${activeMap.flipH ? "text-terminal-primary" : ""}`}
+            className={`vtt-btn-icon ${activeMap.flipH ? "vtt-btn-icon--active" : ""}`}
             title="Flip Horizontal"
           >
             <FlipHorizontal size={13} />
@@ -205,7 +196,7 @@ export default function VTTToolbar() {
                 },
               })
             }
-            className={`${smallBtn} ${activeMap.flipV ? "text-terminal-primary" : ""}`}
+            className={`vtt-btn-icon ${activeMap.flipV ? "vtt-btn-icon--active" : ""}`}
             title="Flip Vertical"
           >
             <FlipVertical size={13} />
@@ -219,21 +210,21 @@ export default function VTTToolbar() {
       {/* Bottom actions */}
       <button
         onClick={() => window.open("/presenter", "_blank", "popup=true")}
-        className="flex items-center justify-center w-7 h-7 rounded text-terminal-primary/40 hover:text-cyan-400 hover:bg-cyan-400/10 transition-colors"
+        className="vtt-btn-icon hover:!text-cyan-400 hover:!border-cyan-400/30"
         title="Presenter View"
       >
         <Presentation size={14} />
       </button>
 
-      <div className="w-5 border-t border-terminal-border/25 my-1" />
+      <div className="vtt-separator" />
 
-      <button onClick={saveSession} className={smallBtn} title="Save (Ctrl+S)">
+      <button onClick={saveSession} className="vtt-btn-icon" title="Save (Ctrl+S)">
         <Save size={13} />
       </button>
-      <button onClick={handleExport} className={smallBtn} title="Export Session">
+      <button onClick={handleExport} className="vtt-btn-icon" title="Export Session">
         <Download size={13} />
       </button>
-      <button onClick={handleImport} className={smallBtn} title="Import Session">
+      <button onClick={handleImport} className="vtt-btn-icon" title="Import Session">
         <Upload size={13} />
       </button>
     </div>

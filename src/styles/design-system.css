@@ -1591,3 +1591,482 @@ input[type="color"] {
     padding: 0.5rem 0.625rem;
   }
 }
+
+/* ===================================
+   VTT DESIGN SYSTEM
+   =================================== */
+
+/* VTT Toolbar — vertical tool strip */
+.vtt-toolbar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.25rem 0.15rem;
+  background: linear-gradient(180deg, rgba(0, 255, 0, 0.04) 0%, var(--bg-panel) 100%);
+  border-color: rgba(0, 255, 0, 0.2);
+  box-shadow: inset 0 0 20px rgba(0, 255, 0, 0.03);
+  user-select: none;
+}
+
+/* VTT Toolbar icon button */
+.vtt-btn-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 4px;
+  color: rgba(0, 255, 0, 0.45);
+  background: transparent;
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.vtt-btn-icon:hover {
+  color: var(--primary);
+  background: rgba(0, 255, 0, 0.08);
+  border-color: rgba(0, 255, 0, 0.15);
+}
+
+.vtt-btn-icon--active {
+  color: var(--primary);
+  background: rgba(0, 255, 0, 0.15);
+  border-color: rgba(0, 255, 0, 0.4);
+  box-shadow: 0 0 8px rgba(0, 255, 0, 0.2), inset 0 0 6px rgba(0, 255, 0, 0.05);
+}
+
+/* VTT toolbar separator */
+.vtt-separator {
+  width: 1.25rem;
+  height: 0;
+  border-top: 1px solid rgba(0, 255, 0, 0.15);
+  margin: 0.3rem 0;
+  box-shadow: 0 0 4px rgba(0, 255, 0, 0.1);
+}
+
+/* VTT Sidebar container */
+.vtt-sidebar {
+  width: 16rem;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(180deg, rgba(0, 255, 0, 0.03) 0%, var(--bg-panel) 40%, var(--bg-dark) 100%);
+  border-left: 1px solid rgba(0, 255, 0, 0.25);
+  box-shadow: -2px 0 20px rgba(0, 255, 0, 0.06), inset 2px 0 12px rgba(0, 255, 0, 0.02);
+}
+
+/* VTT Sidebar header */
+.vtt-sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid rgba(0, 255, 0, 0.25);
+  background: linear-gradient(180deg, rgba(0, 255, 0, 0.08) 0%, rgba(0, 255, 0, 0.02) 100%);
+}
+
+.vtt-sidebar-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  color: var(--primary);
+  text-transform: uppercase;
+  text-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
+}
+
+/* VTT Section label */
+.vtt-section-label {
+  display: block;
+  font-size: 0.625rem;
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 700;
+  color: rgba(0, 255, 0, 0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  margin-bottom: 0.35rem;
+}
+
+/* VTT Compact input */
+.vtt-input {
+  width: 100%;
+  background: var(--bg-dark);
+  border: 1px solid rgba(0, 255, 0, 0.2);
+  border-radius: 4px;
+  padding: 0.35rem 0.5rem;
+  color: var(--primary);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  outline: none;
+  transition: all 0.2s ease;
+  box-shadow: inset 0 0 6px rgba(0, 255, 0, 0.04);
+}
+
+.vtt-input:focus {
+  border-color: rgba(0, 255, 0, 0.5);
+  box-shadow: 0 0 8px rgba(0, 255, 0, 0.15), inset 0 0 8px rgba(0, 255, 0, 0.06);
+}
+
+.vtt-input::placeholder {
+  color: rgba(0, 255, 0, 0.25);
+}
+
+/* VTT Compact button */
+.vtt-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  padding: 0.3rem 0.6rem;
+  background: linear-gradient(180deg, rgba(0, 68, 0, 0.5) 0%, rgba(0, 34, 0, 0.3) 100%);
+  border: 1px solid rgba(0, 255, 0, 0.35);
+  border-radius: 4px;
+  color: var(--primary);
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  box-shadow: 0 0 6px rgba(0, 255, 0, 0.1);
+}
+
+.vtt-btn:hover {
+  background: linear-gradient(180deg, rgba(0, 85, 0, 0.6) 0%, rgba(0, 51, 0, 0.4) 100%);
+  box-shadow: 0 0 12px rgba(0, 255, 0, 0.25);
+  border-color: rgba(0, 255, 0, 0.5);
+}
+
+.vtt-btn:active {
+  transform: translateY(1px);
+}
+
+.vtt-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* VTT Button variants */
+.vtt-btn.danger {
+  background: linear-gradient(180deg, rgba(255, 51, 68, 0.15) 0%, rgba(204, 34, 51, 0.08) 100%);
+  border-color: rgba(255, 51, 68, 0.35);
+  color: var(--danger);
+  box-shadow: 0 0 6px rgba(255, 51, 68, 0.1);
+}
+
+.vtt-btn.danger:hover {
+  background: linear-gradient(180deg, rgba(255, 51, 68, 0.25) 0%, rgba(204, 34, 51, 0.15) 100%);
+  box-shadow: 0 0 12px rgba(255, 51, 68, 0.2);
+}
+
+.vtt-btn.secondary {
+  background: linear-gradient(180deg, rgba(0, 204, 255, 0.12) 0%, rgba(0, 153, 204, 0.06) 100%);
+  border-color: rgba(0, 204, 255, 0.35);
+  color: var(--secondary);
+  box-shadow: 0 0 6px rgba(0, 204, 255, 0.1);
+}
+
+.vtt-btn.secondary:hover {
+  box-shadow: 0 0 12px rgba(0, 204, 255, 0.2);
+}
+
+.vtt-btn.warning {
+  background: linear-gradient(180deg, rgba(255, 204, 0, 0.12) 0%, rgba(204, 153, 0, 0.06) 100%);
+  border-color: rgba(255, 204, 0, 0.35);
+  color: #ffcc00;
+  box-shadow: 0 0 6px rgba(255, 204, 0, 0.1);
+}
+
+.vtt-btn.warning:hover {
+  box-shadow: 0 0 12px rgba(255, 204, 0, 0.2);
+}
+
+/* VTT Option button — for toggle groups / preset selectors */
+.vtt-option {
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  padding: 0.3rem 0.4rem;
+  border-radius: 4px;
+  border: 1px solid rgba(0, 255, 0, 0.2);
+  color: rgba(0, 255, 0, 0.4);
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.vtt-option:hover {
+  color: rgba(0, 255, 0, 0.65);
+  border-color: rgba(0, 255, 0, 0.3);
+  background: rgba(0, 255, 0, 0.04);
+}
+
+.vtt-option--active {
+  color: var(--primary);
+  border-color: rgba(0, 255, 0, 0.5);
+  background: rgba(0, 255, 0, 0.12);
+  box-shadow: 0 0 8px rgba(0, 255, 0, 0.15);
+}
+
+/* VTT List item */
+.vtt-list-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  background: rgba(0, 255, 0, 0.02);
+  border: 1px solid rgba(0, 255, 0, 0.1);
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.vtt-list-item:hover {
+  background: rgba(0, 255, 0, 0.06);
+  border-color: rgba(0, 255, 0, 0.25);
+  box-shadow: 0 0 8px rgba(0, 255, 0, 0.08);
+}
+
+.vtt-list-item--active {
+  background: rgba(0, 255, 0, 0.1);
+  border-color: rgba(0, 255, 0, 0.4);
+  box-shadow: 0 0 10px rgba(0, 255, 0, 0.12);
+}
+
+/* VTT Empty state */
+.vtt-empty {
+  color: rgba(0, 255, 0, 0.25);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  text-align: center;
+  padding: 2rem 1rem;
+}
+
+/* VTT Modal */
+.vtt-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.15s ease;
+}
+
+.vtt-modal {
+  background: var(--bg-panel);
+  border: 1px solid rgba(0, 255, 0, 0.35);
+  border-radius: 6px;
+  box-shadow: 0 0 30px rgba(0, 255, 0, 0.15), 0 0 60px rgba(0, 255, 0, 0.05);
+  max-height: 85vh;
+  overflow: hidden;
+  animation: slideInUp 0.2s ease;
+}
+
+.vtt-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid rgba(0, 255, 0, 0.25);
+  background: linear-gradient(180deg, rgba(0, 255, 0, 0.08) 0%, rgba(0, 255, 0, 0.02) 100%);
+}
+
+.vtt-modal-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--primary);
+  text-transform: uppercase;
+  text-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
+}
+
+.vtt-modal-body {
+  padding: 0.75rem;
+  overflow-y: auto;
+  max-height: calc(85vh - 44px);
+}
+
+/* VTT Checkbox label */
+.vtt-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  color: rgba(0, 255, 0, 0.5);
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.vtt-checkbox:hover {
+  color: rgba(0, 255, 0, 0.7);
+}
+
+.vtt-checkbox input[type="checkbox"] {
+  accent-color: var(--primary);
+}
+
+/* VTT Range slider */
+.vtt-slider {
+  width: 100%;
+  height: 4px;
+  accent-color: var(--primary);
+  cursor: pointer;
+}
+
+/* VTT Badge */
+.vtt-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.1rem 0.35rem;
+  font-family: var(--font-mono);
+  font-size: 0.5rem;
+  border-radius: 2px;
+  color: var(--primary);
+  background: rgba(0, 255, 0, 0.1);
+  border: 1px solid rgba(0, 255, 0, 0.25);
+}
+
+.vtt-badge.danger {
+  color: var(--danger);
+  background: rgba(255, 51, 68, 0.1);
+  border-color: rgba(255, 51, 68, 0.25);
+}
+
+.vtt-badge.warning {
+  color: #ffcc00;
+  background: rgba(255, 204, 0, 0.1);
+  border-color: rgba(255, 204, 0, 0.25);
+}
+
+.vtt-badge.secondary {
+  color: var(--secondary);
+  background: rgba(0, 204, 255, 0.1);
+  border-color: rgba(0, 204, 255, 0.25);
+}
+
+/* VTT Panel section with subtle top border */
+.vtt-panel-section {
+  padding: 0.75rem;
+  border-bottom: 1px solid rgba(0, 255, 0, 0.1);
+}
+
+/* VTT Token avatar circle */
+.vtt-avatar {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  background: var(--bg-dark);
+  border: 1px solid rgba(0, 255, 0, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  overflow: hidden;
+  flex-shrink: 0;
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+}
+
+.vtt-avatar:hover {
+  border-color: rgba(0, 255, 0, 0.6);
+  box-shadow: 0 0 8px rgba(0, 255, 0, 0.15);
+}
+
+/* VTT floating HUD */
+.vtt-hud {
+  background: rgba(0, 0, 0, 0.92);
+  border: 1px solid rgba(0, 255, 0, 0.35);
+  border-radius: 6px;
+  box-shadow: 0 0 20px rgba(0, 255, 0, 0.12), 0 4px 16px rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+}
+
+/* VTT Context menu */
+.vtt-context-menu {
+  background: var(--bg-panel);
+  border: 1px solid rgba(0, 255, 0, 0.3);
+  border-radius: 6px;
+  box-shadow: 0 0 20px rgba(0, 255, 0, 0.1), 0 4px 20px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+  min-width: 10rem;
+  animation: fadeIn 0.1s ease;
+}
+
+.vtt-context-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.75rem;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: rgba(0, 255, 0, 0.6);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.vtt-context-menu-item:hover {
+  color: var(--primary);
+  background: rgba(0, 255, 0, 0.1);
+}
+
+.vtt-context-menu-item.danger {
+  color: rgba(255, 51, 68, 0.6);
+}
+
+.vtt-context-menu-item.danger:hover {
+  color: var(--danger);
+  background: rgba(255, 51, 68, 0.1);
+}
+
+.vtt-context-menu-separator {
+  height: 0;
+  border-top: 1px solid rgba(0, 255, 0, 0.12);
+  margin: 0.2rem 0;
+}
+
+/* VTT Shortcut overlay */
+.vtt-shortcut-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(4px);
+  animation: fadeIn 0.15s ease;
+}
+
+.vtt-shortcut-panel {
+  background: var(--bg-panel);
+  border: 1px solid rgba(0, 255, 0, 0.35);
+  border-radius: 8px;
+  box-shadow: 0 0 40px rgba(0, 255, 0, 0.12);
+  padding: 1.5rem;
+  max-width: 600px;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.vtt-kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.5rem;
+  padding: 0.15rem 0.35rem;
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  color: var(--primary);
+  background: rgba(0, 255, 0, 0.08);
+  border: 1px solid rgba(0, 255, 0, 0.3);
+  border-radius: 3px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}

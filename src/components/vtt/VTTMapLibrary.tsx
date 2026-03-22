@@ -92,7 +92,7 @@ export default function VTTMapLibrary() {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="p-3 border-b border-terminal-border/30">
+      <div className="vtt-panel-section">
         <h3 className="text-terminal-primary text-sm font-mono mb-2 uppercase tracking-wider">
           Map Library
         </h3>
@@ -100,7 +100,7 @@ export default function VTTMapLibrary() {
         {/* Toggle create form */}
         <button
           onClick={() => setShowCreateForm(!showCreateForm)}
-          className="flex items-center justify-between w-full px-2 py-1.5 text-xs font-mono rounded border border-terminal-primary/30 text-terminal-primary/60 hover:text-terminal-primary hover:bg-terminal-primary/10 transition-colors"
+          className="vtt-btn w-full justify-between"
         >
           <span className="flex items-center gap-1.5">
             <Plus size={12} />
@@ -114,7 +114,7 @@ export default function VTTMapLibrary() {
           <div className="mt-2 space-y-2.5 p-2 rounded border border-terminal-border/20 bg-terminal-bg-dark/50">
             {/* Map name */}
             <div>
-              <label className="text-[10px] text-terminal-primary/50 font-mono block mb-0.5">
+              <label className="vtt-section-label block mb-0.5">
                 Name
               </label>
               <input
@@ -123,13 +123,13 @@ export default function VTTMapLibrary() {
                 onChange={(e) => setNewMapName(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleAddMap()}
                 placeholder="Map name..."
-                className="w-full bg-terminal-bg-dark border border-terminal-border/30 text-terminal-primary text-xs px-2 py-1 rounded font-mono placeholder:text-terminal-primary/30 focus:border-terminal-primary/50 focus:outline-none"
+                className="vtt-input w-full"
               />
             </div>
 
             {/* Canvas size presets */}
             <div>
-              <label className="text-[10px] text-terminal-primary/50 font-mono block mb-1">
+              <label className="vtt-section-label block mb-1">
                 Canvas Size
               </label>
               <div className="grid grid-cols-2 gap-1 mb-1.5">
@@ -137,10 +137,10 @@ export default function VTTMapLibrary() {
                   <button
                     key={preset.label}
                     onClick={() => applyPreset(preset.w, preset.h)}
-                    className={`text-[10px] font-mono py-1 px-1 rounded border transition-colors ${
+                    className={`vtt-option text-[10px] ${
                       canvasWidth === preset.w && canvasHeight === preset.h
-                        ? "bg-terminal-primary/20 border-terminal-primary/50 text-terminal-primary"
-                        : "border-terminal-border/30 text-terminal-primary/40 hover:text-terminal-primary/60"
+                        ? "vtt-option--active"
+                        : ""
                     }`}
                   >
                     {preset.w}×{preset.h}
@@ -159,7 +159,7 @@ export default function VTTMapLibrary() {
                     step={100}
                     value={canvasWidth}
                     onChange={(e) => setCanvasWidth(Math.max(100, parseInt(e.target.value) || 1920))}
-                    className="w-full bg-terminal-bg-dark border border-terminal-border/30 text-terminal-primary text-[10px] px-1.5 py-1 rounded font-mono text-center focus:border-terminal-primary/50 focus:outline-none"
+                    className="vtt-input w-full text-[10px] text-center"
                   />
                 </div>
                 <div className="flex-1">
@@ -173,7 +173,7 @@ export default function VTTMapLibrary() {
                     step={100}
                     value={canvasHeight}
                     onChange={(e) => setCanvasHeight(Math.max(100, parseInt(e.target.value) || 1080))}
-                    className="w-full bg-terminal-bg-dark border border-terminal-border/30 text-terminal-primary text-[10px] px-1.5 py-1 rounded font-mono text-center focus:border-terminal-primary/50 focus:outline-none"
+                    className="vtt-input w-full text-[10px] text-center"
                   />
                 </div>
               </div>
@@ -184,7 +184,7 @@ export default function VTTMapLibrary() {
 
             {/* Grid style */}
             <div>
-              <label className="text-[10px] text-terminal-primary/50 font-mono block mb-1">
+              <label className="vtt-section-label block mb-1">
                 Grid Style
               </label>
               <div className="flex gap-1">
@@ -192,10 +192,10 @@ export default function VTTMapLibrary() {
                   <button
                     key={style}
                     onClick={() => setGridStyle(style)}
-                    className={`flex-1 text-xs font-mono py-1 rounded border transition-colors capitalize ${
+                    className={`vtt-option flex-1 capitalize ${
                       gridStyle === style
-                        ? "bg-terminal-primary/20 border-terminal-primary/50 text-terminal-primary"
-                        : "border-terminal-border/30 text-terminal-primary/40 hover:text-terminal-primary/60"
+                        ? "vtt-option--active"
+                        : ""
                     }`}
                   >
                     {style}
@@ -207,7 +207,7 @@ export default function VTTMapLibrary() {
             {/* Grid size */}
             <div>
               <div className="flex items-center justify-between mb-0.5">
-                <label className="text-[10px] text-terminal-primary/50 font-mono">
+                <label className="vtt-section-label">
                   Cell Size
                 </label>
                 <span className="text-[10px] text-terminal-primary/40 font-mono">
@@ -221,14 +221,14 @@ export default function VTTMapLibrary() {
                 step={5}
                 value={gridSize}
                 onChange={(e) => setGridSize(parseInt(e.target.value))}
-                className="w-full accent-green-500 h-1"
+                className="vtt-slider"
               />
             </div>
 
             {/* Create button */}
             <button
               onClick={handleAddMap}
-              className="w-full px-2 py-1.5 text-xs font-mono rounded border border-terminal-primary/50 text-terminal-primary bg-terminal-primary/10 hover:bg-terminal-primary/20 transition-colors"
+              className="vtt-btn w-full justify-center"
             >
               Create Map
             </button>
@@ -238,7 +238,7 @@ export default function VTTMapLibrary() {
 
       <div className="flex-1 overflow-y-auto p-2 space-y-1.5">
         {state.maps.length === 0 ? (
-          <div className="text-terminal-primary/30 text-xs font-mono text-center py-8">
+          <div className="vtt-empty">
             No maps yet.
             <br />
             Create one above.
@@ -247,10 +247,10 @@ export default function VTTMapLibrary() {
           state.maps.map((map) => (
             <div
               key={map.id}
-              className={`group p-2 rounded border cursor-pointer transition-colors ${
+              className={`vtt-list-item group cursor-pointer ${
                 state.activeMapId === map.id
-                  ? "bg-terminal-primary/10 border-terminal-primary/50"
-                  : "bg-terminal-bg-dark/50 border-terminal-border/20 hover:border-terminal-border/40"
+                  ? "vtt-list-item--active"
+                  : ""
               }`}
               onClick={() =>
                 dispatch({ type: "SET_ACTIVE_MAP", payload: map.id })

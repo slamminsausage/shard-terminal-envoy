@@ -108,19 +108,15 @@ export default function VTTContextMenu({
         onClick();
         onClose();
       }}
-      className={`flex items-center gap-2 w-full text-left px-3 py-1.5 text-xs font-mono transition-colors ${
-        danger
-          ? "text-red-400/70 hover:text-red-400 hover:bg-red-500/10"
-          : "text-terminal-primary/70 hover:text-terminal-primary hover:bg-terminal-primary/10"
-      }`}
+      className={`vtt-context-menu-item ${danger ? "danger" : ""}`}
     >
       {Icon && <Icon size={12} />}
       <span className="flex-1">{label}</span>
-      {shortcut && <span className="text-[10px] text-terminal-primary/30 ml-2">{shortcut}</span>}
+      {shortcut && <span className="vtt-kbd ml-2">{shortcut}</span>}
     </button>
   );
 
-  const Separator = () => <div className="border-t border-terminal-border/20 my-0.5" />;
+  const Separator = () => <div className="vtt-context-menu-separator" />;
 
   return (
     <>
@@ -129,7 +125,7 @@ export default function VTTContextMenu({
 
       {/* Menu */}
       <div
-        className="fixed z-50 bg-terminal-bg-dark border border-terminal-border/40 rounded shadow-xl py-1 min-w-[180px]"
+        className="fixed z-50 vtt-context-menu py-1"
         style={{
           left: Math.min(x, window.innerWidth - 200),
           top: Math.min(y, window.innerHeight - 400),
@@ -137,7 +133,7 @@ export default function VTTContextMenu({
       >
         {token && (
           <>
-            <div className="px-3 py-1 text-[10px] text-terminal-primary/40 font-mono uppercase tracking-wider">
+            <div className="px-3 py-1 vtt-section-label" style={{ marginBottom: 0 }}>
               Token: {token.name}
             </div>
             <MenuItem
@@ -244,7 +240,7 @@ export default function VTTContextMenu({
 
         {note && (
           <>
-            <div className="px-3 py-1 text-[10px] text-terminal-primary/40 font-mono uppercase tracking-wider">
+            <div className="px-3 py-1 vtt-section-label" style={{ marginBottom: 0 }}>
               Note: {note.title}
             </div>
             <MenuItem
@@ -280,7 +276,7 @@ export default function VTTContextMenu({
         {/* Selection actions */}
         {hasSelection && (
           <>
-            <div className="px-3 py-1 text-[10px] text-terminal-primary/40 font-mono uppercase tracking-wider">
+            <div className="px-3 py-1 vtt-section-label" style={{ marginBottom: 0 }}>
               Selection ({(state.selectedTokenIds?.length || 0) + (state.selectedStrokeIds?.length || 0) + (state.selectedTextIds?.length || 0) + (state.selectedNoteIds?.length || 0)} items)
             </div>
             <MenuItem

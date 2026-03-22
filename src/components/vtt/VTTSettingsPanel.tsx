@@ -37,7 +37,7 @@ export default function VTTSettingsPanel() {
 
   return (
     <div className="flex flex-col h-full overflow-y-auto p-3 space-y-4">
-      <h4 className="text-[10px] text-terminal-primary/50 uppercase tracking-wider font-mono">
+      <h4 className="vtt-section-label">
         Display
       </h4>
 
@@ -71,7 +71,7 @@ export default function VTTSettingsPanel() {
       {activeMap && grid && (
         <>
           <div className="border-t border-terminal-border/20 pt-3">
-            <h4 className="text-[10px] text-terminal-primary/50 uppercase tracking-wider font-mono mb-2">
+            <h4 className="vtt-section-label mb-2">
               Grid Config
             </h4>
 
@@ -121,7 +121,7 @@ export default function VTTSettingsPanel() {
                     },
                   })
                 }
-                className="w-full accent-green-500 h-1"
+                className="vtt-slider"
               />
             </div>
 
@@ -154,7 +154,7 @@ export default function VTTSettingsPanel() {
                     },
                   })
                 }
-                className="w-full accent-green-500 h-1"
+                className="vtt-slider"
               />
             </div>
 
@@ -177,10 +177,8 @@ export default function VTTSettingsPanel() {
                         },
                       })
                     }
-                    className={`flex-1 text-xs font-mono py-1 rounded border transition-colors capitalize ${
-                      grid.style === style
-                        ? "bg-terminal-primary/20 border-terminal-primary/50 text-terminal-primary"
-                        : "border-terminal-border/30 text-terminal-primary/40 hover:text-terminal-primary/60"
+                    className={`flex-1 vtt-option capitalize ${
+                      grid.style === style ? "vtt-option--active" : ""
                     }`}
                   >
                     {style}
@@ -238,7 +236,7 @@ export default function VTTSettingsPanel() {
       {/* Canvas & Image Scaling */}
       {activeMap && (
         <div className="border-t border-terminal-border/20 pt-3">
-          <h4 className="text-[10px] text-terminal-primary/50 uppercase tracking-wider font-mono mb-2">
+          <h4 className="vtt-section-label mb-2">
             Canvas Size
           </h4>
 
@@ -258,7 +256,7 @@ export default function VTTSettingsPanel() {
                     payload: { mapId: activeMap.id, width: w, height: activeMap.height },
                   });
                 }}
-                className="w-full bg-terminal-bg-dark border border-terminal-border/30 text-terminal-primary text-xs px-1.5 py-1 rounded font-mono text-center focus:border-terminal-primary/50 focus:outline-none"
+                className="vtt-input w-full text-center"
               />
             </div>
             <div className="flex-1">
@@ -276,7 +274,7 @@ export default function VTTSettingsPanel() {
                     payload: { mapId: activeMap.id, width: activeMap.width, height: h },
                   });
                 }}
-                className="w-full bg-terminal-bg-dark border border-terminal-border/30 text-terminal-primary text-xs px-1.5 py-1 rounded font-mono text-center focus:border-terminal-primary/50 focus:outline-none"
+                className="vtt-input w-full text-center"
               />
             </div>
           </div>
@@ -287,7 +285,7 @@ export default function VTTSettingsPanel() {
 
           {activeMap.imageDataUrl && (
             <>
-              <h4 className="text-[10px] text-terminal-primary/50 uppercase tracking-wider font-mono mb-2 mt-3">
+              <h4 className="vtt-section-label mb-2 mt-3">
                 Image Transform
               </h4>
 
@@ -315,7 +313,7 @@ export default function VTTSettingsPanel() {
                       },
                     })
                   }
-                  className="w-full accent-green-500 h-1"
+                  className="vtt-slider"
                 />
               </div>
 
@@ -343,7 +341,7 @@ export default function VTTSettingsPanel() {
                       },
                     })
                   }
-                  className="w-full accent-green-500 h-1"
+                  className="vtt-slider"
                 />
               </div>
 
@@ -371,7 +369,7 @@ export default function VTTSettingsPanel() {
                       },
                     })
                   }
-                  className="w-full accent-green-500 h-1"
+                  className="vtt-slider"
                 />
               </div>
 
@@ -395,7 +393,7 @@ export default function VTTSettingsPanel() {
                     });
                     toast.success("Image fitted to canvas");
                   }}
-                  className="flex-1 px-2 py-1 text-[10px] font-mono rounded border border-terminal-border/30 text-terminal-primary/50 hover:text-terminal-primary hover:bg-terminal-primary/10 transition-colors"
+                  className="vtt-btn flex-1 justify-center"
                 >
                   Fit to Canvas
                 </button>
@@ -416,7 +414,7 @@ export default function VTTSettingsPanel() {
                     });
                     toast.success("Canvas matched to image");
                   }}
-                  className="flex-1 px-2 py-1 text-[10px] font-mono rounded border border-terminal-border/30 text-terminal-primary/50 hover:text-terminal-primary hover:bg-terminal-primary/10 transition-colors"
+                  className="vtt-btn flex-1 justify-center"
                 >
                   Match to Image
                 </button>
@@ -440,7 +438,7 @@ export default function VTTSettingsPanel() {
                   });
                   toast.success("Image centered");
                 }}
-                className="w-full mt-1 px-2 py-1 text-[10px] font-mono rounded border border-terminal-border/30 text-terminal-primary/50 hover:text-terminal-primary hover:bg-terminal-primary/10 transition-colors"
+                className="vtt-btn w-full mt-1 justify-center"
               >
                 Center Image
               </button>
@@ -457,7 +455,7 @@ export default function VTTSettingsPanel() {
 
       {/* Session */}
       <div className="border-t border-terminal-border/20 pt-3">
-        <h4 className="text-[10px] text-terminal-primary/50 uppercase tracking-wider font-mono mb-2">
+        <h4 className="vtt-section-label mb-2">
           Session
         </h4>
         <div className="space-y-1.5">
@@ -466,19 +464,19 @@ export default function VTTSettingsPanel() {
               saveSession();
               toast.success("Session saved to local storage");
             }}
-            className="w-full px-2 py-1.5 text-xs font-mono rounded border border-terminal-primary/30 text-terminal-primary/60 hover:text-terminal-primary hover:bg-terminal-primary/10 transition-colors"
+            className="vtt-btn w-full justify-center"
           >
             Save Now
           </button>
           <button
             onClick={handleExport}
-            className="w-full px-2 py-1.5 text-xs font-mono rounded border border-terminal-border/30 text-terminal-primary/50 hover:text-terminal-primary hover:bg-terminal-primary/10 transition-colors"
+            className="vtt-btn w-full justify-center"
           >
             Export to File
           </button>
           <button
             onClick={handleImport}
-            className="w-full px-2 py-1.5 text-xs font-mono rounded border border-terminal-border/30 text-terminal-primary/50 hover:text-terminal-primary hover:bg-terminal-primary/10 transition-colors"
+            className="vtt-btn w-full justify-center"
           >
             Import from File
           </button>
@@ -487,7 +485,7 @@ export default function VTTSettingsPanel() {
 
       {/* Stats */}
       <div className="border-t border-terminal-border/20 pt-3">
-        <h4 className="text-[10px] text-terminal-primary/50 uppercase tracking-wider font-mono mb-1">
+        <h4 className="vtt-section-label mb-1">
           Stats
         </h4>
         <div className="text-[10px] text-terminal-primary/30 font-mono space-y-0.5">
@@ -518,7 +516,7 @@ function ToggleRow({
   onChange: () => void;
 }) {
   return (
-    <label className="flex items-center justify-between py-0.5 cursor-pointer">
+    <label className="vtt-checkbox justify-between py-0.5">
       <span className="text-xs text-terminal-primary/60 font-mono">
         {label}
       </span>

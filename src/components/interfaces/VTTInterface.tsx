@@ -66,7 +66,7 @@ export default function VTTInterface() {
 
   return (
     <VTTAudioProvider value={audioApi}>
-      <div className="flex h-full w-full overflow-hidden bg-terminal-bg-dark">
+      <div className="flex h-full w-full overflow-hidden" style={{ background: 'linear-gradient(180deg, rgba(0,255,0,0.02) 0%, var(--bg-panel) 40%, var(--bg-dark) 100%)' }}>
         {/* Left toolbar — tools only */}
         <VTTToolbar />
 

@@ -133,7 +133,7 @@ export default function VTTScenePresets() {
     <div className="flex flex-col h-full overflow-y-auto p-3 space-y-3">
       <div className="flex items-center gap-1.5 mb-1">
         <Sparkles size={12} className="text-terminal-primary/50" />
-        <span className="text-[10px] text-terminal-primary/50 uppercase tracking-wider font-mono">
+        <span className="vtt-section-label">
           Quick Scene Presets
         </span>
       </div>
@@ -147,7 +147,7 @@ export default function VTTScenePresets() {
           <button
             key={preset.id}
             onClick={() => applyPreset(preset)}
-            className="w-full text-left p-2 rounded border border-terminal-border/20 hover:border-terminal-primary/40 hover:bg-terminal-primary/5 transition-colors group"
+            className="vtt-list-item w-full text-left flex-col items-start group"
           >
             <div className="text-xs font-mono text-terminal-primary/70 group-hover:text-terminal-primary transition-colors">
               {preset.name}

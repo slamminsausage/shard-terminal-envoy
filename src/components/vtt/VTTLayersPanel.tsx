@@ -28,7 +28,7 @@ export default function VTTLayersPanel() {
 
   return (
     <div className="flex flex-col gap-1 p-2">
-      <div className="text-[10px] text-terminal-primary/40 uppercase tracking-wider mb-1">
+      <div className="vtt-section-label mb-1">
         Render Order (top → bottom)
       </div>
 
@@ -40,10 +40,10 @@ export default function VTTLayersPanel() {
         return (
           <div
             key={index}
-            className={`flex items-center gap-2 px-2 py-1.5 rounded cursor-pointer transition-colors ${
+            className={`vtt-list-item cursor-pointer ${
               isActive
-                ? "bg-terminal-primary/15 border-l-2"
-                : "hover:bg-terminal-primary/5 border-l-2 border-transparent"
+                ? "vtt-list-item--active border-l-2"
+                : "border-l-2 border-transparent"
             }`}
             style={isActive ? { borderLeftColor: color } : undefined}
             onClick={() => dispatch({ type: "SET_LAYER", payload: index })}

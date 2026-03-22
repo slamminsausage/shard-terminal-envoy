@@ -104,28 +104,28 @@ export default function VTTDiceRoller() {
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      <div className="p-3 space-y-3 border-b border-terminal-border/20">
+      <div className="vtt-panel-section space-y-3">
         {/* Quick Traveller rolls */}
         <div>
-          <label className="text-[10px] text-terminal-primary/50 uppercase tracking-wider font-mono block mb-1">
+          <label className="vtt-section-label block mb-1">
             Traveller Rolls
           </label>
           <div className="grid grid-cols-3 gap-1">
             <button
               onClick={doQuick2d6}
-              className="px-2 py-1.5 text-xs font-mono rounded border border-terminal-primary/30 text-terminal-primary hover:bg-terminal-primary/10 transition-colors"
+              className="vtt-btn"
             >
               2d6
             </button>
             <button
               onClick={doBoon}
-              className="px-2 py-1.5 text-xs font-mono rounded border border-green-500/30 text-green-400 hover:bg-green-500/10 transition-colors"
+              className="vtt-btn text-green-400 border-green-500/30 hover:bg-green-500/10"
             >
               Boon
             </button>
             <button
               onClick={doBane}
-              className="px-2 py-1.5 text-xs font-mono rounded border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-colors"
+              className="vtt-btn danger"
             >
               Bane
             </button>
@@ -134,13 +134,13 @@ export default function VTTDiceRoller() {
 
         {/* DM modifier */}
         <div>
-          <label className="text-[10px] text-terminal-primary/50 uppercase tracking-wider font-mono block mb-1">
+          <label className="vtt-section-label block mb-1">
             DM (modifier)
           </label>
           <div className="flex items-center gap-1">
             <button
               onClick={() => setModifier((m) => m - 1)}
-              className="w-7 h-7 flex items-center justify-center rounded border border-terminal-border/30 text-terminal-primary/50 hover:text-terminal-primary hover:bg-terminal-primary/10 transition-colors"
+              className="vtt-btn w-7 h-7 justify-center px-0"
             >
               <Minus size={12} />
             </button>
@@ -149,7 +149,7 @@ export default function VTTDiceRoller() {
             </span>
             <button
               onClick={() => setModifier((m) => m + 1)}
-              className="w-7 h-7 flex items-center justify-center rounded border border-terminal-border/30 text-terminal-primary/50 hover:text-terminal-primary hover:bg-terminal-primary/10 transition-colors"
+              className="vtt-btn w-7 h-7 justify-center px-0"
             >
               <Plus size={12} />
             </button>
@@ -158,7 +158,7 @@ export default function VTTDiceRoller() {
 
         {/* Custom dice */}
         <div>
-          <label className="text-[10px] text-terminal-primary/50 uppercase tracking-wider font-mono block mb-1">
+          <label className="vtt-section-label block mb-1">
             Custom Roll
           </label>
           <div className="flex items-center gap-1">
@@ -168,7 +168,7 @@ export default function VTTDiceRoller() {
               max={20}
               value={diceCount}
               onChange={(e) => setDiceCount(Math.max(1, parseInt(e.target.value) || 1))}
-              className="w-12 bg-terminal-bg-dark border border-terminal-border/30 text-terminal-primary text-xs px-1.5 py-1 rounded font-mono text-center focus:border-terminal-primary/50 focus:outline-none"
+              className="vtt-input w-12 text-center px-1.5"
             />
             <span className="text-terminal-primary/40 text-xs font-mono">d</span>
             <input
@@ -177,11 +177,11 @@ export default function VTTDiceRoller() {
               max={100}
               value={diceSides}
               onChange={(e) => setDiceSides(Math.max(2, parseInt(e.target.value) || 6))}
-              className="w-12 bg-terminal-bg-dark border border-terminal-border/30 text-terminal-primary text-xs px-1.5 py-1 rounded font-mono text-center focus:border-terminal-primary/50 focus:outline-none"
+              className="vtt-input w-12 text-center px-1.5"
             />
             <button
               onClick={() => doRoll()}
-              className="flex-1 flex items-center justify-center gap-1 px-2 py-1 text-xs font-mono rounded border border-terminal-primary/30 text-terminal-primary hover:bg-terminal-primary/10 transition-colors"
+              className="vtt-btn flex-1 justify-center"
             >
               <Dice5 size={12} /> Roll
             </button>
@@ -192,7 +192,7 @@ export default function VTTDiceRoller() {
       {/* Results log */}
       <div className="flex-1 overflow-y-auto p-2 space-y-1">
         {results.length === 0 ? (
-          <div className="text-terminal-primary/20 text-xs font-mono text-center py-6">
+          <div className="vtt-empty py-6">
             No rolls yet
           </div>
         ) : (
@@ -240,12 +240,11 @@ export default function VTTDiceRoller() {
       </div>
 
       <div className="p-2 border-t border-terminal-border/20 space-y-1">
-        <label className="flex items-center gap-2 text-[10px] text-terminal-primary/40 font-mono cursor-pointer">
+        <label className="vtt-checkbox">
           <input
             type="checkbox"
             checked={broadcastEnabled}
             onChange={(e) => setBroadcastEnabled(e.target.checked)}
-            className="accent-green-500"
           />
           Show rolls on presenter
         </label>

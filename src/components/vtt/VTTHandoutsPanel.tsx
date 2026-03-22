@@ -167,11 +167,11 @@ export default function VTTHandoutsPanel() {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="p-3 border-b border-terminal-border/30 space-y-2">
+      <div className="vtt-panel-section space-y-2">
         {/* Quick add images */}
         <button
           onClick={handleAddImageHandout}
-          className="flex items-center gap-1.5 w-full px-2 py-1.5 text-xs font-mono border border-dashed border-terminal-border/30 rounded text-terminal-primary/50 hover:text-terminal-primary hover:border-terminal-primary/30 transition-colors justify-center"
+          className="vtt-btn w-full justify-center gap-1.5 border-dashed"
         >
           <Upload size={12} /> Quick Add Images
         </button>
@@ -179,7 +179,7 @@ export default function VTTHandoutsPanel() {
         {/* Create with details */}
         <button
           onClick={() => setShowCreateForm(!showCreateForm)}
-          className="flex items-center gap-1.5 w-full px-2 py-1.5 text-xs font-mono border border-terminal-primary/20 rounded text-terminal-primary/50 hover:text-terminal-primary hover:border-terminal-primary/40 transition-colors justify-center"
+          className="vtt-btn w-full justify-center gap-1.5"
         >
           <Plus size={12} /> Create Handout
         </button>
@@ -187,7 +187,7 @@ export default function VTTHandoutsPanel() {
         {sentToPresenter && (
           <button
             onClick={hideFromPresenter}
-            className="flex items-center gap-1.5 w-full px-2 py-1.5 text-xs font-mono border border-red-500/30 rounded text-red-400/60 hover:text-red-400 hover:border-red-500/50 transition-colors justify-center"
+            className="vtt-btn danger w-full justify-center gap-1.5"
           >
             <MonitorOff size={12} /> Hide from Presenter
           </button>
@@ -196,25 +196,17 @@ export default function VTTHandoutsPanel() {
 
       {/* Create form */}
       {showCreateForm && (
-        <div className="p-3 border-b border-terminal-border/30 space-y-2">
+        <div className="vtt-panel-section space-y-2">
           <div className="flex gap-1">
             <button
               onClick={() => setNewType("image")}
-              className={`flex-1 px-2 py-1 text-[10px] font-mono rounded border transition-colors ${
-                newType === "image"
-                  ? "border-terminal-primary/50 bg-terminal-primary/10 text-terminal-primary"
-                  : "border-terminal-border/20 text-terminal-primary/40 hover:border-terminal-border/40"
-              }`}
+              className={`flex-1 vtt-option ${newType === "image" ? "vtt-option--active" : ""}`}
             >
               Image/Video
             </button>
             <button
               onClick={() => setNewType("text")}
-              className={`flex-1 px-2 py-1 text-[10px] font-mono rounded border transition-colors ${
-                newType === "text"
-                  ? "border-terminal-primary/50 bg-terminal-primary/10 text-terminal-primary"
-                  : "border-terminal-border/20 text-terminal-primary/40 hover:border-terminal-border/40"
-              }`}
+              className={`flex-1 vtt-option ${newType === "text" ? "vtt-option--active" : ""}`}
             >
               Text
             </button>
@@ -225,7 +217,7 @@ export default function VTTHandoutsPanel() {
             value={newTitle}
             onChange={(e) => setNewTitle(e.target.value)}
             placeholder="Handout title..."
-            className="w-full bg-terminal-bg-dark border border-terminal-border/30 text-terminal-primary text-xs px-2 py-1.5 rounded font-mono placeholder:text-terminal-primary/30 focus:border-terminal-primary/50 focus:outline-none"
+            className="vtt-input w-full"
           />
 
           <input
@@ -233,7 +225,7 @@ export default function VTTHandoutsPanel() {
             value={newDescription}
             onChange={(e) => setNewDescription(e.target.value)}
             placeholder="Description (optional)..."
-            className="w-full bg-terminal-bg-dark border border-terminal-border/30 text-terminal-primary text-xs px-2 py-1 rounded font-mono placeholder:text-terminal-primary/30 focus:border-terminal-primary/50 focus:outline-none"
+            className="vtt-input w-full"
           />
 
           {newType === "text" ? (
@@ -242,7 +234,7 @@ export default function VTTHandoutsPanel() {
               onChange={(e) => setNewTextContent(e.target.value)}
               placeholder="Handout text content..."
               rows={4}
-              className="w-full bg-terminal-bg-dark border border-terminal-border/30 text-terminal-primary text-xs px-2 py-1.5 rounded font-mono placeholder:text-terminal-primary/30 focus:border-terminal-primary/50 focus:outline-none resize-none"
+              className="vtt-input w-full resize-none"
             />
           ) : (
             <div>
@@ -263,7 +255,7 @@ export default function VTTHandoutsPanel() {
               ) : (
                 <button
                   onClick={handlePendingFileSelect}
-                  className="flex items-center gap-1 w-full px-2 py-3 text-[10px] font-mono border border-dashed border-terminal-border/30 rounded text-terminal-primary/40 hover:text-terminal-primary hover:border-terminal-primary/30 transition-colors justify-center"
+                  className="vtt-btn w-full justify-center border-dashed py-3"
                 >
                   <Upload size={10} /> Select file
                 </button>
@@ -275,7 +267,7 @@ export default function VTTHandoutsPanel() {
             <button
               onClick={handleCreateTextHandout}
               disabled={!newTitle.trim() || (newType === "image" && !pendingFile)}
-              className="flex-1 px-2 py-1.5 text-[10px] font-mono rounded border border-terminal-primary/40 bg-terminal-primary/10 text-terminal-primary hover:bg-terminal-primary/20 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              className="vtt-btn flex-1 justify-center disabled:opacity-30 disabled:cursor-not-allowed"
             >
               Create
             </button>
@@ -288,7 +280,7 @@ export default function VTTHandoutsPanel() {
                 setPendingFile(null);
                 setPendingPreviewUrl(null);
               }}
-              className="px-2 py-1.5 text-[10px] font-mono rounded border border-terminal-border/30 text-terminal-primary/40 hover:text-terminal-primary transition-colors"
+              className="vtt-btn justify-center"
             >
               Cancel
             </button>
@@ -299,7 +291,7 @@ export default function VTTHandoutsPanel() {
       {/* Handout list */}
       <div className="flex-1 overflow-y-auto p-2 space-y-1.5">
         {handouts.length === 0 ? (
-          <div className="text-terminal-primary/30 text-xs font-mono text-center py-8">
+          <div className="vtt-empty">
             No handouts.
             <br />
             Upload images or create handouts above.
@@ -312,10 +304,10 @@ export default function VTTHandoutsPanel() {
           handouts.map((h) => (
             <div
               key={h.id}
-              className={`group rounded border transition-colors overflow-hidden ${
+              className={`vtt-list-item flex-col !p-0 overflow-hidden ${
                 sentToPresenter === h.id
-                  ? "border-cyan-500/40 bg-cyan-500/5"
-                  : "border-terminal-border/20 hover:border-terminal-border/40 bg-terminal-bg-dark/50"
+                  ? "vtt-list-item--active border-cyan-500/40 bg-cyan-500/5"
+                  : ""
               }`}
             >
               {/* Thumbnail */}

@@ -691,7 +691,7 @@ export default function VTTPresenterView() {
       {(localScroll || localZoom) && (
         <button
           onClick={resetView}
-          className="absolute top-4 left-4 z-10 bg-black/80 border border-terminal-primary/30 text-terminal-primary/60 text-xs font-mono px-3 py-1.5 rounded hover:text-terminal-primary hover:border-terminal-primary/50 transition-colors"
+          className="absolute top-4 left-4 z-10 vtt-btn"
         >
           Reset View
         </button>
@@ -699,7 +699,7 @@ export default function VTTPresenterView() {
 
       {/* Zoom indicator */}
       {map && (localZoom != null) && (
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10 text-terminal-primary/30 text-xs font-mono">
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10 text-[rgba(0,255,0,0.3)] text-xs font-mono">
           {Math.round((localZoom ?? map.zoom) * 100)}%
         </div>
       )}
@@ -710,14 +710,14 @@ export default function VTTPresenterView() {
           {clocks.map((clock) => (
             <div
               key={clock.id}
-              className="bg-black/80 border border-terminal-primary/20 rounded-lg px-3 py-2 flex items-center gap-3"
+              className="vtt-hud px-3 py-2 flex items-center gap-3"
             >
               <PresenterClockSVG clock={clock} />
               <div>
-                <div className="text-terminal-primary/80 text-xs font-mono">
+                <div className="text-[rgba(0,255,0,0.8)] text-xs font-mono">
                   {clock.name}
                 </div>
-                <div className="text-terminal-primary/40 text-[10px] font-mono">
+                <div className="text-[rgba(0,255,0,0.4)] text-[10px] font-mono">
                   {clock.filled}/{clock.segments}
                 </div>
               </div>
@@ -728,9 +728,9 @@ export default function VTTPresenterView() {
 
       {/* Initiative tracker overlay */}
       {showInitiative && initiative.length > 0 && (
-        <div className="absolute top-4 left-4 z-10 bg-black/85 border border-terminal-primary/30 rounded-lg overflow-hidden min-w-[180px]">
-          <div className="px-3 py-1.5 border-b border-terminal-primary/20">
-            <span className="text-[10px] text-terminal-primary/50 uppercase tracking-wider font-mono">
+        <div className="absolute top-4 left-4 z-10 vtt-hud overflow-hidden min-w-[180px]">
+          <div className="vtt-sidebar-header py-1.5">
+            <span className="vtt-sidebar-title text-[10px]">
               Initiative
             </span>
           </div>
@@ -738,24 +738,24 @@ export default function VTTPresenterView() {
             {initiative.map((entry, index) => (
               <div
                 key={entry.id}
-                className={`flex items-center gap-2 px-3 py-1.5 border-b border-terminal-border/10 ${
+                className={`flex items-center gap-2 px-3 py-1.5 border-b border-[rgba(0,255,0,0.06)] ${
                   index === 0
-                    ? "bg-terminal-primary/10 shadow-[inset_0_0_20px_rgba(0,255,0,0.05)]"
+                    ? "bg-[rgba(0,255,0,0.08)] shadow-[inset_0_0_20px_rgba(0,255,0,0.05)]"
                     : ""
                 }`}
               >
-                <span className="w-6 text-center text-terminal-primary font-mono text-sm font-bold flex-shrink-0">
+                <span className="w-6 text-center text-[var(--primary)] font-mono text-sm font-bold flex-shrink-0">
                   {entry.initiative}
                 </span>
                 <span
                   className={`text-xs font-mono flex-1 truncate ${
-                    index === 0 ? "text-terminal-primary" : "text-terminal-primary/60"
+                    index === 0 ? "text-[var(--primary)]" : "text-[rgba(0,255,0,0.6)]"
                   }`}
                 >
                   {entry.name}
                 </span>
                 {entry.isNPC && (
-                  <span className="text-[8px] text-red-400/50 font-mono">NPC</span>
+                  <span className="vtt-badge danger">NPC</span>
                 )}
               </div>
             ))}
@@ -771,7 +771,7 @@ export default function VTTPresenterView() {
             alt={handout.name}
             className="max-w-[90vw] max-h-[90vh] object-contain"
           />
-          <div className="absolute bottom-6 text-center text-terminal-primary/60 text-sm font-mono">
+          <div className="absolute bottom-6 text-center text-[rgba(0,255,0,0.6)] text-sm font-mono">
             {handout.name}
           </div>
         </div>
@@ -780,21 +780,21 @@ export default function VTTPresenterView() {
       {/* Dice roll overlay */}
       {diceRoll && (
         <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-30 animate-in fade-in slide-in-from-bottom-4 duration-300">
-          <div className="bg-black/90 border border-terminal-primary/50 rounded-lg px-8 py-4 text-center shadow-[0_0_30px_rgba(0,255,0,0.2)]">
-            <div className="text-terminal-primary/60 text-xs font-mono uppercase tracking-wider mb-1">
+          <div className="vtt-hud px-8 py-4 text-center">
+            <div className="vtt-section-label text-center mb-1">
               {diceRoll.label}
             </div>
             <div className="flex items-center justify-center gap-2 mb-1">
               {diceRoll.dice.map((d, i) => (
                 <span
                   key={i}
-                  className="w-10 h-10 flex items-center justify-center bg-terminal-primary/10 border border-terminal-primary/30 rounded text-terminal-primary text-lg font-mono font-bold"
+                  className="w-10 h-10 flex items-center justify-center bg-[rgba(0,255,0,0.08)] border border-[rgba(0,255,0,0.25)] rounded text-[var(--primary)] text-lg font-mono font-bold"
                 >
                   {d}
                 </span>
               ))}
               {diceRoll.modifier !== 0 && (
-                <span className="text-terminal-primary/50 text-sm font-mono">
+                <span className="text-[rgba(0,255,0,0.5)] text-sm font-mono">
                   {diceRoll.modifier > 0 ? "+" : ""}
                   {diceRoll.modifier}
                 </span>
@@ -817,7 +817,7 @@ export default function VTTPresenterView() {
 
       {/* Connection status */}
       {!connected && (
-        <div className="absolute top-4 right-4 text-terminal-primary/40 text-xs font-mono animate-pulse">
+        <div className="absolute top-4 right-4 text-[rgba(0,255,0,0.4)] text-xs font-mono animate-pulse">
           Connecting...
         </div>
       )}

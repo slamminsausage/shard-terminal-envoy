@@ -193,9 +193,9 @@ export default function VTTAudioMixer() {
   return (
     <div className="flex flex-col h-full overflow-y-auto">
       {/* Master Volume */}
-      <div className="p-3 border-b border-terminal-border/30">
+      <div className="vtt-panel-section">
         <div className="flex items-center justify-between mb-1.5">
-          <label className="text-[10px] text-terminal-primary/50 uppercase tracking-wider font-mono">
+          <label className="vtt-section-label">
             Master
           </label>
           <button
@@ -222,7 +222,7 @@ export default function VTTAudioMixer() {
               payload: { masterVolume: parseFloat(e.target.value) },
             })
           }
-          className="w-full accent-green-500 h-1"
+          className="vtt-slider"
         />
       </div>
 
@@ -255,7 +255,7 @@ export default function VTTAudioMixer() {
               >
                 <div className="flex items-center justify-between mb-1">
                   <label
-                    className={`text-[10px] uppercase tracking-wider font-mono ${SLOT_LABEL_COLORS[slot]}`}
+                    className={`vtt-section-label ${SLOT_LABEL_COLORS[slot]}`}
                   >
                     Channel {slot}
                   </label>
@@ -316,7 +316,7 @@ export default function VTTAudioMixer() {
                               },
                             })
                           }
-                          className={`flex-1 ${SLOT_COLORS[slot]} h-1`}
+                          className={`vtt-slider flex-1 ${SLOT_COLORS[slot]}`}
                         />
                       </div>
                       <div className="flex items-center gap-1">
@@ -341,7 +341,7 @@ export default function VTTAudioMixer() {
                               },
                             })
                           }
-                          className={`flex-1 ${SLOT_COLORS[slot]} h-1`}
+                          className={`vtt-slider flex-1 ${SLOT_COLORS[slot]}`}
                         />
                       </div>
                     </div>
@@ -349,7 +349,7 @@ export default function VTTAudioMixer() {
                 ) : (
                   <button
                     onClick={() => handleLoadAmbient(slot)}
-                    className="flex items-center gap-1 w-full px-2 py-1 text-[10px] font-mono border border-dashed border-terminal-border/20 rounded text-terminal-primary/30 hover:text-terminal-primary/60 hover:border-terminal-border/40 transition-colors"
+                    className="vtt-btn secondary w-full justify-center border-dashed"
                   >
                     <Upload size={9} /> Load file
                   </button>
@@ -379,10 +379,10 @@ export default function VTTAudioMixer() {
               <button
                 key={slot}
                 onClick={() => setLibraryTargetSlot(slot)}
-                className={`px-1.5 py-0.5 text-[9px] font-mono rounded border transition-colors ${
+                className={`vtt-option px-1.5 py-0.5 text-[9px] ${
                   libraryTargetSlot === slot
-                    ? `${SLOT_LABEL_COLORS[slot]} border-current bg-current/10`
-                    : "text-terminal-primary/30 border-terminal-border/20 hover:border-terminal-border/40"
+                    ? `vtt-option--active ${SLOT_LABEL_COLORS[slot]} border-current bg-current/10`
+                    : ""
                 }`}
               >
                 {slot}
@@ -487,7 +487,7 @@ export default function VTTAudioMixer() {
                 }
               }}
               placeholder="Save current as..."
-              className="flex-1 bg-terminal-bg-dark border border-terminal-border/20 text-terminal-primary text-[10px] px-2 py-1 rounded font-mono placeholder:text-terminal-primary/20 focus:border-terminal-primary/40 focus:outline-none"
+              className="vtt-input flex-1"
             />
             <button
               onClick={() => {
@@ -507,17 +507,17 @@ export default function VTTAudioMixer() {
 
           {/* Playlist list */}
           {(state.audio.playlists || []).length === 0 ? (
-            <div className="text-[9px] text-terminal-primary/25 font-mono text-center py-3">
+            <div className="vtt-empty py-3">
               No playlists yet. Load tracks into channels, then save as a playlist.
             </div>
           ) : (
             (state.audio.playlists || []).map((playlist) => (
               <div
                 key={playlist.id}
-                className={`flex items-center justify-between px-2 py-1.5 rounded border transition-colors ${
+                className={`vtt-list-item justify-between ${
                   state.audio.activePlaylistId === playlist.id
-                    ? "border-terminal-primary/40 bg-terminal-primary/5"
-                    : "border-terminal-border/15 hover:border-terminal-border/30"
+                    ? "vtt-list-item--active"
+                    : ""
                 }`}
               >
                 <div className="flex-1 min-w-0">
@@ -615,7 +615,7 @@ export default function VTTAudioMixer() {
                         },
                       });
                     }}
-                    className="w-full accent-yellow-500 h-0.5 mt-0.5"
+                    className="vtt-slider w-full accent-yellow-500 h-0.5 mt-0.5"
                   />
                 )}
                 {(slot.url || slot.name) && (
@@ -662,7 +662,7 @@ export default function VTTAudioMixer() {
                 audio.stopAllSFX();
                 setPlayingSFXSlots(new Set());
               }}
-              className="w-full mt-2 px-2 py-1 text-[10px] font-mono rounded border border-red-500/30 text-red-400/60 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+              className="vtt-btn danger w-full justify-center mt-2"
             >
               Stop All SFX
             </button>
@@ -699,7 +699,7 @@ function SectionHeader({
         <ChevronRight size={10} className="text-terminal-primary/40" />
       )}
       <span className="text-terminal-primary/40">{icon}</span>
-      <span className="text-[10px] text-terminal-primary/60 uppercase tracking-wider font-mono flex-1">
+      <span className="vtt-section-label flex-1">
         {label}
       </span>
       {count !== undefined && count > 0 && (
@@ -723,11 +723,7 @@ function FilterPill({
   return (
     <button
       onClick={onClick}
-      className={`px-1.5 py-0.5 text-[9px] font-mono rounded border transition-colors ${
-        active
-          ? "border-terminal-primary/40 bg-terminal-primary/10 text-terminal-primary/70"
-          : "border-terminal-border/15 text-terminal-primary/30 hover:border-terminal-border/30"
-      }`}
+      className={`vtt-option px-1.5 py-0.5 text-[9px] ${active ? "vtt-option--active" : ""}`}
     >
       {label}
     </button>

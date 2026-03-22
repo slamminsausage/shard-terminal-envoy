@@ -61,14 +61,14 @@ export default function VTTRightToolbar() {
     return (
       <button
         onClick={() => toggle(panel)}
-        className={`flex flex-col items-center justify-center gap-0 py-1 w-full rounded transition-colors ${
+        className={`flex flex-col items-center justify-center gap-0 py-1 w-full rounded transition-all ${
           active
-            ? "bg-terminal-primary/15 text-terminal-primary"
-            : "text-terminal-primary/40 hover:text-terminal-primary hover:bg-terminal-primary/8"
+            ? "vtt-btn-icon--active"
+            : "text-[rgba(0,255,0,0.4)] hover:text-[var(--primary)] hover:bg-[rgba(0,255,0,0.06)]"
         }`}
         title={label}
       >
-        <span className={active ? "text-terminal-primary" : ""}>{icon}</span>
+        <span>{icon}</span>
         <span className="text-[7px] font-mono leading-tight mt-0.5 tracking-wider">
           {label}
         </span>
@@ -78,7 +78,7 @@ export default function VTTRightToolbar() {
 
   return (
     <div
-      className="flex flex-col items-center py-1 px-0.5 bg-terminal-bg-dark border-l border-terminal-border/30 select-none"
+      className="vtt-toolbar border-l"
       style={{ width: 44 }}
     >
       {/* Map & canvas panels */}
@@ -86,8 +86,7 @@ export default function VTTRightToolbar() {
         <PanelButton key={p.panel} {...p} />
       ))}
 
-      {/* Separator */}
-      <div className="w-6 border-t border-terminal-border/25 my-1" />
+      <div className="vtt-separator" />
 
       {/* Game & audio panels */}
       {bottomPanels.map((p) => (

@@ -288,7 +288,7 @@ export default function VTTInitiativePanel() {
   return (
     <div className="flex flex-col h-full">
       {/* Add entry */}
-      <div className="p-3 border-b border-terminal-border/30 space-y-2">
+      <div className="vtt-panel-section space-y-2">
         <div className="flex gap-1">
           <input
             type="text"
@@ -296,7 +296,7 @@ export default function VTTInitiativePanel() {
             onChange={(e) => setNewName(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleAdd()}
             placeholder="Name..."
-            className="flex-1 bg-terminal-bg-dark border border-terminal-border/30 text-terminal-primary text-xs px-2 py-1 rounded font-mono placeholder:text-terminal-primary/30 focus:border-terminal-primary/50 focus:outline-none"
+            className="vtt-input flex-1"
           />
           <div className="flex items-center gap-0.5">
             <input
@@ -305,7 +305,7 @@ export default function VTTInitiativePanel() {
               onChange={(e) => setNewInit(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleAdd()}
               placeholder="Init"
-              className="w-12 bg-terminal-bg-dark border border-terminal-border/30 text-terminal-primary text-xs px-1 py-1 rounded font-mono placeholder:text-terminal-primary/30 focus:border-terminal-primary/50 focus:outline-none text-center"
+              className="vtt-input w-12 text-center"
             />
             <button
               onClick={handleRoll2d6}
@@ -317,18 +317,17 @@ export default function VTTInitiativePanel() {
           </div>
         </div>
         <div className="flex items-center justify-between">
-          <label className="flex items-center gap-1.5 text-[10px] text-terminal-primary/50 font-mono cursor-pointer">
+          <label className="vtt-checkbox">
             <input
               type="checkbox"
               checked={isNPC}
               onChange={(e) => setIsNPC(e.target.checked)}
-              className="accent-green-500"
             />
             NPC
           </label>
           <button
             onClick={handleAdd}
-            className="flex items-center gap-1 px-2 py-1 text-[10px] font-mono bg-terminal-primary/10 text-terminal-primary border border-terminal-primary/30 rounded hover:bg-terminal-primary/20 transition-colors"
+            className="vtt-btn"
           >
             <Plus size={10} /> Add
           </button>
@@ -336,15 +335,15 @@ export default function VTTInitiativePanel() {
       </div>
 
       {/* Combat Tracker Sync */}
-      <div className="px-3 py-2 border-b border-terminal-border/20 space-y-1.5">
-        <div className="text-[10px] text-terminal-primary/40 uppercase tracking-wider font-mono">
+      <div className="vtt-panel-section space-y-1.5">
+        <div className="vtt-section-label">
           Combat Tracker Sync
         </div>
         <div className="flex gap-1">
           <button
             onClick={pullFromCombatTracker}
             disabled={syncing}
-            className="flex-1 flex items-center justify-center gap-1 px-2 py-1 text-[10px] font-mono rounded border border-terminal-border/30 text-terminal-primary/50 hover:text-terminal-primary hover:bg-terminal-primary/10 transition-colors disabled:opacity-30"
+            className="vtt-btn secondary flex-1 justify-center"
             title="Pull combatants from Combat Tracker"
           >
             <Download size={10} /> Pull
@@ -352,28 +351,27 @@ export default function VTTInitiativePanel() {
           <button
             onClick={pushToCombatTracker}
             disabled={syncing}
-            className="flex-1 flex items-center justify-center gap-1 px-2 py-1 text-[10px] font-mono rounded border border-terminal-border/30 text-terminal-primary/50 hover:text-terminal-primary hover:bg-terminal-primary/10 transition-colors disabled:opacity-30"
+            className="vtt-btn secondary flex-1 justify-center"
             title="Push initiative to Combat Tracker"
           >
             <Upload size={10} /> Push
           </button>
         </div>
         <div className="flex items-center justify-between">
-          <label className="flex items-center gap-1.5 text-[10px] text-terminal-primary/40 font-mono cursor-pointer">
+          <label className="vtt-checkbox">
             <input
               type="checkbox"
               checked={autoSync}
               onChange={(e) => setAutoSync(e.target.checked)}
-              className="accent-green-500"
             />
             Auto-sync (5s)
           </label>
           <button
             onClick={() => dispatch({ type: "TOGGLE_INITIATIVE_PRESENTER" })}
-            className={`flex items-center gap-1 px-2 py-0.5 text-[10px] font-mono rounded border transition-colors ${
+            className={`vtt-btn ${
               showOnPresenter
                 ? "border-cyan-500/40 text-cyan-400 bg-cyan-500/10"
-                : "border-terminal-border/30 text-terminal-primary/40 hover:text-terminal-primary"
+                : "secondary"
             }`}
             title={showOnPresenter ? "Hide from presenter" : "Show on presenter"}
           >
@@ -385,18 +383,18 @@ export default function VTTInitiativePanel() {
 
       {/* Controls */}
       {state.initiative.length > 0 && (
-        <div className="px-3 py-1.5 border-b border-terminal-border/20 space-y-1">
+        <div className="vtt-panel-section space-y-1">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1">
               <button
                 onClick={handleSort}
-                className="flex items-center gap-1 text-[10px] font-mono text-terminal-primary/50 hover:text-terminal-primary transition-colors"
+                className="vtt-btn secondary"
               >
                 <ArrowUpDown size={10} /> Sort
               </button>
               <button
                 onClick={handleNextTurn}
-                className="flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-mono rounded border border-yellow-500/30 text-yellow-400/70 hover:text-yellow-400 hover:bg-yellow-500/10 transition-colors"
+                className="vtt-btn warning"
                 title="Advance to next combatant"
               >
                 <SkipForward size={10} /> Next
@@ -412,12 +410,11 @@ export default function VTTInitiativePanel() {
               Clear
             </button>
           </div>
-          <label className="flex items-center gap-1.5 text-[10px] text-terminal-primary/40 font-mono cursor-pointer">
+          <label className="vtt-checkbox">
             <input
               type="checkbox"
               checked={state.followActiveTurn ?? false}
               onChange={() => dispatch({ type: "TOGGLE_FOLLOW_ACTIVE_TURN" })}
-              className="accent-green-500"
             />
             <Navigation size={9} /> Follow active turn
           </label>
@@ -427,7 +424,7 @@ export default function VTTInitiativePanel() {
       {/* List */}
       <div className="flex-1 overflow-y-auto p-2 space-y-1">
         {state.initiative.length === 0 ? (
-          <div className="text-terminal-primary/30 text-xs font-mono text-center py-8">
+          <div className="vtt-empty">
             No initiative entries.
             <br />
             Add combatants above or pull from combat tracker.
@@ -453,10 +450,8 @@ export default function VTTInitiativePanel() {
                 setDragIndex(null);
                 setDropIndex(null);
               }}
-              className={`group flex items-center gap-2 p-2 rounded border transition-colors cursor-grab active:cursor-grabbing ${
-                index === 0
-                  ? "bg-terminal-primary/10 border-terminal-primary/40"
-                  : "bg-terminal-bg-dark/50 border-terminal-border/20"
+              className={`vtt-list-item cursor-grab active:cursor-grabbing ${
+                index === 0 ? "vtt-list-item--active" : ""
               } ${entry.isNPC ? "border-l-2 border-l-red-500/50" : ""} ${
                 dropIndex === index && dragIndex !== null ? "border-t-2 border-t-green-400" : ""
               } ${dragIndex === index ? "opacity-40" : ""}`}
