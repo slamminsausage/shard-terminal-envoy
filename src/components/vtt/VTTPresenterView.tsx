@@ -6,7 +6,7 @@ import { renderDynamicLighting } from "@/lib/vtt/raycasting";
 import type { VTTMap, ParticleConfig, Point, Stroke, Token, Clock, InitiativeEntry, AoETemplate, TextOverlay } from "@/types/vtt";
 import { createDefaultParticles } from "@/types/vtt";
 import VTTPlayerToolbar from "./VTTPlayerToolbar";
-import { BookOpen, ScrollText, FileText, Compass, ChevronRight, ChevronLeft, Image, CheckCircle2, Circle, Clock as ClockIcon } from "lucide-react";
+import { BookOpen, ScrollText, FileText, Compass, ChevronRight, ChevronLeft, Image as ImageIcon, CheckCircle2, Circle, Clock as ClockIcon } from "lucide-react";
 
 // ─── Token image cache (mirrors VTTCanvas pattern) ──────────────────────────
 const presenterTokenImageCache = new Map<string, HTMLImageElement>();
@@ -877,7 +877,7 @@ type SidebarTab = "notes" | "sessions" | "handouts" | "quests";
 const SIDEBAR_TABS: { id: SidebarTab; label: string; icon: React.ReactNode }[] = [
   { id: "notes", label: "Notes", icon: <BookOpen size={12} /> },
   { id: "sessions", label: "Sessions", icon: <ScrollText size={12} /> },
-  { id: "handouts", label: "Handouts", icon: <Image size={12} /> },
+  { id: "handouts", label: "Handouts", icon: <ImageIcon size={12} /> },
   { id: "quests", label: "Quests", icon: <Compass size={12} /> },
 ];
 
