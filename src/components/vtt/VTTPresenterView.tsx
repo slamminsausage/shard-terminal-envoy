@@ -4,6 +4,7 @@ import { useVTTParticles } from "@/hooks/useVTTParticles";
 import { renderDynamicLighting } from "@/lib/vtt/raycasting";
 import type { VTTMap, ParticleConfig, Point, Stroke, Token, Clock, InitiativeEntry, AoETemplate, TextOverlay } from "@/types/vtt";
 import { createDefaultParticles } from "@/types/vtt";
+import VTTPlayerToolbar from "./VTTPlayerToolbar";
 
 // ─── Token image cache (mirrors VTTCanvas pattern) ──────────────────────────
 const presenterTokenImageCache = new Map<string, HTMLImageElement>();
@@ -814,6 +815,9 @@ export default function VTTPresenterView() {
           </div>
         </div>
       )}
+
+      {/* Player toolbar */}
+      <VTTPlayerToolbar initiative={initiative} />
 
       {/* Connection status */}
       {!connected && (

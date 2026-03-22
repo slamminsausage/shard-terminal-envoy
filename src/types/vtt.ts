@@ -397,6 +397,8 @@ export type VTTActionType =
   | "wall-remove"
   | "light-add"
   | "light-remove"
+  | "aoe-add"
+  | "aoe-remove"
   | "fog-update";
 
 export interface VTTHistoryEntry {
@@ -451,6 +453,8 @@ export interface VTTState {
   selectedStrokeIds: string[];
   selectedTextIds: string[];
   selectedNoteIds: string[];
+  selectedAoEIds: string[];
+  selectedLightIds: string[];
 
   // Fog brush settings
   fogBrushSize: number;
@@ -482,6 +486,7 @@ export type VTTSidebarPanel =
   | "maps"
   | "layers"
   | "tokens"
+  | "notes"
   | "characters"
   | "drawing"
   | "fog"
@@ -607,6 +612,8 @@ export function createDefaultVTTState(): VTTState {
     selectedStrokeIds: [],
     selectedTextIds: [],
     selectedNoteIds: [],
+    selectedAoEIds: [],
+    selectedLightIds: [],
     fogBrushSize: 40,
     fogBrushMode: "reveal",
     layerStates: {
