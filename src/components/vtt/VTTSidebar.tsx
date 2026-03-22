@@ -42,15 +42,15 @@ export default function VTTSidebar() {
   };
 
   return (
-    <div className="w-64 h-full bg-terminal-bg-dark/95 border-l border-terminal-border/30 flex flex-col">
+    <div className="vtt-sidebar">
       {/* Header */}
-      <div className="flex items-center justify-between px-3 py-2 border-b border-terminal-border/30">
-        <span className="text-terminal-primary text-xs font-mono uppercase tracking-wider">
+      <div className="vtt-sidebar-header">
+        <span className="vtt-sidebar-title">
           {panelLabels[state.sidebarPanel] || state.sidebarPanel}
         </span>
         <button
           onClick={() => dispatch({ type: "SET_SIDEBAR", payload: null })}
-          className="text-terminal-primary/50 hover:text-terminal-primary transition-colors"
+          className="vtt-btn-icon"
         >
           <X size={14} />
         </button>

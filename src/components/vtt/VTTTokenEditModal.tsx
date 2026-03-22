@@ -97,30 +97,28 @@ export default function VTTTokenEditModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-      <div className="bg-terminal-bg-dark border border-terminal-border/40 rounded-lg shadow-xl w-80 max-h-[80vh] flex flex-col">
+    <div className="vtt-modal-overlay">
+      <div className="vtt-modal w-80 flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-terminal-border/30">
-          <h3 className="text-terminal-primary text-sm font-mono uppercase tracking-wider">
-            Edit Token
-          </h3>
-          <button onClick={onClose} className="text-terminal-primary/50 hover:text-terminal-primary">
+        <div className="vtt-modal-header">
+          <h3 className="vtt-modal-title">Edit Token</h3>
+          <button onClick={onClose} className="vtt-btn-icon">
             <X size={16} />
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+        <div className="vtt-modal-body space-y-3">
           {/* Token image preview */}
           <div className="flex items-center gap-3">
             <div
-              className="w-14 h-14 rounded-full border-2 border-terminal-primary/30 bg-terminal-bg-dark flex items-center justify-center overflow-hidden cursor-pointer"
+              className="w-14 h-14 rounded-full border-2 border-[rgba(0,255,0,0.3)] bg-[var(--bg-dark)] flex items-center justify-center overflow-hidden cursor-pointer hover:border-[rgba(0,255,0,0.6)] transition-colors"
               onClick={handleImageUpload}
               title="Click to upload image"
             >
               {token.imageDataUrl ? (
                 <img src={token.imageDataUrl} alt={name} className="w-full h-full object-cover" />
               ) : (
-                <span className="text-terminal-primary/30 text-lg font-mono">
+                <span className="text-[rgba(0,255,0,0.3)] text-lg font-mono">
                   {name.charAt(0).toUpperCase()}
                 </span>
               )}
@@ -130,12 +128,12 @@ export default function VTTTokenEditModal({
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full bg-terminal-bg-dark border border-terminal-border/30 text-terminal-primary text-xs px-2 py-1 rounded font-mono focus:border-terminal-primary/50 focus:outline-none"
+                className="vtt-input"
                 placeholder="Token name"
               />
               <button
                 onClick={handleImageUpload}
-                className="text-[10px] text-terminal-primary/40 font-mono mt-1 hover:text-terminal-primary/60"
+                className="text-[10px] text-[rgba(0,255,0,0.4)] font-mono mt-1 hover:text-[rgba(0,255,0,0.6)]"
               >
                 Upload Image
               </button>
@@ -144,22 +142,20 @@ export default function VTTTokenEditModal({
 
           {/* HP */}
           <div>
-            <label className="text-[10px] text-terminal-primary/50 uppercase tracking-wider font-mono block mb-1">
-              Hit Points
-            </label>
+            <label className="vtt-section-label">Hit Points</label>
             <div className="flex items-center gap-2">
               <input
                 type="number"
                 value={hp}
                 onChange={(e) => setHp(parseInt(e.target.value) || 0)}
-                className="w-16 bg-terminal-bg-dark border border-terminal-border/30 text-terminal-primary text-xs px-2 py-1 rounded font-mono text-center focus:border-terminal-primary/50 focus:outline-none"
+                className="vtt-input w-16 text-center"
               />
-              <span className="text-terminal-primary/30 text-xs">/</span>
+              <span className="text-[rgba(0,255,0,0.3)] text-xs">/</span>
               <input
                 type="number"
                 value={maxHp}
                 onChange={(e) => setMaxHp(parseInt(e.target.value) || 0)}
-                className="w-16 bg-terminal-bg-dark border border-terminal-border/30 text-terminal-primary text-xs px-2 py-1 rounded font-mono text-center focus:border-terminal-primary/50 focus:outline-none"
+                className="vtt-input w-16 text-center"
               />
             </div>
           </div>
@@ -167,29 +163,25 @@ export default function VTTTokenEditModal({
           {/* Size & Rotation */}
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="text-[10px] text-terminal-primary/50 uppercase tracking-wider font-mono block mb-1">
-                Size (cells)
-              </label>
+              <label className="vtt-section-label">Size (cells)</label>
               <input
                 type="number"
                 min={1}
                 max={10}
                 value={size}
                 onChange={(e) => setSize(Math.max(1, parseInt(e.target.value) || 1))}
-                className="w-full bg-terminal-bg-dark border border-terminal-border/30 text-terminal-primary text-xs px-2 py-1 rounded font-mono text-center focus:border-terminal-primary/50 focus:outline-none"
+                className="vtt-input text-center"
               />
             </div>
             <div>
-              <label className="text-[10px] text-terminal-primary/50 uppercase tracking-wider font-mono block mb-1">
-                Rotation
-              </label>
+              <label className="vtt-section-label">Rotation</label>
               <input
                 type="number"
                 min={0}
                 max={359}
                 value={rotation}
                 onChange={(e) => setRotation(parseInt(e.target.value) || 0)}
-                className="w-full bg-terminal-bg-dark border border-terminal-border/30 text-terminal-primary text-xs px-2 py-1 rounded font-mono text-center focus:border-terminal-primary/50 focus:outline-none"
+                className="vtt-input text-center"
               />
             </div>
           </div>
@@ -197,73 +189,65 @@ export default function VTTTokenEditModal({
           {/* Move Speed & Elevation */}
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="text-[10px] text-terminal-primary/50 uppercase tracking-wider font-mono block mb-1">
-                Move Speed
-              </label>
+              <label className="vtt-section-label">Move Speed</label>
               <input
                 type="number"
                 min={0}
                 max={30}
                 value={moveSpeed}
                 onChange={(e) => setMoveSpeed(Math.max(0, parseInt(e.target.value) || 0))}
-                className="w-full bg-terminal-bg-dark border border-terminal-border/30 text-terminal-primary text-xs px-2 py-1 rounded font-mono text-center focus:border-terminal-primary/50 focus:outline-none"
+                className="vtt-input text-center"
               />
             </div>
             <div>
-              <label className="text-[10px] text-terminal-primary/50 uppercase tracking-wider font-mono block mb-1">
-                Elevation
-              </label>
+              <label className="vtt-section-label">Elevation</label>
               <input
                 type="number"
                 value={elevation}
                 onChange={(e) => setElevation(parseInt(e.target.value) || 0)}
-                className="w-full bg-terminal-bg-dark border border-terminal-border/30 text-terminal-primary text-xs px-2 py-1 rounded font-mono text-center focus:border-terminal-primary/50 focus:outline-none"
+                className="vtt-input text-center"
               />
             </div>
           </div>
 
           {/* Light Emission */}
           <div>
-            <label className="text-[10px] text-terminal-primary/50 uppercase tracking-wider font-mono block mb-1">
-              Light Emission
-            </label>
+            <label className="vtt-section-label">Light Emission</label>
             <div className="flex items-center gap-2">
               <div className="flex-1">
-                <span className="text-[9px] text-terminal-primary/30 font-mono">Bright</span>
+                <span className="text-[9px] text-[rgba(0,255,0,0.3)] font-mono">Bright</span>
                 <input
                   type="number"
                   min={0}
                   max={30}
                   value={lightBrightRadius}
                   onChange={(e) => setLightBrightRadius(Math.max(0, parseFloat(e.target.value) || 0))}
-                  className="w-full bg-terminal-bg-dark border border-terminal-border/30 text-terminal-primary text-xs px-2 py-1 rounded font-mono text-center focus:border-terminal-primary/50 focus:outline-none"
+                  className="vtt-input text-center"
                 />
               </div>
               <div className="flex-1">
-                <span className="text-[9px] text-terminal-primary/30 font-mono">Dim</span>
+                <span className="text-[9px] text-[rgba(0,255,0,0.3)] font-mono">Dim</span>
                 <input
                   type="number"
                   min={0}
                   max={30}
                   value={lightDimRadius}
                   onChange={(e) => setLightDimRadius(Math.max(0, parseFloat(e.target.value) || 0))}
-                  className="w-full bg-terminal-bg-dark border border-terminal-border/30 text-terminal-primary text-xs px-2 py-1 rounded font-mono text-center focus:border-terminal-primary/50 focus:outline-none"
+                  className="vtt-input text-center"
                 />
               </div>
               <input
                 type="color"
                 value={lightColor}
                 onChange={(e) => setLightColor(e.target.value)}
-                className="w-8 h-6 rounded border border-terminal-border/30 bg-transparent cursor-pointer mt-3"
+                className="w-8 h-6 rounded border border-[rgba(0,255,0,0.2)] bg-transparent cursor-pointer mt-3"
               />
             </div>
           </div>
 
           {/* Aura */}
           <div>
-            <label className="text-[10px] text-terminal-primary/50 uppercase tracking-wider font-mono block mb-1">
-              Aura Radius (grid units)
-            </label>
+            <label className="vtt-section-label">Aura Radius (grid units)</label>
             <div className="flex items-center gap-2">
               <input
                 type="number"
@@ -271,34 +255,32 @@ export default function VTTTokenEditModal({
                 max={20}
                 value={auraRadius}
                 onChange={(e) => setAuraRadius(Math.max(0, parseFloat(e.target.value) || 0))}
-                className="w-16 bg-terminal-bg-dark border border-terminal-border/30 text-terminal-primary text-xs px-2 py-1 rounded font-mono text-center focus:border-terminal-primary/50 focus:outline-none"
+                className="vtt-input w-16 text-center"
               />
               <input
                 type="color"
                 value={auraColor || "#00ff0033"}
                 onChange={(e) => setAuraColor(e.target.value)}
-                className="w-8 h-6 rounded border border-terminal-border/30 bg-transparent cursor-pointer"
+                className="w-8 h-6 rounded border border-[rgba(0,255,0,0.2)] bg-transparent cursor-pointer"
               />
             </div>
           </div>
 
           {/* Display toggles */}
           <div className="flex items-center gap-4">
-            <label className="flex items-center gap-1.5 text-xs text-terminal-primary/60 font-mono cursor-pointer">
+            <label className="vtt-checkbox">
               <input
                 type="checkbox"
                 checked={showName}
                 onChange={(e) => setShowName(e.target.checked)}
-                className="accent-green-500"
               />
               Show Name
             </label>
-            <label className="flex items-center gap-1.5 text-xs text-terminal-primary/60 font-mono cursor-pointer">
+            <label className="vtt-checkbox">
               <input
                 type="checkbox"
                 checked={showHpBar}
                 onChange={(e) => setShowHpBar(e.target.checked)}
-                className="accent-green-500"
               />
               HP Bar
             </label>
@@ -308,22 +290,14 @@ export default function VTTTokenEditModal({
           <div className="flex gap-1">
             <button
               onClick={() => update({ visible: !token.visible })}
-              className={`flex items-center gap-1 px-2 py-1 text-xs font-mono rounded border transition-colors ${
-                token.visible
-                  ? "border-terminal-border/30 text-terminal-primary/50 hover:text-terminal-primary"
-                  : "border-red-500/30 text-red-400"
-              }`}
+              className={`vtt-btn ${!token.visible ? "danger" : ""}`}
             >
               {token.visible ? <Eye size={12} /> : <EyeOff size={12} />}
               {token.visible ? "Visible" : "Hidden"}
             </button>
             <button
               onClick={() => update({ locked: !token.locked })}
-              className={`flex items-center gap-1 px-2 py-1 text-xs font-mono rounded border transition-colors ${
-                token.locked
-                  ? "border-yellow-500/30 text-yellow-400"
-                  : "border-terminal-border/30 text-terminal-primary/50 hover:text-terminal-primary"
-              }`}
+              className={`vtt-btn ${token.locked ? "warning" : ""}`}
             >
               {token.locked ? <Lock size={12} /> : <Unlock size={12} />}
               {token.locked ? "Locked" : "Unlocked"}
@@ -332,9 +306,7 @@ export default function VTTTokenEditModal({
 
           {/* Conditions */}
           <div>
-            <label className="text-[10px] text-terminal-primary/50 uppercase tracking-wider font-mono block mb-1">
-              Conditions
-            </label>
+            <label className="vtt-section-label">Conditions</label>
             <div className="flex gap-1 mb-1.5">
               <input
                 type="text"
@@ -342,26 +314,21 @@ export default function VTTTokenEditModal({
                 onChange={(e) => setConditionInput(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && addCondition()}
                 placeholder="Add condition..."
-                className="flex-1 bg-terminal-bg-dark border border-terminal-border/30 text-terminal-primary text-xs px-2 py-1 rounded font-mono placeholder:text-terminal-primary/20 focus:border-terminal-primary/50 focus:outline-none"
+                className="vtt-input flex-1"
               />
-              <button
-                onClick={addCondition}
-                className="px-2 py-1 text-xs font-mono rounded border border-terminal-primary/30 text-terminal-primary/50 hover:text-terminal-primary hover:bg-terminal-primary/10 transition-colors"
-              >
-                +
-              </button>
+              <button onClick={addCondition} className="vtt-btn">+</button>
             </div>
             <div className="flex flex-wrap gap-1">
               {token.conditions.map((c, i) => (
                 <span
                   key={i}
-                  className="flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-mono rounded border border-terminal-border/20"
-                  style={{ color: c.color }}
+                  className="vtt-badge"
+                  style={{ color: c.color, borderColor: c.color + '40' }}
                 >
                   {c.name}
                   <button
                     onClick={() => removeCondition(i)}
-                    className="hover:text-red-400"
+                    className="hover:text-red-400 ml-0.5"
                   >
                     <X size={8} />
                   </button>
@@ -372,24 +339,15 @@ export default function VTTTokenEditModal({
         </div>
 
         {/* Footer */}
-        <div className="flex gap-2 px-4 py-3 border-t border-terminal-border/30">
-          <button
-            onClick={handleDelete}
-            className="flex items-center gap-1 px-3 py-1.5 text-xs font-mono rounded border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-colors"
-          >
+        <div className="flex gap-2 px-4 py-3 border-t border-[rgba(0,255,0,0.15)]">
+          <button onClick={handleDelete} className="vtt-btn danger">
             <Trash2 size={12} /> Delete
           </button>
           <div className="flex-1" />
-          <button
-            onClick={onClose}
-            className="px-3 py-1.5 text-xs font-mono rounded border border-terminal-border/30 text-terminal-primary/50 hover:text-terminal-primary transition-colors"
-          >
+          <button onClick={onClose} className="vtt-btn" style={{ background: 'transparent', boxShadow: 'none' }}>
             Cancel
           </button>
-          <button
-            onClick={handleSave}
-            className="px-3 py-1.5 text-xs font-mono rounded border border-terminal-primary/50 text-terminal-primary bg-terminal-primary/10 hover:bg-terminal-primary/20 transition-colors"
-          >
+          <button onClick={handleSave} className="vtt-btn">
             Save
           </button>
         </div>
