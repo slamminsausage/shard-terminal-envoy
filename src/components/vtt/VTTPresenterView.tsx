@@ -1,10 +1,12 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { usePresenterReceiver } from "@/hooks/useVTTPresenter";
+import type { PresenterAudioState, PresenterCampaignData, PresenterMessage } from "@/hooks/useVTTPresenter";
 import { useVTTParticles } from "@/hooks/useVTTParticles";
 import { renderDynamicLighting } from "@/lib/vtt/raycasting";
 import type { VTTMap, ParticleConfig, Point, Stroke, Token, Clock, InitiativeEntry, AoETemplate, TextOverlay } from "@/types/vtt";
 import { createDefaultParticles } from "@/types/vtt";
 import VTTPlayerToolbar from "./VTTPlayerToolbar";
+import { BookOpen, ScrollText, FileText, Compass, ChevronRight, ChevronLeft, Image, CheckCircle2, Circle, Clock as ClockIcon } from "lucide-react";
 
 // ─── Token image cache (mirrors VTTCanvas pattern) ──────────────────────────
 const presenterTokenImageCache = new Map<string, HTMLImageElement>();
@@ -48,6 +50,10 @@ export default function VTTPresenterView() {
   const [initiative, setInitiative] = useState<InitiativeEntry[]>([]);
   const [showInitiative, setShowInitiative] = useState(false);
   const [pings, setPings] = useState<{ x: number; y: number; timestamp: number; label?: string; color?: string }[]>([]);
+  const [audioState, setAudioState] = useState<PresenterAudioState | null>(null);
+  const [campaignData, setCampaignData] = useState<PresenterCampaignData | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarTab, setSidebarTab] = useState<"notes" | "sessions" | "handouts" | "quests">("notes");
 
   // Local presenter viewport (fully independent from GM)
   const [localScroll, setLocalScroll] = useState<Point | null>(null);
@@ -117,7 +123,15 @@ export default function VTTPresenterView() {
     }, 2000);
   }, []);
 
-  usePresenterReceiver(
+  const onAudioSync = useCallback((audio: PresenterAudioState) => {
+    setAudioState(audio);
+  }, []);
+
+  const onCampaignSync = useCallback((campaign: PresenterCampaignData) => {
+    setCampaignData(campaign);
+  }, []);
+
+  const { sendToController } = usePresenterReceiver(
     onMapSync,
     onParticlesSync,
     onShowHandout,
@@ -125,7 +139,9 @@ export default function VTTPresenterView() {
     onDiceRoll,
     onClocksSync,
     onInitiativeSync,
-    onGmPing
+    onGmPing,
+    onAudioSync,
+    onCampaignSync
   );
 
   // Connect particle canvas - always mounted now
@@ -816,8 +832,33 @@ export default function VTTPresenterView() {
         </div>
       )}
 
+      {/* Campaign sidebar toggle */}
+      {campaignData && (
+        <button
+          onClick={() => setSidebarOpen((v) => !v)}
+          className="absolute top-1/2 -translate-y-1/2 z-20 vtt-btn px-1 py-3 transition-all"
+          style={{ right: sidebarOpen ? 321 : 0 }}
+          title="Campaign Info"
+        >
+          {sidebarOpen ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
+        </button>
+      )}
+
+      {/* Campaign sidebar */}
+      {campaignData && sidebarOpen && (
+        <PresenterCampaignSidebar
+          data={campaignData}
+          activeTab={sidebarTab}
+          onTabChange={setSidebarTab}
+        />
+      )}
+
       {/* Player toolbar */}
-      <VTTPlayerToolbar initiative={initiative} />
+      <VTTPlayerToolbar
+        initiative={initiative}
+        audioState={audioState}
+        sendToController={sendToController}
+      />
 
       {/* Connection status */}
       {!connected && (
@@ -827,6 +868,213 @@ export default function VTTPresenterView() {
       )}
     </div>
   );
+}
+
+// ─── Campaign Sidebar for presenter ──────────────────────────────────────────
+
+type SidebarTab = "notes" | "sessions" | "handouts" | "quests";
+
+const SIDEBAR_TABS: { id: SidebarTab; label: string; icon: React.ReactNode }[] = [
+  { id: "notes", label: "Notes", icon: <BookOpen size={12} /> },
+  { id: "sessions", label: "Sessions", icon: <ScrollText size={12} /> },
+  { id: "handouts", label: "Handouts", icon: <Image size={12} /> },
+  { id: "quests", label: "Quests", icon: <Compass size={12} /> },
+];
+
+function PresenterCampaignSidebar({
+  data,
+  activeTab,
+  onTabChange,
+}: {
+  data: PresenterCampaignData;
+  activeTab: SidebarTab;
+  onTabChange: (tab: SidebarTab) => void;
+}) {
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  return (
+    <div className="absolute top-0 right-0 bottom-0 z-10 w-[320px] bg-[#0a0f0a]/95 border-l border-terminal-border/30 backdrop-blur-sm flex flex-col">
+      {/* Tab bar */}
+      <div className="flex border-b border-terminal-border/20 flex-shrink-0">
+        {SIDEBAR_TABS.map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => onTabChange(tab.id)}
+            className={`flex-1 flex items-center justify-center gap-1 px-2 py-2 text-[9px] font-mono uppercase tracking-wider transition-colors ${
+              activeTab === tab.id
+                ? "text-terminal-primary bg-terminal-primary/10 border-b-2 border-terminal-primary"
+                : "text-terminal-primary/40 hover:text-terminal-primary/60"
+            }`}
+          >
+            {tab.icon}
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto p-3 space-y-2">
+        {activeTab === "notes" && (
+          <>
+            {data.notes.length === 0 ? (
+              <EmptyState label="No notes available" />
+            ) : (
+              data.notes.map((note) => (
+                <button
+                  key={note.id}
+                  onClick={() => setExpandedId(expandedId === note.id ? null : note.id)}
+                  className="w-full text-left rounded border border-terminal-border/15 bg-terminal-primary/[0.02] hover:bg-terminal-primary/[0.05] transition-colors"
+                >
+                  <div className="flex items-center gap-2 px-3 py-2">
+                    <FileText size={10} className="text-terminal-primary/40 flex-shrink-0" />
+                    <span className="text-[11px] font-mono text-terminal-primary/70 truncate flex-1">{note.title}</span>
+                    {note.category && (
+                      <span className="text-[8px] font-mono text-terminal-primary/30 bg-terminal-primary/5 px-1.5 py-0.5 rounded">{note.category}</span>
+                    )}
+                  </div>
+                  {expandedId === note.id && note.content && (
+                    <div className="px-3 pb-2 text-[10px] font-mono text-terminal-primary/50 whitespace-pre-wrap border-t border-terminal-border/10 pt-2">
+                      {note.content.slice(0, 500)}{note.content.length > 500 ? "..." : ""}
+                    </div>
+                  )}
+                </button>
+              ))
+            )}
+          </>
+        )}
+
+        {activeTab === "sessions" && (
+          <>
+            {data.sessions.length === 0 ? (
+              <EmptyState label="No sessions available" />
+            ) : (
+              data.sessions.map((session) => (
+                <button
+                  key={session.id}
+                  onClick={() => setExpandedId(expandedId === session.id ? null : session.id)}
+                  className="w-full text-left rounded border border-terminal-border/15 bg-terminal-primary/[0.02] hover:bg-terminal-primary/[0.05] transition-colors"
+                >
+                  <div className="flex items-center gap-2 px-3 py-2">
+                    <ScrollText size={10} className="text-terminal-primary/40 flex-shrink-0" />
+                    <span className="text-[11px] font-mono text-terminal-primary/70 truncate flex-1">
+                      {session.number != null && <span className="text-terminal-primary/30 mr-1">#{session.number}</span>}
+                      {session.title}
+                    </span>
+                    {session.date && (
+                      <span className="text-[8px] font-mono text-terminal-primary/30">{session.date}</span>
+                    )}
+                  </div>
+                  {expandedId === session.id && session.summary && (
+                    <div className="px-3 pb-2 text-[10px] font-mono text-terminal-primary/50 whitespace-pre-wrap border-t border-terminal-border/10 pt-2">
+                      {session.summary.slice(0, 500)}{session.summary.length > 500 ? "..." : ""}
+                    </div>
+                  )}
+                </button>
+              ))
+            )}
+          </>
+        )}
+
+        {activeTab === "handouts" && (
+          <>
+            {data.handouts.filter((h) => h.visible !== false).length === 0 ? (
+              <EmptyState label="No handouts available" />
+            ) : (
+              data.handouts.filter((h) => h.visible !== false).map((handout) => (
+                <div
+                  key={handout.id}
+                  className="rounded border border-terminal-border/15 bg-terminal-primary/[0.02] overflow-hidden"
+                >
+                  {handout.imageUrl && (
+                    <img
+                      src={handout.imageUrl}
+                      alt={handout.title}
+                      className="w-full h-32 object-cover border-b border-terminal-border/10"
+                    />
+                  )}
+                  <div className="px-3 py-2">
+                    <div className="text-[11px] font-mono text-terminal-primary/70">{handout.title}</div>
+                    {handout.content && (
+                      <div className="text-[9px] font-mono text-terminal-primary/40 mt-1 line-clamp-3">
+                        {handout.content}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
+          </>
+        )}
+
+        {activeTab === "quests" && (
+          <>
+            {data.quests.length === 0 ? (
+              <EmptyState label="No quests available" />
+            ) : (
+              data.quests.map((quest) => (
+                <button
+                  key={quest.id}
+                  onClick={() => setExpandedId(expandedId === quest.id ? null : quest.id)}
+                  className="w-full text-left rounded border border-terminal-border/15 bg-terminal-primary/[0.02] hover:bg-terminal-primary/[0.05] transition-colors"
+                >
+                  <div className="flex items-center gap-2 px-3 py-2">
+                    <QuestStatusIcon status={quest.status} />
+                    <span className="text-[11px] font-mono text-terminal-primary/70 truncate flex-1">{quest.title}</span>
+                    {quest.status && (
+                      <span className={`text-[8px] font-mono px-1.5 py-0.5 rounded ${
+                        quest.status === "active" ? "text-green-400/70 bg-green-400/10" :
+                        quest.status === "completed" ? "text-cyan-400/70 bg-cyan-400/10" :
+                        "text-terminal-primary/30 bg-terminal-primary/5"
+                      }`}>
+                        {quest.status}
+                      </span>
+                    )}
+                  </div>
+                  {expandedId === quest.id && (
+                    <div className="px-3 pb-2 border-t border-terminal-border/10 pt-2 space-y-1">
+                      {quest.description && (
+                        <div className="text-[10px] font-mono text-terminal-primary/50">{quest.description}</div>
+                      )}
+                      {quest.objectives && quest.objectives.length > 0 && (
+                        <div className="space-y-0.5 mt-1">
+                          {quest.objectives.map((obj: any, i: number) => (
+                            <div key={i} className="flex items-start gap-1.5 text-[9px] font-mono">
+                              {obj.completed ? (
+                                <CheckCircle2 size={10} className="text-green-400/60 flex-shrink-0 mt-0.5" />
+                              ) : (
+                                <Circle size={10} className="text-terminal-primary/30 flex-shrink-0 mt-0.5" />
+                              )}
+                              <span className={obj.completed ? "text-terminal-primary/30 line-through" : "text-terminal-primary/50"}>
+                                {obj.text || obj.description || obj.name}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </button>
+              ))
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function EmptyState({ label }: { label: string }) {
+  return (
+    <div className="text-center text-[10px] font-mono text-terminal-primary/20 py-8">
+      {label}
+    </div>
+  );
+}
+
+function QuestStatusIcon({ status }: { status?: string }) {
+  if (status === "completed") return <CheckCircle2 size={10} className="text-cyan-400/60 flex-shrink-0" />;
+  if (status === "active") return <Compass size={10} className="text-green-400/60 flex-shrink-0" />;
+  return <Circle size={10} className="text-terminal-primary/30 flex-shrink-0" />;
 }
 
 // ─── Clock SVG for presenter (compact) ──────────────────────────────────────
