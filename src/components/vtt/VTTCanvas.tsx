@@ -6,7 +6,7 @@ import { useVTTFogBrush } from "@/hooks/useVTTFogBrush";
 import { getTokenBoundingBox, getStrokeBoundingBox, getTextBoundingBox, getNoteBoundingBox, getUnionBoundingBox } from "@/lib/vtt/boundingBox";
 import { renderBoundingBoxHandles, hitTestHandles, computeRotationFromHandle } from "@/lib/vtt/selectionHandles";
 import type { HandleType } from "@/lib/vtt/selectionHandles";
-import type { Point, Stroke, Token, MapNote, VTTMap, AoETemplate, TextOverlay, Wall, BoundingBox } from "@/types/vtt";
+import type { Point, Stroke, Token, MapNote, VTTMap, AoETemplate, TextOverlay, Wall, BoundingBox, LightSource } from "@/types/vtt";
 import VTTContextMenu from "./VTTContextMenu";
 import VTTTokenEditModal from "./VTTTokenEditModal";
 import VTTNoteModal from "./VTTNoteModal";
@@ -26,6 +26,49 @@ function getTokenImage(dataUrl: string): HTMLImageElement | null {
     const img = new Image();
     img.src = dataUrl;
     tokenImageCache.set(dataUrl, img);
+  }
+  return null;
+}
+
+// ─── AOE / Light hit testing ──────────────────────────────────────────────
+function findAoEAt(templates: AoETemplate[], pos: Point): AoETemplate | null {
+  for (let i = templates.length - 1; i >= 0; i--) {
+    const aoe = templates[i];
+    const dx = pos.x - aoe.x;
+    const dy = pos.y - aoe.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    if (aoe.shape === "circle" && dist <= aoe.radius) return aoe;
+    if (aoe.shape === "cone" && dist <= aoe.radius) {
+      const angle = Math.atan2(dy, dx);
+      const spread = (aoe.coneAngle ?? Math.PI / 3) / 2;
+      let diff = angle - (aoe.angle ?? 0);
+      while (diff > Math.PI) diff -= 2 * Math.PI;
+      while (diff < -Math.PI) diff += 2 * Math.PI;
+      if (Math.abs(diff) <= spread) return aoe;
+    }
+    if (aoe.shape === "line") {
+      const lineAngle = aoe.angle ?? 0;
+      const lineWidth = 20;
+      const ldx = Math.cos(lineAngle) * aoe.radius;
+      const ldy = Math.sin(lineAngle) * aoe.radius;
+      const lineLen = Math.sqrt(ldx * ldx + ldy * ldy);
+      if (lineLen > 0) {
+        const t = (dx * ldx + dy * ldy) / (lineLen * lineLen);
+        const perpDist = Math.abs((-ldy * dx + ldx * dy) / lineLen);
+        if (t >= 0 && t <= 1 && perpDist <= lineWidth) return aoe;
+      }
+    }
+  }
+  return null;
+}
+
+function findLightAt(lights: LightSource[], pos: Point, zoom: number): LightSource | null {
+  const hitRadius = 15 / Math.max(0.1, zoom);
+  for (let i = lights.length - 1; i >= 0; i--) {
+    const light = lights[i];
+    const dx = pos.x - light.x;
+    const dy = pos.y - light.y;
+    if (Math.sqrt(dx * dx + dy * dy) <= hitRadius) return light;
   }
   return null;
 }
@@ -489,6 +532,40 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
             return;
           }
 
+          // Click-to-select AoE templates
+          const hitAoE = findAoEAt(activeMap.aoeTemplates || [], worldPos);
+          if (hitAoE) {
+            const aoeIds = state.selectedAoEIds || [];
+            if (e.shiftKey) {
+              const isSelected = aoeIds.includes(hitAoE.id);
+              dispatch({
+                type: "SET_AOE_SELECTION",
+                payload: isSelected ? aoeIds.filter((id) => id !== hitAoE.id) : [...aoeIds, hitAoE.id],
+              });
+            } else {
+              dispatch({ type: "CLEAR_SELECTION" });
+              dispatch({ type: "SET_AOE_SELECTION", payload: [hitAoE.id] });
+            }
+            return;
+          }
+
+          // Click-to-select lights
+          const hitLight = findLightAt(activeMap.lights, worldPos, activeMap.zoom);
+          if (hitLight) {
+            const lightIds = state.selectedLightIds || [];
+            if (e.shiftKey) {
+              const isSelected = lightIds.includes(hitLight.id);
+              dispatch({
+                type: "SET_LIGHT_SELECTION",
+                payload: isSelected ? lightIds.filter((id) => id !== hitLight.id) : [...lightIds, hitLight.id],
+              });
+            } else {
+              dispatch({ type: "CLEAR_SELECTION" });
+              dispatch({ type: "SET_LIGHT_SELECTION", payload: [hitLight.id] });
+            }
+            return;
+          }
+
           // Nothing hit — check for image drag on map layer
           if (state.activeLayer === 0 && activeMap.imageDataUrl) {
             setIsDraggingImage(true);
@@ -564,18 +641,26 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
 
         // Light placement
         if (state.activeTool === "light") {
+          const newLight = {
+            id: crypto.randomUUID(),
+            x: worldPos.x,
+            y: worldPos.y,
+            radius: 200,
+            color: "#ffcc44",
+            intensity: 0.8,
+          };
           dispatch({
             type: "ADD_LIGHT",
+            payload: { mapId: activeMap.id, light: newLight },
+          });
+          dispatch({
+            type: "PUSH_HISTORY",
             payload: {
+              type: "light-add",
               mapId: activeMap.id,
-              light: {
-                id: crypto.randomUUID(),
-                x: worldPos.x,
-                y: worldPos.y,
-                radius: 200,
-                color: "#ffcc44",
-                intensity: 0.8,
-              },
+              before: null,
+              after: newLight,
+              timestamp: Date.now(),
             },
           });
           return;
@@ -1015,18 +1100,26 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
         if (state.activeTool === "aoe-cone") shape = "cone";
         else if (state.activeTool === "aoe-line") shape = "line";
 
+        const newAoE = {
+          id: crypto.randomUUID(),
+          shape,
+          x: s.x,
+          y: s.y,
+          radius,
+          angle,
+          coneAngle: Math.PI / 3,
+          color: shape === "cone" ? "#ff440088" : shape === "line" ? "#4488ff88" : "#ffcc0088",
+          opacity: 0.35,
+        };
+        dispatch({ type: "ADD_AOE", payload: newAoE });
         dispatch({
-          type: "ADD_AOE",
+          type: "PUSH_HISTORY",
           payload: {
-            id: crypto.randomUUID(),
-            shape,
-            x: s.x,
-            y: s.y,
-            radius,
-            angle,
-            coneAngle: Math.PI / 3,
-            color: shape === "cone" ? "#ff440088" : shape === "line" ? "#4488ff88" : "#ffcc0088",
-            opacity: 0.35,
+            type: "aoe-add",
+            mapId: activeMap.id,
+            before: null,
+            after: newAoE,
+            timestamp: Date.now(),
           },
         });
         return;
@@ -1268,6 +1361,68 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
     // AoE templates (per-map)
     if ((activeMap.aoeTemplates || []).length > 0) {
       drawAoETemplates(ctx, activeMap.aoeTemplates || []);
+    }
+
+    // Highlight selected AoEs
+    const selectedAoEIds = state.selectedAoEIds || [];
+    if (selectedAoEIds.length > 0) {
+      for (const aoeId of selectedAoEIds) {
+        const aoe = (activeMap.aoeTemplates || []).find((a) => a.id === aoeId);
+        if (!aoe) continue;
+        ctx.save();
+        ctx.strokeStyle = "#00ff00";
+        ctx.lineWidth = 2;
+        ctx.setLineDash([6, 4]);
+        ctx.shadowColor = "#00ff00";
+        ctx.shadowBlur = 8;
+        if (aoe.shape === "circle") {
+          ctx.beginPath();
+          ctx.arc(aoe.x, aoe.y, aoe.radius + 3, 0, Math.PI * 2);
+          ctx.stroke();
+        } else if (aoe.shape === "cone") {
+          const angle = aoe.angle ?? 0;
+          const spread = (aoe.coneAngle ?? Math.PI / 3) / 2;
+          ctx.beginPath();
+          ctx.moveTo(aoe.x, aoe.y);
+          ctx.arc(aoe.x, aoe.y, aoe.radius + 3, angle - spread, angle + spread);
+          ctx.closePath();
+          ctx.stroke();
+        } else if (aoe.shape === "line") {
+          const angle = aoe.angle ?? 0;
+          const lw = 23;
+          const endX = aoe.x + Math.cos(angle) * aoe.radius;
+          const endY = aoe.y + Math.sin(angle) * aoe.radius;
+          const perpX = Math.cos(angle + Math.PI / 2) * lw;
+          const perpY = Math.sin(angle + Math.PI / 2) * lw;
+          ctx.beginPath();
+          ctx.moveTo(aoe.x + perpX, aoe.y + perpY);
+          ctx.lineTo(endX + perpX, endY + perpY);
+          ctx.lineTo(endX - perpX, endY - perpY);
+          ctx.lineTo(aoe.x - perpX, aoe.y - perpY);
+          ctx.closePath();
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+    }
+
+    // Highlight selected lights
+    const selectedLightIds = state.selectedLightIds || [];
+    if (selectedLightIds.length > 0) {
+      for (const lightId of selectedLightIds) {
+        const light = activeMap.lights.find((l) => l.id === lightId);
+        if (!light) continue;
+        ctx.save();
+        ctx.strokeStyle = "#00ff00";
+        ctx.lineWidth = 2;
+        ctx.setLineDash([6, 4]);
+        ctx.shadowColor = "#00ff00";
+        ctx.shadowBlur = 8;
+        ctx.beginPath();
+        ctx.arc(light.x, light.y, 18, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      }
     }
 
     // AoE placement preview

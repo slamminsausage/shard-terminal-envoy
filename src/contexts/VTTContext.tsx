@@ -113,6 +113,7 @@ type VTTAction =
   | { type: "ADD_AOE"; payload: import("@/types/vtt").AoETemplate }
   | { type: "REMOVE_AOE"; payload: string }
   | { type: "CLEAR_AOE" }
+  | { type: "UPDATE_AOE"; payload: { aoeId: string; updates: Partial<import("@/types/vtt").AoETemplate> } }
   // Fog Brush
   | { type: "SET_FOG_BRUSH_SIZE"; payload: number }
   | { type: "SET_FOG_BRUSH_MODE"; payload: "reveal" | "conceal" }
@@ -126,7 +127,9 @@ type VTTAction =
   | { type: "SET_STROKE_SELECTION"; payload: string[] }
   | { type: "SET_TEXT_SELECTION"; payload: string[] }
   | { type: "SET_NOTE_SELECTION"; payload: string[] }
-  | { type: "SET_FULL_SELECTION"; payload: { tokenIds: string[]; strokeIds: string[]; textIds: string[]; noteIds: string[] } }
+  | { type: "SET_AOE_SELECTION"; payload: string[] }
+  | { type: "SET_LIGHT_SELECTION"; payload: string[] }
+  | { type: "SET_FULL_SELECTION"; payload: { tokenIds: string[]; strokeIds: string[]; textIds: string[]; noteIds: string[]; aoeIds?: string[]; lightIds?: string[] } }
   | { type: "CLEAR_SELECTION" }
   // Clipboard
   | { type: "COPY_SELECTION" }
@@ -230,6 +233,16 @@ function applyHistoryReverse(state: VTTState, entry: VTTHistoryEntry): VTTState 
         ...m,
         lights: [...m.lights, entry.before as LightSource],
       }));
+    case "aoe-add":
+      return updateMapInState(state, mapId, (m) => ({
+        ...m,
+        aoeTemplates: (m.aoeTemplates || []).filter((a) => a.id !== (entry.after as any).id),
+      }));
+    case "aoe-remove":
+      return updateMapInState(state, mapId, (m) => ({
+        ...m,
+        aoeTemplates: [...(m.aoeTemplates || []), entry.before as any],
+      }));
     case "fog-update":
       return updateMapInState(state, mapId, (m) => ({
         ...m,
@@ -311,6 +324,16 @@ function applyHistoryForward(state: VTTState, entry: VTTHistoryEntry): VTTState 
       return updateMapInState(state, mapId, (m) => ({
         ...m,
         lights: m.lights.filter((l) => l.id !== (entry.before as any).id),
+      }));
+    case "aoe-add":
+      return updateMapInState(state, mapId, (m) => ({
+        ...m,
+        aoeTemplates: [...(m.aoeTemplates || []), entry.after as any],
+      }));
+    case "aoe-remove":
+      return updateMapInState(state, mapId, (m) => ({
+        ...m,
+        aoeTemplates: (m.aoeTemplates || []).filter((a) => a.id !== (entry.before as any).id),
       }));
     case "fog-update":
       return updateMapInState(state, mapId, (m) => ({
@@ -685,6 +708,14 @@ function vttReducer(state: VTTState, action: VTTAction): VTTState {
         ...m,
         aoeTemplates: [],
       }));
+    case "UPDATE_AOE":
+      if (!state.activeMapId) return state;
+      return updateMapInState(state, state.activeMapId, (m) => ({
+        ...m,
+        aoeTemplates: (m.aoeTemplates || []).map((a) =>
+          a.id === action.payload.aoeId ? { ...a, ...action.payload.updates } : a
+        ),
+      }));
 
     // Fog Brush
     case "SET_FOG_BRUSH_SIZE":
@@ -715,6 +746,10 @@ function vttReducer(state: VTTState, action: VTTAction): VTTState {
       return { ...state, selectedTextIds: action.payload };
     case "SET_NOTE_SELECTION":
       return { ...state, selectedNoteIds: action.payload };
+    case "SET_AOE_SELECTION":
+      return { ...state, selectedAoEIds: action.payload };
+    case "SET_LIGHT_SELECTION":
+      return { ...state, selectedLightIds: action.payload };
     case "SET_FULL_SELECTION":
       return {
         ...state,
@@ -722,9 +757,11 @@ function vttReducer(state: VTTState, action: VTTAction): VTTState {
         selectedStrokeIds: action.payload.strokeIds,
         selectedTextIds: action.payload.textIds,
         selectedNoteIds: action.payload.noteIds,
+        selectedAoEIds: action.payload.aoeIds || [],
+        selectedLightIds: action.payload.lightIds || [],
       };
     case "CLEAR_SELECTION":
-      return { ...state, selectedTokenIds: [], selectedStrokeIds: [], selectedTextIds: [], selectedNoteIds: [] };
+      return { ...state, selectedTokenIds: [], selectedStrokeIds: [], selectedTextIds: [], selectedNoteIds: [], selectedAoEIds: [], selectedLightIds: [] };
 
     // Clipboard
     case "COPY_SELECTION": {

@@ -126,7 +126,9 @@ export function useVTTKeyboard(onToggleShortcuts?: () => void) {
         const strokeIds = state.selectedStrokeIds || [];
         const textIds = state.selectedTextIds || [];
         const noteIds = state.selectedNoteIds || [];
-        if ((tokenIds.length + strokeIds.length + textIds.length + noteIds.length) > 0 && activeMap) {
+        const aoeIds = state.selectedAoEIds || [];
+        const lightIds = state.selectedLightIds || [];
+        if ((tokenIds.length + strokeIds.length + textIds.length + noteIds.length + aoeIds.length + lightIds.length) > 0 && activeMap) {
           for (const tokenId of tokenIds) {
             const token = activeMap.tokens.find((t) => t.id === tokenId);
             if (token) {
@@ -162,6 +164,41 @@ export function useVTTKeyboard(onToggleShortcuts?: () => void) {
             dispatch({
               type: "REMOVE_NOTE",
               payload: { mapId: activeMap.id, noteId },
+            });
+          }
+          for (const aoeId of aoeIds) {
+            const aoe = (activeMap.aoeTemplates || []).find((a) => a.id === aoeId);
+            if (aoe) {
+              dispatch({
+                type: "PUSH_HISTORY",
+                payload: {
+                  type: "aoe-remove",
+                  mapId: activeMap.id,
+                  before: aoe,
+                  after: null,
+                  timestamp: Date.now(),
+                },
+              });
+            }
+            dispatch({ type: "REMOVE_AOE", payload: aoeId });
+          }
+          for (const lightId of lightIds) {
+            const light = activeMap.lights.find((l) => l.id === lightId);
+            if (light) {
+              dispatch({
+                type: "PUSH_HISTORY",
+                payload: {
+                  type: "light-remove",
+                  mapId: activeMap.id,
+                  before: light,
+                  after: null,
+                  timestamp: Date.now(),
+                },
+              });
+            }
+            dispatch({
+              type: "REMOVE_LIGHT",
+              payload: { mapId: activeMap.id, lightId },
             });
           }
           dispatch({ type: "CLEAR_SELECTION" });
