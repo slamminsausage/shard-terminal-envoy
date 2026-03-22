@@ -11,6 +11,7 @@ import VTTContextMenu from "./VTTContextMenu";
 import VTTTokenEditModal from "./VTTTokenEditModal";
 import VTTNoteModal from "./VTTNoteModal";
 import VTTZoomControl from "./VTTZoomControl";
+import VTTTokenHUD from "./VTTTokenHUD";
 
 const MIN_ZOOM = 0.1;
 const MAX_ZOOM = 5;
@@ -108,10 +109,19 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
   const selectionBoxStartRef = useRef<Point>({ x: 0, y: 0 });
 
   // Ping state (visual on GM canvas)
-  const [pings, setPings] = useState<{ x: number; y: number; timestamp: number }[]>([]);
+  const [pings, setPings] = useState<{ x: number; y: number; timestamp: number; label?: string; color?: string }[]>([]);
 
   // Drag start position for undo history
   const dragStartPosRef = useRef<Point>({ x: 0, y: 0 });
+
+  // Inline HP edit state
+  const [hpEdit, setHpEdit] = useState<{
+    tokenId: string;
+    screenX: number;
+    screenY: number;
+    value: string;
+  } | null>(null);
+  const hpEditRef = useRef<HTMLInputElement>(null);
 
   // Hover state (refs to avoid callback re-creation)
   const hoveredTokenIdRef = useRef<string | null>(null);
@@ -260,15 +270,44 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
         if (state.activeTool === "cursor") {
           // Ctrl+Click → GM ping
           if (e.ctrlKey || e.metaKey) {
-            const ping = { x: worldPos.x, y: worldPos.y, timestamp: Date.now() };
+            const ping = { x: worldPos.x, y: worldPos.y, timestamp: Date.now(), label: "GM", color: "#ffcc00" };
             setPings((prev) => [...prev, ping]);
             setTimeout(() => setPings((prev) => prev.filter((p) => p !== ping)), 2000);
-            broadcastPing?.(worldPos.x, worldPos.y);
+            broadcastPing?.(worldPos.x, worldPos.y, "GM", "#ffcc00");
             return;
           }
 
-          // Double-click to edit
+          // Double-click to edit (check HP bar hit first)
           if (e.detail === 2) {
+            // Check if click is on a token's HP bar
+            if (activeMap) {
+              const gs = activeMap.grid.size || 50;
+              for (const t of activeMap.tokens) {
+                if (!t.visible || !t.showHpBar || t.maxHp <= 0) continue;
+                const ps = t.size * gs;
+                const hs = ps / 2;
+                const barX = t.x - hs;
+                const barY = t.y + hs + 2;
+                const barW = ps;
+                const barH = 8; // expanded hit zone
+                if (worldPos.x >= barX && worldPos.x <= barX + barW &&
+                    worldPos.y >= barY && worldPos.y <= barY + barH) {
+                  const rect = canvasRef.current?.getBoundingClientRect();
+                  if (rect) {
+                    const sx = (t.x - activeMap.scrollX) * activeMap.zoom + rect.left;
+                    const sy = (t.y + hs + 4 - activeMap.scrollY) * activeMap.zoom + rect.top;
+                    setHpEdit({
+                      tokenId: t.id,
+                      screenX: sx - rect.left,
+                      screenY: sy - rect.top,
+                      value: String(t.hp),
+                    });
+                    setTimeout(() => hpEditRef.current?.focus(), 0);
+                  }
+                  return;
+                }
+              }
+            }
             const token = findTokenAt(worldPos);
             if (token) {
               setEditingToken(token);
@@ -1095,6 +1134,26 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
       const cursorScreenX = e.clientX - rect.left;
       const cursorScreenY = e.clientY - rect.top;
 
+      // Shift+Scroll = adjust HP on hovered/selected token
+      if (e.shiftKey) {
+        const worldX = map.scrollX + cursorScreenX / map.zoom;
+        const worldY = map.scrollY + cursorScreenY / map.zoom;
+        const tokenUnderCursor = findTokenAt({ x: worldX, y: worldY });
+        if (tokenUnderCursor) {
+          const hpDelta = e.deltaY < 0 ? 1 : -1;
+          const newHp = Math.max(0, Math.min(tokenUnderCursor.maxHp, tokenUnderCursor.hp + hpDelta));
+          dispatch({
+            type: "UPDATE_TOKEN",
+            payload: {
+              mapId: map.id,
+              tokenId: tokenUnderCursor.id,
+              updates: { hp: newHp },
+            },
+          });
+          return;
+        }
+      }
+
       // World point under cursor before zoom
       const worldX = map.scrollX + cursorScreenX / map.zoom;
       const worldY = map.scrollY + cursorScreenY / map.zoom;
@@ -1216,9 +1275,23 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
       drawAoEPreview(ctx, aoeStartRef.current, aoeEndRef.current, state.activeTool);
     }
 
-    // Dynamic lighting
-    if (state.showLights && activeMap.lights.length > 0 && activeMap.walls.length > 0) {
-      renderDynamicLighting(ctx, activeMap.lights, activeMap.walls, activeMap.width, activeMap.height);
+    // Dynamic lighting (combine map lights + token-emitted lights)
+    if (state.showLights && activeMap.walls.length > 0) {
+      const tokenLights = activeMap.tokens
+        .filter((t) => t.visible && (t.lightBrightRadius ?? 0) > 0)
+        .map((t) => ({
+          id: t.id + "-light",
+          x: t.x,
+          y: t.y,
+          radius: (t.lightBrightRadius ?? 0) * (activeMap.grid.size || 50),
+          color: t.lightColor || "#ffaa44",
+          intensity: 1.0,
+          flickering: false,
+        }));
+      const allLights = [...activeMap.lights, ...tokenLights];
+      if (allLights.length > 0) {
+        renderDynamicLighting(ctx, allLights, activeMap.walls, activeMap.width, activeMap.height);
+      }
     }
 
     // Fog of War overlay (use brush canvas if available, otherwise basic fill)
@@ -1509,7 +1582,7 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
       }
     }
 
-    // Active turn indicator (pulsing yellow glow)
+    // Active turn indicator (enhanced pulsing yellow glow + label)
     if (state.initiative?.length > 0) {
       const activeTokenId = state.initiative[0]?.tokenId;
       if (activeTokenId) {
@@ -1517,16 +1590,63 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
         if (token && token.visible) {
           const gridSize = activeMap.grid.size || 50;
           const halfSize = (token.size * gridSize) / 2;
-          const pulse = 0.4 + 0.6 * Math.abs(Math.sin(Date.now() / 400));
+          const now = Date.now();
+          const pulse = 0.4 + 0.6 * Math.abs(Math.sin(now / 400));
           ctx.save();
+          // Outer pulsing ring
           ctx.strokeStyle = "#ffcc00";
           ctx.lineWidth = 3;
           ctx.globalAlpha = pulse;
           ctx.shadowColor = "#ffcc00";
           ctx.shadowBlur = 15;
           ctx.beginPath();
-          ctx.arc(token.x, token.y, halfSize + 4, 0, Math.PI * 2);
+          ctx.arc(token.x, token.y, halfSize + 6, 0, Math.PI * 2);
           ctx.stroke();
+          // Inner subtle glow ring
+          ctx.lineWidth = 1.5;
+          ctx.globalAlpha = pulse * 0.4;
+          ctx.beginPath();
+          ctx.arc(token.x, token.y, halfSize + 10, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.shadowBlur = 0;
+
+          // Chevron arrows pointing at token (4 directions)
+          const arrowDist = halfSize + 16;
+          const arrowSize = 5;
+          ctx.fillStyle = "#ffcc00";
+          ctx.globalAlpha = pulse * 0.8;
+          for (let a = 0; a < 4; a++) {
+            const angle = (a * Math.PI) / 2;
+            const ax = token.x + Math.cos(angle) * arrowDist;
+            const ay = token.y + Math.sin(angle) * arrowDist;
+            const perpX = Math.cos(angle + Math.PI / 2) * arrowSize;
+            const perpY = Math.sin(angle + Math.PI / 2) * arrowSize;
+            const tipX = token.x + Math.cos(angle) * (arrowDist - arrowSize * 1.5);
+            const tipY = token.y + Math.sin(angle) * (arrowDist - arrowSize * 1.5);
+            ctx.beginPath();
+            ctx.moveTo(ax + perpX, ay + perpY);
+            ctx.lineTo(tipX, tipY);
+            ctx.lineTo(ax - perpX, ay - perpY);
+            ctx.closePath();
+            ctx.fill();
+          }
+
+          // "ACTIVE" label above token
+          const labelY = token.y - halfSize - 20;
+          ctx.globalAlpha = pulse;
+          ctx.font = `bold 10px "Share Tech Mono", monospace`;
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          const label = ">> ACTIVE <<";
+          const lm = ctx.measureText(label);
+          ctx.fillStyle = "#000000";
+          ctx.globalAlpha = 0.7;
+          ctx.beginPath();
+          ctx.roundRect(token.x - lm.width / 2 - 4, labelY - 7, lm.width + 8, 14, 3);
+          ctx.fill();
+          ctx.fillStyle = "#ffcc00";
+          ctx.globalAlpha = pulse;
+          ctx.fillText(label, token.x, labelY);
           ctx.restore();
         }
       }
@@ -1563,6 +1683,69 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
       }
     }
 
+    // Drag ruler: movement path with distance during token drag
+    if (dragToken) {
+      const draggingToken = activeMap.tokens.find((t) => t.id === dragToken);
+      if (draggingToken) {
+        const gs = activeMap.grid.size || 50;
+        const startX = dragStartPosRef.current.x;
+        const startY = dragStartPosRef.current.y;
+        const endX = draggingToken.x;
+        const endY = draggingToken.y;
+        const dx = endX - startX;
+        const dy = endY - startY;
+        const pixelDist = Math.sqrt(dx * dx + dy * dy);
+        const gridDist = pixelDist / gs;
+
+        if (gridDist > 0.3) {
+          const moveSpeed = draggingToken.moveSpeed ?? 6;
+          // Color-coded: green=normal, yellow=dash, red=over
+          let pathColor = "#00ff00";
+          if (gridDist > moveSpeed * 2) pathColor = "#ff3344";
+          else if (gridDist > moveSpeed) pathColor = "#ffcc00";
+
+          ctx.save();
+          // Path line
+          ctx.strokeStyle = pathColor;
+          ctx.lineWidth = 3;
+          ctx.globalAlpha = 0.7;
+          ctx.setLineDash([8, 4]);
+          ctx.beginPath();
+          ctx.moveTo(startX, startY);
+          ctx.lineTo(endX, endY);
+          ctx.stroke();
+          ctx.setLineDash([]);
+
+          // Start marker
+          ctx.fillStyle = pathColor;
+          ctx.globalAlpha = 0.5;
+          ctx.beginPath();
+          ctx.arc(startX, startY, 4, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Distance label at midpoint
+          const midX = (startX + endX) / 2;
+          const midY = (startY + endY) / 2;
+          const label = `${gridDist.toFixed(1)} sq`;
+          ctx.font = `bold 12px "Share Tech Mono", monospace`;
+          const metrics = ctx.measureText(label);
+          const labelW = metrics.width + 8;
+          const labelH = 16;
+          ctx.globalAlpha = 0.85;
+          ctx.fillStyle = "#000000";
+          ctx.beginPath();
+          ctx.roundRect(midX - labelW / 2, midY - labelH / 2, labelW, labelH, 4);
+          ctx.fill();
+          ctx.fillStyle = pathColor;
+          ctx.globalAlpha = 1;
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText(label, midX, midY);
+          ctx.restore();
+        }
+      }
+    }
+
     // Selection box (drag rectangle)
     if (selectionBox) {
       ctx.save();
@@ -1582,26 +1765,63 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
       ctx.restore();
     }
 
-    // GM Pings (animated expanding rings)
+    // GM Pings (enhanced animated expanding rings with crosshair and label)
     if (pings.length > 0) {
       const now = Date.now();
       for (const ping of pings) {
         const age = now - ping.timestamp;
         const progress = age / 2000;
         const alpha = 1 - progress;
-        const radius = 10 + progress * 60;
+        const pingColor = ping.color || "#ffcc00";
         ctx.save();
+
+        // Three concentric expanding rings
+        for (let r = 0; r < 3; r++) {
+          const ringProgress = Math.max(0, progress - r * 0.12);
+          const ringAlpha = Math.max(0, (1 - ringProgress) * (1 - r * 0.3));
+          const radius = 10 + ringProgress * 60;
+          ctx.globalAlpha = ringAlpha;
+          ctx.strokeStyle = pingColor;
+          ctx.lineWidth = 3 - r;
+          ctx.beginPath();
+          ctx.arc(ping.x, ping.y, radius, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+
+        // Crosshair at center
         ctx.globalAlpha = Math.max(0, alpha);
-        ctx.strokeStyle = "#ffcc00";
-        ctx.lineWidth = 3;
+        ctx.strokeStyle = pingColor;
+        ctx.lineWidth = 2;
+        const armLen = 8;
         ctx.beginPath();
-        ctx.arc(ping.x, ping.y, radius, 0, Math.PI * 2);
+        ctx.moveTo(ping.x - armLen, ping.y);
+        ctx.lineTo(ping.x + armLen, ping.y);
+        ctx.moveTo(ping.x, ping.y - armLen);
+        ctx.lineTo(ping.x, ping.y + armLen);
         ctx.stroke();
-        ctx.fillStyle = "#ffcc00";
-        ctx.globalAlpha = Math.max(0, alpha * 0.8);
+
+        // Center dot
+        ctx.fillStyle = pingColor;
+        ctx.globalAlpha = Math.max(0, alpha * 0.9);
         ctx.beginPath();
-        ctx.arc(ping.x, ping.y, 5, 0, Math.PI * 2);
+        ctx.arc(ping.x, ping.y, 3, 0, Math.PI * 2);
         ctx.fill();
+
+        // Label below
+        if (ping.label) {
+          ctx.font = `bold 10px "Share Tech Mono", monospace`;
+          ctx.textAlign = "center";
+          ctx.textBaseline = "top";
+          const lm = ctx.measureText(ping.label);
+          ctx.fillStyle = "#000000";
+          ctx.globalAlpha = Math.max(0, alpha * 0.6);
+          ctx.beginPath();
+          ctx.roundRect(ping.x - lm.width / 2 - 3, ping.y + 14, lm.width + 6, 13, 3);
+          ctx.fill();
+          ctx.fillStyle = pingColor;
+          ctx.globalAlpha = Math.max(0, alpha);
+          ctx.fillText(ping.label, ping.x, ping.y + 15);
+        }
         ctx.restore();
       }
     }
@@ -1696,6 +1916,69 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
             }
           }}
           onBlur={() => setTextInput(null)}
+        />
+      )}
+
+      {/* Token Quick-Action HUD */}
+      {activeMap && !dragToken && !contextMenu && !editingToken && state.selectedTokenIds.length === 1 && (() => {
+        const selToken = activeMap.tokens.find((t) => t.id === state.selectedTokenIds[0]);
+        if (!selToken) return null;
+        const gs = activeMap.grid.size || 50;
+        const halfSize = (selToken.size * gs) / 2;
+        const sx = (selToken.x - activeMap.scrollX) * activeMap.zoom;
+        const sy = (selToken.y - halfSize - 8 - activeMap.scrollY) * activeMap.zoom;
+        return (
+          <VTTTokenHUD
+            token={selToken}
+            mapId={activeMap.id}
+            screenX={sx}
+            screenY={sy}
+          />
+        );
+      })()}
+
+      {/* Inline HP edit overlay */}
+      {hpEdit && activeMap && (
+        <input
+          ref={hpEditRef}
+          type="number"
+          value={hpEdit.value}
+          onChange={(e) => setHpEdit({ ...hpEdit, value: e.target.value })}
+          className="absolute bg-black/90 border border-terminal-primary/50 text-terminal-primary font-mono text-xs px-2 py-0.5 rounded outline-none w-16 text-center"
+          style={{
+            left: hpEdit.screenX - 32,
+            top: hpEdit.screenY,
+            zIndex: 20,
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              const newHp = parseInt(hpEdit.value) || 0;
+              dispatch({
+                type: "UPDATE_TOKEN",
+                payload: {
+                  mapId: activeMap.id,
+                  tokenId: hpEdit.tokenId,
+                  updates: { hp: Math.max(0, newHp) },
+                },
+              });
+              setHpEdit(null);
+            }
+            if (e.key === "Escape") setHpEdit(null);
+          }}
+          onBlur={() => {
+            if (hpEdit) {
+              const newHp = parseInt(hpEdit.value) || 0;
+              dispatch({
+                type: "UPDATE_TOKEN",
+                payload: {
+                  mapId: activeMap.id,
+                  tokenId: hpEdit.tokenId,
+                  updates: { hp: Math.max(0, newHp) },
+                },
+              });
+              setHpEdit(null);
+            }
+          }}
         />
       )}
 
@@ -2013,6 +2296,75 @@ function drawTokens(
         );
         ctx.fill();
       });
+    }
+
+    // Elevation badge
+    if (t.elevation && t.elevation !== 0) {
+      const elevLabel = (t.elevation > 0 ? "+" : "") + t.elevation;
+      const badgeColor = t.elevation > 0 ? "#00ccff" : "#ff8800";
+      const badgeX = t.x + halfSize - 2;
+      const badgeY = t.y - halfSize - 2;
+      ctx.save();
+      ctx.font = `bold 9px "Share Tech Mono", monospace`;
+      const bm = ctx.measureText(elevLabel);
+      const bw = bm.width + 6;
+      const bh = 12;
+      ctx.fillStyle = "#000000";
+      ctx.globalAlpha = 0.8;
+      ctx.beginPath();
+      ctx.roundRect(badgeX - bw / 2, badgeY - bh / 2, bw, bh, 3);
+      ctx.fill();
+      ctx.strokeStyle = badgeColor;
+      ctx.lineWidth = 1;
+      ctx.globalAlpha = 0.9;
+      ctx.beginPath();
+      ctx.roundRect(badgeX - bw / 2, badgeY - bh / 2, bw, bh, 3);
+      ctx.stroke();
+      ctx.fillStyle = badgeColor;
+      ctx.globalAlpha = 1;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(elevLabel, badgeX, badgeY);
+      ctx.restore();
+    }
+
+    // Token light emission indicator (bright radius ring)
+    if ((t.lightBrightRadius ?? 0) > 0) {
+      const brightR = (t.lightBrightRadius ?? 0) * gridSize;
+      const dimR = (t.lightDimRadius ?? 0) * gridSize;
+      const lColor = t.lightColor || "#ffaa44";
+      ctx.save();
+      // Dim radius (outer, very faint)
+      if (dimR > brightR) {
+        ctx.globalAlpha = 0.08;
+        ctx.fillStyle = lColor;
+        ctx.beginPath();
+        ctx.arc(t.x, t.y, dimR, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 0.2;
+        ctx.strokeStyle = lColor;
+        ctx.lineWidth = 1;
+        ctx.setLineDash([3, 3]);
+        ctx.beginPath();
+        ctx.arc(t.x, t.y, dimR, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+      // Bright radius (inner, slightly visible)
+      ctx.globalAlpha = 0.12;
+      ctx.fillStyle = lColor;
+      ctx.beginPath();
+      ctx.arc(t.x, t.y, brightR, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 0.3;
+      ctx.strokeStyle = lColor;
+      ctx.lineWidth = 1;
+      ctx.setLineDash([4, 2]);
+      ctx.beginPath();
+      ctx.arc(t.x, t.y, brightR, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.restore();
     }
   }
 }

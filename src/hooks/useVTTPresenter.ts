@@ -16,7 +16,7 @@ export type PresenterMessage =
   | { type: "show-handout"; imageDataUrl: string; name: string }
   | { type: "hide-handout" }
   | { type: "dice-roll"; label: string; dice: number[]; total: number; modifier: number }
-  | { type: "gm-ping"; x: number; y: number }
+  | { type: "gm-ping"; x: number; y: number; label?: string; color?: string }
   | { type: "ping" }
   | { type: "pong" };
 
@@ -125,11 +125,13 @@ export function usePresenterController(state: VTTState, activeMap: VTTMap | null
     []
   );
 
-  const broadcastPing = useCallback((x: number, y: number) => {
+  const broadcastPing = useCallback((x: number, y: number, label?: string, color?: string) => {
     channelRef.current?.postMessage({
       type: "gm-ping",
       x,
       y,
+      label,
+      color,
     } satisfies PresenterMessage);
   }, []);
 
@@ -147,7 +149,7 @@ export function usePresenterReceiver(
   onDiceRoll?: (label: string, dice: number[], total: number, modifier: number) => void,
   onClocksSync?: (clocks: Clock[]) => void,
   onInitiativeSync?: (initiative: InitiativeEntry[], showOnPresenter: boolean) => void,
-  onGmPing?: (x: number, y: number) => void
+  onGmPing?: (x: number, y: number, label?: string, color?: string) => void
 ) {
   const channelRef = useRef<BroadcastChannel | null>(null);
 
@@ -178,7 +180,7 @@ export function usePresenterReceiver(
           onInitiativeSync?.(e.data.initiative, e.data.showOnPresenter);
           break;
         case "gm-ping":
-          onGmPing?.(e.data.x, e.data.y);
+          onGmPing?.(e.data.x, e.data.y, e.data.label, e.data.color);
           break;
         case "pong":
           // Controller is alive

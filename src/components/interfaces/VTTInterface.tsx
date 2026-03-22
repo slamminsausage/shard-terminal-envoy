@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import VTTCanvas from "@/components/vtt/VTTCanvas";
 import VTTToolbar from "@/components/vtt/VTTToolbar";
+import VTTRightToolbar from "@/components/vtt/VTTRightToolbar";
 import VTTSidebar from "@/components/vtt/VTTSidebar";
 import VTTPlayerView from "@/components/vtt/VTTPlayerView";
 import VTTAlignmentBar from "@/components/vtt/VTTAlignmentBar";
@@ -66,7 +67,7 @@ export default function VTTInterface() {
   return (
     <VTTAudioProvider value={audioApi}>
       <div className="flex h-full w-full overflow-hidden bg-terminal-bg-dark">
-        {/* Left toolbar */}
+        {/* Left toolbar — tools only */}
         <VTTToolbar />
 
         {/* Main canvas area */}
@@ -85,8 +86,11 @@ export default function VTTInterface() {
           />
         </div>
 
-        {/* Right sidebar */}
+        {/* Right sidebar panel (opens when a panel is selected) */}
         <VTTSidebar />
+
+        {/* Right toolbar — panel buttons with labels */}
+        <VTTRightToolbar />
 
         {/* Shortcut overlay */}
         {showShortcuts && <VTTShortcutOverlay onClose={toggleShortcuts} />}

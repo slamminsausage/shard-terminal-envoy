@@ -8,83 +8,52 @@ import {
   Grid3X3,
   Eye,
   EyeOff,
-  Map,
-  Users,
-  Paintbrush,
-  Cloud,
-  Music,
-  Swords,
-  Clock,
-  Image,
-  Settings,
-  Save,
-  Download,
-  Upload,
   Type,
   Ruler,
   Lightbulb,
   StickyNote,
-  Dice5,
   Target,
   Presentation,
   RotateCw,
   FlipHorizontal,
   FlipVertical,
-  UserPlus,
-  Sparkles,
-  Layers,
+  Save,
+  Download,
+  Upload,
 } from "lucide-react";
 import { useVTT } from "@/contexts/VTTContext";
-import type { VTTTool, VTTSidebarPanel } from "@/types/vtt";
+import type { VTTTool } from "@/types/vtt";
 import { toast } from "sonner";
 
 interface ToolDef {
   tool: VTTTool;
   icon: React.ReactNode;
   label: string;
+  shortcut?: string;
 }
 
 const tools: ToolDef[] = [
-  { tool: "cursor", icon: <MousePointer size={16} />, label: "Select (double-click to edit)" },
-  { tool: "pan", icon: <Hand size={16} />, label: "Pan (or middle-click)" },
-  { tool: "draw-freehand", icon: <Pencil size={16} />, label: "Freehand" },
-  { tool: "draw-line", icon: <Minus size={16} />, label: "Line" },
-  { tool: "draw-rect", icon: <Square size={16} />, label: "Rectangle" },
-  { tool: "draw-circle", icon: <Circle size={16} />, label: "Circle" },
-  { tool: "draw-text", icon: <Type size={16} />, label: "Text" },
-  { tool: "measure", icon: <Ruler size={16} />, label: "Measure Distance" },
-  { tool: "wall", icon: <Minus size={16} className="text-orange-400" />, label: "Wall" },
-  { tool: "door", icon: <Minus size={16} className="text-cyan-400" />, label: "Door" },
-  { tool: "light", icon: <Lightbulb size={16} />, label: "Place Light" },
-  { tool: "note", icon: <StickyNote size={16} />, label: "Place Note" },
-  { tool: "aoe-cone", icon: <Target size={16} className="text-red-400" />, label: "AoE Cone" },
-  { tool: "aoe-circle", icon: <Target size={16} className="text-yellow-400" />, label: "AoE Circle" },
-  { tool: "aoe-line", icon: <Target size={16} className="text-blue-400" />, label: "AoE Line" },
+  { tool: "cursor", icon: <MousePointer size={14} />, label: "Select", shortcut: "V" },
+  { tool: "pan", icon: <Hand size={14} />, label: "Pan", shortcut: "H" },
+  { tool: "draw-freehand", icon: <Pencil size={14} />, label: "Draw", shortcut: "B" },
+  { tool: "draw-line", icon: <Minus size={14} />, label: "Line", shortcut: "L" },
+  { tool: "draw-rect", icon: <Square size={14} />, label: "Rect", shortcut: "R" },
+  { tool: "draw-circle", icon: <Circle size={14} />, label: "Circle", shortcut: "O" },
+  { tool: "draw-text", icon: <Type size={14} />, label: "Text", shortcut: "T" },
+  { tool: "measure", icon: <Ruler size={14} />, label: "Measure", shortcut: "M" },
 ];
 
-interface PanelDef {
-  panel: VTTSidebarPanel;
-  icon: React.ReactNode;
-  label: string;
-}
+const mapTools: ToolDef[] = [
+  { tool: "wall", icon: <Minus size={14} className="text-orange-400" />, label: "Wall", shortcut: "W" },
+  { tool: "door", icon: <Minus size={14} className="text-cyan-400" />, label: "Door", shortcut: "D" },
+  { tool: "light", icon: <Lightbulb size={14} />, label: "Light", shortcut: "P" },
+  { tool: "note", icon: <StickyNote size={14} />, label: "Note", shortcut: "N" },
+];
 
-const panels: PanelDef[] = [
-  { panel: "maps", icon: <Map size={16} />, label: "Maps" },
-  { panel: "layers", icon: <Layers size={16} />, label: "Layers" },
-  { panel: "tokens", icon: <Users size={16} />, label: "Tokens" },
-  { panel: "characters", icon: <UserPlus size={16} />, label: "Import Characters" },
-  { panel: "drawing", icon: <Paintbrush size={16} />, label: "Drawing" },
-  { panel: "fog", icon: <Eye size={16} />, label: "Fog of War" },
-  { panel: "lighting", icon: <Lightbulb size={16} />, label: "Lighting" },
-  { panel: "aoe", icon: <Target size={16} />, label: "AoE Templates" },
-  { panel: "effects", icon: <Cloud size={16} />, label: "Effects" },
-  { panel: "scenes", icon: <Sparkles size={16} />, label: "Scene Presets" },
-  { panel: "audio", icon: <Music size={16} />, label: "Audio" },
-  { panel: "initiative", icon: <Swords size={16} />, label: "Initiative" },
-  { panel: "clocks", icon: <Clock size={16} />, label: "Clocks" },
-  { panel: "handouts", icon: <Image size={16} />, label: "Handouts" },
-  { panel: "dice", icon: <Dice5 size={16} />, label: "Dice Roller" },
-  { panel: "settings", icon: <Settings size={16} />, label: "Settings" },
+const aoeTools: ToolDef[] = [
+  { tool: "aoe-cone", icon: <Target size={14} className="text-red-400" />, label: "Cone", shortcut: "J" },
+  { tool: "aoe-circle", icon: <Target size={14} className="text-yellow-400" />, label: "AoE", shortcut: "C" },
+  { tool: "aoe-line", icon: <Target size={14} className="text-blue-400" />, label: "Blast", shortcut: "K" },
 ];
 
 export default function VTTToolbar() {
@@ -121,191 +90,152 @@ export default function VTTToolbar() {
   };
 
   const btnClass = (active: boolean) =>
-    `flex items-center justify-center w-8 h-8 rounded transition-colors ${
+    `flex items-center justify-center w-7 h-7 rounded transition-colors ${
       active
         ? "bg-terminal-primary/20 text-terminal-primary border border-terminal-primary/50"
         : "text-terminal-primary/50 hover:text-terminal-primary hover:bg-terminal-primary/10"
     }`;
 
+  const smallBtn = "flex items-center justify-center w-7 h-7 rounded text-terminal-primary/40 hover:text-terminal-primary hover:bg-terminal-primary/10 transition-colors";
+
   return (
-    <div className="flex flex-col gap-1 p-1.5 bg-terminal-bg-dark border-r border-terminal-border/30 overflow-y-auto">
-      {/* Tools — 2-column grid */}
-      <span className="text-[9px] text-terminal-primary/40 uppercase tracking-wider px-0.5">
-        Tools
-      </span>
-      <div className="grid grid-cols-2 gap-0.5">
-        {tools.map(({ tool, icon, label }) => (
-          <button
-            key={tool}
-            onClick={() => dispatch({ type: "SET_TOOL", payload: tool })}
-            className={btnClass(state.activeTool === tool)}
-            title={label}
-          >
-            {icon}
-          </button>
-        ))}
-      </div>
+    <div className="flex flex-col items-center py-1 px-0.5 bg-terminal-bg-dark border-r border-terminal-border/30 select-none" style={{ width: 38 }}>
+      {/* Drawing tools */}
+      {tools.map(({ tool, icon, label, shortcut }) => (
+        <button
+          key={tool}
+          onClick={() => dispatch({ type: "SET_TOOL", payload: tool })}
+          className={btnClass(state.activeTool === tool)}
+          title={`${label}${shortcut ? ` (${shortcut})` : ""}`}
+        >
+          {icon}
+        </button>
+      ))}
 
       {/* Separator */}
-      <div className="border-t border-terminal-border/20 my-0.5" />
+      <div className="w-5 border-t border-terminal-border/25 my-1" />
 
-      {/* Panels — 2-column grid */}
-      <span className="text-[9px] text-terminal-primary/40 uppercase tracking-wider px-0.5">
-        Panels
-      </span>
-      <div className="grid grid-cols-2 gap-0.5">
-        {panels.map(({ panel, icon, label }) => (
-          <button
-            key={panel}
-            onClick={() =>
-              dispatch({
-                type: "SET_SIDEBAR",
-                payload: state.sidebarPanel === panel ? null : panel,
-              })
-            }
-            className={btnClass(state.sidebarPanel === panel)}
-            title={label}
-          >
-            {icon}
-          </button>
-        ))}
-      </div>
+      {/* Map building tools */}
+      {mapTools.map(({ tool, icon, label, shortcut }) => (
+        <button
+          key={tool}
+          onClick={() => dispatch({ type: "SET_TOOL", payload: tool })}
+          className={btnClass(state.activeTool === tool)}
+          title={`${label}${shortcut ? ` (${shortcut})` : ""}`}
+        >
+          {icon}
+        </button>
+      ))}
 
       {/* Separator */}
-      <div className="border-t border-terminal-border/20 my-0.5" />
+      <div className="w-5 border-t border-terminal-border/25 my-1" />
 
-      {/* View toggles — inline row */}
-      <span className="text-[9px] text-terminal-primary/40 uppercase tracking-wider px-0.5">
-        View
-      </span>
-      <div className="flex gap-0.5">
+      {/* AoE tools */}
+      {aoeTools.map(({ tool, icon, label, shortcut }) => (
         <button
-          onClick={() => dispatch({ type: "TOGGLE_GRID" })}
-          className={`flex items-center justify-center w-8 h-8 rounded transition-colors ${
-            state.showGrid
-              ? "text-terminal-primary bg-terminal-primary/10"
-              : "text-terminal-primary/30"
-          }`}
-          title="Toggle Grid"
+          key={tool}
+          onClick={() => dispatch({ type: "SET_TOOL", payload: tool })}
+          className={btnClass(state.activeTool === tool)}
+          title={`${label}${shortcut ? ` (${shortcut})` : ""}`}
         >
-          <Grid3X3 size={16} />
+          {icon}
         </button>
-        <button
-          onClick={() => dispatch({ type: "TOGGLE_FOG" })}
-          className={`flex items-center justify-center w-8 h-8 rounded transition-colors ${
-            state.showFog
-              ? "text-terminal-primary bg-terminal-primary/10"
-              : "text-terminal-primary/30"
-          }`}
-          title="Toggle Fog"
-        >
-          {state.showFog ? <Eye size={16} /> : <EyeOff size={16} />}
-        </button>
-      </div>
+      ))}
 
-      {/* Map controls — inline row */}
+      {/* Separator */}
+      <div className="w-5 border-t border-terminal-border/25 my-1" />
+
+      {/* View toggles */}
+      <button
+        onClick={() => dispatch({ type: "TOGGLE_GRID" })}
+        className={btnClass(state.showGrid)}
+        title="Toggle Grid (Ctrl+G)"
+      >
+        <Grid3X3 size={14} />
+      </button>
+      <button
+        onClick={() => dispatch({ type: "TOGGLE_FOG" })}
+        className={btnClass(state.showFog)}
+        title="Toggle Fog"
+      >
+        {state.showFog ? <Eye size={14} /> : <EyeOff size={14} />}
+      </button>
+
+      {/* Map controls */}
       {activeMap && (
         <>
-          <span className="text-[9px] text-terminal-primary/40 uppercase tracking-wider px-0.5 mt-0.5">
-            Map
-          </span>
-          <div className="flex gap-0.5">
-            <button
-              onClick={() =>
-                dispatch({
-                  type: "UPDATE_MAP",
-                  payload: {
-                    id: activeMap.id,
-                    updates: { rotation: (activeMap.rotation + 90) % 360 },
-                  },
-                })
-              }
-              className="flex items-center justify-center w-8 h-8 rounded text-terminal-primary/50 hover:text-terminal-primary hover:bg-terminal-primary/10 transition-colors"
-              title={`Rotate Map (${activeMap.rotation}°)`}
-            >
-              <RotateCw size={16} />
-            </button>
-            <button
-              onClick={() =>
-                dispatch({
-                  type: "UPDATE_MAP",
-                  payload: {
-                    id: activeMap.id,
-                    updates: { flipH: !activeMap.flipH },
-                  },
-                })
-              }
-              className={`flex items-center justify-center w-8 h-8 rounded transition-colors ${
-                activeMap.flipH
-                  ? "text-terminal-primary bg-terminal-primary/10"
-                  : "text-terminal-primary/50 hover:text-terminal-primary hover:bg-terminal-primary/10"
-              }`}
-              title="Flip Horizontal"
-            >
-              <FlipHorizontal size={16} />
-            </button>
-            <button
-              onClick={() =>
-                dispatch({
-                  type: "UPDATE_MAP",
-                  payload: {
-                    id: activeMap.id,
-                    updates: { flipV: !activeMap.flipV },
-                  },
-                })
-              }
-              className={`flex items-center justify-center w-8 h-8 rounded transition-colors ${
-                activeMap.flipV
-                  ? "text-terminal-primary bg-terminal-primary/10"
-                  : "text-terminal-primary/50 hover:text-terminal-primary hover:bg-terminal-primary/10"
-              }`}
-              title="Flip Vertical"
-            >
-              <FlipVertical size={16} />
-            </button>
-          </div>
+          <div className="w-5 border-t border-terminal-border/25 my-1" />
+          <button
+            onClick={() =>
+              dispatch({
+                type: "UPDATE_MAP",
+                payload: {
+                  id: activeMap.id,
+                  updates: { rotation: (activeMap.rotation + 90) % 360 },
+                },
+              })
+            }
+            className={smallBtn}
+            title={`Rotate Map (${activeMap.rotation}°)`}
+          >
+            <RotateCw size={13} />
+          </button>
+          <button
+            onClick={() =>
+              dispatch({
+                type: "UPDATE_MAP",
+                payload: {
+                  id: activeMap.id,
+                  updates: { flipH: !activeMap.flipH },
+                },
+              })
+            }
+            className={`${smallBtn} ${activeMap.flipH ? "text-terminal-primary" : ""}`}
+            title="Flip Horizontal"
+          >
+            <FlipHorizontal size={13} />
+          </button>
+          <button
+            onClick={() =>
+              dispatch({
+                type: "UPDATE_MAP",
+                payload: {
+                  id: activeMap.id,
+                  updates: { flipV: !activeMap.flipV },
+                },
+              })
+            }
+            className={`${smallBtn} ${activeMap.flipV ? "text-terminal-primary" : ""}`}
+            title="Flip Vertical"
+          >
+            <FlipVertical size={13} />
+          </button>
         </>
       )}
 
       {/* Spacer */}
       <div className="flex-1" />
 
-      {/* Bottom actions — presenter + session in rows */}
-      <div className="flex gap-0.5 justify-center">
-        <button
-          onClick={() => window.open("/presenter", "_blank", "popup=true")}
-          className="flex items-center justify-center w-8 h-8 rounded text-terminal-primary/50 hover:text-cyan-400 hover:bg-cyan-400/10 transition-colors"
-          title="Open Presenter View"
-        >
-          <Presentation size={16} />
-        </button>
-      </div>
+      {/* Bottom actions */}
+      <button
+        onClick={() => window.open("/presenter", "_blank", "popup=true")}
+        className="flex items-center justify-center w-7 h-7 rounded text-terminal-primary/40 hover:text-cyan-400 hover:bg-cyan-400/10 transition-colors"
+        title="Presenter View"
+      >
+        <Presentation size={14} />
+      </button>
 
-      <div className="border-t border-terminal-border/20 my-0.5" />
+      <div className="w-5 border-t border-terminal-border/25 my-1" />
 
-      <div className="flex gap-0.5">
-        <button
-          onClick={saveSession}
-          className="flex items-center justify-center w-8 h-8 rounded text-terminal-primary/50 hover:text-terminal-primary hover:bg-terminal-primary/10 transition-colors"
-          title="Save Session"
-        >
-          <Save size={16} />
-        </button>
-        <button
-          onClick={handleExport}
-          className="flex items-center justify-center w-8 h-8 rounded text-terminal-primary/50 hover:text-terminal-primary hover:bg-terminal-primary/10 transition-colors"
-          title="Export Session"
-        >
-          <Download size={16} />
-        </button>
-        <button
-          onClick={handleImport}
-          className="flex items-center justify-center w-8 h-8 rounded text-terminal-primary/50 hover:text-terminal-primary hover:bg-terminal-primary/10 transition-colors"
-          title="Import Session"
-        >
-          <Upload size={16} />
-        </button>
-      </div>
+      <button onClick={saveSession} className={smallBtn} title="Save (Ctrl+S)">
+        <Save size={13} />
+      </button>
+      <button onClick={handleExport} className={smallBtn} title="Export Session">
+        <Download size={13} />
+      </button>
+      <button onClick={handleImport} className={smallBtn} title="Import Session">
+        <Upload size={13} />
+      </button>
     </div>
   );
 }

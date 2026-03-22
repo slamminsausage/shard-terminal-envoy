@@ -46,7 +46,7 @@ export default function VTTPresenterView() {
   const [clocks, setClocks] = useState<Clock[]>([]);
   const [initiative, setInitiative] = useState<InitiativeEntry[]>([]);
   const [showInitiative, setShowInitiative] = useState(false);
-  const [pings, setPings] = useState<{ x: number; y: number; timestamp: number }[]>([]);
+  const [pings, setPings] = useState<{ x: number; y: number; timestamp: number; label?: string; color?: string }[]>([]);
 
   // Local presenter viewport (fully independent from GM)
   const [localScroll, setLocalScroll] = useState<Point | null>(null);
@@ -108,8 +108,8 @@ export default function VTTPresenterView() {
     setShowInitiative(show);
   }, []);
 
-  const onGmPing = useCallback((x: number, y: number) => {
-    const ping = { x, y, timestamp: Date.now() };
+  const onGmPing = useCallback((x: number, y: number, label?: string, color?: string) => {
+    const ping = { x, y, timestamp: Date.now(), label, color };
     setPings((prev) => [...prev, ping]);
     setTimeout(() => {
       setPings((prev) => prev.filter((p) => p !== ping));
@@ -468,6 +468,36 @@ export default function VTTPresenterView() {
         });
       }
 
+      // Elevation badge
+      if (t.elevation && t.elevation !== 0) {
+        const elevLabel = (t.elevation > 0 ? "+" : "") + t.elevation;
+        const badgeColor = t.elevation > 0 ? "#00ccff" : "#ff8800";
+        const badgeX = t.x + halfSize - 2;
+        const badgeY = t.y - halfSize - 2;
+        ctx.save();
+        ctx.font = `bold 9px "Share Tech Mono", monospace`;
+        const bm = ctx.measureText(elevLabel);
+        const bw = bm.width + 6;
+        const bh = 12;
+        ctx.fillStyle = "#000000";
+        ctx.globalAlpha = 0.8;
+        ctx.beginPath();
+        ctx.roundRect(badgeX - bw / 2, badgeY - bh / 2, bw, bh, 3);
+        ctx.fill();
+        ctx.strokeStyle = badgeColor;
+        ctx.lineWidth = 1;
+        ctx.globalAlpha = 0.9;
+        ctx.beginPath();
+        ctx.roundRect(badgeX - bw / 2, badgeY - bh / 2, bw, bh, 3);
+        ctx.stroke();
+        ctx.fillStyle = badgeColor;
+        ctx.globalAlpha = 1;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(elevLabel, badgeX, badgeY);
+        ctx.restore();
+      }
+
       // Active turn indicator (pulsing glow)
       if (initiative.length > 0 && initiative[0].tokenId === t.id) {
         const pulse = 0.4 + 0.6 * Math.abs(Math.sin(Date.now() / 400));
@@ -538,33 +568,78 @@ export default function VTTPresenterView() {
       }
     }
 
-    // Dynamic lighting
-    if (map.lights.length > 0 && map.walls.length > 0) {
-      renderDynamicLighting(ctx, map.lights, map.walls, map.width, map.height);
+    // Dynamic lighting (combine map lights + token-emitted lights)
+    if (map.walls.length > 0) {
+      const tokenLights = map.tokens
+        .filter((t) => t.visible && (t.lightBrightRadius ?? 0) > 0)
+        .map((t) => ({
+          id: t.id + "-light",
+          x: t.x,
+          y: t.y,
+          radius: (t.lightBrightRadius ?? 0) * (map.grid.size || 50),
+          color: t.lightColor || "#ffaa44",
+          intensity: 1.0,
+          flickering: false,
+        }));
+      const allLights = [...map.lights, ...tokenLights];
+      if (allLights.length > 0) {
+        renderDynamicLighting(ctx, allLights, map.walls, map.width, map.height);
+      }
     }
 
-    // GM pings (animated expanding rings)
+    // GM pings (enhanced animated expanding rings with crosshair and label)
     for (const ping of pings) {
       const age = Date.now() - ping.timestamp;
       const progress = Math.min(1, age / 2000);
-      const radius = 10 + progress * 60;
       const alpha = 1 - progress;
+      const pingColor = ping.color || "#ffcc00";
       ctx.save();
-      ctx.strokeStyle = "#ffcc00";
-      ctx.lineWidth = 3;
-      ctx.globalAlpha = alpha;
-      ctx.shadowColor = "#ffcc00";
-      ctx.shadowBlur = 10;
-      ctx.beginPath();
-      ctx.arc(ping.x, ping.y, radius, 0, Math.PI * 2);
-      ctx.stroke();
-      // Inner dot
-      if (progress < 0.5) {
-        ctx.fillStyle = "#ffcc00";
-        ctx.globalAlpha = alpha * 0.6;
+      // Three concentric expanding rings
+      for (let r = 0; r < 3; r++) {
+        const ringProgress = Math.max(0, progress - r * 0.12);
+        const ringAlpha = Math.max(0, (1 - ringProgress) * (1 - r * 0.3));
+        const radius = 10 + ringProgress * 60;
+        ctx.globalAlpha = ringAlpha;
+        ctx.strokeStyle = pingColor;
+        ctx.lineWidth = 3 - r;
+        ctx.shadowColor = pingColor;
+        ctx.shadowBlur = 10;
         ctx.beginPath();
-        ctx.arc(ping.x, ping.y, 5, 0, Math.PI * 2);
+        ctx.arc(ping.x, ping.y, radius, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      ctx.shadowBlur = 0;
+      // Crosshair at center
+      ctx.globalAlpha = Math.max(0, alpha);
+      ctx.strokeStyle = pingColor;
+      ctx.lineWidth = 2;
+      const armLen = 8;
+      ctx.beginPath();
+      ctx.moveTo(ping.x - armLen, ping.y);
+      ctx.lineTo(ping.x + armLen, ping.y);
+      ctx.moveTo(ping.x, ping.y - armLen);
+      ctx.lineTo(ping.x, ping.y + armLen);
+      ctx.stroke();
+      // Center dot
+      ctx.fillStyle = pingColor;
+      ctx.globalAlpha = Math.max(0, alpha * 0.9);
+      ctx.beginPath();
+      ctx.arc(ping.x, ping.y, 3, 0, Math.PI * 2);
+      ctx.fill();
+      // Label below
+      if (ping.label) {
+        ctx.font = `bold 10px "Share Tech Mono", monospace`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "top";
+        const lm = ctx.measureText(ping.label);
+        ctx.fillStyle = "#000000";
+        ctx.globalAlpha = Math.max(0, alpha * 0.6);
+        ctx.beginPath();
+        ctx.roundRect(ping.x - lm.width / 2 - 3, ping.y + 14, lm.width + 6, 13, 3);
         ctx.fill();
+        ctx.fillStyle = pingColor;
+        ctx.globalAlpha = Math.max(0, alpha);
+        ctx.fillText(ping.label, ping.x, ping.y + 15);
       }
       ctx.restore();
     }
