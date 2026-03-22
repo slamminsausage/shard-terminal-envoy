@@ -7,6 +7,15 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer utilities {
+  .scrollbar-none {
+    scrollbar-width: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 /* Traveller Terminal v5 Design System - Retro CRT Terminal Aesthetic */
 
 @layer base {
