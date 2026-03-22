@@ -1696,6 +1696,24 @@ export const dbHelpers = {
     }
   },
 
+  async deleteSessionLogEntry(entryId: string) {
+    try {
+      const { error } = await supabase
+        .from('session_log_entries')
+        .delete()
+        .eq('id', entryId);
+
+      if (error) {
+        console.error('Database error:', error);
+        throw error;
+      }
+      return true;
+    } catch (error) {
+      console.error('Failed to delete session log entry:', error);
+      throw error;
+    }
+  },
+
   async getSessionRewards(sessionId: string) {
     try {
       const { data, error } = await supabase

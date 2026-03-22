@@ -9,7 +9,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, Plus, Clock, User, MapPin } from 'lucide-react';
+import { ArrowLeft, Plus, Clock, User, MapPin, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { SessionStatus, LogEntryType } from '@/types/session';
 import { useCampaign } from '@/contexts/CampaignContext';
@@ -21,7 +21,7 @@ interface SessionDetailProps {
 
 export const SessionDetail: React.FC<SessionDetailProps> = ({ sessionId, onClose }) => {
   const { isGM } = useCampaign();
-  const { getSession, getSessionLogs, addLogEntry, updateSession } = useSession();
+  const { getSession, getSessionLogs, addLogEntry, deleteLogEntry, updateSession, deleteSession } = useSession();
   const [session, setSession] = useState<Session | null>(null);
   const [logs, setLogs] = useState<SessionLogEntry[]>([]);
   const [showLogForm, setShowLogForm] = useState(false);
@@ -63,6 +63,21 @@ export const SessionDetail: React.FC<SessionDetailProps> = ({ sessionId, onClose
     // Reload logs
     const logsData = await getSessionLogs(sessionId);
     setLogs(logsData);
+  };
+
+  const handleDeleteLogEntry = async (entryId: string) => {
+    if (!confirm('Delete this log entry? This cannot be undone.')) return;
+    const success = await deleteLogEntry(entryId);
+    if (success) {
+      setLogs(prev => prev.filter(l => l.id !== entryId));
+    }
+  };
+
+  const handleDeleteSession = async () => {
+    if (!session) return;
+    if (!confirm(`Delete session "${session.title}"? This cannot be undone.`)) return;
+    const success = await deleteSession(sessionId);
+    if (success) onClose();
   };
 
   const handleStatusChange = async (newStatus: SessionStatus) => {
@@ -117,6 +132,14 @@ export const SessionDetail: React.FC<SessionDetailProps> = ({ sessionId, onClose
                 <SelectItem value="completed" className="text-terminal-primary">Completed</SelectItem>
               </SelectContent>
             </Select>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-red-400 hover:bg-red-500/20 ml-auto"
+              onClick={handleDeleteSession}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
           </div>
           <div className="flex items-center gap-4 text-sm text-terminal-primary/70 mt-1">
             <span>Session #{session.session_number}</span>
@@ -238,9 +261,19 @@ export const SessionDetail: React.FC<SessionDetailProps> = ({ sessionId, onClose
                             <span className="text-terminal-primary font-semibold">{log.title}</span>
                           )}
                         </div>
-                        <span className="text-xs text-terminal-primary/50">
-                          {format(new Date(log.timestamp), 'HH:mm')}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-terminal-primary/50">
+                            {format(new Date(log.timestamp), 'HH:mm')}
+                          </span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 w-6 p-0 text-red-400 hover:bg-red-500/20"
+                            onClick={() => handleDeleteLogEntry(log.id)}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
                       </div>
                     </CardHeader>
                     <CardContent>

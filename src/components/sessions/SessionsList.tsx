@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Calendar, Clock, Plus, Eye } from 'lucide-react';
+import { Calendar, Clock, Plus, Eye, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { SessionCreator } from './SessionCreator';
 import { AnimatedList } from '@/components/ui/AnimatedList';
@@ -24,7 +24,7 @@ const statusLabels: Record<SessionStatus, string> = {
 };
 
 export const SessionsList: React.FC = () => {
-  const { sessions, isLoading, setCurrentSession } = useSession();
+  const { sessions, isLoading, setCurrentSession, deleteSession } = useSession();
   const [showCreator, setShowCreator] = useState(false);
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
 
@@ -36,6 +36,12 @@ export const SessionsList: React.FC = () => {
   const handleCloseDetail = () => {
     setCurrentSession(null);
     setSelectedSessionId(null);
+  };
+
+  const handleDeleteSession = async (e: React.MouseEvent, sessionId: string, sessionTitle: string) => {
+    e.stopPropagation();
+    if (!confirm(`Delete "${sessionTitle}"? This cannot be undone.`)) return;
+    await deleteSession(sessionId);
   };
 
   if (selectedSessionId) {
@@ -94,13 +100,23 @@ export const SessionsList: React.FC = () => {
                       </div>
                       <CardTitle className="text-terminal-primary">{session.title}</CardTitle>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-terminal-primary hover:bg-terminal-primary/20"
-                    >
-                      <Eye className="h-4 w-4" />
-                    </Button>
+                    <div className="flex gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-terminal-primary hover:bg-terminal-primary/20"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-red-400 hover:bg-red-500/20"
+                        onClick={(e) => handleDeleteSession(e, session.id, session.title)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent>
