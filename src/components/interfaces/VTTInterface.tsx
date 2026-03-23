@@ -40,6 +40,16 @@ export default function VTTInterface() {
   const sessionCtx = useSession();
   const questsCtx = useQuest();
 
+  // Fetch objectives for active quests so they appear in the presenter
+  useEffect(() => {
+    const quests = questsCtx?.quests || [];
+    quests.forEach((q: any) => {
+      if (!questsCtx.questObjectives[q.id]) {
+        questsCtx.getQuestObjectives(q.id);
+      }
+    });
+  }, [questsCtx?.quests]);
+
   const campaignData = useMemo<PresenterCampaignData>(() => ({
     notes: (notesCtx?.playerNotes || []).map((n: any) => ({
       id: n.id, title: n.title, content: n.content || "", folder: n.folder, thumbnailUrl: n.thumbnailUrl, createdAt: n.createdAt,
@@ -51,9 +61,16 @@ export default function VTTInterface() {
       id: h.id, title: h.title, imageUrl: h.mediaUrl, content: h.content, visible: h.isVisible !== false,
     })),
     quests: (questsCtx?.quests || []).map((q: any) => ({
-      id: q.id, title: q.title, description: q.description, status: q.status, objectives: q.objectives,
+      id: q.id, title: q.title, description: q.description, status: q.status,
+      objectives: (questsCtx.questObjectives[q.id] || []).map((obj: any) => ({
+        id: obj.id, title: obj.title, description: obj.description,
+        status: obj.status, order_index: obj.order_index,
+        is_optional: obj.is_optional,
+        progress_current: obj.progress_current,
+        progress_required: obj.progress_required,
+      })),
     })),
-  }), [notesCtx?.playerNotes, notesCtx?.handouts, sessionCtx?.sessions, questsCtx?.quests]);
+  }), [notesCtx?.playerNotes, notesCtx?.handouts, sessionCtx?.sessions, questsCtx?.quests, questsCtx?.questObjectives]);
 
   // Player audio command handlers
   const onPlayerAudioCommand = useCallback((command: "play" | "pause" | "stop", slot: any) => {
