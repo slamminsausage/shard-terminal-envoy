@@ -1075,14 +1075,14 @@ function PresenterCampaignSidebar({
                       {quest.objectives && quest.objectives.length > 0 && (
                         <div className="space-y-0.5 mt-1">
                           {quest.objectives.map((obj: any, i: number) => (
-                            <div key={i} className="flex items-start gap-1.5 text-[9px] font-mono">
-                              {obj.completed ? (
+                            <div key={obj.id || i} className="flex items-start gap-1.5 text-[9px] font-mono">
+                              {obj.status === 'completed' ? (
                                 <CheckCircle2 size={10} className="text-green-400/60 flex-shrink-0 mt-0.5" />
                               ) : (
                                 <Circle size={10} className="text-terminal-primary/30 flex-shrink-0 mt-0.5" />
                               )}
-                              <span className={obj.completed ? "text-terminal-primary/30 line-through" : "text-terminal-primary/50"}>
-                                {obj.text || obj.description || obj.name}
+                              <span className={obj.status === 'completed' ? "text-terminal-primary/30 line-through" : "text-terminal-primary/50"}>
+                                {obj.title || obj.description}
                               </span>
                             </div>
                           ))}
