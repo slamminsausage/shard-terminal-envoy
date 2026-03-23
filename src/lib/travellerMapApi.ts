@@ -570,27 +570,36 @@ export function generateMapUrl(
     hideui?: boolean;
     galdir?: boolean;
     routes?: boolean;
+    // Preferred: map-space coordinates bypass TravellerMap's named-lookup (which is broken
+    // for the yah_sector/yah_hex params and causes "not found" alerts).
+    yahX?: number;
+    yahY?: number;
+    // Fallback: named sector/hex used only when map-space coords aren't yet available.
     yahSector?: string;
     yahHex?: string;
   } = {}
 ): string {
   const sectorFull = getSectorFullName(sector);
-  // TravellerMap's /go/ route requires the sector abbreviation (e.g. "troj"),
-  // not the full name with spaces (e.g. "Trojan Reach"), which causes a 404/black map.
   const sectorAbbr = getSectorAbbreviation(sectorFull);
   const {
     style = "terminal",
     scale = 32,
     galdir = false,
     routes = true,
+    yahX,
+    yahY,
     yahSector,
     yahHex,
   } = options;
 
   const paddedHex = padHex(hex);
 
-  // Use abbreviation in /go/ path — full names with spaces are not accepted
-  const url = new URL(`/go/${sectorAbbr}/${paddedHex}`, TRAVELLER_MAP_BASE_URL);
+  // Use ?sector=abbr&hex=XXXX instead of /go/abbr/XXXX.
+  // The /go/ route performs a server-side world lookup and shows an error dialog
+  // for any hex it can't resolve — even valid worlds — making the iframe go black.
+  const url = new URL("/", TRAVELLER_MAP_BASE_URL);
+  url.searchParams.set("sector", sectorAbbr);
+  url.searchParams.set("hex", paddedHex);
   url.searchParams.set("style", style);
   url.searchParams.set("scale", scale.toString());
 
@@ -619,8 +628,14 @@ export function generateMapUrl(
     url.searchParams.set("routes", "0");
   }
 
-  // "You Are Here" marker — also use abbreviation so TravellerMap can resolve it
-  if (yahSector && yahHex) {
+  // "You Are Here" marker.
+  // Prefer map-space x/y coordinates (yah_x/yah_y) — these are a direct position
+  // and don't trigger the named-lookup that causes the "not found" alert.
+  // Fall back to named sector/hex when coords haven't been computed yet.
+  if (yahX !== undefined && yahY !== undefined) {
+    url.searchParams.set("yah_x", yahX.toString());
+    url.searchParams.set("yah_y", yahY.toString());
+  } else if (yahSector && yahHex) {
     url.searchParams.set("yah_sector", getSectorAbbreviation(yahSector));
     url.searchParams.set("yah_hex", padHex(yahHex));
   }

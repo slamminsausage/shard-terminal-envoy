@@ -120,6 +120,9 @@ export interface CurrentLocation {
   sectorAbbr?: string;
   hex: string;
   worldName?: string;
+  // Map-space coordinates for TravellerMap yah_x/yah_y marker (avoids named lookup)
+  mapX?: number;
+  mapY?: number;
 }
 
 // ===== World Notes Types =====
