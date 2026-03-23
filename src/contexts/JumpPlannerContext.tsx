@@ -4,6 +4,7 @@ import {
   calculateRoute,
   getCoordinates,
   getWorldData,
+  sectorHexToWorldSpace,
   padHex,
   getSectorAbbreviation,
   getSectorFullName,
@@ -186,25 +187,37 @@ export function JumpPlannerProvider({ children }: { children: React.ReactNode })
     loadPlayerLocation();
   }, []);
 
-  // If playerLocation is set without a worldName (timing race or loaded from storage),
-  // try to look up the world name so the YAH marker can be shown correctly.
+  // When playerLocation changes, pre-compute map-space x/y coordinates (used for the
+  // yah_x/yah_y marker params which bypass TravellerMap's broken named-lookup).
+  // Also back-fill worldName if it was missing (e.g. loaded from storage).
   useEffect(() => {
-    if (!state.playerLocation || state.playerLocation.worldName) return;
+    if (!state.playerLocation) return;
+    const { sector, hex, mapX, mapY, worldName } = state.playerLocation;
 
-    const { sector, hex } = state.playerLocation;
-    getWorldData(sector, hex)
-      .then((worldData) => {
-        if (!worldData) return;
-        setState((prev) => {
-          // Only update if still the same player location
-          if (prev.playerLocation?.sector !== sector || prev.playerLocation?.hex !== hex) return prev;
-          return {
-            ...prev,
-            playerLocation: { ...prev.playerLocation, worldName: worldData.name },
-          };
-        });
-      })
-      .catch(() => {/* empty hex or API error — leave worldName undefined */});
+    // Only fetch if we're missing either piece of data
+    if (mapX !== undefined && mapY !== undefined && worldName !== undefined) return;
+
+    const updates: Partial<typeof state.playerLocation> = {};
+
+    const coordsPromise = mapX === undefined || mapY === undefined
+      ? sectorHexToWorldSpace(sector, hex).then((coords) => {
+          if (coords) { updates.mapX = coords.x; updates.mapY = coords.y; }
+        }).catch(() => {})
+      : Promise.resolve();
+
+    const namePromise = worldName === undefined
+      ? getWorldData(sector, hex).then((worldData) => {
+          if (worldData) updates.worldName = worldData.name;
+        }).catch(() => {})
+      : Promise.resolve();
+
+    Promise.all([coordsPromise, namePromise]).then(() => {
+      if (Object.keys(updates).length === 0) return;
+      setState((prev) => {
+        if (prev.playerLocation?.sector !== sector || prev.playerLocation?.hex !== hex) return prev;
+        return { ...prev, playerLocation: { ...prev.playerLocation, ...updates } };
+      });
+    });
   }, [state.playerLocation?.sector, state.playerLocation?.hex]);
 
   // Save player location to Supabase (with localStorage backup) when it changes
