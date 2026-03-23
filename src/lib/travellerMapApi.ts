@@ -575,6 +575,9 @@ export function generateMapUrl(
   } = {}
 ): string {
   const sectorFull = getSectorFullName(sector);
+  // TravellerMap's /go/ route requires the sector abbreviation (e.g. "troj"),
+  // not the full name with spaces (e.g. "Trojan Reach"), which causes a 404/black map.
+  const sectorAbbr = getSectorAbbreviation(sectorFull);
   const {
     style = "terminal",
     scale = 32,
@@ -586,8 +589,8 @@ export function generateMapUrl(
 
   const paddedHex = padHex(hex);
 
-  // Use the /go/ URL format which properly handles sector+hex navigation
-  const url = new URL(`/go/${encodeURIComponent(sectorFull)}/${paddedHex}`, TRAVELLER_MAP_BASE_URL);
+  // Use abbreviation in /go/ path — full names with spaces are not accepted
+  const url = new URL(`/go/${sectorAbbr}/${paddedHex}`, TRAVELLER_MAP_BASE_URL);
   url.searchParams.set("style", style);
   url.searchParams.set("scale", scale.toString());
 
@@ -616,9 +619,9 @@ export function generateMapUrl(
     url.searchParams.set("routes", "0");
   }
 
-  // "You Are Here" marker support
+  // "You Are Here" marker — also use abbreviation so TravellerMap can resolve it
   if (yahSector && yahHex) {
-    url.searchParams.set("yah_sector", yahSector);
+    url.searchParams.set("yah_sector", getSectorAbbreviation(yahSector));
     url.searchParams.set("yah_hex", padHex(yahHex));
   }
 

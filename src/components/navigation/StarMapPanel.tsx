@@ -60,13 +60,11 @@ export function StarMapPanel() {
   };
 
   // Generate map URL with "You Are Here" marker
-  // Only pass YAH params when the player location has a world name — TravellerMap's
-  // YAH marker only works for hexes that contain a world, not empty hexes.
   const mapUrl = generateMapUrl(mapSector, mapHex, {
     style: "poster",
     scale: 32,
-    yahSector: playerLocation?.worldName ? playerLocation.sector : undefined,
-    yahHex: playerLocation?.worldName ? playerLocation.hex : undefined,
+    yahSector: playerLocation?.sector,
+    yahHex: playerLocation?.hex,
   });
 
   return (
