@@ -59,16 +59,16 @@ export function StarMapPanel() {
     }
   };
 
-  // Generate map URL with "You Are Here" marker.
-  // Prefer pre-computed map-space coords (yah_x/yah_y) which bypass TravellerMap's
-  // named lookup. Fall back to sector/hex while coords are being fetched.
+  // Generate map URL with "You Are Here" marker using numeric sector/hex coordinates
+  // (yah_sx/yah_sy/yah_hx/yah_hy). These bypass TravellerMap's broken named-lookup
+  // that caused the "not found" alerts. Coords are pre-fetched and cached in context.
   const mapUrl = generateMapUrl(mapSector, mapHex, {
     style: "poster",
     scale: 32,
-    yahX: playerLocation?.mapX,
-    yahY: playerLocation?.mapY,
-    yahSector: playerLocation?.sector,
-    yahHex: playerLocation?.hex,
+    yahSx: playerLocation?.sx,
+    yahSy: playerLocation?.sy,
+    yahHx: playerLocation?.hx,
+    yahHy: playerLocation?.hy,
   });
 
   return (

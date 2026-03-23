@@ -570,13 +570,13 @@ export function generateMapUrl(
     hideui?: boolean;
     galdir?: boolean;
     routes?: boolean;
-    // Preferred: map-space coordinates bypass TravellerMap's named-lookup (which is broken
-    // for the yah_sector/yah_hex params and causes "not found" alerts).
-    yahX?: number;
-    yahY?: number;
-    // Fallback: named sector/hex used only when map-space coords aren't yet available.
-    yahSector?: string;
-    yahHex?: string;
+    // Numeric sector/hex coords for the YAH marker (yah_sx/yah_sy/yah_hx/yah_hy).
+    // These avoid TravellerMap's broken named-lookup entirely — no world lookup,
+    // no "not found" alerts. Fetched async from the metadata API and cached.
+    yahSx?: number;
+    yahSy?: number;
+    yahHx?: number;
+    yahHy?: number;
   } = {}
 ): string {
   const sectorFull = getSectorFullName(sector);
@@ -586,17 +586,17 @@ export function generateMapUrl(
     scale = 32,
     galdir = false,
     routes = true,
-    yahX,
-    yahY,
-    yahSector,
-    yahHex,
+    yahSx,
+    yahSy,
+    yahHx,
+    yahHy,
   } = options;
 
   const paddedHex = padHex(hex);
 
   // Use ?sector=abbr&hex=XXXX instead of /go/abbr/XXXX.
-  // The /go/ route performs a server-side world lookup and shows an error dialog
-  // for any hex it can't resolve — even valid worlds — making the iframe go black.
+  // The /go/ route does a server-side world lookup and shows an error dialog for
+  // any hex it can't resolve — even valid worlds — making the iframe go black.
   const url = new URL("/", TRAVELLER_MAP_BASE_URL);
   url.searchParams.set("sector", sectorAbbr);
   url.searchParams.set("hex", paddedHex);
@@ -628,16 +628,15 @@ export function generateMapUrl(
     url.searchParams.set("routes", "0");
   }
 
-  // "You Are Here" marker.
-  // Prefer map-space x/y coordinates (yah_x/yah_y) — these are a direct position
-  // and don't trigger the named-lookup that causes the "not found" alert.
-  // Fall back to named sector/hex when coords haven't been computed yet.
-  if (yahX !== undefined && yahY !== undefined) {
-    url.searchParams.set("yah_x", yahX.toString());
-    url.searchParams.set("yah_y", yahY.toString());
-  } else if (yahSector && yahHex) {
-    url.searchParams.set("yah_sector", getSectorAbbreviation(yahSector));
-    url.searchParams.set("yah_hex", padHex(yahHex));
+  // "You Are Here" marker using sector/hex integer coordinates (yah_sx/yah_sy/yah_hx/yah_hy).
+  // The API docs confirm these are a valid placement method and require no world lookup.
+  // NOTE: yah_x/yah_y uses map-space (not world-space), and yah_sector/yah_hex triggers
+  // a server-side lookup that fails. Sector/hex integers are the cleanest approach.
+  if (yahSx !== undefined && yahSy !== undefined && yahHx !== undefined && yahHy !== undefined) {
+    url.searchParams.set("yah_sx", yahSx.toString());
+    url.searchParams.set("yah_sy", yahSy.toString());
+    url.searchParams.set("yah_hx", yahHx.toString());
+    url.searchParams.set("yah_hy", yahHy.toString());
   }
 
   return url.toString();

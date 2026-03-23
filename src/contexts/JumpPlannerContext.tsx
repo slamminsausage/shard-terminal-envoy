@@ -4,7 +4,8 @@ import {
   calculateRoute,
   getCoordinates,
   getWorldData,
-  sectorHexToWorldSpace,
+  getSectorCoordinates,
+  parseHexCoords,
   padHex,
   getSectorAbbreviation,
   getSectorFullName,
@@ -187,21 +188,27 @@ export function JumpPlannerProvider({ children }: { children: React.ReactNode })
     loadPlayerLocation();
   }, []);
 
-  // When playerLocation changes, pre-compute map-space x/y coordinates (used for the
-  // yah_x/yah_y marker params which bypass TravellerMap's broken named-lookup).
+  // When playerLocation changes, pre-fetch the numeric sector coords (sx, sy) needed
+  // for the yah_sx/yah_sy/yah_hx/yah_hy marker params.  These bypass TravellerMap's
+  // broken named-lookup entirely. hx/hy are parsed directly from the hex string.
   // Also back-fill worldName if it was missing (e.g. loaded from storage).
   useEffect(() => {
     if (!state.playerLocation) return;
-    const { sector, hex, mapX, mapY, worldName } = state.playerLocation;
+    const { sector, hex, sx, sy, worldName } = state.playerLocation;
 
-    // Only fetch if we're missing either piece of data
-    if (mapX !== undefined && mapY !== undefined && worldName !== undefined) return;
+    // Only fetch if something is still missing
+    if (sx !== undefined && sy !== undefined && worldName !== undefined) return;
 
     const updates: Partial<typeof state.playerLocation> = {};
 
-    const coordsPromise = mapX === undefined || mapY === undefined
-      ? sectorHexToWorldSpace(sector, hex).then((coords) => {
-          if (coords) { updates.mapX = coords.x; updates.mapY = coords.y; }
+    // hx/hy are derived directly from the hex string — no API call needed
+    const { hx, hy } = parseHexCoords(hex);
+    updates.hx = hx;
+    updates.hy = hy;
+
+    const coordsPromise = sx === undefined || sy === undefined
+      ? getSectorCoordinates(sector).then((coords) => {
+          if (coords) { updates.sx = coords.sx; updates.sy = coords.sy; }
         }).catch(() => {})
       : Promise.resolve();
 
