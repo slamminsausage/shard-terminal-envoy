@@ -248,10 +248,11 @@ export function JumpPlannerProvider({ children }: { children: React.ReactNode })
   }, [state.playerLocation]);
 
   // Refs to avoid stale closures in the postMessage listener
-  const handleMapClickRef = useRef(handleMapClick);
-  handleMapClickRef.current = handleMapClick;
-  const setCurrentLocationRef = useRef(setCurrentLocation);
-  setCurrentLocationRef.current = setCurrentLocation;
+  // Initialise with null – the actual callbacks are assigned on every render below.
+  // (Using the callback name directly in useRef() would hit the TDZ because the
+  // const declarations live further down in this component body.)
+  const handleMapClickRef = useRef<((x: number, y: number) => Promise<void>) | null>(null);
+  const setCurrentLocationRef = useRef<((sector: string, hex: string) => Promise<void>) | null>(null);
 
   // Listen for TravellerMap iframe messages
   useEffect(() => {
@@ -263,10 +264,10 @@ export function JumpPlannerProvider({ children }: { children: React.ReactNode })
         const { sector, hex, x, y } = data.location || {};
         if (sector && hex) {
           // Prefer direct sector/hex from TravellerMap event to avoid coordinate jitter
-          void setCurrentLocationRef.current(sector, hex);
+          void setCurrentLocationRef.current?.(sector, hex);
         } else if (typeof x === "number" && typeof y === "number") {
           // Fallback: resolve via coordinates API
-          void handleMapClickRef.current(x, y);
+          void handleMapClickRef.current?.(x, y);
         }
       }
     }
@@ -374,6 +375,10 @@ export function JumpPlannerProvider({ children }: { children: React.ReactNode })
     },
     [setCurrentLocation]
   );
+
+  // Keep refs in sync with the latest callbacks (declared just above)
+  handleMapClickRef.current = handleMapClick;
+  setCurrentLocationRef.current = setCurrentLocation;
 
   // ===== Jump World Actions =====
 
