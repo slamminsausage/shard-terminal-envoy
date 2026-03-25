@@ -774,14 +774,30 @@ Many context providers export functions that are never consumed by any component
 
 ---
 
-#### 10. **NexaInterface Still Unwired** (previously reported)
+#### 10. **PlayerContext Is Completely Unwired** — HIGH
+**Location**: `src/contexts/PlayerContext.tsx`
+
+The entire `PlayerContext` defines a `PlayerProvider` component and `usePlayer` hook with 14 exported methods (`validateAccessCode`, `logout`, `refreshData`, `saveCharacter`, `saveVehicle`, `createNewCharacter`, `createNewVehicle`, `deleteCharacter`, `deleteVehicle`, etc.) — but it is **never imported in `App.tsx`**, never added to the provider hierarchy, and never consumed by any component. This is a fully dead context duplicating functionality that lives in `CampaignContext`.
+
+**Fix**: Remove entirely, or integrate into the auth/data architecture if it was intended to replace parts of CampaignContext.
+
+---
+
+#### 11. **`getDefaultAttitudeFromLawLevel()` Exported But Never Called** — LOW
+**Location**: `src/lib/piracy/tables.ts:78-84`
+
+This utility function maps law levels to port attitudes but is never called. It should likely be used in `PortReputationPanel` to auto-populate port attitude when creating new ports.
+
+---
+
+#### 12. **NexaInterface Still Unwired** (previously reported)
 **Location**: `src/components/interfaces/NexaInterface.tsx`
 
 Still not registered in MainframeShell tabs. Consider either wiring it up or removing the dead component.
 
 ---
 
-#### 11. **AutoSaveIndicator Still Unused** (previously reported)
+#### 13. **AutoSaveIndicator Still Unused** (previously reported)
 **Location**: `src/components/AutoSaveIndicator.tsx`
 
 Defined but never imported or rendered anywhere.
