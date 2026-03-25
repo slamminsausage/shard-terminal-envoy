@@ -189,7 +189,7 @@ export default function VTTLightingPanel() {
                       payload: {
                         mapId: activeMap.id,
                         lightId: light.id,
-                        updates: { radius: parseInt(e.target.value) },
+                        updates: { radius: parseInt(e.target.value, 10) },
                       },
                     })
                   }

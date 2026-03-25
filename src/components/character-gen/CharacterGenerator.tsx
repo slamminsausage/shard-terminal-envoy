@@ -1211,7 +1211,7 @@ export const CharacterGenerator: React.FC = () => {
     academyGradSkillsSelected.forEach(skillName => {
       const skillKey = normalizeSkillName(skillName);
       setCharacterData(prev => {
-        const currentValue = parseInt(prev.skills[skillKey]?.value || '0');
+        const currentValue = parseInt(prev.skills[skillKey]?.value || '0', 10);
         return {
           ...prev,
           skills: {
@@ -1421,8 +1421,8 @@ export const CharacterGenerator: React.FC = () => {
             const skill1Key = normalizeSkillName(universitySkillLevel1);
 
             setCharacterData(prev => {
-              const currentSkill0 = parseInt(prev.skills[skill0Key]?.value || '0');
-              const currentSkill1 = parseInt(prev.skills[skill1Key]?.value || '0');
+              const currentSkill0 = parseInt(prev.skills[skill0Key]?.value || '0', 10);
+              const currentSkill1 = parseInt(prev.skills[skill1Key]?.value || '0', 10);
 
               return {
                 ...prev,
@@ -1659,7 +1659,7 @@ export const CharacterGenerator: React.FC = () => {
         const skillKey = normalizeSkillName(skillChoice);
         setCharacterData(prev => {
           const currentSkill = prev.skills[skillKey];
-          const currentValue = currentSkill ? parseInt(currentSkill.value) || 0 : 0;
+          const currentValue = currentSkill ? parseInt(currentSkill.value, 10) || 0 : 0;
 
           return {
             ...prev,
@@ -1725,7 +1725,7 @@ export const CharacterGenerator: React.FC = () => {
           const skillKey = normalizeSkillName(skillName);
           setCharacterData(prev => {
             const currentSkill = prev.skills[skillKey];
-            const currentValue = currentSkill ? parseInt(currentSkill.value) || 0 : 0;
+            const currentValue = currentSkill ? parseInt(currentSkill.value, 10) || 0 : 0;
             // For level 0, just ensure proficiency; for higher, set to max of current or target
             const newValue = level === 0 ? Math.max(currentValue, 0) : Math.max(currentValue, level);
             return {
@@ -1887,7 +1887,7 @@ export const CharacterGenerator: React.FC = () => {
           const skillKey = normalizeSkillName(skillName);
           setCharacterData(prev => {
             const currentSkill = prev.skills[skillKey];
-            const currentValue = currentSkill ? parseInt(currentSkill.value) || 0 : 0;
+            const currentValue = currentSkill ? parseInt(currentSkill.value, 10) || 0 : 0;
             const newValue = level === 0 ? Math.max(currentValue, 0) : Math.max(currentValue, level);
             return {
               ...prev,
@@ -2121,7 +2121,7 @@ export const CharacterGenerator: React.FC = () => {
 
   const getTotalSkillLevels = (skills: Record<string, SkillState>): number => {
     return Object.values(skills).reduce((total, skill) => {
-      return total + (parseInt(skill.value) || 0);
+      return total + (parseInt(skill.value, 10) || 0);
     }, 0);
   };
 
@@ -2133,7 +2133,7 @@ export const CharacterGenerator: React.FC = () => {
 
   const canIncreaseSkill = (skillKey: string, currentSkills: Record<string, SkillState>): { allowed: boolean; reason?: string } => {
     const currentSkill = currentSkills[skillKey];
-    const currentValue = currentSkill ? parseInt(currentSkill.value) || 0 : 0;
+    const currentValue = currentSkill ? parseInt(currentSkill.value, 10) || 0 : 0;
 
     // Check individual skill limit (max level 4)
     if (currentValue >= 4) {
@@ -2189,7 +2189,7 @@ export const CharacterGenerator: React.FC = () => {
         }
 
         const currentSkill = prev.skills[skillKey];
-        const currentValue = currentSkill ? parseInt(currentSkill.value) || 0 : 0;
+        const currentValue = currentSkill ? parseInt(currentSkill.value, 10) || 0 : 0;
 
         return {
           ...prev,
@@ -2223,7 +2223,7 @@ export const CharacterGenerator: React.FC = () => {
       }
 
       const currentSkill = prev.skills[skillKey];
-      const currentValue = currentSkill ? parseInt(currentSkill.value) || 0 : 0;
+      const currentValue = currentSkill ? parseInt(currentSkill.value, 10) || 0 : 0;
 
       return {
         ...prev,
@@ -3356,7 +3356,7 @@ export const CharacterGenerator: React.FC = () => {
                                 max="18"
                                 value={characterData.characteristics[key].total || ''}
                                 onChange={(e) => {
-                                  const val = parseInt(e.target.value) || 0;
+                                  const val = parseInt(e.target.value, 10) || 0;
                                   if (val >= 0 && val <= 18) {
                                     manuallySetCharacteristic(key, val);
                                   }
@@ -3982,7 +3982,7 @@ export const CharacterGenerator: React.FC = () => {
                     currentShipShares={characterData.shipShares}
                     hasTasMembership={characterData.tasMembership}
                     ships={characterData.ships}
-                    gamblerSkillLevel={parseInt(characterData.skills['Gambler']?.value || '0') || 0}
+                    gamblerSkillLevel={parseInt(characterData.skills['Gambler']?.value || '0', 10) || 0}
                     characteristics={characterData.characteristics}
                     onComplete={handleMusteringOutComplete}
                   />
@@ -4104,15 +4104,15 @@ export const CharacterGenerator: React.FC = () => {
                   <h3 className="text-sm font-bold text-terminal-primary mb-2">Acquired Skills</h3>
                   <div className="grid grid-cols-2 gap-2 text-xs text-terminal-primary/80">
                     {Object.entries(characterData.skills)
-                      .filter(([_, skill]) => skill.proficient || parseInt(skill.value) > 0)
-                      .sort((a, b) => parseInt(b[1].value) - parseInt(a[1].value))
+                      .filter(([_, skill]) => skill.proficient || parseInt(skill.value, 10) > 0)
+                      .sort((a, b) => parseInt(b[1].value, 10) - parseInt(a[1].value, 10))
                       .map(([skillName, skill]) => (
                         <div key={skillName} className="flex justify-between">
                           <span className="capitalize">{skillName.replace(/_/g, ' ')}</span>
                           <span className="text-terminal-primary">{skill.value}</span>
                         </div>
                       ))}
-                    {Object.entries(characterData.skills).filter(([_, skill]) => skill.proficient || parseInt(skill.value) > 0).length === 0 && (
+                    {Object.entries(characterData.skills).filter(([_, skill]) => skill.proficient || parseInt(skill.value, 10) > 0).length === 0 && (
                       <div className="text-terminal-primary/50 col-span-2">No skills acquired yet</div>
                     )}
                   </div>
@@ -4196,13 +4196,13 @@ export const CharacterGenerator: React.FC = () => {
                           />
                           <Button
                             onClick={() => {
-                              const val = parseInt(manualDiceValue);
+                              const val = parseInt(manualDiceValue, 10);
                               if (!isNaN(val) && val >= 2 && val <= 12) {
                                 runSurvivalCheck(val);
                                 setManualDiceValue('');
                               }
                             }}
-                            disabled={!manualDiceValue || isNaN(parseInt(manualDiceValue)) || parseInt(manualDiceValue) < 2 || parseInt(manualDiceValue) > 12}
+                            disabled={!manualDiceValue || isNaN(parseInt(manualDiceValue, 10)) || parseInt(manualDiceValue, 10) < 2 || parseInt(manualDiceValue, 10) > 12}
                             className="bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
                           >
                             Submit {selectedCareer?.isPreCareer ? 'Graduation' : 'Survival'} Roll
@@ -4370,13 +4370,13 @@ export const CharacterGenerator: React.FC = () => {
                               />
                               <Button
                                 onClick={() => {
-                                  const val = parseInt(manualDiceValue);
+                                  const val = parseInt(manualDiceValue, 10);
                                   if (!isNaN(val) && val >= 2 && val <= 12) {
                                     rollEvent(val);
                                     setManualDiceValue('');
                                   }
                                 }}
-                                disabled={!manualDiceValue || isNaN(parseInt(manualDiceValue)) || parseInt(manualDiceValue) < 2 || parseInt(manualDiceValue) > 12}
+                                disabled={!manualDiceValue || isNaN(parseInt(manualDiceValue, 10)) || parseInt(manualDiceValue, 10) < 2 || parseInt(manualDiceValue, 10) > 12}
                                 className="bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
                               >
                                 Submit Event Roll
@@ -4420,13 +4420,13 @@ export const CharacterGenerator: React.FC = () => {
                               />
                               <Button
                                 onClick={() => {
-                                  const val = parseInt(manualDiceValue);
+                                  const val = parseInt(manualDiceValue, 10);
                                   if (!isNaN(val) && val >= 2 && val <= 12) {
                                     runAdvancementCheck(val);
                                     setManualDiceValue('');
                                   }
                                 }}
-                                disabled={!manualDiceValue || isNaN(parseInt(manualDiceValue)) || parseInt(manualDiceValue) < 2 || parseInt(manualDiceValue) > 12}
+                                disabled={!manualDiceValue || isNaN(parseInt(manualDiceValue, 10)) || parseInt(manualDiceValue, 10) < 2 || parseInt(manualDiceValue, 10) > 12}
                                 className="bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
                               >
                                 Submit Advancement Roll
@@ -4498,13 +4498,13 @@ export const CharacterGenerator: React.FC = () => {
                           />
                           <Button
                             onClick={() => {
-                              const val = parseInt(manualDiceValue);
+                              const val = parseInt(manualDiceValue, 10);
                               if (!isNaN(val) && val >= 2 && val <= 12) {
                                 rollEvent(val);
                                 setManualDiceValue('');
                               }
                             }}
-                            disabled={!manualDiceValue || isNaN(parseInt(manualDiceValue)) || parseInt(manualDiceValue) < 2 || parseInt(manualDiceValue) > 12}
+                            disabled={!manualDiceValue || isNaN(parseInt(manualDiceValue, 10)) || parseInt(manualDiceValue, 10) < 2 || parseInt(manualDiceValue, 10) > 12}
                             className="bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
                           >
                             Submit Event Roll
@@ -5505,16 +5505,16 @@ export const CharacterGenerator: React.FC = () => {
                         <CardHeader className="pb-2">
                           <CardTitle className="text-terminal-primary text-sm font-['Orbitron'] tracking-wider uppercase flex items-center gap-2">
                             <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
-                            Skills ({Object.entries(characterData.skills).filter(([_, s]) => s.proficient && parseInt(s.value) >= 0).length})
+                            Skills ({Object.entries(characterData.skills).filter(([_, s]) => s.proficient && parseInt(s.value, 10) >= 0).length})
                           </CardTitle>
                         </CardHeader>
                         <CardContent>
                           <div className="flex flex-wrap gap-1.5">
                             {Object.entries(characterData.skills)
-                              .filter(([_, state]) => state.proficient && parseInt(state.value) >= 0)
-                              .sort((a, b) => parseInt(b[1].value) - parseInt(a[1].value))
+                              .filter(([_, state]) => state.proficient && parseInt(state.value, 10) >= 0)
+                              .sort((a, b) => parseInt(b[1].value, 10) - parseInt(a[1].value, 10))
                               .map(([skill, state]) => {
-                                const level = parseInt(state.value);
+                                const level = parseInt(state.value, 10);
                                 const isHighLevel = level >= 2;
                                 return (
                                   <div
@@ -5531,7 +5531,7 @@ export const CharacterGenerator: React.FC = () => {
                                   </div>
                                 );
                               })}
-                            {Object.entries(characterData.skills).filter(([_, s]) => s.proficient && parseInt(s.value) >= 0).length === 0 && (
+                            {Object.entries(characterData.skills).filter(([_, s]) => s.proficient && parseInt(s.value, 10) >= 0).length === 0 && (
                               <span className="text-terminal-primary/50 text-sm">No skills acquired</span>
                             )}
                           </div>

@@ -61,7 +61,7 @@ const getTerminalEffectClasses = (terminalId: string) => {
   return "terminal terminal-flicker";
 };
 
-export default function TerminalInterface() {
+function TerminalInterface() {
   const navigate = useNavigate();
   const hasInitialized = useRef(false);
   const typingCancelRef = useRef<(() => void) | null>(null);
@@ -698,3 +698,5 @@ export default function TerminalInterface() {
     </div>
   );
 }
+
+export default React.memo(TerminalInterface);

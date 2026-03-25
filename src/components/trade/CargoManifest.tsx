@@ -50,7 +50,7 @@ export const CargoManifest: React.FC<CargoManifestProps> = ({ vehicleId }) => {
 
     await sellTradeGood(
       selectedGood.id,
-      parseInt(salePrice),
+      parseInt(salePrice, 10),
       saleWorld,
       new Date().toISOString()
     );
@@ -229,14 +229,14 @@ export const CargoManifest: React.FC<CargoManifestProps> = ({ vehicleId }) => {
 
             {salePrice && (
               <div className={`p-3 rounded ${
-                parseInt(salePrice) >= selectedGood.purchase_price
+                parseInt(salePrice, 10) >= selectedGood.purchase_price
                   ? 'bg-green-500/10 border border-green-500/50'
                   : 'bg-red-500/10 border border-red-500/50'
               }`}>
                 <div className="text-sm font-bold">
-                  Profit/Loss: <span className={parseInt(salePrice) >= selectedGood.purchase_price ? 'text-green-400' : 'text-red-400'}>
-                    {parseInt(salePrice) >= selectedGood.purchase_price ? '+' : ''}
-                    {(parseInt(salePrice) - selectedGood.purchase_price).toLocaleString()} Cr
+                  Profit/Loss: <span className={parseInt(salePrice, 10) >= selectedGood.purchase_price ? 'text-green-400' : 'text-red-400'}>
+                    {parseInt(salePrice, 10) >= selectedGood.purchase_price ? '+' : ''}
+                    {(parseInt(salePrice, 10) - selectedGood.purchase_price).toLocaleString()} Cr
                   </span>
                 </div>
               </div>

@@ -79,7 +79,7 @@ export function useTabNavigationShortcuts(
       }
 
       // Check for number keys 1-7
-      const num = parseInt(e.key);
+      const num = parseInt(e.key, 10);
       if (!isNaN(num) && num >= 1 && num <= tabIds.length) {
         e.preventDefault();
         const tabId = tabIds[num - 1];

@@ -167,7 +167,7 @@ export default function VTTDiceRoller() {
               min={1}
               max={20}
               value={diceCount}
-              onChange={(e) => setDiceCount(Math.max(1, parseInt(e.target.value) || 1))}
+              onChange={(e) => setDiceCount(Math.max(1, parseInt(e.target.value, 10) || 1))}
               className="vtt-input w-12 text-center px-1.5"
             />
             <span className="text-terminal-primary/40 text-xs font-mono">d</span>
@@ -176,7 +176,7 @@ export default function VTTDiceRoller() {
               min={2}
               max={100}
               value={diceSides}
-              onChange={(e) => setDiceSides(Math.max(2, parseInt(e.target.value) || 6))}
+              onChange={(e) => setDiceSides(Math.max(2, parseInt(e.target.value, 10) || 6))}
               className="vtt-input w-12 text-center px-1.5"
             />
             <button

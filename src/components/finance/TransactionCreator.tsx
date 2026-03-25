@@ -28,11 +28,11 @@ export const TransactionCreator: React.FC<TransactionCreatorProps> = ({
   const [notes, setNotes] = useState('');
 
   const handleCreate = async () => {
-    if (!description.trim() || !amount || parseInt(amount) <= 0) return;
+    if (!description.trim() || !amount || parseInt(amount, 10) <= 0) return;
 
     await addTransaction({
       description,
-      amount: parseInt(amount),
+      amount: parseInt(amount, 10),
       transaction_type: transactionType,
       category,
       character_id: characterId,
@@ -163,7 +163,7 @@ export const TransactionCreator: React.FC<TransactionCreatorProps> = ({
         <div className="flex gap-2">
           <Button
             onClick={handleCreate}
-            disabled={!description.trim() || !amount || parseInt(amount) <= 0}
+            disabled={!description.trim() || !amount || parseInt(amount, 10) <= 0}
             className="bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
           >
             <Save className="h-4 w-4 mr-2" />

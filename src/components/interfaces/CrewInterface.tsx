@@ -128,7 +128,7 @@ function CrewAssignmentInline({
   );
 }
 
-export default function CrewInterface() {
+function CrewInterface() {
   const [displayText, setDisplayText] = useState("");
   const [activeCrewMember, setActiveCrewMember] = useState<string | null>(null);
   const [showCharacterSheet, setShowCharacterSheet] = useState(false);
@@ -565,3 +565,5 @@ export default function CrewInterface() {
     </div>
   );
 }
+
+export default React.memo(CrewInterface);

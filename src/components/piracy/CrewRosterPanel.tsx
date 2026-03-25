@@ -134,7 +134,7 @@ export const CrewRosterPanel: React.FC = () => {
               type="number"
               placeholder="Shares"
               value={newCrew.shares}
-              onChange={e => setNewCrew(p => ({ ...p, shares: parseInt(e.target.value) || 1 }))}
+              onChange={e => setNewCrew(p => ({ ...p, shares: parseInt(e.target.value, 10) || 1 }))}
               className="terminal-input text-sm"
               min={1}
               max={10}

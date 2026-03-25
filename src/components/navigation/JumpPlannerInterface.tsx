@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { StarMapPanel } from "./StarMapPanel";
 import { ControlPanel } from "./ControlPanel";
 import { WorldInfoPanel } from "./WorldInfoPanel";
@@ -16,7 +16,7 @@ const NAV_TABS: { id: NavPanelTab; label: string; shortLabel: string; icon: type
   { id: "notes", label: "NOTES", shortLabel: "NOTE", icon: FileText },
 ];
 
-export function JumpPlannerInterface() {
+function JumpPlannerInterfaceInner() {
   const isMobile = useIsMobile();
   const [activePanel, setActivePanel] = useState<NavPanelTab>("jump");
 
@@ -88,4 +88,5 @@ export function JumpPlannerInterface() {
   );
 }
 
+export const JumpPlannerInterface = React.memo(JumpPlannerInterfaceInner);
 export default JumpPlannerInterface;

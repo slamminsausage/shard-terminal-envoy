@@ -178,7 +178,7 @@ export default function VTTAudioMixer() {
 
       const key = e.key;
       if (key >= "1" && key <= "9") {
-        const index = parseInt(key) - 1;
+        const index = parseInt(key, 10) - 1;
         const slot = state.audio.sfxSlots[index];
         if (slot?.url || slot?.name) {
           e.preventDefault();

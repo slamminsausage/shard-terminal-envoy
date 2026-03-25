@@ -157,14 +157,14 @@ export default function VTTTokenEditModal({
               <input
                 type="number"
                 value={hp}
-                onChange={(e) => setHp(parseInt(e.target.value) || 0)}
+                onChange={(e) => setHp(parseInt(e.target.value, 10) || 0)}
                 className="vtt-input w-16 text-center"
               />
               <span className="text-[rgba(0,255,0,0.3)] text-xs">/</span>
               <input
                 type="number"
                 value={maxHp}
-                onChange={(e) => setMaxHp(parseInt(e.target.value) || 0)}
+                onChange={(e) => setMaxHp(parseInt(e.target.value, 10) || 0)}
                 className="vtt-input w-16 text-center"
               />
             </div>
@@ -179,7 +179,7 @@ export default function VTTTokenEditModal({
                 min={1}
                 max={10}
                 value={size}
-                onChange={(e) => setSize(Math.max(1, parseInt(e.target.value) || 1))}
+                onChange={(e) => setSize(Math.max(1, parseInt(e.target.value, 10) || 1))}
                 className="vtt-input text-center"
               />
             </div>
@@ -190,7 +190,7 @@ export default function VTTTokenEditModal({
                 min={0}
                 max={359}
                 value={rotation}
-                onChange={(e) => setRotation(parseInt(e.target.value) || 0)}
+                onChange={(e) => setRotation(parseInt(e.target.value, 10) || 0)}
                 className="vtt-input text-center"
               />
             </div>
@@ -205,7 +205,7 @@ export default function VTTTokenEditModal({
                 min={0}
                 max={30}
                 value={moveSpeed}
-                onChange={(e) => setMoveSpeed(Math.max(0, parseInt(e.target.value) || 0))}
+                onChange={(e) => setMoveSpeed(Math.max(0, parseInt(e.target.value, 10) || 0))}
                 className="vtt-input text-center"
               />
             </div>
@@ -214,7 +214,7 @@ export default function VTTTokenEditModal({
               <input
                 type="number"
                 value={elevation}
-                onChange={(e) => setElevation(parseInt(e.target.value) || 0)}
+                onChange={(e) => setElevation(parseInt(e.target.value, 10) || 0)}
                 className="vtt-input text-center"
               />
             </div>

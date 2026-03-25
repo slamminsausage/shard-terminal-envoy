@@ -531,7 +531,7 @@ export class EventProcessor {
     } else {
       // No specific skills required - use character's existing skills
       for (const [skillKey, skillData] of Object.entries(this.skills)) {
-        const level = parseInt(skillData.value) || 0;
+        const level = parseInt(skillData.value, 10) || 0;
 
         if (req?.minLevel && level < req.minLevel) {
           continue;
@@ -564,7 +564,7 @@ export class EventProcessor {
     const normalizedKey = normalizeSkillName(skillName);
     const directMatch = this.skills[normalizedKey];
     if (directMatch) {
-      return parseInt(directMatch.value) || 0;
+      return parseInt(directMatch.value, 10) || 0;
     }
 
     // If this is a base skill name (no specialty), check for any specialty matches
@@ -574,7 +574,7 @@ export class EventProcessor {
       let bestLevel = -3;
       for (const [key, data] of Object.entries(this.skills)) {
         if (key.startsWith(baseKey + '-') || key === baseKey) {
-          const level = parseInt(data.value) || 0;
+          const level = parseInt(data.value, 10) || 0;
           if (level > bestLevel) {
             bestLevel = level;
           }

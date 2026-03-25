@@ -45,7 +45,7 @@ export const StandingPanel: React.FC = () => {
     let description = '';
 
     if (selectedEvent === 'manual_adjust') {
-      change = parseInt(customAmount) || 0;
+      change = parseInt(customAmount, 10) || 0;
       description = customDesc || 'Manual adjustment';
     } else if (selectedEvent === 'cargo_theft') {
       change = -1;

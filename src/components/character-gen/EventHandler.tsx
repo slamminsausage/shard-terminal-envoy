@@ -77,7 +77,7 @@ export function EventHandler({
     const normalizedKey = normalizeSkillName(skillName);
     const directMatch = skills[normalizedKey];
     if (directMatch) {
-      return parseInt(directMatch.value) || 0;
+      return parseInt(directMatch.value, 10) || 0;
     }
 
     // If this is a base skill name (no specialty), check for any specialty matches
@@ -87,7 +87,7 @@ export function EventHandler({
       let bestLevel = -3;
       for (const [key, data] of Object.entries(skills)) {
         if (key.startsWith(baseKey + '-') || key === baseKey) {
-          const level = parseInt(data.value) || 0;
+          const level = parseInt(data.value, 10) || 0;
           if (level > bestLevel) {
             bestLevel = level;
           }
@@ -319,12 +319,12 @@ export function EventHandler({
         />
         <Button
           onClick={() => {
-            const val = parseInt(manualDiceValue);
+            const val = parseInt(manualDiceValue, 10);
             if (!isNaN(val) && val >= diceCount && val <= diceCount * diceSides) {
               onSubmit(val);
             }
           }}
-          disabled={!manualDiceValue || isNaN(parseInt(manualDiceValue)) || parseInt(manualDiceValue) < diceCount || parseInt(manualDiceValue) > diceCount * diceSides}
+          disabled={!manualDiceValue || isNaN(parseInt(manualDiceValue, 10)) || parseInt(manualDiceValue, 10) < diceCount || parseInt(manualDiceValue, 10) > diceCount * diceSides}
           className="bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
         >
           <Edit3 className="h-4 w-4 mr-2" />
@@ -550,12 +550,12 @@ export function EventHandler({
               />
               <Button
                 onClick={() => {
-                  const val = parseInt(manualDiceValue);
+                  const val = parseInt(manualDiceValue, 10);
                   if (!isNaN(val) && val >= diceCount && val <= diceCount * diceSides) {
                     handleSubRoll(val);
                   }
                 }}
-                disabled={!manualDiceValue || isNaN(parseInt(manualDiceValue)) || parseInt(manualDiceValue) < diceCount || parseInt(manualDiceValue) > diceCount * diceSides}
+                disabled={!manualDiceValue || isNaN(parseInt(manualDiceValue, 10)) || parseInt(manualDiceValue, 10) < diceCount || parseInt(manualDiceValue, 10) > diceCount * diceSides}
                 className="bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
               >
                 <Edit3 className="h-4 w-4 mr-2" />

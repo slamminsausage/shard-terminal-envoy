@@ -84,7 +84,7 @@ export const QuestDetail: React.FC<QuestDetailProps> = ({ questId, onClose }) =>
       status: 'pending',
       is_optional: objIsOptional,
       progress_current: 0,
-      progress_required: parseInt(objProgressRequired) || 1,
+      progress_required: parseInt(objProgressRequired, 10) || 1,
     });
 
     setObjTitle('');
@@ -188,8 +188,8 @@ export const QuestDetail: React.FC<QuestDetailProps> = ({ questId, onClose }) =>
   const saveRewards = async () => {
     if (!quest) return;
     const updated = await updateQuest(questId, {
-      reward_credits: parseInt(editRewardCredits) || 0,
-      reward_xp: parseInt(editRewardXp) || 0,
+      reward_credits: parseInt(editRewardCredits, 10) || 0,
+      reward_xp: parseInt(editRewardXp, 10) || 0,
       reward_items: editRewardItems,
       reward_other: editRewardOther,
     });

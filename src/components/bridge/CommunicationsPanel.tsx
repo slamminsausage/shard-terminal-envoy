@@ -107,7 +107,7 @@ export function CommunicationsPanel({
         </div>
       </div>
 
-      <div className="overflow-y-auto p-2 max-h-[280px]">
+      <div className="overflow-y-auto p-2 max-h-[280px]" role="log" aria-live="polite" aria-label="Bridge communications">
         {messages.length === 0 ? (
           <div className="text-center text-terminal-text-dimmer text-sm py-8">NO TRANSMISSIONS</div>
         ) : (

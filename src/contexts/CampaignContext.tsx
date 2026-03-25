@@ -48,10 +48,9 @@ const getStoredPlayer = (): Player | null => {
 };
 
 const generateSessionToken = (): string => {
-  const timestamp = Date.now().toString(36);
-  const randomPart = Math.random().toString(36).substring(2, 15);
-  const additionalRandom = Math.random().toString(36).substring(2, 15);
-  return `${timestamp}-${randomPart}-${additionalRandom}`;
+  const array = new Uint8Array(24);
+  crypto.getRandomValues(array);
+  return Array.from(array, b => b.toString(16).padStart(2, '0')).join('');
 };
 
 const createLocalSession = (player: Player) => {
@@ -357,25 +356,24 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
     try {
       const player = currentPlayerRef.current;
 
+      // Fetch all data in parallel for better performance
+      const [allChars, vehiclesData, crewGroupsData] = await Promise.all([
+        dbHelpers.getAllCharacters(),
+        dbHelpers.getAllVehicles(),
+        dbHelpers.getAllCrewGroups(),
+      ]);
+
       // GM sees all characters; players see all PCs + NPCs (editing controlled at UI level)
-      let charactersData: any[];
-      if (!player || player.role === 'gm') {
-        charactersData = await dbHelpers.getAllCharacters();
-      } else {
-        const allChars = await dbHelpers.getAllCharacters();
-        charactersData = allChars.filter((c: any) =>
-          c.player_id === player.id ||
-          c.player_id === 'campaign' ||
-          c.character_type === 'npc' ||
-          (c.character_type || 'pc') === 'pc'
-        );
-      }
+      const charactersData = (!player || player.role === 'gm')
+        ? allChars
+        : allChars.filter((c: any) =>
+            c.player_id === player.id ||
+            c.player_id === 'campaign' ||
+            c.character_type === 'npc' ||
+            (c.character_type || 'pc') === 'pc'
+          );
       setCharacters(charactersData as Character[]);
-
-      const vehiclesData = await dbHelpers.getAllVehicles();
       setVehicles(vehiclesData as Vehicle[]);
-
-      const crewGroupsData = await dbHelpers.getAllCrewGroups();
       setCrewGroups(crewGroupsData as CrewGroup[]);
     } catch (error) {
       console.error('Failed to refresh data:', error);

@@ -83,7 +83,7 @@ export default function VTTTokenHUD({ token, mapId, screenX, screenY }: VTTToken
           <input
             type="number"
             value={token.elevation ?? 0}
-            onChange={(e) => update({ elevation: parseInt(e.target.value) || 0 })}
+            onChange={(e) => update({ elevation: parseInt(e.target.value, 10) || 0 })}
             className="vtt-input w-10 text-center !text-[10px] !py-0 !px-1"
           />
           {/* Torch toggle */}

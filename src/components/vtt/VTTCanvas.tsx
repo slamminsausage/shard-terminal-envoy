@@ -2115,7 +2115,7 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
           }}
           onKeyDown={(e) => {
             if (e.key === "Enter") {
-              const newHp = parseInt(hpEdit.value) || 0;
+              const newHp = parseInt(hpEdit.value, 10) || 0;
               dispatch({
                 type: "UPDATE_TOKEN",
                 payload: {
@@ -2130,7 +2130,7 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
           }}
           onBlur={() => {
             if (hpEdit) {
-              const newHp = parseInt(hpEdit.value) || 0;
+              const newHp = parseInt(hpEdit.value, 10) || 0;
               dispatch({
                 type: "UPDATE_TOKEN",
                 payload: {

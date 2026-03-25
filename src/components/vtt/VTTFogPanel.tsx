@@ -136,7 +136,7 @@ export default function VTTFogPanel() {
           onChange={(e) =>
             dispatch({
               type: "SET_FOG_BRUSH_SIZE",
-              payload: parseInt(e.target.value),
+              payload: parseInt(e.target.value, 10),
             })
           }
           className="vtt-slider"
