@@ -1,6 +1,6 @@
 import { useVTT } from "@/contexts/VTTContext";
 import { useVTTAudioApi } from "@/contexts/VTTAudioContext";
-import type { AmbientSlot, AmbientTrack } from "@/types/vtt";
+import type { AmbientSlot, AmbientTrack, CustomLibraryTrack } from "@/types/vtt";
 import {
   Volume2,
   VolumeX,
@@ -16,9 +16,11 @@ import {
   ChevronRight,
   Music,
   Zap,
+  Plus,
 } from "lucide-react";
-import { useRef, useEffect, useCallback, useState } from "react";
+import { useRef, useEffect, useCallback, useState, useMemo } from "react";
 import { toast } from "sonner";
+import { dbHelpers } from "@/lib/supabase";
 
 // Built-in sound library catalog — organized from public/audio/
 const LIBRARY_TRACKS = [
@@ -160,11 +162,77 @@ export default function VTTAudioMixer() {
     return state.audio[`ambient${slot}` as keyof typeof state.audio] as AmbientTrack | null;
   };
 
-  const categories = [...new Set(LIBRARY_TRACKS.map((t) => t.category))];
+  // Merge built-in and custom library tracks
+  const allLibraryTracks = useMemo(() => {
+    const builtIn = LIBRARY_TRACKS.map((t) => ({
+      ...t,
+      id: t.path,
+      isCustom: false as const,
+    }));
+    const custom = (state.audio.customLibraryTracks || []).map((t) => ({
+      name: t.name,
+      category: t.category,
+      path: t.url,
+      id: t.id,
+      isCustom: true as const,
+    }));
+    return [...builtIn, ...custom].sort((a, b) => {
+      // Sort by category first, then name
+      const catCmp = a.category.localeCompare(b.category);
+      if (catCmp !== 0) return catCmp;
+      return a.name.localeCompare(b.name);
+    });
+  }, [state.audio.customLibraryTracks]);
+
+  const categories = [...new Set(allLibraryTracks.map((t) => t.category))];
   const filteredLibrary =
     libraryFilter === "all"
-      ? LIBRARY_TRACKS
-      : LIBRARY_TRACKS.filter((t) => t.category === libraryFilter);
+      ? allLibraryTracks
+      : allLibraryTracks.filter((t) => t.category === libraryFilter);
+
+  const [addingCustomTrack, setAddingCustomTrack] = useState(false);
+  const [customTrackCategory, setCustomTrackCategory] = useState<CustomLibraryTrack["category"]>("Music");
+  const [isUploadingCustom, setIsUploadingCustom] = useState(false);
+
+  const handleAddCustomTrack = async () => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "audio/*";
+    input.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+
+      setIsUploadingCustom(true);
+      const trackId = crypto.randomUUID();
+
+      try {
+        // Try uploading to Supabase Storage
+        const url = await dbHelpers.uploadVTTAudioFile(file, trackId);
+
+        const track: CustomLibraryTrack = {
+          id: trackId,
+          name: file.name.replace(/\.[^/.]+$/, ""),
+          url: url || URL.createObjectURL(file),
+          category: customTrackCategory,
+        };
+
+        dispatch({ type: "ADD_CUSTOM_LIBRARY_TRACK", payload: track });
+        toast.success(`"${track.name}" added to library`);
+        setAddingCustomTrack(false);
+      } catch {
+        toast.error("Failed to upload audio file");
+      } finally {
+        setIsUploadingCustom(false);
+      }
+    };
+    input.click();
+  };
+
+  const handleRemoveCustomTrack = async (trackId: string) => {
+    dispatch({ type: "REMOVE_CUSTOM_LIBRARY_TRACK", payload: trackId });
+    dbHelpers.deleteVTTAudioFile(trackId).catch(() => {});
+    toast.success("Track removed from library");
+  };
 
   // SFX keyboard hotkeys
   useEffect(() => {
@@ -276,11 +344,20 @@ export default function VTTAudioMixer() {
                     </button>
                     <button
                       onClick={() => audio.stopAmbient(slot)}
-                      className="p-1 text-terminal-primary/40 hover:text-red-400"
-                      title="Stop & Remove"
+                      className="p-1 text-terminal-primary/40 hover:text-terminal-primary"
+                      title="Stop"
                     >
                       <Square size={10} />
                     </button>
+                    {track && (
+                      <button
+                        onClick={() => audio.removeAmbient(slot)}
+                        className="p-1 text-terminal-primary/40 hover:text-red-400"
+                        title="Remove track"
+                      >
+                        <Trash2 size={10} />
+                      </button>
+                    )}
                   </div>
                 </div>
                 {track ? (
@@ -366,7 +443,7 @@ export default function VTTAudioMixer() {
         icon={<Library size={11} />}
         expanded={expandedSections.library}
         onToggle={() => toggleSection("library")}
-        count={LIBRARY_TRACKS.length}
+        count={allLibraryTracks.length}
       />
       {expandedSections.library && (
         <div className="border-b border-terminal-border/30">
@@ -390,8 +467,8 @@ export default function VTTAudioMixer() {
             ))}
           </div>
 
-          {/* Category filter */}
-          <div className="px-3 py-1 flex gap-1 flex-wrap">
+          {/* Category filter + Add button */}
+          <div className="px-3 py-1 flex gap-1 flex-wrap items-center">
             <FilterPill
               label="All"
               active={libraryFilter === "all"}
@@ -405,18 +482,56 @@ export default function VTTAudioMixer() {
                 onClick={() => setLibraryFilter(cat)}
               />
             ))}
+            <button
+              onClick={() => setAddingCustomTrack(!addingCustomTrack)}
+              className="ml-auto p-0.5 text-terminal-primary/40 hover:text-terminal-primary transition-colors"
+              title="Add custom track to library"
+            >
+              <Plus size={12} />
+            </button>
           </div>
+
+          {/* Add custom track form */}
+          {addingCustomTrack && (
+            <div className="px-3 pb-2 space-y-1.5">
+              <div className="flex gap-1 items-center">
+                <span className="text-[9px] text-terminal-primary/40 font-mono">Type:</span>
+                {(["Ambient", "Music", "SFX", "Story"] as const).map((cat) => (
+                  <button
+                    key={cat}
+                    onClick={() => setCustomTrackCategory(cat)}
+                    className={`vtt-option px-1.5 py-0.5 text-[8px] ${
+                      customTrackCategory === cat ? "vtt-option--active" : ""
+                    }`}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+              <button
+                onClick={handleAddCustomTrack}
+                disabled={isUploadingCustom}
+                className="vtt-btn secondary w-full justify-center"
+              >
+                <Upload size={9} />
+                {isUploadingCustom ? "Uploading..." : "Upload Audio File"}
+              </button>
+            </div>
+          )}
 
           {/* Track list */}
           <div className="max-h-48 overflow-y-auto px-2 pb-2 space-y-0.5">
             {filteredLibrary.map((track) => (
               <div
-                key={track.path}
+                key={track.id}
                 className="flex items-center justify-between px-2 py-1 rounded hover:bg-terminal-primary/5 transition-colors group"
               >
                 <div className="flex-1 min-w-0">
                   <div className="text-[10px] text-terminal-primary/70 font-mono truncate">
                     {track.name}
+                    {track.isCustom && (
+                      <span className="ml-1 text-[8px] text-cyan-400/40">[custom]</span>
+                    )}
                   </div>
                   <div className="text-[8px] text-terminal-primary/30 font-mono">
                     {track.category}
@@ -454,6 +569,15 @@ export default function VTTAudioMixer() {
                       title="Add to SFX Soundboard"
                     >
                       SFX
+                    </button>
+                  )}
+                  {track.isCustom && (
+                    <button
+                      onClick={() => handleRemoveCustomTrack(track.id)}
+                      className="p-0.5 text-terminal-primary/30 hover:text-red-400 transition-colors"
+                      title="Remove from library"
+                    >
+                      <Trash2 size={8} />
                     </button>
                   )}
                 </div>

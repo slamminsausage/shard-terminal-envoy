@@ -90,6 +90,23 @@ function VTTInterface() {
     onPlayerSfxTrigger,
   });
 
+  // Duck audio when handouts are shown on the presenter
+  useEffect(() => {
+    const channel = new BroadcastChannel("shard-vtt-presenter");
+    const handler = (e: MessageEvent) => {
+      if (e.data?.type === "show-handout") {
+        audioApi.duckAudio();
+      } else if (e.data?.type === "hide-handout") {
+        audioApi.unduckAudio();
+      }
+    };
+    channel.addEventListener("message", handler);
+    return () => {
+      channel.removeEventListener("message", handler);
+      channel.close();
+    };
+  }, [audioApi]);
+
   // Resize particle canvas to match container
   useEffect(() => {
     const container = containerRef.current;
