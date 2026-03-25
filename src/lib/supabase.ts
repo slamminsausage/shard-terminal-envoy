@@ -3177,6 +3177,49 @@ export const dbHelpers = {
     }
   },
 
+  async uploadVTTAudioFile(file: File, trackId: string): Promise<string | null> {
+    try {
+      const fileExt = file.name.split('.').pop() || 'mp3';
+      const fileName = `${trackId}.${fileExt}`;
+
+      if (isDev) console.log(`Uploading VTT audio: ${fileName} (${(file.size / 1024).toFixed(2)} KB)`);
+
+      const { error } = await supabase.storage
+        .from('vtt_audio')
+        .upload(fileName, file, { cacheControl: '3600', upsert: true });
+
+      if (error) {
+        console.error('VTT audio upload error:', error);
+        throw error;
+      }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('vtt_audio')
+        .getPublicUrl(fileName);
+
+      if (isDev) console.log('VTT audio upload successful, URL:', publicUrl);
+      return publicUrl;
+    } catch (error) {
+      console.error('Failed to upload VTT audio:', error);
+      return null;
+    }
+  },
+
+  async deleteVTTAudioFile(trackId: string): Promise<boolean> {
+    try {
+      const extensions = ['mp3', 'wav', 'ogg', 'webm', 'm4a', 'flac', 'aac'];
+      for (const ext of extensions) {
+        await supabase.storage
+          .from('vtt_audio')
+          .remove([`${trackId}.${ext}`]);
+      }
+      return true;
+    } catch (error) {
+      console.error('Failed to delete VTT audio:', error);
+      return false;
+    }
+  },
+
   // ─── VTT Session Functions ───────────────────────────────────────────────────
 
   async saveVTTSession(stateJson: any): Promise<boolean> {

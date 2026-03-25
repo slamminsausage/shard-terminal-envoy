@@ -31,6 +31,7 @@ import type {
   AmbientSlot,
   SFXSlot,
   AudioPlaylist,
+  CustomLibraryTrack,
 } from "@/types/vtt";
 import {
   createDefaultVTTState,
@@ -110,6 +111,8 @@ type VTTAction =
   | { type: "REMOVE_PLAYLIST"; payload: string }
   | { type: "ACTIVATE_PLAYLIST"; payload: string }
   | { type: "UPDATE_PLAYLIST"; payload: { id: string; updates: Partial<AudioPlaylist> } }
+  | { type: "ADD_CUSTOM_LIBRARY_TRACK"; payload: CustomLibraryTrack }
+  | { type: "REMOVE_CUSTOM_LIBRARY_TRACK"; payload: string }
   // AoE Templates
   | { type: "ADD_AOE"; payload: import("@/types/vtt").AoETemplate }
   | { type: "REMOVE_AOE"; payload: string }
@@ -690,6 +693,26 @@ function vttReducer(state: VTTState, action: VTTAction): VTTState {
         },
       };
 
+    // Custom library tracks
+    case "ADD_CUSTOM_LIBRARY_TRACK":
+      return {
+        ...state,
+        audio: {
+          ...state.audio,
+          customLibraryTracks: [...(state.audio.customLibraryTracks || []), action.payload],
+        },
+      };
+    case "REMOVE_CUSTOM_LIBRARY_TRACK":
+      return {
+        ...state,
+        audio: {
+          ...state.audio,
+          customLibraryTracks: (state.audio.customLibraryTracks || []).filter(
+            (t) => t.id !== action.payload
+          ),
+        },
+      };
+
     // AoE Templates (per-map)
     case "ADD_AOE":
       if (!state.activeMapId) return state;
@@ -1052,6 +1075,7 @@ export function VTTProvider({ children }: { children: React.ReactNode }) {
         if (audio.ambientD === undefined) audio.ambientD = null;
         if (!audio.playlists) audio.playlists = [];
         if (audio.activePlaylistId === undefined) audio.activePlaylistId = null;
+        if (!audio.customLibraryTracks) audio.customLibraryTracks = [];
         delete audio.crossfade;
         // Remove legacy VTT handouts from state (now in NotesContext)
         delete (parsed as any).handouts;
@@ -1156,6 +1180,29 @@ export function VTTProvider({ children }: { children: React.ReactNode }) {
     return () => clearInterval(interval);
   }, []);
 
+  // Save on page unload to prevent data loss
+  useEffect(() => {
+    const handleUnload = () => {
+      try {
+        const toSave = JSON.parse(JSON.stringify(stateRef.current)) as VTTState;
+        for (const m of toSave.maps) {
+          if (m.isVideo && m.imageDataUrl?.startsWith("blob:")) m.imageDataUrl = null;
+        }
+        toSave.selectedTokenIds = [];
+        toSave.selectedStrokeIds = [];
+        toSave.selectedTextIds = [];
+        toSave.selectedNoteIds = [];
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
+        // Note: Supabase async save may not complete during unload,
+        // but localStorage save is synchronous and will persist
+      } catch {
+        // Best-effort during unload
+      }
+    };
+    window.addEventListener("beforeunload", handleUnload);
+    return () => window.removeEventListener("beforeunload", handleUnload);
+  }, []);
+
   const activeMap =
     state.maps.find((m) => m.id === state.activeMapId) ?? null;
 
@@ -1164,6 +1211,23 @@ export function VTTProvider({ children }: { children: React.ReactNode }) {
       const map = createDefaultMap(name);
       dispatch({ type: "ADD_MAP", payload: map });
       dispatch({ type: "SET_ACTIVE_MAP", payload: map.id });
+      // Save immediately so new maps persist without waiting for autosave
+      setTimeout(() => {
+        try {
+          const toSave = JSON.parse(JSON.stringify(stateRef.current)) as VTTState;
+          for (const m of toSave.maps) {
+            if (m.isVideo && m.imageDataUrl?.startsWith("blob:")) m.imageDataUrl = null;
+          }
+          toSave.selectedTokenIds = [];
+          toSave.selectedStrokeIds = [];
+          toSave.selectedTextIds = [];
+          toSave.selectedNoteIds = [];
+          dbHelpers.saveVTTSession(toSave).catch(e => console.warn("VTT save failed:", e));
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
+        } catch (e) {
+          console.warn("VTT immediate save after addMap failed:", e);
+        }
+      }, 100); // Small delay to let state update propagate
       return map;
     },
     []

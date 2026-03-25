@@ -117,6 +117,40 @@ export function useVTTAudio() {
     state.audio.ambientD?.pan,
   ]);
 
+  // ─── Crossfade helper ────────────────────────────────────────────
+
+  const CROSSFADE_MS = 1500;
+
+  /** Fade out the old track on a slot, then clean up its audio nodes */
+  const fadeOutOldTrack = useCallback((slot: AmbientSlot) => {
+    const oldEl = ambientElRefs.current[slot];
+    const oldSource = ambientSourceRefs.current[slot];
+    const oldGain = ambientGainRefs.current[slot];
+
+    if (!oldEl || !oldGain) return;
+
+    // Create a temporary gain node for the fade-out so the channel gain stays intact
+    const ctx = ctxRef.current;
+    if (!ctx) { oldEl.pause(); oldSource?.disconnect(); return; }
+
+    const fadeGain = ctx.createGain();
+    fadeGain.gain.setValueAtTime(oldGain.gain.value, ctx.currentTime);
+    fadeGain.gain.linearRampToValueAtTime(0, ctx.currentTime + CROSSFADE_MS / 1000);
+
+    // Re-route old source through fade gain
+    oldSource?.disconnect();
+    oldSource?.connect(fadeGain);
+    fadeGain.connect(oldGain);
+    oldGain.connect(ambientPanRefs.current[slot]!);
+
+    // Clean up after fade completes
+    setTimeout(() => {
+      oldEl.pause();
+      oldSource?.disconnect();
+      fadeGain.disconnect();
+    }, CROSSFADE_MS);
+  }, []);
+
   // ─── Load ambient track ───────────────────────────────────────────
 
   const loadAmbient = useCallback(
@@ -124,17 +158,20 @@ export function useVTTAudio() {
       const ctx = ensureContext();
       const url = URL.createObjectURL(file);
 
+      // Crossfade out old track if one is playing
+      if (ambientElRefs.current[slot] && !ambientElRefs.current[slot]!.paused) {
+        fadeOutOldTrack(slot);
+      } else {
+        ambientElRefs.current[slot]?.pause();
+        ambientSourceRefs.current[slot]?.disconnect();
+      }
+
       const el = new Audio();
       el.crossOrigin = "anonymous";
       el.loop = true;
       el.src = url;
 
       const source = ctx.createMediaElementSource(el);
-
-      // Clean up old
-      ambientElRefs.current[slot]?.pause();
-      ambientSourceRefs.current[slot]?.disconnect();
-
       source.connect(ambientGainRefs.current[slot]!);
       ambientSourceRefs.current[slot] = source;
       ambientElRefs.current[slot] = el;
@@ -158,7 +195,7 @@ export function useVTTAudio() {
 
       el.play().catch(() => {});
     },
-    [ensureContext, dispatch]
+    [ensureContext, dispatch, fadeOutOldTrack]
   );
 
   /** Load a built-in library track (from public/audio/) into a channel */
@@ -166,17 +203,20 @@ export function useVTTAudio() {
     (slot: AmbientSlot, path: string, name: string) => {
       const ctx = ensureContext();
 
+      // Crossfade out old track if one is playing
+      if (ambientElRefs.current[slot] && !ambientElRefs.current[slot]!.paused) {
+        fadeOutOldTrack(slot);
+      } else {
+        ambientElRefs.current[slot]?.pause();
+        ambientSourceRefs.current[slot]?.disconnect();
+      }
+
       const el = new Audio();
       el.crossOrigin = "anonymous";
       el.loop = true;
       el.src = path;
 
       const source = ctx.createMediaElementSource(el);
-
-      // Clean up old
-      ambientElRefs.current[slot]?.pause();
-      ambientSourceRefs.current[slot]?.disconnect();
-
       source.connect(ambientGainRefs.current[slot]!);
       ambientSourceRefs.current[slot] = source;
       ambientElRefs.current[slot] = el;
@@ -199,7 +239,7 @@ export function useVTTAudio() {
 
       el.play().catch(() => {});
     },
-    [ensureContext, dispatch]
+    [ensureContext, dispatch, fadeOutOldTrack]
   );
 
   /** Load a library track into an SFX slot */
@@ -227,6 +267,14 @@ export function useVTTAudio() {
   const stopAmbient = useCallback((slot: AmbientSlot) => {
     ambientElRefs.current[slot]?.pause();
     if (ambientElRefs.current[slot]) ambientElRefs.current[slot]!.currentTime = 0;
+    // Don't clear the track from state — just stop playback so it stays in the slot
+  }, []);
+
+  const removeAmbient = useCallback((slot: AmbientSlot) => {
+    ambientElRefs.current[slot]?.pause();
+    ambientSourceRefs.current[slot]?.disconnect();
+    ambientSourceRefs.current[slot] = null;
+    ambientElRefs.current[slot] = null;
     dispatch({ type: "SET_AMBIENT_TRACK", payload: { slot, track: null } });
   }, [dispatch]);
 
@@ -363,6 +411,36 @@ export function useVTTAudio() {
     });
   }, []);
 
+  // ─── Audio ducking (lower music when handouts/videos play) ───────
+
+  const duckingRef = useRef(false);
+
+  const duckAudio = useCallback(() => {
+    if (duckingRef.current) return;
+    duckingRef.current = true;
+    const ctx = ctxRef.current;
+    const master = masterGainRef.current;
+    if (ctx && master) {
+      master.gain.setValueAtTime(master.gain.value, ctx.currentTime);
+      master.gain.linearRampToValueAtTime(
+        master.gain.value * 0.15,
+        ctx.currentTime + 0.5
+      );
+    }
+  }, []);
+
+  const unduckAudio = useCallback(() => {
+    if (!duckingRef.current) return;
+    duckingRef.current = false;
+    const ctx = ctxRef.current;
+    const master = masterGainRef.current;
+    if (ctx && master) {
+      const target = state.audio.muted ? 0 : masterVolumeRef.current;
+      master.gain.setValueAtTime(master.gain.value, ctx.currentTime);
+      master.gain.linearRampToValueAtTime(target, ctx.currentTime + 0.5);
+    }
+  }, [state.audio.muted]);
+
   // ─── Analyzer data ────────────────────────────────────────────────
 
   const getFrequencyData = useCallback(() => {
@@ -389,6 +467,7 @@ export function useVTTAudio() {
     loadLibraryTrack,
     loadLibrarySFX,
     stopAmbient,
+    removeAmbient,
     playAmbient,
     pauseAmbient,
     activatePlaylist,
@@ -399,6 +478,8 @@ export function useVTTAudio() {
     stopAllSFX,
     getFrequencyData,
     ensureContext,
+    duckAudio,
+    unduckAudio,
   };
 }
 

@@ -144,6 +144,18 @@ export default function VTTPresenterView() {
     onCampaignSync
   );
 
+  // Escape key to close handout overlay
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && handout) {
+        setHandout(null);
+        sendToController({ type: "hide-handout" });
+      }
+    };
+    document.addEventListener("keydown", handleKey);
+    return () => document.removeEventListener("keydown", handleKey);
+  }, [handout, sendToController]);
+
   // Connect particle canvas - always mounted now
   useEffect(() => {
     setParticleCanvas(particleCanvasRef.current);
@@ -661,10 +673,10 @@ export default function VTTPresenterView() {
       ctx.restore();
     }
 
-    // Fog of war (use brush data if available, otherwise solid fill)
+    // Fog of war — fully opaque on presenter (players should not see through fog)
     if (map.fog.enabled) {
       ctx.save();
-      ctx.globalAlpha = map.fog.opacity;
+      ctx.globalAlpha = 1;
       if (fogImageRef.current) {
         ctx.drawImage(fogImageRef.current, 0, 0);
       } else {
@@ -780,13 +792,31 @@ export default function VTTPresenterView() {
         </div>
       )}
 
-      {/* Handout overlay */}
+      {/* Handout overlay — click anywhere or press Escape to close */}
       {handout && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/90 z-20">
+        <div
+          className="absolute inset-0 flex items-center justify-center bg-black/90 z-20 cursor-pointer"
+          onClick={() => {
+            setHandout(null);
+            sendToController({ type: "hide-handout" });
+          }}
+        >
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setHandout(null);
+              sendToController({ type: "hide-handout" });
+            }}
+            className="absolute top-4 right-4 z-30 w-10 h-10 flex items-center justify-center rounded-full bg-black/60 border border-[rgba(0,255,0,0.3)] text-[rgba(0,255,0,0.7)] hover:text-[rgba(0,255,0,1)] hover:border-[rgba(0,255,0,0.6)] transition-colors text-xl font-mono"
+            title="Close handout"
+          >
+            &times;
+          </button>
           <img
             src={handout.imageDataUrl}
             alt={handout.name}
             className="max-w-[90vw] max-h-[90vh] object-contain"
+            onClick={(e) => e.stopPropagation()}
           />
           <div className="absolute bottom-6 text-center text-[rgba(0,255,0,0.6)] text-sm font-mono">
             {handout.name}

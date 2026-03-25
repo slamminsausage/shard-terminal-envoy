@@ -306,6 +306,15 @@ export interface AudioPlaylist {
   };
 }
 
+/** A user-added track in the sound library */
+export interface CustomLibraryTrack {
+  id: string;
+  name: string;
+  /** Supabase Storage URL or path */
+  url: string;
+  category: "Ambient" | "Music" | "SFX" | "Story";
+}
+
 export interface AudioState {
   masterVolume: number;
   muted: boolean;
@@ -316,6 +325,8 @@ export interface AudioState {
   sfxSlots: SFXSlot[];
   playlists: AudioPlaylist[];
   activePlaylistId: string | null;
+  /** User-uploaded tracks added to the sound library */
+  customLibraryTracks: CustomLibraryTrack[];
 }
 
 // --- AoE Templates ---
@@ -554,6 +565,7 @@ export function createDefaultAudio(): AudioState {
     })),
     playlists: [],
     activePlaylistId: null,
+    customLibraryTracks: [],
   };
 }
 

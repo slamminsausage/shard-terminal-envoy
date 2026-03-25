@@ -37,6 +37,7 @@ export const NotesInterface: React.FC<NotesInterfaceProps> = ({ defaultTab = 'no
     updatePlayerNote,
     deletePlayerNote,
     handouts,
+    addHandout,
     deleteHandout,
     toggleHandoutVisibility,
     isGMMode,
@@ -70,8 +71,67 @@ export const NotesInterface: React.FC<NotesInterfaceProps> = ({ defaultTab = 'no
   const [newNoteCropperOpen, setNewNoteCropperOpen] = useState(false);
   const [newNoteSelectedFile, setNewNoteSelectedFile] = useState<File | null>(null);
 
-  // Only show visible handouts (admin page controls visibility)
+  // Only show visible handouts for players; GMs see all
   const visibleHandouts = handouts.filter(h => h.isVisible);
+
+  // Handout creation state (GM only)
+  const [showNewHandoutForm, setShowNewHandoutForm] = useState(false);
+  const [newHandoutTitle, setNewHandoutTitle] = useState('');
+  const [newHandoutDescription, setNewHandoutDescription] = useState('');
+  const [newHandoutType, setNewHandoutType] = useState<'text' | 'image' | 'video'>('text');
+  const [newHandoutContent, setNewHandoutContent] = useState('');
+  const [newHandoutMediaUrl, setNewHandoutMediaUrl] = useState('');
+  const handoutFileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleHandoutFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.type.startsWith('image/')) {
+      setNewHandoutType('image');
+      const { compressImage } = await import('@/lib/mediaCompression');
+      compressImage(file, 1920, 1920, 0.8).then(compressed => {
+        setNewHandoutMediaUrl(compressed);
+      }).catch(() => {
+        const reader = new FileReader();
+        reader.onloadend = () => setNewHandoutMediaUrl(reader.result as string);
+        reader.readAsDataURL(file);
+      });
+    } else if (file.type.startsWith('video/')) {
+      setNewHandoutType('video');
+      const { compressVideo } = await import('@/lib/mediaCompression');
+      compressVideo(file).then(dataUrl => {
+        setNewHandoutMediaUrl(dataUrl);
+      }).catch(() => {
+        toast.error('Failed to process video file');
+      });
+    }
+  };
+
+  const handleAddHandout = async () => {
+    if (!newHandoutTitle.trim()) return;
+    if (!newHandoutDescription.trim() && !newHandoutContent.trim() && !newHandoutMediaUrl) return;
+    try {
+      await addHandout({
+        title: newHandoutTitle,
+        description: newHandoutDescription,
+        type: newHandoutType,
+        content: newHandoutType === 'text' ? newHandoutContent : undefined,
+        mediaUrl: newHandoutType !== 'text' ? newHandoutMediaUrl : undefined,
+        isVisible: false,
+        tags: [],
+      });
+      setNewHandoutTitle('');
+      setNewHandoutDescription('');
+      setNewHandoutContent('');
+      setNewHandoutMediaUrl('');
+      setNewHandoutType('text');
+      setShowNewHandoutForm(false);
+      if (handoutFileInputRef.current) handoutFileInputRef.current.value = '';
+      toast.success('Handout created');
+    } catch {
+      toast.error('Failed to create handout');
+    }
+  };
 
 
   // Filter notes by folder
@@ -393,12 +453,145 @@ export const NotesInterface: React.FC<NotesInterfaceProps> = ({ defaultTab = 'no
               <h2 className="text-lg font-semibold">
                 {isGMMode ? 'All Handouts' : 'Shared Handouts'}
               </h2>
-              {isGMMode && (
-                <span className="text-xs text-terminal-primary/50">
-                  {handouts.length} total &middot; {visibleHandouts.length} visible to players
-                </span>
-              )}
+              <div className="flex items-center gap-3">
+                {isGMMode && (
+                  <span className="text-xs text-terminal-primary/50">
+                    {handouts.length} total &middot; {visibleHandouts.length} visible to players
+                  </span>
+                )}
+                {isGMMode && (
+                  <Button
+                    onClick={() => setShowNewHandoutForm(!showNewHandoutForm)}
+                    variant="outline"
+                    size="sm"
+                    className="border-terminal-primary/50 text-terminal-primary hover:bg-terminal-primary/20 whitespace-nowrap"
+                  >
+                    + New Handout
+                  </Button>
+                )}
+              </div>
             </div>
+
+            {/* GM Handout Creation Form */}
+            {isGMMode && showNewHandoutForm && (
+              <Card className="bg-black border-terminal-primary/50">
+                <CardHeader>
+                  <CardTitle className="text-terminal-primary">Create Handout</CardTitle>
+                  <CardDescription className="text-terminal-primary/60">
+                    Handouts start hidden. Toggle visibility to share with players.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <Input
+                    placeholder="Handout Title"
+                    value={newHandoutTitle}
+                    onChange={(e) => setNewHandoutTitle(e.target.value)}
+                    className="bg-black border-terminal-primary/50 text-terminal-primary"
+                  />
+                  <Input
+                    placeholder="Short description (optional)"
+                    value={newHandoutDescription}
+                    onChange={(e) => setNewHandoutDescription(e.target.value)}
+                    className="bg-black border-terminal-primary/50 text-terminal-primary"
+                  />
+
+                  {/* Type selector */}
+                  <div className="flex gap-2">
+                    {(['text', 'image', 'video'] as const).map((type) => (
+                      <Button
+                        key={type}
+                        onClick={() => { setNewHandoutType(type); setNewHandoutMediaUrl(''); setNewHandoutContent(''); }}
+                        size="sm"
+                        variant={newHandoutType === type ? 'default' : 'outline'}
+                        className={newHandoutType === type
+                          ? 'bg-terminal-primary/20 text-terminal-primary border-terminal-primary/50'
+                          : 'border-terminal-primary/30 text-terminal-primary/70 hover:bg-terminal-primary/10'}
+                      >
+                        {type === 'text' && <FileText className="h-3 w-3 mr-1" />}
+                        {type === 'image' && <ImageIcon className="h-3 w-3 mr-1" />}
+                        {type === 'video' && <Video className="h-3 w-3 mr-1" />}
+                        {type.charAt(0).toUpperCase() + type.slice(1)}
+                      </Button>
+                    ))}
+                  </div>
+
+                  {/* Text content */}
+                  {newHandoutType === 'text' && (
+                    <Textarea
+                      placeholder="Handout content..."
+                      value={newHandoutContent}
+                      onChange={(e) => setNewHandoutContent(e.target.value)}
+                      rows={6}
+                      className="bg-black border-terminal-primary/50 text-terminal-primary resize-none"
+                    />
+                  )}
+
+                  {/* Media upload */}
+                  {(newHandoutType === 'image' || newHandoutType === 'video') && (
+                    <div>
+                      <input
+                        ref={handoutFileInputRef}
+                        type="file"
+                        accept={newHandoutType === 'image' ? 'image/*' : 'video/*'}
+                        onChange={handleHandoutFileSelect}
+                        className="hidden"
+                      />
+                      {newHandoutMediaUrl ? (
+                        <div className="space-y-2">
+                          {newHandoutType === 'image' ? (
+                            <img src={newHandoutMediaUrl} alt="Preview" className="max-h-48 rounded border border-terminal-primary/30" />
+                          ) : (
+                            <video src={newHandoutMediaUrl} controls className="max-h-48 rounded border border-terminal-primary/30" />
+                          )}
+                          <Button
+                            onClick={() => { setNewHandoutMediaUrl(''); if (handoutFileInputRef.current) handoutFileInputRef.current.value = ''; }}
+                            size="sm"
+                            variant="outline"
+                            className="border-red-500/50 text-red-400 hover:bg-red-500/20"
+                          >
+                            <X className="h-3 w-3 mr-1" /> Remove
+                          </Button>
+                        </div>
+                      ) : (
+                        <Button
+                          onClick={() => handoutFileInputRef.current?.click()}
+                          variant="outline"
+                          className="border-terminal-primary/50 text-terminal-primary hover:bg-terminal-primary/20 w-full"
+                        >
+                          <Upload className="h-4 w-4 mr-2" />
+                          Upload {newHandoutType === 'image' ? 'Image' : 'Video'}
+                        </Button>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={handleAddHandout}
+                      className="bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
+                    >
+                      <Save className="h-4 w-4 mr-2" />
+                      Create Handout
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        setShowNewHandoutForm(false);
+                        setNewHandoutTitle('');
+                        setNewHandoutDescription('');
+                        setNewHandoutContent('');
+                        setNewHandoutMediaUrl('');
+                        setNewHandoutType('text');
+                      }}
+                      variant="outline"
+                      className="border-terminal-primary/50 text-terminal-primary hover:bg-terminal-primary/20"
+                    >
+                      <X className="h-4 w-4 mr-2" />
+                      Cancel
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {(() => {
               const displayHandouts = isGMMode ? handouts : visibleHandouts;
@@ -406,7 +599,7 @@ export const NotesInterface: React.FC<NotesInterfaceProps> = ({ defaultTab = 'no
                 <Card className="bg-black border-terminal-primary/30">
                   <CardContent className="p-8 text-center text-terminal-primary/70">
                     {isGMMode
-                      ? 'No handouts yet. Create handouts in the VTT or here to share with players.'
+                      ? 'No handouts yet. Click "+ New Handout" to create one.'
                       : 'No handouts available yet. Handouts will appear here when revealed.'}
                   </CardContent>
                 </Card>
