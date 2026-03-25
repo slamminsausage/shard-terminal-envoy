@@ -56,6 +56,20 @@ export const FinanceProvider: React.FC<FinanceProviderProps> = ({ children }) =>
   const partyFundsRef = useRef(partyFunds);
   useEffect(() => { partyFundsRef.current = partyFunds; }, [partyFunds]);
 
+  const updatePartyFundsBalance = useCallback(async (newBalance: number) => {
+    try {
+      const data = await dbHelpers.updatePartyFunds(newBalance);
+      setPartyFunds(data as PartyFunds);
+    } catch (error) {
+      console.error('Failed to update party funds:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update party funds',
+        variant: 'destructive',
+      });
+    }
+  }, [toast]);
+
   const getAllTransactions = useCallback(async (characterId?: string) => {
     setIsLoading(true);
     try {
@@ -179,20 +193,6 @@ export const FinanceProvider: React.FC<FinanceProviderProps> = ({ children }) =>
   useEffect(() => {
     getPartyFunds();
   }, [getPartyFunds]);
-
-  const updatePartyFundsBalance = useCallback(async (newBalance: number) => {
-    try {
-      const data = await dbHelpers.updatePartyFunds(newBalance);
-      setPartyFunds(data as PartyFunds);
-    } catch (error) {
-      console.error('Failed to update party funds:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to update party funds',
-        variant: 'destructive',
-      });
-    }
-  }, [toast]);
 
   const adjustPartyFunds = useCallback(async (amount: number) => {
     if (!partyFundsRef.current) {
