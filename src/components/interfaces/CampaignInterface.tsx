@@ -8,7 +8,7 @@ import { CalendarView } from '../calendar/CalendarView';
 import PlayerManagement from '../auth/PlayerManagement';
 import { useCampaign } from '@/contexts/CampaignContext';
 
-export const CampaignInterface: React.FC = () => {
+export const CampaignInterface: React.FC = React.memo(() => {
   const { isGM } = useCampaign();
 
   const [activeSubTab, setActiveSubTab] = useState(() => {
@@ -97,4 +97,5 @@ export const CampaignInterface: React.FC = () => {
       </div>
     </div>
   );
-};
+});
+CampaignInterface.displayName = 'CampaignInterface';

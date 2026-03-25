@@ -247,6 +247,12 @@ export function JumpPlannerProvider({ children }: { children: React.ReactNode })
     savePlayerLocation();
   }, [state.playerLocation]);
 
+  // Refs to avoid stale closures in the postMessage listener
+  const handleMapClickRef = useRef(handleMapClick);
+  handleMapClickRef.current = handleMapClick;
+  const setCurrentLocationRef = useRef(setCurrentLocation);
+  setCurrentLocationRef.current = setCurrentLocation;
+
   // Listen for TravellerMap iframe messages
   useEffect(() => {
     function handleMessage(event: MessageEvent) {
@@ -257,10 +263,10 @@ export function JumpPlannerProvider({ children }: { children: React.ReactNode })
         const { sector, hex, x, y } = data.location || {};
         if (sector && hex) {
           // Prefer direct sector/hex from TravellerMap event to avoid coordinate jitter
-          void setCurrentLocation(sector, hex);
+          void setCurrentLocationRef.current(sector, hex);
         } else if (typeof x === "number" && typeof y === "number") {
           // Fallback: resolve via coordinates API
-          void handleMapClick(x, y);
+          void handleMapClickRef.current(x, y);
         }
       }
     }
@@ -335,7 +341,7 @@ export function JumpPlannerProvider({ children }: { children: React.ReactNode })
           return;
         }
 
-        console.log("Processing coordinates:", coords);
+        if (import.meta.env.DEV) console.log("Processing coordinates:", coords);
 
         // Sector name is now resolved by getCoordinates via Metadata API lookup
         if (!coords.Sector) {
@@ -355,7 +361,7 @@ export function JumpPlannerProvider({ children }: { children: React.ReactNode })
         }
 
         const sectorFull = getSectorFullName(coords.Sector);
-        console.log("Setting location to:", sectorFull, hex);
+        if (import.meta.env.DEV) console.log("Setting location to:", sectorFull, hex);
 
         await setCurrentLocation(sectorFull, hex);
       } catch (error) {

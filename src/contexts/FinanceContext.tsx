@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, ReactNode, useEffect } from 'react';
+import React, { createContext, useContext, useState, useCallback, useRef, ReactNode, useEffect } from 'react';
 import { Transaction, PartyFunds, RecurringExpense } from '@/types/finance';
 import { dbHelpers } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
@@ -53,6 +53,8 @@ export const FinanceProvider: React.FC<FinanceProviderProps> = ({ children }) =>
   const [recurringExpenses, setRecurringExpenses] = useState<RecurringExpense[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const partyFundsRef = useRef(partyFunds);
+  useEffect(() => { partyFundsRef.current = partyFunds; }, [partyFunds]);
 
   const getAllTransactions = useCallback(async (characterId?: string) => {
     setIsLoading(true);
@@ -63,7 +65,7 @@ export const FinanceProvider: React.FC<FinanceProviderProps> = ({ children }) =>
 
       // Recalculate party funds balance from party transactions if balance is 0
       // but party transactions exist (handles out-of-sync stored balance)
-      const currentBalance = partyFunds?.balance || 0;
+      const currentBalance = partyFundsRef.current?.balance || 0;
       if (currentBalance === 0) {
         const partyTxns = loadedTransactions.filter(t => t.is_party_transaction);
         if (partyTxns.length > 0) {
@@ -85,7 +87,7 @@ export const FinanceProvider: React.FC<FinanceProviderProps> = ({ children }) =>
     } finally {
       setIsLoading(false);
     }
-  }, [toast, partyFunds]);
+  }, [toast]);
 
   const addTransaction = useCallback(async (transaction: Partial<Transaction>): Promise<Transaction | null> => {
     try {
@@ -105,7 +107,7 @@ export const FinanceProvider: React.FC<FinanceProviderProps> = ({ children }) =>
         if (newTransaction.is_party_transaction) {
           const amount = newTransaction.amount || 0;
           const adjustment = newTransaction.transaction_type === 'income' ? amount : -amount;
-          const currentBalance = partyFunds?.balance || 0;
+          const currentBalance = partyFundsRef.current?.balance || 0;
           await updatePartyFundsBalance(currentBalance + adjustment);
         }
 
@@ -125,7 +127,7 @@ export const FinanceProvider: React.FC<FinanceProviderProps> = ({ children }) =>
       });
       return null;
     }
-  }, [toast, partyFunds]);
+  }, [toast]);
 
   const deleteTransaction = useCallback(async (transactionId: string): Promise<boolean> => {
     try {
@@ -139,7 +141,7 @@ export const FinanceProvider: React.FC<FinanceProviderProps> = ({ children }) =>
       if (transaction?.is_party_transaction) {
         const amount = transaction.amount || 0;
         const reversal = transaction.transaction_type === 'income' ? -amount : amount;
-        const currentBalance = partyFunds?.balance || 0;
+        const currentBalance = partyFundsRef.current?.balance || 0;
         await updatePartyFundsBalance(currentBalance + reversal);
       }
 
@@ -157,7 +159,7 @@ export const FinanceProvider: React.FC<FinanceProviderProps> = ({ children }) =>
       });
       return false;
     }
-  }, [toast, transactions, partyFunds]);
+  }, [toast, transactions]);
 
   const getPartyFunds = useCallback(async () => {
     try {
@@ -193,14 +195,14 @@ export const FinanceProvider: React.FC<FinanceProviderProps> = ({ children }) =>
   }, [toast]);
 
   const adjustPartyFunds = useCallback(async (amount: number) => {
-    if (!partyFunds) {
+    if (!partyFundsRef.current) {
       await updatePartyFundsBalance(amount);
       return;
     }
 
-    const newBalance = partyFunds.balance + amount;
+    const newBalance = partyFundsRef.current.balance + amount;
     await updatePartyFundsBalance(newBalance);
-  }, [partyFunds, updatePartyFundsBalance]);
+  }, [updatePartyFundsBalance]);
 
   const getAllRecurringExpenses = useCallback(async () => {
     try {

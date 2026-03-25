@@ -485,7 +485,7 @@ export default function VTTToolbar() {
             max={200}
             step={5}
             value={state.fogBrushSize}
-            onChange={(e) => dispatch({ type: "SET_FOG_BRUSH_SIZE", payload: parseInt(e.target.value) })}
+            onChange={(e) => dispatch({ type: "SET_FOG_BRUSH_SIZE", payload: parseInt(e.target.value, 10) })}
             className="vtt-slider w-full"
           />
         </div>

@@ -143,7 +143,7 @@ function generateNPC(
     const level = terms >= 3 && Math.random() < 0.3 ? 2 : 1;
     if (skills[key]) {
       // If already set, possibly increase
-      const currentLevel = parseInt(skills[key].value) || 0;
+      const currentLevel = parseInt(skills[key].value, 10) || 0;
       skills[key] = { proficient: true, value: String(Math.max(currentLevel + 1, level)) };
     } else {
       skills[key] = { proficient: true, value: String(level) };

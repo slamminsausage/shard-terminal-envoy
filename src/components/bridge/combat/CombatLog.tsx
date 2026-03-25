@@ -10,7 +10,7 @@ export function CombatLog({ log, maxEntries = 50 }: CombatLogProps) {
   const entries = log.slice(0, maxEntries);
 
   return (
-    <div className="space-y-0.5 max-h-32 overflow-y-auto font-['Share_Tech_Mono'] text-[0.6rem]">
+    <div className="space-y-0.5 max-h-32 overflow-y-auto font-['Share_Tech_Mono'] text-[0.6rem]" role="log" aria-live="polite" aria-label="Combat log">
       {entries.length === 0 && (
         <p className="text-terminal-text-dimmer text-center py-2">No combat log entries yet.</p>
       )}

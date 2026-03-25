@@ -499,7 +499,9 @@ export const dbHelpers = {
           groups.push(group);
         }
         localStorage.setItem('traveller_crew_groups', JSON.stringify(groups));
-      } catch { /* ignore */ }
+      } catch (e) {
+        if (isDev) console.warn('Failed to parse localStorage crew_groups data:', e);
+      }
       return group;
     }
 
@@ -549,7 +551,9 @@ export const dbHelpers = {
         const groups = raw ? JSON.parse(raw) : [];
         const filtered = groups.filter((g: any) => g.id !== groupId);
         localStorage.setItem('traveller_crew_groups', JSON.stringify(filtered));
-      } catch { /* ignore */ }
+      } catch (e) {
+        if (isDev) console.warn('Failed to parse localStorage crew_groups data:', e);
+      }
       return true;
     }
 
@@ -1529,7 +1533,7 @@ export const dbHelpers = {
         .from('character_thumbnails')
         .getPublicUrl(fileName);
 
-      console.log('Upload successful, public URL:', publicUrl);
+      if (isDev) console.log('Upload successful, public URL:', publicUrl);
       return publicUrl;
     } catch (error) {
       console.error('Failed to upload character thumbnail from data URL:', error);
@@ -1550,12 +1554,12 @@ export const dbHelpers = {
 
         // If no error, file was deleted
         if (!error) {
-          console.log(`Deleted character thumbnail: ${filePath}`);
+          if (isDev) console.log(`Deleted character thumbnail: ${filePath}`);
           return true;
         }
       }
 
-      console.log('No character thumbnail found to delete for:', characterId);
+      if (isDev) console.log('No character thumbnail found to delete for:', characterId);
       return true;
     } catch (error) {
       console.error('Failed to delete character thumbnail:', error);

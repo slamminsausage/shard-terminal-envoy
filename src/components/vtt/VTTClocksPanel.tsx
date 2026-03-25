@@ -14,7 +14,7 @@ export default function VTTClocksPanel() {
     const clock: Clock = {
       id: crypto.randomUUID(),
       name: newName.trim() || `Clock ${state.clocks.length + 1}`,
-      segments: Math.max(2, Math.min(12, parseInt(newSegments) || 4)),
+      segments: Math.max(2, Math.min(12, parseInt(newSegments, 10) || 4)),
       filled: 0,
       color: CLOCK_COLORS[state.clocks.length % CLOCK_COLORS.length],
     };

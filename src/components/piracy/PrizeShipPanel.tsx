@@ -173,7 +173,7 @@ export const PrizeShipPanel: React.FC = () => {
   const handleDispose = (ship: PrizeShip) => {
     if (disposeAction === 'sold') {
       disposePrizeShip(ship.id, 'sold', {
-        sale_value: parseInt(disposeSaleValue) || estimateSaleValue(ship.hull_type, ship.condition),
+        sale_value: parseInt(disposeSaleValue, 10) || estimateSaleValue(ship.hull_type, ship.condition),
         sale_port: disposeSalePort || undefined,
         sale_date: new Date().toISOString(),
       });
@@ -592,7 +592,7 @@ export const PrizeShipPanel: React.FC = () => {
               <input
                 type="number"
                 value={form.tonnage}
-                onChange={e => setForm(p => ({ ...p, tonnage: parseInt(e.target.value) || 200 }))}
+                onChange={e => setForm(p => ({ ...p, tonnage: parseInt(e.target.value, 10) || 200 }))}
                 className="terminal-input text-sm w-full"
                 min={10}
               />
@@ -602,7 +602,7 @@ export const PrizeShipPanel: React.FC = () => {
               <input
                 type="number"
                 value={form.tech_level}
-                onChange={e => setForm(p => ({ ...p, tech_level: parseInt(e.target.value) || 10 }))}
+                onChange={e => setForm(p => ({ ...p, tech_level: parseInt(e.target.value, 10) || 10 }))}
                 className="terminal-input text-sm w-full"
                 min={1}
                 max={16}
@@ -625,7 +625,7 @@ export const PrizeShipPanel: React.FC = () => {
               <input
                 type="number"
                 value={form.hull_damage_percent}
-                onChange={e => setForm(p => ({ ...p, hull_damage_percent: parseInt(e.target.value) || 0 }))}
+                onChange={e => setForm(p => ({ ...p, hull_damage_percent: parseInt(e.target.value, 10) || 0 }))}
                 className="terminal-input text-sm w-full"
                 min={0}
                 max={100}
@@ -706,7 +706,7 @@ export const PrizeShipPanel: React.FC = () => {
               <input
                 type="number"
                 value={form.cargo_tons}
-                onChange={e => setForm(p => ({ ...p, cargo_tons: parseInt(e.target.value) || 0 }))}
+                onChange={e => setForm(p => ({ ...p, cargo_tons: parseInt(e.target.value, 10) || 0 }))}
                 className="terminal-input text-sm w-full"
                 min={0}
               />
@@ -716,7 +716,7 @@ export const PrizeShipPanel: React.FC = () => {
               <input
                 type="number"
                 value={form.cargo_estimated_value}
-                onChange={e => setForm(p => ({ ...p, cargo_estimated_value: parseInt(e.target.value) || 0 }))}
+                onChange={e => setForm(p => ({ ...p, cargo_estimated_value: parseInt(e.target.value, 10) || 0 }))}
                 className="terminal-input text-sm w-full"
                 min={0}
               />

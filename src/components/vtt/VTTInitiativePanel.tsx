@@ -40,7 +40,7 @@ export default function VTTInitiativePanel() {
     const entry: InitiativeEntry = {
       id: crypto.randomUUID(),
       name: newName.trim(),
-      initiative: parseInt(newInit) || 0,
+      initiative: parseInt(newInit, 10) || 0,
       hp: 0,
       maxHp: 0,
       isNPC,

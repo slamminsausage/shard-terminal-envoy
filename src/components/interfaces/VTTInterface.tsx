@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback, useMemo } from "react";
+import React, { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import VTTCanvas from "@/components/vtt/VTTCanvas";
 import VTTToolbar from "@/components/vtt/VTTToolbar";
 import VTTRightToolbar from "@/components/vtt/VTTRightToolbar";
@@ -18,7 +18,7 @@ import { useNotes } from "@/contexts/NotesContext";
 import { useSession } from "@/contexts/SessionContext";
 import { useQuest } from "@/contexts/QuestContext";
 
-export default function VTTInterface() {
+function VTTInterface() {
   const { isGM } = useCampaign();
   const { state, activeMap } = useVTT();
   const particleCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -154,3 +154,5 @@ export default function VTTInterface() {
     </VTTAudioProvider>
   );
 }
+
+export default React.memo(VTTInterface);

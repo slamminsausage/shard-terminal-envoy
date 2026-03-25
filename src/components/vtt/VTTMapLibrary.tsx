@@ -158,7 +158,7 @@ export default function VTTMapLibrary() {
                     max={10000}
                     step={100}
                     value={canvasWidth}
-                    onChange={(e) => setCanvasWidth(Math.max(100, parseInt(e.target.value) || 1920))}
+                    onChange={(e) => setCanvasWidth(Math.max(100, parseInt(e.target.value, 10) || 1920))}
                     className="vtt-input w-full text-[10px] text-center"
                   />
                 </div>
@@ -172,7 +172,7 @@ export default function VTTMapLibrary() {
                     max={10000}
                     step={100}
                     value={canvasHeight}
-                    onChange={(e) => setCanvasHeight(Math.max(100, parseInt(e.target.value) || 1080))}
+                    onChange={(e) => setCanvasHeight(Math.max(100, parseInt(e.target.value, 10) || 1080))}
                     className="vtt-input w-full text-[10px] text-center"
                   />
                 </div>
@@ -220,7 +220,7 @@ export default function VTTMapLibrary() {
                 max={200}
                 step={5}
                 value={gridSize}
-                onChange={(e) => setGridSize(parseInt(e.target.value))}
+                onChange={(e) => setGridSize(parseInt(e.target.value, 10))}
                 className="vtt-slider"
               />
             </div>

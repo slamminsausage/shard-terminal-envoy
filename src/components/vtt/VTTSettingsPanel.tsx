@@ -116,7 +116,7 @@ export default function VTTSettingsPanel() {
                     payload: {
                       id: activeMap.id,
                       updates: {
-                        grid: { ...grid, size: parseInt(e.target.value) },
+                        grid: { ...grid, size: parseInt(e.target.value, 10) },
                       },
                     },
                   })
@@ -250,7 +250,7 @@ export default function VTTSettingsPanel() {
                 step={100}
                 value={activeMap.width}
                 onChange={(e) => {
-                  const w = Math.max(100, parseInt(e.target.value) || 1920);
+                  const w = Math.max(100, parseInt(e.target.value, 10) || 1920);
                   dispatch({
                     type: "SET_CANVAS_SIZE",
                     payload: { mapId: activeMap.id, width: w, height: activeMap.height },
@@ -268,7 +268,7 @@ export default function VTTSettingsPanel() {
                 step={100}
                 value={activeMap.height}
                 onChange={(e) => {
-                  const h = Math.max(100, parseInt(e.target.value) || 1080);
+                  const h = Math.max(100, parseInt(e.target.value, 10) || 1080);
                   dispatch({
                     type: "SET_CANVAS_SIZE",
                     payload: { mapId: activeMap.id, width: activeMap.width, height: h },
@@ -337,7 +337,7 @@ export default function VTTSettingsPanel() {
                       type: "UPDATE_MAP",
                       payload: {
                         id: activeMap.id,
-                        updates: { imageOffsetX: parseInt(e.target.value) },
+                        updates: { imageOffsetX: parseInt(e.target.value, 10) },
                       },
                     })
                   }
@@ -365,7 +365,7 @@ export default function VTTSettingsPanel() {
                       type: "UPDATE_MAP",
                       payload: {
                         id: activeMap.id,
-                        updates: { imageOffsetY: parseInt(e.target.value) },
+                        updates: { imageOffsetY: parseInt(e.target.value, 10) },
                       },
                     })
                   }

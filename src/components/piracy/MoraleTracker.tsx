@@ -60,7 +60,7 @@ export const MoraleTracker: React.FC = () => {
   };
 
   const handleCustomAdjust = () => {
-    const amount = parseInt(customAmount);
+    const amount = parseInt(customAmount, 10);
     if (isNaN(amount) || !customDesc.trim()) return;
     adjustMorale(amount, 'manual_adjust', customDesc.trim());
     setCustomDesc('');
@@ -170,7 +170,7 @@ export const MoraleTracker: React.FC = () => {
           min={0}
           max={morale.max_mor}
           value={morale.current_mor}
-          onChange={e => setMorale(parseInt(e.target.value))}
+          onChange={e => setMorale(parseInt(e.target.value, 10))}
           className="flex-1 accent-green-500"
         />
         <span className="text-xs text-terminal-primary font-mono w-6 text-right">{morale.current_mor}</span>
