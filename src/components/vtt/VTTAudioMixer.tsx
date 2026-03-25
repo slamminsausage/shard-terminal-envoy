@@ -65,7 +65,7 @@ const SLOT_LABEL_COLORS: Record<AmbientSlot, string> = {
 type MixerSection = "channels" | "library" | "playlists" | "sfx";
 
 export default function VTTAudioMixer() {
-  const { state, dispatch } = useVTT();
+  const { state, dispatch, saveSession } = useVTT();
   const audio = useVTTAudioApi();
   const visualizerRef = useRef<HTMLCanvasElement>(null);
   const animRef = useRef<number>(0);
@@ -217,6 +217,7 @@ export default function VTTAudioMixer() {
         };
 
         dispatch({ type: "ADD_CUSTOM_LIBRARY_TRACK", payload: track });
+        setTimeout(() => saveSession(), 100);
         toast.success(`"${track.name}" added to library`);
         setAddingCustomTrack(false);
       } catch {
@@ -230,6 +231,7 @@ export default function VTTAudioMixer() {
 
   const handleRemoveCustomTrack = async (trackId: string) => {
     dispatch({ type: "REMOVE_CUSTOM_LIBRARY_TRACK", payload: trackId });
+    setTimeout(() => saveSession(), 100);
     dbHelpers.deleteVTTAudioFile(trackId).catch(() => {});
     toast.success("Track removed from library");
   };
