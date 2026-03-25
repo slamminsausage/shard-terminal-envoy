@@ -1,9 +1,7 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { PlayerNote, Handout } from '@/types/notes';
 import { dbHelpers } from '@/lib/supabase';
-
-// GM mode is determined by a separate flag, not just authentication
-const GM_MODE_KEY = 'traveller_gm_mode';
+import { useCampaign } from '@/contexts/CampaignContext';
 
 interface NotesContextType {
   // Player notes
@@ -26,9 +24,9 @@ interface NotesContextType {
 const NotesContext = createContext<NotesContextType | undefined>(undefined);
 
 export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { isGM: isGMMode } = useCampaign();
   const [playerNotes, setPlayerNotes] = useState<PlayerNote[]>([]);
   const [handouts, setHandouts] = useState<Handout[]>([]);
-  const [isGMMode, setIsGMMode] = useState(false);
 
   // Load data from database on mount
   useEffect(() => {
@@ -84,13 +82,6 @@ export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     const loadData = async () => {
       try {
-        // GM mode is a separate setting from authentication
-        // It should be explicitly set by the GM, not assumed from auth status
-        const savedGMMode = localStorage.getItem(GM_MODE_KEY);
-        if (savedGMMode !== null) {
-          setIsGMMode(savedGMMode === 'true');
-        }
-
         // Load player notes from database
         const dbNotes = await dbHelpers.getAllPlayerNotes();
 
