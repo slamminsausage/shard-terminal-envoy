@@ -68,10 +68,39 @@ export default function VTTPresenterView() {
   const animRef = useRef<number>(0);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Pan state
+  // Tool and pan state
+  const [activeTool, setActiveTool] = useState<string>("pan");
   const [isPanning, setIsPanning] = useState(false);
+  const [spaceHeld, setSpaceHeld] = useState(false);
   const panStartRef = useRef<Point>({ x: 0, y: 0 });
   const scrollStartRef = useRef<Point>({ x: 0, y: 0 });
+  const spaceHeldRef = useRef(false);
+
+  // Spacebar hold for temporary pan mode
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.code === "Space" && !e.repeat && !spaceHeldRef.current) {
+        e.preventDefault();
+        spaceHeldRef.current = true;
+        setSpaceHeld(true);
+      }
+    };
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.code === "Space") {
+        spaceHeldRef.current = false;
+        setSpaceHeld(false);
+        setIsPanning(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keyup", handleKeyUp);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keyup", handleKeyUp);
+    };
+  }, []);
+
+  const canPan = activeTool === "pan" || spaceHeld;
 
   const { setCanvas: setParticleCanvas } = useVTTParticles(particles);
 
@@ -269,13 +298,15 @@ export default function VTTPresenterView() {
     return () => canvas.removeEventListener("wheel", handleWheel);
   }, []);
 
-  // Pan handlers
+  // Pan handlers — only pan when canPan is true
+  const canPanRef = useRef(canPan);
+  canPanRef.current = canPan;
+
   const handleMouseDown = useCallback(
     (e: React.MouseEvent) => {
-      if (!map) return;
+      if (!map || !canPanRef.current) return;
       setIsPanning(true);
       panStartRef.current = { x: e.clientX, y: e.clientY };
-      const currentZoom = localZoom ?? map.zoom;
       scrollStartRef.current = localScroll ?? { x: map.scrollX, y: map.scrollY };
     },
     [map, localScroll, localZoom]
@@ -698,7 +729,7 @@ export default function VTTPresenterView() {
     <div
       ref={containerRef}
       className="fixed inset-0 bg-black"
-      style={{ cursor: isPanning ? "grabbing" : "grab" }}
+      style={{ cursor: isPanning ? "grabbing" : canPan ? "grab" : "crosshair" }}
     >
       <canvas
         ref={canvasRef}
@@ -832,6 +863,7 @@ export default function VTTPresenterView() {
         clocks={clocks}
         audioState={audioState}
         sendToController={sendToController}
+        onPlayerToolChange={setActiveTool}
       />
 
       {/* Connection status */}
