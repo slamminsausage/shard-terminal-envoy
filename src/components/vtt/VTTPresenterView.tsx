@@ -3,10 +3,10 @@ import { usePresenterReceiver } from "@/hooks/useVTTPresenter";
 import type { PresenterAudioState, PresenterCampaignData, PresenterMessage } from "@/hooks/useVTTPresenter";
 import { useVTTParticles } from "@/hooks/useVTTParticles";
 import { renderDynamicLighting } from "@/lib/vtt/raycasting";
-import type { VTTMap, ParticleConfig, Point, Stroke, Token, Clock, InitiativeEntry, AoETemplate, TextOverlay } from "@/types/vtt";
+import type { VTTMap, ParticleConfig, Point, Clock, InitiativeEntry, AoETemplate } from "@/types/vtt";
 import { createDefaultParticles } from "@/types/vtt";
 import VTTPlayerToolbar from "./VTTPlayerToolbar";
-import { BookOpen, ScrollText, FileText, Compass, ChevronRight, ChevronLeft, Image as ImageIcon, CheckCircle2, Circle, Clock as ClockIcon } from "lucide-react";
+import { BookOpen, ScrollText, Compass, ChevronRight, ChevronLeft, Image as ImageIcon, CheckCircle2, Circle } from "lucide-react";
 
 // ─── Token image cache (mirrors VTTCanvas pattern) ──────────────────────────
 const presenterTokenImageCache = new Map<string, HTMLImageElement>();
@@ -720,7 +720,7 @@ export default function VTTPresenterView() {
       {(localScroll || localZoom) && (
         <button
           onClick={resetView}
-          className="absolute top-4 left-4 z-10 vtt-btn"
+          className="absolute top-4 left-14 z-10 vtt-btn"
         >
           Reset View
         </button>
@@ -730,65 +730,6 @@ export default function VTTPresenterView() {
       {map && (localZoom != null) && (
         <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10 text-[rgba(0,255,0,0.3)] text-xs font-mono">
           {Math.round((localZoom ?? map.zoom) * 100)}%
-        </div>
-      )}
-
-      {/* Clocks overlay */}
-      {clocks.length > 0 && (
-        <div className="absolute top-4 right-4 z-10 flex flex-col gap-2">
-          {clocks.map((clock) => (
-            <div
-              key={clock.id}
-              className="vtt-hud px-3 py-2 flex items-center gap-3"
-            >
-              <PresenterClockSVG clock={clock} />
-              <div>
-                <div className="text-[rgba(0,255,0,0.8)] text-xs font-mono">
-                  {clock.name}
-                </div>
-                <div className="text-[rgba(0,255,0,0.4)] text-[10px] font-mono">
-                  {clock.filled}/{clock.segments}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Initiative tracker overlay */}
-      {showInitiative && initiative.length > 0 && (
-        <div className="absolute top-4 left-4 z-10 vtt-hud overflow-hidden min-w-[180px]">
-          <div className="vtt-sidebar-header py-1.5">
-            <span className="vtt-sidebar-title text-[10px]">
-              Initiative
-            </span>
-          </div>
-          <div className="max-h-[60vh] overflow-y-auto">
-            {initiative.map((entry, index) => (
-              <div
-                key={entry.id}
-                className={`flex items-center gap-2 px-3 py-1.5 border-b border-[rgba(0,255,0,0.06)] ${
-                  index === 0
-                    ? "bg-[rgba(0,255,0,0.08)] shadow-[inset_0_0_20px_rgba(0,255,0,0.05)]"
-                    : ""
-                }`}
-              >
-                <span className="w-6 text-center text-[var(--primary)] font-mono text-sm font-bold flex-shrink-0">
-                  {entry.initiative}
-                </span>
-                <span
-                  className={`text-xs font-mono flex-1 truncate ${
-                    index === 0 ? "text-[var(--primary)]" : "text-[rgba(0,255,0,0.6)]"
-                  }`}
-                >
-                  {entry.name}
-                </span>
-                {entry.isNPC && (
-                  <span className="vtt-badge danger">NPC</span>
-                )}
-              </div>
-            ))}
-          </div>
         </div>
       )}
 
@@ -880,12 +821,15 @@ export default function VTTPresenterView() {
           data={campaignData}
           activeTab={sidebarTab}
           onTabChange={setSidebarTab}
+          onOpenHandout={(imageUrl, title) => setHandout({ imageDataUrl: imageUrl, name: title })}
         />
       )}
 
-      {/* Player toolbar */}
+      {/* Player toolbar (left side pullout) */}
       <VTTPlayerToolbar
         initiative={initiative}
+        showInitiative={showInitiative}
+        clocks={clocks}
         audioState={audioState}
         sendToController={sendToController}
       />
@@ -915,10 +859,12 @@ function PresenterCampaignSidebar({
   data,
   activeTab,
   onTabChange,
+  onOpenHandout,
 }: {
   data: PresenterCampaignData;
   activeTab: SidebarTab;
   onTabChange: (tab: SidebarTab) => void;
+  onOpenHandout?: (imageUrl: string, title: string) => void;
 }) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
@@ -1033,7 +979,7 @@ function PresenterCampaignSidebar({
                   </div>
                   {expandedId === session.id && session.summary && (
                     <div className="px-3 pb-2 text-[10px] font-mono text-terminal-primary/50 whitespace-pre-wrap border-t border-terminal-border/10 pt-2">
-                      {session.summary.slice(0, 500)}{session.summary.length > 500 ? "..." : ""}
+                      {session.summary}
                     </div>
                   )}
                 </button>
@@ -1047,28 +993,49 @@ function PresenterCampaignSidebar({
             {data.handouts.filter((h) => h.visible !== false).length === 0 ? (
               <EmptyState label="No handouts available" />
             ) : (
-              data.handouts.filter((h) => h.visible !== false).map((handout) => (
-                <div
-                  key={handout.id}
-                  className="rounded border border-terminal-border/15 bg-terminal-primary/[0.02] overflow-hidden"
-                >
-                  {handout.imageUrl && (
-                    <img
-                      src={handout.imageUrl}
-                      alt={handout.title}
-                      className="w-full h-32 object-cover border-b border-terminal-border/10"
-                    />
-                  )}
-                  <div className="px-3 py-2">
-                    <div className="text-[11px] font-mono text-terminal-primary/70">{handout.title}</div>
-                    {handout.content && (
-                      <div className="text-[9px] font-mono text-terminal-primary/40 mt-1 line-clamp-3">
-                        {handout.content}
+              data.handouts.filter((h) => h.visible !== false).map((handout) => {
+                const isExpanded = expandedId === handout.id;
+                return (
+                  <div
+                    key={handout.id}
+                    className="rounded border border-terminal-border/15 bg-terminal-primary/[0.02] overflow-hidden hover:border-terminal-border/40 transition-colors"
+                  >
+                    {handout.imageUrl && (
+                      <button
+                        onClick={() => onOpenHandout?.(handout.imageUrl!, handout.title)}
+                        className="w-full block cursor-pointer"
+                        title="Click to view fullscreen"
+                      >
+                        <img
+                          src={handout.imageUrl}
+                          alt={handout.title}
+                          className="w-full h-32 object-cover border-b border-terminal-border/10 hover:opacity-80 transition-opacity"
+                        />
+                      </button>
+                    )}
+                    <button
+                      onClick={() => setExpandedId(isExpanded ? null : handout.id)}
+                      className="w-full text-left px-3 py-2"
+                    >
+                      <div className="flex items-center gap-2">
+                        <ImageIcon size={10} className="text-terminal-primary/40 flex-shrink-0" />
+                        <span className="text-[11px] font-mono text-terminal-primary/70 flex-1 truncate">{handout.title}</span>
+                        {handout.imageUrl && (
+                          <span className="text-[8px] font-mono text-terminal-primary/30">click image to view</span>
+                        )}
+                        <ChevronRight size={10} className={`text-terminal-primary/30 flex-shrink-0 transition-transform ${isExpanded ? "rotate-90" : ""}`} />
+                      </div>
+                    </button>
+                    {isExpanded && handout.content && (
+                      <div className="border-t border-terminal-border/10 px-3 py-3">
+                        <p className="text-[11px] font-mono text-terminal-primary/60 whitespace-pre-wrap leading-relaxed">
+                          {handout.content}
+                        </p>
                       </div>
                     )}
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
           </>
         )}
@@ -1144,42 +1111,3 @@ function QuestStatusIcon({ status }: { status?: string }) {
   return <Circle size={10} className="text-terminal-primary/30 flex-shrink-0" />;
 }
 
-// ─── Clock SVG for presenter (compact) ──────────────────────────────────────
-
-function PresenterClockSVG({ clock }: { clock: Clock }) {
-  const size = 40;
-  const cx = size / 2;
-  const cy = size / 2;
-  const r = size / 2 - 2;
-
-  const segments = [];
-  for (let i = 0; i < clock.segments; i++) {
-    const startAngle = (i / clock.segments) * Math.PI * 2 - Math.PI / 2;
-    const endAngle = ((i + 1) / clock.segments) * Math.PI * 2 - Math.PI / 2;
-    const x1 = cx + r * Math.cos(startAngle);
-    const y1 = cy + r * Math.sin(startAngle);
-    const x2 = cx + r * Math.cos(endAngle);
-    const y2 = cy + r * Math.sin(endAngle);
-    const largeArc = endAngle - startAngle > Math.PI ? 1 : 0;
-    const d = `M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${largeArc} 1 ${x2} ${y2} Z`;
-    const filled = i < clock.filled;
-
-    segments.push(
-      <path
-        key={i}
-        d={d}
-        fill={filled ? clock.color : "transparent"}
-        stroke={clock.color}
-        strokeWidth={1}
-        opacity={filled ? 0.8 : 0.2}
-      />
-    );
-  }
-
-  return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-      <circle cx={cx} cy={cy} r={r} fill="transparent" stroke={clock.color} strokeWidth={1.5} opacity={0.3} />
-      {segments}
-    </svg>
-  );
-}

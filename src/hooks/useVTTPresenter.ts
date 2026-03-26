@@ -65,52 +65,56 @@ export function usePresenterController(
   const optionsRef = useRef(options);
   optionsRef.current = options;
 
+  // Keep refs for values used in the ping handler so it always has current state
+  const activeMapRef = useRef(activeMap);
+  activeMapRef.current = activeMap;
+  const stateRef = useRef(state);
+  stateRef.current = state;
+
   useEffect(() => {
     channelRef.current = new BroadcastChannel(CHANNEL_NAME);
 
     // Respond to pings from presenter and handle player commands
     channelRef.current.onmessage = (e: MessageEvent<PresenterMessage>) => {
       if (e.data.type === "ping") {
+        const curMap = activeMapRef.current;
+        const curState = stateRef.current;
         channelRef.current?.postMessage({ type: "pong" } satisfies PresenterMessage);
-        // Also send full state on ping (presenter just connected)
-        if (activeMap) {
+        // Always send full state on ping (presenter just connected)
+        channelRef.current?.postMessage({
+          type: "sync-map",
+          map: curMap,
+        } satisfies PresenterMessage);
+        channelRef.current?.postMessage({
+          type: "sync-particles",
+          particles: curState.particles,
+        } satisfies PresenterMessage);
+        channelRef.current?.postMessage({
+          type: "sync-clocks",
+          clocks: curState.clocks,
+        } satisfies PresenterMessage);
+        channelRef.current?.postMessage({
+          type: "sync-initiative",
+          initiative: curState.initiative,
+          showOnPresenter: curState.showInitiativeOnPresenter ?? false,
+        } satisfies PresenterMessage);
+        channelRef.current?.postMessage({
+          type: "sync-audio",
+          audio: {
+            masterVolume: curState.audio.masterVolume,
+            muted: curState.audio.muted,
+            ambientA: curState.audio.ambientA,
+            ambientB: curState.audio.ambientB,
+            ambientC: curState.audio.ambientC,
+            ambientD: curState.audio.ambientD,
+            sfxSlots: curState.audio.sfxSlots,
+          },
+        } satisfies PresenterMessage);
+        if (optionsRef.current?.campaignData) {
           channelRef.current?.postMessage({
-            type: "sync-map",
-            map: activeMap,
+            type: "sync-campaign",
+            campaign: optionsRef.current.campaignData,
           } satisfies PresenterMessage);
-          channelRef.current?.postMessage({
-            type: "sync-particles",
-            particles: state.particles,
-          } satisfies PresenterMessage);
-          channelRef.current?.postMessage({
-            type: "sync-clocks",
-            clocks: state.clocks,
-          } satisfies PresenterMessage);
-          channelRef.current?.postMessage({
-            type: "sync-initiative",
-            initiative: state.initiative,
-            showOnPresenter: state.showInitiativeOnPresenter ?? false,
-          } satisfies PresenterMessage);
-          // Send audio state on connect
-          channelRef.current?.postMessage({
-            type: "sync-audio",
-            audio: {
-              masterVolume: state.audio.masterVolume,
-              muted: state.audio.muted,
-              ambientA: state.audio.ambientA,
-              ambientB: state.audio.ambientB,
-              ambientC: state.audio.ambientC,
-              ambientD: state.audio.ambientD,
-              sfxSlots: state.audio.sfxSlots,
-            },
-          } satisfies PresenterMessage);
-          // Send campaign data on connect
-          if (optionsRef.current?.campaignData) {
-            channelRef.current?.postMessage({
-              type: "sync-campaign",
-              campaign: optionsRef.current.campaignData,
-            } satisfies PresenterMessage);
-          }
         }
       } else if (e.data.type === "player-audio-command") {
         optionsRef.current?.onPlayerAudioCommand?.(e.data.command, e.data.slot);
