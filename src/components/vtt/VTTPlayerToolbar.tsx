@@ -3,7 +3,6 @@ import {
   Dice5,
   Swords,
   Music,
-  Sparkles,
   Pencil,
   Minus,
   Square,
@@ -19,6 +18,7 @@ import {
   Pause,
   Zap,
   Clock as ClockIcon,
+  Hand,
 } from "lucide-react";
 import type { InitiativeEntry, Point, AmbientTrack, AmbientSlot, SFXSlot, Clock } from "@/types/vtt";
 import type { PresenterAudioState, PresenterMessage } from "@/hooks/useVTTPresenter";
@@ -41,7 +41,7 @@ interface RollResult {
 
 // ─── Player Toolbar Component ──────────────────────────────────────────────
 
-export type PlayerTool = "none" | "draw-freehand" | "draw-line" | "draw-rect" | "draw-circle" | "draw-text";
+export type PlayerTool = "pan" | "draw-freehand" | "draw-line" | "draw-rect" | "draw-circle" | "draw-text";
 
 interface VTTPlayerToolbarProps {
   initiative: InitiativeEntry[];
@@ -93,8 +93,8 @@ export default function VTTPlayerToolbar({
   const [modifier, setModifier] = useState(0);
   const [diceResults, setDiceResults] = useState<RollResult[]>([]);
 
-  // Drawing state
-  const [playerTool, setPlayerTool] = useState<PlayerTool>("none");
+  // Drawing state — default to pan mode
+  const [playerTool, setPlayerTool] = useState<PlayerTool>("pan");
   const [drawColor, setDrawColor] = useState("#00ff00");
   const [drawWidth, setDrawWidth] = useState(3);
   const [playerStrokes, setPlayerStrokes] = useState<PlayerStroke[]>([]);
@@ -184,7 +184,7 @@ export default function VTTPlayerToolbar({
   // ─── Drawing ────────────────────────────────────────────────────────
 
   const selectPlayerTool = (tool: PlayerTool) => {
-    setPlayerTool(playerTool === tool ? "none" : tool);
+    setPlayerTool(playerTool === tool ? "pan" : tool);
   };
 
   const undoLastStroke = () => {
@@ -231,7 +231,7 @@ export default function VTTPlayerToolbar({
     }`;
 
   const hasClocks = clocks && clocks.length > 0;
-  const hasInitiative = showInitiative && initiative.length > 0;
+  const hasInitiative = initiative.length > 0;
 
   return (
     <>
@@ -253,21 +253,27 @@ export default function VTTPlayerToolbar({
 
           <div className="w-6 h-px bg-terminal-border/20 mb-1" />
 
+          <button
+            onClick={() => { setPlayerTool("pan"); setActivePanel(null); }}
+            className={toolBtnClass(playerTool === "pan")}
+            title="Pan (Space + Drag)"
+          >
+            <Hand size={16} />
+          </button>
+
+          <div className="w-6 h-px bg-terminal-border/20 my-0.5" />
+
           <button onClick={() => togglePanel("dice")} className={toolBtnClass(activePanel === "dice")} title="Dice Roller">
             <Dice5 size={16} />
           </button>
 
-          {hasInitiative && (
-            <button onClick={() => togglePanel("initiative")} className={toolBtnClass(activePanel === "initiative")} title="Initiative">
-              <Swords size={16} />
-            </button>
-          )}
+          <button onClick={() => togglePanel("initiative")} className={toolBtnClass(activePanel === "initiative")} title="Initiative">
+            <Swords size={16} />
+          </button>
 
-          {hasClocks && (
-            <button onClick={() => togglePanel("clocks")} className={toolBtnClass(activePanel === "clocks")} title="Clocks">
-              <ClockIcon size={16} />
-            </button>
-          )}
+          <button onClick={() => togglePanel("clocks")} className={toolBtnClass(activePanel === "clocks")} title="Clocks">
+            <ClockIcon size={16} />
+          </button>
 
           <button onClick={() => togglePanel("audio")} className={toolBtnClass(activePanel === "audio")} title="Audio">
             {muted ? <VolumeX size={16} /> : <Music size={16} />}
@@ -278,13 +284,13 @@ export default function VTTPlayerToolbar({
           </button>
 
           {/* Active draw tool indicator */}
-          {playerTool !== "none" && (
+          {playerTool.startsWith("draw-") && (
             <>
               <div className="w-6 h-px bg-terminal-border/20 my-0.5" />
               <button
-                onClick={() => setPlayerTool("none")}
+                onClick={() => setPlayerTool("pan")}
                 className="text-[8px] font-mono text-yellow-400/70 hover:text-yellow-400 px-1 py-1"
-                title="Click to deselect draw tool"
+                title="Click to switch to pan"
               >
                 {playerTool.replace("draw-", "").toUpperCase()}
               </button>
@@ -294,8 +300,8 @@ export default function VTTPlayerToolbar({
           {/* Status indicators at bottom */}
           <div className="flex-1" />
           {hasInitiative && activePanel !== "initiative" && (
-            <div className="w-6 h-6 flex items-center justify-center rounded bg-[rgba(0,255,0,0.06)]" title={`Active: ${initiative[0]?.name}`}>
-              <Swords size={10} className="text-yellow-400/60" />
+            <div className="w-6 h-6 flex items-center justify-center rounded bg-[rgba(255,204,0,0.1)] animate-pulse" title={`Active: ${initiative[0]?.name}`}>
+              <Swords size={10} className="text-yellow-400/70" />
             </div>
           )}
           {hasClocks && activePanel !== "clocks" && (
