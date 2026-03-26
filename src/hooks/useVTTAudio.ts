@@ -1,6 +1,7 @@
 import { useRef, useEffect, useCallback } from "react";
 import { useVTT } from "@/contexts/VTTContext";
 import type { AmbientSlot } from "@/types/vtt";
+import { toast } from "sonner";
 
 const SLOTS: AmbientSlot[] = ["A", "B", "C", "D"];
 
@@ -40,12 +41,26 @@ export function useVTTAudio() {
   const masterVolumeRef = useRef(state.audio.masterVolume);
   masterVolumeRef.current = state.audio.masterVolume;
 
+  // Track whether we've already shown the autoplay toast
+  const autoplayWarningShown = useRef(false);
+
   // ─── Initialize AudioContext ──────────────────────────────────────
 
   const ensureContext = useCallback(() => {
-    if (ctxRef.current) return ctxRef.current;
+    if (ctxRef.current) {
+      // Resume if browser suspended it (autoplay policy)
+      if (ctxRef.current.state === "suspended") {
+        ctxRef.current.resume().catch(() => {});
+      }
+      return ctxRef.current;
+    }
     const ctx = new AudioContext();
     ctxRef.current = ctx;
+
+    // Resume immediately — will succeed if called from a user gesture
+    if (ctx.state === "suspended") {
+      ctx.resume().catch(() => {});
+    }
 
     const master = ctx.createGain();
     master.gain.value = masterVolumeRef.current;
@@ -67,6 +82,20 @@ export function useVTTAudio() {
     }
 
     return ctx;
+  }, []);
+
+  /** Attempt to play an audio element; show a one-time toast if blocked by autoplay policy */
+  const tryPlay = useCallback((el: HTMLAudioElement) => {
+    el.play().catch((e: DOMException) => {
+      if (e.name === "NotAllowedError") {
+        if (!autoplayWarningShown.current) {
+          autoplayWarningShown.current = true;
+          toast.info("Click anywhere on the page to enable audio playback");
+        }
+      } else {
+        console.warn("Audio play failed:", e);
+      }
+    });
   }, []);
 
   // ─── Master volume sync ───────────────────────────────────────────
@@ -193,9 +222,9 @@ export function useVTTAudio() {
         },
       });
 
-      el.play().catch(() => {});
+      tryPlay(el);
     },
-    [ensureContext, dispatch, fadeOutOldTrack]
+    [ensureContext, dispatch, fadeOutOldTrack, tryPlay]
   );
 
   /** Load a built-in library track (from public/audio/) into a channel */
@@ -237,9 +266,9 @@ export function useVTTAudio() {
         },
       });
 
-      el.play().catch(() => {});
+      tryPlay(el);
     },
-    [ensureContext, dispatch, fadeOutOldTrack]
+    [ensureContext, dispatch, fadeOutOldTrack, tryPlay]
   );
 
   /** Load a library track into an SFX slot */
@@ -282,7 +311,7 @@ export function useVTTAudio() {
     const el = ambientElRefs.current[slot];
     if (el) {
       ensureContext();
-      el.play().catch(() => {});
+      tryPlay(el);
     } else {
       // If no element but there's a library track in state, reload it
       const track = getTrack(slot);
@@ -290,7 +319,7 @@ export function useVTTAudio() {
         loadLibraryTrack(slot, track.url, track.name);
       }
     }
-  }, [ensureContext, getTrack, loadLibraryTrack]);
+  }, [ensureContext, tryPlay, getTrack, loadLibraryTrack]);
 
   const pauseAmbient = useCallback((slot: AmbientSlot) => {
     const el = ambientElRefs.current[slot];
@@ -326,10 +355,10 @@ export function useVTTAudio() {
         source.connect(ambientGainRefs.current[slot]!);
         ambientSourceRefs.current[slot] = source;
         ambientElRefs.current[slot] = el;
-        el.play().catch(() => {});
+        tryPlay(el);
       }
     }
-  }, [state.audio.playlists, dispatch, ensureContext]);
+  }, [state.audio.playlists, dispatch, ensureContext, tryPlay]);
 
   /** Save current channel configuration as a new playlist */
   const saveAsPlaylist = useCallback((name: string) => {
@@ -388,10 +417,10 @@ export function useVTTAudio() {
         el.volume = (slot.volume ?? 0.7) * state.audio.masterVolume;
         el.loop = slot.loop;
         el.currentTime = 0;
-        el.play().catch(() => {});
+        tryPlay(el);
       }
     },
-    [ensureContext, state.audio.sfxSlots, state.audio.masterVolume]
+    [ensureContext, tryPlay, state.audio.sfxSlots, state.audio.masterVolume]
   );
 
   const stopSFX = useCallback((slotIndex: number) => {

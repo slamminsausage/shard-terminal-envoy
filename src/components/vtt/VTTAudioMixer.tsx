@@ -206,13 +206,19 @@ export default function VTTAudioMixer() {
       const trackId = crypto.randomUUID();
 
       try {
-        // Try uploading to Supabase Storage
+        // Upload to Supabase Storage — don't fall back to blob URLs
+        // (blob URLs can't survive a page reload)
         const url = await dbHelpers.uploadVTTAudioFile(file, trackId);
+
+        if (!url) {
+          toast.error("Failed to upload audio file. Check your connection and try again.");
+          return;
+        }
 
         const track: CustomLibraryTrack = {
           id: trackId,
           name: file.name.replace(/\.[^/.]+$/, ""),
-          url: url || URL.createObjectURL(file),
+          url,
           category: customTrackCategory,
         };
 
@@ -221,7 +227,7 @@ export default function VTTAudioMixer() {
         toast.success(`"${track.name}" added to library`);
         setAddingCustomTrack(false);
       } catch {
-        toast.error("Failed to upload audio file");
+        toast.error("Failed to upload audio file. Check your connection and try again.");
       } finally {
         setIsUploadingCustom(false);
       }

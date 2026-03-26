@@ -48,7 +48,10 @@ class AudioManager {
       sound.addEventListener('error', cleanup);
 
       sound.play().catch(e => {
-        console.warn('Audio play failed:', e);
+        // NotAllowedError is expected before user interacts with the page
+        if (e.name !== 'NotAllowedError') {
+          console.warn('Audio play failed:', e);
+        }
         cleanup();
       });
     } catch (error) {
@@ -63,7 +66,11 @@ class AudioManager {
       const ambient = this.sounds[track];
       ambient.loop = true;
       ambient.volume = this.volume * 0.5;
-      ambient.play().catch(e => console.warn('Ambient play failed:', e));
+      ambient.play().catch(e => {
+        if (e.name !== 'NotAllowedError') {
+          console.warn('Ambient play failed:', e);
+        }
+      });
     } catch (error) {
       console.warn(`Failed to play ambient: ${track}`, error);
     }
