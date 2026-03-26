@@ -41,6 +41,7 @@ import {
 // ─── Storage Keys ───────────────────────────────────────────────────────────
 
 const STORAGE_KEY = "vtt_session";
+const STORAGE_TS_KEY = "vtt_session_ts"; // ISO timestamp of last localStorage save
 const AUTOSAVE_INTERVAL = 120_000; // 2 minutes
 const DEBOUNCE_SAVE_MS = 2_000; // 2 seconds — debounced save after every state change
 
@@ -1019,6 +1020,12 @@ interface VTTContextValue {
 
 const VTTContext = createContext<VTTContextValue | null>(null);
 
+/** Write VTT state + timestamp to localStorage */
+function saveToLocalStorage(toSave: VTTState) {
+  saveToLocalStorage(toSave);
+  localStorage.setItem(STORAGE_TS_KEY, new Date().toISOString());
+}
+
 /** Prepare a VTT state snapshot for persistence (strip ephemeral data) */
 function prepareForSave(state: VTTState): VTTState {
   const toSave = JSON.parse(JSON.stringify(state)) as VTTState;
@@ -1128,43 +1135,65 @@ export function VTTProvider({ children }: { children: React.ReactNode }) {
     stateRef.current = state;
   }, [state]);
 
-  // On mount: load from Supabase (overrides localStorage-based initial state),
-  // and migrate any existing base64 map images to Supabase Storage
+  // On mount: load from Supabase and reconcile with localStorage.
+  // localStorage is always written synchronously (including on beforeunload),
+  // so it may be newer than Supabase if the async save didn't complete.
   useEffect(() => {
+    const applyMigrations = (s: any) => {
+      if (!s.selectedTokenIds) s.selectedTokenIds = [];
+      if (!s.selectedStrokeIds) s.selectedStrokeIds = [];
+      if (!s.selectedTextIds) s.selectedTextIds = [];
+      if (!s.selectedNoteIds) s.selectedNoteIds = [];
+      if (!s.layerStates) {
+        s.layerStates = {
+          0: { visible: true, locked: false },
+          1: { visible: true, locked: false },
+          2: { visible: true, locked: false },
+        };
+      }
+      for (const m of s.maps || []) {
+        if (!m.aoeTemplates) m.aoeTemplates = [];
+        if (m.imageScale === undefined) m.imageScale = 1;
+        if (m.imageOffsetX === undefined) m.imageOffsetX = 0;
+        if (m.imageOffsetY === undefined) m.imageOffsetY = 0;
+        if (m.imageNaturalWidth === undefined) m.imageNaturalWidth = 0;
+        if (m.imageNaturalHeight === undefined) m.imageNaturalHeight = 0;
+        if (m.isVideo && m.imageDataUrl?.startsWith("blob:")) {
+          m.imageDataUrl = null;
+        }
+      }
+      if (s.audio?.customLibraryTracks) {
+        s.audio.customLibraryTracks = s.audio.customLibraryTracks.filter(
+          (t: any) => t.url && !t.url.startsWith('blob:')
+        );
+      }
+    };
+
     const loadAndMigrate = async () => {
       try {
-        const dbState = await dbHelpers.loadVTTSession();
-        if (dbState) {
-          // Apply same migrations as the lazy initializer
-          if (!dbState.selectedTokenIds) dbState.selectedTokenIds = [];
-          if (!dbState.selectedStrokeIds) dbState.selectedStrokeIds = [];
-          if (!dbState.selectedTextIds) dbState.selectedTextIds = [];
-          if (!dbState.selectedNoteIds) dbState.selectedNoteIds = [];
-          if (!dbState.layerStates) {
-            dbState.layerStates = {
-              0: { visible: true, locked: false },
-              1: { visible: true, locked: false },
-              2: { visible: true, locked: false },
-            };
-          }
-          for (const m of dbState.maps || []) {
-            if (!m.aoeTemplates) m.aoeTemplates = [];
-            if (m.imageScale === undefined) m.imageScale = 1;
-            if (m.imageOffsetX === undefined) m.imageOffsetX = 0;
-            if (m.imageOffsetY === undefined) m.imageOffsetY = 0;
-            if (m.imageNaturalWidth === undefined) m.imageNaturalWidth = 0;
-            if (m.imageNaturalHeight === undefined) m.imageNaturalHeight = 0;
-            // Clear stale blob URLs
-            if (m.isVideo && m.imageDataUrl?.startsWith("blob:")) {
-              m.imageDataUrl = null;
-            }
-          }
-          // Strip stale blob URLs from custom audio tracks
-          if (dbState.audio?.customLibraryTracks) {
-            dbState.audio.customLibraryTracks = dbState.audio.customLibraryTracks.filter(
-              (t: any) => t.url && !t.url.startsWith('blob:')
+        const dbResult = await dbHelpers.loadVTTSession();
+        if (dbResult) {
+          const { stateJson: dbState, updatedAt: supabaseTs } = dbResult;
+          const localTs = localStorage.getItem(STORAGE_TS_KEY);
+
+          // If localStorage has a newer timestamp than Supabase, prefer localStorage
+          // (this handles the case where beforeunload saved locally but async
+          // Supabase save didn't complete before page unload)
+          if (localTs && supabaseTs && new Date(localTs) > new Date(supabaseTs)) {
+            if (import.meta.env.DEV) console.log(
+              `VTT: localStorage is newer (${localTs}) than Supabase (${supabaseTs}), pushing to Supabase`
             );
+            // The useReducer initializer already loaded from localStorage,
+            // so just push it to Supabase to sync up
+            const toSync = prepareForSave(stateRef.current);
+            dbHelpers.saveVTTSession(toSync).catch(e =>
+              console.warn("VTT: failed to sync localStorage state to Supabase:", e)
+            );
+            return;
           }
+
+          // Supabase is newer (or same) — use it
+          applyMigrations(dbState);
           dispatch({ type: "LOAD_SESSION", payload: dbState });
 
           // Migrate any remaining base64 map images to Supabase Storage
@@ -1204,7 +1233,7 @@ export function VTTProvider({ children }: { children: React.ReactNode }) {
       try {
         const toSave = prepareForSave(stateRef.current);
         dbHelpers.saveVTTSession(toSave).catch(e => console.warn("VTT Supabase autosave failed:", e));
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
+        saveToLocalStorage(toSave);
       } catch (e) {
         console.warn("VTT autosave failed:", e);
       }
@@ -1226,7 +1255,7 @@ export function VTTProvider({ children }: { children: React.ReactNode }) {
       try {
         const toSave = prepareForSave(stateRef.current);
         dbHelpers.saveVTTSession(toSave).catch(e => console.warn("VTT debounced save failed:", e));
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
+        saveToLocalStorage(toSave);
       } catch (e) {
         console.warn("VTT debounced save failed:", e);
       }
@@ -1239,7 +1268,7 @@ export function VTTProvider({ children }: { children: React.ReactNode }) {
     const handleUnload = () => {
       try {
         const toSave = prepareForSave(stateRef.current);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
+        saveToLocalStorage(toSave);
         // Note: Supabase async save may not complete during unload,
         // but localStorage save is synchronous and will persist
       } catch {
@@ -1263,7 +1292,7 @@ export function VTTProvider({ children }: { children: React.ReactNode }) {
         try {
           const toSave = prepareForSave(stateRef.current);
           dbHelpers.saveVTTSession(toSave).catch(e => console.warn("VTT save failed:", e));
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
+          saveToLocalStorage(toSave);
         } catch (e) {
           console.warn("VTT immediate save after addMap failed:", e);
         }
@@ -1409,7 +1438,7 @@ export function VTTProvider({ children }: { children: React.ReactNode }) {
     try {
       const toSave = prepareForSave(stateRef.current);
       dbHelpers.saveVTTSession(toSave).catch(e => console.warn("VTT Supabase save failed:", e));
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
+      saveToLocalStorage(toSave);
     } catch (e) {
       console.warn("VTT save failed:", e);
     }
