@@ -479,6 +479,44 @@ export function useVTTAudio() {
     return data;
   }, []);
 
+  // ─── Reconnect persisted library tracks on mount ─────────────────
+  // After a page refresh, the track metadata (name, url, isLibrary) persists
+  // in state but the HTMLAudioElement refs are null. Recreate them so tracks
+  // are immediately playable without the user having to remove and re-add.
+
+  const reconnectedRef = useRef(false);
+  useEffect(() => {
+    if (reconnectedRef.current) return;
+    reconnectedRef.current = true;
+
+    for (const slot of SLOTS) {
+      if (ambientElRefs.current[slot]) continue; // already has an element
+      const track = state.audio[`ambient${slot}` as keyof typeof state.audio] as (typeof state.audio.ambientA);
+      if (track?.isLibrary && track.url) {
+        // Silently recreate the Audio element + Web Audio nodes.
+        // Don't auto-play — the user will click play when ready.
+        const ctx = ensureContext();
+        const el = new Audio();
+        el.crossOrigin = "anonymous";
+        el.loop = track.loop;
+        el.src = track.url;
+
+        const source = ctx.createMediaElementSource(el);
+        source.connect(ambientGainRefs.current[slot]!);
+        ambientSourceRefs.current[slot] = source;
+        ambientElRefs.current[slot] = el;
+
+        // Apply persisted volume / pan
+        if (ambientGainRefs.current[slot]) {
+          ambientGainRefs.current[slot]!.gain.value = track.volume ?? 0.7;
+        }
+        if (ambientPanRefs.current[slot]) {
+          ambientPanRefs.current[slot]!.pan.value = track.pan ?? 0;
+        }
+      }
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   // ─── Cleanup ──────────────────────────────────────────────────────
 
   useEffect(() => {

@@ -1022,7 +1022,7 @@ const VTTContext = createContext<VTTContextValue | null>(null);
 
 /** Write VTT state + timestamp to localStorage */
 function saveToLocalStorage(toSave: VTTState) {
-  saveToLocalStorage(toSave);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
   localStorage.setItem(STORAGE_TS_KEY, new Date().toISOString());
 }
 
@@ -1135,6 +1135,12 @@ export function VTTProvider({ children }: { children: React.ReactNode }) {
     stateRef.current = state;
   }, [state]);
 
+  // True once the Supabase reconciliation in loadAndMigrate has completed.
+  // The debounced save must not fire until this is set, otherwise it would
+  // persist stale Supabase data back to localStorage before the user's
+  // fresh localStorage state has been reconciled.
+  const supabaseReconciled = useRef(false);
+
   // On mount: load from Supabase and reconcile with localStorage.
   // localStorage is always written synchronously (including on beforeunload),
   // so it may be newer than Supabase if the async save didn't complete.
@@ -1221,6 +1227,8 @@ export function VTTProvider({ children }: { children: React.ReactNode }) {
         }
       } catch (e) {
         console.warn("Failed to load VTT session from Supabase:", e);
+      } finally {
+        supabaseReconciled.current = true;
       }
     };
     loadAndMigrate();
@@ -1243,14 +1251,11 @@ export function VTTProvider({ children }: { children: React.ReactNode }) {
 
   // Debounced save on every state change — ensures deletions, edits, etc.
   // persist within 2 seconds rather than waiting for the 2-minute autosave.
-  const initialLoadDone = useRef(false);
   useEffect(() => {
-    // Skip the first render (initial state from localStorage) and the
-    // Supabase LOAD_SESSION dispatch to avoid saving stale data back.
-    if (!initialLoadDone.current) {
-      initialLoadDone.current = true;
-      return;
-    }
+    // Don't save until Supabase reconciliation is complete. Otherwise we'd
+    // persist stale Supabase data (or the initial localStorage load) back
+    // before the timestamp comparison has decided which source is fresher.
+    if (!supabaseReconciled.current) return;
     const timer = setTimeout(() => {
       try {
         const toSave = prepareForSave(stateRef.current);
