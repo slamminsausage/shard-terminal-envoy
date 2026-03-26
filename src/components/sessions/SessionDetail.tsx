@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSession } from '@/contexts/SessionContext';
 import { Session, SessionLogEntry } from '@/types/session';
 import { Button } from '@/components/ui/button';
@@ -9,10 +9,12 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, Plus, Clock, User, MapPin, Trash2 } from 'lucide-react';
+import { ArrowLeft, Plus, Clock, User, MapPin, Trash2, ExternalLink, Pencil, X, Check } from 'lucide-react';
 import { format } from 'date-fns';
 import { SessionStatus, LogEntryType } from '@/types/session';
 import { useCampaign } from '@/contexts/CampaignContext';
+
+const LOG_CHANNEL_NAME = "shard-session-log";
 
 interface SessionDetailProps {
   sessionId: string;
@@ -21,7 +23,7 @@ interface SessionDetailProps {
 
 export const SessionDetail: React.FC<SessionDetailProps> = ({ sessionId, onClose }) => {
   const { isGM } = useCampaign();
-  const { getSession, getSessionLogs, addLogEntry, deleteLogEntry, updateSession, deleteSession } = useSession();
+  const { getSession, getSessionLogs, addLogEntry, updateLogEntry, deleteLogEntry, updateSession, deleteSession } = useSession();
   const [session, setSession] = useState<Session | null>(null);
   const [logs, setLogs] = useState<SessionLogEntry[]>([]);
   const [showLogForm, setShowLogForm] = useState(false);
@@ -30,6 +32,12 @@ export const SessionDetail: React.FC<SessionDetailProps> = ({ sessionId, onClose
   const [logTitle, setLogTitle] = useState('');
   const [logContent, setLogContent] = useState('');
   const [logType, setLogType] = useState<LogEntryType>('note');
+
+  // Edit state for existing log entries
+  const [editingLogId, setEditingLogId] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState('');
+  const [editContent, setEditContent] = useState('');
+  const [editType, setEditType] = useState<LogEntryType>('note');
 
   useEffect(() => {
     loadSessionData();
@@ -45,6 +53,25 @@ export const SessionDetail: React.FC<SessionDetailProps> = ({ sessionId, onClose
     setLogs(logsData);
   };
 
+  // Listen for messages from pop-out windows
+  useEffect(() => {
+    const channel = new BroadcastChannel(LOG_CHANNEL_NAME);
+
+    channel.onmessage = async (e: MessageEvent) => {
+      if (e.data.type === 'add-log-entry' && e.data.sessionId === sessionId) {
+        await addLogEntry(sessionId, e.data.entry);
+        const logsData = await getSessionLogs(sessionId);
+        setLogs(logsData);
+      } else if (e.data.type === 'update-log-entry') {
+        await updateLogEntry(e.data.entryId, e.data.updates);
+        const logsData = await getSessionLogs(sessionId);
+        setLogs(logsData);
+      }
+    };
+
+    return () => channel.close();
+  }, [sessionId, addLogEntry, updateLogEntry, getSessionLogs]);
+
   const handleAddLogEntry = async () => {
     if (!logContent.trim()) return;
 
@@ -52,7 +79,7 @@ export const SessionDetail: React.FC<SessionDetailProps> = ({ sessionId, onClose
       entry_type: logType,
       title: logTitle || undefined,
       content: logContent,
-      created_by: 'gm',
+      created_by: isGM ? 'gm' : 'player',
     });
 
     setLogTitle('');
@@ -60,7 +87,6 @@ export const SessionDetail: React.FC<SessionDetailProps> = ({ sessionId, onClose
     setLogType('note');
     setShowLogForm(false);
 
-    // Reload logs
     const logsData = await getSessionLogs(sessionId);
     setLogs(logsData);
   };
@@ -91,6 +117,55 @@ export const SessionDetail: React.FC<SessionDetailProps> = ({ sessionId, onClose
     }
   };
 
+  const startEditingLog = (log: SessionLogEntry) => {
+    setEditingLogId(log.id);
+    setEditTitle(log.title || '');
+    setEditContent(log.content);
+    setEditType(log.entry_type);
+  };
+
+  const cancelEditingLog = () => {
+    setEditingLogId(null);
+    setEditTitle('');
+    setEditContent('');
+    setEditType('note');
+  };
+
+  const saveEditingLog = async () => {
+    if (!editingLogId || !editContent.trim()) return;
+    await updateLogEntry(editingLogId, {
+      title: editTitle || undefined,
+      content: editContent,
+      entry_type: editType,
+    });
+    setEditingLogId(null);
+    const logsData = await getSessionLogs(sessionId);
+    setLogs(logsData);
+  };
+
+  const openPopout = () => {
+    window.open(
+      `/session-log-popout?sessionId=${sessionId}`,
+      '_blank',
+      'width=620,height=520,menubar=no,toolbar=no,location=no,status=no'
+    );
+  };
+
+  const openEditPopout = (log: SessionLogEntry) => {
+    const params = new URLSearchParams({
+      sessionId,
+      editId: log.id,
+      editTitle: log.title || '',
+      editContent: log.content,
+      editType: log.entry_type,
+    });
+    window.open(
+      `/session-log-popout?${params.toString()}`,
+      '_blank',
+      'width=620,height=520,menubar=no,toolbar=no,location=no,status=no'
+    );
+  };
+
   if (!session) {
     return (
       <div className="text-center py-8 text-terminal-primary/70">
@@ -100,11 +175,19 @@ export const SessionDetail: React.FC<SessionDetailProps> = ({ sessionId, onClose
   }
 
   const logTypeLabels: Record<LogEntryType, string> = {
-    note: '📝 Note',
-    combat: '⚔️ Combat',
-    skill_check: '🎲 Skill Check',
-    npc_interaction: '💬 NPC Interaction',
-    location_change: '📍 Location Change',
+    note: 'Note',
+    combat: 'Combat',
+    skill_check: 'Skill Check',
+    npc_interaction: 'NPC Interaction',
+    location_change: 'Location Change',
+  };
+
+  const logTypeEmojis: Record<LogEntryType, string> = {
+    note: '\u{1F4DD}',
+    combat: '\u{2694}\u{FE0F}',
+    skill_check: '\u{1F3B2}',
+    npc_interaction: '\u{1F4AC}',
+    location_change: '\u{1F4CD}',
   };
 
   return (
@@ -143,11 +226,11 @@ export const SessionDetail: React.FC<SessionDetailProps> = ({ sessionId, onClose
           </div>
           <div className="flex items-center gap-4 text-sm text-terminal-primary/70 mt-1">
             <span>Session #{session.session_number}</span>
-            <span>•</span>
+            <span>&bull;</span>
             <span>{format(new Date(session.session_date), 'MMMM dd, yyyy')}</span>
             {session.in_game_date && (
               <>
-                <span>•</span>
+                <span>&bull;</span>
                 <span>Imperial: {session.in_game_date}</span>
               </>
             )}
@@ -177,7 +260,17 @@ export const SessionDetail: React.FC<SessionDetailProps> = ({ sessionId, onClose
         </TabsList>
 
         <TabsContent value="log" className="flex-1 flex flex-col mt-4">
-          <div className="flex justify-end mb-3">
+          <div className="flex justify-end gap-2 mb-3">
+            <Button
+              onClick={openPopout}
+              size="sm"
+              variant="outline"
+              className="border-terminal-primary/50 text-terminal-primary hover:bg-terminal-primary/20"
+              title="Open note editor in a pop-out window that stays open while you browse"
+            >
+              <ExternalLink className="h-4 w-4 mr-2" />
+              Pop Out
+            </Button>
             <Button
               onClick={() => setShowLogForm(!showLogForm)}
               size="sm"
@@ -205,7 +298,7 @@ export const SessionDetail: React.FC<SessionDetailProps> = ({ sessionId, onClose
                     <SelectContent className="bg-black border-terminal-primary/50">
                       {Object.entries(logTypeLabels).map(([value, label]) => (
                         <SelectItem key={value} value={value} className="text-terminal-primary">
-                          {label}
+                          {logTypeEmojis[value as LogEntryType]} {label}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -255,34 +348,112 @@ export const SessionDetail: React.FC<SessionDetailProps> = ({ sessionId, onClose
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <Badge className="bg-terminal-primary/10 text-terminal-primary/70 border-terminal-primary/30">
-                            {logTypeLabels[log.entry_type]}
+                            {logTypeEmojis[log.entry_type]} {logTypeLabels[log.entry_type]}
                           </Badge>
-                          {log.title && (
+                          {editingLogId !== log.id && log.title && (
                             <span className="text-terminal-primary font-semibold">{log.title}</span>
                           )}
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1">
                           <span className="text-xs text-terminal-primary/50">
                             {format(new Date(log.timestamp), 'HH:mm')}
                           </span>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-6 w-6 p-0 text-red-400 hover:bg-red-500/20"
-                            onClick={() => handleDeleteLogEntry(log.id)}
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
+                          {editingLogId === log.id ? (
+                            <>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 w-6 p-0 text-green-400 hover:bg-green-500/20"
+                                onClick={saveEditingLog}
+                                title="Save"
+                              >
+                                <Check className="h-3 w-3" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 w-6 p-0 text-terminal-primary/50 hover:bg-terminal-primary/20"
+                                onClick={cancelEditingLog}
+                                title="Cancel"
+                              >
+                                <X className="h-3 w-3" />
+                              </Button>
+                            </>
+                          ) : (
+                            <>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 w-6 p-0 text-terminal-primary/40 hover:bg-terminal-primary/20 hover:text-terminal-primary"
+                                onClick={() => openEditPopout(log)}
+                                title="Edit in pop-out"
+                              >
+                                <ExternalLink className="h-3 w-3" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 w-6 p-0 text-terminal-primary/40 hover:bg-terminal-primary/20 hover:text-terminal-primary"
+                                onClick={() => startEditingLog(log)}
+                                title="Edit inline"
+                              >
+                                <Pencil className="h-3 w-3" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 w-6 p-0 text-red-400 hover:bg-red-500/20"
+                                onClick={() => handleDeleteLogEntry(log.id)}
+                                title="Delete"
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </>
+                          )}
                         </div>
                       </div>
                     </CardHeader>
                     <CardContent>
-                      <p className="text-terminal-primary/90 whitespace-pre-wrap">{log.content}</p>
-                      {log.location && (
-                        <div className="mt-2 flex items-center gap-1 text-xs text-terminal-primary/60">
-                          <MapPin className="h-3 w-3" />
-                          {log.location}
+                      {editingLogId === log.id ? (
+                        <div className="space-y-2">
+                          <div className="grid grid-cols-2 gap-2">
+                            <Input
+                              placeholder="Title (optional)"
+                              value={editTitle}
+                              onChange={(e) => setEditTitle(e.target.value)}
+                              className="bg-black border-terminal-primary/50 text-terminal-primary h-8 text-sm"
+                            />
+                            <Select value={editType} onValueChange={(v) => setEditType(v as LogEntryType)}>
+                              <SelectTrigger className="bg-black border-terminal-primary/50 text-terminal-primary h-8 text-sm">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent className="bg-black border-terminal-primary/50">
+                                {Object.entries(logTypeLabels).map(([value, label]) => (
+                                  <SelectItem key={value} value={value} className="text-terminal-primary">
+                                    {logTypeEmojis[value as LogEntryType]} {label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <Textarea
+                            value={editContent}
+                            onChange={(e) => setEditContent(e.target.value)}
+                            rows={4}
+                            className="bg-black border-terminal-primary/50 text-terminal-primary resize-y text-sm"
+                            autoFocus
+                          />
                         </div>
+                      ) : (
+                        <>
+                          <p className="text-terminal-primary/90 whitespace-pre-wrap">{log.content}</p>
+                          {log.location && (
+                            <div className="mt-2 flex items-center gap-1 text-xs text-terminal-primary/60">
+                              <MapPin className="h-3 w-3" />
+                              {log.location}
+                            </div>
+                          )}
+                        </>
                       )}
                     </CardContent>
                   </Card>
