@@ -1139,7 +1139,9 @@ export function VTTProvider({ children }: { children: React.ReactNode }) {
   // The debounced save must not fire until this is set, otherwise it would
   // persist stale Supabase data back to localStorage before the user's
   // fresh localStorage state has been reconciled.
-  const supabaseReconciled = useRef(false);
+  // Uses useState (not useRef) so that flipping it triggers a re-render,
+  // which re-evaluates the debounced save effect for the current state.
+  const [supabaseReconciled, setSupabaseReconciled] = useState(false);
 
   // On mount: load from Supabase and reconcile with localStorage.
   // localStorage is always written synchronously (including on beforeunload),
@@ -1228,7 +1230,7 @@ export function VTTProvider({ children }: { children: React.ReactNode }) {
       } catch (e) {
         console.warn("Failed to load VTT session from Supabase:", e);
       } finally {
-        supabaseReconciled.current = true;
+        setSupabaseReconciled(true);
       }
     };
     loadAndMigrate();
@@ -1255,7 +1257,7 @@ export function VTTProvider({ children }: { children: React.ReactNode }) {
     // Don't save until Supabase reconciliation is complete. Otherwise we'd
     // persist stale Supabase data (or the initial localStorage load) back
     // before the timestamp comparison has decided which source is fresher.
-    if (!supabaseReconciled.current) return;
+    if (!supabaseReconciled) return;
     const timer = setTimeout(() => {
       try {
         const toSave = prepareForSave(stateRef.current);
@@ -1266,7 +1268,7 @@ export function VTTProvider({ children }: { children: React.ReactNode }) {
       }
     }, DEBOUNCE_SAVE_MS);
     return () => clearTimeout(timer);
-  }, [state]);
+  }, [state, supabaseReconciled]);
 
   // Save on page unload to prevent data loss
   useEffect(() => {
