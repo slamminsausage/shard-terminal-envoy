@@ -1018,6 +1018,29 @@ interface VTTContextValue {
 
 const VTTContext = createContext<VTTContextValue | null>(null);
 
+/** Prepare a VTT state snapshot for persistence (strip ephemeral data) */
+function prepareForSave(state: VTTState): VTTState {
+  const toSave = JSON.parse(JSON.stringify(state)) as VTTState;
+  // Strip blob URLs for video maps (they can't persist across reloads)
+  for (const m of toSave.maps) {
+    if (m.isVideo && m.imageDataUrl?.startsWith("blob:")) {
+      m.imageDataUrl = null;
+    }
+  }
+  // Strip blob URLs from custom audio tracks (they can't persist)
+  if (toSave.audio?.customLibraryTracks) {
+    toSave.audio.customLibraryTracks = toSave.audio.customLibraryTracks.filter(
+      t => t.url && !t.url.startsWith('blob:')
+    );
+  }
+  // Don't persist transient selection state
+  toSave.selectedTokenIds = [];
+  toSave.selectedStrokeIds = [];
+  toSave.selectedTextIds = [];
+  toSave.selectedNoteIds = [];
+  return toSave;
+}
+
 // ─── Provider ───────────────────────────────────────────────────────────────
 
 export function VTTProvider({ children }: { children: React.ReactNode }) {
@@ -1076,6 +1099,10 @@ export function VTTProvider({ children }: { children: React.ReactNode }) {
         if (!audio.playlists) audio.playlists = [];
         if (audio.activePlaylistId === undefined) audio.activePlaylistId = null;
         if (!audio.customLibraryTracks) audio.customLibraryTracks = [];
+        // Remove custom tracks with stale blob URLs (they can't survive a reload)
+        audio.customLibraryTracks = audio.customLibraryTracks.filter(
+          (t: any) => t.url && !t.url.startsWith('blob:')
+        );
         delete audio.crossfade;
         // Remove legacy VTT handouts from state (now in NotesContext)
         delete (parsed as any).handouts;
@@ -1131,7 +1158,24 @@ export function VTTProvider({ children }: { children: React.ReactNode }) {
               m.imageDataUrl = null;
             }
           }
+          // Strip stale blob URLs from custom audio tracks
+          if (dbState.audio?.customLibraryTracks) {
+            dbState.audio.customLibraryTracks = dbState.audio.customLibraryTracks.filter(
+              (t: any) => t.url && !t.url.startsWith('blob:')
+            );
+          }
           dispatch({ type: "LOAD_SESSION", payload: dbState });
+
+          // Migrate any remaining base64 map images to Supabase Storage
+          for (const m of dbState.maps || []) {
+            if (m.imageDataUrl && m.imageDataUrl.startsWith("data:image/")) {
+              const mimeType = m.imageDataUrl.split(";")[0].split(":")[1];
+              const url = await dbHelpers.uploadVTTMapImageFromDataURL(m.imageDataUrl, m.id, mimeType);
+              if (url) {
+                dispatch({ type: "SET_MAP_IMAGE", payload: { mapId: m.id, dataUrl: url, width: m.imageNaturalWidth || m.width, height: m.imageNaturalHeight || m.height } });
+              }
+            }
+          }
         } else {
           // No Supabase state yet — migrate any base64 images from the localStorage state
           const current = stateRef.current;
@@ -1157,21 +1201,8 @@ export function VTTProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const interval = setInterval(() => {
       try {
-        const toSave = JSON.parse(JSON.stringify(stateRef.current)) as VTTState;
-        // Strip blob URLs for video maps (they can't persist)
-        for (const m of toSave.maps) {
-          if (m.isVideo && m.imageDataUrl?.startsWith("blob:")) {
-            m.imageDataUrl = null;
-          }
-        }
-        // Don't persist transient selection state
-        toSave.selectedTokenIds = [];
-        toSave.selectedStrokeIds = [];
-        toSave.selectedTextIds = [];
-        toSave.selectedNoteIds = [];
-        // Primary: save to Supabase
+        const toSave = prepareForSave(stateRef.current);
         dbHelpers.saveVTTSession(toSave).catch(e => console.warn("VTT Supabase autosave failed:", e));
-        // Fallback: keep localStorage copy
         localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
       } catch (e) {
         console.warn("VTT autosave failed:", e);
@@ -1184,14 +1215,7 @@ export function VTTProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const handleUnload = () => {
       try {
-        const toSave = JSON.parse(JSON.stringify(stateRef.current)) as VTTState;
-        for (const m of toSave.maps) {
-          if (m.isVideo && m.imageDataUrl?.startsWith("blob:")) m.imageDataUrl = null;
-        }
-        toSave.selectedTokenIds = [];
-        toSave.selectedStrokeIds = [];
-        toSave.selectedTextIds = [];
-        toSave.selectedNoteIds = [];
+        const toSave = prepareForSave(stateRef.current);
         localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
         // Note: Supabase async save may not complete during unload,
         // but localStorage save is synchronous and will persist
@@ -1214,14 +1238,7 @@ export function VTTProvider({ children }: { children: React.ReactNode }) {
       // Save immediately so new maps persist without waiting for autosave
       setTimeout(() => {
         try {
-          const toSave = JSON.parse(JSON.stringify(stateRef.current)) as VTTState;
-          for (const m of toSave.maps) {
-            if (m.isVideo && m.imageDataUrl?.startsWith("blob:")) m.imageDataUrl = null;
-          }
-          toSave.selectedTokenIds = [];
-          toSave.selectedStrokeIds = [];
-          toSave.selectedTextIds = [];
-          toSave.selectedNoteIds = [];
+          const toSave = prepareForSave(stateRef.current);
           dbHelpers.saveVTTSession(toSave).catch(e => console.warn("VTT save failed:", e));
           localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
         } catch (e) {
@@ -1367,17 +1384,7 @@ export function VTTProvider({ children }: { children: React.ReactNode }) {
 
   const saveSession = useCallback(() => {
     try {
-      const toSave = JSON.parse(JSON.stringify(stateRef.current)) as VTTState;
-      for (const m of toSave.maps) {
-        if (m.isVideo && m.imageDataUrl?.startsWith("blob:")) {
-          m.imageDataUrl = null;
-        }
-      }
-      toSave.selectedTokenIds = [];
-      toSave.selectedStrokeIds = [];
-      toSave.selectedTextIds = [];
-      toSave.selectedNoteIds = [];
-      // Save to Supabase (primary) and localStorage (fallback)
+      const toSave = prepareForSave(stateRef.current);
       dbHelpers.saveVTTSession(toSave).catch(e => console.warn("VTT Supabase save failed:", e));
       localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
     } catch (e) {
