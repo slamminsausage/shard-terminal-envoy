@@ -42,6 +42,7 @@ import {
 
 const STORAGE_KEY = "vtt_session";
 const AUTOSAVE_INTERVAL = 120_000; // 2 minutes
+const DEBOUNCE_SAVE_MS = 2_000; // 2 seconds — debounced save after every state change
 
 // ─── Actions ────────────────────────────────────────────────────────────────
 
@@ -1210,6 +1211,28 @@ export function VTTProvider({ children }: { children: React.ReactNode }) {
     }, AUTOSAVE_INTERVAL);
     return () => clearInterval(interval);
   }, []);
+
+  // Debounced save on every state change — ensures deletions, edits, etc.
+  // persist within 2 seconds rather than waiting for the 2-minute autosave.
+  const initialLoadDone = useRef(false);
+  useEffect(() => {
+    // Skip the first render (initial state from localStorage) and the
+    // Supabase LOAD_SESSION dispatch to avoid saving stale data back.
+    if (!initialLoadDone.current) {
+      initialLoadDone.current = true;
+      return;
+    }
+    const timer = setTimeout(() => {
+      try {
+        const toSave = prepareForSave(stateRef.current);
+        dbHelpers.saveVTTSession(toSave).catch(e => console.warn("VTT debounced save failed:", e));
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
+      } catch (e) {
+        console.warn("VTT debounced save failed:", e);
+      }
+    }, DEBOUNCE_SAVE_MS);
+    return () => clearTimeout(timer);
+  }, [state]);
 
   // Save on page unload to prevent data loss
   useEffect(() => {
