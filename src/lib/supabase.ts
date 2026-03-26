@@ -3243,13 +3243,13 @@ export const dbHelpers = {
     }
   },
 
-  async loadVTTSession(): Promise<any | null> {
+  async loadVTTSession(): Promise<{ stateJson: any; updatedAt: string } | null> {
     if (supabaseDisabled) return null;
 
     try {
       const { data, error } = await supabase
         .from('vtt_sessions')
-        .select('state_json')
+        .select('state_json, updated_at')
         .eq('id', 'default')
         .maybeSingle();
 
@@ -3258,7 +3258,8 @@ export const dbHelpers = {
         return null;
       }
 
-      return data?.state_json || null;
+      if (!data?.state_json) return null;
+      return { stateJson: data.state_json, updatedAt: data.updated_at };
     } catch (error) {
       console.error('Failed to load VTT session:', error);
       return null;
