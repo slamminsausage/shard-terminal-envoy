@@ -1255,27 +1255,39 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
         }
       }
 
-      // World point under cursor before zoom
-      const worldX = map.scrollX + cursorScreenX / map.zoom;
-      const worldY = map.scrollY + cursorScreenY / map.zoom;
+      if (e.ctrlKey || e.metaKey) {
+        // Ctrl/Cmd + wheel = zoom (trackpad pinch also sends ctrlKey)
+        const worldX = map.scrollX + cursorScreenX / map.zoom;
+        const worldY = map.scrollY + cursorScreenY / map.zoom;
 
-      // Compute new zoom (exponential scaling for smooth feel)
-      const zoomFactor = 1 - e.deltaY * 0.001;
-      const newZoom = clamp(map.zoom * zoomFactor, MIN_ZOOM, MAX_ZOOM);
+        const zoomFactor = 1 - e.deltaY * 0.005;
+        const newZoom = clamp(map.zoom * zoomFactor, MIN_ZOOM, MAX_ZOOM);
 
-      // Adjust scroll so world point under cursor stays fixed
-      const newScrollX = worldX - cursorScreenX / newZoom;
-      const newScrollY = worldY - cursorScreenY / newZoom;
+        const newScrollX = worldX - cursorScreenX / newZoom;
+        const newScrollY = worldY - cursorScreenY / newZoom;
 
-      dispatch({
-        type: "SET_VIEWPORT",
-        payload: {
-          mapId: map.id,
-          scrollX: newScrollX,
-          scrollY: newScrollY,
-          zoom: newZoom,
-        },
-      });
+        dispatch({
+          type: "SET_VIEWPORT",
+          payload: {
+            mapId: map.id,
+            scrollX: newScrollX,
+            scrollY: newScrollY,
+            zoom: newZoom,
+          },
+        });
+      } else {
+        // Bare wheel = pan (two-finger scroll on trackpad)
+        const panSpeed = 1 / map.zoom;
+        dispatch({
+          type: "SET_VIEWPORT",
+          payload: {
+            mapId: map.id,
+            scrollX: map.scrollX + e.deltaX * panSpeed,
+            scrollY: map.scrollY + e.deltaY * panSpeed,
+            zoom: map.zoom,
+          },
+        });
+      }
     };
 
     canvas.addEventListener("wheel", handleWheel, { passive: false });

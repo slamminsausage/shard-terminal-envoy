@@ -278,24 +278,97 @@ export default function VTTPresenterView() {
 
       const currentZoom = localZoomRef.current ?? m.zoom;
       const currentScroll = localScrollRef.current ?? { x: m.scrollX, y: m.scrollY };
-      const delta = e.deltaY > 0 ? 0.9 : 1.1;
-      const newZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, currentZoom * delta));
 
-      // Zoom from viewport center
-      const rect = canvas.getBoundingClientRect();
-      const viewCenterX = rect.width / 2;
-      const viewCenterY = rect.height / 2;
-      const worldCenterX = viewCenterX / currentZoom + currentScroll.x;
-      const worldCenterY = viewCenterY / currentZoom + currentScroll.y;
-      const newScrollX = worldCenterX - viewCenterX / newZoom;
-      const newScrollY = worldCenterY - viewCenterY / newZoom;
+      if (e.ctrlKey || e.metaKey) {
+        // Ctrl/Cmd + wheel = zoom (pinch gesture on trackpad also sends ctrlKey)
+        const zoomFactor = 1 - e.deltaY * 0.005;
+        const newZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, currentZoom * zoomFactor));
 
-      setLocalZoom(newZoom);
-      setLocalScroll({ x: newScrollX, y: newScrollY });
+        const rect = canvas.getBoundingClientRect();
+        const cursorX = e.clientX - rect.left;
+        const cursorY = e.clientY - rect.top;
+        const worldX = cursorX / currentZoom + currentScroll.x;
+        const worldY = cursorY / currentZoom + currentScroll.y;
+        const newScrollX = worldX - cursorX / newZoom;
+        const newScrollY = worldY - cursorY / newZoom;
+
+        setLocalZoom(newZoom);
+        setLocalScroll({ x: newScrollX, y: newScrollY });
+      } else {
+        // Bare wheel = pan (two-finger scroll on trackpad)
+        const panSpeed = 1 / currentZoom;
+        setLocalScroll({
+          x: currentScroll.x + e.deltaX * panSpeed,
+          y: currentScroll.y + e.deltaY * panSpeed,
+        });
+      }
     };
 
     canvas.addEventListener("wheel", handleWheel, { passive: false });
     return () => canvas.removeEventListener("wheel", handleWheel);
+  }, []);
+
+  // Touch gestures (pinch-zoom + one-finger pan)
+  const touchStartDistRef = useRef<number | null>(null);
+  const touchStartZoomRef = useRef<number>(1);
+  const touchPanStartRef = useRef<Point | null>(null);
+  const touchScrollStartRef = useRef<Point>({ x: 0, y: 0 });
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const getTouchDist = (t: TouchList) => {
+      if (t.length < 2) return 0;
+      const dx = t[1].clientX - t[0].clientX;
+      const dy = t[1].clientY - t[0].clientY;
+      return Math.sqrt(dx * dx + dy * dy);
+    };
+
+    const onTouchStart = (e: TouchEvent) => {
+      if (e.touches.length === 2) {
+        e.preventDefault();
+        touchStartDistRef.current = getTouchDist(e.touches);
+        touchStartZoomRef.current = localZoomRef.current ?? mapRef.current?.zoom ?? 1;
+      } else if (e.touches.length === 1) {
+        touchPanStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+        const m = mapRef.current;
+        touchScrollStartRef.current = localScrollRef.current ?? { x: m?.scrollX ?? 0, y: m?.scrollY ?? 0 };
+      }
+    };
+
+    const onTouchMove = (e: TouchEvent) => {
+      if (e.touches.length === 2 && touchStartDistRef.current) {
+        e.preventDefault();
+        const dist = getTouchDist(e.touches);
+        const ratio = dist / touchStartDistRef.current;
+        const newZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, touchStartZoomRef.current * ratio));
+        setLocalZoom(newZoom);
+      } else if (e.touches.length === 1 && touchPanStartRef.current) {
+        e.preventDefault();
+        const currentZoom = localZoomRef.current ?? mapRef.current?.zoom ?? 1;
+        const dx = (e.touches[0].clientX - touchPanStartRef.current.x) / currentZoom;
+        const dy = (e.touches[0].clientY - touchPanStartRef.current.y) / currentZoom;
+        setLocalScroll({
+          x: touchScrollStartRef.current.x - dx,
+          y: touchScrollStartRef.current.y - dy,
+        });
+      }
+    };
+
+    const onTouchEnd = (e: TouchEvent) => {
+      if (e.touches.length < 2) touchStartDistRef.current = null;
+      if (e.touches.length === 0) touchPanStartRef.current = null;
+    };
+
+    canvas.addEventListener("touchstart", onTouchStart, { passive: false });
+    canvas.addEventListener("touchmove", onTouchMove, { passive: false });
+    canvas.addEventListener("touchend", onTouchEnd);
+    return () => {
+      canvas.removeEventListener("touchstart", onTouchStart);
+      canvas.removeEventListener("touchmove", onTouchMove);
+      canvas.removeEventListener("touchend", onTouchEnd);
+    };
   }, []);
 
   // Pan handlers — only pan when canPan is true

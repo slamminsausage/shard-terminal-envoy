@@ -1700,6 +1700,26 @@ export const dbHelpers = {
     }
   },
 
+  async updateSessionLogEntry(entryId: string, updates: Record<string, any>) {
+    try {
+      const { data, error } = await supabase
+        .from('session_log_entries')
+        .update(updates)
+        .eq('id', entryId)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Database error:', error);
+        throw error;
+      }
+      return data;
+    } catch (error) {
+      console.error('Failed to update session log entry:', error);
+      throw error;
+    }
+  },
+
   async deleteSessionLogEntry(entryId: string) {
     try {
       const { error } = await supabase
