@@ -16,7 +16,9 @@ import { DamageCalculator } from "./DamageCalculator";
 import { AddShipToCombatModal } from "./AddShipToCombatModal";
 import { CombatSidebar } from "./combat/CombatSidebar";
 import { CombatReadout } from "./combat/CombatReadout";
-import type { BridgeMessage, Contact, NewContact } from "@/lib/bridge/bridgeTypes";
+import { AssetLibrary } from "./AssetLibrary";
+import type { BridgeMessage, Contact, NewContact, AssetLibraryItem } from "@/lib/bridge/bridgeTypes";
+import { Images } from "lucide-react";
 import { toast } from "sonner";
 
 function BridgeConsoleInner() {
@@ -37,6 +39,7 @@ function BridgeConsoleInner() {
     setPlayerShip,
     isOnline,
     combat,
+    assets,
   } = useBridge();
 
   // Navigation data from Jump Planner
@@ -54,6 +57,8 @@ function BridgeConsoleInner() {
   const [combatMode, setCombatMode] = useState(false);
   const [showAddShipToCombat, setShowAddShipToCombat] = useState(false);
   const [selectedVehicleId, setSelectedVehicleId] = useState<string>("");
+  const [showAssetLibrary, setShowAssetLibrary] = useState(false);
+  const [pendingAsset, setPendingAsset] = useState<AssetLibraryItem | null>(null);
 
   const playerShip = contacts.find(c => c.isPlayerShip);
 
@@ -139,6 +144,22 @@ function BridgeConsoleInner() {
       setCombatMode(true);
     }
   };
+
+  // Asset handlers
+  const handleUploadAsset = useCallback(async (file: File) => {
+    const item = await assets.uploadAsset(file);
+    if (item) toast.success(`Asset "${item.name}" uploaded`);
+    else toast.error("Upload failed");
+  }, [assets]);
+
+  const handleSelectAsset = useCallback((item: AssetLibraryItem) => {
+    setPendingAsset(prev => prev?.storagePath === item.storagePath ? null : item);
+  }, []);
+
+  const handlePlaceAsset = useCallback(async (item: AssetLibraryItem, svgX: number, svgY: number) => {
+    await assets.placeAsset(item, svgX - 40, svgY - 40, 80, 80);
+    setPendingAsset(null);
+  }, [assets]);
 
   const { ref: consoleRef, shake } = useScreenShake<HTMLDivElement>();
   const [hullBreachFlash, setHullBreachFlash] = useState(false);
@@ -291,9 +312,26 @@ function BridgeConsoleInner() {
               ))}
           </select>
         </div>
-        <span className={`text-[0.65rem] md:text-xs font-mono px-2 md:px-3 py-1 rounded border ${isOnline ? "border-terminal-primary-mid text-terminal-primary-light" : "border-terminal-danger-alt text-terminal-danger-light"}`}>
-          {isOnline ? "LIVE (Supabase)" : "OFFLINE (local fallback)"}
-        </span>
+        <div className="flex items-center gap-2">
+          {isGM && (
+            <button
+              onClick={() => { setShowAssetLibrary(v => !v); if (showAssetLibrary) setPendingAsset(null); }}
+              className={`flex items-center gap-1.5 text-[0.65rem] md:text-xs font-mono px-2 md:px-3 py-1 rounded border transition-colors ${
+                showAssetLibrary
+                  ? "border-terminal-secondary text-terminal-secondary bg-terminal-secondary/10"
+                  : "border-terminal-bg-border text-terminal-text-dimmer hover:border-terminal-primary/40"
+              }`}
+              title="Toggle asset library"
+            >
+              <Images className="h-3 w-3" />
+              ASSETS
+              {pendingAsset && <span className="ml-1 animate-pulse">●</span>}
+            </button>
+          )}
+          <span className={`text-[0.65rem] md:text-xs font-mono px-2 md:px-3 py-1 rounded border ${isOnline ? "border-terminal-primary-mid text-terminal-primary-light" : "border-terminal-danger-alt text-terminal-danger-light"}`}>
+            {isOnline ? "LIVE (Supabase)" : "OFFLINE (local fallback)"}
+          </span>
+        </div>
       </div>
 
       {/* Main Content */}
@@ -315,7 +353,26 @@ function BridgeConsoleInner() {
             gridRadius={combatMode ? 12 : undefined}
             movementRange={movementRange}
             fireTrails={fireTrails}
+            mapAssets={assets.mapAssets}
+            pendingAsset={pendingAsset}
+            isGM={isGM}
+            onPlaceAsset={handlePlaceAsset}
+            onUpdateAsset={assets.updateMapAsset}
+            onDeleteAsset={assets.deleteMapAsset}
           />
+
+          {/* Asset Library Panel */}
+          {isGM && showAssetLibrary && (
+            <AssetLibrary
+              library={assets.library}
+              uploading={assets.uploading}
+              pendingAsset={pendingAsset}
+              onUpload={handleUploadAsset}
+              onSelect={handleSelectAsset}
+              onDeleteLibraryItem={assets.deleteLibraryAsset}
+              onClose={() => { setShowAssetLibrary(false); setPendingAsset(null); }}
+            />
+          )}
 
           {/* Navigation Info Bar - hide during active combat to give grid more space */}
           {!combat.isActive && (

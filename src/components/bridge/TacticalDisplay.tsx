@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
-import type { Contact } from "@/lib/bridge/bridgeTypes";
+import type { Contact, MapAsset, AssetLibraryItem } from "@/lib/bridge/bridgeTypes";
 import type { CombatPhase } from "@/lib/bridge/shipCombatRules";
 
 export interface FireTrail {
@@ -16,7 +16,7 @@ interface DestroyEffect {
 }
 import { hexDistance, hexDistanceToRangeBand, RANGE_BAND_HEX_COLORS, getHexesInRange } from "@/lib/bridge/hexCombatUtils";
 import { RANGE_BAND_LABELS } from "@/lib/bridge/shipCombatRules";
-import { ZoomIn, ZoomOut, Maximize2, LocateFixed } from "lucide-react";
+import { ZoomIn, ZoomOut, Maximize2, LocateFixed, Trash2 } from "lucide-react";
 
 interface TacticalDisplayProps {
   contacts: Contact[];
@@ -28,8 +28,15 @@ interface TacticalDisplayProps {
   combatActive?: boolean;
   combatPhase?: CombatPhase;
   gridRadius?: number;
-  movementRange?: number; // max hexes the selected ship can move this phase
+  movementRange?: number;
   fireTrails?: FireTrail[];
+  // Asset system props
+  mapAssets?: MapAsset[];
+  pendingAsset?: AssetLibraryItem | null;
+  isGM?: boolean;
+  onPlaceAsset?: (item: AssetLibraryItem, svgX: number, svgY: number) => void;
+  onUpdateAsset?: (id: string, updates: Partial<Pick<MapAsset, "svgX" | "svgY" | "width" | "height" | "rotation">>) => void;
+  onDeleteAsset?: (id: string) => void;
 }
 
 export function TacticalDisplay({
@@ -43,8 +50,45 @@ export function TacticalDisplay({
   gridRadius: gridRadiusProp,
   movementRange,
   fireTrails = [],
+  mapAssets = [],
+  pendingAsset = null,
+  isGM = false,
+  onPlaceAsset,
+  onUpdateAsset,
+  onDeleteAsset,
 }: TacticalDisplayProps) {
   const [hoveredHex, setHoveredHex] = useState<{ q: number; r: number } | null>(null);
+
+  // ── Map asset interaction state ──────────────────────────────────────
+  const svgRef = useRef<SVGSVGElement>(null);
+  const [selectedAssetId, setSelectedAssetId] = useState<string | null>(null);
+  const assetDragRef = useRef<{
+    assetId: string;
+    startSvgX: number; startSvgY: number;
+    startClientX: number; startClientY: number;
+  } | null>(null);
+  const assetResizeRef = useRef<{
+    assetId: string;
+    corner: "TL" | "TR" | "BL" | "BR";
+    origX: number; origY: number; origW: number; origH: number;
+    startClientX: number; startClientY: number;
+  } | null>(null);
+
+  // Convert client coords to SVG coordinate space
+  const clientToSvg = useCallback((clientX: number, clientY: number) => {
+    if (!svgRef.current) return { x: 0, y: 0 };
+    try {
+      const pt = svgRef.current.createSVGPoint();
+      pt.x = clientX;
+      pt.y = clientY;
+      const m = svgRef.current.getScreenCTM();
+      if (!m) return { x: 0, y: 0 };
+      const svgPt = pt.matrixTransform(m.inverse());
+      return { x: svgPt.x, y: svgPt.y };
+    } catch {
+      return { x: 0, y: 0 };
+    }
+  }, []);
 
   // ── Destruction effects: detect when contacts disappear ─────────────
   const prevContactsRef = useRef<Contact[]>([]);
@@ -129,6 +173,51 @@ export function TacticalDisplay({
   }, [panOffset]);
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    // Asset drag
+    if (assetDragRef.current && onUpdateAsset) {
+      e.preventDefault();
+      const { assetId, startSvgX, startSvgY, startClientX, startClientY } = assetDragRef.current;
+      if (!svgContainerRef.current) return;
+      const rect = svgContainerRef.current.getBoundingClientRect();
+      const svgPerPixel = visibleSize / rect.width;
+      const dx = (e.clientX - startClientX) * svgPerPixel;
+      const dy = (e.clientY - startClientY) * svgPerPixel;
+      onUpdateAsset(assetId, { svgX: startSvgX + dx, svgY: startSvgY + dy });
+      return;
+    }
+
+    // Asset resize
+    if (assetResizeRef.current && onUpdateAsset) {
+      e.preventDefault();
+      const { assetId, corner, origX, origY, origW, origH, startClientX, startClientY } = assetResizeRef.current;
+      if (!svgContainerRef.current) return;
+      const rect = svgContainerRef.current.getBoundingClientRect();
+      const svgPerPixel = visibleSize / rect.width;
+      const dx = (e.clientX - startClientX) * svgPerPixel;
+      const dy = (e.clientY - startClientY) * svgPerPixel;
+      const MIN = 20;
+      let newX = origX, newY = origY, newW = origW, newH = origH;
+      if (corner === "BR") {
+        newW = Math.max(MIN, origW + dx);
+        newH = Math.max(MIN, origH + dy);
+      } else if (corner === "TR") {
+        newW = Math.max(MIN, origW + dx);
+        const proposedH = origH - dy;
+        if (proposedH >= MIN) { newH = proposedH; newY = origY + dy; }
+      } else if (corner === "BL") {
+        const proposedW = origW - dx;
+        if (proposedW >= MIN) { newW = proposedW; newX = origX + dx; }
+        newH = Math.max(MIN, origH + dy);
+      } else if (corner === "TL") {
+        const proposedW = origW - dx;
+        if (proposedW >= MIN) { newW = proposedW; newX = origX + dx; }
+        const proposedH = origH - dy;
+        if (proposedH >= MIN) { newH = proposedH; newY = origY + dy; }
+      }
+      onUpdateAsset(assetId, { svgX: newX, svgY: newY, width: newW, height: newH });
+      return;
+    }
+
     if (!isDragging.current || !dragStart.current || !svgContainerRef.current) return;
     e.preventDefault();
     const rect = svgContainerRef.current.getBoundingClientRect();
@@ -137,9 +226,11 @@ export function TacticalDisplay({
     const dx = (e.clientX - dragStart.current.x) * svgPerPixel;
     const dy = (e.clientY - dragStart.current.y) * svgPerPixel;
     setPanOffset({ x: dragStart.current.panX - dx, y: dragStart.current.panY - dy });
-  }, [visibleSize]);
+  }, [visibleSize, onUpdateAsset]);
 
   const handleMouseUp = useCallback(() => {
+    assetDragRef.current = null;
+    assetResizeRef.current = null;
     isDragging.current = false;
     dragStart.current = null;
   }, []);
@@ -245,13 +336,22 @@ export function TacticalDisplay({
     return points.join(" ");
   };
 
-  const handleHexClick = (q: number, r: number) => {
+  const handleHexClick = (q: number, r: number, e: React.MouseEvent) => {
+    // If a pending asset is armed, place it here
+    if (pendingAsset && isGM && onPlaceAsset) {
+      const { x, y } = hexToPixel(q, r);
+      onPlaceAsset(pendingAsset, x, y);
+      return;
+    }
+    // Deselect any selected asset
+    if (selectedAssetId) {
+      setSelectedAssetId(null);
+      return;
+    }
     if (!selectedContact) return;
     if (combatActive && combatPhase === 'maneuver') {
-      // Only allow clicks within the movement-allocated range
       if (!validMoveHexes || !validMoveHexes.has(`${q},${r}`)) return;
     } else if (combatActive && combatPhase && combatPhase !== 'setup') {
-      // No repositioning during attack / actions / end phases
       return;
     }
     onShipMove(selectedContact.id, q, r);
@@ -426,9 +526,11 @@ export function TacticalDisplay({
         onMouseLeave={handleMouseUp}
       >
         <svg
+          ref={svgRef}
           viewBox={`${vbX} ${vbY} ${visibleSize} ${visibleSize}`}
           className="w-full h-full"
           preserveAspectRatio="xMidYMid meet"
+          style={pendingAsset ? { cursor: "crosshair" } : undefined}
         >
           {/* Range band rings */}
           {combatActive && refShipPos ? (
@@ -520,7 +622,7 @@ export function TacticalDisplay({
                   className={`${isClickable ? 'cursor-pointer' : 'cursor-not-allowed'} transition-all duration-150`}
                   onMouseEnter={() => setHoveredHex({ q, r })}
                   onMouseLeave={() => setHoveredHex(null)}
-                  onClick={() => handleHexClick(q, r)}
+                  onClick={(e) => handleHexClick(q, r, e)}
                 />
               );
             })}
@@ -618,6 +720,117 @@ export function TacticalDisplay({
                 </g>
               );
             })}
+
+          {/* ── Map assets (scatter terrain, bodies, props) ────── */}
+          {mapAssets.map(asset => {
+            const isSelected = isGM && selectedAssetId === asset.id;
+            const hw = asset.width / 2;
+            const hh = asset.height / 2;
+            // Corner handle positions (relative to asset top-left)
+            const handles: Array<{ corner: "TL"|"TR"|"BL"|"BR"; cx: number; cy: number }> = [
+              { corner: "TL", cx: asset.svgX,              cy: asset.svgY },
+              { corner: "TR", cx: asset.svgX + asset.width, cy: asset.svgY },
+              { corner: "BL", cx: asset.svgX,              cy: asset.svgY + asset.height },
+              { corner: "BR", cx: asset.svgX + asset.width, cy: asset.svgY + asset.height },
+            ];
+            return (
+              <g
+                key={asset.id}
+                style={{ cursor: isGM ? (isSelected ? "move" : "pointer") : "default" }}
+                onMouseDown={isGM ? (e) => {
+                  if (e.button !== 0) return;
+                  e.stopPropagation();
+                  setSelectedAssetId(asset.id);
+                  assetDragRef.current = {
+                    assetId: asset.id,
+                    startSvgX: asset.svgX,
+                    startSvgY: asset.svgY,
+                    startClientX: e.clientX,
+                    startClientY: e.clientY,
+                  };
+                } : undefined}
+              >
+                <image
+                  href={asset.url}
+                  x={asset.svgX}
+                  y={asset.svgY}
+                  width={asset.width}
+                  height={asset.height}
+                  preserveAspectRatio="none"
+                  style={{ opacity: 0.9 }}
+                />
+                {/* Selection border */}
+                {isSelected && (
+                  <rect
+                    x={asset.svgX}
+                    y={asset.svgY}
+                    width={asset.width}
+                    height={asset.height}
+                    fill="none"
+                    stroke="var(--secondary)"
+                    strokeWidth="1.5"
+                    strokeDasharray="4 2"
+                  />
+                )}
+                {/* Corner resize handles */}
+                {isSelected && handles.map(h => (
+                  <rect
+                    key={h.corner}
+                    x={h.cx - 5}
+                    y={h.cy - 5}
+                    width={10}
+                    height={10}
+                    fill="var(--secondary)"
+                    stroke="var(--bg-dark)"
+                    strokeWidth="1"
+                    style={{ cursor: "nwse-resize" }}
+                    onMouseDown={(e) => {
+                      e.stopPropagation();
+                      assetResizeRef.current = {
+                        assetId: asset.id,
+                        corner: h.corner,
+                        origX: asset.svgX,
+                        origY: asset.svgY,
+                        origW: asset.width,
+                        origH: asset.height,
+                        startClientX: e.clientX,
+                        startClientY: e.clientY,
+                      };
+                    }}
+                  />
+                ))}
+                {/* Delete button */}
+                {isSelected && onDeleteAsset && (
+                  <g
+                    style={{ cursor: "pointer" }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDeleteAsset(asset.id);
+                      setSelectedAssetId(null);
+                    }}
+                  >
+                    <circle
+                      cx={asset.svgX + asset.width}
+                      cy={asset.svgY}
+                      r={8}
+                      fill="var(--danger-alt)"
+                      stroke="var(--bg-dark)"
+                      strokeWidth="1"
+                    />
+                    <text
+                      x={asset.svgX + asset.width}
+                      y={asset.svgY + 4}
+                      fill="white"
+                      fontSize="10"
+                      textAnchor="middle"
+                      fontFamily="monospace"
+                      style={{ pointerEvents: "none", userSelect: "none" }}
+                    >×</text>
+                  </g>
+                )}
+              </g>
+            );
+          })}
 
           {/* ── Weapon fire trails ─────────────────────────────── */}
           {fireTrails.map(trail => {

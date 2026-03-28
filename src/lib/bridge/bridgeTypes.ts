@@ -140,3 +140,25 @@ export interface BridgeScan {
   notes?: string | null;
   createdAt: string;
 }
+
+// VTT asset system
+export interface AssetLibraryItem {
+  storagePath: string;
+  name: string;
+  url: string;
+}
+
+export interface MapAsset {
+  id: string;
+  bridgeStateId: string;
+  name: string;
+  storagePath: string;
+  url: string;
+  svgX: number;
+  svgY: number;
+  width: number;
+  height: number;
+  rotation: number;
+  zIndex: number;
+  createdAt: string;
+}
