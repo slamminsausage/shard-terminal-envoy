@@ -16,6 +16,7 @@ import {
   Image,
   Dice5,
   Settings,
+  Images,
 } from "lucide-react";
 import { useVTT } from "@/contexts/VTTContext";
 import type { VTTSidebarPanel } from "@/types/vtt";
@@ -35,6 +36,7 @@ const topPanels: PanelDef[] = [
   { panel: "fog", icon: <Eye size={15} />, label: "FOG" },
   { panel: "lighting", icon: <Lightbulb size={15} />, label: "LIGHT" },
   { panel: "aoe", icon: <Target size={15} />, label: "AOE" },
+  { panel: "assets", icon: <Images size={15} />, label: "ASSETS" },
 ];
 
 const bottomPanels: PanelDef[] = [

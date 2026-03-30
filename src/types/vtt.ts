@@ -254,6 +254,7 @@ export interface VTTMap {
   walls: Wall[];
   lights: LightSource[];
   aoeTemplates: AoETemplate[];
+  props: SceneProp[];
   grid: GridConfig;
   // Viewport state
   scrollX: number;
@@ -327,6 +328,23 @@ export interface AudioState {
   activePlaylistId: string | null;
   /** User-uploaded tracks added to the sound library */
   customLibraryTracks: CustomLibraryTrack[];
+}
+
+// --- Scene Props (placed image assets on the map) ---
+
+export interface SceneProp {
+  id: string;
+  name: string;
+  imageUrl: string;  // Public URL or data URL
+  x: number;        // World-space center X
+  y: number;        // World-space center Y
+  width: number;    // World-space width
+  height: number;   // World-space height
+  rotation: number; // Degrees
+  opacity: number;  // 0–1
+  layer: LayerIndex;
+  locked: boolean;
+  visible: boolean;
 }
 
 // --- AoE Templates ---
@@ -410,6 +428,9 @@ export type VTTActionType =
   | "light-remove"
   | "aoe-add"
   | "aoe-remove"
+  | "prop-add"
+  | "prop-remove"
+  | "prop-update"
   | "fog-update";
 
 export interface VTTHistoryEntry {
@@ -466,6 +487,11 @@ export interface VTTState {
   selectedNoteIds: string[];
   selectedAoEIds: string[];
   selectedLightIds: string[];
+  selectedPropIds: string[];
+
+  // Pending prop placement (armed for placing on canvas)
+  pendingPropImageUrl: string | null;
+  pendingPropName: string;
 
   // Fog brush settings
   fogBrushSize: number;
@@ -510,6 +536,7 @@ export type VTTSidebarPanel =
   | "handouts"
   | "aoe"
   | "dice"
+  | "assets"
   | "settings";
 
 // --- Default Factories ---
@@ -589,6 +616,7 @@ export function createDefaultMap(name: string = "New Map"): VTTMap {
     walls: [],
     lights: [],
     aoeTemplates: [],
+    props: [],
     grid: createDefaultGrid(),
     scrollX: 0,
     scrollY: 0,
@@ -626,6 +654,9 @@ export function createDefaultVTTState(): VTTState {
     selectedNoteIds: [],
     selectedAoEIds: [],
     selectedLightIds: [],
+    selectedPropIds: [],
+    pendingPropImageUrl: null,
+    pendingPropName: "",
     fogBrushSize: 40,
     fogBrushMode: "reveal",
     layerStates: {

@@ -1,4 +1,4 @@
-import type { BoundingBox, Token, Stroke, TextOverlay, MapNote } from "@/types/vtt";
+import type { BoundingBox, Token, Stroke, TextOverlay, MapNote, SceneProp } from "@/types/vtt";
 
 /** Compute bounding box for a token */
 export function getTokenBoundingBox(token: Token, gridSize: number): BoundingBox {
@@ -77,6 +77,17 @@ export function getNoteBoundingBox(note: MapNote): BoundingBox {
     width: size,
     height: size,
     rotation: note.rotation ?? 0,
+  };
+}
+
+/** Compute bounding box for a scene prop */
+export function getPropBoundingBox(prop: SceneProp): BoundingBox {
+  return {
+    cx: prop.x,
+    cy: prop.y,
+    width: prop.width,
+    height: prop.height,
+    rotation: prop.rotation,
   };
 }
 
