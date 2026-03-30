@@ -121,6 +121,12 @@ type VTTAction =
   | { type: "REMOVE_AOE"; payload: string }
   | { type: "CLEAR_AOE" }
   | { type: "UPDATE_AOE"; payload: { aoeId: string; updates: Partial<import("@/types/vtt").AoETemplate> } }
+  // Scene Props
+  | { type: "ADD_PROP"; payload: { mapId: string; prop: import("@/types/vtt").SceneProp } }
+  | { type: "REMOVE_PROP"; payload: { mapId: string; propId: string } }
+  | { type: "UPDATE_PROP"; payload: { mapId: string; propId: string; updates: Partial<import("@/types/vtt").SceneProp> } }
+  | { type: "SET_PROP_SELECTION"; payload: string[] }
+  | { type: "SET_PENDING_PROP"; payload: { imageUrl: string; name: string } | null }
   // Fog Brush
   | { type: "SET_FOG_BRUSH_SIZE"; payload: number }
   | { type: "SET_FOG_BRUSH_MODE"; payload: "reveal" | "conceal" }
@@ -743,6 +749,33 @@ function vttReducer(state: VTTState, action: VTTAction): VTTState {
           a.id === action.payload.aoeId ? { ...a, ...action.payload.updates } : a
         ),
       }));
+
+    // Scene Props
+    case "ADD_PROP":
+      return updateMapInState(state, action.payload.mapId, (m) => ({
+        ...m,
+        props: [...(m.props || []), action.payload.prop],
+      }));
+    case "REMOVE_PROP":
+      return updateMapInState(state, action.payload.mapId, (m) => ({
+        ...m,
+        props: (m.props || []).filter((p) => p.id !== action.payload.propId),
+      }));
+    case "UPDATE_PROP":
+      return updateMapInState(state, action.payload.mapId, (m) => ({
+        ...m,
+        props: (m.props || []).map((p) =>
+          p.id === action.payload.propId ? { ...p, ...action.payload.updates } : p
+        ),
+      }));
+    case "SET_PROP_SELECTION":
+      return { ...state, selectedPropIds: action.payload };
+    case "SET_PENDING_PROP":
+      return {
+        ...state,
+        pendingPropImageUrl: action.payload?.imageUrl ?? null,
+        pendingPropName: action.payload?.name ?? "",
+      };
 
     // Fog Brush
     case "SET_FOG_BRUSH_SIZE":

@@ -16,6 +16,7 @@ import VTTScenePresets from "./VTTScenePresets";
 import VTTAoEPanel from "./VTTAoEPanel";
 import VTTLayersPanel from "./VTTLayersPanel";
 import VTTNotesPanel from "./VTTNotesPanel";
+import VTTAssetsPanel from "./VTTAssetsPanel";
 import { X } from "lucide-react";
 
 export default function VTTSidebar() {
@@ -40,6 +41,7 @@ export default function VTTSidebar() {
     notes: "Campaign Notes",
     aoe: "AoE Templates",
     dice: "Dice Roller",
+    assets: "Asset Library",
     settings: "Settings",
   };
 
@@ -76,6 +78,7 @@ export default function VTTSidebar() {
         {state.sidebarPanel === "fog" && <VTTFogPanel />}
         {state.sidebarPanel === "lighting" && <VTTLightingPanel />}
         {state.sidebarPanel === "dice" && <VTTDiceRoller />}
+        {state.sidebarPanel === "assets" && <VTTAssetsPanel />}
         {state.sidebarPanel === "settings" && <VTTSettingsPanel />}
       </div>
     </div>
