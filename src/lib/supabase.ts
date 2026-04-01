@@ -59,6 +59,28 @@ const addLocalUnlockedTerminal = (terminalCode: string) => {
   return updated;
 };
 
+// Completed actions localStorage helpers
+const LOCAL_COMPLETED_ACTIONS_KEY = 'dev_completed_actions';
+
+const getLocalCompletedActions = (): string[] => {
+  try {
+    const raw = localStorage.getItem(LOCAL_COMPLETED_ACTIONS_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+};
+
+const addLocalCompletedAction = (actionId: string) => {
+  const existing = getLocalCompletedActions();
+  if (existing.includes(actionId)) return existing;
+  const updated = [...existing, actionId];
+  localStorage.setItem(LOCAL_COMPLETED_ACTIONS_KEY, JSON.stringify(updated));
+  return updated;
+};
+
 // World notes localStorage helpers
 const getLocalWorldNotes = (): WorldNote[] => {
   try {
@@ -618,6 +640,16 @@ export const dbHelpers = {
       console.error('Failed to add unlocked terminal:', error)
       throw error
     }
+  },
+
+  // Completed Actions (localStorage-only for now, Supabase table can be added later)
+  async getCompletedActions(): Promise<string[]> {
+    return getLocalCompletedActions();
+  },
+
+  async addCompletedAction(actionId: string): Promise<boolean> {
+    addLocalCompletedAction(actionId);
+    return true;
   },
 
   // World Notes

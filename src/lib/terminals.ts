@@ -36,7 +36,8 @@ export const TERMINALS: TerminalDefinition[] = [
   { code: '01-1485-10-4-89-40', name: 'Deep Core Security', logPath: '/logs/01-1485-10-4-89-40.json', requiresSpecialHandler: true },
   { code: 'hg_xii_bridge', name: 'HG-Borite-XII Bridge Command', logPath: '/logs/hg-xii-bridge.json' },
   { code: 'hg_xii_general', name: 'HG-Borite-XII General Access', logPath: '/logs/hg-xii-general.json' },
-  { code: 'hg_xii_krrsh', name: 'HG-Borite-XII — Krrsh Personal Terminal', logPath: '/logs/hg-xii-krrsh.json', requiresRoll: 10 }
+  { code: 'hg_xii_krrsh', name: 'HG-Borite-XII — Krrsh Personal Terminal', logPath: '/logs/hg-xii-krrsh.json', requiresRoll: 10 },
+  { code: 'seqtest', name: 'Action Sequence Test Terminal', logPath: '/logs/example-sequences.json' }
 ];
 
 export const TERMINAL_MAP = new Map(TERMINALS.map(terminal => [terminal.code.toLowerCase(), terminal]));

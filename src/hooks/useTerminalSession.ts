@@ -14,6 +14,7 @@
 
 import { useState, useCallback, useRef } from 'react';
 import { TerminalDefinition } from '@/lib/terminals';
+import type { ActionSequence } from '@/types/terminalAction';
 
 type ViewType = 'loading' | 'init' | 'connecting' | 'terminal' | 'log';
 
@@ -39,6 +40,8 @@ interface LogEntry {
     skill?: string;
   };
   logs?: any[];
+  type?: string;
+  action_sequence?: ActionSequence;
 }
 
 interface TerminalSessionState {
@@ -81,6 +84,10 @@ interface TerminalSessionState {
   // Async state for logs
   logsLoading: boolean;
   logsError: string | null;
+
+  // Action sequences
+  activeSequence: ActionSequence | null;
+  completedActions: string[];
 
   // Command history (access codes)
   commandHistory: string[];
@@ -129,6 +136,11 @@ interface TerminalSessionActions {
   setLogsLoading: (loading: boolean) => void;
   setLogsError: (message: string | null) => void;
 
+  // Action sequences
+  setActiveSequence: (sequence: ActionSequence | null) => void;
+  setCompletedActions: (actions: string[]) => void;
+  addCompletedAction: (actionId: string) => void;
+
   // Command history
   addCommandToHistory: (command: string) => void;
   recallHistory: (direction: 'back' | 'forward') => string;
@@ -166,6 +178,8 @@ const initialState: TerminalSessionState = {
   terminalsError: null,
   logsLoading: false,
   logsError: null,
+  activeSequence: null,
+  completedActions: [],
   commandHistory: [],
   historyIndex: -1,
 };
@@ -305,6 +319,24 @@ export function useTerminalSession(): TerminalSessionState & TerminalSessionActi
     setState((prev) => ({ ...prev, logsError: message }));
   }, []);
 
+  // Action sequences
+  const setActiveSequence = useCallback((sequence: ActionSequence | null) => {
+    setState((prev) => ({ ...prev, activeSequence: sequence }));
+  }, []);
+
+  const setCompletedActions = useCallback((actions: string[]) => {
+    setState((prev) => ({ ...prev, completedActions: actions }));
+  }, []);
+
+  const addCompletedAction = useCallback((actionId: string) => {
+    setState((prev) => ({
+      ...prev,
+      completedActions: prev.completedActions.includes(actionId)
+        ? prev.completedActions
+        : [...prev.completedActions, actionId],
+    }));
+  }, []);
+
   const addCommandToHistory = useCallback((command: string) => {
     const trimmed = command.trim();
     if (!trimmed) return;
@@ -355,6 +387,7 @@ export function useTerminalSession(): TerminalSessionState & TerminalSessionActi
       passwordAttempts: 0,
       terminalPasswordRequired: false,
       terminalPasswordAttempts: 0,
+      activeSequence: null,
     }));
   }, []);
 
@@ -370,6 +403,7 @@ export function useTerminalSession(): TerminalSessionState & TerminalSessionActi
       specialRollCheck: null,
       requiresPassword: false,
       passwordAttempts: 0,
+      activeSequence: null,
     }));
   }, []);
 
@@ -404,6 +438,9 @@ export function useTerminalSession(): TerminalSessionState & TerminalSessionActi
     setTerminalsError,
     setLogsLoading,
     setLogsError,
+    setActiveSequence,
+    setCompletedActions,
+    addCompletedAction,
     addCommandToHistory,
     recallHistory,
     resetSession,
