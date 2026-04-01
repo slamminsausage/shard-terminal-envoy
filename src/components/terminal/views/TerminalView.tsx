@@ -41,6 +41,7 @@ interface TerminalViewProps {
   logs: LogEntry[];
   onLogSelect: (log: LogEntry) => void;
   onBack: () => void;
+  completedActions?: string[];
 }
 
 /** Generate a pseudo-random uptime string from terminal code */
@@ -57,6 +58,7 @@ export default function TerminalView({
   logs,
   onLogSelect,
   onBack,
+  completedActions = [],
 }: TerminalViewProps) {
   const profile = getTerminalBootProfile(terminal.code);
   const category = getTerminalCategory(terminal.code);
@@ -187,6 +189,7 @@ export default function TerminalView({
                 accentColor={accentColor}
                 dimColor={dimColor}
                 terminalCode={terminal.code}
+                completedActions={completedActions}
                 onClick={() => onLogSelect(log)}
               />
             ))}

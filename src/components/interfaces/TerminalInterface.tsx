@@ -30,6 +30,7 @@ import AudioLogsPage from '../terminal/views/AudioLogsPage';
 import TerminalBootScreen from '../terminal/views/TerminalBootScreen';
 import PasswordPrompt from '../terminal/SecurityChallenge/PasswordPrompt';
 import RollCheckPrompt from '../terminal/SecurityChallenge/RollCheckPrompt';
+import ActionSequencePlayer from '../terminal/ActionSequence/ActionSequencePlayer';
 import { getTerminalBootProfile } from '@/lib/terminalBootProfiles';
 
 // New hooks
@@ -180,8 +181,9 @@ function TerminalInterface() {
 
     typingCancelRef.current = cancel;
 
-    // Load unlocked terminals
+    // Load unlocked terminals and completed actions
     loadUnlockedTerminals();
+    loadCompletedActions();
 
     return () => {
       if (typingCancelRef.current) {
@@ -233,6 +235,16 @@ function TerminalInterface() {
       session.setTerminalsError('Unable to sync unlocked terminals. Using cached codes.');
     } finally {
       session.setTerminalsLoading(false);
+    }
+  };
+
+  // Load completed actions from database
+  const loadCompletedActions = async () => {
+    try {
+      const actions = await dbHelpers.getCompletedActions();
+      session.setCompletedActions(actions);
+    } catch (error) {
+      console.error('Failed to load completed actions:', error);
     }
   };
 
@@ -335,6 +347,53 @@ function TerminalInterface() {
       // Show nested audio logs page
       session.setShowAudioLogs(true);
       session.setAudioLogsData(log.logs);
+      return;
+    }
+
+    // For action sequences: if already completed, show content with completion note
+    // If not completed and has an action_sequence, type content then auto-start sequence
+    if (log.type === 'action_sequence' && log.action_sequence) {
+      const isCompleted = session.completedActions.includes(log.action_sequence.id);
+
+      if (isCompleted) {
+        // Show content + completion message
+        const completionText = log.content
+          ? log.content + '\n\n>> [SEQUENCE PREVIOUSLY COMPLETED]\n>> ' + log.action_sequence.on_complete.message
+          : '>> [SEQUENCE PREVIOUSLY COMPLETED]\n>> ' + log.action_sequence.on_complete.message;
+
+        setLocalDisplayedText('');
+        setLocalTypingComplete(false);
+        const cancel = typeTextWithSound(
+          completionText,
+          setLocalDisplayedText,
+          () => setLocalTypingComplete(true),
+          { delay: 20 }
+        );
+        typingCancelRef.current = cancel;
+        return;
+      }
+
+      // Not yet completed: type content first, then start sequence
+      if (log.content) {
+        setLocalDisplayedText('');
+        setLocalTypingComplete(false);
+        const cancel = typeTextWithSound(
+          log.content,
+          setLocalDisplayedText,
+          () => {
+            setLocalTypingComplete(true);
+            // Auto-start the action sequence after a short delay
+            setTimeout(() => {
+              session.setActiveSequence(log.action_sequence);
+            }, 800);
+          },
+          { delay: 20 }
+        );
+        typingCancelRef.current = cancel;
+      } else {
+        // No content preamble, start sequence immediately
+        session.setActiveSequence(log.action_sequence);
+      }
       return;
     }
 
@@ -657,8 +716,41 @@ function TerminalInterface() {
               />
             )}
 
+            {/* Action Sequence Player */}
+            {session.activeSequence &&
+             session.selectedLog &&
+             !session.requiresPassword &&
+             !session.rollCheck &&
+             !session.specialRollCheck &&
+             !session.terminalPasswordRequired && (
+              <ActionSequencePlayer
+                sequence={session.activeSequence}
+                onComplete={async () => {
+                  const actionId = session.activeSequence?.on_complete?.persist_key || session.activeSequence?.id;
+                  if (actionId) {
+                    session.addCompletedAction(actionId);
+                    try {
+                      await dbHelpers.addCompletedAction(actionId);
+                    } catch (error) {
+                      console.error('Failed to persist completed action:', error);
+                    }
+                  }
+                  session.setActiveSequence(null);
+                }}
+                onFail={() => {
+                  session.setActiveSequence(null);
+                  session.goToTerminal();
+                }}
+                onBack={() => {
+                  session.setActiveSequence(null);
+                  session.goToTerminal();
+                }}
+              />
+            )}
+
             {/* Log Detail View */}
             {session.selectedLog &&
+             !session.activeSequence &&
              !session.requiresPassword &&
              !session.rollCheck &&
              !session.specialRollCheck &&
@@ -681,6 +773,7 @@ function TerminalInterface() {
                 logs={session.logData}
                 onLogSelect={handleLogClick}
                 onBack={session.goToInit}
+                completedActions={session.completedActions}
               />
             )}
 
