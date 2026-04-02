@@ -88,24 +88,8 @@ function TerminalInterface() {
       session.resetPasswordAttempts();
       audioManager.playEffect('access_granted');
 
-      // Check if log has nested audio logs
-      if (session.selectedLog?.logs && Array.isArray(session.selectedLog.logs) && session.selectedLog.logs.length > 0) {
-        session.setShowAudioLogs(true);
-        session.setAudioLogsData(session.selectedLog.logs);
-        return;
-      }
-
-      // Otherwise type the content
-      if (session.selectedLog?.content) {
-        setLocalDisplayedText('');
-        setLocalTypingComplete(false);
-        const cancel = typeTextWithSound(
-          session.selectedLog.content,
-          setLocalDisplayedText,
-          () => setLocalTypingComplete(true),
-          { delay: 20 }
-        );
-        typingCancelRef.current = cancel;
+      if (session.selectedLog) {
+        showLogContent(session.selectedLog);
       }
     },
     onFailure: () => {
@@ -353,7 +337,8 @@ function TerminalInterface() {
     // For action sequences: if already completed, show content with completion note
     // If not completed and has an action_sequence, type content then auto-start sequence
     if (log.type === 'action_sequence' && log.action_sequence) {
-      const isCompleted = session.completedActions.includes(log.action_sequence.id);
+      const persistKey = log.action_sequence.on_complete?.persist_key || log.action_sequence.id;
+      const isCompleted = session.completedActions.includes(persistKey);
 
       if (isCompleted) {
         // Show content + completion message
@@ -473,24 +458,8 @@ function TerminalInterface() {
     if (result.success) {
       audioManager.playEffect('access_granted');
 
-      // Check if log has nested audio logs
-      if (session.selectedLog?.logs && Array.isArray(session.selectedLog.logs) && session.selectedLog.logs.length > 0) {
-        session.setShowAudioLogs(true);
-        session.setAudioLogsData(session.selectedLog.logs);
-        return;
-      }
-
-      // Otherwise type the content
-      if (session.selectedLog?.content) {
-        setLocalDisplayedText('');
-        setLocalTypingComplete(false);
-        const cancel = typeTextWithSound(
-          session.selectedLog.content,
-          setLocalDisplayedText,
-          () => setLocalTypingComplete(true),
-          { delay: 20 }
-        );
-        typingCancelRef.current = cancel;
+      if (session.selectedLog) {
+        showLogContent(session.selectedLog);
       }
     } else {
       audioManager.playEffect('access_denied');
@@ -506,24 +475,8 @@ function TerminalInterface() {
     if (result.success) {
       audioManager.playEffect('access_granted');
 
-      // Check if log has nested audio logs
-      if (session.selectedLog?.logs && Array.isArray(session.selectedLog.logs) && session.selectedLog.logs.length > 0) {
-        session.setShowAudioLogs(true);
-        session.setAudioLogsData(session.selectedLog.logs);
-        return;
-      }
-
-      // Otherwise type the content
-      if (session.selectedLog?.content) {
-        setLocalDisplayedText('');
-        setLocalTypingComplete(false);
-        const cancel = typeTextWithSound(
-          session.selectedLog.content,
-          setLocalDisplayedText,
-          () => setLocalTypingComplete(true),
-          { delay: 20 }
-        );
-        typingCancelRef.current = cancel;
+      if (session.selectedLog) {
+        showLogContent(session.selectedLog);
       }
     } else {
       audioManager.playEffect('access_denied');

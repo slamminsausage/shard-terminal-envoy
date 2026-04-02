@@ -28,6 +28,8 @@ interface LogEntry {
   audio_file?: string;
   logs?: any[];
   content?: string;
+  type?: string;
+  action_sequence?: { id: string; category: string; on_complete?: { persist_key?: string } };
 }
 
 interface Terminal {
