@@ -12,6 +12,7 @@ interface ActionSequencePlayerProps {
   onComplete: () => void;
   onFail: () => void;
   onBack: () => void;
+  onBackToTerminal: () => void;
 }
 
 type SequenceStatus = 'running' | 'completed' | 'failed';
@@ -34,6 +35,7 @@ export default function ActionSequencePlayer({
   onComplete,
   onFail,
   onBack,
+  onBackToTerminal,
 }: ActionSequencePlayerProps) {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [status, setStatus] = useState<SequenceStatus>('running');
@@ -60,12 +62,12 @@ export default function ActionSequencePlayer({
     const nextIndex = currentStepIndex + 1;
 
     if (nextIndex >= totalSteps) {
-      // Sequence complete
       setStatus('completed');
       if (sequence.on_complete.sound) {
         audioManager.playEffect(sequence.on_complete.sound);
       }
-      setTimeout(onComplete, 800);
+      // Persist the completion but stay on this screen
+      onComplete();
     } else {
       setCurrentStepIndex(nextIndex);
     }
@@ -76,8 +78,7 @@ export default function ActionSequencePlayer({
     if (sequence.on_failure?.sound) {
       audioManager.playEffect(sequence.on_failure.sound);
     }
-    setTimeout(onFail, 1200);
-  }, [sequence, onFail]);
+  }, [sequence]);
 
   const renderStep = (step: SequenceStep) => {
     switch (step.type) {
@@ -213,6 +214,22 @@ export default function ActionSequencePlayer({
           >
             <div className="text-green-400 font-bold mb-2">{'>> SEQUENCE COMPLETE'}</div>
             <div style={{ color: accentColor }}>{sequence.on_complete.message}</div>
+            <button
+              onClick={onBackToTerminal}
+              className="mt-4 px-4 py-2 font-mono text-xs tracking-wider border rounded transition-colors"
+              style={{
+                borderColor: `${accentColor}44`,
+                color: accentColor,
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = `${accentColor}18`;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent';
+              }}
+            >
+              ← BACK TO TERMINAL
+            </button>
           </div>
         )}
 
@@ -229,6 +246,12 @@ export default function ActionSequencePlayer({
             <div className="text-red-300">
               {sequence.on_failure?.message || 'SECURITY LOCKOUT ENGAGED.'}
             </div>
+            <button
+              onClick={onBackToTerminal}
+              className="mt-4 px-4 py-2 font-mono text-xs tracking-wider border border-red-500/40 text-red-400 rounded transition-colors hover:bg-red-500/10"
+            >
+              ← BACK TO TERMINAL
+            </button>
           </div>
         )}
       </div>
@@ -238,12 +261,16 @@ export default function ActionSequencePlayer({
         className="flex items-center justify-between px-4 py-2 border-t"
         style={{ borderColor: `${accentColor}22` }}
       >
-        <button
-          onClick={onBack}
-          className="text-xs font-mono text-terminal-primary/40 hover:text-terminal-primary/80 transition-colors"
-        >
-          [ESC] BACK
-        </button>
+        {status === 'running' ? (
+          <button
+            onClick={onBack}
+            className="text-xs font-mono text-terminal-primary/40 hover:text-terminal-primary/80 transition-colors"
+          >
+            [ESC] ABORT
+          </button>
+        ) : (
+          <div />
+        )}
         <div
           className="text-xs font-mono"
           style={{ color: `${accentColor}44` }}
