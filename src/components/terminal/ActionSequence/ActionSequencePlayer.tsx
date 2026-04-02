@@ -8,6 +8,7 @@ import ChoiceStep from './ChoiceStep';
 
 interface ActionSequencePlayerProps {
   sequence: ActionSequence;
+  preambleText?: string;
   onComplete: () => void;
   onFail: () => void;
   onBack: () => void;
@@ -29,6 +30,7 @@ const CATEGORY_COLORS: Record<string, string> = {
 
 export default function ActionSequencePlayer({
   sequence,
+  preambleText,
   onComplete,
   onFail,
   onBack,
@@ -144,6 +146,13 @@ export default function ActionSequencePlayer({
         ref={scrollRef}
         className="flex-1 overflow-y-auto p-4 space-y-4"
       >
+        {/* Preamble text from log content */}
+        {preambleText && (
+          <div className="font-mono text-sm text-terminal-primary/50 whitespace-pre-wrap pb-2 mb-2 border-b border-terminal-primary/10">
+            {preambleText}
+          </div>
+        )}
+
         {/* Completed steps shown as faded output */}
         {completedSteps.map((stepIdx) => {
           const completedStep = sequence.steps[stepIdx];
