@@ -682,13 +682,13 @@ function TerminalInterface() {
                       console.error('Failed to persist completed action:', error);
                     }
                   }
-                  session.setActiveSequence(null);
                 }}
-                onFail={() => {
+                onFail={() => {}}
+                onBack={() => {
                   session.setActiveSequence(null);
                   session.goToTerminal();
                 }}
-                onBack={() => {
+                onBackToTerminal={() => {
                   session.setActiveSequence(null);
                   session.goToTerminal();
                 }}
