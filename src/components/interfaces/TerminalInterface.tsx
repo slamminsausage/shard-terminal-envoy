@@ -678,6 +678,7 @@ function TerminalInterface() {
              !session.terminalPasswordRequired && (
               <ActionSequencePlayer
                 sequence={session.activeSequence}
+                preambleText={session.selectedLog?.content}
                 onComplete={async () => {
                   const actionId = session.activeSequence?.on_complete?.persist_key || session.activeSequence?.id;
                   if (actionId) {
