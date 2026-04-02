@@ -34,6 +34,8 @@ interface LogEntry {
   requires_roll?: boolean;
   roll_check?: { difficulty: number; skill: string };
   logs?: any[];
+  type?: string;
+  action_sequence?: { id: string; category: string; on_complete?: { persist_key?: string; message?: string } };
 }
 
 interface LogDetailViewProps {
@@ -41,6 +43,7 @@ interface LogDetailViewProps {
   displayedText: string;
   typingComplete: boolean;
   onBack: () => void;
+  onInitiateSequence?: () => void;
   terminalCode?: string;
 }
 
@@ -74,6 +77,7 @@ export default function LogDetailView({
   displayedText,
   typingComplete,
   onBack,
+  onInitiateSequence,
   terminalCode = '',
 }: LogDetailViewProps) {
   const profile = useMemo(() => getTerminalBootProfile(terminalCode), [terminalCode]);
@@ -212,9 +216,20 @@ export default function LogDetailView({
             </div>
           )}
 
-          {/* Back button */}
+          {/* Action buttons */}
           {typingComplete && (
             <div className="flex items-center gap-3">
+              {/* Initiate Sequence button for action sequence logs */}
+              {log.type === 'action_sequence' && log.action_sequence && onInitiateSequence && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onInitiateSequence}
+                  className="font-mono animate-pulse border-orange-500/60 text-orange-400 hover:bg-orange-500/10 hover:text-orange-300"
+                >
+                  ▶ INITIATE SEQUENCE
+                </Button>
+              )}
               <Button variant="outline" size="sm" onClick={onBack}>
                 ← Back
               </Button>

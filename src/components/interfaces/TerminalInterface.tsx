@@ -335,13 +335,12 @@ function TerminalInterface() {
     }
 
     // For action sequences: if already completed, show content with completion note
-    // If not completed and has an action_sequence, type content then auto-start sequence
+    // If not completed, type content normally — LogDetailView shows INITIATE SEQUENCE button
     if (log.type === 'action_sequence' && log.action_sequence) {
       const persistKey = log.action_sequence.on_complete?.persist_key || log.action_sequence.id;
       const isCompleted = session.completedActions.includes(persistKey);
 
       if (isCompleted) {
-        // Show content + completion message
         const completionText = log.content
           ? log.content + '\n\n>> [SEQUENCE PREVIOUSLY COMPLETED]\n>> ' + log.action_sequence.on_complete.message
           : '>> [SEQUENCE PREVIOUSLY COMPLETED]\n>> ' + log.action_sequence.on_complete.message;
@@ -358,25 +357,19 @@ function TerminalInterface() {
         return;
       }
 
-      // Not yet completed: type content first, then start sequence
+      // Not yet completed: type content, player clicks INITIATE SEQUENCE when ready
       if (log.content) {
         setLocalDisplayedText('');
         setLocalTypingComplete(false);
         const cancel = typeTextWithSound(
           log.content,
           setLocalDisplayedText,
-          () => {
-            setLocalTypingComplete(true);
-            // Auto-start the action sequence after a short delay
-            setTimeout(() => {
-              session.setActiveSequence(log.action_sequence);
-            }, 800);
-          },
+          () => setLocalTypingComplete(true),
           { delay: 20 }
         );
         typingCancelRef.current = cancel;
       } else {
-        // No content preamble, start sequence immediately
+        // No content preamble — go straight to sequence
         session.setActiveSequence(log.action_sequence);
       }
       return;
@@ -714,6 +707,11 @@ function TerminalInterface() {
                 displayedText={localDisplayedText}
                 typingComplete={localTypingComplete}
                 onBack={session.goToTerminal}
+                onInitiateSequence={
+                  session.selectedLog?.type === 'action_sequence' && session.selectedLog?.action_sequence
+                    ? () => session.setActiveSequence(session.selectedLog!.action_sequence!)
+                    : undefined
+                }
                 terminalCode={session.activeTerminal?.code || ''}
               />
             )}
