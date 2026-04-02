@@ -37,7 +37,8 @@ const fallbackUnlocked = [
   'es1-omegalab',
   'es1-gamma',
   'blacktalon',
-  'vennik-personal'
+  'vennik-personal',
+  'seqtest'
 ];
 
 const getLocalUnlockedTerminals = () => {
