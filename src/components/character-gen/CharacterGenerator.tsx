@@ -20,6 +20,7 @@ import { RACES, getRaceById, applyRaceModifiers, type Race, type RaceTrait } fro
 import { getCareerTheme, getCareerCardStyle, getCareerTextStyle, type CareerTheme } from './careerThemes';
 import { CREW_POSITION_PRESETS } from '@/types/database';
 import { AnimatedDiceValue } from './AnimatedDiceValue';
+import { CareerTableDisplay } from './CareerTableDisplay';
 
 // ============================================================================
 // TYPE DEFINITIONS (Component-specific)
@@ -453,6 +454,7 @@ export const CharacterGenerator: React.FC = () => {
   // Mishap GameEvent state - for mishaps that require player interaction (rolls, choices)
   const [pendingMishapGameEvent, setPendingMishapGameEvent] = useState<GameEvent | null>(null);
   const [mishapRollNumber, setMishapRollNumber] = useState<number | null>(null);
+  const [needsMishapRoll, setNeedsMishapRoll] = useState(false); // True when survival failed and waiting for manual mishap roll
 
   // Aging state
   const [agingResult, setAgingResult] = useState<AgingRollResult | null>(null);
@@ -577,8 +579,8 @@ export const CharacterGenerator: React.FC = () => {
     setAssignmentMode('manual');
   };
 
-  const rollSingleCharacteristic = (key: keyof Omit<Characteristics, 'psionics'>) => {
-    const roll = rollDice(2, 6);
+  const rollSingleCharacteristic = (key: keyof Omit<Characteristics, 'psionics'>, manualRoll?: number) => {
+    const roll = manualRoll ?? rollDice(2, 6);
 
     // Trigger dice spin animation for ~420ms before revealing result
     setRollingStats(prev => new Set([...prev, key]));
@@ -768,7 +770,7 @@ export const CharacterGenerator: React.FC = () => {
   // STEP 4: CAREER SELECTION
   // ============================================================================
 
-  const attemptQualification = () => {
+  const attemptQualification = (manualRoll?: number) => {
     if (!selectedCareer) return;
 
     // Check for automatic entry from failed Military Academy
@@ -844,7 +846,7 @@ export const CharacterGenerator: React.FC = () => {
       dmDetails.push(`Event DM +${characterData.eventQualificationDM}`);
     }
 
-    const roll = rollDice(2, 6);
+    const roll = manualRoll ?? rollDice(2, 6);
     const total = roll + dm;
     const passed = total >= selectedCareer.qualificationTarget;
 
@@ -1264,6 +1266,7 @@ export const CharacterGenerator: React.FC = () => {
     // Reset mishap GameEvent state
     setPendingMishapGameEvent(null);
     setMishapRollNumber(null);
+    setNeedsMishapRoll(false);
 
     // Calculate age based on TOTAL terms completed across all careers
     // lifepath_log contains one entry per completed term
@@ -1283,6 +1286,47 @@ export const CharacterGenerator: React.FC = () => {
       applyBasicTraining();
     }
     // For subsequent careers, UI will show skill selection (handled in render)
+  };
+
+  // Process a mishap roll result (extracted for manual dice support)
+  const applyMishapRoll = (mishapRoll: number) => {
+    if (!selectedCareer) return;
+    const assignment = selectedCareer.assignments[selectedAssignment];
+    const mishapEntry = selectedCareer.mishapTable[mishapRoll - 1];
+    setMishapRollNumber(mishapRoll);
+    setNeedsMishapRoll(false);
+
+    // Check if this mishap is a GameEvent (has rolls/choices)
+    if (mishapEntry && typeof mishapEntry === 'object' && 'resolution' in mishapEntry) {
+      // GameEvent mishap - needs player interaction through EventHandler
+      setPendingMishapGameEvent(mishapEntry as GameEvent);
+      // Don't log the term yet - wait for GameEvent resolution
+    } else {
+      // Simple string mishap - log immediately
+      const mishap = mishapEntry ? getMishapDescription(mishapEntry) : 'Injured. Roll on the Injury table.';
+      const ranks = getRanksForCareer(selectedCareer, isCommissioned, assignment.name);
+
+      const termRecord: TermRecord = {
+        termNumber: currentTerm,
+        career: selectedCareer.name,
+        assignment: assignment.name,
+        age: characterData.age,
+        survivalRoll: survivalRollLog || '',
+        survived: false,
+        advanced: false,
+        rank: characterData.rank,
+        rankTitle: ranks[characterData.rank]?.title || 'Rank 0',
+        event: `MISHAP: ${mishap}`,
+        skillsGained: [],
+        mishap,
+      };
+
+      setCharacterData(prev => ({
+        ...prev,
+        lifepath_log: [...prev.lifepath_log, termRecord],
+        terms_served: currentTerm,
+      }));
+    }
   };
 
   const runSurvivalCheck = (manualRoll?: number) => {
@@ -1363,42 +1407,13 @@ export const CharacterGenerator: React.FC = () => {
           terms_served: currentTerm,
         }));
       } else {
-        // Regular career mishap
-        const mishapRoll = rollDice(1, 6);
-        const mishapEntry = selectedCareer.mishapTable[mishapRoll - 1];
-        setMishapRollNumber(mishapRoll);
-
-        // Check if this mishap is a GameEvent (has rolls/choices)
-        if (mishapEntry && typeof mishapEntry === 'object' && 'resolution' in mishapEntry) {
-          // GameEvent mishap - needs player interaction through EventHandler
-          setPendingMishapGameEvent(mishapEntry as GameEvent);
-          // Don't log the term yet - wait for GameEvent resolution
-        } else {
-          // Simple string mishap - log immediately
-          const mishap = mishapEntry ? getMishapDescription(mishapEntry) : 'Injured. Roll on the Injury table.';
-          const ranks = getRanksForCareer(selectedCareer, isCommissioned, assignment.name);
-
-          const termRecord: TermRecord = {
-            termNumber: currentTerm,
-            career: selectedCareer.name,
-            assignment: assignment.name,
-            age: characterData.age,
-            survivalRoll: `${roll} + ${dm} = ${total} (need ${assignment.survivalTarget}+)`,
-            survived: false,
-            advanced: false,
-            rank: characterData.rank,
-            rankTitle: ranks[characterData.rank]?.title || 'Rank 0',
-            event: `MISHAP: ${mishap}`,
-            skillsGained: [],
-            mishap,
-          };
-
-          setCharacterData(prev => ({
-            ...prev,
-            lifepath_log: [...prev.lifepath_log, termRecord],
-            terms_served: currentTerm,
-          }));
+        // Regular career mishap - if manual dice is on, wait for player to roll
+        if (useManualDice) {
+          setNeedsMishapRoll(true);
+          return; // Wait for manual mishap roll
         }
+        const mishapRoll = rollDice(1, 6);
+        applyMishapRoll(mishapRoll);
       }
     } else {
       // Graduation/survival success
@@ -1831,6 +1846,11 @@ export const CharacterGenerator: React.FC = () => {
         setEventAdvancementDM(prev => prev + effects.advancementDM!);
         setTermSkillsGained(prev => [...prev, `DM+${effects.advancementDM} to next advancement roll`]);
       }
+      if (effects.autoPromotion) {
+        // Grant a very large advancement DM to guarantee promotion
+        setEventAdvancementDM(prev => prev + 99);
+        setTermSkillsGained(prev => [...prev, 'Automatic promotion this term']);
+      }
       if (effects.benefitDM && effects.benefitDM > 0) {
         // Add each benefit DM as a separate entry (each can only be used once)
         setEventBenefitDMs(prev => [...prev, effects.benefitDM!]);
@@ -1851,7 +1871,7 @@ export const CharacterGenerator: React.FC = () => {
         });
 
         // Trigger the table redirect
-        handleTableRedirect(effects.rollOnTable as 'life_events' | 'injury' | 'aging' | 'draft' | 'unusual_events');
+        handleTableRedirect(effects.rollOnTable as 'life_events' | 'injury' | 'aging' | 'draft' | 'unusual_events' | 'mishap');
         return; // Don't mark event as completed yet - wait for redirected table
       }
     }
@@ -1956,7 +1976,7 @@ export const CharacterGenerator: React.FC = () => {
 
       // Handle table redirects from mishap (e.g., roll on injury)
       if (effects.rollOnTable) {
-        handleTableRedirect(effects.rollOnTable as 'life_events' | 'injury' | 'aging' | 'draft' | 'unusual_events');
+        handleTableRedirect(effects.rollOnTable as 'life_events' | 'injury' | 'aging' | 'draft' | 'unusual_events' | 'mishap');
         return; // Don't complete mishap yet - wait for redirected table to complete
       }
     }
@@ -1966,6 +1986,7 @@ export const CharacterGenerator: React.FC = () => {
       setTermSurvived(true);
       setPendingMishapGameEvent(null);
       setMishapRollNumber(null);
+    setNeedsMishapRoll(false);
       // Note: the term will still need to go through the normal event/skill flow
       // Re-set to allow event roll
       setTermEventRoll(null);
@@ -1997,11 +2018,12 @@ export const CharacterGenerator: React.FC = () => {
 
       setPendingMishapGameEvent(null);
       setMishapRollNumber(null);
+    setNeedsMishapRoll(false);
     }
   };
 
-  // Handler for table redirects (Life Events, Injury, etc.)
-  const handleTableRedirect = (table: 'life_events' | 'injury' | 'aging' | 'draft' | 'unusual_events') => {
+  // Handler for table redirects (Life Events, Injury, Mishap, etc.)
+  const handleTableRedirect = (table: 'life_events' | 'injury' | 'aging' | 'draft' | 'unusual_events' | 'mishap') => {
     let roll: number;
     let event: GameEvent | null = null;
     let tableName = '';
@@ -2016,6 +2038,17 @@ export const CharacterGenerator: React.FC = () => {
         roll = rollDiceUtil(1, 6); // 1D6
         event = getInjury(roll);
         tableName = 'Injury';
+        break;
+      case 'mishap':
+        roll = rollDiceUtil(1, 6); // 1D6
+        if (selectedCareer?.mishapTable) {
+          const mishapIndex = Math.min(roll - 1, selectedCareer.mishapTable.length - 1);
+          const mishap = selectedCareer.mishapTable[mishapIndex];
+          if (isGameEvent(mishap)) {
+            event = mishap;
+          }
+        }
+        tableName = 'Mishap';
         break;
       case 'unusual_events':
         roll = rollDiceUtil(1, 6); // 1D6
@@ -2060,7 +2093,7 @@ export const CharacterGenerator: React.FC = () => {
   };
 
   // Handler for nested table redirects (e.g., Life Events -> Injury -> ...)
-  const handleNestedTableRedirect = (table: 'life_events' | 'injury' | 'aging' | 'draft' | 'unusual_events') => {
+  const handleNestedTableRedirect = (table: 'life_events' | 'injury' | 'aging' | 'draft' | 'unusual_events' | 'mishap') => {
     // Complete the current redirected event first
     setRedirectedEvent(null);
     setRedirectTableRoll(null);
@@ -2113,6 +2146,7 @@ export const CharacterGenerator: React.FC = () => {
 
     setPendingMishapGameEvent(null);
     setMishapRollNumber(null);
+    setNeedsMishapRoll(false);
   };
 
   // ============================================================================
@@ -2284,13 +2318,13 @@ export const CharacterGenerator: React.FC = () => {
   };
 
   // Roll skill from the currently expanded table
-  const rollSkillFromExpandedTable = () => {
+  const rollSkillFromExpandedTable = (manualRoll?: number) => {
     if (!selectedCareer || !expandedSkillTable || termSkillSelected) return;
 
     const { table, displayName } = getSkillTableInfo(expandedSkillTable);
     if (table.length === 0) return;
 
-    const roll = rollDice(1, 6);
+    const roll = manualRoll ?? rollDice(1, 6);
     setSkillTableRollResult(roll);
 
     const skillName = table[roll - 1];
@@ -2502,7 +2536,7 @@ export const CharacterGenerator: React.FC = () => {
     setSwitchAssignmentResult(null);
   };
 
-  const rollSwitchAssignment = (newAssignmentIndex: number) => {
+  const rollSwitchAssignment = (newAssignmentIndex: number, manualRoll?: number) => {
     if (!selectedCareer) return;
 
     setSwitchAssignmentTarget(newAssignmentIndex);
@@ -2510,7 +2544,7 @@ export const CharacterGenerator: React.FC = () => {
     // Make a qualification roll for the new assignment
     const charValue = characterData.characteristics[selectedCareer.qualificationStat].total;
     const dm = getDM(charValue);
-    const roll = rollDice(2, 6);
+    const roll = manualRoll ?? rollDice(2, 6);
     const total = roll + dm;
     const passed = total >= selectedCareer.qualificationTarget;
     const newAssignment = selectedCareer.assignments[newAssignmentIndex];
@@ -2575,6 +2609,7 @@ export const CharacterGenerator: React.FC = () => {
     // Reset mishap GameEvent state
     setPendingMishapGameEvent(null);
     setMishapRollNumber(null);
+    setNeedsMishapRoll(false);
 
     // Reset career state for new career
     setCurrentTerm(0);
@@ -2717,6 +2752,7 @@ export const CharacterGenerator: React.FC = () => {
     // Reset mishap GameEvent state
     setPendingMishapGameEvent(null);
     setMishapRollNumber(null);
+    setNeedsMishapRoll(false);
 
     // Go back to career selection
     setStep(4);
@@ -3669,20 +3705,50 @@ export const CharacterGenerator: React.FC = () => {
                     </div>
 
                     {qualificationPassed === null && (
-                      <Button
-                        onClick={attemptQualification}
-                        className="w-full transition-all duration-200"
-                        style={{
-                          backgroundColor: selectedTheme.bgColor,
-                          color: selectedTheme.textColor,
-                          borderColor: selectedTheme.borderColor,
-                          borderWidth: '1px',
-                          borderStyle: 'solid',
-                        }}
-                      >
-                        <Dices className="h-4 w-4 mr-2" />
-                        Attempt Qualification for {selectedCareer.name}
-                      </Button>
+                      useManualDice ? (
+                        <div className="space-y-2">
+                          <p className="text-xs text-blue-400">Enter your 2D6 roll result for qualification (DM will be applied automatically):</p>
+                          <div className="flex gap-2">
+                            <Input
+                              type="number"
+                              min={2}
+                              max={12}
+                              value={manualDiceValue}
+                              onChange={(e) => setManualDiceValue(e.target.value)}
+                              placeholder="Enter 2D6 result (2-12)"
+                              className="bg-black border-terminal-primary/50 text-terminal-primary placeholder:text-terminal-primary/40"
+                            />
+                            <Button
+                              onClick={() => {
+                                const val = parseInt(manualDiceValue);
+                                if (!isNaN(val) && val >= 2 && val <= 12) {
+                                  attemptQualification(val);
+                                  setManualDiceValue('');
+                                }
+                              }}
+                              disabled={!manualDiceValue || isNaN(parseInt(manualDiceValue)) || parseInt(manualDiceValue) < 2 || parseInt(manualDiceValue) > 12}
+                              className="bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
+                            >
+                              Submit Qualification Roll
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <Button
+                          onClick={() => attemptQualification()}
+                          className="w-full transition-all duration-200"
+                          style={{
+                            backgroundColor: selectedTheme.bgColor,
+                            color: selectedTheme.textColor,
+                            borderColor: selectedTheme.borderColor,
+                            borderWidth: '1px',
+                            borderStyle: 'solid',
+                          }}
+                        >
+                          <Dices className="h-4 w-4 mr-2" />
+                          Attempt Qualification for {selectedCareer.name}
+                        </Button>
+                      )
                     )}
 
                     {qualificationRollLog && (
@@ -3985,6 +4051,7 @@ export const CharacterGenerator: React.FC = () => {
                     gamblerSkillLevel={parseInt(characterData.skills['Gambler']?.value || '0') || 0}
                     characteristics={characterData.characteristics}
                     onComplete={handleMusteringOutComplete}
+                    useManualDice={useManualDice}
                   />
                 ) : (
                 <>
@@ -4168,17 +4235,15 @@ export const CharacterGenerator: React.FC = () => {
 
                     {/* MISHAP TABLE */}
                     {selectedCareer && selectedCareer.mishapTable && (
-                      <div className="bg-black border border-terminal-primary/30 rounded p-3">
-                        <h4 className="text-xs font-bold text-red-400 mb-2">Potential Mishaps (1D6):</h4>
-                        <div className="space-y-1 text-xs text-terminal-primary/70">
-                          {(selectedCareer.mishapTable || []).map((mishap, idx) => (
-                            <div key={idx} className="flex gap-2">
-                              <span className="text-terminal-primary/50">{idx + 1}.</span>
-                              <span>{getMishapDescription(mishap)}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
+                      <CareerTableDisplay
+                        title="Potential Mishaps (1D6)"
+                        titleColor="text-red-400"
+                        entries={(selectedCareer.mishapTable || []).map((mishap, idx) => ({
+                          index: idx + 1,
+                          label: `${idx + 1}.`,
+                          description: getMishapDescription(mishap),
+                        }))}
+                      />
                     )}
 
                     {useManualDice ? (
@@ -4233,6 +4298,37 @@ export const CharacterGenerator: React.FC = () => {
                     {survivalRollLog && (
                       <div className="bg-terminal-primary/5 border border-terminal-primary/30 rounded p-2">
                         <p className="text-xs text-terminal-primary/60 font-mono">{survivalRollLog}</p>
+                      </div>
+                    )}
+
+                    {/* Manual dice: waiting for player to roll mishap */}
+                    {needsMishapRoll && useManualDice && (
+                      <div className="space-y-2">
+                        <p className="text-xs text-blue-400">Enter your 1D6 roll result for the mishap table:</p>
+                        <div className="flex gap-2">
+                          <Input
+                            type="number"
+                            min={1}
+                            max={6}
+                            value={manualDiceValue}
+                            onChange={(e) => setManualDiceValue(e.target.value)}
+                            placeholder="Enter 1D6 result (1-6)"
+                            className="bg-black border-terminal-primary/50 text-terminal-primary placeholder:text-terminal-primary/40"
+                          />
+                          <Button
+                            onClick={() => {
+                              const val = parseInt(manualDiceValue);
+                              if (!isNaN(val) && val >= 1 && val <= 6) {
+                                applyMishapRoll(val);
+                                setManualDiceValue('');
+                              }
+                            }}
+                            disabled={!manualDiceValue || isNaN(parseInt(manualDiceValue)) || parseInt(manualDiceValue) < 1 || parseInt(manualDiceValue) > 6}
+                            className="bg-red-500/20 text-red-400 hover:bg-red-500/30"
+                          >
+                            Submit Mishap Roll
+                          </Button>
+                        </div>
                       </div>
                     )}
 
@@ -4470,17 +4566,16 @@ export const CharacterGenerator: React.FC = () => {
 
                     {/* EVENT TABLE */}
                     {selectedCareer && selectedCareer.eventTable && (
-                      <div className="bg-black border border-terminal-primary/30 rounded p-3">
-                        <h4 className="text-xs font-bold text-blue-400 mb-2">Possible Events (2D6):</h4>
-                        <div className="space-y-1 text-xs text-terminal-primary/70">
-                          {(selectedCareer.eventTable || []).map((event, idx) => (
-                            <div key={idx} className="flex gap-2">
-                              <span className="text-terminal-primary/50">{idx + 2}.</span>
-                              <span>{getEventDescription(event)}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
+                      <CareerTableDisplay
+                        title="Possible Events (2D6)"
+                        titleColor="text-blue-400"
+                        entries={(selectedCareer.eventTable || []).map((event, idx) => ({
+                          index: idx + 2,
+                          label: `${idx + 2}.`,
+                          description: getEventDescription(event),
+                        }))}
+                        highlightIndex={termEventRoll ?? undefined}
+                      />
                     )}
 
                     {useManualDice ? (
@@ -4781,13 +4876,40 @@ export const CharacterGenerator: React.FC = () => {
                                   ))}
                                 </div>
                                 {!skillTableRollResult && (
-                                  <Button
-                                    onClick={rollSkillFromExpandedTable}
-                                    className="w-full bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30 border border-terminal-primary/50"
-                                  >
-                                    <Dices className="h-4 w-4 mr-2" />
-                                    Roll 1D6
-                                  </Button>
+                                  useManualDice ? (
+                                    <div className="flex gap-2">
+                                      <Input
+                                        type="number"
+                                        min={1}
+                                        max={6}
+                                        value={manualDiceValue}
+                                        onChange={(e) => setManualDiceValue(e.target.value)}
+                                        placeholder="1D6 (1-6)"
+                                        className="bg-black border-terminal-primary/50 text-terminal-primary placeholder:text-terminal-primary/40 w-24"
+                                      />
+                                      <Button
+                                        onClick={() => {
+                                          const val = parseInt(manualDiceValue);
+                                          if (!isNaN(val) && val >= 1 && val <= 6) {
+                                            rollSkillFromExpandedTable(val);
+                                            setManualDiceValue('');
+                                          }
+                                        }}
+                                        disabled={!manualDiceValue || isNaN(parseInt(manualDiceValue)) || parseInt(manualDiceValue) < 1 || parseInt(manualDiceValue) > 6}
+                                        className="flex-1 bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30 border border-terminal-primary/50"
+                                      >
+                                        Submit Skill Roll
+                                      </Button>
+                                    </div>
+                                  ) : (
+                                    <Button
+                                      onClick={() => rollSkillFromExpandedTable()}
+                                      className="w-full bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30 border border-terminal-primary/50"
+                                    >
+                                      <Dices className="h-4 w-4 mr-2" />
+                                      Roll 1D6
+                                    </Button>
+                                  )
                                 )}
                               </div>
                             )}
@@ -4825,13 +4947,40 @@ export const CharacterGenerator: React.FC = () => {
                                   ))}
                                 </div>
                                 {!skillTableRollResult && (
-                                  <Button
-                                    onClick={rollSkillFromExpandedTable}
-                                    className="w-full bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30 border border-terminal-primary/50"
-                                  >
-                                    <Dices className="h-4 w-4 mr-2" />
-                                    Roll 1D6
-                                  </Button>
+                                  useManualDice ? (
+                                    <div className="flex gap-2">
+                                      <Input
+                                        type="number"
+                                        min={1}
+                                        max={6}
+                                        value={manualDiceValue}
+                                        onChange={(e) => setManualDiceValue(e.target.value)}
+                                        placeholder="1D6 (1-6)"
+                                        className="bg-black border-terminal-primary/50 text-terminal-primary placeholder:text-terminal-primary/40 w-24"
+                                      />
+                                      <Button
+                                        onClick={() => {
+                                          const val = parseInt(manualDiceValue);
+                                          if (!isNaN(val) && val >= 1 && val <= 6) {
+                                            rollSkillFromExpandedTable(val);
+                                            setManualDiceValue('');
+                                          }
+                                        }}
+                                        disabled={!manualDiceValue || isNaN(parseInt(manualDiceValue)) || parseInt(manualDiceValue) < 1 || parseInt(manualDiceValue) > 6}
+                                        className="flex-1 bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30 border border-terminal-primary/50"
+                                      >
+                                        Submit Skill Roll
+                                      </Button>
+                                    </div>
+                                  ) : (
+                                    <Button
+                                      onClick={() => rollSkillFromExpandedTable()}
+                                      className="w-full bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30 border border-terminal-primary/50"
+                                    >
+                                      <Dices className="h-4 w-4 mr-2" />
+                                      Roll 1D6
+                                    </Button>
+                                  )
                                 )}
                               </div>
                             )}
@@ -4919,13 +5068,40 @@ export const CharacterGenerator: React.FC = () => {
                                   })()}
                                 </div>
                                 {!skillTableRollResult && (
-                                  <Button
-                                    onClick={rollSkillFromExpandedTable}
-                                    className="w-full bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30 border border-terminal-primary/50"
-                                  >
-                                    <Dices className="h-4 w-4 mr-2" />
-                                    Roll 1D6
-                                  </Button>
+                                  useManualDice ? (
+                                    <div className="flex gap-2">
+                                      <Input
+                                        type="number"
+                                        min={1}
+                                        max={6}
+                                        value={manualDiceValue}
+                                        onChange={(e) => setManualDiceValue(e.target.value)}
+                                        placeholder="1D6 (1-6)"
+                                        className="bg-black border-terminal-primary/50 text-terminal-primary placeholder:text-terminal-primary/40 w-24"
+                                      />
+                                      <Button
+                                        onClick={() => {
+                                          const val = parseInt(manualDiceValue);
+                                          if (!isNaN(val) && val >= 1 && val <= 6) {
+                                            rollSkillFromExpandedTable(val);
+                                            setManualDiceValue('');
+                                          }
+                                        }}
+                                        disabled={!manualDiceValue || isNaN(parseInt(manualDiceValue)) || parseInt(manualDiceValue) < 1 || parseInt(manualDiceValue) > 6}
+                                        className="flex-1 bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30 border border-terminal-primary/50"
+                                      >
+                                        Submit Skill Roll
+                                      </Button>
+                                    </div>
+                                  ) : (
+                                    <Button
+                                      onClick={() => rollSkillFromExpandedTable()}
+                                      className="w-full bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30 border border-terminal-primary/50"
+                                    >
+                                      <Dices className="h-4 w-4 mr-2" />
+                                      Roll 1D6
+                                    </Button>
+                                  )
                                 )}
                               </div>
                             )}
