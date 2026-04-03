@@ -2934,12 +2934,26 @@ export const CharacterGenerator: React.FC = () => {
               </p>
             </div>
           </div>
-          <div className="text-right">
-            <div className="text-terminal-primary font-bold">
-              {characterData.name || 'Unnamed Character'}
-            </div>
-            <div className="text-terminal-primary/50 text-xs">
-              Age {characterData.age} • Step {step} of 6
+          <div className="flex items-center gap-4">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={useManualDice}
+                onChange={(e) => {
+                  setUseManualDice(e.target.checked);
+                  setManualDiceValue('');
+                }}
+                className="accent-terminal-primary"
+              />
+              <span className="text-xs text-terminal-primary/60">Manual Dice</span>
+            </label>
+            <div className="text-right">
+              <div className="text-terminal-primary font-bold">
+                {characterData.name || 'Unnamed Character'}
+              </div>
+              <div className="text-terminal-primary/50 text-xs">
+                Age {characterData.age} • Step {step} of 6
+              </div>
             </div>
           </div>
         </div>
@@ -4061,21 +4075,6 @@ export const CharacterGenerator: React.FC = () => {
                   />
                 ) : (
                 <>
-                {/* Manual Dice Toggle */}
-                <div className="flex items-center justify-end gap-2 mb-2">
-                  <label className="text-xs text-terminal-primary/60 cursor-pointer flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={useManualDice}
-                      onChange={(e) => {
-                        setUseManualDice(e.target.checked);
-                        setManualDiceValue('');
-                      }}
-                      className="accent-terminal-primary"
-                    />
-                    <span>Manual Dice Entry (use physical dice)</span>
-                  </label>
-                </div>
 
                 {/* Career Status Panel */}
                 <div
