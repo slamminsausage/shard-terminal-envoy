@@ -1649,10 +1649,10 @@ export const CharacterGenerator: React.FC = () => {
     }
   };
 
-  const rollEventCheck = (characteristic: keyof Omit<Characteristics, 'psionics'>, target: number) => {
+  const rollEventCheck = (characteristic: keyof Omit<Characteristics, 'psionics'>, target: number, manualRoll?: number) => {
     const stat = characterData.characteristics[characteristic];
     const dm = getDM(stat.total);
-    const roll = rollDice(2, 6);
+    const roll = manualRoll ?? rollDice(2, 6);
     const total = roll + dm;
 
     setEventRollResult({ roll, dm, total });
@@ -3181,32 +3181,36 @@ export const CharacterGenerator: React.FC = () => {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                      <button
-                        onClick={rollAllCharacteristics}
-                        className="group bg-yellow-500/10 hover:bg-yellow-500/20 border border-yellow-500/30 hover:border-yellow-500/50 rounded-lg p-4 transition-all duration-200 hover:shadow-[0_0_15px_rgba(234,179,8,0.2)]"
-                      >
-                        <Dices className="h-6 w-6 text-yellow-400 mx-auto mb-2 group-hover:scale-110 transition-transform" />
-                        <div className="font-bold text-yellow-400 font-['Orbitron'] tracking-wide text-sm">Auto-Assign</div>
-                        <div className="text-xs text-terminal-primary/50 mt-1">Roll 6, assign in order</div>
-                      </button>
+                    <div className={`grid grid-cols-1 ${useManualDice ? '' : 'md:grid-cols-3'} gap-3`}>
+                      {!useManualDice && (
+                        <>
+                          <button
+                            onClick={rollAllCharacteristics}
+                            className="group bg-yellow-500/10 hover:bg-yellow-500/20 border border-yellow-500/30 hover:border-yellow-500/50 rounded-lg p-4 transition-all duration-200 hover:shadow-[0_0_15px_rgba(234,179,8,0.2)]"
+                          >
+                            <Dices className="h-6 w-6 text-yellow-400 mx-auto mb-2 group-hover:scale-110 transition-transform" />
+                            <div className="font-bold text-yellow-400 font-['Orbitron'] tracking-wide text-sm">Auto-Assign</div>
+                            <div className="text-xs text-terminal-primary/50 mt-1">Roll 6, assign in order</div>
+                          </button>
 
-                      <button
-                        onClick={rollForManualAssignment}
-                        className="group bg-yellow-500/10 hover:bg-yellow-500/20 border border-yellow-500/30 hover:border-yellow-500/50 rounded-lg p-4 transition-all duration-200 hover:shadow-[0_0_15px_rgba(234,179,8,0.2)]"
-                      >
-                        <Dices className="h-6 w-6 text-yellow-400 mx-auto mb-2 group-hover:scale-110 transition-transform" />
-                        <div className="font-bold text-yellow-400 font-['Orbitron'] tracking-wide text-sm">Manual Assign</div>
-                        <div className="text-xs text-terminal-primary/50 mt-1">Roll 6, pick placement</div>
-                      </button>
+                          <button
+                            onClick={rollForManualAssignment}
+                            className="group bg-yellow-500/10 hover:bg-yellow-500/20 border border-yellow-500/30 hover:border-yellow-500/50 rounded-lg p-4 transition-all duration-200 hover:shadow-[0_0_15px_rgba(234,179,8,0.2)]"
+                          >
+                            <Dices className="h-6 w-6 text-yellow-400 mx-auto mb-2 group-hover:scale-110 transition-transform" />
+                            <div className="font-bold text-yellow-400 font-['Orbitron'] tracking-wide text-sm">Manual Assign</div>
+                            <div className="text-xs text-terminal-primary/50 mt-1">Roll 6, pick placement</div>
+                          </button>
+                        </>
+                      )}
 
                       <button
                         onClick={() => setHasRolled(true)}
                         className="group bg-yellow-500/10 hover:bg-yellow-500/20 border border-yellow-500/30 hover:border-yellow-500/50 rounded-lg p-4 transition-all duration-200 hover:shadow-[0_0_15px_rgba(234,179,8,0.2)]"
                       >
                         <Dices className="h-6 w-6 text-yellow-400 mx-auto mb-2 group-hover:scale-110 transition-transform" />
-                        <div className="font-bold text-yellow-400 font-['Orbitron'] tracking-wide text-sm">Roll Individually</div>
-                        <div className="text-xs text-terminal-primary/50 mt-1">Roll each stat separately</div>
+                        <div className="font-bold text-yellow-400 font-['Orbitron'] tracking-wide text-sm">{useManualDice ? 'Enter Values Individually' : 'Roll Individually'}</div>
+                        <div className="text-xs text-terminal-primary/50 mt-1">{useManualDice ? 'Type each stat value' : 'Roll each stat separately'}</div>
                       </button>
                     </div>
                   </>
@@ -3367,14 +3371,16 @@ export const CharacterGenerator: React.FC = () => {
                             <div className="text-sm font-semibold uppercase tracking-wide text-terminal-primary">
                               {key}
                             </div>
-                            <Button
-                              onClick={() => rollSingleCharacteristic(key)}
-                              size="sm"
-                              variant="outline"
-                              className="border-terminal-primary/50 text-terminal-primary hover:bg-terminal-primary/20 h-7"
-                            >
-                              <Dices className="h-3 w-3" />
-                            </Button>
+                            {!useManualDice && (
+                              <Button
+                                onClick={() => rollSingleCharacteristic(key)}
+                                size="sm"
+                                variant="outline"
+                                className="border-terminal-primary/50 text-terminal-primary hover:bg-terminal-primary/20 h-7"
+                              >
+                                <Dices className="h-3 w-3" />
+                              </Button>
+                            )}
                           </div>
                           <div className="flex items-center gap-3">
                             {rollingStats.has(key) ? (
@@ -4682,27 +4688,64 @@ export const CharacterGenerator: React.FC = () => {
                             {currentEvent.requiresRoll && !eventRollResult && (
                               <div className="space-y-2">
                                 <p className="text-sm text-terminal-primary/80">{currentEvent.requiresRoll.displayText}</p>
-                                <Button
-                                  onClick={() => {
-                                    const success = rollEventCheck(currentEvent.requiresRoll!.characteristic, currentEvent.requiresRoll!.target);
-                                    // Auto-apply if no skill choice needed
-                                    if (success && currentEvent.successOutcome && !currentEvent.successOutcome.skills) {
-                                      applyEventOutcome(currentEvent.successOutcome);
-                                      setEventResolved(true);
-                                    } else if (!success && currentEvent.failureOutcome && !currentEvent.failureOutcome.skills) {
-                                      applyEventOutcome(currentEvent.failureOutcome);
-                                      setEventResolved(true);
-                                    } else if (success && !currentEvent.successOutcome?.skills) {
-                                      setEventResolved(true);
-                                    } else if (!success && !currentEvent.failureOutcome?.skills) {
-                                      setEventResolved(true);
-                                    }
-                                  }}
-                                  className="w-full bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
-                                >
-                                  <Dices className="h-4 w-4 mr-2" />
-                                  Roll {currentEvent.requiresRoll.characteristic.toUpperCase()} {currentEvent.requiresRoll.target}+
-                                </Button>
+                                {useManualDice ? (
+                                  <div className="flex gap-2">
+                                    <Input
+                                      type="number"
+                                      min={2}
+                                      max={12}
+                                      value={manualDiceValue}
+                                      onChange={(e) => setManualDiceValue(e.target.value)}
+                                      placeholder="2D6 (2-12)"
+                                      className="bg-black border-terminal-primary/50 text-terminal-primary placeholder:text-terminal-primary/40 w-28"
+                                    />
+                                    <Button
+                                      onClick={() => {
+                                        const val = parseInt(manualDiceValue);
+                                        if (!isNaN(val) && val >= 2 && val <= 12) {
+                                          const success = rollEventCheck(currentEvent.requiresRoll!.characteristic, currentEvent.requiresRoll!.target, val);
+                                          if (success && currentEvent.successOutcome && !currentEvent.successOutcome.skills) {
+                                            applyEventOutcome(currentEvent.successOutcome);
+                                            setEventResolved(true);
+                                          } else if (!success && currentEvent.failureOutcome && !currentEvent.failureOutcome.skills) {
+                                            applyEventOutcome(currentEvent.failureOutcome);
+                                            setEventResolved(true);
+                                          } else if (success && !currentEvent.successOutcome?.skills) {
+                                            setEventResolved(true);
+                                          } else if (!success && !currentEvent.failureOutcome?.skills) {
+                                            setEventResolved(true);
+                                          }
+                                          setManualDiceValue('');
+                                        }
+                                      }}
+                                      disabled={!manualDiceValue || isNaN(parseInt(manualDiceValue)) || parseInt(manualDiceValue) < 2 || parseInt(manualDiceValue) > 12}
+                                      className="flex-1 bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
+                                    >
+                                      Submit {currentEvent.requiresRoll.characteristic.toUpperCase()} {currentEvent.requiresRoll.target}+ Roll
+                                    </Button>
+                                  </div>
+                                ) : (
+                                  <Button
+                                    onClick={() => {
+                                      const success = rollEventCheck(currentEvent.requiresRoll!.characteristic, currentEvent.requiresRoll!.target);
+                                      if (success && currentEvent.successOutcome && !currentEvent.successOutcome.skills) {
+                                        applyEventOutcome(currentEvent.successOutcome);
+                                        setEventResolved(true);
+                                      } else if (!success && currentEvent.failureOutcome && !currentEvent.failureOutcome.skills) {
+                                        applyEventOutcome(currentEvent.failureOutcome);
+                                        setEventResolved(true);
+                                      } else if (success && !currentEvent.successOutcome?.skills) {
+                                        setEventResolved(true);
+                                      } else if (!success && !currentEvent.failureOutcome?.skills) {
+                                        setEventResolved(true);
+                                      }
+                                    }}
+                                    className="w-full bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
+                                  >
+                                    <Dices className="h-4 w-4 mr-2" />
+                                    Roll {currentEvent.requiresRoll.characteristic.toUpperCase()} {currentEvent.requiresRoll.target}+
+                                  </Button>
+                                )}
                               </div>
                             )}
 
@@ -5019,13 +5062,40 @@ export const CharacterGenerator: React.FC = () => {
                                     ))}
                                   </div>
                                   {!skillTableRollResult && (
-                                    <Button
-                                      onClick={rollSkillFromExpandedTable}
-                                      className="w-full bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30 border border-terminal-primary/50"
-                                    >
-                                      <Dices className="h-4 w-4 mr-2" />
-                                      Roll 1D6
-                                    </Button>
+                                    useManualDice ? (
+                                      <div className="flex gap-2">
+                                        <Input
+                                          type="number"
+                                          min={1}
+                                          max={6}
+                                          value={manualDiceValue}
+                                          onChange={(e) => setManualDiceValue(e.target.value)}
+                                          placeholder="1D6 (1-6)"
+                                          className="bg-black border-terminal-primary/50 text-terminal-primary placeholder:text-terminal-primary/40 w-24"
+                                        />
+                                        <Button
+                                          onClick={() => {
+                                            const val = parseInt(manualDiceValue);
+                                            if (!isNaN(val) && val >= 1 && val <= 6) {
+                                              rollSkillFromExpandedTable(val);
+                                              setManualDiceValue('');
+                                            }
+                                          }}
+                                          disabled={!manualDiceValue || isNaN(parseInt(manualDiceValue)) || parseInt(manualDiceValue) < 1 || parseInt(manualDiceValue) > 6}
+                                          className="flex-1 bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30 border border-terminal-primary/50"
+                                        >
+                                          Submit Skill Roll
+                                        </Button>
+                                      </div>
+                                    ) : (
+                                      <Button
+                                        onClick={() => rollSkillFromExpandedTable()}
+                                        className="w-full bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30 border border-terminal-primary/50"
+                                      >
+                                        <Dices className="h-4 w-4 mr-2" />
+                                        Roll 1D6
+                                      </Button>
+                                    )
                                   )}
                                 </div>
                               )}
@@ -5375,21 +5445,61 @@ export const CharacterGenerator: React.FC = () => {
                           <p className="text-xs text-terminal-primary/70">Select new assignment:</p>
                           <div className="grid grid-cols-1 gap-2">
                             {selectedCareer?.assignments.map((assignment, idx) => (
-                              <Button
-                                key={idx}
-                                onClick={() => rollSwitchAssignment(idx)}
-                                disabled={idx === selectedAssignment}
-                                variant="outline"
-                                className={`border-terminal-primary/50 text-terminal-primary hover:bg-terminal-primary/20 ${
-                                  idx === selectedAssignment ? 'opacity-40 cursor-not-allowed' : ''
-                                }`}
-                              >
-                                {assignment.name}
-                                {idx === selectedAssignment ? ' (current)' : ''}
-                                <span className="ml-2 text-xs text-terminal-primary/50">
-                                  Survival: {assignment.survivalStat.toUpperCase()} {assignment.survivalTarget}+ | Advancement: {assignment.advancementStat.toUpperCase()} {assignment.advancementTarget}+
-                                </span>
-                              </Button>
+                              useManualDice ? (
+                                <div key={idx} className="space-y-1">
+                                  <div className={`text-sm text-terminal-primary ${idx === selectedAssignment ? 'opacity-40' : ''}`}>
+                                    {assignment.name}
+                                    {idx === selectedAssignment ? ' (current)' : ''}
+                                    <span className="ml-2 text-xs text-terminal-primary/50">
+                                      Survival: {assignment.survivalStat.toUpperCase()} {assignment.survivalTarget}+ | Advancement: {assignment.advancementStat.toUpperCase()} {assignment.advancementTarget}+
+                                    </span>
+                                  </div>
+                                  {idx !== selectedAssignment && (
+                                    <div className="flex gap-2">
+                                      <Input
+                                        type="number"
+                                        min={2}
+                                        max={12}
+                                        value={manualDiceValue}
+                                        onChange={(e) => setManualDiceValue(e.target.value)}
+                                        placeholder="2D6 (2-12)"
+                                        className="bg-black border-terminal-primary/50 text-terminal-primary placeholder:text-terminal-primary/40 w-28"
+                                      />
+                                      <Button
+                                        onClick={() => {
+                                          const val = parseInt(manualDiceValue);
+                                          if (!isNaN(val) && val >= 2 && val <= 12) {
+                                            rollSwitchAssignment(idx, val);
+                                            setManualDiceValue('');
+                                          }
+                                        }}
+                                        disabled={!manualDiceValue || isNaN(parseInt(manualDiceValue)) || parseInt(manualDiceValue) < 2 || parseInt(manualDiceValue) > 12}
+                                        size="sm"
+                                        variant="outline"
+                                        className="border-terminal-primary/50 text-terminal-primary hover:bg-terminal-primary/20"
+                                      >
+                                        Switch to {assignment.name}
+                                      </Button>
+                                    </div>
+                                  )}
+                                </div>
+                              ) : (
+                                <Button
+                                  key={idx}
+                                  onClick={() => rollSwitchAssignment(idx)}
+                                  disabled={idx === selectedAssignment}
+                                  variant="outline"
+                                  className={`border-terminal-primary/50 text-terminal-primary hover:bg-terminal-primary/20 ${
+                                    idx === selectedAssignment ? 'opacity-40 cursor-not-allowed' : ''
+                                  }`}
+                                >
+                                  {assignment.name}
+                                  {idx === selectedAssignment ? ' (current)' : ''}
+                                  <span className="ml-2 text-xs text-terminal-primary/50">
+                                    Survival: {assignment.survivalStat.toUpperCase()} {assignment.survivalTarget}+ | Advancement: {assignment.advancementStat.toUpperCase()} {assignment.advancementTarget}+
+                                  </span>
+                                </Button>
+                              )
                             ))}
                           </div>
                           <Button
