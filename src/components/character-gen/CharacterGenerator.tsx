@@ -2935,18 +2935,19 @@ export const CharacterGenerator: React.FC = () => {
             </div>
           </div>
           <div className="flex items-center gap-4">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={useManualDice}
-                onChange={(e) => {
-                  setUseManualDice(e.target.checked);
-                  setManualDiceValue('');
-                }}
-                className="accent-terminal-primary"
-              />
-              <span className="text-xs text-terminal-primary/60">Manual Dice</span>
-            </label>
+            <button
+              onClick={() => {
+                setUseManualDice(!useManualDice);
+                setManualDiceValue('');
+              }}
+              className={`px-3 py-1.5 rounded border text-xs font-bold font-['Orbitron'] tracking-wide transition-all duration-200 ${
+                useManualDice
+                  ? 'bg-amber-500/20 border-amber-500 text-amber-400 shadow-[0_0_10px_rgba(245,158,11,0.3)]'
+                  : 'bg-terminal-primary/10 border-terminal-primary/30 text-terminal-primary/60 hover:border-terminal-primary/60 hover:text-terminal-primary'
+              }`}
+            >
+              {useManualDice ? 'MANUAL DICE: ON' : 'MANUAL DICE: OFF'}
+            </button>
             <div className="text-right">
               <div className="text-terminal-primary font-bold">
                 {characterData.name || 'Unnamed Character'}
