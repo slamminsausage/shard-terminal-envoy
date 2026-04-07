@@ -862,13 +862,15 @@ export const CharacterGenerator: React.FC = () => {
         career: selectedCareer.name,
         notes: prev.notes + `\nQualified for ${selectedCareer.name}: ${roll} + ${dm} = ${total}`,
         eventQualificationDM: 0, // Reset after using
+        preCareerQualificationDM: 0, // Reset after first use - one-time bonus
         // Note: totalCareerTerms is incremented in completeTerm(), not here
       }));
     } else {
-      // Reset eventQualificationDM even on failure (it's a one-time bonus)
+      // Reset eventQualificationDM and preCareerQualificationDM even on failure (one-time bonuses)
       setCharacterData(prev => ({
         ...prev,
         eventQualificationDM: 0,
+        preCareerQualificationDM: 0, // Reset after first use - one-time bonus
       }));
     }
   };
@@ -1324,6 +1326,7 @@ export const CharacterGenerator: React.FC = () => {
     setCommissionRollLog(log);
     setCommissionPending(false);
     setNeedsCommissionRoll(false);
+    setCommissionRollDM(0); // Reset after use - one-time bonus from pre-career
 
     if (passed) {
       setIsCommissioned(true);
@@ -2794,8 +2797,9 @@ export const CharacterGenerator: React.FC = () => {
     setMilitaryAcademyService(null);
     setAcademyGradSkillsSelected([]);
     setAcademyGradPendingSpecialty(null);
-    // Reset event advancement DM for new career
+    // Reset event advancement DM and commission DM for new career
     setEventAdvancementDM(0);
+    setCommissionRollDM(0);
     // Reset assignment switching state
     setIsSwitchingAssignment(false);
     setSwitchAssignmentTarget(null);
