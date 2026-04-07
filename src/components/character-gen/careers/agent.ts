@@ -165,6 +165,7 @@ const AGENT_EVENTS: GameEvent[] = [
     resolution: {
       type: 'automatic',
       effects: {
+        advancementDM: 2,
         message: 'Your dedication is noticed. Gain DM+2 to your next advancement roll.',
       },
     },
