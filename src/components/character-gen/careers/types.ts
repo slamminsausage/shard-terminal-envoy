@@ -203,7 +203,7 @@ export interface GameEvent {
       }
     | {
         type: 'table_redirect';
-        table: 'life_events' | 'injury' | 'aging' | 'draft' | 'unusual_events';
+        table: 'life_events' | 'injury' | 'aging' | 'draft' | 'unusual_events' | 'mishap';
         displayText: string;
       }
     | {

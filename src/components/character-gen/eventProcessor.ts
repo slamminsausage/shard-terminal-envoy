@@ -74,6 +74,8 @@ export interface EventState {
   // Sub-roll state
   subRollResult?: {
     roll: number;
+    dm?: number;
+    total?: number;
     outcome: { min: number; max: number; label: string; effects: EventEffects };
   };
 

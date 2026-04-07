@@ -323,6 +323,36 @@ const SCOUT_EVENTS: GameEvent[] = [
       },
     },
   },
+
+  // Roll 12 - Life on the edge
+  {
+    id: 'scout-event-12',
+    description: 'You spend several years jumping from world to world in your scout ship.',
+    resolution: {
+      type: 'choice',
+      displayText: 'Choose your reward for years of dedicated service:',
+      options: [
+        {
+          id: 'pilot',
+          label: 'Gain Pilot 1',
+          description: 'Years of flying hone your piloting skills',
+          effects: {
+            skills: { choices: ['Pilot'], level: 1 },
+            message: 'Years of flying have honed your piloting skills. Gain Pilot 1.',
+          },
+        },
+        {
+          id: 'advancement',
+          label: 'Automatic Advancement',
+          description: 'Your reputation earns you recognition',
+          effects: {
+            autoPromotion: true,
+            message: 'Your years of dedicated service earn you automatic advancement.',
+          },
+        },
+      ],
+    },
+  },
 ];
 
 export const CAREER_SCOUT: CareerDefinition = {

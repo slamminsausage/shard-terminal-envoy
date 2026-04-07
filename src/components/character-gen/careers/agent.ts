@@ -240,10 +240,24 @@ const AGENT_EVENTS: GameEvent[] = [
           label: 'DM+4 to Advancement',
           description: 'Your mentor puts in a good word',
           effects: {
+            advancementDM: 4,
             message: 'Your mentor\'s recommendation gives you DM+4 to an advancement roll.',
           },
         },
       ],
+    },
+  },
+
+  // Roll 12 - Major conspiracy
+  {
+    id: 'agent-event-12',
+    description: 'Your efforts uncover a major conspiracy against your employers.',
+    resolution: {
+      type: 'automatic',
+      effects: {
+        autoPromotion: true,
+        message: 'You uncover a major conspiracy against your employers. You are automatically promoted.',
+      },
     },
   },
 ];
@@ -327,6 +341,7 @@ export const CAREER_AGENT: CareerDefinition = {
             description: 'Leave career with DM+4 to next Qualification roll, but gain a Rival.',
             effects: {
               rivals: 1,
+              qualificationDM: 4,
               message: 'You accept the deal. DM+4 to your next Qualification roll, but you gain a Rival.',
             },
           },
