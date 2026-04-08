@@ -767,11 +767,25 @@ export function EventHandler({
     }
 
     if (choices && choices.length > 1) {
+      const chooseCount = state.appliedEffects?.skills?.chooseCount || 1;
+      const alreadySelected = state.selectedSkills || [];
+      const remainingPicks = chooseCount - alreadySelected.length;
+      const availableChoices = choices.filter(skill => !alreadySelected.includes(skill));
+
       return (
         <div className="space-y-2">
-          <p className="text-sm text-terminal-primary/80">Choose a skill to gain at level {level ?? 1}:</p>
+          <p className="text-sm text-terminal-primary/80">
+            {chooseCount > 1
+              ? `Choose ${remainingPicks} skill${remainingPicks > 1 ? 's' : ''} to gain at level ${level ?? 1} (${alreadySelected.length}/${chooseCount} selected):`
+              : `Choose a skill to gain at level ${level ?? 1}:`}
+          </p>
+          {alreadySelected.length > 0 && (
+            <div className="text-xs text-green-400">
+              Selected: {alreadySelected.join(', ')}
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-2">
-            {choices.map(skill => (
+            {availableChoices.map(skill => (
               <Button
                 key={skill}
                 onClick={() => handleSelectSkillGain(skill)}

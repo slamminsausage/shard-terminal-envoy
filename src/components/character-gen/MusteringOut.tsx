@@ -44,6 +44,7 @@ interface BenefitRollResult {
 
 interface MusteringOutProps {
   careerHistory: CareerRecord[];
+  lostBenefitCareers?: string[];
   currentCash: number;
   currentShipShares: number;
   hasTasMembership: boolean;
@@ -168,6 +169,7 @@ const formatBenefitEntry = (entry: BenefitEntry): string => {
 
 export const MusteringOut: React.FC<MusteringOutProps> = ({
   careerHistory,
+  lostBenefitCareers = [],
   currentCash,
   currentShipShares,
   hasTasMembership,
@@ -177,10 +179,15 @@ export const MusteringOut: React.FC<MusteringOutProps> = ({
   onComplete,
   useManualDice = false,
 }) => {
-  // Filter out pre-careers (they don't get benefits)
+  // Filter out pre-careers (they don't get benefits) and zero out careers that lost benefits
   const eligibleCareers = useMemo(() =>
-    careerHistory.filter(c => !c.isPreCareer),
-    [careerHistory]
+    careerHistory
+      .filter(c => !c.isPreCareer)
+      .map(c => lostBenefitCareers.includes(c.careerName)
+        ? { ...c, termsServed: 0, highestRank: 0, extraBenefitRolls: 0 }
+        : c
+      ),
+    [careerHistory, lostBenefitCareers]
   );
 
   // Calculate total benefit rolls per career

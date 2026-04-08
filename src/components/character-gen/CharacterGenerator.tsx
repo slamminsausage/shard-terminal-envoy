@@ -129,6 +129,7 @@ interface CharacterData {
   paroleThreshold?: number;       // Current parole threshold (starts at 1D+2)
   forcedCareer?: string;          // Career that must be taken next term
   prisonerSurvivalDM?: number;    // DM to survival rolls from gang membership, etc.
+  lostBenefitCareers?: string[];  // Careers that lost benefits from events
 
   // Psionic tracking
   psiTested?: boolean;            // Whether PSI has been tested
@@ -339,6 +340,7 @@ export const CharacterGenerator: React.FC = () => {
     paroleThreshold: undefined,
     forcedCareer: undefined,
     prisonerSurvivalDM: 0,
+    lostBenefitCareers: [],
     // Psionic tracking
     psiTested: false,
     psiTalents: [],
@@ -452,6 +454,8 @@ export const CharacterGenerator: React.FC = () => {
 
   // Mustering out state
   const [isMusteringOut, setIsMusteringOut] = useState(false);
+  const [forceLeaveCareer, setForceLeaveCareer] = useState(false);
+  const [pendingInjurySeverity, setPendingInjurySeverity] = useState<'severe' | null>(null);
 
   // Mishap GameEvent state - for mishaps that require player interaction (rolls, choices)
   const [pendingMishapGameEvent, setPendingMishapGameEvent] = useState<GameEvent | null>(null);
@@ -1271,6 +1275,8 @@ export const CharacterGenerator: React.FC = () => {
     setPendingMishapGameEvent(null);
     setMishapRollNumber(null);
     setNeedsMishapRoll(false);
+    // Reset forced leave state
+    setForceLeaveCareer(false);
     // Reset commission state
     setCommissionPending(false);
     setCommissionRollLog('');
@@ -1384,6 +1390,9 @@ export const CharacterGenerator: React.FC = () => {
     const assignment = selectedCareer.assignments[selectedAssignment];
     const charValue = characterData.characteristics[assignment.survivalStat].total;
     let dm = getDM(charValue);
+
+    // Apply prisoner survival DM (e.g., from gang membership)
+    dm += characterData.prisonerSurvivalDM || 0;
 
     // For pre-careers, this is actually a GRADUATION check
     const isPreCareer = selectedCareer.isPreCareer || false;
@@ -1910,6 +1919,42 @@ export const CharacterGenerator: React.FC = () => {
         setTermSkillsGained(prev => [...prev, 'Extra Benefit roll']);
       }
 
+      // Prisoner career effects
+      if (effects.paroleThresholdChange) {
+        setCharacterData(prev => ({
+          ...prev,
+          paroleThreshold: (prev.paroleThreshold || 0) + effects.paroleThresholdChange!,
+        }));
+        const sign = effects.paroleThresholdChange > 0 ? '+' : '';
+        setTermSkillsGained(prev => [...prev, `Parole threshold ${sign}${effects.paroleThresholdChange}`]);
+      }
+      if (effects.survivalDM) {
+        setCharacterData(prev => ({
+          ...prev,
+          prisonerSurvivalDM: (prev.prisonerSurvivalDM || 0) + effects.survivalDM!,
+        }));
+        setTermSkillsGained(prev => [...prev, `DM+${effects.survivalDM} to survival rolls`]);
+      }
+      if (effects.rerollParoleThreshold) {
+        const newThreshold = rollDice(1, 6) + 2;
+        setCharacterData(prev => ({
+          ...prev,
+          paroleThreshold: newThreshold,
+        }));
+        setTermSkillsGained(prev => [...prev, `Parole threshold rerolled to ${newThreshold}`]);
+      }
+      if (effects.leaveCareer) {
+        setForceLeaveCareer(true);
+        setTermSkillsGained(prev => [...prev, 'You leave this career.']);
+      }
+      if (effects.loseBenefits) {
+        setCharacterData(prev => ({
+          ...prev,
+          lostBenefitCareers: [...(prev.lostBenefitCareers || []), selectedCareer?.name || ''],
+        }));
+        setTermSkillsGained(prev => [...prev, 'Lost all Benefit rolls from this career']);
+      }
+
       // Handle table redirects (e.g., rollOnTable: 'injury')
       if (effects.rollOnTable) {
         // Add any messages first
@@ -1918,6 +1963,11 @@ export const CharacterGenerator: React.FC = () => {
             setTermSkillsGained(prev => [...prev, msg]);
           }
         });
+
+        // Track injury severity for severe injuries (roll twice, take lower)
+        if (effects.injurySeverity === 'severe') {
+          setPendingInjurySeverity('severe');
+        }
 
         // Trigger the table redirect
         handleTableRedirect(effects.rollOnTable as 'life_events' | 'injury' | 'aging' | 'draft' | 'unusual_events' | 'mishap');
@@ -2023,8 +2073,41 @@ export const CharacterGenerator: React.FC = () => {
         setEventBenefitDMs(prev => [...prev, effects.benefitDM!]);
       }
 
+      // Prisoner career effects
+      if (effects.paroleThresholdChange) {
+        setCharacterData(prev => ({
+          ...prev,
+          paroleThreshold: (prev.paroleThreshold || 0) + effects.paroleThresholdChange!,
+        }));
+      }
+      if (effects.survivalDM) {
+        setCharacterData(prev => ({
+          ...prev,
+          prisonerSurvivalDM: (prev.prisonerSurvivalDM || 0) + effects.survivalDM!,
+        }));
+      }
+      if (effects.rerollParoleThreshold) {
+        const newThreshold = rollDice(1, 6) + 2;
+        setCharacterData(prev => ({
+          ...prev,
+          paroleThreshold: newThreshold,
+        }));
+      }
+      if (effects.leaveCareer) {
+        setForceLeaveCareer(true);
+      }
+      if (effects.loseBenefits) {
+        setCharacterData(prev => ({
+          ...prev,
+          lostBenefitCareers: [...(prev.lostBenefitCareers || []), selectedCareer?.name || ''],
+        }));
+      }
+
       // Handle table redirects from mishap (e.g., roll on injury)
       if (effects.rollOnTable) {
+        if (effects.injurySeverity === 'severe') {
+          setPendingInjurySeverity('severe');
+        }
         handleTableRedirect(effects.rollOnTable as 'life_events' | 'injury' | 'aging' | 'draft' | 'unusual_events' | 'mishap');
         return; // Don't complete mishap yet - wait for redirected table to complete
       }
@@ -2084,9 +2167,19 @@ export const CharacterGenerator: React.FC = () => {
         tableName = 'Life Events';
         break;
       case 'injury':
-        roll = rollDiceUtil(1, 6); // 1D6
-        event = getInjury(roll);
-        tableName = 'Injury';
+        if (pendingInjurySeverity === 'severe') {
+          // Severe injury: roll twice, take the lower (worse) result
+          const roll1 = rollDiceUtil(1, 6);
+          const roll2 = rollDiceUtil(1, 6);
+          roll = Math.min(roll1, roll2);
+          event = getInjury(roll);
+          tableName = `Injury (Severe - rolled ${roll1} and ${roll2}, took ${roll})`;
+          setPendingInjurySeverity(null);
+        } else {
+          roll = rollDiceUtil(1, 6); // 1D6
+          event = getInjury(roll);
+          tableName = 'Injury';
+        }
         break;
       case 'mishap':
         roll = rollDiceUtil(1, 6); // 1D6
@@ -2674,6 +2767,7 @@ export const CharacterGenerator: React.FC = () => {
     setCommissionRollLog('');
     setBasicTrainingApplied(false);
     setBasicTrainingSkillSelected(null);
+    setForceLeaveCareer(false);
 
     if (choice === 'drifter') {
       // Enter Drifter career
@@ -4123,6 +4217,7 @@ export const CharacterGenerator: React.FC = () => {
                 {isMusteringOut ? (
                   <MusteringOut
                     careerHistory={characterData.careerHistory}
+                    lostBenefitCareers={characterData.lostBenefitCareers || []}
                     currentCash={characterData.cash_on_hand}
                     currentShipShares={characterData.shipShares}
                     hasTasMembership={characterData.tasMembership}
@@ -5507,13 +5602,18 @@ export const CharacterGenerator: React.FC = () => {
                   ) : !isSwitchingAssignment ? (
                     // Regular career: show start next term, switch career, switch assignment, or muster out
                     <div className="space-y-2">
+                      {forceLeaveCareer && (
+                        <p className="text-xs text-yellow-400">You must leave this career.</p>
+                      )}
                       <div className="flex gap-2">
-                        <Button
-                          onClick={startNewTerm}
-                          className="flex-1 bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30 border border-terminal-primary/50"
-                        >
-                          Start Term {currentTerm + 1}
-                        </Button>
+                        {!forceLeaveCareer && (
+                          <Button
+                            onClick={startNewTerm}
+                            className="flex-1 bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30 border border-terminal-primary/50"
+                          >
+                            Start Term {currentTerm + 1}
+                          </Button>
+                        )}
                         <Button
                           onClick={musterOut}
                           className="flex-1 bg-red-500/20 text-red-400 hover:bg-red-500/30 border border-red-500/50"
