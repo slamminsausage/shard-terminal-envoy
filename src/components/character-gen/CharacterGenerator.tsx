@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Dices, User, Briefcase, Award, Save, ArrowRight, AlertCircle, RefreshCw, ChevronDown, ChevronUp, Star, Ship, Users } from 'lucide-react';
+import { Dices, User, Briefcase, Award, Save, ArrowRight, AlertCircle, RefreshCw, ChevronDown, ChevronUp, Star, Ship, Users, Lock } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useCampaign } from '@/contexts/CampaignContext';
 import { ALL_CAREERS, BACKGROUND_SKILLS, getPreCareerEvent, CAREER_PRISONER, rollInitialParoleThreshold, CAREER_PSION, performPsiTesting, PSIONIC_TALENTS, type PsiTestResult } from './careers';
@@ -476,38 +476,48 @@ export const CharacterGenerator: React.FC = () => {
   const [useManualDice, setUseManualDice] = useState(false);
   const [manualDiceValue, setManualDiceValue] = useState<string>('');
 
-  // Get available careers based on current term number
+  // Always return all careers - locked state is handled by isCareerAvailable()
   const getAvailableCareers = (): CareerDefinition[] => {
+    return ALL_CAREERS;
+  };
+
+  // Check if a career can be selected (returns availability + reason if locked)
+  const isCareerAvailable = (career: CareerDefinition): { available: boolean; reason?: string } => {
     const totalTerms = characterData.totalCareerTerms || 0;
 
-    // If character has a forced career (e.g., arrested -> Prisoner), only that career is available
+    // Forced career: only that career is available
     if (characterData.forcedCareer) {
-      if (characterData.forcedCareer === 'Prisoner') {
-        return [CAREER_PRISONER];
+      if (career.isPrisonerCareer && characterData.forcedCareer === 'Prisoner') {
+        return { available: true };
       }
-      // For other forced careers, find in ALL_CAREERS
-      const forcedCareer = ALL_CAREERS.find(c => c.name === characterData.forcedCareer);
-      if (forcedCareer) {
-        return [forcedCareer];
+      if (career.name === characterData.forcedCareer) {
+        return { available: true };
+      }
+      return { available: false, reason: `You must enter the ${characterData.forcedCareer} career` };
+    }
+
+    // Pre-careers: limited by terms and one-time use
+    if (career.isPreCareer) {
+      if (characterData.hasCompletedPreCareer) return { available: false, reason: 'Already completed a pre-career' };
+      if (totalTerms >= 3) return { available: false, reason: 'Pre-careers unavailable after 3 terms' };
+    }
+
+    // Prisoner: only via forced entry
+    if (career.isPrisonerCareer) {
+      return { available: false, reason: 'Can only enter through sentencing' };
+    }
+
+    // Psion: requires PSI testing with PSI > 0
+    if (career.requiresPsiTesting) {
+      if (!characterData.psiTested) {
+        return { available: false, reason: 'Requires psionic testing' };
+      }
+      if ((characterData.characteristics.psionics?.total || 0) === 0) {
+        return { available: false, reason: 'No psionic potential detected' };
       }
     }
 
-    return ALL_CAREERS.filter(career => {
-      // Pre-careers are only available for first 3 terms
-      if (career.isPreCareer) {
-        // Can't take pre-career if already completed one
-        if (characterData.hasCompletedPreCareer) return false;
-        // Only available for terms 1-3
-        return totalTerms < 3;
-      }
-      // Psion career requires PSI testing and PSI > 0
-      if (career.requiresPsiTesting) {
-        if (!characterData.psiTested) return false;
-        if ((characterData.characteristics.psionics?.total || 0) === 0) return false;
-      }
-      // Regular careers always available
-      return true;
-    });
+    return { available: true };
   };
 
   // Get qualification DM for pre-careers based on term number
@@ -3755,16 +3765,22 @@ export const CharacterGenerator: React.FC = () => {
                   const theme = getCareerTheme(career.name);
                   const CareerIcon = theme.icon;
                   const isSelected = selectedCareer?.name === career.name;
+                  const availability = isCareerAvailable(career);
+                  const isLocked = !availability.available;
 
                   return (
                     <Card
                       key={career.name}
-                      className="cursor-pointer transition-all duration-200 border-2 bg-black"
+                      className={`transition-all duration-200 border-2 bg-black ${
+                        isLocked ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'
+                      }`}
                       style={{
-                        ...getCareerCardStyle(career.name, isSelected),
-                        borderWidth: isSelected ? '2px' : '1px',
+                        ...getCareerCardStyle(career.name, isSelected && !isLocked),
+                        borderWidth: isSelected && !isLocked ? '2px' : '1px',
                       }}
                       onClick={() => {
+                        if (isLocked) return;
+
                         // Handle Prisoner career specially (forced entry, automatic qualification)
                         if (career.isPrisonerCareer) {
                           becomePrisoner();
@@ -3805,6 +3821,11 @@ export const CharacterGenerator: React.FC = () => {
                                   Pre-Career
                                 </span>
                               )}
+                              {isLocked && (
+                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-terminal-primary/10 text-terminal-primary/40 uppercase font-bold flex items-center gap-1">
+                                  <Lock className="h-2.5 w-2.5" /> Locked
+                                </span>
+                              )}
                             </div>
                             <p className="text-xs text-terminal-primary/60 italic mb-2">{theme.tagline}</p>
                             <p className="text-sm text-terminal-primary/80 mb-2">{career.description}</p>
@@ -3814,6 +3835,11 @@ export const CharacterGenerator: React.FC = () => {
                             >
                               Qualification: {career.qualification}
                             </div>
+                            {isLocked && availability.reason && (
+                              <div className="text-xs text-terminal-primary/40 italic mt-1">
+                                {availability.reason}
+                              </div>
+                            )}
                           </div>
                         </div>
                       </CardContent>
