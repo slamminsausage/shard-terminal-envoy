@@ -246,15 +246,15 @@ const NOBLE_EVENTS: GameEvent[] = [
   // Event 4: Wide range of experiences
   {
     id: 'noble-event-4',
-    description: 'Your time as a ruler or playboy gives you a wide range of experiences. Gain one of Animals (riding) 1, Art 1, Carouse 1 or Streetwise 1.',
+    description: 'Your time as a ruler or playboy gives you a wide range of experiences. Gain one of Animals (Riding) 1, Art 1, Carouse 1 or Streetwise 1.',
     resolution: {
       type: 'choice',
       displayText: 'Your privileged life gives you varied experiences:',
       options: [
         {
           id: 'animals',
-          label: 'Animals (riding) 1',
-          effects: { skills: { choices: ['Animals (riding)'], level: 1 }, message: 'You learn to ride with the nobility.' },
+          label: 'Animals (Riding) 1',
+          effects: { skills: { choices: ['Animals (Riding)'], level: 1 }, message: 'You learn to ride with the nobility.' },
         },
         {
           id: 'art',

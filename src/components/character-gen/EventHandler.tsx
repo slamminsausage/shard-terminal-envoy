@@ -26,7 +26,7 @@ interface EventHandlerProps {
   characteristics: Characteristics;
   skills: Record<string, { proficient: boolean; value: string }>;
   onComplete: (effects: EventEffects | undefined, messages: string[]) => void;
-  onTableRedirect?: (table: 'life_events' | 'injury' | 'aging' | 'draft' | 'unusual_events' | 'mishap') => void;
+  onTableRedirect?: (table: 'life_events' | 'injury' | 'aging' | 'draft' | 'unusual_events' | 'mishap' | 'prison_event') => void;
   useManualDice?: boolean; // When true, show manual dice entry instead of auto-roll buttons
 }
 

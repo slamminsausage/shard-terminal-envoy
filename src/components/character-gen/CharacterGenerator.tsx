@@ -8,7 +8,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dices, User, Briefcase, Award, Save, ArrowRight, AlertCircle, RefreshCw, ChevronDown, ChevronUp, Star, Ship, Users, Lock } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useCampaign } from '@/contexts/CampaignContext';
-import { ALL_CAREERS, BACKGROUND_SKILLS, getPreCareerEvent, CAREER_PRISONER, rollInitialParoleThreshold, CAREER_PSION, performPsiTesting, PSIONIC_TALENTS, type PsiTestResult } from './careers';
+import { ALL_CAREERS, BACKGROUND_SKILLS, getPreCareerEvent, CAREER_PRISONER, rollInitialParoleThreshold, CAREER_PSION, performPsiTesting, PSIONIC_TALENTS, getPrisonSubEvent, type PsiTestResult } from './careers';
 import type { CareerDefinition, Characteristics, StructuredEvent, EventOutcome, GameEvent, EventEffects } from './careers';
 import { isGameEvent } from './careers';
 import { rollDraft, type DraftResult, getLifeEvent, getInjury, getUnusualEvent, rollAging, applyAgingEffects, type AgingRollResult } from './tables';
@@ -1964,6 +1964,20 @@ export const CharacterGenerator: React.FC = () => {
         }));
         setTermSkillsGained(prev => [...prev, 'Lost all Benefit rolls from this career']);
       }
+      if (effects.paroleReduction) {
+        const reduction = typeof effects.paroleReduction === 'number'
+          ? effects.paroleReduction
+          : rollDiceExpression(effects.paroleReduction);
+        setCharacterData(prev => ({
+          ...prev,
+          paroleThreshold: Math.max(0, (prev.paroleThreshold || 0) - reduction),
+        }));
+        setTermSkillsGained(prev => [...prev, `Parole threshold reduced by ${reduction}`]);
+      }
+      if (effects.mustLeaveCareer) {
+        setForceLeaveCareer(true);
+        setTermSkillsGained(prev => [...prev, 'You must leave this career.']);
+      }
 
       // Handle table redirects (e.g., rollOnTable: 'injury')
       if (effects.rollOnTable) {
@@ -1980,7 +1994,7 @@ export const CharacterGenerator: React.FC = () => {
         }
 
         // Trigger the table redirect
-        handleTableRedirect(effects.rollOnTable as 'life_events' | 'injury' | 'aging' | 'draft' | 'unusual_events' | 'mishap');
+        handleTableRedirect(effects.rollOnTable as 'life_events' | 'injury' | 'aging' | 'draft' | 'unusual_events' | 'mishap' | 'prison_event');
         return; // Don't mark event as completed yet - wait for redirected table
       }
     }
@@ -2112,13 +2126,55 @@ export const CharacterGenerator: React.FC = () => {
           lostBenefitCareers: [...(prev.lostBenefitCareers || []), selectedCareer?.name || ''],
         }));
       }
+      if (effects.paroleReduction) {
+        const reduction = typeof effects.paroleReduction === 'number'
+          ? effects.paroleReduction
+          : rollDiceExpression(effects.paroleReduction);
+        setCharacterData(prev => ({
+          ...prev,
+          paroleThreshold: Math.max(0, (prev.paroleThreshold || 0) - reduction),
+        }));
+      }
+      if (effects.mustLeaveCareer) {
+        setForceLeaveCareer(true);
+      }
+
+      // Effects that also exist in regular event handler — needed for mishap outcomes
+      if (effects.forceCareer) {
+        setCharacterData(prev => ({ ...prev, forcedCareer: effects.forceCareer }));
+      }
+      if (effects.allowCareer) {
+        setCharacterData(prev => ({
+          ...prev,
+          allowedCareers: [...(prev.allowedCareers || []), effects.allowCareer!],
+        }));
+      }
+      if (effects.failGraduation) {
+        setPreCareerGraduated(false);
+        setTermSurvived(false);
+      }
+      if (effects.canTestPsi) {
+        setCharacterData(prev => ({ ...prev, canTestPsi: true }));
+      }
+      if (effects.advancementDM) {
+        setEventAdvancementDM(prev => prev + effects.advancementDM!);
+      }
+      if (effects.autoPromotion) {
+        setEventAdvancementDM(prev => prev + 99);
+      }
+      if (effects.qualificationDM) {
+        setCharacterData(prev => ({
+          ...prev,
+          eventQualificationDM: (prev.eventQualificationDM || 0) + effects.qualificationDM!,
+        }));
+      }
 
       // Handle table redirects from mishap (e.g., roll on injury)
       if (effects.rollOnTable) {
         if (effects.injurySeverity === 'severe') {
           setPendingInjurySeverity('severe');
         }
-        handleTableRedirect(effects.rollOnTable as 'life_events' | 'injury' | 'aging' | 'draft' | 'unusual_events' | 'mishap');
+        handleTableRedirect(effects.rollOnTable as 'life_events' | 'injury' | 'aging' | 'draft' | 'unusual_events' | 'mishap' | 'prison_event');
         return; // Don't complete mishap yet - wait for redirected table to complete
       }
     }
@@ -2165,7 +2221,7 @@ export const CharacterGenerator: React.FC = () => {
   };
 
   // Handler for table redirects (Life Events, Injury, Mishap, etc.)
-  const handleTableRedirect = (table: 'life_events' | 'injury' | 'aging' | 'draft' | 'unusual_events' | 'mishap') => {
+  const handleTableRedirect = (table: 'life_events' | 'injury' | 'aging' | 'draft' | 'unusual_events' | 'mishap' | 'prison_event') => {
     let roll: number;
     let event: GameEvent | null = null;
     let tableName = '';
@@ -2207,6 +2263,11 @@ export const CharacterGenerator: React.FC = () => {
         event = getUnusualEvent(roll);
         tableName = 'Unusual Events';
         break;
+      case 'prison_event':
+        roll = rollDiceUtil(1, 6); // 1D6
+        event = getPrisonSubEvent(roll);
+        tableName = 'Prison Event';
+        break;
       case 'aging':
         // Aging table not yet implemented
         setTermSkillsGained(prev => [...prev, 'Roll on Aging table (not yet implemented)']);
@@ -2245,7 +2306,7 @@ export const CharacterGenerator: React.FC = () => {
   };
 
   // Handler for nested table redirects (e.g., Life Events -> Injury -> ...)
-  const handleNestedTableRedirect = (table: 'life_events' | 'injury' | 'aging' | 'draft' | 'unusual_events' | 'mishap') => {
+  const handleNestedTableRedirect = (table: 'life_events' | 'injury' | 'aging' | 'draft' | 'unusual_events' | 'mishap' | 'prison_event') => {
     // Complete the current redirected event first
     setRedirectedEvent(null);
     setRedirectTableRoll(null);
