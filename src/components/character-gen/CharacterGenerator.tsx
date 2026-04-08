@@ -748,7 +748,9 @@ export const CharacterGenerator: React.FC = () => {
   const finalizeCharacteristicsWithRace = () => {
     // Check if race modifiers already applied (species already set to non-human)
     if (characterData.raceId === selectedRace.id && characterData.species === selectedRace.name) {
-      // Already finalized, just proceed
+      // Already finalized — still recalculate background skills to be safe
+      const eduDM = getDM(characterData.characteristics.education.total);
+      setBackgroundSkillsRemaining(Math.max(0, eduDM + 3));
       setStep(3);
       return;
     }
@@ -3890,7 +3892,9 @@ export const CharacterGenerator: React.FC = () => {
                     disabled={
                       assignmentMode === 'manual'
                         ? characteristicRolls.length > 0
-                        : (backgroundSkillsRemaining === 0 && characterData.characteristics.education.total === 0)
+                        : !(['strength', 'dexterity', 'endurance', 'intellect', 'education', 'social'] as const).every(
+                            stat => characterData.characteristics[stat].total > 0
+                          )
                     }
                     className="flex-1 bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30 border border-yellow-500/50 transition-all duration-200 hover:shadow-[0_0_15px_rgba(234,179,8,0.3)]"
                   >
