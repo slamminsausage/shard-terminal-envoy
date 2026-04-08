@@ -102,7 +102,7 @@ export interface EventEffects {
   qualificationDM?: number;    // DM to next qualification roll
 
   // Redirect to another table
-  rollOnTable?: 'life_events' | 'injury' | 'aging' | 'unusual_events' | 'mishap';
+  rollOnTable?: 'life_events' | 'injury' | 'aging' | 'unusual_events' | 'mishap' | 'prison_event';
 
   // Display message
   message?: string;
@@ -203,7 +203,7 @@ export interface GameEvent {
       }
     | {
         type: 'table_redirect';
-        table: 'life_events' | 'injury' | 'aging' | 'draft' | 'unusual_events' | 'mishap';
+        table: 'life_events' | 'injury' | 'aging' | 'draft' | 'unusual_events' | 'mishap' | 'prison_event';
         displayText: string;
       }
     | {

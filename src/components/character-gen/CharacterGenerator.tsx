@@ -8,10 +8,10 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dices, User, Briefcase, Award, Save, ArrowRight, AlertCircle, RefreshCw, ChevronDown, ChevronUp, Star, Ship, Users, Lock } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useCampaign } from '@/contexts/CampaignContext';
-import { ALL_CAREERS, BACKGROUND_SKILLS, getPreCareerEvent, CAREER_PRISONER, rollInitialParoleThreshold, CAREER_PSION, performPsiTesting, PSIONIC_TALENTS, type PsiTestResult } from './careers';
-import type { CareerDefinition, Characteristics, StructuredEvent, EventOutcome, GameEvent, EventEffects } from './careers';
+import { ALL_CAREERS, BACKGROUND_SKILLS, getPreCareerEvent, CAREER_PRISONER, rollInitialParoleThreshold, CAREER_PSION, performPsiTesting, PSIONIC_TALENTS, getPrisonSubEvent, type PsiTestResult } from './careers';
+import type { CareerDefinition, Characteristics, CharacteristicName, StructuredEvent, EventOutcome, GameEvent, EventEffects } from './careers';
 import { isGameEvent } from './careers';
-import { rollDraft, type DraftResult, getLifeEvent, getInjury, getUnusualEvent, rollAging, applyAgingEffects, type AgingRollResult } from './tables';
+import { rollDraft, type DraftResult, getLifeEvent, getInjury, getUnusualEvent, rollAging, applyAgingEffects, type AgingRollResult, type AgingEffectLevel, type AgingCrisisResult, checkAgingCrisis, rollAnagathicsObtain, rollAnagathicsCost, type AnagathicsObtainResult, calculateMedicalCoverage, calculateInjuryCost, type MedicalCoverageResult } from './tables';
 import { EventHandler } from './EventHandler';
 import { rollDiceExpression, rollDice as rollDiceUtil } from './eventProcessor';
 import { SpecialtySelector, needsSpecialtySelection, getBaseSkillName } from './SpecialtySelector';
@@ -139,6 +139,15 @@ interface CharacterData {
   // Event-granted career effects
   eventQualificationDM?: number;  // DM bonus to next qualification roll from events
   allowedCareers?: string[];      // Careers unlocked by events (bypass qualification)
+
+  // Anagathics tracking
+  isUsingAnagathics?: boolean;        // Currently using anagathics
+  anagathicsStartTerm?: number;       // Total term number when anagathics started
+  anagathicsTotalCost?: number;       // Total anagathics cost accumulated
+
+  // Medical bills tracking
+  medicalDebt?: number;               // Accumulated unpaid medical bills
+  agingCrisisFailQualification?: boolean;  // Auto-fail next qualification after aging crisis
 }
 
 // ============================================================================
@@ -462,9 +471,21 @@ export const CharacterGenerator: React.FC = () => {
   const [mishapRollNumber, setMishapRollNumber] = useState<number | null>(null);
   const [needsMishapRoll, setNeedsMishapRoll] = useState(false); // True when survival failed and waiting for manual mishap roll
 
-  // Aging state
+  // Aging state (interactive)
   const [agingResult, setAgingResult] = useState<AgingRollResult | null>(null);
   const [agingPending, setAgingPending] = useState(false);
+  const [agingPhysicalChosen, setAgingPhysicalChosen] = useState(false);
+  const [agingMentalChosen, setAgingMentalChosen] = useState(false);
+  const [agingCrisis, setAgingCrisis] = useState<AgingCrisisResult | null>(null);
+  const [agingCrisisAcknowledged, setAgingCrisisAcknowledged] = useState(false);
+  const [agingChosenEffects, setAgingChosenEffects] = useState<{ stat: string; modifier: number }[]>([]);
+
+  // Anagathics state
+  const [showAnagathicsPrompt, setShowAnagathicsPrompt] = useState(false);
+  const [anagathicsRollResult, setAnagathicsRollResult] = useState<AnagathicsObtainResult | null>(null);
+
+  // Medical bills state
+  const [pendingMedicalBill, setPendingMedicalBill] = useState<MedicalCoverageResult | null>(null);
 
   // Assignment switching state
   const [isSwitchingAssignment, setIsSwitchingAssignment] = useState(false);
@@ -824,6 +845,17 @@ export const CharacterGenerator: React.FC = () => {
         notes: prev.notes + `\nEntered ${selectedCareer.name} (unlocked by event)`,
         // Remove the career from allowed list (one-time use)
         allowedCareers: prev.allowedCareers?.filter(c => c !== selectedCareer.name) || [],
+      }));
+      return;
+    }
+
+    // Auto-fail qualification after aging crisis
+    if (characterData.agingCrisisFailQualification) {
+      setQualificationPassed(false);
+      setQualificationRollLog('Automatic failure - still recovering from aging crisis.');
+      setCharacterData(prev => ({
+        ...prev,
+        agingCrisisFailQualification: false, // Reset after use (one-time penalty)
       }));
       return;
     }
@@ -1421,13 +1453,25 @@ export const CharacterGenerator: React.FC = () => {
 
     const roll = manualRoll ?? rollDice(2, 6);
     const total = roll + dm;
-    const survived = total >= assignment.survivalTarget;
+    let survived = total >= assignment.survivalTarget;
+    let survivalLog = `Survival Roll: ${roll} + ${dm} = ${total} (need ${assignment.survivalTarget}+)`;
+
+    // Anagathics: must make TWO survival checks per term
+    if (survived && characterData.isUsingAnagathics && !isPreCareer) {
+      const roll2 = rollDice(2, 6);
+      const total2 = roll2 + dm;
+      const survived2 = total2 >= assignment.survivalTarget;
+      survivalLog += ` | Anagathics 2nd check: ${roll2} + ${dm} = ${total2} (need ${assignment.survivalTarget}+)`;
+      if (!survived2) {
+        survived = false;
+      }
+    }
 
     setTermSurvived(survived);
 
     // Set survival/graduation roll log for regular careers
     if (!isPreCareer) {
-      setSurvivalRollLog(`Survival Roll: ${roll} + ${dm} = ${total} (need ${assignment.survivalTarget}+)`);
+      setSurvivalRollLog(survivalLog);
     }
 
     if (!survived) {
@@ -1848,6 +1892,24 @@ export const CharacterGenerator: React.FC = () => {
             `${change.stat.toUpperCase()} ${change.modifier >= 0 ? '+' : ''}${change.modifier} (event)`,
           ]);
         });
+
+        // Calculate medical bills for characteristic damage (injuries)
+        const totalDamage = effects.characteristics.reduce((sum, c) => sum + Math.max(0, -c.modifier), 0);
+        if (totalDamage > 0 && selectedCareer) {
+          const injuryCost = calculateInjuryCost(totalDamage);
+          const coverage = calculateMedicalCoverage(selectedCareer.name, characterData.rank, injuryCost);
+          setPendingMedicalBill(coverage);
+          if (coverage.outOfPocket > 0) {
+            setCharacterData(prev => ({
+              ...prev,
+              medicalDebt: (prev.medicalDebt || 0) + coverage.outOfPocket,
+            }));
+          }
+          setTermSkillsGained(prev => [
+            ...prev,
+            `Medical: Cr${injuryCost.toLocaleString()} (${coverage.coveragePercent}% covered by ${selectedCareer.name}). Out of pocket: Cr${coverage.outOfPocket.toLocaleString()}`,
+          ]);
+        }
       }
 
       // Apply social connections (resolve dice expressions) and update characterData
@@ -1964,6 +2026,20 @@ export const CharacterGenerator: React.FC = () => {
         }));
         setTermSkillsGained(prev => [...prev, 'Lost all Benefit rolls from this career']);
       }
+      if (effects.paroleReduction) {
+        const reduction = typeof effects.paroleReduction === 'number'
+          ? effects.paroleReduction
+          : rollDiceExpression(effects.paroleReduction);
+        setCharacterData(prev => ({
+          ...prev,
+          paroleThreshold: Math.max(0, (prev.paroleThreshold || 0) - reduction),
+        }));
+        setTermSkillsGained(prev => [...prev, `Parole threshold reduced by ${reduction}`]);
+      }
+      if (effects.mustLeaveCareer) {
+        setForceLeaveCareer(true);
+        setTermSkillsGained(prev => [...prev, 'You must leave this career.']);
+      }
 
       // Handle table redirects (e.g., rollOnTable: 'injury')
       if (effects.rollOnTable) {
@@ -1980,7 +2056,7 @@ export const CharacterGenerator: React.FC = () => {
         }
 
         // Trigger the table redirect
-        handleTableRedirect(effects.rollOnTable as 'life_events' | 'injury' | 'aging' | 'draft' | 'unusual_events' | 'mishap');
+        handleTableRedirect(effects.rollOnTable as 'life_events' | 'injury' | 'aging' | 'draft' | 'unusual_events' | 'mishap' | 'prison_event');
         return; // Don't mark event as completed yet - wait for redirected table
       }
     }
@@ -2049,6 +2125,20 @@ export const CharacterGenerator: React.FC = () => {
             };
           });
         });
+
+        // Calculate medical bills for mishap injuries
+        const totalDamage = effects.characteristics.reduce((sum, c) => sum + Math.max(0, -c.modifier), 0);
+        if (totalDamage > 0 && selectedCareer) {
+          const injuryCost = calculateInjuryCost(totalDamage);
+          const coverage = calculateMedicalCoverage(selectedCareer.name, characterData.rank, injuryCost);
+          setPendingMedicalBill(coverage);
+          if (coverage.outOfPocket > 0) {
+            setCharacterData(prev => ({
+              ...prev,
+              medicalDebt: (prev.medicalDebt || 0) + coverage.outOfPocket,
+            }));
+          }
+        }
       }
 
       if (effects.allies) {
@@ -2112,13 +2202,55 @@ export const CharacterGenerator: React.FC = () => {
           lostBenefitCareers: [...(prev.lostBenefitCareers || []), selectedCareer?.name || ''],
         }));
       }
+      if (effects.paroleReduction) {
+        const reduction = typeof effects.paroleReduction === 'number'
+          ? effects.paroleReduction
+          : rollDiceExpression(effects.paroleReduction);
+        setCharacterData(prev => ({
+          ...prev,
+          paroleThreshold: Math.max(0, (prev.paroleThreshold || 0) - reduction),
+        }));
+      }
+      if (effects.mustLeaveCareer) {
+        setForceLeaveCareer(true);
+      }
+
+      // Effects that also exist in regular event handler — needed for mishap outcomes
+      if (effects.forceCareer) {
+        setCharacterData(prev => ({ ...prev, forcedCareer: effects.forceCareer }));
+      }
+      if (effects.allowCareer) {
+        setCharacterData(prev => ({
+          ...prev,
+          allowedCareers: [...(prev.allowedCareers || []), effects.allowCareer!],
+        }));
+      }
+      if (effects.failGraduation) {
+        setPreCareerGraduated(false);
+        setTermSurvived(false);
+      }
+      if (effects.canTestPsi) {
+        setCharacterData(prev => ({ ...prev, canTestPsi: true }));
+      }
+      if (effects.advancementDM) {
+        setEventAdvancementDM(prev => prev + effects.advancementDM!);
+      }
+      if (effects.autoPromotion) {
+        setEventAdvancementDM(prev => prev + 99);
+      }
+      if (effects.qualificationDM) {
+        setCharacterData(prev => ({
+          ...prev,
+          eventQualificationDM: (prev.eventQualificationDM || 0) + effects.qualificationDM!,
+        }));
+      }
 
       // Handle table redirects from mishap (e.g., roll on injury)
       if (effects.rollOnTable) {
         if (effects.injurySeverity === 'severe') {
           setPendingInjurySeverity('severe');
         }
-        handleTableRedirect(effects.rollOnTable as 'life_events' | 'injury' | 'aging' | 'draft' | 'unusual_events' | 'mishap');
+        handleTableRedirect(effects.rollOnTable as 'life_events' | 'injury' | 'aging' | 'draft' | 'unusual_events' | 'mishap' | 'prison_event');
         return; // Don't complete mishap yet - wait for redirected table to complete
       }
     }
@@ -2165,7 +2297,7 @@ export const CharacterGenerator: React.FC = () => {
   };
 
   // Handler for table redirects (Life Events, Injury, Mishap, etc.)
-  const handleTableRedirect = (table: 'life_events' | 'injury' | 'aging' | 'draft' | 'unusual_events' | 'mishap') => {
+  const handleTableRedirect = (table: 'life_events' | 'injury' | 'aging' | 'draft' | 'unusual_events' | 'mishap' | 'prison_event') => {
     let roll: number;
     let event: GameEvent | null = null;
     let tableName = '';
@@ -2207,6 +2339,11 @@ export const CharacterGenerator: React.FC = () => {
         event = getUnusualEvent(roll);
         tableName = 'Unusual Events';
         break;
+      case 'prison_event':
+        roll = rollDiceUtil(1, 6); // 1D6
+        event = getPrisonSubEvent(roll);
+        tableName = 'Prison Event';
+        break;
       case 'aging':
         // Aging table not yet implemented
         setTermSkillsGained(prev => [...prev, 'Roll on Aging table (not yet implemented)']);
@@ -2245,7 +2382,7 @@ export const CharacterGenerator: React.FC = () => {
   };
 
   // Handler for nested table redirects (e.g., Life Events -> Injury -> ...)
-  const handleNestedTableRedirect = (table: 'life_events' | 'injury' | 'aging' | 'draft' | 'unusual_events' | 'mishap') => {
+  const handleNestedTableRedirect = (table: 'life_events' | 'injury' | 'aging' | 'draft' | 'unusual_events' | 'mishap' | 'prison_event') => {
     // Complete the current redirected event first
     setRedirectedEvent(null);
     setRedirectTableRoll(null);
@@ -2571,26 +2708,172 @@ export const CharacterGenerator: React.FC = () => {
     // Total terms is based on lifepath_log length which now includes the current term
     const totalTermsAfterThis = characterData.lifepath_log.length + 1;
     if (totalTermsAfterThis >= 5) {
-      const agingRollResult = rollAging(totalTermsAfterThis, characterData.characteristics);
+      // Calculate anagathics DM: +1 per term using anagathics
+      let agingDM = 0;
+      if (characterData.isUsingAnagathics && characterData.anagathicsStartTerm) {
+        agingDM = totalTermsAfterThis - characterData.anagathicsStartTerm + 1;
+      }
+
+      const agingRollResult = rollAging(totalTermsAfterThis, agingDM);
       if (agingRollResult) {
         setAgingResult(agingRollResult);
         setAgingPending(true);
-
-        // If aging roll failed, apply the effects immediately to characteristics
-        if (!agingRollResult.passed) {
-          const newCharacteristics = applyAgingEffects(
-            characterData.characteristics,
-            agingRollResult.effects.effects
-          );
-          setCharacterData(prev => ({
-            ...prev,
-            characteristics: newCharacteristics,
-          }));
-        }
+        // Reset aging choice state
+        setAgingPhysicalChosen(false);
+        setAgingMentalChosen(false);
+        setAgingCrisis(null);
+        setAgingCrisisAcknowledged(false);
+        setAgingChosenEffects([]);
+        // Effects are NOT auto-applied — player makes choices in the UI
       }
     }
 
+    // Deduct anagathics cost if using
+    if (characterData.isUsingAnagathics) {
+      const { cost } = rollAnagathicsCost();
+      setCharacterData(prev => ({
+        ...prev,
+        anagathicsTotalCost: (prev.anagathicsTotalCost || 0) + cost,
+        cash_on_hand: Math.max(0, prev.cash_on_hand - cost),
+        medicalDebt: prev.cash_on_hand < cost
+          ? (prev.medicalDebt || 0) + (cost - prev.cash_on_hand)
+          : prev.medicalDebt,
+      }));
+      setTermSkillsGained(prev => [...prev, `Anagathics cost: Cr${cost.toLocaleString()}`]);
+    }
+
     setIsInTerm(false);
+  };
+
+  // Handle aging physical characteristic choice
+  const handleAgingPhysicalChoice = (choiceIndex: number) => {
+    if (!agingResult?.effectLevel) return;
+    const choice = agingResult.effectLevel.physicalChoices[choiceIndex];
+    if (!choice) return;
+
+    const allEffects = [...choice.effects];
+    setAgingChosenEffects(allEffects);
+    setAgingPhysicalChosen(true);
+
+    // If no mental choices needed, apply effects now
+    if (!agingResult.effectLevel.mentalChoices || agingResult.effectLevel.mentalChoices.length === 0) {
+      applyAgingChosenEffects(allEffects);
+    }
+  };
+
+  // Handle aging mental characteristic choice
+  const handleAgingMentalChoice = (choiceIndex: number) => {
+    if (!agingResult?.effectLevel?.mentalChoices) return;
+    const choice = agingResult.effectLevel.mentalChoices[choiceIndex];
+    if (!choice) return;
+
+    const allEffects = [...agingChosenEffects, ...choice.effects];
+    setAgingChosenEffects(allEffects);
+    setAgingMentalChosen(true);
+    applyAgingChosenEffects(allEffects);
+  };
+
+  // Apply the chosen aging effects to characteristics
+  const applyAgingChosenEffects = (effects: { stat: string; modifier: number }[]) => {
+    const typedEffects = effects as { stat: CharacteristicName; modifier: number }[];
+
+    // Check for aging crisis before applying
+    const crisis = checkAgingCrisis(
+      characterData.characteristics as Record<CharacteristicName, { total: number; current: number }>,
+      typedEffects
+    );
+
+    // Get list of crisis stats so we can set them to 1 instead of 0
+    const crisisStats = crisis.isCrisis ? crisis.characteristics : undefined;
+
+    const newCharacteristics = applyAgingEffects(
+      characterData.characteristics as Record<CharacteristicName, { total: number; current: number }>,
+      typedEffects,
+      crisisStats
+    );
+
+    setCharacterData(prev => ({
+      ...prev,
+      characteristics: newCharacteristics,
+      // Add medical debt from aging crisis
+      medicalDebt: crisis.isCrisis
+        ? (prev.medicalDebt || 0) + crisis.medicalCost
+        : prev.medicalDebt,
+      // Auto-fail next qualification after aging crisis
+      agingCrisisFailQualification: crisis.isCrisis ? true : prev.agingCrisisFailQualification,
+    }));
+
+    if (crisis.isCrisis) {
+      setAgingCrisis(crisis);
+    }
+
+    // Log the effects
+    const effectStr = typedEffects.map(e => `${e.stat.toUpperCase()} ${e.modifier}`).join(', ');
+    setTermSkillsGained(prev => [...prev, `Aging: ${effectStr}`]);
+    if (crisis.isCrisis) {
+      setTermSkillsGained(prev => [...prev, `Aging crisis! Medical cost: Cr${crisis.medicalCost.toLocaleString()}`]);
+    }
+  };
+
+  // Acknowledge aging (dismiss the aging UI)
+  const acknowledgeAging = () => {
+    setAgingPending(false);
+    setAgingResult(null);
+    setAgingPhysicalChosen(false);
+    setAgingMentalChosen(false);
+    setAgingCrisis(null);
+    setAgingCrisisAcknowledged(false);
+    setAgingChosenEffects([]);
+  };
+
+  // Handle anagathics attempt
+  const handleAnagathicsAttempt = () => {
+    const socValue = characterData.characteristics.social.total;
+    const socDM = getDM(socValue);
+    const result = rollAnagathicsObtain(socDM);
+    setAnagathicsRollResult(result);
+
+    if (result.arrested) {
+      // Forced to Prisoner career
+      setCharacterData(prev => ({
+        ...prev,
+        forcedCareer: 'Prisoner',
+      }));
+    } else if (result.success) {
+      const totalTerms = characterData.lifepath_log.length;
+      setCharacterData(prev => ({
+        ...prev,
+        isUsingAnagathics: true,
+        anagathicsStartTerm: totalTerms + 1,
+      }));
+    }
+  };
+
+  // Handle stopping anagathics (triggers immediate aging roll with no DM)
+  const handleStopAnagathics = () => {
+    setCharacterData(prev => ({
+      ...prev,
+      isUsingAnagathics: false,
+      anagathicsStartTerm: undefined,
+    }));
+
+    // Immediate aging roll with no DM
+    const totalTerms = characterData.lifepath_log.length;
+    if (totalTerms >= 5) {
+      const agingRollResult = rollAging(totalTerms, 0);
+      if (agingRollResult) {
+        setAgingResult(agingRollResult);
+        setAgingPending(true);
+        setAgingPhysicalChosen(false);
+        setAgingMentalChosen(false);
+        setAgingCrisis(null);
+        setAgingCrisisAcknowledged(false);
+        setAgingChosenEffects([]);
+      }
+    }
+
+    setShowAnagathicsPrompt(false);
+    setAnagathicsRollResult(null);
   };
 
   const musterOut = () => {
@@ -5628,11 +5911,28 @@ export const CharacterGenerator: React.FC = () => {
                   ) : !isSwitchingAssignment ? (
                     // Regular career: show start next term, switch career, switch assignment, or muster out
                     <div className="space-y-2">
-                      {forceLeaveCareer && (
+                      {forceLeaveCareer && !agingPending && (
                         <p className="text-xs text-yellow-400">You must leave this career.</p>
                       )}
+                      {agingPending && (
+                        <p className="text-xs text-terminal-primary/50">Resolve aging effects before continuing.</p>
+                      )}
+
+                      {/* Anagathics offer between terms (SOC 10+, not in prisoner career, not using noAnagathics career) */}
+                      {!agingPending && !showAnagathicsPrompt && characterData.characteristics.social.total >= 10 &&
+                        !(selectedCareer?.noAnagathics) && (characterData.isUsingAnagathics || characterData.lifepath_log.length >= 4) && (
+                        <Button
+                          onClick={() => setShowAnagathicsPrompt(true)}
+                          variant="outline"
+                          size="sm"
+                          className="w-full border-blue-500/30 text-blue-400/70 hover:bg-blue-500/10"
+                        >
+                          {characterData.isUsingAnagathics ? 'Manage Anagathics' : 'Seek Anagathics'}
+                        </Button>
+                      )}
+
                       <div className="flex gap-2">
-                        {!forceLeaveCareer && (
+                        {!forceLeaveCareer && !agingPending && (
                           <Button
                             onClick={startNewTerm}
                             className="flex-1 bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30 border border-terminal-primary/50"
@@ -5640,31 +5940,35 @@ export const CharacterGenerator: React.FC = () => {
                             Start Term {currentTerm + 1}
                           </Button>
                         )}
-                        <Button
-                          onClick={musterOut}
-                          className="flex-1 bg-red-500/20 text-red-400 hover:bg-red-500/30 border border-red-500/50"
-                        >
-                          Muster Out
-                        </Button>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button
-                          onClick={switchToNewCareer}
-                          variant="outline"
-                          className="flex-1 border-terminal-primary/50 text-terminal-primary hover:bg-terminal-primary/20"
-                        >
-                          Switch Career
-                        </Button>
-                        {canSwitchAssignment() && (
+                        {!agingPending && (
                           <Button
-                            onClick={startSwitchAssignment}
-                            variant="outline"
-                            className="flex-1 border-blue-500/50 text-blue-400 hover:bg-blue-500/20"
+                            onClick={musterOut}
+                            className="flex-1 bg-red-500/20 text-red-400 hover:bg-red-500/30 border border-red-500/50"
                           >
-                            Switch Assignment
+                            Muster Out
                           </Button>
                         )}
                       </div>
+                      {!agingPending && (
+                        <div className="flex gap-2">
+                          <Button
+                            onClick={switchToNewCareer}
+                            variant="outline"
+                            className="flex-1 border-terminal-primary/50 text-terminal-primary hover:bg-terminal-primary/20"
+                          >
+                            Switch Career
+                          </Button>
+                          {canSwitchAssignment() && (
+                            <Button
+                              onClick={startSwitchAssignment}
+                              variant="outline"
+                              className="flex-1 border-blue-500/50 text-blue-400 hover:bg-blue-500/20"
+                            >
+                              Switch Assignment
+                            </Button>
+                          )}
+                        </div>
+                      )}
                     </div>
                   ) : (
                     // Assignment switching UI
@@ -5821,32 +6125,195 @@ export const CharacterGenerator: React.FC = () => {
                   )
                 )}
 
-                {/* Aging Result Alert */}
+                {/* Interactive Aging System */}
                 {agingPending && agingResult && (
-                  <Alert className={agingResult.passed ? "bg-green-500/10 border-green-500/50" : agingResult.crisisCheck?.isCrisis ? "bg-red-500/10 border-red-500/50" : "bg-yellow-500/10 border-yellow-500/50"}>
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription className={agingResult.passed ? "text-green-400" : agingResult.crisisCheck?.isCrisis ? "text-red-400" : "text-yellow-400"}>
-                      <div className="font-bold mb-1">Aging Roll (Term {agingResult.termNumber})</div>
-                      <div className="text-sm mb-2">{agingResult.message}</div>
-                      {!agingResult.passed && agingResult.effects.effects.length > 0 && (
-                        <div className="text-xs text-terminal-primary/70">
-                          Effects: {agingResult.effects.effects.map((e, i) => `${e.stat.toUpperCase()} ${e.modifier}`).join(', ')}
-                        </div>
-                      )}
-                      {agingResult.crisisCheck?.isCrisis && (
-                        <div className="mt-2 text-xs text-red-400 font-bold">
-                          {agingResult.crisisCheck.message}
-                        </div>
-                      )}
+                  <div className="space-y-3">
+                    {/* Aging Roll Result */}
+                    <Alert className={agingResult.passed ? "bg-green-500/10 border-green-500/50" : "bg-yellow-500/10 border-yellow-500/50"}>
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription className={agingResult.passed ? "text-green-400" : "text-yellow-400"}>
+                        <div className="font-bold mb-1">Aging Roll (Term {agingResult.termNumber})</div>
+                        <div className="text-sm mb-2">{agingResult.message}</div>
+                        {characterData.isUsingAnagathics && (
+                          <div className="text-xs text-blue-400 mb-1">Anagathics DM: +{agingResult.dm}</div>
+                        )}
+                      </AlertDescription>
+                    </Alert>
+
+                    {/* Passed - simple acknowledge */}
+                    {agingResult.passed && (
                       <Button
-                        onClick={() => setAgingPending(false)}
+                        onClick={acknowledgeAging}
                         size="sm"
-                        className="mt-2 bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
+                        className="w-full bg-green-500/20 text-green-400 hover:bg-green-500/30"
                       >
-                        Acknowledge
+                        Acknowledge - No Aging Effects
                       </Button>
-                    </AlertDescription>
-                  </Alert>
+                    )}
+
+                    {/* Failed - physical characteristic choices */}
+                    {!agingResult.passed && agingResult.effectLevel && !agingPhysicalChosen && (
+                      <div className="border border-yellow-500/30 rounded p-3 space-y-2">
+                        <p className="text-sm text-yellow-400 font-bold">{agingResult.effectLevel.description}</p>
+                        {agingResult.effectLevel.physicalChoices.length === 1 ? (
+                          // Automatic (no choice needed)
+                          <Button
+                            onClick={() => handleAgingPhysicalChoice(0)}
+                            className="w-full bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30 border border-yellow-500/50"
+                          >
+                            Apply: {agingResult.effectLevel.physicalChoices[0].label}
+                          </Button>
+                        ) : (
+                          // Player chooses
+                          <div className="space-y-1">
+                            <p className="text-xs text-terminal-primary/60">Choose which characteristics are affected:</p>
+                            <div className="grid grid-cols-1 gap-2">
+                              {agingResult.effectLevel.physicalChoices.map((choice, idx) => (
+                                <Button
+                                  key={idx}
+                                  onClick={() => handleAgingPhysicalChoice(idx)}
+                                  variant="outline"
+                                  className="border-yellow-500/50 text-yellow-400 hover:bg-yellow-500/20"
+                                >
+                                  {choice.label}
+                                </Button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Mental characteristic choices (only for extreme aging, Effect -6 or less) */}
+                    {!agingResult.passed && agingPhysicalChosen && agingResult.effectLevel?.mentalChoices && !agingMentalChosen && (
+                      <div className="border border-red-500/30 rounded p-3 space-y-2">
+                        <p className="text-sm text-red-400 font-bold">Additionally, reduce one mental characteristic by 1.</p>
+                        <div className="grid grid-cols-2 gap-2">
+                          {agingResult.effectLevel.mentalChoices.map((choice, idx) => (
+                            <Button
+                              key={idx}
+                              onClick={() => handleAgingMentalChoice(idx)}
+                              variant="outline"
+                              className="border-red-500/50 text-red-400 hover:bg-red-500/20"
+                            >
+                              {choice.label}
+                            </Button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Aging effects applied - show summary */}
+                    {!agingResult.passed && (agingPhysicalChosen && (!agingResult.effectLevel?.mentalChoices || agingMentalChosen)) && (
+                      <div className="space-y-2">
+                        <div className="text-xs text-terminal-primary/70">
+                          Applied: {agingChosenEffects.map(e => `${e.stat.toUpperCase()} ${e.modifier}`).join(', ')}
+                        </div>
+
+                        {/* Aging Crisis Alert */}
+                        {agingCrisis?.isCrisis && (
+                          <Alert className="bg-red-500/10 border-red-500/50">
+                            <AlertCircle className="h-4 w-4" />
+                            <AlertDescription className="text-red-400">
+                              <div className="font-bold mb-1">AGING CRISIS</div>
+                              <div className="text-sm">{agingCrisis.message}</div>
+                            </AlertDescription>
+                          </Alert>
+                        )}
+
+                        {/* Medical Bill from aging (if any) */}
+                        {pendingMedicalBill && (
+                          <Alert className="bg-blue-500/10 border-blue-500/50">
+                            <AlertDescription className="text-blue-400 text-xs">
+                              {pendingMedicalBill.message}
+                            </AlertDescription>
+                          </Alert>
+                        )}
+
+                        <Button
+                          onClick={acknowledgeAging}
+                          size="sm"
+                          className="w-full bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
+                        >
+                          Acknowledge Aging Effects
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Anagathics Prompt (shown between terms when eligible) */}
+                {!agingPending && !isInTerm && currentTerm > 0 && termSurvived !== false &&
+                  !selectedCareer?.isPreCareer && showAnagathicsPrompt && (
+                  <div className="border border-blue-500/30 rounded p-3 space-y-2">
+                    <p className="text-sm text-blue-400 font-bold">Anagathics</p>
+                    {characterData.isUsingAnagathics ? (
+                      <div className="space-y-2">
+                        <p className="text-xs text-terminal-primary/70">
+                          You are currently using anagathics (started term {characterData.anagathicsStartTerm}).
+                          Cost: 1D × Cr25,000 per term. Aging DM: +{(characterData.lifepath_log.length - (characterData.anagathicsStartTerm || 0) + 2)}.
+                          You must make two survival checks per term.
+                        </p>
+                        <div className="flex gap-2">
+                          <Button
+                            onClick={() => setShowAnagathicsPrompt(false)}
+                            className="flex-1 bg-blue-500/20 text-blue-400 hover:bg-blue-500/30"
+                          >
+                            Continue Using
+                          </Button>
+                          <Button
+                            onClick={handleStopAnagathics}
+                            variant="outline"
+                            className="flex-1 border-red-500/50 text-red-400 hover:bg-red-500/20"
+                          >
+                            Stop (Immediate Aging Roll)
+                          </Button>
+                        </div>
+                      </div>
+                    ) : anagathicsRollResult ? (
+                      <div className="space-y-2">
+                        <p className={`text-xs ${anagathicsRollResult.success ? 'text-green-400' : anagathicsRollResult.arrested ? 'text-red-400' : 'text-yellow-400'}`}>
+                          {anagathicsRollResult.message}
+                        </p>
+                        <Button
+                          onClick={() => { setShowAnagathicsPrompt(false); setAnagathicsRollResult(null); }}
+                          size="sm"
+                          className="w-full bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
+                        >
+                          Continue
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <p className="text-xs text-terminal-primary/70">
+                          Your Social Standing of {characterData.characteristics.social.total} qualifies you to seek anagathic drugs.
+                          Cost: 1D × Cr25,000/term. Grants DM to aging rolls. Requires two survival checks per term.
+                        </p>
+                        <div className="flex gap-2">
+                          <Button
+                            onClick={handleAnagathicsAttempt}
+                            className="flex-1 bg-blue-500/20 text-blue-400 hover:bg-blue-500/30"
+                          >
+                            Attempt to Obtain
+                          </Button>
+                          <Button
+                            onClick={() => setShowAnagathicsPrompt(false)}
+                            variant="outline"
+                            className="flex-1 border-terminal-primary/30 text-terminal-primary/60 hover:bg-terminal-primary/10"
+                          >
+                            Decline
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Medical Debt Summary (if any) */}
+                {(characterData.medicalDebt || 0) > 0 && !agingPending && (
+                  <div className="text-xs text-red-400/80 bg-red-500/5 border border-red-500/20 rounded p-2">
+                    Outstanding medical debt: Cr{(characterData.medicalDebt || 0).toLocaleString()}
+                  </div>
                 )}
 
                 {characterData.lifepath_log.length > 0 && (
