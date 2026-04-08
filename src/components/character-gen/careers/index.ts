@@ -52,8 +52,7 @@ export { CAREER_PRISONER, PRISON_EVENTS_SUBTABLE, getPrisonSubEvent, rollInitial
 // Psion career - requires PSI testing before qualification
 export { CAREER_PSION, PSIONIC_TALENTS, performPsiTesting, rollPsiCharacteristic, getPsiAgePenalty, type PsionicTalent, type PsiTestResult } from './psion';
 
-// Export all careers array (does NOT include Prisoner - it can only be entered via force)
-// Psion IS included but requires PSI testing before qualification
+// Export all careers array (includes Prisoner and Psion - locked in UI until prerequisites met)
 export const ALL_CAREERS = [
   CAREER_UNIVERSITY,
   CAREER_MILITARY_ACADEMY,
@@ -70,4 +69,5 @@ export const ALL_CAREERS = [
   CAREER_SCHOLAR,
   CAREER_SCOUT,
   CAREER_PSION,
+  CAREER_PRISONER,
 ];
