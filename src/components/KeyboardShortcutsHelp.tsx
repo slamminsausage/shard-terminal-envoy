@@ -24,18 +24,6 @@ interface ShortcutGroup {
 
 const shortcutGroups: ShortcutGroup[] = [
   {
-    title: 'Navigation',
-    shortcuts: [
-      { keys: ['1'], description: 'Terminal tab' },
-      { keys: ['2'], description: 'Crew tab' },
-      { keys: ['3'], description: 'Hangar tab' },
-      { keys: ['4'], description: 'Bridge tab' },
-      { keys: ['5'], description: 'Star Map tab' },
-      { keys: ['6'], description: 'Notes tab' },
-      { keys: ['7'], description: 'Combat tab' },
-    ],
-  },
-  {
     title: 'Search',
     shortcuts: [
       { keys: ['Ctrl', 'K'], description: 'Open global search' },
