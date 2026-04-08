@@ -1,27 +1,27 @@
 // ============================================================================
-// AGING TABLE (2D6)
+// AGING TABLE (Traveller 2E)
 // ============================================================================
 // Characters begin aging at the end of their 4th term (age 34).
-// The aging check becomes progressively harder as the character ages.
+// Roll 2D6 at end of each term starting from term 5.
+// Effect = roll + DM - threshold. Negative effects cause stat reductions.
+// Players CHOOSE which characteristics are reduced (interactive).
 
 import type { CharacteristicName } from '../careers/types';
 
 // Physical characteristics that can be affected by aging
 export const AGING_CHARACTERISTICS: CharacteristicName[] = ['strength', 'dexterity', 'endurance'];
 
-// Mental characteristics that can be affected by advanced age
-export const MENTAL_CHARACTERISTICS: CharacteristicName[] = ['intellect'];
+// Mental characteristics that can be affected by extreme old age
+export const MENTAL_CHARACTERISTICS: CharacteristicName[] = ['intellect', 'education'];
 
 // ============================================================================
-// AGING THRESHOLDS BY AGE
+// AGING THRESHOLDS BY TERM
 // ============================================================================
-// Roll 2D6 at the end of each term starting from term 4
-// Must roll >= threshold to avoid aging effects
 
 export interface AgingThreshold {
   termNumber: number;
   ageRange: string;
-  threshold: number;  // Roll this or higher to avoid effects
+  threshold: number;
   description: string;
 }
 
@@ -38,12 +38,9 @@ export const AGING_THRESHOLDS: AgingThreshold[] = [
   { termNumber: 13, ageRange: '70+', threshold: 12, description: 'Roll 12 to avoid aging' },
 ];
 
-// Get the aging threshold for a given term number
 export function getAgingThreshold(termNumber: number): AgingThreshold | null {
-  // No aging before term 5 (age 38)
   if (termNumber < 5) return null;
 
-  // Find the appropriate threshold
   const threshold = AGING_THRESHOLDS.find(t => t.termNumber === termNumber);
   if (threshold) return threshold;
 
@@ -61,108 +58,212 @@ export function getAgingThreshold(termNumber: number): AgingThreshold | null {
 }
 
 // ============================================================================
-// AGING EFFECTS TABLE (amount below threshold)
+// INTERACTIVE AGING EFFECTS TABLE
 // ============================================================================
-// The amount you fail the aging roll by determines the severity of effects
+// Based on Effect value (roll + DM - threshold).
+// Players choose which characteristics are reduced.
 
-export interface AgingEffect {
-  failedBy: number;      // Amount the roll failed by (1, 2, 3+, etc.)
-  effects: {
-    stat: CharacteristicName;
-    modifier: -1;
-  }[];
-  description: string;
+export interface AgingChoice {
+  label: string;
+  effects: { stat: CharacteristicName; modifier: number }[];
 }
 
-// Standard aging effects based on how badly the roll was failed
-export const AGING_EFFECTS: AgingEffect[] = [
+export interface AgingEffectLevel {
+  effectValue: number;
+  isMinimum?: boolean;      // True for -6 (covers -6 and below)
+  description: string;
+  physicalChoices: AgingChoice[];   // Player picks one. Length 1 = automatic.
+  mentalChoices?: AgingChoice[];    // Player picks one (only for extreme aging).
+}
+
+export const AGING_EFFECTS_TABLE: AgingEffectLevel[] = [
+  // Effect 0: Reduce one physical characteristic by 1
   {
-    failedBy: 1,
-    effects: [{ stat: 'endurance', modifier: -1 }],
-    description: 'Minor aging effects. Reduce END by 1.',
-  },
-  {
-    failedBy: 2,
-    effects: [
-      { stat: 'endurance', modifier: -1 },
-      { stat: 'dexterity', modifier: -1 },
+    effectValue: 0,
+    description: 'Minor aging. Reduce one physical characteristic by 1.',
+    physicalChoices: [
+      { label: 'STR -1', effects: [{ stat: 'strength', modifier: -1 }] },
+      { label: 'DEX -1', effects: [{ stat: 'dexterity', modifier: -1 }] },
+      { label: 'END -1', effects: [{ stat: 'endurance', modifier: -1 }] },
     ],
-    description: 'Moderate aging effects. Reduce END and DEX by 1 each.',
   },
+  // Effect -1: Reduce two physical characteristics by 1 each
   {
-    failedBy: 3,
-    effects: [
-      { stat: 'endurance', modifier: -1 },
-      { stat: 'dexterity', modifier: -1 },
-      { stat: 'strength', modifier: -1 },
+    effectValue: -1,
+    description: 'Aging effects. Reduce two physical characteristics by 1 each.',
+    physicalChoices: [
+      {
+        label: 'STR -1, DEX -1',
+        effects: [{ stat: 'strength', modifier: -1 }, { stat: 'dexterity', modifier: -1 }],
+      },
+      {
+        label: 'STR -1, END -1',
+        effects: [{ stat: 'strength', modifier: -1 }, { stat: 'endurance', modifier: -1 }],
+      },
+      {
+        label: 'DEX -1, END -1',
+        effects: [{ stat: 'dexterity', modifier: -1 }, { stat: 'endurance', modifier: -1 }],
+      },
     ],
-    description: 'Significant aging effects. Reduce END, DEX, and STR by 1 each.',
   },
+  // Effect -2: Reduce all three physical characteristics by 1
   {
-    failedBy: 4,
-    effects: [
-      { stat: 'endurance', modifier: -1 },
-      { stat: 'endurance', modifier: -1 },
-      { stat: 'dexterity', modifier: -1 },
-      { stat: 'strength', modifier: -1 },
+    effectValue: -2,
+    description: 'Significant aging. All physical characteristics reduced by 1.',
+    physicalChoices: [
+      {
+        label: 'STR -1, DEX -1, END -1',
+        effects: [
+          { stat: 'strength', modifier: -1 },
+          { stat: 'dexterity', modifier: -1 },
+          { stat: 'endurance', modifier: -1 },
+        ],
+      },
     ],
-    description: 'Severe aging effects. Reduce END by 2, DEX and STR by 1 each.',
   },
+  // Effect -3: Reduce one physical by 2, two by 1
   {
-    failedBy: 5,
-    effects: [
-      { stat: 'endurance', modifier: -1 },
-      { stat: 'endurance', modifier: -1 },
-      { stat: 'dexterity', modifier: -1 },
-      { stat: 'dexterity', modifier: -1 },
-      { stat: 'strength', modifier: -1 },
+    effectValue: -3,
+    description: 'Serious aging. Reduce one physical characteristic by 2, and two others by 1.',
+    physicalChoices: [
+      {
+        label: 'STR -2, DEX -1, END -1',
+        effects: [
+          { stat: 'strength', modifier: -2 },
+          { stat: 'dexterity', modifier: -1 },
+          { stat: 'endurance', modifier: -1 },
+        ],
+      },
+      {
+        label: 'DEX -2, STR -1, END -1',
+        effects: [
+          { stat: 'dexterity', modifier: -2 },
+          { stat: 'strength', modifier: -1 },
+          { stat: 'endurance', modifier: -1 },
+        ],
+      },
+      {
+        label: 'END -2, STR -1, DEX -1',
+        effects: [
+          { stat: 'endurance', modifier: -2 },
+          { stat: 'strength', modifier: -1 },
+          { stat: 'dexterity', modifier: -1 },
+        ],
+      },
     ],
-    description: 'Very severe aging effects. Reduce END and DEX by 2 each, STR by 1.',
+  },
+  // Effect -4: Reduce two physical by 2, one by 1
+  {
+    effectValue: -4,
+    description: 'Severe aging. Reduce two physical characteristics by 2, and one by 1.',
+    physicalChoices: [
+      {
+        label: 'STR -1 (DEX -2, END -2)',
+        effects: [
+          { stat: 'strength', modifier: -1 },
+          { stat: 'dexterity', modifier: -2 },
+          { stat: 'endurance', modifier: -2 },
+        ],
+      },
+      {
+        label: 'DEX -1 (STR -2, END -2)',
+        effects: [
+          { stat: 'dexterity', modifier: -1 },
+          { stat: 'strength', modifier: -2 },
+          { stat: 'endurance', modifier: -2 },
+        ],
+      },
+      {
+        label: 'END -1 (STR -2, DEX -2)',
+        effects: [
+          { stat: 'endurance', modifier: -1 },
+          { stat: 'strength', modifier: -2 },
+          { stat: 'dexterity', modifier: -2 },
+        ],
+      },
+    ],
+  },
+  // Effect -5: Reduce all three physical by 2
+  {
+    effectValue: -5,
+    description: 'Very severe aging. All physical characteristics reduced by 2.',
+    physicalChoices: [
+      {
+        label: 'STR -2, DEX -2, END -2',
+        effects: [
+          { stat: 'strength', modifier: -2 },
+          { stat: 'dexterity', modifier: -2 },
+          { stat: 'endurance', modifier: -2 },
+        ],
+      },
+    ],
+  },
+  // Effect -6 or less: All three physical by 2, plus one mental by 1
+  {
+    effectValue: -6,
+    isMinimum: true,
+    description: 'Catastrophic aging. All physical characteristics reduced by 2. One mental characteristic reduced by 1.',
+    physicalChoices: [
+      {
+        label: 'STR -2, DEX -2, END -2',
+        effects: [
+          { stat: 'strength', modifier: -2 },
+          { stat: 'dexterity', modifier: -2 },
+          { stat: 'endurance', modifier: -2 },
+        ],
+      },
+    ],
+    mentalChoices: [
+      { label: 'INT -1', effects: [{ stat: 'intellect', modifier: -1 }] },
+      { label: 'EDU -1', effects: [{ stat: 'education', modifier: -1 }] },
+    ],
   },
 ];
 
-// Get aging effects based on how much the roll was failed by
-export function getAgingEffects(failedBy: number): AgingEffect {
-  if (failedBy <= 0) {
-    return {
-      failedBy: 0,
-      effects: [],
-      description: 'No aging effects.',
-    };
+// Get the aging effect level for a given effect value
+export function getAgingEffectLevel(effectValue: number): AgingEffectLevel | null {
+  // Effect 1+: no aging effects
+  if (effectValue >= 1) return null;
+
+  // Find exact match
+  const exact = AGING_EFFECTS_TABLE.find(e => e.effectValue === effectValue && !e.isMinimum);
+  if (exact) return exact;
+
+  // For values -6 or below, use the minimum entry
+  if (effectValue <= -6) {
+    return AGING_EFFECTS_TABLE.find(e => e.isMinimum) || null;
   }
 
-  // Cap at maximum defined effects
-  const effectIndex = Math.min(failedBy - 1, AGING_EFFECTS.length - 1);
-  return AGING_EFFECTS[effectIndex];
+  return null;
 }
 
 // ============================================================================
 // AGING CRISIS
 // ============================================================================
-// If any characteristic is reduced to 0 by aging, the character enters aging crisis
+// If any characteristic is reduced to 0 by aging, the character enters aging crisis.
+// The characteristic is set to 1 instead of 0 but requires medical treatment.
+// Cost: 1D × Cr10,000 per characteristic in crisis.
 
 export interface AgingCrisisResult {
   isCrisis: boolean;
   characteristics: CharacteristicName[];
-  canSurvive: boolean;  // Can be saved by medical intervention
+  medicalCost: number;        // Total medical cost for crisis treatment
   message: string;
 }
 
 export function checkAgingCrisis(
   characteristics: Record<CharacteristicName, { total: number; current: number }>,
-  agingEffects: { stat: CharacteristicName; modifier: number }[]
+  effects: { stat: CharacteristicName; modifier: number }[]
 ): AgingCrisisResult {
   const affectedStats: CharacteristicName[] = [];
 
-  // Apply effects temporarily to check for crisis
+  // Check which stats would be reduced to 0 or below
   const tempStats = { ...characteristics };
-
-  for (const effect of agingEffects) {
+  for (const effect of effects) {
     tempStats[effect.stat] = {
       ...tempStats[effect.stat],
       total: tempStats[effect.stat].total + effect.modifier,
     };
-
     if (tempStats[effect.stat].total <= 0) {
       affectedStats.push(effect.stat);
     }
@@ -172,103 +273,57 @@ export function checkAgingCrisis(
     return {
       isCrisis: false,
       characteristics: [],
-      canSurvive: true,
-      message: 'Aging effects applied normally.',
+      medicalCost: 0,
+      message: 'Aging effects applied.',
     };
   }
 
-  // Check if all physical characteristics would be reduced to 0 (death)
-  const allPhysicalZero = AGING_CHARACTERISTICS.every(
-    stat => tempStats[stat].total <= 0
-  );
-
-  if (allPhysicalZero) {
-    return {
-      isCrisis: true,
-      characteristics: affectedStats,
-      canSurvive: false,
-      message: 'FATAL: All physical characteristics reduced to 0. The character has died of old age unless they have access to advanced medical technology.',
-    };
-  }
+  // Crisis cost: 1D × Cr10,000 per affected characteristic
+  const costRoll = Math.floor(Math.random() * 6) + 1;
+  const medicalCost = costRoll * 10000 * affectedStats.length;
 
   return {
     isCrisis: true,
     characteristics: affectedStats,
-    canSurvive: true,
-    message: `AGING CRISIS: ${affectedStats.join(', ').toUpperCase()} reduced to 0! Character requires immediate medical attention or must pay Cr10,000 × (affected characteristics) for treatment, or the characteristic remains at 1 permanently.`,
+    medicalCost,
+    message: `AGING CRISIS: ${affectedStats.map(s => s.toUpperCase()).join(', ')} reduced to 0! Requires medical treatment costing Cr${medicalCost.toLocaleString()} (${costRoll} × Cr10,000 × ${affectedStats.length} stat${affectedStats.length > 1 ? 's' : ''}). Characteristic${affectedStats.length > 1 ? 's' : ''} set to 1. You automatically fail your next qualification roll.`,
   };
 }
 
 // ============================================================================
-// ANAGATHICS
-// ============================================================================
-// Anagathic drugs can delay or reduce aging effects
-// These are expensive and rare drugs that slow the aging process
-
-export interface AnagathicsResult {
-  isAvailable: boolean;
-  costPerTerm: number;     // Cr per term
-  agingDMBonus: number;    // Bonus to aging roll
-  sideEffectRisk: boolean; // Risk of side effects
-  message: string;
-}
-
-// Standard anagathics
-export const ANAGATHICS: AnagathicsResult = {
-  isAvailable: true,
-  costPerTerm: 1000000,  // Cr1,000,000 per term
-  agingDMBonus: 2,       // DM+2 to aging rolls
-  sideEffectRisk: true,  // Must roll for side effects when stopping
-  message: 'Anagathics grant DM+2 to aging rolls but cost Cr1,000,000 per term. Stopping use may cause side effects.',
-};
-
-// Check if character can afford anagathics
-export function canAffordAnagathics(credits: number, termCost: number = ANAGATHICS.costPerTerm): boolean {
-  return credits >= termCost;
-}
-
-// ============================================================================
-// HELPER FUNCTIONS
+// AGING ROLL
 // ============================================================================
 
-// Roll for aging at end of term
 export interface AgingRollResult {
   termNumber: number;
   threshold: number;
-  roll: number;
-  dm: number;
-  total: number;
-  passed: boolean;
-  failedBy: number;
-  effects: AgingEffect;
-  crisisCheck: AgingCrisisResult | null;
+  roll: number;           // Natural 2D6 roll
+  dm: number;             // Total DM (including anagathics)
+  total: number;          // roll + dm
+  effectValue: number;    // total - threshold
+  passed: boolean;        // effectValue >= 1 (no aging)
+  effectLevel: AgingEffectLevel | null;  // The aging effects to apply (null if passed)
   message: string;
 }
 
 export function rollAging(
   termNumber: number,
-  characteristics: Record<CharacteristicName, { total: number; current: number }>,
-  dm: number = 0  // Can include anagathics bonus
+  dm: number = 0
 ): AgingRollResult | null {
   const threshold = getAgingThreshold(termNumber);
 
-  // No aging roll needed
   if (!threshold || threshold.threshold < 0) {
     return null;
   }
 
-  // Roll 2D6
-  const roll = Math.floor(Math.random() * 6) + 1 + Math.floor(Math.random() * 6) + 1;
+  const die1 = Math.floor(Math.random() * 6) + 1;
+  const die2 = Math.floor(Math.random() * 6) + 1;
+  const roll = die1 + die2;
   const total = roll + dm;
-  const passed = total >= threshold.threshold;
-  const failedBy = passed ? 0 : threshold.threshold - total;
+  const effectValue = total - threshold.threshold;
+  const passed = effectValue >= 1;
 
-  const effects = getAgingEffects(failedBy);
-
-  // Check for aging crisis if failed
-  const crisisCheck = !passed
-    ? checkAgingCrisis(characteristics, effects.effects)
-    : null;
+  const effectLevel = passed ? null : getAgingEffectLevel(effectValue);
 
   return {
     termNumber,
@@ -276,30 +331,191 @@ export function rollAging(
     roll,
     dm,
     total,
+    effectValue,
     passed,
-    failedBy,
-    effects,
-    crisisCheck,
+    effectLevel,
     message: passed
-      ? `Aging roll: ${roll}${dm !== 0 ? ` + ${dm} DM` : ''} = ${total} vs ${threshold.threshold}. Passed! No aging effects.`
-      : `Aging roll: ${roll}${dm !== 0 ? ` + ${dm} DM` : ''} = ${total} vs ${threshold.threshold}. Failed by ${failedBy}. ${effects.description}`,
+      ? `Aging roll: ${roll}${dm !== 0 ? ` + ${dm} DM` : ''} = ${total} vs ${threshold.threshold}+ (Effect +${effectValue}). No aging effects.`
+      : `Aging roll: ${roll}${dm !== 0 ? ` + ${dm} DM` : ''} = ${total} vs ${threshold.threshold}+ (Effect ${effectValue}). ${effectLevel?.description || 'Aging effects apply.'}`,
   };
 }
 
-// Apply aging effects to characteristics
+// Apply aging effects to characteristics (used after player makes choices)
 export function applyAgingEffects(
   characteristics: Record<CharacteristicName, { total: number; current: number }>,
-  effects: { stat: CharacteristicName; modifier: number }[]
+  effects: { stat: CharacteristicName; modifier: number }[],
+  crisisStats?: CharacteristicName[]
 ): Record<CharacteristicName, { total: number; current: number }> {
   const result = { ...characteristics };
 
   for (const effect of effects) {
     const current = result[effect.stat];
-    result[effect.stat] = {
-      total: Math.max(0, current.total + effect.modifier),
-      current: Math.max(0, current.current + effect.modifier),
-    };
+    const newTotal = current.total + effect.modifier;
+    const newCurrent = current.current + effect.modifier;
+
+    // If in crisis (would go to 0 or below), set to 1 instead
+    if (newTotal <= 0 && crisisStats?.includes(effect.stat)) {
+      result[effect.stat] = { total: 1, current: Math.max(1, newCurrent) };
+    } else {
+      result[effect.stat] = {
+        total: Math.max(0, newTotal),
+        current: Math.max(0, newCurrent),
+      };
+    }
   }
 
   return result;
+}
+
+// ============================================================================
+// ANAGATHICS
+// ============================================================================
+// Anagathic drugs slow aging but are expensive and risky.
+// - Requirement: SOC 10+ to attempt obtaining
+// - Roll 2D6 + SOC DM: 8+ to obtain
+// - Natural 2 on the roll: arrested, must take Prisoner career
+// - DM to aging rolls: +1 per term using anagathics
+// - Cost: 1D × Cr25,000 per term (from cash benefits)
+// - Must make TWO survival checks per term while using
+// - Stopping: immediate aging roll with no anagathics DM
+// - Cannot use in Prisoner career (noAnagathics flag)
+
+export interface AnagathicsObtainResult {
+  roll: number;           // Natural 2D6 roll
+  dm: number;             // SOC DM
+  total: number;
+  success: boolean;       // 8+ = obtained
+  arrested: boolean;      // Natural 2 = arrested
+  message: string;
+}
+
+export function rollAnagathicsObtain(socDM: number): AnagathicsObtainResult {
+  const die1 = Math.floor(Math.random() * 6) + 1;
+  const die2 = Math.floor(Math.random() * 6) + 1;
+  const roll = die1 + die2;
+  const total = roll + socDM;
+  const arrested = roll === 2;  // Natural 2 before DM
+  const success = !arrested && total >= 8;
+
+  let message: string;
+  if (arrested) {
+    message = `Anagathics roll: natural 2! You were caught attempting to obtain illegal drugs. You must take the Prisoner career next term.`;
+  } else if (success) {
+    message = `Anagathics roll: ${roll} + ${socDM} DM = ${total} vs 8+. Success! You have obtained anagathics.`;
+  } else {
+    message = `Anagathics roll: ${roll} + ${socDM} DM = ${total} vs 8+. Failed. Unable to obtain anagathics this term.`;
+  }
+
+  return { roll, dm: socDM, total, success, arrested, message };
+}
+
+export function rollAnagathicsCost(): { roll: number; cost: number } {
+  const roll = Math.floor(Math.random() * 6) + 1;
+  const cost = roll * 25000;
+  return { roll, cost };
+}
+
+// ============================================================================
+// MEDICAL BILLS - Career Coverage
+// ============================================================================
+// When injured, the organization you work for may cover medical costs.
+// Coverage depends on career type and a 2D+rank roll.
+//
+// Tier 1 (Military): Army, Navy, Marines
+//   4+: 75%, 8+: 100%, 12+: 100%
+// Tier 2 (Professional): Agent, Noble, Scholar, Entertainer, Merchant, Citizen
+//   4+: 50%, 8+: 75%, 12+: 100%
+// Tier 3 (Independent): Scout, Rogue, Drifter, Prisoner, Psion
+//   4+: 0%, 8+: 50%, 12+: 75%
+//
+// Characteristic restoration: Cr5,000 per point lost
+// Aging crisis: 1D × Cr10,000 per stat in crisis
+
+export type CoverageTier = 'military' | 'professional' | 'independent';
+
+const CAREER_TIERS: Record<string, CoverageTier> = {
+  'Army': 'military',
+  'Navy': 'military',
+  'Marines': 'military',
+  'Agent': 'professional',
+  'Noble': 'professional',
+  'Scholar': 'professional',
+  'Entertainer': 'professional',
+  'Merchant': 'professional',
+  'Citizen': 'professional',
+  'Scout': 'independent',
+  'Rogue': 'independent',
+  'Drifter': 'independent',
+  'Prisoner': 'independent',
+  'Psion': 'independent',
+};
+
+const COVERAGE_TABLE: Record<CoverageTier, { threshold4: number; threshold8: number; threshold12: number }> = {
+  military:      { threshold4: 75, threshold8: 100, threshold12: 100 },
+  professional:  { threshold4: 50, threshold8: 75,  threshold12: 100 },
+  independent:   { threshold4: 0,  threshold8: 50,  threshold12: 75 },
+};
+
+export function getCareerTier(careerName: string): CoverageTier {
+  return CAREER_TIERS[careerName] || 'independent';
+}
+
+export interface MedicalCoverageResult {
+  careerName: string;
+  tier: CoverageTier;
+  rank: number;
+  roll: number;           // Natural 2D6
+  total: number;          // roll + rank
+  coveragePercent: number;
+  totalCost: number;
+  coveredAmount: number;
+  outOfPocket: number;
+  message: string;
+}
+
+export function calculateMedicalCoverage(
+  careerName: string,
+  rank: number,
+  totalCost: number
+): MedicalCoverageResult {
+  const tier = getCareerTier(careerName);
+  const coverage = COVERAGE_TABLE[tier];
+
+  const die1 = Math.floor(Math.random() * 6) + 1;
+  const die2 = Math.floor(Math.random() * 6) + 1;
+  const roll = die1 + die2;
+  const total = roll + rank;
+
+  let coveragePercent = 0;
+  if (total >= 12) {
+    coveragePercent = coverage.threshold12;
+  } else if (total >= 8) {
+    coveragePercent = coverage.threshold8;
+  } else if (total >= 4) {
+    coveragePercent = coverage.threshold4;
+  }
+
+  const coveredAmount = Math.floor(totalCost * coveragePercent / 100);
+  const outOfPocket = totalCost - coveredAmount;
+
+  return {
+    careerName,
+    tier,
+    rank,
+    roll,
+    total,
+    coveragePercent,
+    totalCost,
+    coveredAmount,
+    outOfPocket,
+    message: `Medical coverage (${careerName}, ${tier}): 2D+Rank = ${roll}+${rank} = ${total}. Coverage: ${coveragePercent}%. Total: Cr${totalCost.toLocaleString()}, Covered: Cr${coveredAmount.toLocaleString()}, Out of pocket: Cr${outOfPocket.toLocaleString()}.`,
+  };
+}
+
+// Calculate medical cost for characteristic damage
+export function calculateInjuryCost(
+  pointsLost: number,
+  costPerPoint: number = 5000
+): number {
+  return pointsLost * costPerPoint;
 }
