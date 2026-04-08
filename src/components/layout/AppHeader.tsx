@@ -127,7 +127,7 @@ export default function AppHeader({
               <>
                 <div className="fixed inset-0 z-40" onClick={() => setDropdownOpen(false)} />
                 <div className="absolute top-full left-0 right-0 mt-1 z-50 border border-terminal-primary/30 rounded bg-terminal-bg-dark/95 backdrop-blur-sm shadow-lg shadow-black/50 max-h-[70vh] overflow-y-auto">
-                  {tabs.map((tab, index) => {
+                  {tabs.map((tab) => {
                     const Icon = tab.icon;
                     const isActive = activeTab === tab.id;
                     return (
@@ -150,7 +150,6 @@ export default function AppHeader({
                           <Icon size={12} className="w-4 flex-shrink-0" />
                         ) : <span className="w-4" />}
                         <span>{tab.label.toUpperCase()}</span>
-                        <span className="ml-auto text-terminal-primary/30 text-[10px]">{index + 1}</span>
                       </button>
                     );
                   })}
@@ -177,7 +176,7 @@ export default function AppHeader({
               role="tablist"
               aria-label="Mainframe views"
             >
-              {tabs.map((tab, index) => {
+              {tabs.map((tab) => {
                 const Icon = tab.icon;
                 const isActive = activeTab === tab.id;
                 return (
@@ -187,7 +186,7 @@ export default function AppHeader({
                     aria-selected={isActive}
                     className={cn("tab-button phosphor-hover flex-shrink-0", isActive && "tab-button--active")}
                     onClick={() => onTabChange(tab.id)}
-                    title={`${tab.label} (Press ${index + 1})`}
+                    title={tab.label}
                   >
                     {tab.emoji ? (
                       <span className="opacity-70 leading-none" style={{ fontSize: "11px" }} aria-hidden>{tab.emoji}</span>

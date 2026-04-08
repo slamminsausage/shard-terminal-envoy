@@ -4,7 +4,6 @@ import { Terminal, Users, Radar, Navigation, BookOpen, Swords, Skull, Layout } f
 import AppHeader from "./layout/AppHeader";
 import AppFooter from "./layout/AppFooter";
 import TerminalLoadingSkeleton from "./TerminalLoadingSkeleton";
-import { useTabNavigationShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { KeyboardShortcutOverlay } from "./KeyboardShortcutOverlay";
 import { lazyWithRetry, lazyNamedWithRetry } from "@/lib/lazyWithRetry";
 
@@ -44,10 +43,6 @@ export default function MainframeShell() {
     { id: "combat", label: "Combat", icon: Swords },
     { id: "vtt", label: "VTT", icon: Layout }
   ], []);
-
-  // Enable keyboard shortcuts for tab navigation (1-8)
-  const tabIds = useMemo(() => tabs.map(tab => tab.id), [tabs]);
-  useTabNavigationShortcuts(setActiveTab, tabIds);
 
   // ? key to show shortcut overlay
   useEffect(() => {
@@ -106,7 +101,6 @@ export default function MainframeShell() {
       {/* Keyboard shortcut overlay */}
       {showShortcuts && (
         <KeyboardShortcutOverlay
-          tabs={tabs}
           onClose={() => setShowShortcuts(false)}
         />
       )}
