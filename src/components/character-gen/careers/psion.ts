@@ -470,6 +470,11 @@ export interface PsiTestResult {
   message: string;
 }
 
+export interface PsiTestingOptions {
+  manualPsiRoll?: number;
+  manualTalentRolls?: Partial<Record<PsionicTalent, number>>;
+}
+
 // PSI testing costs credits based on where/how it's done
 // This is a simplified version - actual costs vary by setting
 export const PSI_TESTING_COST = 5000;
@@ -495,8 +500,10 @@ function getCharacteristicDM(value: number): number {
 }
 
 // Roll for PSI characteristic
-export function rollPsiCharacteristic(termsServed: number): number {
-  const roll = Math.floor(Math.random() * 6) + 1 + Math.floor(Math.random() * 6) + 1;
+export function rollPsiCharacteristic(termsServed: number, manualRoll?: number): number {
+  const roll = Number.isFinite(manualRoll)
+    ? Math.max(2, Math.min(12, Math.floor(manualRoll as number)))
+    : Math.floor(Math.random() * 6) + 1 + Math.floor(Math.random() * 6) + 1;
   const penalty = Math.max(0, termsServed);
   return Math.max(0, roll - penalty);
 }
@@ -510,7 +517,8 @@ export function testForTalent(
   talent: PsionicTalent,
   attemptsMade: number,
   psiDM: number,
-  isFirstTalentCheck: boolean
+  isFirstTalentCheck: boolean,
+  manualRoll?: number
 ): {
   targetNumber: number;
   roll: number;
@@ -540,7 +548,9 @@ export function testForTalent(
     };
   }
 
-  const rawRoll = Math.floor(Math.random() * 6) + 1 + Math.floor(Math.random() * 6) + 1;
+  const rawRoll = Number.isFinite(manualRoll)
+    ? Math.max(2, Math.min(12, Math.floor(manualRoll as number)))
+    : Math.floor(Math.random() * 6) + 1 + Math.floor(Math.random() * 6) + 1;
   const total = rawRoll + psiDM + learningDM + attemptDM;
   const acquired = total >= targetNumber;
 
@@ -558,8 +568,12 @@ export function testForTalent(
 }
 
 // Perform full PSI testing
-export function performPsiTesting(termsServed: number, talentsToTest: PsionicTalent[]): PsiTestResult {
-  const psiValue = rollPsiCharacteristic(termsServed);
+export function performPsiTesting(
+  termsServed: number,
+  talentsToTest: PsionicTalent[],
+  options?: PsiTestingOptions
+): PsiTestResult {
+  const psiValue = rollPsiCharacteristic(termsServed, options?.manualPsiRoll);
   const psiDM = getCharacteristicDM(psiValue);
 
   if (psiValue === 0) {
@@ -573,7 +587,13 @@ export function performPsiTesting(termsServed: number, talentsToTest: PsionicTal
   }
 
   const talentsTested = talentsToTest.map((talent, index) => {
-    const result = testForTalent(talent, index, psiDM, index === 0);
+    const result = testForTalent(
+      talent,
+      index,
+      psiDM,
+      index === 0,
+      options?.manualTalentRolls?.[talent]
+    );
     return {
       talent,
       ...result,

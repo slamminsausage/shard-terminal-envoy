@@ -230,11 +230,12 @@ const normalizeSkillName = (skillName: string): string => {
   return skillName.toLowerCase().replace(/ /g, '_');
 };
 
-const parseSkillGain = (skillText: string): { skill: string; isStat: boolean; stat?: keyof Omit<Characteristics, 'psionics'> } => {
+const parseSkillGain = (skillText: string): { skill: string; isStat: boolean; stat?: keyof Characteristics } => {
   // Check if it's a stat increase (e.g., "Dexterity +1")
-  const statMatch = skillText.match(/(Strength|Dexterity|Endurance|Intellect|Education|Social)\s*\+1/i);
+  const statMatch = skillText.match(/(Strength|Dexterity|Endurance|Intellect|Education|Social|Psionics|PSI)\s*\+1/i);
   if (statMatch) {
-    const statName = statMatch[1].toLowerCase() as keyof Omit<Characteristics, 'psionics'>;
+    const matched = statMatch[1].toLowerCase();
+    const statName = (matched === 'psi' ? 'psionics' : matched) as keyof Characteristics;
     return { skill: skillText, isStat: true, stat: statName };
   }
 
@@ -363,6 +364,8 @@ export const CharacterGenerator: React.FC = () => {
   const [psiTestResult, setPsiTestResult] = useState<PsiTestResult | null>(null);
   const [showPsiTesting, setShowPsiTesting] = useState(false);
   const [psiTalentOrder, setPsiTalentOrder] = useState<typeof PSIONIC_TALENTS[number][]>([...PSIONIC_TALENTS]);
+  const [manualPsiRoll, setManualPsiRoll] = useState('');
+  const [manualTalentRolls, setManualTalentRolls] = useState<Partial<Record<typeof PSIONIC_TALENTS[number], string>>>({});
 
   const [characteristicRolls, setCharacteristicRolls] = useState<number[]>([]);
   const [hasRolled, setHasRolled] = useState(false);
@@ -451,6 +454,7 @@ export const CharacterGenerator: React.FC = () => {
   // Specialty selection state - for skills with specialties that need user choice
   const [pendingSpecialtySkill, setPendingSpecialtySkill] = useState<string | null>(null);
   const [pendingSpecialtySource, setPendingSpecialtySource] = useState<string>(''); // For logging purposes
+  const [pendingAnyTalentSource, setPendingAnyTalentSource] = useState<string>('');
 
   // End-of-term skill selection state
   const [termSkillSelected, setTermSkillSelected] = useState<boolean>(false);
@@ -1029,7 +1033,24 @@ export const CharacterGenerator: React.FC = () => {
   // Perform PSI testing
   const performPsiTest = () => {
     const termsServed = characterData.totalCareerTerms || 0;
-    const result = performPsiTesting(termsServed, psiTalentOrder);
+    const parsedPsiRoll = manualPsiRoll.trim() === '' ? undefined : Number(manualPsiRoll);
+    const parsedTalentRolls: Partial<Record<typeof PSIONIC_TALENTS[number], number>> = {};
+    psiTalentOrder.forEach((talent) => {
+      const rawValue = manualTalentRolls[talent];
+      if (rawValue != null && rawValue.trim() !== '') {
+        const parsedValue = Number(rawValue);
+        if (Number.isFinite(parsedValue)) {
+          parsedTalentRolls[talent] = parsedValue;
+        }
+      }
+    });
+
+    const manualPsiValue = Number.isFinite(parsedPsiRoll) ? parsedPsiRoll : undefined;
+
+    const result = performPsiTesting(termsServed, psiTalentOrder, {
+      manualPsiRoll: manualPsiValue,
+      manualTalentRolls: parsedTalentRolls,
+    });
     setPsiTestResult(result);
 
     // Update character with PSI value and acquired talents
@@ -2504,6 +2525,11 @@ export const CharacterGenerator: React.FC = () => {
         },
       }));
     } else {
+      if (parsed.skill.toLowerCase() === 'any talent') {
+        setPendingAnyTalentSource(source);
+        return;
+      }
+
       // Check if this skill needs specialty selection
       if (needsSpecialtySelection(parsed.skill)) {
         // Queue this skill for specialty selection
@@ -2576,6 +2602,16 @@ export const CharacterGenerator: React.FC = () => {
     // Add to term skills gained log
     if (source) {
       setTermSkillsGained(prev => [...prev, `${fullSkillName} (${source})`]);
+    }
+  };
+
+  const handleAnyTalentSelected = (talent: string) => {
+    const source = pendingAnyTalentSource;
+    setPendingAnyTalentSource('');
+    applySkillGain(talent, source || 'Any Talent');
+
+    if (source) {
+      setTermSkillsGained(prev => [...prev, `${talent} (${source})`]);
     }
   };
 
@@ -4047,15 +4083,39 @@ export const CharacterGenerator: React.FC = () => {
                     </div>
                     {!characterData.psiTested && (
                       <div className="mt-3 border-t border-purple-500/30 pt-2">
+                        <div className="mb-2 flex items-center gap-2">
+                          <span className="text-xs text-purple-300/80">Manual PSI 2D6 roll (optional):</span>
+                          <Input
+                            type="number"
+                            min={2}
+                            max={12}
+                            value={manualPsiRoll}
+                            onChange={(e) => setManualPsiRoll(e.target.value)}
+                            placeholder="auto"
+                            className="h-7 w-20 bg-black/40 border-purple-500/30 text-xs text-purple-200"
+                          />
+                        </div>
                         <div className="text-xs text-purple-300/80 mb-2">
                           Choose talent test order (DM-1 per previous check attempted):
                         </div>
                         <div className="space-y-1.5">
                           {psiTalentOrder.map((talent, index) => (
                             <div key={talent} className="flex items-center justify-between rounded border border-purple-500/20 px-2 py-1">
-                              <span className="text-xs text-purple-200">
-                                {index + 1}. {talent}
-                              </span>
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs text-purple-200">
+                                  {index + 1}. {talent}
+                                </span>
+                                <Input
+                                  type="number"
+                                  min={2}
+                                  max={12}
+                                  value={manualTalentRolls[talent] ?? ''}
+                                  onChange={(e) => setManualTalentRolls(prev => ({ ...prev, [talent]: e.target.value }))}
+                                  placeholder="auto 2D6"
+                                  className="h-7 w-24 bg-black/40 border-purple-500/30 text-xs text-purple-200"
+                                  disabled={index === 0 && talent === 'Telepathy'}
+                                />
+                              </div>
                               <div className="flex items-center gap-1">
                                 <Button
                                   type="button"
@@ -5455,8 +5515,31 @@ export const CharacterGenerator: React.FC = () => {
                       />
                     )}
 
-                    {/* Skill Gain Tables (only show for regular careers when event is resolved and no pending specialty) */}
-                    {!selectedCareer?.isPreCareer && !pendingSpecialtySkill && ((!currentGameEvent || gameEventCompleted) && (!currentEvent || eventResolved)) && (
+                    {pendingAnyTalentSource && (
+                      <Card className="bg-purple-500/10 border-purple-500/40">
+                        <CardHeader>
+                          <CardTitle className="text-purple-300 text-sm">
+                            Choose Any Talent {pendingAnyTalentSource ? `(${pendingAnyTalentSource})` : ''}
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="grid grid-cols-2 gap-2">
+                          {PSIONIC_TALENTS.map((talent) => (
+                            <Button
+                              key={talent}
+                              type="button"
+                              variant="outline"
+                              className="border-purple-500/40 text-purple-200 hover:bg-purple-500/20"
+                              onClick={() => handleAnyTalentSelected(talent)}
+                            >
+                              {talent}
+                            </Button>
+                          ))}
+                        </CardContent>
+                      </Card>
+                    )}
+
+                    {/* Skill Gain Tables (only show for regular careers when event is resolved and no pending selectors) */}
+                    {!selectedCareer?.isPreCareer && !pendingSpecialtySkill && !pendingAnyTalentSource && ((!currentGameEvent || gameEventCompleted) && (!currentEvent || eventResolved)) && (
                       <div className="space-y-3">
                         <h4 className="text-sm font-bold text-terminal-primary uppercase">
                           {termSkillSelected ? 'Skill Selected This Term' : 'Select One Skill Table'}
@@ -5783,7 +5866,7 @@ export const CharacterGenerator: React.FC = () => {
                         )}
 
                         {/* Military Academy Graduation: Select 3 Service Skills */}
-                        {selectedCareer?.preCareerType === 'military_academy' && termSurvived && !pendingSpecialtySkill && (
+                        {selectedCareer?.preCareerType === 'military_academy' && termSurvived && !pendingSpecialtySkill && !pendingAnyTalentSource && (
                           <div className="bg-terminal-primary/5 border border-terminal-primary/30 rounded p-4 space-y-3">
                             <h4 className="text-sm font-bold text-terminal-primary">
                               Select 3 Service Skills to Increase to Level 1
@@ -5870,7 +5953,7 @@ export const CharacterGenerator: React.FC = () => {
                       </div>
                     )}
 
-                    {((!currentGameEvent || gameEventCompleted) && (!currentEvent || eventResolved) && !pendingSpecialtySkill &&
+                    {((!currentGameEvent || gameEventCompleted) && (!currentEvent || eventResolved) && !pendingSpecialtySkill && !pendingAnyTalentSource &&
                       !(selectedCareer?.preCareerType === 'military_academy' && termSurvived && academyGradSkillsSelected.length < 3) &&
                       (selectedCareer?.isPreCareer || termSkillSelected)) && (
                       <Button
