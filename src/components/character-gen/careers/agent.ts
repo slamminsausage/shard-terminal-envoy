@@ -30,8 +30,8 @@ const AGENT_EVENTS: GameEvent[] = [
     description: 'Disaster! Roll on the Mishap table but you are not ejected from this career.',
     resolution: {
       type: 'table_redirect',
-      table: 'injury',
-      displayText: 'Roll on the Injury table to determine the severity of the disaster.',
+      table: 'mishap',
+      displayText: 'Roll on the Mishap table but you are not ejected from this career.',
     },
   },
 

@@ -180,9 +180,20 @@ const SCHOLAR_EVENTS: GameEvent[] = [
           description: 'Extra Benefit, 2 Science skills, but D3 Enemies',
           effects: {
             extraBenefit: true,
-            skills: { choices: ['Science'], level: 1 },
+            skills: {
+              choices: [
+                'Science (Archaeology)', 'Science (Astronomy)', 'Science (Biology)',
+                'Science (Chemistry)', 'Science (Cosmology)', 'Science (Cybernetics)',
+                'Science (Economics)', 'Science (Genetics)', 'Science (History)',
+                'Science (Linguistics)', 'Science (Philosophy)', 'Science (Physics)',
+                'Science (Planetology)', 'Science (Psionicology)', 'Science (Psychology)',
+                'Science (Robotics)', 'Science (Sophontology)', 'Science (Xenology)',
+              ],
+              chooseCount: 2,
+              level: 1,
+            },
             enemies: 'D3',
-            message: 'You perform the unethical research. Gain extra Benefit, Science skills, but D3 Enemies.',
+            message: 'You perform the unethical research. Gain extra Benefit, 2 Science skills, but D3 Enemies.',
           },
         },
         {

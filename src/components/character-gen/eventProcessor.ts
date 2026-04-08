@@ -79,6 +79,9 @@ export interface EventState {
     outcome: { min: number; max: number; label: string; effects: EventEffects };
   };
 
+  // Multi-pick skill selection (for chooseCount > 1)
+  selectedSkills?: string[];
+
   // Final outcome
   appliedEffects?: EventEffects;
   completed: boolean;
@@ -368,11 +371,19 @@ export class EventProcessor {
       };
     }
 
+    // Check if choice effects require skill selection
+    let nextPhase: EventPhase = 'apply_effects';
+    if (choice.effects?.skills?.anySkill) {
+      nextPhase = 'select_any_skill';
+    } else if (choice.effects?.skills?.choices && choice.effects.skills.choices.length > 1) {
+      nextPhase = 'select_skill_gain';
+    }
+
     return {
       ...state,
       selectedChoice: choice,
       appliedEffects: choice.effects,
-      phase: 'apply_effects',
+      phase: nextPhase,
     };
   }
 
@@ -465,6 +476,15 @@ export class EventProcessor {
    * Acknowledge sub-roll result
    */
   acknowledgeSubRollResult(state: EventState): EventState {
+    // Check if we need skill selection from sub-roll outcome
+    if (state.appliedEffects?.skills) {
+      if (state.appliedEffects.skills.anySkill) {
+        return { ...state, phase: 'select_any_skill' };
+      }
+      if (state.appliedEffects.skills.choices && state.appliedEffects.skills.choices.length > 1) {
+        return { ...state, phase: 'select_skill_gain' };
+      }
+    }
     return { ...state, phase: 'apply_effects' };
   }
 
@@ -476,17 +496,30 @@ export class EventProcessor {
       return state;
     }
 
-    // Update effects to only include the selected skill
+    const chooseCount = state.appliedEffects.skills.chooseCount || 1;
+    const currentChoices = state.selectedSkills || [];
+    const newChoices = [...currentChoices, skillName];
+
+    if (newChoices.length >= chooseCount) {
+      // All picks made — set choices to selected and move to apply
+      return {
+        ...state,
+        selectedSkills: undefined,
+        appliedEffects: {
+          ...state.appliedEffects,
+          skills: {
+            ...state.appliedEffects.skills,
+            choices: newChoices,
+          },
+        },
+        phase: 'apply_effects',
+      };
+    }
+
+    // More picks needed — stay in selection phase
     return {
       ...state,
-      appliedEffects: {
-        ...state.appliedEffects,
-        skills: {
-          ...state.appliedEffects.skills,
-          choices: [skillName],
-        },
-      },
-      phase: 'apply_effects',
+      selectedSkills: newChoices,
     };
   }
 
