@@ -362,6 +362,7 @@ export const CharacterGenerator: React.FC = () => {
   // Psionic testing state
   const [psiTestResult, setPsiTestResult] = useState<PsiTestResult | null>(null);
   const [showPsiTesting, setShowPsiTesting] = useState(false);
+  const [psiTalentOrder, setPsiTalentOrder] = useState<typeof PSIONIC_TALENTS[number][]>([...PSIONIC_TALENTS]);
 
   const [characteristicRolls, setCharacteristicRolls] = useState<number[]>([]);
   const [hasRolled, setHasRolled] = useState(false);
@@ -1027,8 +1028,8 @@ export const CharacterGenerator: React.FC = () => {
 
   // Perform PSI testing
   const performPsiTest = () => {
-    // Test for all five talents
-    const result = performPsiTesting(characterData.age, [...PSIONIC_TALENTS]);
+    const termsServed = characterData.totalCareerTerms || 0;
+    const result = performPsiTesting(termsServed, psiTalentOrder);
     setPsiTestResult(result);
 
     // Update character with PSI value and acquired talents
@@ -1048,6 +1049,16 @@ export const CharacterGenerator: React.FC = () => {
     }));
 
     setShowPsiTesting(false);
+  };
+
+  const movePsiTalent = (index: number, direction: -1 | 1) => {
+    const nextIndex = index + direction;
+    if (nextIndex < 0 || nextIndex >= psiTalentOrder.length) return;
+    setPsiTalentOrder(prev => {
+      const next = [...prev];
+      [next[index], next[nextIndex]] = [next[nextIndex], next[index]];
+      return next;
+    });
   };
 
   // ============================================================================
@@ -4034,12 +4045,52 @@ export const CharacterGenerator: React.FC = () => {
                         </Button>
                       )}
                     </div>
+                    {!characterData.psiTested && (
+                      <div className="mt-3 border-t border-purple-500/30 pt-2">
+                        <div className="text-xs text-purple-300/80 mb-2">
+                          Choose talent test order (DM-1 per previous check attempted):
+                        </div>
+                        <div className="space-y-1.5">
+                          {psiTalentOrder.map((talent, index) => (
+                            <div key={talent} className="flex items-center justify-between rounded border border-purple-500/20 px-2 py-1">
+                              <span className="text-xs text-purple-200">
+                                {index + 1}. {talent}
+                              </span>
+                              <div className="flex items-center gap-1">
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-6 w-6 p-0 border-purple-500/30 text-purple-300"
+                                  disabled={index === 0}
+                                  onClick={() => movePsiTalent(index, -1)}
+                                >
+                                  <ChevronUp className="h-3 w-3" />
+                                </Button>
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-6 w-6 p-0 border-purple-500/30 text-purple-300"
+                                  disabled={index === psiTalentOrder.length - 1}
+                                  onClick={() => movePsiTalent(index, 1)}
+                                >
+                                  <ChevronDown className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                     {psiTestResult && (
                       <div className="mt-3 text-xs text-purple-300/80 border-t border-purple-500/30 pt-2">
                         <div className="font-bold mb-1">Test Results:</div>
-                        {psiTestResult.talentsTested.map((t, i) => (
+                        {psiTestResult.talentsTested.map((t) => (
                           <div key={t.talent} className={t.acquired ? 'text-green-400' : 'text-red-400/70'}>
-                            {t.talent}: Roll {t.roll} vs {t.targetNumber} - {t.acquired ? 'ACQUIRED' : 'Failed'}
+                            {t.talent}: {t.automatic
+                              ? `Auto-acquired (first talent Telepathy)`
+                              : `2D6 ${t.rawRoll} ${t.psiDM >= 0 ? '+' : '-'} ${Math.abs(t.psiDM)} ${t.learningDM >= 0 ? '+' : '-'} ${Math.abs(t.learningDM)} ${t.attemptDM >= 0 ? '+' : '-'} ${Math.abs(t.attemptDM)} = ${t.total} vs ${t.targetNumber}`} - {t.acquired ? 'ACQUIRED' : 'Failed'}
                           </div>
                         ))}
                       </div>

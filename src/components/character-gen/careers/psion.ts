@@ -452,12 +452,19 @@ export type PsionicTalent = typeof PSIONIC_TALENTS[number];
 // Determine PSI characteristic and initial talent(s)
 
 export interface PsiTestResult {
-  psiValue: number;        // The PSI characteristic (2D6, modified by age)
+  psiValue: number;        // The PSI characteristic (2D6 - terms served)
+  psiDM: number;
   hasPsi: boolean;         // Whether they have usable psi (PSI > 0)
   talentsTested: {
     talent: PsionicTalent;
     targetNumber: number;
-    roll: number;
+    roll: number; // Backward-compatible alias for total score
+    rawRoll: number; // Raw 2D6 roll before modifiers
+    psiDM: number;
+    learningDM: number;
+    attemptDM: number; // -1 per previous check attempted
+    total: number; // rawRoll + psiDM + learningDM + attemptDM
+    automatic: boolean;
     acquired: boolean;
   }[];
   message: string;
@@ -467,53 +474,98 @@ export interface PsiTestResult {
 // This is a simplified version - actual costs vary by setting
 export const PSI_TESTING_COST = 5000;
 
-// Age modifier for PSI testing (older = lower PSI)
-export function getPsiAgePenalty(age: number): number {
-  if (age <= 18) return 0;
-  // Lose 1 PSI potential for every 4 years over 18
-  return Math.floor((age - 18) / 4);
+export const PSI_TRAINING_TARGET = 8;
+
+const TALENT_LEARNING_DM: Record<PsionicTalent, number> = {
+  Telepathy: 4,
+  Clairvoyance: 3,
+  Telekinesis: 2,
+  Awareness: 1,
+  Teleportation: 0,
+};
+
+function getCharacteristicDM(value: number): number {
+  if (value <= 0) return -3;
+  if (value <= 2) return -2;
+  if (value <= 5) return -1;
+  if (value <= 8) return 0;
+  if (value <= 11) return 1;
+  if (value <= 14) return 2;
+  return 3;
 }
 
 // Roll for PSI characteristic
-export function rollPsiCharacteristic(age: number): number {
+export function rollPsiCharacteristic(termsServed: number): number {
   const roll = Math.floor(Math.random() * 6) + 1 + Math.floor(Math.random() * 6) + 1;
-  const penalty = getPsiAgePenalty(age);
+  const penalty = Math.max(0, termsServed);
   return Math.max(0, roll - penalty);
 }
 
-// Calculate target number to acquire a talent
-// Each talent tested increases the difficulty by 1
-export function getTalentTargetNumber(talentIndex: number, psiValue: number): number {
-  // Base target is 8+, increases by 1 for each previous talent tested
-  const base = 8 + talentIndex;
-  return base;
+export function getTalentLearningDM(talent: PsionicTalent): number {
+  return TALENT_LEARNING_DM[talent];
 }
 
 // Test for a single talent
 export function testForTalent(
   talent: PsionicTalent,
-  talentIndex: number,
-  psiValue: number
-): { targetNumber: number; roll: number; acquired: boolean } {
-  const targetNumber = getTalentTargetNumber(talentIndex, psiValue);
-  const roll = Math.floor(Math.random() * 6) + 1 + Math.floor(Math.random() * 6) + 1;
-  const total = roll + Math.floor((psiValue - 7) / 3); // PSI DM
+  attemptsMade: number,
+  psiDM: number,
+  isFirstTalentCheck: boolean
+): {
+  targetNumber: number;
+  roll: number;
+  rawRoll: number;
+  psiDM: number;
+  learningDM: number;
+  attemptDM: number;
+  total: number;
+  automatic: boolean;
+  acquired: boolean;
+} {
+  const targetNumber = PSI_TRAINING_TARGET;
+  const learningDM = getTalentLearningDM(talent);
+  const attemptDM = -attemptsMade;
+
+  if (isFirstTalentCheck && talent === 'Telepathy') {
+    return {
+      targetNumber,
+      roll: targetNumber,
+      rawRoll: 0,
+      psiDM,
+      learningDM,
+      attemptDM,
+      total: targetNumber,
+      automatic: true,
+      acquired: true,
+    };
+  }
+
+  const rawRoll = Math.floor(Math.random() * 6) + 1 + Math.floor(Math.random() * 6) + 1;
+  const total = rawRoll + psiDM + learningDM + attemptDM;
   const acquired = total >= targetNumber;
 
   return {
     targetNumber,
     roll: total,
+    rawRoll,
+    psiDM,
+    learningDM,
+    attemptDM,
+    total,
+    automatic: false,
     acquired,
   };
 }
 
 // Perform full PSI testing
-export function performPsiTesting(age: number, talentsToTest: PsionicTalent[]): PsiTestResult {
-  const psiValue = rollPsiCharacteristic(age);
+export function performPsiTesting(termsServed: number, talentsToTest: PsionicTalent[]): PsiTestResult {
+  const psiValue = rollPsiCharacteristic(termsServed);
+  const psiDM = getCharacteristicDM(psiValue);
 
   if (psiValue === 0) {
     return {
       psiValue: 0,
+      psiDM,
       hasPsi: false,
       talentsTested: [],
       message: 'PSI Testing Result: No psionic potential detected (PSI 0).',
@@ -521,7 +573,7 @@ export function performPsiTesting(age: number, talentsToTest: PsionicTalent[]): 
   }
 
   const talentsTested = talentsToTest.map((talent, index) => {
-    const result = testForTalent(talent, index, psiValue);
+    const result = testForTalent(talent, index, psiDM, index === 0);
     return {
       talent,
       ...result,
@@ -532,6 +584,7 @@ export function performPsiTesting(age: number, talentsToTest: PsionicTalent[]): 
 
   return {
     psiValue,
+    psiDM,
     hasPsi: true,
     talentsTested,
     message: `PSI Testing Result: PSI ${psiValue}. Acquired talents: ${acquiredTalents.length > 0 ? acquiredTalents.map(t => t.talent).join(', ') : 'None'}.`,
