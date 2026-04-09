@@ -5,13 +5,14 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Dices, User, Briefcase, Award, Save, ArrowRight, AlertCircle, RefreshCw, ChevronDown, ChevronUp, Star, Ship, Users } from 'lucide-react';
+import { Dices, User, Briefcase, Award, Save, ArrowRight, AlertCircle, RefreshCw, ChevronDown, ChevronUp, Star, Ship, Users, Rocket, Lock } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useCampaign } from '@/contexts/CampaignContext';
+import { getLocalStorage, setLocalStorage, removeLocalStorage } from '@/lib/localStorage';
 import { ALL_CAREERS, BACKGROUND_SKILLS, getPreCareerEvent, CAREER_PRISONER, rollInitialParoleThreshold, CAREER_PSION, performPsiTesting, PSIONIC_TALENTS, type PsiTestResult } from './careers';
 import type { CareerDefinition, Characteristics, StructuredEvent, EventOutcome, GameEvent, EventEffects } from './careers';
 import { isGameEvent } from './careers';
-import { rollDraft, type DraftResult, getLifeEvent, getInjury, getUnusualEvent, rollAging, applyAgingEffects, type AgingRollResult } from './tables';
+import { rollDraft, type DraftResult, getLifeEvent, getInjury, getUnusualEvent, rollAging, applyAgingEffects, type AgingRollResult, LIFE_EVENTS, INJURY_TABLE, UNUSUAL_EVENTS } from './tables';
 import { EventHandler } from './EventHandler';
 import { rollDiceExpression, rollDice as rollDiceUtil } from './eventProcessor';
 import { SpecialtySelector, needsSpecialtySelection, getBaseSkillName } from './SpecialtySelector';
@@ -290,8 +291,14 @@ const getRankTitle = (
 // ============================================================================
 
 export const CharacterGenerator: React.FC = () => {
-  const { saveCharacter, crewGroups, vehicles } = useCampaign();
+  const { saveCharacter, crewGroups, vehicles, currentPlayer } = useCampaign();
   const [step, setStep] = useState(1);
+
+  // Draft persistence state
+  const DRAFT_KEY = `traveller_chargen_draft${currentPlayer?.id ? `_${currentPlayer.id}` : ''}`;
+  const [showResumeDraft, setShowResumeDraft] = useState(false);
+  const [draftChecked, setDraftChecked] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Crew selection state for the final save step
   const [selectedCrewId, setSelectedCrewId] = useState<string>('');
@@ -424,6 +431,10 @@ export const CharacterGenerator: React.FC = () => {
   const [redirectedEvent, setRedirectedEvent] = useState<GameEvent | null>(null);
   const [redirectTableRoll, setRedirectTableRoll] = useState<number | null>(null);
   const [redirectTableName, setRedirectTableName] = useState<string | null>(null);
+
+  // Pending table redirect state - shows table & manual roller before auto-rolling
+  const [pendingTableRedirect, setPendingTableRedirect] = useState<'life_events' | 'injury' | 'unusual_events' | null>(null);
+  const [pendingTableIsMishap, setPendingTableIsMishap] = useState(false);
 
   // Draft system state
   const [hasUsedDraft, setHasUsedDraft] = useState(false);
@@ -2001,35 +2012,21 @@ export const CharacterGenerator: React.FC = () => {
   };
 
   // Handler for table redirects (Life Events, Injury, etc.)
-  const handleTableRedirect = (table: 'life_events' | 'injury' | 'aging' | 'draft' | 'unusual_events') => {
-    let roll: number;
-    let event: GameEvent | null = null;
-    let tableName = '';
-
+  // Instead of auto-rolling, shows the table and lets the user roll manually
+  const handleTableRedirect = (table: 'life_events' | 'injury' | 'aging' | 'draft' | 'unusual_events', isMishap = false) => {
     switch (table) {
       case 'life_events':
-        roll = rollDiceUtil(2, 6); // 2D6
-        event = getLifeEvent(roll);
-        tableName = 'Life Events';
-        break;
       case 'injury':
-        roll = rollDiceUtil(1, 6); // 1D6
-        event = getInjury(roll);
-        tableName = 'Injury';
-        break;
       case 'unusual_events':
-        roll = rollDiceUtil(1, 6); // 1D6
-        event = getUnusualEvent(roll);
-        tableName = 'Unusual Events';
-        break;
+        setPendingTableRedirect(table);
+        setPendingTableIsMishap(isMishap);
+        return;
       case 'aging':
-        // Aging table not yet implemented
         setTermSkillsGained(prev => [...prev, 'Roll on Aging table (not yet implemented)']);
         setGameEventCompleted(true);
         setEventResolved(true);
         return;
       case 'draft':
-        // Draft is handled separately
         setTermSkillsGained(prev => [...prev, 'Roll on Draft table (use draft system)']);
         setGameEventCompleted(true);
         setEventResolved(true);
@@ -2039,12 +2036,41 @@ export const CharacterGenerator: React.FC = () => {
         setEventResolved(true);
         return;
     }
+  };
+
+  // Execute the actual table roll after user clicks the roll button
+  const executeTableRedirectRoll = (manualRoll?: number) => {
+    if (!pendingTableRedirect) return;
+
+    let roll: number;
+    let event: GameEvent | null = null;
+    let tableName = '';
+
+    switch (pendingTableRedirect) {
+      case 'life_events':
+        roll = manualRoll ?? rollDiceUtil(2, 6);
+        event = getLifeEvent(roll);
+        tableName = 'Life Events';
+        break;
+      case 'injury':
+        roll = manualRoll ?? rollDiceUtil(1, 6);
+        event = getInjury(roll);
+        tableName = 'Injury';
+        break;
+      case 'unusual_events':
+        roll = manualRoll ?? rollDiceUtil(1, 6);
+        event = getUnusualEvent(roll);
+        tableName = 'Unusual Events';
+        break;
+      default:
+        return;
+    }
 
     if (event) {
       setRedirectedEvent(event);
       setRedirectTableRoll(roll);
       setRedirectTableName(tableName);
-      // Don't mark as completed yet - the redirected event needs to be processed
+      setPendingTableRedirect(null);
     }
   };
 
@@ -2057,6 +2083,7 @@ export const CharacterGenerator: React.FC = () => {
     setRedirectedEvent(null);
     setRedirectTableRoll(null);
     setRedirectTableName(null);
+    setPendingTableIsMishap(false);
   };
 
   // Handler for nested table redirects (e.g., Life Events -> Injury -> ...)
@@ -2081,6 +2108,7 @@ export const CharacterGenerator: React.FC = () => {
     setRedirectedEvent(null);
     setRedirectTableRoll(null);
     setRedirectTableName(null);
+    setPendingTableIsMishap(false);
 
     // Now finalize the mishap
     const assignment = selectedCareer.assignments[selectedAssignment];
@@ -2869,6 +2897,7 @@ export const CharacterGenerator: React.FC = () => {
       };
 
       await saveCharacter(finalCharacterData);
+      removeLocalStorage(DRAFT_KEY);
       alert('Character created successfully!');
     } catch (error) {
       console.error('Failed to save character:', error);
@@ -2877,11 +2906,256 @@ export const CharacterGenerator: React.FC = () => {
   };
 
   // ============================================================================
+  // DRAFT PERSISTENCE
+  // ============================================================================
+
+  // Check for existing draft on mount
+  useEffect(() => {
+    if (draftChecked) return;
+    const draft = getLocalStorage<any>(DRAFT_KEY, null);
+    if (draft && draft.version === 1) {
+      setShowResumeDraft(true);
+    }
+    setDraftChecked(true);
+  }, [DRAFT_KEY, draftChecked]);
+
+  // Resume a saved draft
+  const resumeDraft = () => {
+    const draft = getLocalStorage<any>(DRAFT_KEY, null);
+    if (!draft) { setShowResumeDraft(false); return; }
+
+    setStep(draft.step || 1);
+    if (draft.characterData) setCharacterData(draft.characterData);
+    setSelectedAssignment(draft.selectedAssignment ?? 0);
+    setCurrentTerm(draft.currentTerm ?? 0);
+    // Resume at start of term, not mid-term
+    setIsInTerm(false);
+    setQualificationPassed(draft.qualificationPassed ?? null);
+    setHasUsedDraft(draft.hasUsedDraft ?? false);
+    setHasRolled(draft.hasRolled ?? false);
+    setCharacteristicRolls(draft.characteristicRolls ?? []);
+    setBackgroundSkillsRemaining(draft.backgroundSkillsRemaining ?? 0);
+    setIsCommissioned(draft.isCommissioned ?? false);
+    setBasicTrainingApplied(draft.basicTrainingApplied ?? false);
+    setAssignmentMode(draft.assignmentMode ?? 'auto');
+    setUseManualDice(draft.useManualDice ?? false);
+    setIsMusteringOut(draft.isMusteringOut ?? false);
+    setEventBenefitDMs(draft.eventBenefitDMs ?? []);
+    setExtraBenefitRolls(draft.extraBenefitRolls ?? 0);
+    setPreCareerGraduated(draft.preCareerGraduated ?? false);
+    setPreCareerFailedService(draft.preCareerFailedService ?? null);
+    setGraduatedWithHonours(draft.graduatedWithHonours ?? false);
+    setUniversitySkillLevel0(draft.universitySkillLevel0 ?? null);
+    setUniversitySkillLevel1(draft.universitySkillLevel1 ?? null);
+    setMilitaryAcademyService(draft.militaryAcademyService ?? null);
+    setPsiTestResult(draft.psiTestResult ?? null);
+    setShowPsiTesting(draft.showPsiTesting ?? false);
+
+    // Restore selectedCareer from name
+    if (draft.selectedCareerName) {
+      const career = ALL_CAREERS.find(c => c.name === draft.selectedCareerName);
+      if (career) setSelectedCareer(career);
+    }
+
+    // Restore selectedRace from raceId
+    if (draft.raceId) {
+      const race = RACES.find(r => r.id === draft.raceId);
+      if (race) setSelectedRace(race);
+    }
+
+    setShowResumeDraft(false);
+  };
+
+  // Auto-save draft on meaningful state changes (debounced)
+  useEffect(() => {
+    if (!draftChecked || showResumeDraft) return;
+    // Only save if there's meaningful progress
+    if (step <= 1 && !hasRolled && !characterData.name) return;
+
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      const draft = {
+        version: 1,
+        savedAt: new Date().toISOString(),
+        step,
+        characterData,
+        selectedCareerName: selectedCareer?.name ?? null,
+        selectedAssignment,
+        currentTerm,
+        isInTerm,
+        qualificationPassed,
+        hasUsedDraft,
+        hasRolled,
+        characteristicRolls,
+        backgroundSkillsRemaining,
+        isCommissioned,
+        basicTrainingApplied,
+        assignmentMode,
+        useManualDice,
+        isMusteringOut,
+        eventBenefitDMs,
+        extraBenefitRolls,
+        preCareerGraduated,
+        preCareerFailedService,
+        graduatedWithHonours,
+        universitySkillLevel0,
+        universitySkillLevel1,
+        militaryAcademyService,
+        psiTestResult,
+        showPsiTesting,
+        raceId: selectedRace?.id ?? 'human',
+      };
+      setLocalStorage(DRAFT_KEY, draft);
+    }, 500);
+
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, [step, characterData, selectedCareer, selectedAssignment, currentTerm, isInTerm,
+      qualificationPassed, hasUsedDraft, hasRolled, characteristicRolls, backgroundSkillsRemaining,
+      isCommissioned, basicTrainingApplied, isMusteringOut, draftChecked, showResumeDraft,
+      DRAFT_KEY, assignmentMode, useManualDice, eventBenefitDMs, extraBenefitRolls,
+      preCareerGraduated, preCareerFailedService, graduatedWithHonours,
+      universitySkillLevel0, universitySkillLevel1, militaryAcademyService,
+      psiTestResult, showPsiTesting, selectedRace]);
+
+  // Warn before closing/refreshing when there's progress
+  useEffect(() => {
+    const hasProgress = step > 1 || hasRolled || characterData.name.length > 0;
+    if (!hasProgress) return;
+
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+    };
+
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [step, hasRolled, characterData.name]);
+
+  // ============================================================================
+  // RENDER HELPERS
+  // ============================================================================
+
+  // Renders the pending table redirect UI (table display + roll button)
+  const renderPendingTableRedirect = () => {
+    if (!pendingTableRedirect) return null;
+
+    const tableConfig = {
+      life_events: { title: 'Life Events Table (2D6)', dice: 2, sides: 6, entries: LIFE_EVENTS, offset: 2 },
+      injury: { title: 'Injury Table (1D6)', dice: 1, sides: 6, entries: INJURY_TABLE, offset: 1 },
+      unusual_events: { title: 'Unusual Events Table (1D6)', dice: 1, sides: 6, entries: UNUSUAL_EVENTS, offset: 1 },
+    }[pendingTableRedirect];
+
+    if (!tableConfig) return null;
+
+    const minRoll = tableConfig.dice * 1;
+    const maxRoll = tableConfig.dice * tableConfig.sides;
+    const diceLabel = `${tableConfig.dice}D6`;
+
+    return (
+      <div className="space-y-3">
+        <Alert className="bg-blue-500/10 border-blue-500/50">
+          <AlertDescription className="text-blue-400">
+            <strong>Roll on the {tableConfig.title}</strong>
+          </AlertDescription>
+        </Alert>
+
+        {/* Display the full table */}
+        <div className="bg-black border border-terminal-primary/30 rounded p-3">
+          <h4 className="text-xs font-bold text-terminal-primary mb-2 uppercase tracking-wider">{tableConfig.title}</h4>
+          <div className="space-y-1 text-xs text-terminal-primary/70">
+            {tableConfig.entries.map((entry, idx) => (
+              <div key={entry.id} className="flex gap-2 py-0.5">
+                <span className="text-terminal-primary/50 w-6 text-right font-mono shrink-0">{idx + tableConfig.offset}.</span>
+                <span>{entry.description}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Roll button or manual entry */}
+        {useManualDice ? (
+          <div className="space-y-2">
+            <p className="text-xs text-blue-400">Enter your {diceLabel} roll result:</p>
+            <div className="flex gap-2">
+              <Input
+                type="number"
+                min={minRoll}
+                max={maxRoll}
+                value={manualDiceValue}
+                onChange={(e) => setManualDiceValue(e.target.value)}
+                placeholder={`Enter ${diceLabel} result (${minRoll}-${maxRoll})`}
+                className="bg-black border-terminal-primary/50 text-terminal-primary placeholder:text-terminal-primary/40"
+              />
+              <Button
+                onClick={() => {
+                  const val = parseInt(manualDiceValue);
+                  if (!isNaN(val) && val >= minRoll && val <= maxRoll) {
+                    executeTableRedirectRoll(val);
+                    setManualDiceValue('');
+                  }
+                }}
+                disabled={!manualDiceValue || isNaN(parseInt(manualDiceValue)) || parseInt(manualDiceValue) < minRoll || parseInt(manualDiceValue) > maxRoll}
+                className="bg-blue-500/20 text-blue-400 hover:bg-blue-500/30"
+              >
+                Submit Roll
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <Button
+            onClick={() => executeTableRedirectRoll()}
+            className="w-full bg-blue-500/20 text-blue-400 hover:bg-blue-500/30"
+          >
+            <Dices className="h-4 w-4 mr-2" />
+            Roll {tableConfig.title.replace(' Table ', ' ')}
+          </Button>
+        )}
+      </div>
+    );
+  };
+
+  // ============================================================================
   // RENDER
   // ============================================================================
 
   return (
     <div className="h-full flex flex-col bg-black text-terminal-primary font-mono">
+      {/* Resume Draft Dialog */}
+      {showResumeDraft && (
+        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
+          <Card className="bg-black border-2 border-terminal-primary/50 max-w-md w-full">
+            <CardHeader className="border-b border-terminal-primary/30">
+              <CardTitle className="text-terminal-primary font-['Orbitron'] tracking-wider flex items-center gap-2">
+                <RefreshCw className="h-5 w-5" />
+                Resume Character?
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4 pt-4">
+              <p className="text-terminal-primary/70 text-sm">
+                You have a character in progress. Would you like to resume where you left off or start fresh?
+              </p>
+              <div className="flex gap-3">
+                <Button
+                  onClick={resumeDraft}
+                  className="flex-1 bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30 border border-terminal-primary/50"
+                >
+                  Resume
+                </Button>
+                <Button
+                  onClick={() => {
+                    removeLocalStorage(DRAFT_KEY);
+                    setShowResumeDraft(false);
+                  }}
+                  variant="outline"
+                  className="flex-1 border-red-500/50 text-red-400 hover:bg-red-500/10"
+                >
+                  Start Fresh
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
       {/* Enhanced Header */}
       <div className="border-b border-terminal-primary/30 p-4 bg-gradient-to-r from-terminal-primary/5 via-transparent to-terminal-primary/5">
         <div className="flex items-center justify-between">
@@ -2914,25 +3188,34 @@ export const CharacterGenerator: React.FC = () => {
           {/* Enhanced Step Navigation */}
           <TabsList className="grid w-full grid-cols-6 bg-black/50 border border-terminal-primary/30 mb-4 p-1 gap-1">
             {['Basics', 'Characteristics', 'Background', 'Career', 'Terms', 'Review'].map((label, idx) => {
-              const isActive = step === idx + 1;
-              const isCompleted = step > idx + 1;
+              const targetStep = idx + 1;
+              const isActive = step === targetStep;
+              const isCompleted = step > targetStep;
+              // Lock steps 1-4 once career terms have started to prevent state corruption
+              const isLocked = targetStep <= 4 && (isInTerm || currentTerm > 0);
               return (
                 <TabsTrigger
                   key={label}
-                  value={`step${idx + 1}`}
-                  onClick={() => setStep(idx + 1)}
+                  value={`step${targetStep}`}
+                  onClick={() => {
+                    if (isLocked) return;
+                    setStep(targetStep);
+                  }}
                   className={`
                     text-xs font-bold transition-all duration-200 rounded
-                    ${isActive
+                    ${isLocked
+                      ? 'text-terminal-primary/20 cursor-not-allowed opacity-40'
+                      : isActive
                       ? 'bg-terminal-primary/20 text-terminal-primary border border-terminal-primary/50 shadow-[0_0_10px_rgba(0,255,0,0.3)]'
                       : isCompleted
                       ? 'bg-terminal-primary/10 text-terminal-primary/70 hover:bg-terminal-primary/15'
                       : 'text-terminal-primary/40 hover:text-terminal-primary/60 hover:bg-terminal-primary/5'
                     }
                   `}
+                  title={isLocked ? 'Career in progress — cannot go back' : undefined}
                 >
-                  <span className={`mr-1 ${isCompleted ? 'text-green-400' : ''}`}>
-                    {isCompleted ? '✓' : idx + 1}.
+                  <span className={`mr-1 ${isLocked ? 'text-terminal-primary/20' : isCompleted ? 'text-green-400' : ''}`}>
+                    {isLocked ? <Lock className="inline h-3 w-3" /> : isCompleted ? '✓' : targetStep}.
                   </span>
                   {label}
                 </TabsTrigger>
@@ -4237,7 +4520,7 @@ export const CharacterGenerator: React.FC = () => {
                     )}
 
                     {/* Pending Mishap GameEvent - requires player interaction */}
-                    {pendingMishapGameEvent && !redirectedEvent && (
+                    {pendingMishapGameEvent && !redirectedEvent && !pendingTableRedirect && (
                       <div className="space-y-2">
                         <Alert className="bg-yellow-500/10 border-yellow-500/50">
                           <AlertDescription className="text-yellow-400">
@@ -4249,9 +4532,21 @@ export const CharacterGenerator: React.FC = () => {
                           characteristics={characterData.characteristics}
                           skills={characterData.skills}
                           onComplete={handleMishapGameEventComplete}
-                          onTableRedirect={handleTableRedirect}
+                          onTableRedirect={(table) => handleTableRedirect(table, true)}
                           useManualDice={useManualDice}
                         />
+                      </div>
+                    )}
+
+                    {/* Pending Table Redirect from Mishap - show table and roller */}
+                    {pendingMishapGameEvent && pendingTableRedirect && pendingTableIsMishap && (
+                      <div className="space-y-2">
+                        <Alert className="bg-yellow-500/10 border-yellow-500/50">
+                          <AlertDescription className="text-yellow-400">
+                            <strong>Mishap {mishapRollNumber}:</strong> {pendingMishapGameEvent.description}
+                          </AlertDescription>
+                        </Alert>
+                        {renderPendingTableRedirect()}
                       </div>
                     )}
 
@@ -4525,8 +4820,15 @@ export const CharacterGenerator: React.FC = () => {
 
                 {isInTerm && termEventRoll !== null && (
                   <div className="space-y-2">
+                    {/* Pending Table Redirect - show table and roller before rolling */}
+                    {pendingTableRedirect && !pendingTableIsMishap && (
+                      <div className="space-y-2">
+                        {renderPendingTableRedirect()}
+                      </div>
+                    )}
+
                     {/* Redirected Event (from table redirect like Life Events -> Injury) */}
-                    {redirectedEvent && (
+                    {redirectedEvent && !pendingTableIsMishap && (
                       <div className="space-y-2">
                         <Alert className="bg-blue-500/10 border-blue-500/50">
                           <AlertDescription className="text-blue-400">
@@ -4545,7 +4847,7 @@ export const CharacterGenerator: React.FC = () => {
                     )}
 
                     {/* New GameEvent System */}
-                    {currentGameEvent && !gameEventCompleted && !redirectedEvent && (
+                    {currentGameEvent && !gameEventCompleted && !redirectedEvent && !pendingTableRedirect && (
                       <div className="space-y-2">
                         <div className="bg-terminal-primary/5 border border-terminal-primary/30 rounded p-2 mb-2">
                           <p className="text-xs text-terminal-primary/60">Event Roll: {termEventRoll}</p>
