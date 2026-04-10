@@ -23,6 +23,7 @@ import { useParams } from "react-router-dom";
 import { lazyWithRetry } from "@/lib/lazyWithRetry";
 
 const VTTPresenterView = lazyWithRetry(() => import("./components/vtt/VTTPresenterView"));
+const SessionLogPopout = lazyWithRetry(() => import("./pages/SessionLogPopout"));
 const Index = lazyWithRetry(() => import("./pages/Index"));
 const AdminNotes = lazyWithRetry(() => import("./pages/AdminNotes"));
 const CharacterView = lazyWithRetry(() => import("./components/crew/CharacterView"));
@@ -71,6 +72,7 @@ const App = () => (
                                       <Route path="/vehicle-view/:id" element={<VehicleViewRoute />} />
                                       <Route path="/admin/notes" element={<AdminNotes />} />
                                       <Route path="/presenter" element={<VTTPresenterView />} />
+                                      <Route path="/session-log-popout" element={<SessionLogPopout />} />
                                       {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                                       <Route path="*" element={<NotFound />} />
                                     </Routes>

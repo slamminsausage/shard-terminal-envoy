@@ -21,6 +21,7 @@ import { RACES, getRaceById, applyRaceModifiers, type Race, type RaceTrait } fro
 import { getCareerTheme, getCareerCardStyle, getCareerTextStyle, type CareerTheme } from './careerThemes';
 import { CREW_POSITION_PRESETS } from '@/types/database';
 import { AnimatedDiceValue } from './AnimatedDiceValue';
+import { CareerTableDisplay } from './CareerTableDisplay';
 
 // ============================================================================
 // TYPE DEFINITIONS (Component-specific)
@@ -129,6 +130,7 @@ interface CharacterData {
   paroleThreshold?: number;       // Current parole threshold (starts at 1D+2)
   forcedCareer?: string;          // Career that must be taken next term
   prisonerSurvivalDM?: number;    // DM to survival rolls from gang membership, etc.
+  lostBenefitCareers?: string[];  // Careers that lost benefits from events
 
   // Psionic tracking
   psiTested?: boolean;            // Whether PSI has been tested
@@ -138,6 +140,15 @@ interface CharacterData {
   // Event-granted career effects
   eventQualificationDM?: number;  // DM bonus to next qualification roll from events
   allowedCareers?: string[];      // Careers unlocked by events (bypass qualification)
+
+  // Anagathics tracking
+  isUsingAnagathics?: boolean;        // Currently using anagathics
+  anagathicsStartTerm?: number;       // Total term number when anagathics started
+  anagathicsTotalCost?: number;       // Total anagathics cost accumulated
+
+  // Medical bills tracking
+  medicalDebt?: number;               // Accumulated unpaid medical bills
+  agingCrisisFailQualification?: boolean;  // Auto-fail next qualification after aging crisis
 }
 
 // ============================================================================
@@ -220,11 +231,12 @@ const normalizeSkillName = (skillName: string): string => {
   return skillName.toLowerCase().replace(/ /g, '_');
 };
 
-const parseSkillGain = (skillText: string): { skill: string; isStat: boolean; stat?: keyof Omit<Characteristics, 'psionics'> } => {
+const parseSkillGain = (skillText: string): { skill: string; isStat: boolean; stat?: keyof Characteristics } => {
   // Check if it's a stat increase (e.g., "Dexterity +1")
-  const statMatch = skillText.match(/(Strength|Dexterity|Endurance|Intellect|Education|Social)\s*\+1/i);
+  const statMatch = skillText.match(/(Strength|Dexterity|Endurance|Intellect|Education|Social|Psionics|PSI)\s*\+1/i);
   if (statMatch) {
-    const statName = statMatch[1].toLowerCase() as keyof Omit<Characteristics, 'psionics'>;
+    const matched = statMatch[1].toLowerCase();
+    const statName = (matched === 'psi' ? 'psionics' : matched) as keyof Characteristics;
     return { skill: skillText, isStat: true, stat: statName };
   }
 
@@ -345,6 +357,7 @@ export const CharacterGenerator: React.FC = () => {
     paroleThreshold: undefined,
     forcedCareer: undefined,
     prisonerSurvivalDM: 0,
+    lostBenefitCareers: [],
     // Psionic tracking
     psiTested: false,
     psiTalents: [],
@@ -357,6 +370,9 @@ export const CharacterGenerator: React.FC = () => {
   // Psionic testing state
   const [psiTestResult, setPsiTestResult] = useState<PsiTestResult | null>(null);
   const [showPsiTesting, setShowPsiTesting] = useState(false);
+  const [psiTalentOrder, setPsiTalentOrder] = useState<typeof PSIONIC_TALENTS[number][]>([...PSIONIC_TALENTS]);
+  const [manualPsiRoll, setManualPsiRoll] = useState('');
+  const [manualTalentRolls, setManualTalentRolls] = useState<Partial<Record<typeof PSIONIC_TALENTS[number], string>>>({});
 
   const [characteristicRolls, setCharacteristicRolls] = useState<number[]>([]);
   const [hasRolled, setHasRolled] = useState(false);
@@ -452,6 +468,7 @@ export const CharacterGenerator: React.FC = () => {
   // Specialty selection state - for skills with specialties that need user choice
   const [pendingSpecialtySkill, setPendingSpecialtySkill] = useState<string | null>(null);
   const [pendingSpecialtySource, setPendingSpecialtySource] = useState<string>(''); // For logging purposes
+  const [pendingAnyTalentSource, setPendingAnyTalentSource] = useState<string>('');
 
   // End-of-term skill selection state
   // Counter-based so advancement success can grant two rolls.
@@ -468,14 +485,29 @@ export const CharacterGenerator: React.FC = () => {
 
   // Mustering out state
   const [isMusteringOut, setIsMusteringOut] = useState(false);
+  const [forceLeaveCareer, setForceLeaveCareer] = useState(false);
+  const [pendingInjurySeverity, setPendingInjurySeverity] = useState<'severe' | null>(null);
 
   // Mishap GameEvent state - for mishaps that require player interaction (rolls, choices)
   const [pendingMishapGameEvent, setPendingMishapGameEvent] = useState<GameEvent | null>(null);
   const [mishapRollNumber, setMishapRollNumber] = useState<number | null>(null);
+  const [needsMishapRoll, setNeedsMishapRoll] = useState(false); // True when survival failed and waiting for manual mishap roll
 
-  // Aging state
+  // Aging state (interactive)
   const [agingResult, setAgingResult] = useState<AgingRollResult | null>(null);
   const [agingPending, setAgingPending] = useState(false);
+  const [agingPhysicalChosen, setAgingPhysicalChosen] = useState(false);
+  const [agingMentalChosen, setAgingMentalChosen] = useState(false);
+  const [agingCrisis, setAgingCrisis] = useState<AgingCrisisResult | null>(null);
+  const [agingCrisisAcknowledged, setAgingCrisisAcknowledged] = useState(false);
+  const [agingChosenEffects, setAgingChosenEffects] = useState<{ stat: string; modifier: number }[]>([]);
+
+  // Anagathics state
+  const [showAnagathicsPrompt, setShowAnagathicsPrompt] = useState(false);
+  const [anagathicsRollResult, setAnagathicsRollResult] = useState<AnagathicsObtainResult | null>(null);
+
+  // Medical bills state
+  const [pendingMedicalBill, setPendingMedicalBill] = useState<MedicalCoverageResult | null>(null);
 
   // Assignment switching state
   const [isSwitchingAssignment, setIsSwitchingAssignment] = useState(false);
@@ -487,38 +519,48 @@ export const CharacterGenerator: React.FC = () => {
   const [useManualDice, setUseManualDice] = useState(false);
   const [manualDiceValue, setManualDiceValue] = useState<string>('');
 
-  // Get available careers based on current term number
+  // Always return all careers - locked state is handled by isCareerAvailable()
   const getAvailableCareers = (): CareerDefinition[] => {
+    return ALL_CAREERS;
+  };
+
+  // Check if a career can be selected (returns availability + reason if locked)
+  const isCareerAvailable = (career: CareerDefinition): { available: boolean; reason?: string } => {
     const totalTerms = characterData.totalCareerTerms || 0;
 
-    // If character has a forced career (e.g., arrested -> Prisoner), only that career is available
+    // Forced career: only that career is available
     if (characterData.forcedCareer) {
-      if (characterData.forcedCareer === 'Prisoner') {
-        return [CAREER_PRISONER];
+      if (career.isPrisonerCareer && characterData.forcedCareer === 'Prisoner') {
+        return { available: true };
       }
-      // For other forced careers, find in ALL_CAREERS
-      const forcedCareer = ALL_CAREERS.find(c => c.name === characterData.forcedCareer);
-      if (forcedCareer) {
-        return [forcedCareer];
+      if (career.name === characterData.forcedCareer) {
+        return { available: true };
+      }
+      return { available: false, reason: `You must enter the ${characterData.forcedCareer} career` };
+    }
+
+    // Pre-careers: limited by terms and one-time use
+    if (career.isPreCareer) {
+      if (characterData.hasCompletedPreCareer) return { available: false, reason: 'Already completed a pre-career' };
+      if (totalTerms >= 3) return { available: false, reason: 'Pre-careers unavailable after 3 terms' };
+    }
+
+    // Prisoner: only via forced entry
+    if (career.isPrisonerCareer) {
+      return { available: false, reason: 'Can only enter through sentencing' };
+    }
+
+    // Psion: requires PSI testing with PSI > 0
+    if (career.requiresPsiTesting) {
+      if (!characterData.psiTested) {
+        return { available: false, reason: 'Requires psionic testing' };
+      }
+      if ((characterData.characteristics.psionics?.total || 0) === 0) {
+        return { available: false, reason: 'No psionic potential detected' };
       }
     }
 
-    return ALL_CAREERS.filter(career => {
-      // Pre-careers are only available for first 3 terms
-      if (career.isPreCareer) {
-        // Can't take pre-career if already completed one
-        if (characterData.hasCompletedPreCareer) return false;
-        // Only available for terms 1-3
-        return totalTerms < 3;
-      }
-      // Psion career requires PSI testing and PSI > 0
-      if (career.requiresPsiTesting) {
-        if (!characterData.psiTested) return false;
-        if ((characterData.characteristics.psionics?.total || 0) === 0) return false;
-      }
-      // Regular careers always available
-      return true;
-    });
+    return { available: true };
   };
 
   // Get qualification DM for pre-careers based on term number
@@ -596,8 +638,8 @@ export const CharacterGenerator: React.FC = () => {
     setAssignmentMode('manual');
   };
 
-  const rollSingleCharacteristic = (key: keyof Omit<Characteristics, 'psionics'>) => {
-    const roll = rollDice(2, 6);
+  const rollSingleCharacteristic = (key: keyof Omit<Characteristics, 'psionics'>, manualRoll?: number) => {
+    const roll = manualRoll ?? rollDice(2, 6);
 
     // Trigger dice spin animation for ~420ms before revealing result
     setRollingStats(prev => new Set([...prev, key]));
@@ -728,7 +770,9 @@ export const CharacterGenerator: React.FC = () => {
   const finalizeCharacteristicsWithRace = () => {
     // Check if race modifiers already applied (species already set to non-human)
     if (characterData.raceId === selectedRace.id && characterData.species === selectedRace.name) {
-      // Already finalized, just proceed
+      // Already finalized — still recalculate background skills to be safe
+      const eduDM = getDM(characterData.characteristics.education.total);
+      setBackgroundSkillsRemaining(Math.max(0, eduDM + 3));
       setStep(3);
       return;
     }
@@ -787,7 +831,7 @@ export const CharacterGenerator: React.FC = () => {
   // STEP 4: CAREER SELECTION
   // ============================================================================
 
-  const attemptQualification = () => {
+  const attemptQualification = (manualRoll?: number) => {
     if (!selectedCareer) return;
 
     // Check for automatic entry from failed Military Academy
@@ -829,6 +873,17 @@ export const CharacterGenerator: React.FC = () => {
       return;
     }
 
+    // Auto-fail qualification after aging crisis
+    if (characterData.agingCrisisFailQualification) {
+      setQualificationPassed(false);
+      setQualificationRollLog('Automatic failure - still recovering from aging crisis.');
+      setCharacterData(prev => ({
+        ...prev,
+        agingCrisisFailQualification: false, // Reset after use (one-time penalty)
+      }));
+      return;
+    }
+
     const charValue = characterData.characteristics[selectedCareer.qualificationStat].total;
     let dm = getDM(charValue);
     let dmDetails: string[] = [`Char DM ${getDM(charValue)}`];
@@ -863,7 +918,7 @@ export const CharacterGenerator: React.FC = () => {
       dmDetails.push(`Event DM +${characterData.eventQualificationDM}`);
     }
 
-    const roll = rollDice(2, 6);
+    const roll = manualRoll ?? rollDice(2, 6);
     const total = roll + dm;
     const passed = total >= selectedCareer.qualificationTarget;
 
@@ -877,13 +932,15 @@ export const CharacterGenerator: React.FC = () => {
         career: selectedCareer.name,
         notes: prev.notes + `\nQualified for ${selectedCareer.name}: ${roll} + ${dm} = ${total}`,
         eventQualificationDM: 0, // Reset after using
+        preCareerQualificationDM: 0, // Reset after first use - one-time bonus
         // Note: totalCareerTerms is incremented in completeTerm(), not here
       }));
     } else {
-      // Reset eventQualificationDM even on failure (it's a one-time bonus)
+      // Reset eventQualificationDM and preCareerQualificationDM even on failure (one-time bonuses)
       setCharacterData(prev => ({
         ...prev,
         eventQualificationDM: 0,
+        preCareerQualificationDM: 0, // Reset after first use - one-time bonus
       }));
     }
   };
@@ -992,8 +1049,25 @@ export const CharacterGenerator: React.FC = () => {
 
   // Perform PSI testing
   const performPsiTest = () => {
-    // Test for all five talents
-    const result = performPsiTesting(characterData.age, [...PSIONIC_TALENTS]);
+    const termsServed = characterData.totalCareerTerms || 0;
+    const parsedPsiRoll = manualPsiRoll.trim() === '' ? undefined : Number(manualPsiRoll);
+    const parsedTalentRolls: Partial<Record<typeof PSIONIC_TALENTS[number], number>> = {};
+    psiTalentOrder.forEach((talent) => {
+      const rawValue = manualTalentRolls[talent];
+      if (rawValue != null && rawValue.trim() !== '') {
+        const parsedValue = Number(rawValue);
+        if (Number.isFinite(parsedValue)) {
+          parsedTalentRolls[talent] = parsedValue;
+        }
+      }
+    });
+
+    const manualPsiValue = Number.isFinite(parsedPsiRoll) ? parsedPsiRoll : undefined;
+
+    const result = performPsiTesting(termsServed, psiTalentOrder, {
+      manualPsiRoll: manualPsiValue,
+      manualTalentRolls: parsedTalentRolls,
+    });
     setPsiTestResult(result);
 
     // Update character with PSI value and acquired talents
@@ -1013,6 +1087,16 @@ export const CharacterGenerator: React.FC = () => {
     }));
 
     setShowPsiTesting(false);
+  };
+
+  const movePsiTalent = (index: number, direction: -1 | 1) => {
+    const nextIndex = index + direction;
+    if (nextIndex < 0 || nextIndex >= psiTalentOrder.length) return;
+    setPsiTalentOrder(prev => {
+      const next = [...prev];
+      [next[index], next[nextIndex]] = [next[nextIndex], next[index]];
+      return next;
+    });
   };
 
   // ============================================================================
@@ -1230,7 +1314,7 @@ export const CharacterGenerator: React.FC = () => {
     academyGradSkillsSelected.forEach(skillName => {
       const skillKey = normalizeSkillName(skillName);
       setCharacterData(prev => {
-        const currentValue = parseInt(prev.skills[skillKey]?.value || '0');
+        const currentValue = parseInt(prev.skills[skillKey]?.value || '0', 10);
         return {
           ...prev,
           skills: {
@@ -1290,6 +1374,27 @@ export const CharacterGenerator: React.FC = () => {
     // Reset mishap GameEvent state
     setPendingMishapGameEvent(null);
     setMishapRollNumber(null);
+    setNeedsMishapRoll(false);
+    // Reset forced leave state
+    setForceLeaveCareer(false);
+    // Reset commission state
+    setCommissionPending(false);
+    setCommissionRollLog('');
+
+    // Check if commission roll is needed (first term in a military career after pre-career graduation)
+    if (newTermNumber === 1 && needsCommissionRoll && selectedCareer?.commissionTarget) {
+      if (commissionRollDM <= -999) {
+        // Automatic commission (military academy with honours)
+        setIsCommissioned(true);
+        setCharacterData(prev => ({ ...prev, rank: 1 }));
+        setCommissionRollLog('Commission: Automatic (Military Academy Honours) → Commissioned as Officer (Rank O1)');
+        setTermSkillsGained(prev => [...prev, 'Automatic Commission (Honours) → Officer Rank O1']);
+        setNeedsCommissionRoll(false);
+      } else {
+        // Need to roll for commission
+        setCommissionPending(true);
+      }
+    }
 
     // Calculate age based on TOTAL terms completed across all careers
     // lifepath_log contains one entry per completed term
@@ -1311,12 +1416,83 @@ export const CharacterGenerator: React.FC = () => {
     // For subsequent careers, UI will show skill selection (handled in render)
   };
 
+  // Roll for commission (military careers after pre-career graduation)
+  const rollCommission = (manualRoll?: number) => {
+    if (!selectedCareer?.commissionTarget) return;
+
+    const socMod = getDM(characterData.characteristics.social.current);
+    const target = selectedCareer.commissionTarget;
+    const dm = socMod + commissionRollDM;
+    const naturalRoll = manualRoll ?? rollDice(2, 6);
+    const total = naturalRoll + dm;
+    const passed = total >= target;
+
+    const dmBreakdown = `SOC DM ${socMod >= 0 ? '+' : ''}${socMod}${commissionRollDM !== 0 ? `, Pre-career DM ${commissionRollDM >= 0 ? '+' : ''}${commissionRollDM}` : ''}`;
+    const log = `Commission Roll: ${naturalRoll} + (${dmBreakdown}) = ${total} vs ${target}+ → ${passed ? 'COMMISSIONED' : 'Failed'}`;
+    setCommissionRollLog(log);
+    setCommissionPending(false);
+    setNeedsCommissionRoll(false);
+    setCommissionRollDM(0); // Reset after use - one-time bonus from pre-career
+
+    if (passed) {
+      setIsCommissioned(true);
+      setCharacterData(prev => ({ ...prev, rank: 1 }));
+      setTermSkillsGained(prev => [...prev, 'Commission Granted → Officer Rank O1']);
+    } else {
+      setTermSkillsGained(prev => [...prev, 'Commission Failed → Enlisted']);
+    }
+  };
+
+  // Process a mishap roll result (extracted for manual dice support)
+  const applyMishapRoll = (mishapRoll: number) => {
+    if (!selectedCareer) return;
+    const assignment = selectedCareer.assignments[selectedAssignment];
+    const mishapEntry = selectedCareer.mishapTable[mishapRoll - 1];
+    setMishapRollNumber(mishapRoll);
+    setNeedsMishapRoll(false);
+
+    // Check if this mishap is a GameEvent (has rolls/choices)
+    if (mishapEntry && typeof mishapEntry === 'object' && 'resolution' in mishapEntry) {
+      // GameEvent mishap - needs player interaction through EventHandler
+      setPendingMishapGameEvent(mishapEntry as GameEvent);
+      // Don't log the term yet - wait for GameEvent resolution
+    } else {
+      // Simple string mishap - log immediately
+      const mishap = mishapEntry ? getMishapDescription(mishapEntry) : 'Injured. Roll on the Injury table.';
+      const ranks = getRanksForCareer(selectedCareer, isCommissioned, assignment.name);
+
+      const termRecord: TermRecord = {
+        termNumber: currentTerm,
+        career: selectedCareer.name,
+        assignment: assignment.name,
+        age: characterData.age,
+        survivalRoll: survivalRollLog || '',
+        survived: false,
+        advanced: false,
+        rank: characterData.rank,
+        rankTitle: ranks[characterData.rank]?.title || 'Rank 0',
+        event: `MISHAP: ${mishap}`,
+        skillsGained: [],
+        mishap,
+      };
+
+      setCharacterData(prev => ({
+        ...prev,
+        lifepath_log: [...prev.lifepath_log, termRecord],
+        terms_served: currentTerm,
+      }));
+    }
+  };
+
   const runSurvivalCheck = (manualRoll?: number) => {
     if (!selectedCareer || termSurvived !== null) return;
 
     const assignment = selectedCareer.assignments[selectedAssignment];
     const charValue = characterData.characteristics[assignment.survivalStat].total;
     let dm = getDM(charValue);
+
+    // Apply prisoner survival DM (e.g., from gang membership)
+    dm += characterData.prisonerSurvivalDM || 0;
 
     // For pre-careers, this is actually a GRADUATION check
     const isPreCareer = selectedCareer.isPreCareer || false;
@@ -1393,42 +1569,13 @@ export const CharacterGenerator: React.FC = () => {
           terms_served: currentTerm,
         }));
       } else {
-        // Regular career mishap
-        const mishapRoll = rollDice(1, 6);
-        const mishapEntry = selectedCareer.mishapTable[mishapRoll - 1];
-        setMishapRollNumber(mishapRoll);
-
-        // Check if this mishap is a GameEvent (has rolls/choices)
-        if (mishapEntry && typeof mishapEntry === 'object' && 'resolution' in mishapEntry) {
-          // GameEvent mishap - needs player interaction through EventHandler
-          setPendingMishapGameEvent(mishapEntry as GameEvent);
-          // Don't log the term yet - wait for GameEvent resolution
-        } else {
-          // Simple string mishap - log immediately
-          const mishap = mishapEntry ? getMishapDescription(mishapEntry) : 'Injured. Roll on the Injury table.';
-          const ranks = getRanksForCareer(selectedCareer, isCommissioned, assignment.name);
-
-          const termRecord: TermRecord = {
-            termNumber: currentTerm,
-            career: selectedCareer.name,
-            assignment: assignment.name,
-            age: characterData.age,
-            survivalRoll: `${roll} + ${dm} = ${total} (need ${assignment.survivalTarget}+)`,
-            survived: false,
-            advanced: false,
-            rank: characterData.rank,
-            rankTitle: ranks[characterData.rank]?.title || 'Rank 0',
-            event: `MISHAP: ${mishap}`,
-            skillsGained: [],
-            mishap,
-          };
-
-          setCharacterData(prev => ({
-            ...prev,
-            lifepath_log: [...prev.lifepath_log, termRecord],
-            terms_served: currentTerm,
-          }));
+        // Regular career mishap - if manual dice is on, wait for player to roll
+        if (useManualDice) {
+          setNeedsMishapRoll(true);
+          return; // Wait for manual mishap roll
         }
+        const mishapRoll = rollDice(1, 6);
+        applyMishapRoll(mishapRoll);
       }
     } else {
       // Graduation/survival success
@@ -1451,8 +1598,8 @@ export const CharacterGenerator: React.FC = () => {
             const skill1Key = normalizeSkillName(universitySkillLevel1);
 
             setCharacterData(prev => {
-              const currentSkill0 = parseInt(prev.skills[skill0Key]?.value || '0');
-              const currentSkill1 = parseInt(prev.skills[skill1Key]?.value || '0');
+              const currentSkill0 = parseInt(prev.skills[skill0Key]?.value || '0', 10);
+              const currentSkill1 = parseInt(prev.skills[skill1Key]?.value || '0', 10);
 
               return {
                 ...prev,
@@ -1787,10 +1934,10 @@ export const CharacterGenerator: React.FC = () => {
     }
   };
 
-  const rollEventCheck = (characteristic: keyof Omit<Characteristics, 'psionics'>, target: number) => {
+  const rollEventCheck = (characteristic: keyof Omit<Characteristics, 'psionics'>, target: number, manualRoll?: number) => {
     const stat = characterData.characteristics[characteristic];
     const dm = getDM(stat.total);
-    const roll = rollDice(2, 6);
+    const roll = manualRoll ?? rollDice(2, 6);
     const total = roll + dm;
 
     setEventRollResult({ roll, dm, total });
@@ -1812,7 +1959,7 @@ export const CharacterGenerator: React.FC = () => {
         const skillKey = normalizeSkillName(skillChoice);
         setCharacterData(prev => {
           const currentSkill = prev.skills[skillKey];
-          const currentValue = currentSkill ? parseInt(currentSkill.value) || 0 : 0;
+          const currentValue = currentSkill ? parseInt(currentSkill.value, 10) || 0 : 0;
 
           return {
             ...prev,
@@ -1878,7 +2025,7 @@ export const CharacterGenerator: React.FC = () => {
           const skillKey = normalizeSkillName(skillName);
           setCharacterData(prev => {
             const currentSkill = prev.skills[skillKey];
-            const currentValue = currentSkill ? parseInt(currentSkill.value) || 0 : 0;
+            const currentValue = currentSkill ? parseInt(currentSkill.value, 10) || 0 : 0;
             // For level 0, just ensure proficiency; for higher, set to max of current or target
             const newValue = level === 0 ? Math.max(currentValue, 0) : Math.max(currentValue, level);
             return {
@@ -1918,6 +2065,24 @@ export const CharacterGenerator: React.FC = () => {
             `${change.stat.toUpperCase()} ${change.modifier >= 0 ? '+' : ''}${change.modifier} (event)`,
           ]);
         });
+
+        // Calculate medical bills for characteristic damage (injuries)
+        const totalDamage = effects.characteristics.reduce((sum, c) => sum + Math.max(0, -c.modifier), 0);
+        if (totalDamage > 0 && selectedCareer) {
+          const injuryCost = calculateInjuryCost(totalDamage);
+          const coverage = calculateMedicalCoverage(selectedCareer.name, characterData.rank, injuryCost);
+          setPendingMedicalBill(coverage);
+          if (coverage.outOfPocket > 0) {
+            setCharacterData(prev => ({
+              ...prev,
+              medicalDebt: (prev.medicalDebt || 0) + coverage.outOfPocket,
+            }));
+          }
+          setTermSkillsGained(prev => [
+            ...prev,
+            `Medical: Cr${injuryCost.toLocaleString()} (${coverage.coveragePercent}% covered by ${selectedCareer.name}). Out of pocket: Cr${coverage.outOfPocket.toLocaleString()}`,
+          ]);
+        }
       }
 
       // Apply social connections (resolve dice expressions) and update characterData
@@ -1984,6 +2149,11 @@ export const CharacterGenerator: React.FC = () => {
         setEventAdvancementDM(prev => prev + effects.advancementDM!);
         setTermSkillsGained(prev => [...prev, `DM+${effects.advancementDM} to next advancement roll`]);
       }
+      if (effects.autoPromotion) {
+        // Grant a very large advancement DM to guarantee promotion
+        setEventAdvancementDM(prev => prev + 99);
+        setTermSkillsGained(prev => [...prev, 'Automatic promotion this term']);
+      }
       if (effects.benefitDM && effects.benefitDM > 0) {
         // Add each benefit DM as a separate entry (each can only be used once)
         setEventBenefitDMs(prev => [...prev, effects.benefitDM!]);
@@ -1992,6 +2162,56 @@ export const CharacterGenerator: React.FC = () => {
       if (effects.extraBenefit) {
         setExtraBenefitRolls(prev => prev + 1);
         setTermSkillsGained(prev => [...prev, 'Extra Benefit roll']);
+      }
+
+      // Prisoner career effects
+      if (effects.paroleThresholdChange) {
+        setCharacterData(prev => ({
+          ...prev,
+          paroleThreshold: (prev.paroleThreshold || 0) + effects.paroleThresholdChange!,
+        }));
+        const sign = effects.paroleThresholdChange > 0 ? '+' : '';
+        setTermSkillsGained(prev => [...prev, `Parole threshold ${sign}${effects.paroleThresholdChange}`]);
+      }
+      if (effects.survivalDM) {
+        setCharacterData(prev => ({
+          ...prev,
+          prisonerSurvivalDM: (prev.prisonerSurvivalDM || 0) + effects.survivalDM!,
+        }));
+        setTermSkillsGained(prev => [...prev, `DM+${effects.survivalDM} to survival rolls`]);
+      }
+      if (effects.rerollParoleThreshold) {
+        const newThreshold = rollDice(1, 6) + 2;
+        setCharacterData(prev => ({
+          ...prev,
+          paroleThreshold: newThreshold,
+        }));
+        setTermSkillsGained(prev => [...prev, `Parole threshold rerolled to ${newThreshold}`]);
+      }
+      if (effects.leaveCareer) {
+        setForceLeaveCareer(true);
+        setTermSkillsGained(prev => [...prev, 'You leave this career.']);
+      }
+      if (effects.loseBenefits) {
+        setCharacterData(prev => ({
+          ...prev,
+          lostBenefitCareers: [...(prev.lostBenefitCareers || []), selectedCareer?.name || ''],
+        }));
+        setTermSkillsGained(prev => [...prev, 'Lost all Benefit rolls from this career']);
+      }
+      if (effects.paroleReduction) {
+        const reduction = typeof effects.paroleReduction === 'number'
+          ? effects.paroleReduction
+          : rollDiceExpression(effects.paroleReduction);
+        setCharacterData(prev => ({
+          ...prev,
+          paroleThreshold: Math.max(0, (prev.paroleThreshold || 0) - reduction),
+        }));
+        setTermSkillsGained(prev => [...prev, `Parole threshold reduced by ${reduction}`]);
+      }
+      if (effects.mustLeaveCareer) {
+        setForceLeaveCareer(true);
+        setTermSkillsGained(prev => [...prev, 'You must leave this career.']);
       }
 
       // Handle table redirects (e.g., rollOnTable: 'injury')
@@ -2003,8 +2223,13 @@ export const CharacterGenerator: React.FC = () => {
           }
         });
 
+        // Track injury severity for severe injuries (roll twice, take lower)
+        if (effects.injurySeverity === 'severe') {
+          setPendingInjurySeverity('severe');
+        }
+
         // Trigger the table redirect
-        handleTableRedirect(effects.rollOnTable as 'life_events' | 'injury' | 'aging' | 'draft' | 'unusual_events');
+        handleTableRedirect(effects.rollOnTable as 'life_events' | 'injury' | 'aging' | 'draft' | 'unusual_events' | 'mishap' | 'prison_event');
         return; // Don't mark event as completed yet - wait for redirected table
       }
     }
@@ -2040,7 +2265,7 @@ export const CharacterGenerator: React.FC = () => {
           const skillKey = normalizeSkillName(skillName);
           setCharacterData(prev => {
             const currentSkill = prev.skills[skillKey];
-            const currentValue = currentSkill ? parseInt(currentSkill.value) || 0 : 0;
+            const currentValue = currentSkill ? parseInt(currentSkill.value, 10) || 0 : 0;
             const newValue = level === 0 ? Math.max(currentValue, 0) : Math.max(currentValue, level);
             return {
               ...prev,
@@ -2073,6 +2298,20 @@ export const CharacterGenerator: React.FC = () => {
             };
           });
         });
+
+        // Calculate medical bills for mishap injuries
+        const totalDamage = effects.characteristics.reduce((sum, c) => sum + Math.max(0, -c.modifier), 0);
+        if (totalDamage > 0 && selectedCareer) {
+          const injuryCost = calculateInjuryCost(totalDamage);
+          const coverage = calculateMedicalCoverage(selectedCareer.name, characterData.rank, injuryCost);
+          setPendingMedicalBill(coverage);
+          if (coverage.outOfPocket > 0) {
+            setCharacterData(prev => ({
+              ...prev,
+              medicalDebt: (prev.medicalDebt || 0) + coverage.outOfPocket,
+            }));
+          }
+        }
       }
 
       if (effects.allies) {
@@ -2107,9 +2346,84 @@ export const CharacterGenerator: React.FC = () => {
         setEventBenefitDMs(prev => [...prev, effects.benefitDM!]);
       }
 
+      // Prisoner career effects
+      if (effects.paroleThresholdChange) {
+        setCharacterData(prev => ({
+          ...prev,
+          paroleThreshold: (prev.paroleThreshold || 0) + effects.paroleThresholdChange!,
+        }));
+      }
+      if (effects.survivalDM) {
+        setCharacterData(prev => ({
+          ...prev,
+          prisonerSurvivalDM: (prev.prisonerSurvivalDM || 0) + effects.survivalDM!,
+        }));
+      }
+      if (effects.rerollParoleThreshold) {
+        const newThreshold = rollDice(1, 6) + 2;
+        setCharacterData(prev => ({
+          ...prev,
+          paroleThreshold: newThreshold,
+        }));
+      }
+      if (effects.leaveCareer) {
+        setForceLeaveCareer(true);
+      }
+      if (effects.loseBenefits) {
+        setCharacterData(prev => ({
+          ...prev,
+          lostBenefitCareers: [...(prev.lostBenefitCareers || []), selectedCareer?.name || ''],
+        }));
+      }
+      if (effects.paroleReduction) {
+        const reduction = typeof effects.paroleReduction === 'number'
+          ? effects.paroleReduction
+          : rollDiceExpression(effects.paroleReduction);
+        setCharacterData(prev => ({
+          ...prev,
+          paroleThreshold: Math.max(0, (prev.paroleThreshold || 0) - reduction),
+        }));
+      }
+      if (effects.mustLeaveCareer) {
+        setForceLeaveCareer(true);
+      }
+
+      // Effects that also exist in regular event handler — needed for mishap outcomes
+      if (effects.forceCareer) {
+        setCharacterData(prev => ({ ...prev, forcedCareer: effects.forceCareer }));
+      }
+      if (effects.allowCareer) {
+        setCharacterData(prev => ({
+          ...prev,
+          allowedCareers: [...(prev.allowedCareers || []), effects.allowCareer!],
+        }));
+      }
+      if (effects.failGraduation) {
+        setPreCareerGraduated(false);
+        setTermSurvived(false);
+      }
+      if (effects.canTestPsi) {
+        setCharacterData(prev => ({ ...prev, canTestPsi: true }));
+      }
+      if (effects.advancementDM) {
+        setEventAdvancementDM(prev => prev + effects.advancementDM!);
+      }
+      if (effects.autoPromotion) {
+        setEventAdvancementDM(prev => prev + 99);
+      }
+      if (effects.qualificationDM) {
+        setCharacterData(prev => ({
+          ...prev,
+          eventQualificationDM: (prev.eventQualificationDM || 0) + effects.qualificationDM!,
+        }));
+      }
+
       // Handle table redirects from mishap (e.g., roll on injury)
       if (effects.rollOnTable) {
-        handleTableRedirect(effects.rollOnTable as 'life_events' | 'injury' | 'aging' | 'draft' | 'unusual_events');
+        if (effects.injurySeverity === 'severe') {
+          setPendingInjurySeverity('severe');
+        }
+        handleTableRedirect(effects.rollOnTable as 'life_events' | 'injury' | 'aging' | 'draft' | 'unusual_events' | 'mishap' | 'prison_event');
         return; // Don't complete mishap yet - wait for redirected table to complete
       }
     }
@@ -2119,6 +2433,7 @@ export const CharacterGenerator: React.FC = () => {
       setTermSurvived(true);
       setPendingMishapGameEvent(null);
       setMishapRollNumber(null);
+    setNeedsMishapRoll(false);
       // Note: the term will still need to go through the normal event/skill flow
       // Re-set to allow event roll
       setTermEventRoll(null);
@@ -2150,6 +2465,7 @@ export const CharacterGenerator: React.FC = () => {
 
       setPendingMishapGameEvent(null);
       setMishapRollNumber(null);
+    setNeedsMishapRoll(false);
     }
   };
 
@@ -2229,7 +2545,7 @@ export const CharacterGenerator: React.FC = () => {
   };
 
   // Handler for nested table redirects (e.g., Life Events -> Injury -> ...)
-  const handleNestedTableRedirect = (table: 'life_events' | 'injury' | 'aging' | 'draft' | 'unusual_events') => {
+  const handleNestedTableRedirect = (table: 'life_events' | 'injury' | 'aging' | 'draft' | 'unusual_events' | 'mishap' | 'prison_event') => {
     // Complete the current redirected event first
     setRedirectedEvent(null);
     setRedirectTableRoll(null);
@@ -2283,6 +2599,7 @@ export const CharacterGenerator: React.FC = () => {
 
     setPendingMishapGameEvent(null);
     setMishapRollNumber(null);
+    setNeedsMishapRoll(false);
   };
 
   // ============================================================================
@@ -2291,7 +2608,7 @@ export const CharacterGenerator: React.FC = () => {
 
   const getTotalSkillLevels = (skills: Record<string, SkillState>): number => {
     return Object.values(skills).reduce((total, skill) => {
-      return total + (parseInt(skill.value) || 0);
+      return total + (parseInt(skill.value, 10) || 0);
     }, 0);
   };
 
@@ -2303,7 +2620,7 @@ export const CharacterGenerator: React.FC = () => {
 
   const canIncreaseSkill = (skillKey: string, currentSkills: Record<string, SkillState>): { allowed: boolean; reason?: string } => {
     const currentSkill = currentSkills[skillKey];
-    const currentValue = currentSkill ? parseInt(currentSkill.value) || 0 : 0;
+    const currentValue = currentSkill ? parseInt(currentSkill.value, 10) || 0 : 0;
 
     // Check individual skill limit (max level 4)
     if (currentValue >= 4) {
@@ -2338,6 +2655,11 @@ export const CharacterGenerator: React.FC = () => {
         },
       }));
     } else {
+      if (parsed.skill.toLowerCase() === 'any talent') {
+        setPendingAnyTalentSource(source);
+        return;
+      }
+
       // Check if this skill needs specialty selection
       if (needsSpecialtySelection(parsed.skill)) {
         // Queue this skill for specialty selection
@@ -2359,7 +2681,7 @@ export const CharacterGenerator: React.FC = () => {
         }
 
         const currentSkill = prev.skills[skillKey];
-        const currentValue = currentSkill ? parseInt(currentSkill.value) || 0 : 0;
+        const currentValue = currentSkill ? parseInt(currentSkill.value, 10) || 0 : 0;
 
         return {
           ...prev,
@@ -2393,7 +2715,7 @@ export const CharacterGenerator: React.FC = () => {
       }
 
       const currentSkill = prev.skills[skillKey];
-      const currentValue = currentSkill ? parseInt(currentSkill.value) || 0 : 0;
+      const currentValue = currentSkill ? parseInt(currentSkill.value, 10) || 0 : 0;
 
       return {
         ...prev,
@@ -2410,6 +2732,16 @@ export const CharacterGenerator: React.FC = () => {
     // Add to term skills gained log
     if (source) {
       setTermSkillsGained(prev => [...prev, `${fullSkillName} (${source})`]);
+    }
+  };
+
+  const handleAnyTalentSelected = (talent: string) => {
+    const source = pendingAnyTalentSource;
+    setPendingAnyTalentSource('');
+    applySkillGain(talent, source || 'Any Talent');
+
+    if (source) {
+      setTermSkillsGained(prev => [...prev, `${talent} (${source})`]);
     }
   };
 
@@ -2454,13 +2786,13 @@ export const CharacterGenerator: React.FC = () => {
   };
 
   // Roll skill from the currently expanded table
-  const rollSkillFromExpandedTable = () => {
+  const rollSkillFromExpandedTable = (manualRoll?: number) => {
     if (!selectedCareer || !expandedSkillTable || termSkillSelected) return;
 
     const { table, displayName } = getSkillTableInfo(expandedSkillTable);
     if (table.length === 0) return;
 
-    const roll = rollDice(1, 6);
+    const roll = manualRoll ?? rollDice(1, 6);
     setSkillTableRollResult(roll);
 
     const skillName = table[roll - 1];
@@ -2559,26 +2891,172 @@ export const CharacterGenerator: React.FC = () => {
     // Total terms is based on lifepath_log length which now includes the current term
     const totalTermsAfterThis = characterData.lifepath_log.length + 1;
     if (totalTermsAfterThis >= 5) {
-      const agingRollResult = rollAging(totalTermsAfterThis, characterData.characteristics);
+      // Calculate anagathics DM: +1 per term using anagathics
+      let agingDM = 0;
+      if (characterData.isUsingAnagathics && characterData.anagathicsStartTerm) {
+        agingDM = totalTermsAfterThis - characterData.anagathicsStartTerm + 1;
+      }
+
+      const agingRollResult = rollAging(totalTermsAfterThis, agingDM);
       if (agingRollResult) {
         setAgingResult(agingRollResult);
         setAgingPending(true);
-
-        // If aging roll failed, apply the effects immediately to characteristics
-        if (!agingRollResult.passed) {
-          const newCharacteristics = applyAgingEffects(
-            characterData.characteristics,
-            agingRollResult.effects.effects
-          );
-          setCharacterData(prev => ({
-            ...prev,
-            characteristics: newCharacteristics,
-          }));
-        }
+        // Reset aging choice state
+        setAgingPhysicalChosen(false);
+        setAgingMentalChosen(false);
+        setAgingCrisis(null);
+        setAgingCrisisAcknowledged(false);
+        setAgingChosenEffects([]);
+        // Effects are NOT auto-applied — player makes choices in the UI
       }
     }
 
+    // Deduct anagathics cost if using
+    if (characterData.isUsingAnagathics) {
+      const { cost } = rollAnagathicsCost();
+      setCharacterData(prev => ({
+        ...prev,
+        anagathicsTotalCost: (prev.anagathicsTotalCost || 0) + cost,
+        cash_on_hand: Math.max(0, prev.cash_on_hand - cost),
+        medicalDebt: prev.cash_on_hand < cost
+          ? (prev.medicalDebt || 0) + (cost - prev.cash_on_hand)
+          : prev.medicalDebt,
+      }));
+      setTermSkillsGained(prev => [...prev, `Anagathics cost: Cr${cost.toLocaleString()}`]);
+    }
+
     setIsInTerm(false);
+  };
+
+  // Handle aging physical characteristic choice
+  const handleAgingPhysicalChoice = (choiceIndex: number) => {
+    if (!agingResult?.effectLevel) return;
+    const choice = agingResult.effectLevel.physicalChoices[choiceIndex];
+    if (!choice) return;
+
+    const allEffects = [...choice.effects];
+    setAgingChosenEffects(allEffects);
+    setAgingPhysicalChosen(true);
+
+    // If no mental choices needed, apply effects now
+    if (!agingResult.effectLevel.mentalChoices || agingResult.effectLevel.mentalChoices.length === 0) {
+      applyAgingChosenEffects(allEffects);
+    }
+  };
+
+  // Handle aging mental characteristic choice
+  const handleAgingMentalChoice = (choiceIndex: number) => {
+    if (!agingResult?.effectLevel?.mentalChoices) return;
+    const choice = agingResult.effectLevel.mentalChoices[choiceIndex];
+    if (!choice) return;
+
+    const allEffects = [...agingChosenEffects, ...choice.effects];
+    setAgingChosenEffects(allEffects);
+    setAgingMentalChosen(true);
+    applyAgingChosenEffects(allEffects);
+  };
+
+  // Apply the chosen aging effects to characteristics
+  const applyAgingChosenEffects = (effects: { stat: string; modifier: number }[]) => {
+    const typedEffects = effects as { stat: CharacteristicName; modifier: number }[];
+
+    // Check for aging crisis before applying
+    const crisis = checkAgingCrisis(
+      characterData.characteristics as Record<CharacteristicName, { total: number; current: number }>,
+      typedEffects
+    );
+
+    // Get list of crisis stats so we can set them to 1 instead of 0
+    const crisisStats = crisis.isCrisis ? crisis.characteristics : undefined;
+
+    const newCharacteristics = applyAgingEffects(
+      characterData.characteristics as Record<CharacteristicName, { total: number; current: number }>,
+      typedEffects,
+      crisisStats
+    );
+
+    setCharacterData(prev => ({
+      ...prev,
+      characteristics: newCharacteristics,
+      // Add medical debt from aging crisis
+      medicalDebt: crisis.isCrisis
+        ? (prev.medicalDebt || 0) + crisis.medicalCost
+        : prev.medicalDebt,
+      // Auto-fail next qualification after aging crisis
+      agingCrisisFailQualification: crisis.isCrisis ? true : prev.agingCrisisFailQualification,
+    }));
+
+    if (crisis.isCrisis) {
+      setAgingCrisis(crisis);
+    }
+
+    // Log the effects
+    const effectStr = typedEffects.map(e => `${e.stat.toUpperCase()} ${e.modifier}`).join(', ');
+    setTermSkillsGained(prev => [...prev, `Aging: ${effectStr}`]);
+    if (crisis.isCrisis) {
+      setTermSkillsGained(prev => [...prev, `Aging crisis! Medical cost: Cr${crisis.medicalCost.toLocaleString()}`]);
+    }
+  };
+
+  // Acknowledge aging (dismiss the aging UI)
+  const acknowledgeAging = () => {
+    setAgingPending(false);
+    setAgingResult(null);
+    setAgingPhysicalChosen(false);
+    setAgingMentalChosen(false);
+    setAgingCrisis(null);
+    setAgingCrisisAcknowledged(false);
+    setAgingChosenEffects([]);
+  };
+
+  // Handle anagathics attempt
+  const handleAnagathicsAttempt = () => {
+    const socValue = characterData.characteristics.social.total;
+    const socDM = getDM(socValue);
+    const result = rollAnagathicsObtain(socDM);
+    setAnagathicsRollResult(result);
+
+    if (result.arrested) {
+      // Forced to Prisoner career
+      setCharacterData(prev => ({
+        ...prev,
+        forcedCareer: 'Prisoner',
+      }));
+    } else if (result.success) {
+      const totalTerms = characterData.lifepath_log.length;
+      setCharacterData(prev => ({
+        ...prev,
+        isUsingAnagathics: true,
+        anagathicsStartTerm: totalTerms + 1,
+      }));
+    }
+  };
+
+  // Handle stopping anagathics (triggers immediate aging roll with no DM)
+  const handleStopAnagathics = () => {
+    setCharacterData(prev => ({
+      ...prev,
+      isUsingAnagathics: false,
+      anagathicsStartTerm: undefined,
+    }));
+
+    // Immediate aging roll with no DM
+    const totalTerms = characterData.lifepath_log.length;
+    if (totalTerms >= 5) {
+      const agingRollResult = rollAging(totalTerms, 0);
+      if (agingRollResult) {
+        setAgingResult(agingRollResult);
+        setAgingPending(true);
+        setAgingPhysicalChosen(false);
+        setAgingMentalChosen(false);
+        setAgingCrisis(null);
+        setAgingCrisisAcknowledged(false);
+        setAgingChosenEffects([]);
+      }
+    }
+
+    setShowAnagathicsPrompt(false);
+    setAnagathicsRollResult(null);
   };
 
   const musterOut = () => {
@@ -2676,7 +3154,7 @@ export const CharacterGenerator: React.FC = () => {
     setSwitchAssignmentResult(null);
   };
 
-  const rollSwitchAssignment = (newAssignmentIndex: number) => {
+  const rollSwitchAssignment = (newAssignmentIndex: number, manualRoll?: number) => {
     if (!selectedCareer) return;
 
     setSwitchAssignmentTarget(newAssignmentIndex);
@@ -2684,7 +3162,7 @@ export const CharacterGenerator: React.FC = () => {
     // Make a qualification roll for the new assignment
     const charValue = characterData.characteristics[selectedCareer.qualificationStat].total;
     const dm = getDM(charValue);
-    const roll = rollDice(2, 6);
+    const roll = manualRoll ?? rollDice(2, 6);
     const total = roll + dm;
     const passed = total >= selectedCareer.qualificationTarget;
     const newAssignment = selectedCareer.assignments[newAssignmentIndex];
@@ -2715,6 +3193,8 @@ export const CharacterGenerator: React.FC = () => {
         }));
         setCurrentTerm(0);
         setIsCommissioned(false);
+        setCommissionPending(false);
+        setCommissionRollLog('');
       }
     } else {
       setSwitchAssignmentResult('failure');
@@ -2749,6 +3229,7 @@ export const CharacterGenerator: React.FC = () => {
     // Reset mishap GameEvent state
     setPendingMishapGameEvent(null);
     setMishapRollNumber(null);
+    setNeedsMishapRoll(false);
 
     // Reset career state for new career
     setCurrentTerm(0);
@@ -2758,8 +3239,11 @@ export const CharacterGenerator: React.FC = () => {
     setTermEventRoll(null);
     setTermSkillsGained([]);
     setIsCommissioned(false);
+    setCommissionPending(false);
+    setCommissionRollLog('');
     setBasicTrainingApplied(false);
     setBasicTrainingSkillSelected(null);
+    setForceLeaveCareer(false);
 
     if (choice === 'drifter') {
       // Enter Drifter career
@@ -2853,6 +3337,8 @@ export const CharacterGenerator: React.FC = () => {
     setTermEventRoll(null);
     setTermSkillsGained([]);
     setIsCommissioned(false);
+    setCommissionPending(false);
+    setCommissionRollLog('');
     setPreCareerGraduated(false);
     setGraduatedWithHonours(false);
     setGraduationRollLog('');
@@ -2886,8 +3372,9 @@ export const CharacterGenerator: React.FC = () => {
     setMilitaryAcademyService(null);
     setAcademyGradSkillsSelected([]);
     setAcademyGradPendingSpecialty(null);
-    // Reset event advancement DM for new career
+    // Reset event advancement DM and commission DM for new career
     setEventAdvancementDM(0);
+    setCommissionRollDM(0);
     // Reset assignment switching state
     setIsSwitchingAssignment(false);
     setSwitchAssignmentTarget(null);
@@ -2896,6 +3383,7 @@ export const CharacterGenerator: React.FC = () => {
     // Reset mishap GameEvent state
     setPendingMishapGameEvent(null);
     setMishapRollNumber(null);
+    setNeedsMishapRoll(false);
 
     // Go back to career selection
     setStep(4);
@@ -2929,6 +3417,8 @@ export const CharacterGenerator: React.FC = () => {
     setTermEventRoll(null);
     setTermSkillsGained([]);
     setIsCommissioned(false);
+    setCommissionPending(false);
+    setCommissionRollLog('');
     setPreCareerGraduated(false);
     setGraduatedWithHonours(false);
     setGraduationRollLog('');
@@ -3332,12 +3822,27 @@ export const CharacterGenerator: React.FC = () => {
               </p>
             </div>
           </div>
-          <div className="text-right">
-            <div className="text-terminal-primary font-bold">
-              {characterData.name || 'Unnamed Character'}
-            </div>
-            <div className="text-terminal-primary/50 text-xs">
-              Age {characterData.age} • Step {step} of 6
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => {
+                setUseManualDice(!useManualDice);
+                setManualDiceValue('');
+              }}
+              className={`px-3 py-1.5 rounded border text-xs font-bold font-['Orbitron'] tracking-wide transition-all duration-200 ${
+                useManualDice
+                  ? 'bg-amber-500/20 border-amber-500 text-amber-400 shadow-[0_0_10px_rgba(245,158,11,0.3)]'
+                  : 'bg-terminal-primary/10 border-terminal-primary/30 text-terminal-primary/60 hover:border-terminal-primary/60 hover:text-terminal-primary'
+              }`}
+            >
+              {useManualDice ? 'MANUAL DICE: ON' : 'MANUAL DICE: OFF'}
+            </button>
+            <div className="text-right">
+              <div className="text-terminal-primary font-bold">
+                {characterData.name || 'Unnamed Character'}
+              </div>
+              <div className="text-terminal-primary/50 text-xs">
+                Age {characterData.age} • Step {step} of 6
+              </div>
             </div>
           </div>
         </div>
@@ -3588,32 +4093,36 @@ export const CharacterGenerator: React.FC = () => {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                      <button
-                        onClick={rollAllCharacteristics}
-                        className="group bg-yellow-500/10 hover:bg-yellow-500/20 border border-yellow-500/30 hover:border-yellow-500/50 rounded-lg p-4 transition-all duration-200 hover:shadow-[0_0_15px_rgba(234,179,8,0.2)]"
-                      >
-                        <Dices className="h-6 w-6 text-yellow-400 mx-auto mb-2 group-hover:scale-110 transition-transform" />
-                        <div className="font-bold text-yellow-400 font-['Orbitron'] tracking-wide text-sm">Auto-Assign</div>
-                        <div className="text-xs text-terminal-primary/50 mt-1">Roll 6, assign in order</div>
-                      </button>
+                    <div className={`grid grid-cols-1 ${useManualDice ? '' : 'md:grid-cols-3'} gap-3`}>
+                      {!useManualDice && (
+                        <>
+                          <button
+                            onClick={rollAllCharacteristics}
+                            className="group bg-yellow-500/10 hover:bg-yellow-500/20 border border-yellow-500/30 hover:border-yellow-500/50 rounded-lg p-4 transition-all duration-200 hover:shadow-[0_0_15px_rgba(234,179,8,0.2)]"
+                          >
+                            <Dices className="h-6 w-6 text-yellow-400 mx-auto mb-2 group-hover:scale-110 transition-transform" />
+                            <div className="font-bold text-yellow-400 font-['Orbitron'] tracking-wide text-sm">Auto-Assign</div>
+                            <div className="text-xs text-terminal-primary/50 mt-1">Roll 6, assign in order</div>
+                          </button>
 
-                      <button
-                        onClick={rollForManualAssignment}
-                        className="group bg-yellow-500/10 hover:bg-yellow-500/20 border border-yellow-500/30 hover:border-yellow-500/50 rounded-lg p-4 transition-all duration-200 hover:shadow-[0_0_15px_rgba(234,179,8,0.2)]"
-                      >
-                        <Dices className="h-6 w-6 text-yellow-400 mx-auto mb-2 group-hover:scale-110 transition-transform" />
-                        <div className="font-bold text-yellow-400 font-['Orbitron'] tracking-wide text-sm">Manual Assign</div>
-                        <div className="text-xs text-terminal-primary/50 mt-1">Roll 6, pick placement</div>
-                      </button>
+                          <button
+                            onClick={rollForManualAssignment}
+                            className="group bg-yellow-500/10 hover:bg-yellow-500/20 border border-yellow-500/30 hover:border-yellow-500/50 rounded-lg p-4 transition-all duration-200 hover:shadow-[0_0_15px_rgba(234,179,8,0.2)]"
+                          >
+                            <Dices className="h-6 w-6 text-yellow-400 mx-auto mb-2 group-hover:scale-110 transition-transform" />
+                            <div className="font-bold text-yellow-400 font-['Orbitron'] tracking-wide text-sm">Manual Assign</div>
+                            <div className="text-xs text-terminal-primary/50 mt-1">Roll 6, pick placement</div>
+                          </button>
+                        </>
+                      )}
 
                       <button
                         onClick={() => setHasRolled(true)}
                         className="group bg-yellow-500/10 hover:bg-yellow-500/20 border border-yellow-500/30 hover:border-yellow-500/50 rounded-lg p-4 transition-all duration-200 hover:shadow-[0_0_15px_rgba(234,179,8,0.2)]"
                       >
                         <Dices className="h-6 w-6 text-yellow-400 mx-auto mb-2 group-hover:scale-110 transition-transform" />
-                        <div className="font-bold text-yellow-400 font-['Orbitron'] tracking-wide text-sm">Roll Individually</div>
-                        <div className="text-xs text-terminal-primary/50 mt-1">Roll each stat separately</div>
+                        <div className="font-bold text-yellow-400 font-['Orbitron'] tracking-wide text-sm">{useManualDice ? 'Enter Values Individually' : 'Roll Individually'}</div>
+                        <div className="text-xs text-terminal-primary/50 mt-1">{useManualDice ? 'Type each stat value' : 'Roll each stat separately'}</div>
                       </button>
                     </div>
                   </>
@@ -3774,14 +4283,16 @@ export const CharacterGenerator: React.FC = () => {
                             <div className="text-sm font-semibold uppercase tracking-wide text-terminal-primary">
                               {key}
                             </div>
-                            <Button
-                              onClick={() => rollSingleCharacteristic(key)}
-                              size="sm"
-                              variant="outline"
-                              className="border-terminal-primary/50 text-terminal-primary hover:bg-terminal-primary/20 h-7"
-                            >
-                              <Dices className="h-3 w-3" />
-                            </Button>
+                            {!useManualDice && (
+                              <Button
+                                onClick={() => rollSingleCharacteristic(key)}
+                                size="sm"
+                                variant="outline"
+                                className="border-terminal-primary/50 text-terminal-primary hover:bg-terminal-primary/20 h-7"
+                              >
+                                <Dices className="h-3 w-3" />
+                              </Button>
+                            )}
                           </div>
                           <div className="flex items-center gap-3">
                             {rollingStats.has(key) ? (
@@ -3799,7 +4310,7 @@ export const CharacterGenerator: React.FC = () => {
                                 max="18"
                                 value={characterData.characteristics[key].total || ''}
                                 onChange={(e) => {
-                                  const val = parseInt(e.target.value) || 0;
+                                  const val = parseInt(e.target.value, 10) || 0;
                                   if (val >= 0 && val <= 18) {
                                     manuallySetCharacteristic(key, val);
                                   }
@@ -3831,7 +4342,9 @@ export const CharacterGenerator: React.FC = () => {
                     disabled={
                       assignmentMode === 'manual'
                         ? characteristicRolls.length > 0
-                        : (backgroundSkillsRemaining === 0 && characterData.characteristics.education.total === 0)
+                        : !(['strength', 'dexterity', 'endurance', 'intellect', 'education', 'social'] as const).every(
+                            stat => characterData.characteristics[stat].total > 0
+                          )
                     }
                     className="flex-1 bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30 border border-yellow-500/50 transition-all duration-200 hover:shadow-[0_0_15px_rgba(234,179,8,0.3)]"
                   >
@@ -3971,12 +4484,76 @@ export const CharacterGenerator: React.FC = () => {
                         </Button>
                       )}
                     </div>
+                    {!characterData.psiTested && (
+                      <div className="mt-3 border-t border-purple-500/30 pt-2">
+                        <div className="mb-2 flex items-center gap-2">
+                          <span className="text-xs text-purple-300/80">Manual PSI 2D6 roll (optional):</span>
+                          <Input
+                            type="number"
+                            min={2}
+                            max={12}
+                            value={manualPsiRoll}
+                            onChange={(e) => setManualPsiRoll(e.target.value)}
+                            placeholder="auto"
+                            className="h-7 w-20 bg-black/40 border-purple-500/30 text-xs text-purple-200"
+                          />
+                        </div>
+                        <div className="text-xs text-purple-300/80 mb-2">
+                          Choose talent test order (DM-1 per previous check attempted):
+                        </div>
+                        <div className="space-y-1.5">
+                          {psiTalentOrder.map((talent, index) => (
+                            <div key={talent} className="flex items-center justify-between rounded border border-purple-500/20 px-2 py-1">
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs text-purple-200">
+                                  {index + 1}. {talent}
+                                </span>
+                                <Input
+                                  type="number"
+                                  min={2}
+                                  max={12}
+                                  value={manualTalentRolls[talent] ?? ''}
+                                  onChange={(e) => setManualTalentRolls(prev => ({ ...prev, [talent]: e.target.value }))}
+                                  placeholder="auto 2D6"
+                                  className="h-7 w-24 bg-black/40 border-purple-500/30 text-xs text-purple-200"
+                                  disabled={index === 0 && talent === 'Telepathy'}
+                                />
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-6 w-6 p-0 border-purple-500/30 text-purple-300"
+                                  disabled={index === 0}
+                                  onClick={() => movePsiTalent(index, -1)}
+                                >
+                                  <ChevronUp className="h-3 w-3" />
+                                </Button>
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-6 w-6 p-0 border-purple-500/30 text-purple-300"
+                                  disabled={index === psiTalentOrder.length - 1}
+                                  onClick={() => movePsiTalent(index, 1)}
+                                >
+                                  <ChevronDown className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                     {psiTestResult && (
                       <div className="mt-3 text-xs text-purple-300/80 border-t border-purple-500/30 pt-2">
                         <div className="font-bold mb-1">Test Results:</div>
-                        {psiTestResult.talentsTested.map((t, i) => (
+                        {psiTestResult.talentsTested.map((t) => (
                           <div key={t.talent} className={t.acquired ? 'text-green-400' : 'text-red-400/70'}>
-                            {t.talent}: Roll {t.roll} vs {t.targetNumber} - {t.acquired ? 'ACQUIRED' : 'Failed'}
+                            {t.talent}: {t.automatic
+                              ? `Auto-acquired (first talent Telepathy)`
+                              : `2D6 ${t.rawRoll} ${t.psiDM >= 0 ? '+' : '-'} ${Math.abs(t.psiDM)} ${t.learningDM >= 0 ? '+' : '-'} ${Math.abs(t.learningDM)} ${t.attemptDM >= 0 ? '+' : '-'} ${Math.abs(t.attemptDM)} = ${t.total} vs ${t.targetNumber}`} - {t.acquired ? 'ACQUIRED' : 'Failed'}
                           </div>
                         ))}
                       </div>
@@ -3989,16 +4566,22 @@ export const CharacterGenerator: React.FC = () => {
                   const theme = getCareerTheme(career.name);
                   const CareerIcon = theme.icon;
                   const isSelected = selectedCareer?.name === career.name;
+                  const availability = isCareerAvailable(career);
+                  const isLocked = !availability.available;
 
                   return (
                     <Card
                       key={career.name}
-                      className="cursor-pointer transition-all duration-200 border-2 bg-black"
+                      className={`transition-all duration-200 border-2 bg-black ${
+                        isLocked ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'
+                      }`}
                       style={{
-                        ...getCareerCardStyle(career.name, isSelected),
-                        borderWidth: isSelected ? '2px' : '1px',
+                        ...getCareerCardStyle(career.name, isSelected && !isLocked),
+                        borderWidth: isSelected && !isLocked ? '2px' : '1px',
                       }}
                       onClick={() => {
+                        if (isLocked) return;
+
                         // Handle Prisoner career specially (forced entry, automatic qualification)
                         if (career.isPrisonerCareer) {
                           becomePrisoner();
@@ -4039,6 +4622,11 @@ export const CharacterGenerator: React.FC = () => {
                                   Pre-Career
                                 </span>
                               )}
+                              {isLocked && (
+                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-terminal-primary/10 text-terminal-primary/40 uppercase font-bold flex items-center gap-1">
+                                  <Lock className="h-2.5 w-2.5" /> Locked
+                                </span>
+                              )}
                             </div>
                             <p className="text-xs text-terminal-primary/60 italic mb-2">{theme.tagline}</p>
                             <p className="text-sm text-terminal-primary/80 mb-2">{career.description}</p>
@@ -4048,6 +4636,11 @@ export const CharacterGenerator: React.FC = () => {
                             >
                               Qualification: {career.qualification}
                             </div>
+                            {isLocked && availability.reason && (
+                              <div className="text-xs text-terminal-primary/40 italic mt-1">
+                                {availability.reason}
+                              </div>
+                            )}
                           </div>
                         </div>
                       </CardContent>
@@ -4112,20 +4705,50 @@ export const CharacterGenerator: React.FC = () => {
                     </div>
 
                     {qualificationPassed === null && (
-                      <Button
-                        onClick={attemptQualification}
-                        className="w-full transition-all duration-200"
-                        style={{
-                          backgroundColor: selectedTheme.bgColor,
-                          color: selectedTheme.textColor,
-                          borderColor: selectedTheme.borderColor,
-                          borderWidth: '1px',
-                          borderStyle: 'solid',
-                        }}
-                      >
-                        <Dices className="h-4 w-4 mr-2" />
-                        Attempt Qualification for {selectedCareer.name}
-                      </Button>
+                      useManualDice ? (
+                        <div className="space-y-2">
+                          <p className="text-xs text-blue-400">Enter your 2D6 roll result for qualification (DM will be applied automatically):</p>
+                          <div className="flex gap-2">
+                            <Input
+                              type="number"
+                              min={2}
+                              max={12}
+                              value={manualDiceValue}
+                              onChange={(e) => setManualDiceValue(e.target.value)}
+                              placeholder="Enter 2D6 result (2-12)"
+                              className="bg-black border-terminal-primary/50 text-terminal-primary placeholder:text-terminal-primary/40"
+                            />
+                            <Button
+                              onClick={() => {
+                                const val = parseInt(manualDiceValue);
+                                if (!isNaN(val) && val >= 2 && val <= 12) {
+                                  attemptQualification(val);
+                                  setManualDiceValue('');
+                                }
+                              }}
+                              disabled={!manualDiceValue || isNaN(parseInt(manualDiceValue)) || parseInt(manualDiceValue) < 2 || parseInt(manualDiceValue) > 12}
+                              className="bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
+                            >
+                              Submit Qualification Roll
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <Button
+                          onClick={() => attemptQualification()}
+                          className="w-full transition-all duration-200"
+                          style={{
+                            backgroundColor: selectedTheme.bgColor,
+                            color: selectedTheme.textColor,
+                            borderColor: selectedTheme.borderColor,
+                            borderWidth: '1px',
+                            borderStyle: 'solid',
+                          }}
+                        >
+                          <Dices className="h-4 w-4 mr-2" />
+                          Attempt Qualification for {selectedCareer.name}
+                        </Button>
+                      )
                     )}
 
                     {qualificationRollLog && (
@@ -4421,31 +5044,18 @@ export const CharacterGenerator: React.FC = () => {
                 {isMusteringOut ? (
                   <MusteringOut
                     careerHistory={characterData.careerHistory}
+                    lostBenefitCareers={characterData.lostBenefitCareers || []}
                     currentCash={characterData.cash_on_hand}
                     currentShipShares={characterData.shipShares}
                     hasTasMembership={characterData.tasMembership}
                     ships={characterData.ships}
-                    gamblerSkillLevel={parseInt(characterData.skills['Gambler']?.value || '0') || 0}
+                    gamblerSkillLevel={parseInt(characterData.skills['Gambler']?.value || '0', 10) || 0}
                     characteristics={characterData.characteristics}
                     onComplete={handleMusteringOutComplete}
+                    useManualDice={useManualDice}
                   />
                 ) : (
                 <>
-                {/* Manual Dice Toggle */}
-                <div className="flex items-center justify-end gap-2 mb-2">
-                  <label className="text-xs text-terminal-primary/60 cursor-pointer flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={useManualDice}
-                      onChange={(e) => {
-                        setUseManualDice(e.target.checked);
-                        setManualDiceValue('');
-                      }}
-                      className="accent-terminal-primary"
-                    />
-                    <span>Manual Dice Entry (use physical dice)</span>
-                  </label>
-                </div>
 
                 {/* Career Status Panel */}
                 <div
@@ -4547,15 +5157,15 @@ export const CharacterGenerator: React.FC = () => {
                   <h3 className="text-sm font-bold text-terminal-primary mb-2">Acquired Skills</h3>
                   <div className="grid grid-cols-2 gap-2 text-xs text-terminal-primary/80">
                     {Object.entries(characterData.skills)
-                      .filter(([_, skill]) => skill.proficient || parseInt(skill.value) > 0)
-                      .sort((a, b) => parseInt(b[1].value) - parseInt(a[1].value))
+                      .filter(([_, skill]) => skill.proficient || parseInt(skill.value, 10) > 0)
+                      .sort((a, b) => parseInt(b[1].value, 10) - parseInt(a[1].value, 10))
                       .map(([skillName, skill]) => (
                         <div key={skillName} className="flex justify-between">
                           <span className="capitalize">{skillName.replace(/_/g, ' ')}</span>
                           <span className="text-terminal-primary">{skill.value}</span>
                         </div>
                       ))}
-                    {Object.entries(characterData.skills).filter(([_, skill]) => skill.proficient || parseInt(skill.value) > 0).length === 0 && (
+                    {Object.entries(characterData.skills).filter(([_, skill]) => skill.proficient || parseInt(skill.value, 10) > 0).length === 0 && (
                       <div className="text-terminal-primary/50 col-span-2">No skills acquired yet</div>
                     )}
                   </div>
@@ -4598,31 +5208,16 @@ export const CharacterGenerator: React.FC = () => {
                   </div>
                 )}
 
-                {isInTerm && termSurvived === null && basicTrainingApplied && (
+                {/* COMMISSION ROLL (for military careers after pre-career graduation) */}
+                {isInTerm && commissionPending && basicTrainingApplied && (
                   <div className="space-y-2">
-                    <Alert className="bg-terminal-primary/5 border-terminal-primary/30">
+                    <Alert className="bg-amber-500/10 border-amber-500/50">
                       <AlertCircle className="h-4 w-4" />
-                      <AlertDescription className="text-terminal-primary/80">
-                        {selectedCareer?.isPreCareer
-                          ? 'Roll for graduation. If you fail, you do not receive graduation benefits but may continue to another career.'
-                          : 'Roll for survival. If you fail, you suffer a mishap and must leave the career.'}
+                      <AlertDescription className="text-amber-400">
+                        <strong>Commission Roll:</strong> Roll SOC {selectedCareer?.commissionTarget}+ to enter as a commissioned officer.
+                        {commissionRollDM > 0 && ` (DM+${commissionRollDM} from pre-career)`}
                       </AlertDescription>
                     </Alert>
-
-                    {/* MISHAP TABLE */}
-                    {selectedCareer && selectedCareer.mishapTable && (
-                      <div className="bg-black border border-terminal-primary/30 rounded p-3">
-                        <h4 className="text-xs font-bold text-red-400 mb-2">Potential Mishaps (1D6):</h4>
-                        <div className="space-y-1 text-xs text-terminal-primary/70">
-                          {(selectedCareer.mishapTable || []).map((mishap, idx) => (
-                            <div key={idx} className="flex gap-2">
-                              <span className="text-terminal-primary/50">{idx + 1}.</span>
-                              <span>{getMishapDescription(mishap)}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
 
                     {useManualDice ? (
                       <div className="space-y-2">
@@ -4641,11 +5236,84 @@ export const CharacterGenerator: React.FC = () => {
                             onClick={() => {
                               const val = parseInt(manualDiceValue);
                               if (!isNaN(val) && val >= 2 && val <= 12) {
-                                runSurvivalCheck(val);
+                                rollCommission(val);
                                 setManualDiceValue('');
                               }
                             }}
                             disabled={!manualDiceValue || isNaN(parseInt(manualDiceValue)) || parseInt(manualDiceValue) < 2 || parseInt(manualDiceValue) > 12}
+                            className="bg-amber-500/20 text-amber-400 hover:bg-amber-500/30"
+                          >
+                            Submit Commission Roll
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <Button
+                        onClick={() => rollCommission()}
+                        className="w-full bg-amber-500/20 text-amber-400 hover:bg-amber-500/30"
+                      >
+                        <Dices className="h-4 w-4 mr-2" />
+                        Roll Commission Check (SOC {selectedCareer?.commissionTarget}+)
+                      </Button>
+                    )}
+                  </div>
+                )}
+
+                {/* Commission roll result display */}
+                {commissionRollLog && (
+                  <Alert className={isCommissioned ? "bg-green-500/10 border-green-500/50" : "bg-red-500/10 border-red-500/50"}>
+                    <AlertDescription className={isCommissioned ? "text-green-400" : "text-red-400"}>
+                      {commissionRollLog}
+                    </AlertDescription>
+                  </Alert>
+                )}
+
+                {isInTerm && termSurvived === null && basicTrainingApplied && !commissionPending && (
+                  <div className="space-y-2">
+                    <Alert className="bg-terminal-primary/5 border-terminal-primary/30">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription className="text-terminal-primary/80">
+                        {selectedCareer?.isPreCareer
+                          ? 'Roll for graduation. If you fail, you do not receive graduation benefits but may continue to another career.'
+                          : 'Roll for survival. If you fail, you suffer a mishap and must leave the career.'}
+                      </AlertDescription>
+                    </Alert>
+
+                    {/* MISHAP TABLE */}
+                    {selectedCareer && selectedCareer.mishapTable && (
+                      <CareerTableDisplay
+                        title="Potential Mishaps (1D6)"
+                        titleColor="text-red-400"
+                        entries={(selectedCareer.mishapTable || []).map((mishap, idx) => ({
+                          index: idx + 1,
+                          label: `${idx + 1}.`,
+                          description: getMishapDescription(mishap),
+                        }))}
+                      />
+                    )}
+
+                    {useManualDice ? (
+                      <div className="space-y-2">
+                        <p className="text-xs text-blue-400">Enter your 2D6 roll result (DM will be applied automatically):</p>
+                        <div className="flex gap-2">
+                          <Input
+                            type="number"
+                            min={2}
+                            max={12}
+                            value={manualDiceValue}
+                            onChange={(e) => setManualDiceValue(e.target.value)}
+                            placeholder="Enter 2D6 result (2-12)"
+                            className="bg-black border-terminal-primary/50 text-terminal-primary placeholder:text-terminal-primary/40"
+                          />
+                          <Button
+                            onClick={() => {
+                              const val = parseInt(manualDiceValue, 10);
+                              if (!isNaN(val) && val >= 2 && val <= 12) {
+                                runSurvivalCheck(val);
+                                setManualDiceValue('');
+                              }
+                            }}
+                            disabled={!manualDiceValue || isNaN(parseInt(manualDiceValue, 10)) || parseInt(manualDiceValue, 10) < 2 || parseInt(manualDiceValue, 10) > 12}
                             className="bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
                           >
                             Submit {selectedCareer?.isPreCareer ? 'Graduation' : 'Survival'} Roll
@@ -4676,6 +5344,37 @@ export const CharacterGenerator: React.FC = () => {
                     {survivalRollLog && (
                       <div className="bg-terminal-primary/5 border border-terminal-primary/30 rounded p-2">
                         <p className="text-xs text-terminal-primary/60 font-mono">{survivalRollLog}</p>
+                      </div>
+                    )}
+
+                    {/* Manual dice: waiting for player to roll mishap */}
+                    {needsMishapRoll && useManualDice && (
+                      <div className="space-y-2">
+                        <p className="text-xs text-blue-400">Enter your 1D6 roll result for the mishap table:</p>
+                        <div className="flex gap-2">
+                          <Input
+                            type="number"
+                            min={1}
+                            max={6}
+                            value={manualDiceValue}
+                            onChange={(e) => setManualDiceValue(e.target.value)}
+                            placeholder="Enter 1D6 result (1-6)"
+                            className="bg-black border-terminal-primary/50 text-terminal-primary placeholder:text-terminal-primary/40"
+                          />
+                          <Button
+                            onClick={() => {
+                              const val = parseInt(manualDiceValue);
+                              if (!isNaN(val) && val >= 1 && val <= 6) {
+                                applyMishapRoll(val);
+                                setManualDiceValue('');
+                              }
+                            }}
+                            disabled={!manualDiceValue || isNaN(parseInt(manualDiceValue)) || parseInt(manualDiceValue) < 1 || parseInt(manualDiceValue) > 6}
+                            className="bg-red-500/20 text-red-400 hover:bg-red-500/30"
+                          >
+                            Submit Mishap Roll
+                          </Button>
+                        </div>
                       </div>
                     )}
 
@@ -4825,13 +5524,13 @@ export const CharacterGenerator: React.FC = () => {
                               />
                               <Button
                                 onClick={() => {
-                                  const val = parseInt(manualDiceValue);
+                                  const val = parseInt(manualDiceValue, 10);
                                   if (!isNaN(val) && val >= 2 && val <= 12) {
                                     rollEvent(val);
                                     setManualDiceValue('');
                                   }
                                 }}
-                                disabled={!manualDiceValue || isNaN(parseInt(manualDiceValue)) || parseInt(manualDiceValue) < 2 || parseInt(manualDiceValue) > 12}
+                                disabled={!manualDiceValue || isNaN(parseInt(manualDiceValue, 10)) || parseInt(manualDiceValue, 10) < 2 || parseInt(manualDiceValue, 10) > 12}
                                 className="bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
                               >
                                 Submit Event Roll
@@ -4891,13 +5590,13 @@ export const CharacterGenerator: React.FC = () => {
                               />
                               <Button
                                 onClick={() => {
-                                  const val = parseInt(manualDiceValue);
+                                  const val = parseInt(manualDiceValue, 10);
                                   if (!isNaN(val) && val >= 2 && val <= 12) {
                                     rollEvent(val);
                                     setManualDiceValue('');
                                   }
                                 }}
-                                disabled={!manualDiceValue || isNaN(parseInt(manualDiceValue)) || parseInt(manualDiceValue) < 2 || parseInt(manualDiceValue) > 12}
+                                disabled={!manualDiceValue || isNaN(parseInt(manualDiceValue, 10)) || parseInt(manualDiceValue, 10) < 2 || parseInt(manualDiceValue, 10) > 12}
                                 className="bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
                               >
                                 Submit Event Roll
@@ -5015,13 +5714,13 @@ export const CharacterGenerator: React.FC = () => {
                           />
                           <Button
                             onClick={() => {
-                              const val = parseInt(manualDiceValue);
+                              const val = parseInt(manualDiceValue, 10);
                               if (!isNaN(val) && val >= 2 && val <= 12) {
                                 runAdvancementCheck(val);
                                 setManualDiceValue('');
                               }
                             }}
-                            disabled={!manualDiceValue || isNaN(parseInt(manualDiceValue)) || parseInt(manualDiceValue) < 2 || parseInt(manualDiceValue) > 12}
+                            disabled={!manualDiceValue || isNaN(parseInt(manualDiceValue, 10)) || parseInt(manualDiceValue, 10) < 2 || parseInt(manualDiceValue, 10) > 12}
                             className="bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
                           >
                             Submit Advancement Roll
@@ -5135,27 +5834,64 @@ export const CharacterGenerator: React.FC = () => {
                             {currentEvent.requiresRoll && !eventRollResult && (
                               <div className="space-y-2">
                                 <p className="text-sm text-terminal-primary/80">{currentEvent.requiresRoll.displayText}</p>
-                                <Button
-                                  onClick={() => {
-                                    const success = rollEventCheck(currentEvent.requiresRoll!.characteristic, currentEvent.requiresRoll!.target);
-                                    // Auto-apply if no skill choice needed
-                                    if (success && currentEvent.successOutcome && !currentEvent.successOutcome.skills) {
-                                      applyEventOutcome(currentEvent.successOutcome);
-                                      setEventResolved(true);
-                                    } else if (!success && currentEvent.failureOutcome && !currentEvent.failureOutcome.skills) {
-                                      applyEventOutcome(currentEvent.failureOutcome);
-                                      setEventResolved(true);
-                                    } else if (success && !currentEvent.successOutcome?.skills) {
-                                      setEventResolved(true);
-                                    } else if (!success && !currentEvent.failureOutcome?.skills) {
-                                      setEventResolved(true);
-                                    }
-                                  }}
-                                  className="w-full bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
-                                >
-                                  <Dices className="h-4 w-4 mr-2" />
-                                  Roll {currentEvent.requiresRoll.characteristic.toUpperCase()} {currentEvent.requiresRoll.target}+
-                                </Button>
+                                {useManualDice ? (
+                                  <div className="flex gap-2">
+                                    <Input
+                                      type="number"
+                                      min={2}
+                                      max={12}
+                                      value={manualDiceValue}
+                                      onChange={(e) => setManualDiceValue(e.target.value)}
+                                      placeholder="2D6 (2-12)"
+                                      className="bg-black border-terminal-primary/50 text-terminal-primary placeholder:text-terminal-primary/40 w-28"
+                                    />
+                                    <Button
+                                      onClick={() => {
+                                        const val = parseInt(manualDiceValue);
+                                        if (!isNaN(val) && val >= 2 && val <= 12) {
+                                          const success = rollEventCheck(currentEvent.requiresRoll!.characteristic, currentEvent.requiresRoll!.target, val);
+                                          if (success && currentEvent.successOutcome && !currentEvent.successOutcome.skills) {
+                                            applyEventOutcome(currentEvent.successOutcome);
+                                            setEventResolved(true);
+                                          } else if (!success && currentEvent.failureOutcome && !currentEvent.failureOutcome.skills) {
+                                            applyEventOutcome(currentEvent.failureOutcome);
+                                            setEventResolved(true);
+                                          } else if (success && !currentEvent.successOutcome?.skills) {
+                                            setEventResolved(true);
+                                          } else if (!success && !currentEvent.failureOutcome?.skills) {
+                                            setEventResolved(true);
+                                          }
+                                          setManualDiceValue('');
+                                        }
+                                      }}
+                                      disabled={!manualDiceValue || isNaN(parseInt(manualDiceValue)) || parseInt(manualDiceValue) < 2 || parseInt(manualDiceValue) > 12}
+                                      className="flex-1 bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
+                                    >
+                                      Submit {currentEvent.requiresRoll.characteristic.toUpperCase()} {currentEvent.requiresRoll.target}+ Roll
+                                    </Button>
+                                  </div>
+                                ) : (
+                                  <Button
+                                    onClick={() => {
+                                      const success = rollEventCheck(currentEvent.requiresRoll!.characteristic, currentEvent.requiresRoll!.target);
+                                      if (success && currentEvent.successOutcome && !currentEvent.successOutcome.skills) {
+                                        applyEventOutcome(currentEvent.successOutcome);
+                                        setEventResolved(true);
+                                      } else if (!success && currentEvent.failureOutcome && !currentEvent.failureOutcome.skills) {
+                                        applyEventOutcome(currentEvent.failureOutcome);
+                                        setEventResolved(true);
+                                      } else if (success && !currentEvent.successOutcome?.skills) {
+                                        setEventResolved(true);
+                                      } else if (!success && !currentEvent.failureOutcome?.skills) {
+                                        setEventResolved(true);
+                                      }
+                                    }}
+                                    className="w-full bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
+                                  >
+                                    <Dices className="h-4 w-4 mr-2" />
+                                    Roll {currentEvent.requiresRoll.characteristic.toUpperCase()} {currentEvent.requiresRoll.target}+
+                                  </Button>
+                                )}
                               </div>
                             )}
 
@@ -5340,13 +6076,40 @@ export const CharacterGenerator: React.FC = () => {
                                   ))}
                                 </div>
                                 {!skillTableRollResult && (
-                                  <Button
-                                    onClick={rollSkillFromExpandedTable}
-                                    className="w-full bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30 border border-terminal-primary/50"
-                                  >
-                                    <Dices className="h-4 w-4 mr-2" />
-                                    Roll 1D6
-                                  </Button>
+                                  useManualDice ? (
+                                    <div className="flex gap-2">
+                                      <Input
+                                        type="number"
+                                        min={1}
+                                        max={6}
+                                        value={manualDiceValue}
+                                        onChange={(e) => setManualDiceValue(e.target.value)}
+                                        placeholder="1D6 (1-6)"
+                                        className="bg-black border-terminal-primary/50 text-terminal-primary placeholder:text-terminal-primary/40 w-24"
+                                      />
+                                      <Button
+                                        onClick={() => {
+                                          const val = parseInt(manualDiceValue);
+                                          if (!isNaN(val) && val >= 1 && val <= 6) {
+                                            rollSkillFromExpandedTable(val);
+                                            setManualDiceValue('');
+                                          }
+                                        }}
+                                        disabled={!manualDiceValue || isNaN(parseInt(manualDiceValue)) || parseInt(manualDiceValue) < 1 || parseInt(manualDiceValue) > 6}
+                                        className="flex-1 bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30 border border-terminal-primary/50"
+                                      >
+                                        Submit Skill Roll
+                                      </Button>
+                                    </div>
+                                  ) : (
+                                    <Button
+                                      onClick={() => rollSkillFromExpandedTable()}
+                                      className="w-full bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30 border border-terminal-primary/50"
+                                    >
+                                      <Dices className="h-4 w-4 mr-2" />
+                                      Roll 1D6
+                                    </Button>
+                                  )
                                 )}
                               </div>
                             )}
@@ -5384,13 +6147,40 @@ export const CharacterGenerator: React.FC = () => {
                                   ))}
                                 </div>
                                 {!skillTableRollResult && (
-                                  <Button
-                                    onClick={rollSkillFromExpandedTable}
-                                    className="w-full bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30 border border-terminal-primary/50"
-                                  >
-                                    <Dices className="h-4 w-4 mr-2" />
-                                    Roll 1D6
-                                  </Button>
+                                  useManualDice ? (
+                                    <div className="flex gap-2">
+                                      <Input
+                                        type="number"
+                                        min={1}
+                                        max={6}
+                                        value={manualDiceValue}
+                                        onChange={(e) => setManualDiceValue(e.target.value)}
+                                        placeholder="1D6 (1-6)"
+                                        className="bg-black border-terminal-primary/50 text-terminal-primary placeholder:text-terminal-primary/40 w-24"
+                                      />
+                                      <Button
+                                        onClick={() => {
+                                          const val = parseInt(manualDiceValue);
+                                          if (!isNaN(val) && val >= 1 && val <= 6) {
+                                            rollSkillFromExpandedTable(val);
+                                            setManualDiceValue('');
+                                          }
+                                        }}
+                                        disabled={!manualDiceValue || isNaN(parseInt(manualDiceValue)) || parseInt(manualDiceValue) < 1 || parseInt(manualDiceValue) > 6}
+                                        className="flex-1 bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30 border border-terminal-primary/50"
+                                      >
+                                        Submit Skill Roll
+                                      </Button>
+                                    </div>
+                                  ) : (
+                                    <Button
+                                      onClick={() => rollSkillFromExpandedTable()}
+                                      className="w-full bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30 border border-terminal-primary/50"
+                                    >
+                                      <Dices className="h-4 w-4 mr-2" />
+                                      Roll 1D6
+                                    </Button>
+                                  )
                                 )}
                               </div>
                             )}
@@ -5429,13 +6219,40 @@ export const CharacterGenerator: React.FC = () => {
                                     ))}
                                   </div>
                                   {!skillTableRollResult && (
-                                    <Button
-                                      onClick={rollSkillFromExpandedTable}
-                                      className="w-full bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30 border border-terminal-primary/50"
-                                    >
-                                      <Dices className="h-4 w-4 mr-2" />
-                                      Roll 1D6
-                                    </Button>
+                                    useManualDice ? (
+                                      <div className="flex gap-2">
+                                        <Input
+                                          type="number"
+                                          min={1}
+                                          max={6}
+                                          value={manualDiceValue}
+                                          onChange={(e) => setManualDiceValue(e.target.value)}
+                                          placeholder="1D6 (1-6)"
+                                          className="bg-black border-terminal-primary/50 text-terminal-primary placeholder:text-terminal-primary/40 w-24"
+                                        />
+                                        <Button
+                                          onClick={() => {
+                                            const val = parseInt(manualDiceValue);
+                                            if (!isNaN(val) && val >= 1 && val <= 6) {
+                                              rollSkillFromExpandedTable(val);
+                                              setManualDiceValue('');
+                                            }
+                                          }}
+                                          disabled={!manualDiceValue || isNaN(parseInt(manualDiceValue)) || parseInt(manualDiceValue) < 1 || parseInt(manualDiceValue) > 6}
+                                          className="flex-1 bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30 border border-terminal-primary/50"
+                                        >
+                                          Submit Skill Roll
+                                        </Button>
+                                      </div>
+                                    ) : (
+                                      <Button
+                                        onClick={() => rollSkillFromExpandedTable()}
+                                        className="w-full bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30 border border-terminal-primary/50"
+                                      >
+                                        <Dices className="h-4 w-4 mr-2" />
+                                        Roll 1D6
+                                      </Button>
+                                    )
                                   )}
                                 </div>
                               )}
@@ -5478,13 +6295,40 @@ export const CharacterGenerator: React.FC = () => {
                                   })()}
                                 </div>
                                 {!skillTableRollResult && (
-                                  <Button
-                                    onClick={rollSkillFromExpandedTable}
-                                    className="w-full bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30 border border-terminal-primary/50"
-                                  >
-                                    <Dices className="h-4 w-4 mr-2" />
-                                    Roll 1D6
-                                  </Button>
+                                  useManualDice ? (
+                                    <div className="flex gap-2">
+                                      <Input
+                                        type="number"
+                                        min={1}
+                                        max={6}
+                                        value={manualDiceValue}
+                                        onChange={(e) => setManualDiceValue(e.target.value)}
+                                        placeholder="1D6 (1-6)"
+                                        className="bg-black border-terminal-primary/50 text-terminal-primary placeholder:text-terminal-primary/40 w-24"
+                                      />
+                                      <Button
+                                        onClick={() => {
+                                          const val = parseInt(manualDiceValue);
+                                          if (!isNaN(val) && val >= 1 && val <= 6) {
+                                            rollSkillFromExpandedTable(val);
+                                            setManualDiceValue('');
+                                          }
+                                        }}
+                                        disabled={!manualDiceValue || isNaN(parseInt(manualDiceValue)) || parseInt(manualDiceValue) < 1 || parseInt(manualDiceValue) > 6}
+                                        className="flex-1 bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30 border border-terminal-primary/50"
+                                      >
+                                        Submit Skill Roll
+                                      </Button>
+                                    </div>
+                                  ) : (
+                                    <Button
+                                      onClick={() => rollSkillFromExpandedTable()}
+                                      className="w-full bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30 border border-terminal-primary/50"
+                                    >
+                                      <Dices className="h-4 w-4 mr-2" />
+                                      Roll 1D6
+                                    </Button>
+                                  )
                                 )}
                               </div>
                             )}
@@ -5519,7 +6363,7 @@ export const CharacterGenerator: React.FC = () => {
                         )}
 
                         {/* Military Academy Graduation: Select 3 Service Skills */}
-                        {selectedCareer?.preCareerType === 'military_academy' && termSurvived && !pendingSpecialtySkill && (
+                        {selectedCareer?.preCareerType === 'military_academy' && termSurvived && !pendingSpecialtySkill && !pendingAnyTalentSource && (
                           <div className="bg-terminal-primary/5 border border-terminal-primary/30 rounded p-4 space-y-3">
                             <h4 className="text-sm font-bold text-terminal-primary">
                               Select 3 Service Skills to Increase to Level 1
@@ -5606,7 +6450,7 @@ export const CharacterGenerator: React.FC = () => {
                       </div>
                     )}
 
-                    {((!currentGameEvent || gameEventCompleted) && (!currentEvent || eventResolved) && !pendingSpecialtySkill &&
+                    {((!currentGameEvent || gameEventCompleted) && (!currentEvent || eventResolved) && !pendingSpecialtySkill && !pendingAnyTalentSource &&
                       !(selectedCareer?.preCareerType === 'military_academy' && termSurvived && academyGradSkillsSelected.length < 3) &&
                       (selectedCareer?.isPreCareer || termSkillSelected)) && (
                       <Button
@@ -5739,19 +6583,42 @@ export const CharacterGenerator: React.FC = () => {
                           variant="outline"
                           className="flex-1 border-terminal-primary/50 text-terminal-primary hover:bg-terminal-primary/20 disabled:opacity-40 disabled:cursor-not-allowed"
                         >
-                          Switch Career
+                          {characterData.isUsingAnagathics ? 'Manage Anagathics' : 'Seek Anagathics'}
                         </Button>
-                        {canSwitchAssignment() && (
+                      )}
+
+                      <div className="flex gap-2">
+                        {!forceLeaveCareer && !agingPending && (
                           <Button
                             onClick={startSwitchAssignment}
                             disabled={forcedContinueInCareer}
                             variant="outline"
                             className="flex-1 border-blue-500/50 text-blue-400 hover:bg-blue-500/20 disabled:opacity-40 disabled:cursor-not-allowed"
                           >
-                            Switch Assignment
+                            Muster Out
                           </Button>
                         )}
                       </div>
+                      {!agingPending && (
+                        <div className="flex gap-2">
+                          <Button
+                            onClick={switchToNewCareer}
+                            variant="outline"
+                            className="flex-1 border-terminal-primary/50 text-terminal-primary hover:bg-terminal-primary/20"
+                          >
+                            Switch Career
+                          </Button>
+                          {canSwitchAssignment() && (
+                            <Button
+                              onClick={startSwitchAssignment}
+                              variant="outline"
+                              className="flex-1 border-blue-500/50 text-blue-400 hover:bg-blue-500/20"
+                            >
+                              Switch Assignment
+                            </Button>
+                          )}
+                        </div>
+                      )}
                     </div>
                   ) : (
                     // Assignment switching UI
@@ -5776,21 +6643,61 @@ export const CharacterGenerator: React.FC = () => {
                           <p className="text-xs text-terminal-primary/70">Select new assignment:</p>
                           <div className="grid grid-cols-1 gap-2">
                             {selectedCareer?.assignments.map((assignment, idx) => (
-                              <Button
-                                key={idx}
-                                onClick={() => rollSwitchAssignment(idx)}
-                                disabled={idx === selectedAssignment}
-                                variant="outline"
-                                className={`border-terminal-primary/50 text-terminal-primary hover:bg-terminal-primary/20 ${
-                                  idx === selectedAssignment ? 'opacity-40 cursor-not-allowed' : ''
-                                }`}
-                              >
-                                {assignment.name}
-                                {idx === selectedAssignment ? ' (current)' : ''}
-                                <span className="ml-2 text-xs text-terminal-primary/50">
-                                  Survival: {assignment.survivalStat.toUpperCase()} {assignment.survivalTarget}+ | Advancement: {assignment.advancementStat.toUpperCase()} {assignment.advancementTarget}+
-                                </span>
-                              </Button>
+                              useManualDice ? (
+                                <div key={idx} className="space-y-1">
+                                  <div className={`text-sm text-terminal-primary ${idx === selectedAssignment ? 'opacity-40' : ''}`}>
+                                    {assignment.name}
+                                    {idx === selectedAssignment ? ' (current)' : ''}
+                                    <span className="ml-2 text-xs text-terminal-primary/50">
+                                      Survival: {assignment.survivalStat.toUpperCase()} {assignment.survivalTarget}+ | Advancement: {assignment.advancementStat.toUpperCase()} {assignment.advancementTarget}+
+                                    </span>
+                                  </div>
+                                  {idx !== selectedAssignment && (
+                                    <div className="flex gap-2">
+                                      <Input
+                                        type="number"
+                                        min={2}
+                                        max={12}
+                                        value={manualDiceValue}
+                                        onChange={(e) => setManualDiceValue(e.target.value)}
+                                        placeholder="2D6 (2-12)"
+                                        className="bg-black border-terminal-primary/50 text-terminal-primary placeholder:text-terminal-primary/40 w-28"
+                                      />
+                                      <Button
+                                        onClick={() => {
+                                          const val = parseInt(manualDiceValue);
+                                          if (!isNaN(val) && val >= 2 && val <= 12) {
+                                            rollSwitchAssignment(idx, val);
+                                            setManualDiceValue('');
+                                          }
+                                        }}
+                                        disabled={!manualDiceValue || isNaN(parseInt(manualDiceValue)) || parseInt(manualDiceValue) < 2 || parseInt(manualDiceValue) > 12}
+                                        size="sm"
+                                        variant="outline"
+                                        className="border-terminal-primary/50 text-terminal-primary hover:bg-terminal-primary/20"
+                                      >
+                                        Switch to {assignment.name}
+                                      </Button>
+                                    </div>
+                                  )}
+                                </div>
+                              ) : (
+                                <Button
+                                  key={idx}
+                                  onClick={() => rollSwitchAssignment(idx)}
+                                  disabled={idx === selectedAssignment}
+                                  variant="outline"
+                                  className={`border-terminal-primary/50 text-terminal-primary hover:bg-terminal-primary/20 ${
+                                    idx === selectedAssignment ? 'opacity-40 cursor-not-allowed' : ''
+                                  }`}
+                                >
+                                  {assignment.name}
+                                  {idx === selectedAssignment ? ' (current)' : ''}
+                                  <span className="ml-2 text-xs text-terminal-primary/50">
+                                    Survival: {assignment.survivalStat.toUpperCase()} {assignment.survivalTarget}+ | Advancement: {assignment.advancementStat.toUpperCase()} {assignment.advancementTarget}+
+                                  </span>
+                                </Button>
+                              )
                             ))}
                           </div>
                           <Button
@@ -5868,32 +6775,195 @@ export const CharacterGenerator: React.FC = () => {
                   )
                 )}
 
-                {/* Aging Result Alert */}
+                {/* Interactive Aging System */}
                 {agingPending && agingResult && (
-                  <Alert className={agingResult.passed ? "bg-green-500/10 border-green-500/50" : agingResult.crisisCheck?.isCrisis ? "bg-red-500/10 border-red-500/50" : "bg-yellow-500/10 border-yellow-500/50"}>
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription className={agingResult.passed ? "text-green-400" : agingResult.crisisCheck?.isCrisis ? "text-red-400" : "text-yellow-400"}>
-                      <div className="font-bold mb-1">Aging Roll (Term {agingResult.termNumber})</div>
-                      <div className="text-sm mb-2">{agingResult.message}</div>
-                      {!agingResult.passed && agingResult.effects.effects.length > 0 && (
-                        <div className="text-xs text-terminal-primary/70">
-                          Effects: {agingResult.effects.effects.map((e, i) => `${e.stat.toUpperCase()} ${e.modifier}`).join(', ')}
-                        </div>
-                      )}
-                      {agingResult.crisisCheck?.isCrisis && (
-                        <div className="mt-2 text-xs text-red-400 font-bold">
-                          {agingResult.crisisCheck.message}
-                        </div>
-                      )}
+                  <div className="space-y-3">
+                    {/* Aging Roll Result */}
+                    <Alert className={agingResult.passed ? "bg-green-500/10 border-green-500/50" : "bg-yellow-500/10 border-yellow-500/50"}>
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription className={agingResult.passed ? "text-green-400" : "text-yellow-400"}>
+                        <div className="font-bold mb-1">Aging Roll (Term {agingResult.termNumber})</div>
+                        <div className="text-sm mb-2">{agingResult.message}</div>
+                        {characterData.isUsingAnagathics && (
+                          <div className="text-xs text-blue-400 mb-1">Anagathics DM: +{agingResult.dm}</div>
+                        )}
+                      </AlertDescription>
+                    </Alert>
+
+                    {/* Passed - simple acknowledge */}
+                    {agingResult.passed && (
                       <Button
-                        onClick={() => setAgingPending(false)}
+                        onClick={acknowledgeAging}
                         size="sm"
-                        className="mt-2 bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
+                        className="w-full bg-green-500/20 text-green-400 hover:bg-green-500/30"
                       >
-                        Acknowledge
+                        Acknowledge - No Aging Effects
                       </Button>
-                    </AlertDescription>
-                  </Alert>
+                    )}
+
+                    {/* Failed - physical characteristic choices */}
+                    {!agingResult.passed && agingResult.effectLevel && !agingPhysicalChosen && (
+                      <div className="border border-yellow-500/30 rounded p-3 space-y-2">
+                        <p className="text-sm text-yellow-400 font-bold">{agingResult.effectLevel.description}</p>
+                        {agingResult.effectLevel.physicalChoices.length === 1 ? (
+                          // Automatic (no choice needed)
+                          <Button
+                            onClick={() => handleAgingPhysicalChoice(0)}
+                            className="w-full bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30 border border-yellow-500/50"
+                          >
+                            Apply: {agingResult.effectLevel.physicalChoices[0].label}
+                          </Button>
+                        ) : (
+                          // Player chooses
+                          <div className="space-y-1">
+                            <p className="text-xs text-terminal-primary/60">Choose which characteristics are affected:</p>
+                            <div className="grid grid-cols-1 gap-2">
+                              {agingResult.effectLevel.physicalChoices.map((choice, idx) => (
+                                <Button
+                                  key={idx}
+                                  onClick={() => handleAgingPhysicalChoice(idx)}
+                                  variant="outline"
+                                  className="border-yellow-500/50 text-yellow-400 hover:bg-yellow-500/20"
+                                >
+                                  {choice.label}
+                                </Button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Mental characteristic choices (only for extreme aging, Effect -6 or less) */}
+                    {!agingResult.passed && agingPhysicalChosen && agingResult.effectLevel?.mentalChoices && !agingMentalChosen && (
+                      <div className="border border-red-500/30 rounded p-3 space-y-2">
+                        <p className="text-sm text-red-400 font-bold">Additionally, reduce one mental characteristic by 1.</p>
+                        <div className="grid grid-cols-2 gap-2">
+                          {agingResult.effectLevel.mentalChoices.map((choice, idx) => (
+                            <Button
+                              key={idx}
+                              onClick={() => handleAgingMentalChoice(idx)}
+                              variant="outline"
+                              className="border-red-500/50 text-red-400 hover:bg-red-500/20"
+                            >
+                              {choice.label}
+                            </Button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Aging effects applied - show summary */}
+                    {!agingResult.passed && (agingPhysicalChosen && (!agingResult.effectLevel?.mentalChoices || agingMentalChosen)) && (
+                      <div className="space-y-2">
+                        <div className="text-xs text-terminal-primary/70">
+                          Applied: {agingChosenEffects.map(e => `${e.stat.toUpperCase()} ${e.modifier}`).join(', ')}
+                        </div>
+
+                        {/* Aging Crisis Alert */}
+                        {agingCrisis?.isCrisis && (
+                          <Alert className="bg-red-500/10 border-red-500/50">
+                            <AlertCircle className="h-4 w-4" />
+                            <AlertDescription className="text-red-400">
+                              <div className="font-bold mb-1">AGING CRISIS</div>
+                              <div className="text-sm">{agingCrisis.message}</div>
+                            </AlertDescription>
+                          </Alert>
+                        )}
+
+                        {/* Medical Bill from aging (if any) */}
+                        {pendingMedicalBill && (
+                          <Alert className="bg-blue-500/10 border-blue-500/50">
+                            <AlertDescription className="text-blue-400 text-xs">
+                              {pendingMedicalBill.message}
+                            </AlertDescription>
+                          </Alert>
+                        )}
+
+                        <Button
+                          onClick={acknowledgeAging}
+                          size="sm"
+                          className="w-full bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
+                        >
+                          Acknowledge Aging Effects
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Anagathics Prompt (shown between terms when eligible) */}
+                {!agingPending && !isInTerm && currentTerm > 0 && termSurvived !== false &&
+                  !selectedCareer?.isPreCareer && showAnagathicsPrompt && (
+                  <div className="border border-blue-500/30 rounded p-3 space-y-2">
+                    <p className="text-sm text-blue-400 font-bold">Anagathics</p>
+                    {characterData.isUsingAnagathics ? (
+                      <div className="space-y-2">
+                        <p className="text-xs text-terminal-primary/70">
+                          You are currently using anagathics (started term {characterData.anagathicsStartTerm}).
+                          Cost: 1D × Cr25,000 per term. Aging DM: +{(characterData.lifepath_log.length - (characterData.anagathicsStartTerm || 0) + 2)}.
+                          You must make two survival checks per term.
+                        </p>
+                        <div className="flex gap-2">
+                          <Button
+                            onClick={() => setShowAnagathicsPrompt(false)}
+                            className="flex-1 bg-blue-500/20 text-blue-400 hover:bg-blue-500/30"
+                          >
+                            Continue Using
+                          </Button>
+                          <Button
+                            onClick={handleStopAnagathics}
+                            variant="outline"
+                            className="flex-1 border-red-500/50 text-red-400 hover:bg-red-500/20"
+                          >
+                            Stop (Immediate Aging Roll)
+                          </Button>
+                        </div>
+                      </div>
+                    ) : anagathicsRollResult ? (
+                      <div className="space-y-2">
+                        <p className={`text-xs ${anagathicsRollResult.success ? 'text-green-400' : anagathicsRollResult.arrested ? 'text-red-400' : 'text-yellow-400'}`}>
+                          {anagathicsRollResult.message}
+                        </p>
+                        <Button
+                          onClick={() => { setShowAnagathicsPrompt(false); setAnagathicsRollResult(null); }}
+                          size="sm"
+                          className="w-full bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
+                        >
+                          Continue
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <p className="text-xs text-terminal-primary/70">
+                          Your Social Standing of {characterData.characteristics.social.total} qualifies you to seek anagathic drugs.
+                          Cost: 1D × Cr25,000/term. Grants DM to aging rolls. Requires two survival checks per term.
+                        </p>
+                        <div className="flex gap-2">
+                          <Button
+                            onClick={handleAnagathicsAttempt}
+                            className="flex-1 bg-blue-500/20 text-blue-400 hover:bg-blue-500/30"
+                          >
+                            Attempt to Obtain
+                          </Button>
+                          <Button
+                            onClick={() => setShowAnagathicsPrompt(false)}
+                            variant="outline"
+                            className="flex-1 border-terminal-primary/30 text-terminal-primary/60 hover:bg-terminal-primary/10"
+                          >
+                            Decline
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Medical Debt Summary (if any) */}
+                {(characterData.medicalDebt || 0) > 0 && !agingPending && (
+                  <div className="text-xs text-red-400/80 bg-red-500/5 border border-red-500/20 rounded p-2">
+                    Outstanding medical debt: Cr{(characterData.medicalDebt || 0).toLocaleString()}
+                  </div>
                 )}
 
                 {characterData.lifepath_log.length > 0 && (
@@ -6082,16 +7152,16 @@ export const CharacterGenerator: React.FC = () => {
                         <CardHeader className="pb-2">
                           <CardTitle className="text-terminal-primary text-sm font-['Orbitron'] tracking-wider uppercase flex items-center gap-2">
                             <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
-                            Skills ({Object.entries(characterData.skills).filter(([_, s]) => s.proficient && parseInt(s.value) >= 0).length})
+                            Skills ({Object.entries(characterData.skills).filter(([_, s]) => s.proficient && parseInt(s.value, 10) >= 0).length})
                           </CardTitle>
                         </CardHeader>
                         <CardContent>
                           <div className="flex flex-wrap gap-1.5">
                             {Object.entries(characterData.skills)
-                              .filter(([_, state]) => state.proficient && parseInt(state.value) >= 0)
-                              .sort((a, b) => parseInt(b[1].value) - parseInt(a[1].value))
+                              .filter(([_, state]) => state.proficient && parseInt(state.value, 10) >= 0)
+                              .sort((a, b) => parseInt(b[1].value, 10) - parseInt(a[1].value, 10))
                               .map(([skill, state]) => {
-                                const level = parseInt(state.value);
+                                const level = parseInt(state.value, 10);
                                 const isHighLevel = level >= 2;
                                 return (
                                   <div
@@ -6108,7 +7178,7 @@ export const CharacterGenerator: React.FC = () => {
                                   </div>
                                 );
                               })}
-                            {Object.entries(characterData.skills).filter(([_, s]) => s.proficient && parseInt(s.value) >= 0).length === 0 && (
+                            {Object.entries(characterData.skills).filter(([_, s]) => s.proficient && parseInt(s.value, 10) >= 0).length === 0 && (
                               <span className="text-terminal-primary/50 text-sm">No skills acquired</span>
                             )}
                           </div>

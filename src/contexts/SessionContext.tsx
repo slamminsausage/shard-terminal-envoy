@@ -20,6 +20,8 @@ interface SessionContextType {
   // Log Entries
   getSessionLogs: (sessionId: string) => Promise<SessionLogEntry[]>;
   addLogEntry: (sessionId: string, entry: Omit<SessionLogEntry, 'id' | 'created_at'>) => Promise<SessionLogEntry | null>;
+  updateLogEntry: (entryId: string, updates: Partial<SessionLogEntry>) => Promise<SessionLogEntry | null>;
+  deleteLogEntry: (entryId: string) => Promise<boolean>;
 
   // Rewards
   getSessionRewards: (sessionId: string) => Promise<SessionReward[]>;
@@ -208,6 +210,47 @@ export const SessionProvider: React.FC<SessionProviderProps> = ({ children }) =>
     }
   }, [toast]);
 
+  const updateLogEntry = useCallback(async (
+    entryId: string,
+    updates: Partial<SessionLogEntry>
+  ): Promise<SessionLogEntry | null> => {
+    try {
+      const saved = await dbHelpers.updateSessionLogEntry(entryId, updates);
+      toast({
+        title: "Log Entry Updated",
+        description: "Session log entry has been saved.",
+      });
+      return saved as SessionLogEntry;
+    } catch (error) {
+      console.error('Failed to update log entry:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update log entry",
+        variant: "destructive",
+      });
+      return null;
+    }
+  }, [toast]);
+
+  const deleteLogEntry = useCallback(async (entryId: string): Promise<boolean> => {
+    try {
+      await dbHelpers.deleteSessionLogEntry(entryId);
+      toast({
+        title: "Log Entry Deleted",
+        description: "Session log entry has been removed.",
+      });
+      return true;
+    } catch (error) {
+      console.error('Failed to delete log entry:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete log entry",
+        variant: "destructive",
+      });
+      return false;
+    }
+  }, [toast]);
+
   const getSessionRewards = useCallback(async (sessionId: string): Promise<SessionReward[]> => {
     try {
       const data = await dbHelpers.getSessionRewards(sessionId);
@@ -259,6 +302,8 @@ export const SessionProvider: React.FC<SessionProviderProps> = ({ children }) =>
     setCurrentSession,
     getSessionLogs,
     addLogEntry,
+    updateLogEntry,
+    deleteLogEntry,
     getSessionRewards,
     addReward,
   };

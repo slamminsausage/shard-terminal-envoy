@@ -1,27 +1,35 @@
 import { useRef, useEffect, useCallback } from "react";
 import { useVTT } from "@/contexts/VTTContext";
+import type { AmbientSlot } from "@/types/vtt";
+import { toast } from "sonner";
+
+const SLOTS: AmbientSlot[] = ["A", "B", "C", "D"];
 
 /**
- * Web Audio API hook for VTT ambient crossfade and SFX playback.
- * All audio files are loaded from local storage (data URLs / object URLs).
+ * Web Audio API hook for VTT audio system.
+ * Supports 4 ambient channels with independent volume/pan, SFX soundboard,
+ * and built-in library track loading.
  */
 export function useVTTAudio() {
   const { state, dispatch } = useVTT();
   const ctxRef = useRef<AudioContext | null>(null);
   const masterGainRef = useRef<GainNode | null>(null);
 
-  // Ambient nodes
-  const ambientASourceRef = useRef<MediaElementAudioSourceNode | null>(null);
-  const ambientAGainRef = useRef<GainNode | null>(null);
-  const ambientAPanRef = useRef<StereoPannerNode | null>(null);
-  const ambientAElRef = useRef<HTMLAudioElement | null>(null);
+  // Per-channel refs (keyed by slot letter)
+  const ambientSourceRefs = useRef<Record<AmbientSlot, MediaElementAudioSourceNode | null>>({
+    A: null, B: null, C: null, D: null,
+  });
+  const ambientGainRefs = useRef<Record<AmbientSlot, GainNode | null>>({
+    A: null, B: null, C: null, D: null,
+  });
+  const ambientPanRefs = useRef<Record<AmbientSlot, StereoPannerNode | null>>({
+    A: null, B: null, C: null, D: null,
+  });
+  const ambientElRefs = useRef<Record<AmbientSlot, HTMLAudioElement | null>>({
+    A: null, B: null, C: null, D: null,
+  });
 
-  const ambientBSourceRef = useRef<MediaElementAudioSourceNode | null>(null);
-  const ambientBGainRef = useRef<GainNode | null>(null);
-  const ambientBPanRef = useRef<StereoPannerNode | null>(null);
-  const ambientBElRef = useRef<HTMLAudioElement | null>(null);
-
-  // SFX audio elements (one per slot)
+  // SFX audio elements
   const sfxElementsRef = useRef<(HTMLAudioElement | null)[]>(
     Array(18).fill(null)
   );
@@ -29,15 +37,33 @@ export function useVTTAudio() {
   // Analyzer for visualization
   const analyzerRef = useRef<AnalyserNode | null>(null);
 
+  // Ref to track current master volume without causing callback identity changes
+  const masterVolumeRef = useRef(state.audio.masterVolume);
+  masterVolumeRef.current = state.audio.masterVolume;
+
+  // Track whether we've already shown the autoplay toast
+  const autoplayWarningShown = useRef(false);
+
   // ─── Initialize AudioContext ──────────────────────────────────────
 
   const ensureContext = useCallback(() => {
-    if (ctxRef.current) return ctxRef.current;
+    if (ctxRef.current) {
+      // Resume if browser suspended it (autoplay policy)
+      if (ctxRef.current.state === "suspended") {
+        ctxRef.current.resume().catch(() => {});
+      }
+      return ctxRef.current;
+    }
     const ctx = new AudioContext();
     ctxRef.current = ctx;
 
+    // Resume immediately — will succeed if called from a user gesture
+    if (ctx.state === "suspended") {
+      ctx.resume().catch(() => {});
+    }
+
     const master = ctx.createGain();
-    master.gain.value = state.audio.masterVolume;
+    master.gain.value = masterVolumeRef.current;
     master.connect(ctx.destination);
     masterGainRef.current = master;
 
@@ -46,22 +72,31 @@ export function useVTTAudio() {
     master.connect(analyzer);
     analyzerRef.current = analyzer;
 
-    // Ambient A chain
-    const gainA = ctx.createGain();
-    const panA = ctx.createStereoPanner();
-    gainA.connect(panA).connect(master);
-    ambientAGainRef.current = gainA;
-    ambientAPanRef.current = panA;
-
-    // Ambient B chain
-    const gainB = ctx.createGain();
-    const panB = ctx.createStereoPanner();
-    gainB.connect(panB).connect(master);
-    ambientBGainRef.current = gainB;
-    ambientBPanRef.current = panB;
+    // Create gain + pan chains for all 4 channels
+    for (const slot of SLOTS) {
+      const gain = ctx.createGain();
+      const pan = ctx.createStereoPanner();
+      gain.connect(pan).connect(master);
+      ambientGainRefs.current[slot] = gain;
+      ambientPanRefs.current[slot] = pan;
+    }
 
     return ctx;
-  }, [state.audio.masterVolume]);
+  }, []);
+
+  /** Attempt to play an audio element; show a one-time toast if blocked by autoplay policy */
+  const tryPlay = useCallback((el: HTMLAudioElement) => {
+    el.play().catch((e: DOMException) => {
+      if (e.name === "NotAllowedError") {
+        if (!autoplayWarningShown.current) {
+          autoplayWarningShown.current = true;
+          toast.info("Click anywhere on the page to enable audio playback");
+        }
+      } else {
+        console.warn("Audio play failed:", e);
+      }
+    });
+  }, []);
 
   // ─── Master volume sync ───────────────────────────────────────────
 
@@ -73,42 +108,92 @@ export function useVTTAudio() {
     }
   }, [state.audio.masterVolume, state.audio.muted]);
 
-  // ─── Crossfade sync ───────────────────────────────────────────────
+  // ─── Per-channel volume sync ──────────────────────────────────────
+
+  const getTrack = useCallback((slot: AmbientSlot) => {
+    return state.audio[`ambient${slot}` as keyof typeof state.audio] as (typeof state.audio.ambientA);
+  }, [state.audio]);
 
   useEffect(() => {
-    const cf = state.audio.crossfade; // 0 = full A, 0.5 = both, 1 = full B
-    if (ambientAGainRef.current) {
-      const aVol = state.audio.ambientA?.volume ?? 1;
-      // DJ-style crossfade: A at full until cf > 0.5, then fades
-      ambientAGainRef.current.gain.value = aVol * Math.min(1, 2 * (1 - cf));
+    for (const slot of SLOTS) {
+      const gain = ambientGainRefs.current[slot];
+      const track = state.audio[`ambient${slot}` as keyof typeof state.audio] as (typeof state.audio.ambientA);
+      if (gain) {
+        gain.gain.value = track?.volume ?? 0;
+      }
     }
-    if (ambientBGainRef.current) {
-      const bVol = state.audio.ambientB?.volume ?? 1;
-      // B at full until cf < 0.5, then fades
-      ambientBGainRef.current.gain.value = bVol * Math.min(1, 2 * cf);
-    }
-  }, [state.audio.crossfade, state.audio.ambientA?.volume, state.audio.ambientB?.volume]);
+  }, [
+    state.audio.ambientA?.volume,
+    state.audio.ambientB?.volume,
+    state.audio.ambientC?.volume,
+    state.audio.ambientD?.volume,
+  ]);
 
-  // ─── Pan sync ─────────────────────────────────────────────────────
-
-  useEffect(() => {
-    if (ambientAPanRef.current && state.audio.ambientA) {
-      ambientAPanRef.current.pan.value = state.audio.ambientA.pan;
-    }
-  }, [state.audio.ambientA?.pan]);
+  // ─── Per-channel pan sync ─────────────────────────────────────────
 
   useEffect(() => {
-    if (ambientBPanRef.current && state.audio.ambientB) {
-      ambientBPanRef.current.pan.value = state.audio.ambientB.pan;
+    for (const slot of SLOTS) {
+      const pan = ambientPanRefs.current[slot];
+      const track = state.audio[`ambient${slot}` as keyof typeof state.audio] as (typeof state.audio.ambientA);
+      if (pan && track) {
+        pan.pan.value = track.pan;
+      }
     }
-  }, [state.audio.ambientB?.pan]);
+  }, [
+    state.audio.ambientA?.pan,
+    state.audio.ambientB?.pan,
+    state.audio.ambientC?.pan,
+    state.audio.ambientD?.pan,
+  ]);
+
+  // ─── Crossfade helper ────────────────────────────────────────────
+
+  const CROSSFADE_MS = 1500;
+
+  /** Fade out the old track on a slot, then clean up its audio nodes */
+  const fadeOutOldTrack = useCallback((slot: AmbientSlot) => {
+    const oldEl = ambientElRefs.current[slot];
+    const oldSource = ambientSourceRefs.current[slot];
+    const oldGain = ambientGainRefs.current[slot];
+
+    if (!oldEl || !oldGain) return;
+
+    // Create a temporary gain node for the fade-out so the channel gain stays intact
+    const ctx = ctxRef.current;
+    if (!ctx) { oldEl.pause(); oldSource?.disconnect(); return; }
+
+    const fadeGain = ctx.createGain();
+    fadeGain.gain.setValueAtTime(oldGain.gain.value, ctx.currentTime);
+    fadeGain.gain.linearRampToValueAtTime(0, ctx.currentTime + CROSSFADE_MS / 1000);
+
+    // Re-route old source through fade gain
+    oldSource?.disconnect();
+    oldSource?.connect(fadeGain);
+    fadeGain.connect(oldGain);
+    oldGain.connect(ambientPanRefs.current[slot]!);
+
+    // Clean up after fade completes
+    setTimeout(() => {
+      oldEl.pause();
+      oldSource?.disconnect();
+      fadeGain.disconnect();
+    }, CROSSFADE_MS);
+  }, []);
 
   // ─── Load ambient track ───────────────────────────────────────────
 
   const loadAmbient = useCallback(
-    (slot: "A" | "B", file: File) => {
+    (slot: AmbientSlot, file: File) => {
       const ctx = ensureContext();
       const url = URL.createObjectURL(file);
+
+      // Crossfade out old track if one is playing
+      if (ambientElRefs.current[slot] && !ambientElRefs.current[slot]!.paused) {
+        fadeOutOldTrack(slot);
+      } else {
+        ambientElRefs.current[slot]?.pause();
+        ambientSourceRefs.current[slot]?.disconnect();
+      }
 
       const el = new Audio();
       el.crossOrigin = "anonymous";
@@ -116,72 +201,180 @@ export function useVTTAudio() {
       el.src = url;
 
       const source = ctx.createMediaElementSource(el);
+      source.connect(ambientGainRefs.current[slot]!);
+      ambientSourceRefs.current[slot] = source;
+      ambientElRefs.current[slot] = el;
 
-      if (slot === "A") {
-        // Clean up old
-        ambientAElRef.current?.pause();
-        ambientASourceRef.current?.disconnect();
-
-        source.connect(ambientAGainRef.current!);
-        ambientASourceRef.current = source;
-        ambientAElRef.current = el;
-      } else {
-        ambientBElRef.current?.pause();
-        ambientBSourceRef.current?.disconnect();
-
-        source.connect(ambientBGainRef.current!);
-        ambientBSourceRef.current = source;
-        ambientBElRef.current = el;
-      }
-
-      // Read file as data URL for persistence
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        dispatch({
-          type: "SET_AMBIENT_TRACK",
-          payload: {
-            slot,
-            track: {
-              id: crypto.randomUUID(),
-              name: file.name,
-              url: e.target?.result as string,
-              volume: 0.7,
-              pan: 0,
-              loop: true,
-            },
+      // Store metadata (not data URL to avoid localStorage bloat)
+      dispatch({
+        type: "SET_AMBIENT_TRACK",
+        payload: {
+          slot,
+          track: {
+            id: crypto.randomUUID(),
+            name: file.name,
+            url: "", // Don't store data URL — file must be re-loaded on refresh
+            volume: 0.7,
+            pan: 0,
+            loop: true,
+            isLibrary: false,
           },
-        });
-      };
-      reader.readAsDataURL(file);
+        },
+      });
 
-      el.play().catch(() => {});
+      tryPlay(el);
     },
-    [ensureContext, dispatch]
+    [ensureContext, dispatch, fadeOutOldTrack, tryPlay]
   );
 
-  const stopAmbient = useCallback((slot: "A" | "B") => {
-    if (slot === "A") {
-      ambientAElRef.current?.pause();
-      if (ambientAElRef.current) ambientAElRef.current.currentTime = 0;
-    } else {
-      ambientBElRef.current?.pause();
-      if (ambientBElRef.current) ambientBElRef.current.currentTime = 0;
-    }
+  /** Load a built-in library track (from public/audio/) into a channel */
+  const loadLibraryTrack = useCallback(
+    (slot: AmbientSlot, path: string, name: string) => {
+      const ctx = ensureContext();
+
+      // Crossfade out old track if one is playing
+      if (ambientElRefs.current[slot] && !ambientElRefs.current[slot]!.paused) {
+        fadeOutOldTrack(slot);
+      } else {
+        ambientElRefs.current[slot]?.pause();
+        ambientSourceRefs.current[slot]?.disconnect();
+      }
+
+      const el = new Audio();
+      el.crossOrigin = "anonymous";
+      el.loop = true;
+      el.src = path;
+
+      const source = ctx.createMediaElementSource(el);
+      source.connect(ambientGainRefs.current[slot]!);
+      ambientSourceRefs.current[slot] = source;
+      ambientElRefs.current[slot] = el;
+
+      dispatch({
+        type: "SET_AMBIENT_TRACK",
+        payload: {
+          slot,
+          track: {
+            id: crypto.randomUUID(),
+            name,
+            url: path,
+            volume: 0.7,
+            pan: 0,
+            loop: true,
+            isLibrary: true,
+          },
+        },
+      });
+
+      tryPlay(el);
+    },
+    [ensureContext, dispatch, fadeOutOldTrack, tryPlay]
+  );
+
+  /** Load a library track into an SFX slot */
+  const loadLibrarySFX = useCallback(
+    (slotIndex: number, path: string, name: string) => {
+      const el = new Audio(path);
+      sfxElementsRef.current[slotIndex]?.pause();
+      sfxElementsRef.current[slotIndex] = el;
+
+      dispatch({
+        type: "SET_SFX_SLOT",
+        payload: {
+          index: slotIndex,
+          slot: {
+            name,
+            url: path,
+            isLibrary: true,
+          },
+        },
+      });
+    },
+    [dispatch]
+  );
+
+  const stopAmbient = useCallback((slot: AmbientSlot) => {
+    ambientElRefs.current[slot]?.pause();
+    if (ambientElRefs.current[slot]) ambientElRefs.current[slot]!.currentTime = 0;
+    // Don't clear the track from state — just stop playback so it stays in the slot
+  }, []);
+
+  const removeAmbient = useCallback((slot: AmbientSlot) => {
+    ambientElRefs.current[slot]?.pause();
+    ambientSourceRefs.current[slot]?.disconnect();
+    ambientSourceRefs.current[slot] = null;
+    ambientElRefs.current[slot] = null;
     dispatch({ type: "SET_AMBIENT_TRACK", payload: { slot, track: null } });
   }, [dispatch]);
 
-  const playAmbient = useCallback((slot: "A" | "B") => {
-    const el = slot === "A" ? ambientAElRef.current : ambientBElRef.current;
+  const playAmbient = useCallback((slot: AmbientSlot) => {
+    const el = ambientElRefs.current[slot];
     if (el) {
       ensureContext();
-      el.play().catch(() => {});
+      tryPlay(el);
+    } else {
+      // If no element but there's a library track in state, reload it
+      const track = getTrack(slot);
+      if (track?.isLibrary && track.url) {
+        loadLibraryTrack(slot, track.url, track.name);
+      }
     }
-  }, [ensureContext]);
+  }, [ensureContext, tryPlay, getTrack, loadLibraryTrack]);
 
-  const pauseAmbient = useCallback((slot: "A" | "B") => {
-    const el = slot === "A" ? ambientAElRef.current : ambientBElRef.current;
+  const pauseAmbient = useCallback((slot: AmbientSlot) => {
+    const el = ambientElRefs.current[slot];
     if (el) el.pause();
   }, []);
+
+  /** Activate a playlist — load all its channels and start playing */
+  const activatePlaylist = useCallback((playlistId: string) => {
+    const playlist = (state.audio.playlists || []).find((p) => p.id === playlistId);
+    if (!playlist) return;
+
+    // Stop all current channels
+    for (const slot of SLOTS) {
+      ambientElRefs.current[slot]?.pause();
+      ambientSourceRefs.current[slot]?.disconnect();
+      ambientSourceRefs.current[slot] = null;
+      ambientElRefs.current[slot] = null;
+    }
+
+    // Dispatch state update (sets all channels at once)
+    dispatch({ type: "ACTIVATE_PLAYLIST", payload: playlistId });
+
+    // Re-initialize audio elements for tracks with URLs
+    const ctx = ensureContext();
+    for (const slot of SLOTS) {
+      const track = playlist.channels[slot];
+      if (track?.url) {
+        const el = new Audio();
+        el.crossOrigin = "anonymous";
+        el.loop = track.loop;
+        el.src = track.url;
+        const source = ctx.createMediaElementSource(el);
+        source.connect(ambientGainRefs.current[slot]!);
+        ambientSourceRefs.current[slot] = source;
+        ambientElRefs.current[slot] = el;
+        tryPlay(el);
+      }
+    }
+  }, [state.audio.playlists, dispatch, ensureContext, tryPlay]);
+
+  /** Save current channel configuration as a new playlist */
+  const saveAsPlaylist = useCallback((name: string) => {
+    const playlist = {
+      id: crypto.randomUUID(),
+      name,
+      channels: {
+        A: state.audio.ambientA ? { ...state.audio.ambientA } : null,
+        B: state.audio.ambientB ? { ...state.audio.ambientB } : null,
+        C: state.audio.ambientC ? { ...state.audio.ambientC } : null,
+        D: state.audio.ambientD ? { ...state.audio.ambientD } : null,
+      },
+    };
+    dispatch({ type: "ADD_PLAYLIST", payload: playlist });
+    return playlist;
+  }, [state.audio, dispatch]);
 
   // ─── SFX ──────────────────────────────────────────────────────────
 
@@ -190,25 +383,20 @@ export function useVTTAudio() {
       const url = URL.createObjectURL(file);
       const el = new Audio(url);
 
-      // Clean up old element
       sfxElementsRef.current[slotIndex]?.pause();
       sfxElementsRef.current[slotIndex] = el;
 
-      // Persist as data URL
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        dispatch({
-          type: "SET_SFX_SLOT",
-          payload: {
-            index: slotIndex,
-            slot: {
-              name: file.name,
-              url: e.target?.result as string,
-            },
+      dispatch({
+        type: "SET_SFX_SLOT",
+        payload: {
+          index: slotIndex,
+          slot: {
+            name: file.name,
+            url: "", // Don't store data URL
+            isLibrary: false,
           },
-        });
-      };
-      reader.readAsDataURL(file);
+        },
+      });
     },
     [dispatch]
   );
@@ -217,20 +405,22 @@ export function useVTTAudio() {
     (slotIndex: number) => {
       ensureContext();
       const slot = state.audio.sfxSlots[slotIndex];
-      if (!slot?.url) return;
+      if (!slot?.url && !slot?.name) return;
 
       let el = sfxElementsRef.current[slotIndex];
-      if (!el) {
+      if (!el && slot.url) {
         el = new Audio(slot.url);
         sfxElementsRef.current[slotIndex] = el;
       }
 
-      el.volume = slot.volume * state.audio.masterVolume;
-      el.loop = slot.loop;
-      el.currentTime = 0;
-      el.play().catch(() => {});
+      if (el) {
+        el.volume = (slot.volume ?? 0.7) * state.audio.masterVolume;
+        el.loop = slot.loop;
+        el.currentTime = 0;
+        tryPlay(el);
+      }
     },
-    [ensureContext, state.audio.sfxSlots, state.audio.masterVolume]
+    [ensureContext, tryPlay, state.audio.sfxSlots, state.audio.masterVolume]
   );
 
   const stopSFX = useCallback((slotIndex: number) => {
@@ -250,6 +440,36 @@ export function useVTTAudio() {
     });
   }, []);
 
+  // ─── Audio ducking (lower music when handouts/videos play) ───────
+
+  const duckingRef = useRef(false);
+
+  const duckAudio = useCallback(() => {
+    if (duckingRef.current) return;
+    duckingRef.current = true;
+    const ctx = ctxRef.current;
+    const master = masterGainRef.current;
+    if (ctx && master) {
+      master.gain.setValueAtTime(master.gain.value, ctx.currentTime);
+      master.gain.linearRampToValueAtTime(
+        master.gain.value * 0.15,
+        ctx.currentTime + 0.5
+      );
+    }
+  }, []);
+
+  const unduckAudio = useCallback(() => {
+    if (!duckingRef.current) return;
+    duckingRef.current = false;
+    const ctx = ctxRef.current;
+    const master = masterGainRef.current;
+    if (ctx && master) {
+      const target = state.audio.muted ? 0 : masterVolumeRef.current;
+      master.gain.setValueAtTime(master.gain.value, ctx.currentTime);
+      master.gain.linearRampToValueAtTime(target, ctx.currentTime + 0.5);
+    }
+  }, [state.audio.muted]);
+
   // ─── Analyzer data ────────────────────────────────────────────────
 
   const getFrequencyData = useCallback(() => {
@@ -259,12 +479,51 @@ export function useVTTAudio() {
     return data;
   }, []);
 
+  // ─── Reconnect persisted library tracks on mount ─────────────────
+  // After a page refresh, the track metadata (name, url, isLibrary) persists
+  // in state but the HTMLAudioElement refs are null. Recreate them so tracks
+  // are immediately playable without the user having to remove and re-add.
+
+  const reconnectedRef = useRef(false);
+  useEffect(() => {
+    if (reconnectedRef.current) return;
+    reconnectedRef.current = true;
+
+    for (const slot of SLOTS) {
+      if (ambientElRefs.current[slot]) continue; // already has an element
+      const track = state.audio[`ambient${slot}` as keyof typeof state.audio] as (typeof state.audio.ambientA);
+      if (track?.isLibrary && track.url) {
+        // Silently recreate the Audio element + Web Audio nodes.
+        // Don't auto-play — the user will click play when ready.
+        const ctx = ensureContext();
+        const el = new Audio();
+        el.crossOrigin = "anonymous";
+        el.loop = track.loop;
+        el.src = track.url;
+
+        const source = ctx.createMediaElementSource(el);
+        source.connect(ambientGainRefs.current[slot]!);
+        ambientSourceRefs.current[slot] = source;
+        ambientElRefs.current[slot] = el;
+
+        // Apply persisted volume / pan
+        if (ambientGainRefs.current[slot]) {
+          ambientGainRefs.current[slot]!.gain.value = track.volume ?? 0.7;
+        }
+        if (ambientPanRefs.current[slot]) {
+          ambientPanRefs.current[slot]!.pan.value = track.pan ?? 0;
+        }
+      }
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   // ─── Cleanup ──────────────────────────────────────────────────────
 
   useEffect(() => {
     return () => {
-      ambientAElRef.current?.pause();
-      ambientBElRef.current?.pause();
+      for (const slot of SLOTS) {
+        ambientElRefs.current[slot]?.pause();
+      }
       sfxElementsRef.current.forEach((el) => el?.pause());
       ctxRef.current?.close();
     };
@@ -272,15 +531,22 @@ export function useVTTAudio() {
 
   return {
     loadAmbient,
+    loadLibraryTrack,
+    loadLibrarySFX,
     stopAmbient,
+    removeAmbient,
     playAmbient,
     pauseAmbient,
+    activatePlaylist,
+    saveAsPlaylist,
     loadSFX,
     playSFX,
     stopSFX,
     stopAllSFX,
     getFrequencyData,
     ensureContext,
+    duckAudio,
+    unduckAudio,
   };
 }
 

@@ -30,8 +30,8 @@ const SCOUT_EVENTS: GameEvent[] = [
     description: 'Disaster! Roll on the Mishap table but you are not ejected from this career.',
     resolution: {
       type: 'table_redirect',
-      table: 'injury',
-      displayText: 'Roll on the Injury table to determine the severity of the disaster.',
+      table: 'mishap',
+      displayText: 'Roll on the Mishap table (not ejected from career).',
     },
   },
 
@@ -321,6 +321,36 @@ const SCOUT_EVENTS: GameEvent[] = [
         benefitDM: 2,
         message: 'Your discovery is noted and rewarded. Gain DM+2 to any one Benefit roll from this career.',
       },
+    },
+  },
+
+  // Roll 12 - Life on the edge
+  {
+    id: 'scout-event-12',
+    description: 'You spend several years jumping from world to world in your scout ship.',
+    resolution: {
+      type: 'choice',
+      displayText: 'Choose your reward for years of dedicated service:',
+      options: [
+        {
+          id: 'pilot',
+          label: 'Gain Pilot 1',
+          description: 'Years of flying hone your piloting skills',
+          effects: {
+            skills: { choices: ['Pilot'], level: 1 },
+            message: 'Years of flying have honed your piloting skills. Gain Pilot 1.',
+          },
+        },
+        {
+          id: 'advancement',
+          label: 'Automatic Advancement',
+          description: 'Your reputation earns you recognition',
+          effects: {
+            autoPromotion: true,
+            message: 'Your years of dedicated service earn you automatic advancement.',
+          },
+        },
+      ],
     },
   },
 ];

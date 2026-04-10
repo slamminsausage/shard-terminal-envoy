@@ -16,7 +16,7 @@ import type { PreMadeShip, ShipDesign } from "@/data/shipConstruction";
 import { calculateShipDesign } from "@/data/shipConstruction";
 import type { PreMadeVehicle } from "@/data/vehicleCatalog";
 
-export default function VehicleInterface() {
+function VehicleInterface() {
   const [displayText, setDisplayText] = useState("");
   const [showVehicleSheet, setShowVehicleSheet] = useState(false);
   const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null);
@@ -82,9 +82,8 @@ export default function VehicleInterface() {
     }
   };
 
-  const handleCrewAssignmentComplete = (vehicleId: string, assignedCrew: string[]) => {
+  const handleCrewAssignmentComplete = (_vehicleId: string, _assignedCrew: string[]) => {
     // The vehicle list will be automatically updated by the context
-    console.log(`Crew assignment completed for vehicle ${vehicleId}:`, assignedCrew);
   };
 
   const handleShipDesignComplete = async (design: ShipDesign) => {
@@ -388,3 +387,5 @@ export default function VehicleInterface() {
     </div>
   );
 }
+
+export default React.memo(VehicleInterface);

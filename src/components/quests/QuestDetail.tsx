@@ -9,7 +9,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, Plus, Check, X, Trash2, CheckCircle, XCircle } from 'lucide-react';
+import { ArrowLeft, Plus, Check, X, Trash2, CheckCircle, XCircle, ChevronUp, ChevronDown, Pencil } from 'lucide-react';
 import { format } from 'date-fns';
 import { useCampaign } from '@/contexts/CampaignContext';
 
@@ -29,18 +29,36 @@ export const QuestDetail: React.FC<QuestDetailProps> = ({ questId, onClose }) =>
     addObjective,
     updateObjective,
     deleteObjective,
-    completeObjective
+    completeObjective,
+    reorderObjective
   } = useQuest();
 
   const [quest, setQuest] = useState<Quest | null>(null);
   const [objectives, setObjectives] = useState<QuestObjective[]>([]);
   const [showObjectiveForm, setShowObjectiveForm] = useState(false);
+  const [isReordering, setIsReordering] = useState(false);
 
   // Objective form state
   const [objTitle, setObjTitle] = useState('');
   const [objDescription, setObjDescription] = useState('');
   const [objIsOptional, setObjIsOptional] = useState(false);
   const [objProgressRequired, setObjProgressRequired] = useState('1');
+
+  // Details edit mode
+  const [isEditingDetails, setIsEditingDetails] = useState(false);
+  const [editTitle, setEditTitle] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [editQuestGiver, setEditQuestGiver] = useState('');
+  const [editLocation, setEditLocation] = useState('');
+  const [editNotes, setEditNotes] = useState('');
+  const [editGmNotes, setEditGmNotes] = useState('');
+
+  // Rewards edit mode
+  const [isEditingRewards, setIsEditingRewards] = useState(false);
+  const [editRewardCredits, setEditRewardCredits] = useState('');
+  const [editRewardXp, setEditRewardXp] = useState('');
+  const [editRewardItems, setEditRewardItems] = useState('');
+  const [editRewardOther, setEditRewardOther] = useState('');
 
   useEffect(() => {
     loadQuestData();
@@ -66,7 +84,7 @@ export const QuestDetail: React.FC<QuestDetailProps> = ({ questId, onClose }) =>
       status: 'pending',
       is_optional: objIsOptional,
       progress_current: 0,
-      progress_required: parseInt(objProgressRequired) || 1,
+      progress_required: parseInt(objProgressRequired, 10) || 1,
     });
 
     setObjTitle('');
@@ -90,6 +108,17 @@ export const QuestDetail: React.FC<QuestDetailProps> = ({ questId, onClose }) =>
     await deleteObjective(objectiveId);
     const objectivesData = await getQuestObjectives(questId);
     setObjectives(objectivesData);
+  };
+
+  const handleReorder = async (objectiveId: string, direction: 'up' | 'down') => {
+    setIsReordering(true);
+    try {
+      await reorderObjective(questId, objectiveId, direction);
+      const objectivesData = await getQuestObjectives(questId);
+      setObjectives(objectivesData);
+    } finally {
+      setIsReordering(false);
+    }
   };
 
   const handleStatusChange = async (newStatus: QuestStatus) => {
@@ -116,6 +145,58 @@ export const QuestDetail: React.FC<QuestDetailProps> = ({ questId, onClose }) =>
     if (questData) {
       setQuest(questData);
     }
+  };
+
+  // Details editing
+  const startEditingDetails = () => {
+    if (!quest) return;
+    setEditTitle(quest.title || '');
+    setEditDescription(quest.description || '');
+    setEditQuestGiver(quest.quest_giver || '');
+    setEditLocation(quest.location || '');
+    setEditNotes(quest.notes || '');
+    setEditGmNotes(quest.gm_notes || '');
+    setIsEditingDetails(true);
+  };
+
+  const saveDetails = async () => {
+    if (!quest) return;
+    const updated = await updateQuest(questId, {
+      title: editTitle,
+      description: editDescription,
+      quest_giver: editQuestGiver,
+      location: editLocation,
+      notes: editNotes,
+      gm_notes: editGmNotes,
+    });
+    if (updated) {
+      setQuest(updated);
+    }
+    setIsEditingDetails(false);
+  };
+
+  // Rewards editing
+  const startEditingRewards = () => {
+    if (!quest) return;
+    setEditRewardCredits(String(quest.reward_credits || 0));
+    setEditRewardXp(String(quest.reward_xp || 0));
+    setEditRewardItems(quest.reward_items || '');
+    setEditRewardOther(quest.reward_other || '');
+    setIsEditingRewards(true);
+  };
+
+  const saveRewards = async () => {
+    if (!quest) return;
+    const updated = await updateQuest(questId, {
+      reward_credits: parseInt(editRewardCredits, 10) || 0,
+      reward_xp: parseInt(editRewardXp, 10) || 0,
+      reward_items: editRewardItems,
+      reward_other: editRewardOther,
+    });
+    if (updated) {
+      setQuest(updated);
+    }
+    setIsEditingRewards(false);
   };
 
   if (!quest) {
@@ -214,6 +295,7 @@ export const QuestDetail: React.FC<QuestDetailProps> = ({ questId, onClose }) =>
           </TabsTrigger>
         </TabsList>
 
+        {/* ─── Objectives Tab ─── */}
         <TabsContent value="objectives" className="flex-1 mt-4">
           <ScrollArea className="h-[calc(100vh-300px)]">
             <div className="space-y-4 pr-4">
@@ -236,7 +318,7 @@ export const QuestDetail: React.FC<QuestDetailProps> = ({ questId, onClose }) =>
               )}
 
               {/* Objectives List */}
-              {objectives.map((objective) => (
+              {objectives.map((objective, index) => (
                 <Card key={objective.id} className="bg-black border-terminal-primary/50">
                   <CardContent className="pt-4">
                     <div className="flex items-start gap-3">
@@ -272,14 +354,38 @@ export const QuestDetail: React.FC<QuestDetailProps> = ({ questId, onClose }) =>
                             )}
                           </div>
 
-                          <Button
-                            onClick={() => handleDeleteObjective(objective.id)}
-                            variant="ghost"
-                            size="sm"
-                            className="text-red-400 hover:bg-red-500/20 hover:text-red-300"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                          <div className="flex items-center gap-1">
+                            {/* Reorder buttons */}
+                            <div className="flex flex-col">
+                              <Button
+                                onClick={() => handleReorder(objective.id, 'up')}
+                                disabled={index === 0 || isReordering}
+                                variant="ghost"
+                                size="sm"
+                                className="p-0 h-5 w-5 text-terminal-primary/50 hover:bg-terminal-primary/20 hover:text-terminal-primary disabled:opacity-20"
+                              >
+                                <ChevronUp className="h-3.5 w-3.5" />
+                              </Button>
+                              <Button
+                                onClick={() => handleReorder(objective.id, 'down')}
+                                disabled={index === objectives.length - 1 || isReordering}
+                                variant="ghost"
+                                size="sm"
+                                className="p-0 h-5 w-5 text-terminal-primary/50 hover:bg-terminal-primary/20 hover:text-terminal-primary disabled:opacity-20"
+                              >
+                                <ChevronDown className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
+
+                            <Button
+                              onClick={() => handleDeleteObjective(objective.id)}
+                              variant="ghost"
+                              size="sm"
+                              className="text-red-400 hover:bg-red-500/20 hover:text-red-300"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </div>
 
                         {objective.progress_required > 1 && (
@@ -392,77 +498,171 @@ export const QuestDetail: React.FC<QuestDetailProps> = ({ questId, onClose }) =>
           </ScrollArea>
         </TabsContent>
 
+        {/* ─── Details Tab ─── */}
         <TabsContent value="details" className="flex-1 mt-4">
           <ScrollArea className="h-[calc(100vh-300px)]">
             <div className="space-y-4 pr-4">
               <Card className="bg-black border-terminal-primary/50">
-                <CardHeader>
+                <CardHeader className="flex flex-row items-center justify-between">
                   <CardTitle className="text-terminal-primary text-sm">Quest Information</CardTitle>
+                  {isEditingDetails ? (
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={saveDetails}
+                        size="sm"
+                        className="bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
+                      >
+                        <Check className="h-4 w-4 mr-1" />
+                        Save
+                      </Button>
+                      <Button
+                        onClick={() => setIsEditingDetails(false)}
+                        variant="outline"
+                        size="sm"
+                        className="border-terminal-primary/50 text-terminal-primary hover:bg-terminal-primary/20"
+                      >
+                        <X className="h-4 w-4 mr-1" />
+                        Cancel
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button
+                      onClick={startEditingDetails}
+                      variant="ghost"
+                      size="sm"
+                      className="text-terminal-primary/70 hover:bg-terminal-primary/20 hover:text-terminal-primary"
+                    >
+                      <Pencil className="h-4 w-4 mr-1" />
+                      Edit
+                    </Button>
+                  )}
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  {quest.description && (
-                    <div>
-                      <label className="text-xs text-terminal-primary/70 uppercase mb-1 block">
-                        Description
-                      </label>
-                      <p className="text-terminal-primary">{quest.description}</p>
-                    </div>
-                  )}
+                  {isEditingDetails ? (
+                    <>
+                      <div>
+                        <label className="text-xs text-terminal-primary/70 uppercase mb-1 block">Title</label>
+                        <Input
+                          value={editTitle}
+                          onChange={(e) => setEditTitle(e.target.value)}
+                          className="bg-black border-terminal-primary/50 text-terminal-primary"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs text-terminal-primary/70 uppercase mb-1 block">Description</label>
+                        <Textarea
+                          value={editDescription}
+                          onChange={(e) => setEditDescription(e.target.value)}
+                          rows={3}
+                          className="bg-black border-terminal-primary/50 text-terminal-primary resize-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs text-terminal-primary/70 uppercase mb-1 block">Quest Giver</label>
+                        <Input
+                          value={editQuestGiver}
+                          onChange={(e) => setEditQuestGiver(e.target.value)}
+                          className="bg-black border-terminal-primary/50 text-terminal-primary"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs text-terminal-primary/70 uppercase mb-1 block">Location</label>
+                        <Input
+                          value={editLocation}
+                          onChange={(e) => setEditLocation(e.target.value)}
+                          className="bg-black border-terminal-primary/50 text-terminal-primary"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs text-terminal-primary/70 uppercase mb-1 block">Notes</label>
+                        <Textarea
+                          value={editNotes}
+                          onChange={(e) => setEditNotes(e.target.value)}
+                          rows={3}
+                          placeholder="Player-visible notes..."
+                          className="bg-black border-terminal-primary/50 text-terminal-primary resize-none"
+                        />
+                      </div>
+                      {isGM && (
+                        <div>
+                          <label className="text-xs text-terminal-primary/70 uppercase mb-1 block">GM Notes</label>
+                          <Textarea
+                            value={editGmNotes}
+                            onChange={(e) => setEditGmNotes(e.target.value)}
+                            rows={3}
+                            placeholder="GM-only notes..."
+                            className="bg-black border-terminal-primary/50 text-terminal-primary resize-none"
+                          />
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      {quest.description && (
+                        <div>
+                          <label className="text-xs text-terminal-primary/70 uppercase mb-1 block">
+                            Description
+                          </label>
+                          <p className="text-terminal-primary">{quest.description}</p>
+                        </div>
+                      )}
 
-                  {quest.quest_giver && (
-                    <div>
-                      <label className="text-xs text-terminal-primary/70 uppercase mb-1 block">
-                        Quest Giver
-                      </label>
-                      <p className="text-terminal-primary">{quest.quest_giver}</p>
-                    </div>
-                  )}
+                      {quest.quest_giver && (
+                        <div>
+                          <label className="text-xs text-terminal-primary/70 uppercase mb-1 block">
+                            Quest Giver
+                          </label>
+                          <p className="text-terminal-primary">{quest.quest_giver}</p>
+                        </div>
+                      )}
 
-                  {quest.location && (
-                    <div>
-                      <label className="text-xs text-terminal-primary/70 uppercase mb-1 block">
-                        Location
-                      </label>
-                      <p className="text-terminal-primary">{quest.location}</p>
-                    </div>
-                  )}
+                      {quest.location && (
+                        <div>
+                          <label className="text-xs text-terminal-primary/70 uppercase mb-1 block">
+                            Location
+                          </label>
+                          <p className="text-terminal-primary">{quest.location}</p>
+                        </div>
+                      )}
 
-                  <div>
-                    <label className="text-xs text-terminal-primary/70 uppercase mb-1 block">
-                      Date Accepted
-                    </label>
-                    <p className="text-terminal-primary">
-                      {format(new Date(quest.date_accepted), 'MMM d, yyyy')}
-                    </p>
-                  </div>
+                      <div>
+                        <label className="text-xs text-terminal-primary/70 uppercase mb-1 block">
+                          Date Accepted
+                        </label>
+                        <p className="text-terminal-primary">
+                          {format(new Date(quest.date_accepted), 'MMM d, yyyy')}
+                        </p>
+                      </div>
 
-                  {quest.date_completed && (
-                    <div>
-                      <label className="text-xs text-terminal-primary/70 uppercase mb-1 block">
-                        Date Completed
-                      </label>
-                      <p className="text-terminal-primary">
-                        {format(new Date(quest.date_completed), 'MMM d, yyyy')}
-                      </p>
-                    </div>
-                  )}
+                      {quest.date_completed && (
+                        <div>
+                          <label className="text-xs text-terminal-primary/70 uppercase mb-1 block">
+                            Date Completed
+                          </label>
+                          <p className="text-terminal-primary">
+                            {format(new Date(quest.date_completed), 'MMM d, yyyy')}
+                          </p>
+                        </div>
+                      )}
 
-                  {quest.notes && (
-                    <div>
-                      <label className="text-xs text-terminal-primary/70 uppercase mb-1 block">
-                        Notes
-                      </label>
-                      <p className="text-terminal-primary whitespace-pre-wrap">{quest.notes}</p>
-                    </div>
-                  )}
+                      {quest.notes && (
+                        <div>
+                          <label className="text-xs text-terminal-primary/70 uppercase mb-1 block">
+                            Notes
+                          </label>
+                          <p className="text-terminal-primary whitespace-pre-wrap">{quest.notes}</p>
+                        </div>
+                      )}
 
-                  {isGM && quest.gm_notes && (
-                    <div>
-                      <label className="text-xs text-terminal-primary/70 uppercase mb-1 block">
-                        GM Notes
-                      </label>
-                      <p className="text-terminal-primary whitespace-pre-wrap">{quest.gm_notes}</p>
-                    </div>
+                      {isGM && quest.gm_notes && (
+                        <div>
+                          <label className="text-xs text-terminal-primary/70 uppercase mb-1 block">
+                            GM Notes
+                          </label>
+                          <p className="text-terminal-primary whitespace-pre-wrap">{quest.gm_notes}</p>
+                        </div>
+                      )}
+                    </>
                   )}
                 </CardContent>
               </Card>
@@ -470,50 +670,129 @@ export const QuestDetail: React.FC<QuestDetailProps> = ({ questId, onClose }) =>
           </ScrollArea>
         </TabsContent>
 
+        {/* ─── Rewards Tab ─── */}
         <TabsContent value="rewards" className="flex-1 mt-4">
           <ScrollArea className="h-[calc(100vh-300px)]">
             <div className="space-y-4 pr-4">
               <Card className="bg-black border-terminal-primary/50">
-                <CardHeader>
+                <CardHeader className="flex flex-row items-center justify-between">
                   <CardTitle className="text-terminal-primary text-sm">Quest Rewards</CardTitle>
+                  {isEditingRewards ? (
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={saveRewards}
+                        size="sm"
+                        className="bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
+                      >
+                        <Check className="h-4 w-4 mr-1" />
+                        Save
+                      </Button>
+                      <Button
+                        onClick={() => setIsEditingRewards(false)}
+                        variant="outline"
+                        size="sm"
+                        className="border-terminal-primary/50 text-terminal-primary hover:bg-terminal-primary/20"
+                      >
+                        <X className="h-4 w-4 mr-1" />
+                        Cancel
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button
+                      onClick={startEditingRewards}
+                      variant="ghost"
+                      size="sm"
+                      className="text-terminal-primary/70 hover:bg-terminal-primary/20 hover:text-terminal-primary"
+                    >
+                      <Pencil className="h-4 w-4 mr-1" />
+                      Edit
+                    </Button>
+                  )}
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-xs text-terminal-primary/70 uppercase mb-1 block">
-                        Credits
-                      </label>
-                      <p className="text-xl font-bold text-terminal-primary">
-                        {quest.reward_credits.toLocaleString()} Cr
-                      </p>
-                    </div>
+                  {isEditingRewards ? (
+                    <>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-xs text-terminal-primary/70 uppercase mb-1 block">Credits</label>
+                          <Input
+                            type="number"
+                            value={editRewardCredits}
+                            onChange={(e) => setEditRewardCredits(e.target.value)}
+                            className="bg-black border-terminal-primary/50 text-terminal-primary"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs text-terminal-primary/70 uppercase mb-1 block">Experience Points</label>
+                          <Input
+                            type="number"
+                            value={editRewardXp}
+                            onChange={(e) => setEditRewardXp(e.target.value)}
+                            className="bg-black border-terminal-primary/50 text-terminal-primary"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-xs text-terminal-primary/70 uppercase mb-1 block">Items</label>
+                        <Textarea
+                          value={editRewardItems}
+                          onChange={(e) => setEditRewardItems(e.target.value)}
+                          rows={2}
+                          placeholder="Item rewards..."
+                          className="bg-black border-terminal-primary/50 text-terminal-primary resize-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs text-terminal-primary/70 uppercase mb-1 block">Other Rewards</label>
+                        <Textarea
+                          value={editRewardOther}
+                          onChange={(e) => setEditRewardOther(e.target.value)}
+                          rows={2}
+                          placeholder="Other rewards..."
+                          className="bg-black border-terminal-primary/50 text-terminal-primary resize-none"
+                        />
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-xs text-terminal-primary/70 uppercase mb-1 block">
+                            Credits
+                          </label>
+                          <p className="text-xl font-bold text-terminal-primary">
+                            {quest.reward_credits.toLocaleString()} Cr
+                          </p>
+                        </div>
 
-                    <div>
-                      <label className="text-xs text-terminal-primary/70 uppercase mb-1 block">
-                        Experience Points
-                      </label>
-                      <p className="text-xl font-bold text-terminal-primary">
-                        {quest.reward_xp.toLocaleString()} XP
-                      </p>
-                    </div>
-                  </div>
+                        <div>
+                          <label className="text-xs text-terminal-primary/70 uppercase mb-1 block">
+                            Experience Points
+                          </label>
+                          <p className="text-xl font-bold text-terminal-primary">
+                            {quest.reward_xp.toLocaleString()} XP
+                          </p>
+                        </div>
+                      </div>
 
-                  {quest.reward_items && (
-                    <div>
-                      <label className="text-xs text-terminal-primary/70 uppercase mb-1 block">
-                        Items
-                      </label>
-                      <p className="text-terminal-primary">{quest.reward_items}</p>
-                    </div>
-                  )}
+                      {quest.reward_items && (
+                        <div>
+                          <label className="text-xs text-terminal-primary/70 uppercase mb-1 block">
+                            Items
+                          </label>
+                          <p className="text-terminal-primary">{quest.reward_items}</p>
+                        </div>
+                      )}
 
-                  {quest.reward_other && (
-                    <div>
-                      <label className="text-xs text-terminal-primary/70 uppercase mb-1 block">
-                        Other Rewards
-                      </label>
-                      <p className="text-terminal-primary">{quest.reward_other}</p>
-                    </div>
+                      {quest.reward_other && (
+                        <div>
+                          <label className="text-xs text-terminal-primary/70 uppercase mb-1 block">
+                            Other Rewards
+                          </label>
+                          <p className="text-terminal-primary">{quest.reward_other}</p>
+                        </div>
+                      )}
+                    </>
                   )}
                 </CardContent>
               </Card>

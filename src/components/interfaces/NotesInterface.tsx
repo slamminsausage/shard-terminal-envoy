@@ -1,11 +1,11 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useNotes } from '@/contexts/NotesContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Edit2, Trash2, Save, X, Image as ImageIcon, Video, FileText, Folder, Maximize2, Upload, Crop } from 'lucide-react';
+import { Edit2, Trash2, Save, X, Image as ImageIcon, Video, FileText, Folder, Maximize2, Upload, Crop, Monitor, MonitorOff, Eye, EyeOff } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -14,6 +14,7 @@ import { compressImage } from '@/lib/mediaCompression';
 import { dbHelpers } from '@/lib/supabase';
 import { ThumbnailCropper } from '@/components/ui/ThumbnailCropper';
 import { MediaDialog } from '@/components/ui/MediaDialog';
+import { toast } from 'sonner';
 
 const FOLDERS: { value: NoteFolder; label: string; emoji: string }[] = [
   { value: 'general', label: 'General', emoji: '📝' },
@@ -36,8 +37,28 @@ export const NotesInterface: React.FC<NotesInterfaceProps> = ({ defaultTab = 'no
     updatePlayerNote,
     deletePlayerNote,
     handouts,
+    addHandout,
+    deleteHandout,
+    toggleHandoutVisibility,
     isGMMode,
   } = useNotes();
+
+  const presenterChannelRef = useRef<BroadcastChannel | null>(null);
+
+  useEffect(() => {
+    presenterChannelRef.current = new BroadcastChannel(PRESENTER_CHANNEL);
+    return () => presenterChannelRef.current?.close();
+  }, []);
+
+  const handleSendToPresenter = (handout: Handout) => {
+    if (!handout.mediaUrl) return;
+    presenterChannelRef.current?.postMessage({
+      type: "show-handout",
+      imageDataUrl: handout.mediaUrl,
+      name: handout.title,
+    });
+    toast.success(`"${handout.title}" sent to VTT presenter`);
+  };
 
   const [editingNote, setEditingNote] = useState<string | null>(null);
   const [newNoteTitle, setNewNoteTitle] = useState('');
@@ -50,8 +71,67 @@ export const NotesInterface: React.FC<NotesInterfaceProps> = ({ defaultTab = 'no
   const [newNoteCropperOpen, setNewNoteCropperOpen] = useState(false);
   const [newNoteSelectedFile, setNewNoteSelectedFile] = useState<File | null>(null);
 
-  // Only show visible handouts (admin page controls visibility)
+  // Only show visible handouts for players; GMs see all
   const visibleHandouts = handouts.filter(h => h.isVisible);
+
+  // Handout creation state (GM only)
+  const [showNewHandoutForm, setShowNewHandoutForm] = useState(false);
+  const [newHandoutTitle, setNewHandoutTitle] = useState('');
+  const [newHandoutDescription, setNewHandoutDescription] = useState('');
+  const [newHandoutType, setNewHandoutType] = useState<'text' | 'image' | 'video'>('text');
+  const [newHandoutContent, setNewHandoutContent] = useState('');
+  const [newHandoutMediaUrl, setNewHandoutMediaUrl] = useState('');
+  const handoutFileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleHandoutFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.type.startsWith('image/')) {
+      setNewHandoutType('image');
+      const { compressImage } = await import('@/lib/mediaCompression');
+      compressImage(file, 1920, 1920, 0.8).then(compressed => {
+        setNewHandoutMediaUrl(compressed);
+      }).catch(() => {
+        const reader = new FileReader();
+        reader.onloadend = () => setNewHandoutMediaUrl(reader.result as string);
+        reader.readAsDataURL(file);
+      });
+    } else if (file.type.startsWith('video/')) {
+      setNewHandoutType('video');
+      const { compressVideo } = await import('@/lib/mediaCompression');
+      compressVideo(file).then(dataUrl => {
+        setNewHandoutMediaUrl(dataUrl);
+      }).catch(() => {
+        toast.error('Failed to process video file');
+      });
+    }
+  };
+
+  const handleAddHandout = async () => {
+    if (!newHandoutTitle.trim()) return;
+    if (!newHandoutDescription.trim() && !newHandoutContent.trim() && !newHandoutMediaUrl) return;
+    try {
+      await addHandout({
+        title: newHandoutTitle,
+        description: newHandoutDescription,
+        type: newHandoutType,
+        content: newHandoutType === 'text' ? newHandoutContent : undefined,
+        mediaUrl: newHandoutType !== 'text' ? newHandoutMediaUrl : undefined,
+        isVisible: false,
+        tags: [],
+      });
+      setNewHandoutTitle('');
+      setNewHandoutDescription('');
+      setNewHandoutContent('');
+      setNewHandoutMediaUrl('');
+      setNewHandoutType('text');
+      setShowNewHandoutForm(false);
+      if (handoutFileInputRef.current) handoutFileInputRef.current.value = '';
+      toast.success('Handout created');
+    } catch {
+      toast.error('Failed to create handout');
+    }
+  };
 
 
   // Filter notes by folder
@@ -370,24 +450,176 @@ export const NotesInterface: React.FC<NotesInterfaceProps> = ({ defaultTab = 'no
           {/* Handouts Tab */}
           <TabsContent value="handouts" className="space-y-4 mt-4">
             <div className="flex justify-between items-center">
-              <h2 className="text-lg font-semibold">Shared Handouts</h2>
+              <h2 className="text-lg font-semibold">
+                {isGMMode ? 'All Handouts' : 'Shared Handouts'}
+              </h2>
+              <div className="flex items-center gap-3">
+                {isGMMode && (
+                  <span className="text-xs text-terminal-primary/50">
+                    {handouts.length} total &middot; {visibleHandouts.length} visible to players
+                  </span>
+                )}
+                {isGMMode && (
+                  <Button
+                    onClick={() => setShowNewHandoutForm(!showNewHandoutForm)}
+                    variant="outline"
+                    size="sm"
+                    className="border-terminal-primary/50 text-terminal-primary hover:bg-terminal-primary/20 whitespace-nowrap"
+                  >
+                    + New Handout
+                  </Button>
+                )}
+              </div>
             </div>
 
-            {visibleHandouts.length === 0 ? (
-              <Card className="bg-black border-terminal-primary/30">
-                <CardContent className="p-8 text-center text-terminal-primary/70">
-                  No handouts available yet. Handouts will appear here when revealed.
+            {/* GM Handout Creation Form */}
+            {isGMMode && showNewHandoutForm && (
+              <Card className="bg-black border-terminal-primary/50">
+                <CardHeader>
+                  <CardTitle className="text-terminal-primary">Create Handout</CardTitle>
+                  <CardDescription className="text-terminal-primary/60">
+                    Handouts start hidden. Toggle visibility to share with players.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <Input
+                    placeholder="Handout Title"
+                    value={newHandoutTitle}
+                    onChange={(e) => setNewHandoutTitle(e.target.value)}
+                    className="bg-black border-terminal-primary/50 text-terminal-primary"
+                  />
+                  <Input
+                    placeholder="Short description (optional)"
+                    value={newHandoutDescription}
+                    onChange={(e) => setNewHandoutDescription(e.target.value)}
+                    className="bg-black border-terminal-primary/50 text-terminal-primary"
+                  />
+
+                  {/* Type selector */}
+                  <div className="flex gap-2">
+                    {(['text', 'image', 'video'] as const).map((type) => (
+                      <Button
+                        key={type}
+                        onClick={() => { setNewHandoutType(type); setNewHandoutMediaUrl(''); setNewHandoutContent(''); }}
+                        size="sm"
+                        variant={newHandoutType === type ? 'default' : 'outline'}
+                        className={newHandoutType === type
+                          ? 'bg-terminal-primary/20 text-terminal-primary border-terminal-primary/50'
+                          : 'border-terminal-primary/30 text-terminal-primary/70 hover:bg-terminal-primary/10'}
+                      >
+                        {type === 'text' && <FileText className="h-3 w-3 mr-1" />}
+                        {type === 'image' && <ImageIcon className="h-3 w-3 mr-1" />}
+                        {type === 'video' && <Video className="h-3 w-3 mr-1" />}
+                        {type.charAt(0).toUpperCase() + type.slice(1)}
+                      </Button>
+                    ))}
+                  </div>
+
+                  {/* Text content */}
+                  {newHandoutType === 'text' && (
+                    <Textarea
+                      placeholder="Handout content..."
+                      value={newHandoutContent}
+                      onChange={(e) => setNewHandoutContent(e.target.value)}
+                      rows={6}
+                      className="bg-black border-terminal-primary/50 text-terminal-primary resize-none"
+                    />
+                  )}
+
+                  {/* Media upload */}
+                  {(newHandoutType === 'image' || newHandoutType === 'video') && (
+                    <div>
+                      <input
+                        ref={handoutFileInputRef}
+                        type="file"
+                        accept={newHandoutType === 'image' ? 'image/*' : 'video/*'}
+                        onChange={handleHandoutFileSelect}
+                        className="hidden"
+                      />
+                      {newHandoutMediaUrl ? (
+                        <div className="space-y-2">
+                          {newHandoutType === 'image' ? (
+                            <img src={newHandoutMediaUrl} alt="Preview" className="max-h-48 rounded border border-terminal-primary/30" />
+                          ) : (
+                            <video src={newHandoutMediaUrl} controls className="max-h-48 rounded border border-terminal-primary/30" />
+                          )}
+                          <Button
+                            onClick={() => { setNewHandoutMediaUrl(''); if (handoutFileInputRef.current) handoutFileInputRef.current.value = ''; }}
+                            size="sm"
+                            variant="outline"
+                            className="border-red-500/50 text-red-400 hover:bg-red-500/20"
+                          >
+                            <X className="h-3 w-3 mr-1" /> Remove
+                          </Button>
+                        </div>
+                      ) : (
+                        <Button
+                          onClick={() => handoutFileInputRef.current?.click()}
+                          variant="outline"
+                          className="border-terminal-primary/50 text-terminal-primary hover:bg-terminal-primary/20 w-full"
+                        >
+                          <Upload className="h-4 w-4 mr-2" />
+                          Upload {newHandoutType === 'image' ? 'Image' : 'Video'}
+                        </Button>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={handleAddHandout}
+                      className="bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
+                    >
+                      <Save className="h-4 w-4 mr-2" />
+                      Create Handout
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        setShowNewHandoutForm(false);
+                        setNewHandoutTitle('');
+                        setNewHandoutDescription('');
+                        setNewHandoutContent('');
+                        setNewHandoutMediaUrl('');
+                        setNewHandoutType('text');
+                      }}
+                      variant="outline"
+                      className="border-terminal-primary/50 text-terminal-primary hover:bg-terminal-primary/20"
+                    >
+                      <X className="h-4 w-4 mr-2" />
+                      Cancel
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
-            ) : (
-              <div className="max-h-[calc(100vh-300px)] overflow-y-auto pr-2">
-                <div className="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-                  {visibleHandouts.map((handout) => (
-                    <HandoutCard key={handout.id} handout={handout} />
-                  ))}
-                </div>
-              </div>
             )}
+
+            {(() => {
+              const displayHandouts = isGMMode ? handouts : visibleHandouts;
+              return displayHandouts.length === 0 ? (
+                <Card className="bg-black border-terminal-primary/30">
+                  <CardContent className="p-8 text-center text-terminal-primary/70">
+                    {isGMMode
+                      ? 'No handouts yet. Click "+ New Handout" to create one.'
+                      : 'No handouts available yet. Handouts will appear here when revealed.'}
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="max-h-[calc(100vh-300px)] overflow-y-auto pr-2">
+                  <div className="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+                    {displayHandouts.map((handout) => (
+                      <HandoutCard
+                        key={handout.id}
+                        handout={handout}
+                        isGM={isGMMode}
+                        onToggleVisibility={isGMMode ? toggleHandoutVisibility : undefined}
+                        onDelete={isGMMode ? deleteHandout : undefined}
+                        onSendToPresenter={isGMMode ? handleSendToPresenter : undefined}
+                      />
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
           </TabsContent>
         </Tabs>
       </div>
@@ -675,9 +907,15 @@ const NoteCard: React.FC<NoteCardProps> = ({
 
 interface HandoutCardProps {
   handout: Handout;
+  isGM?: boolean;
+  onToggleVisibility?: (id: string) => void;
+  onDelete?: (id: string) => Promise<void>;
+  onSendToPresenter?: (handout: Handout) => void;
 }
 
-const HandoutCard: React.FC<HandoutCardProps> = ({ handout }) => {
+const PRESENTER_CHANNEL = "shard-vtt-presenter";
+
+const HandoutCard: React.FC<HandoutCardProps> = ({ handout, isGM, onToggleVisibility, onDelete, onSendToPresenter }) => {
   const [showFullSize, setShowFullSize] = useState(false);
 
   return (
@@ -695,7 +933,53 @@ const HandoutCard: React.FC<HandoutCardProps> = ({ handout }) => {
               </CardDescription>
             )}
           </div>
+          {/* GM Controls */}
+          {isGM && (
+            <div className="flex gap-1 flex-shrink-0">
+              {(handout.type === 'image' || handout.type === 'video') && handout.mediaUrl && onSendToPresenter && (
+                <Button
+                  onClick={() => onSendToPresenter(handout)}
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 w-7 p-0 text-cyan-400/60 hover:text-cyan-400 hover:bg-cyan-500/10"
+                  title="Send to VTT Presenter"
+                >
+                  <Monitor className="h-3.5 w-3.5" />
+                </Button>
+              )}
+              {onToggleVisibility && (
+                <Button
+                  onClick={() => onToggleVisibility(handout.id)}
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 w-7 p-0 text-terminal-primary/60 hover:text-terminal-primary hover:bg-terminal-primary/10"
+                  title={handout.isVisible ? 'Hide from players' : 'Show to players'}
+                >
+                  {handout.isVisible ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+                </Button>
+              )}
+              {onDelete && (
+                <Button
+                  onClick={() => onDelete(handout.id)}
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 w-7 p-0 text-red-500/60 hover:text-red-500 hover:bg-red-500/10"
+                  title="Delete handout"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+              )}
+            </div>
+          )}
         </div>
+        {/* Visibility badge */}
+        {isGM && (
+          <Badge className={`mt-1 text-[10px] ${handout.isVisible
+            ? 'bg-green-500/10 text-green-400/70 border-green-500/30'
+            : 'bg-terminal-primary/5 text-terminal-primary/40 border-terminal-primary/20'}`}>
+            {handout.isVisible ? 'Visible to players' : 'Hidden'}
+          </Badge>
+        )}
       </CardHeader>
       <Separator className="bg-terminal-primary/30" />
       <CardContent className="p-3">

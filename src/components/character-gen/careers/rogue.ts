@@ -149,7 +149,7 @@ const ROGUE_EVENTS: GameEvent[] = [
     description: 'Disaster! Roll on the Mishap table but you are not ejected from this career.',
     resolution: {
       type: 'table_redirect',
-      table: 'injury',
+      table: 'mishap',
       displayText: 'Roll on the Mishap table (not ejected from career).',
     },
   },
@@ -167,7 +167,30 @@ const ROGUE_EVENTS: GameEvent[] = [
           label: 'Defend yourself',
           description: 'Roll Advocate 8+. Success: charges dropped. Failure: Prison + Enemy.',
           effects: {
-            message: 'You attempt to defend yourself in court. (Roll Advocate 8+ - failure means Prison and Enemy)',
+            message: 'You attempt to defend yourself in court.',
+          },
+          subRoll: {
+            dice: 2,
+            outcomes: [
+              {
+                min: 2,
+                max: 7,
+                label: 'Failed! You are found guilty and sent to prison.',
+                effects: {
+                  enemies: 1,
+                  forceCareer: 'Prisoner',
+                  message: 'You fail to defend yourself in court. You gain an Enemy and must take the Prisoner career next term.',
+                },
+              },
+              {
+                min: 8,
+                max: 12,
+                label: 'Success! The charges are dropped.',
+                effects: {
+                  message: 'You successfully defend yourself in court. The charges are dropped.',
+                },
+              },
+            ],
           },
         },
         {

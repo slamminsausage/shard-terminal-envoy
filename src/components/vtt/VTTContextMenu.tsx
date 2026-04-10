@@ -10,8 +10,14 @@ import {
   Unlock,
   StickyNote,
   Copy,
+  Clipboard,
+  ClipboardPaste,
   ShieldAlert,
   ShieldCheck,
+  RotateCw,
+  RotateCcw,
+  ArrowUpToLine,
+  ArrowDownToLine,
 } from "lucide-react";
 
 interface VTTContextMenuProps {
@@ -45,44 +51,42 @@ export default function VTTContextMenu({
     (state.selectedTextIds?.length || 0) > 0 ||
     (state.selectedNoteIds?.length || 0) > 0;
 
+  const hasClipboard = !!state.clipboard;
+
+  // Check if any selected item is currently visible/non-gmOnly
+  const selectionVisibleToPlayers = activeMap ? (
+    (state.selectedTokenIds || []).some((id) => activeMap.tokens.find((t) => t.id === id)?.visible) ||
+    (state.selectedStrokeIds || []).some((id) => !activeMap.strokes.find((s) => s.id === id)?.gmOnly) ||
+    (state.selectedTextIds || []).some((id) => !activeMap.texts.find((t) => t.id === id)?.gmOnly) ||
+    (state.selectedNoteIds || []).some((id) => activeMap.notes.find((n) => n.id === id)?.visible)
+  ) : false;
+
   const toggleGmOnlySelection = () => {
     if (!activeMap) return;
-    // Toggle gmOnly for all selected items
+    const shouldHide = selectionVisibleToPlayers;
     for (const tokenId of state.selectedTokenIds || []) {
-      const t = activeMap.tokens.find((tk) => tk.id === tokenId);
-      if (t) {
-        dispatch({
-          type: "UPDATE_TOKEN",
-          payload: { mapId, tokenId, updates: { visible: !t.visible } },
-        });
-      }
+      dispatch({
+        type: "UPDATE_TOKEN",
+        payload: { mapId, tokenId, updates: { visible: !shouldHide } },
+      });
     }
     for (const strokeId of state.selectedStrokeIds || []) {
-      const s = activeMap.strokes.find((sk) => sk.id === strokeId);
-      if (s) {
-        dispatch({
-          type: "UPDATE_STROKE",
-          payload: { mapId, strokeId, updates: { gmOnly: !s.gmOnly } },
-        });
-      }
+      dispatch({
+        type: "UPDATE_STROKE",
+        payload: { mapId, strokeId, updates: { gmOnly: shouldHide } },
+      });
     }
     for (const textId of state.selectedTextIds || []) {
-      const t = activeMap.texts.find((tk) => tk.id === textId);
-      if (t) {
-        dispatch({
-          type: "UPDATE_TEXT",
-          payload: { mapId, textId, updates: { gmOnly: !t.gmOnly } },
-        });
-      }
+      dispatch({
+        type: "UPDATE_TEXT",
+        payload: { mapId, textId, updates: { gmOnly: shouldHide } },
+      });
     }
     for (const noteId of state.selectedNoteIds || []) {
-      const n = activeMap.notes.find((nk) => nk.id === noteId);
-      if (n) {
-        dispatch({
-          type: "UPDATE_NOTE",
-          payload: { mapId, noteId, updates: { visible: !n.visible } },
-        });
-      }
+      dispatch({
+        type: "UPDATE_NOTE",
+        payload: { mapId, noteId, updates: { visible: !shouldHide } },
+      });
     }
   };
 
@@ -91,29 +95,28 @@ export default function VTTContextMenu({
     label,
     onClick,
     danger,
+    shortcut,
   }: {
     icon?: any;
     label: string;
     onClick: () => void;
     danger?: boolean;
+    shortcut?: string;
   }) => (
     <button
       onClick={() => {
         onClick();
         onClose();
       }}
-      className={`flex items-center gap-2 w-full text-left px-3 py-1.5 text-xs font-mono transition-colors ${
-        danger
-          ? "text-red-400/70 hover:text-red-400 hover:bg-red-500/10"
-          : "text-terminal-primary/70 hover:text-terminal-primary hover:bg-terminal-primary/10"
-      }`}
+      className={`vtt-context-menu-item ${danger ? "danger" : ""}`}
     >
       {Icon && <Icon size={12} />}
-      {label}
+      <span className="flex-1">{label}</span>
+      {shortcut && <span className="vtt-kbd ml-2">{shortcut}</span>}
     </button>
   );
 
-  const Separator = () => <div className="border-t border-terminal-border/20 my-0.5" />;
+  const Separator = () => <div className="vtt-context-menu-separator" />;
 
   return (
     <>
@@ -122,15 +125,15 @@ export default function VTTContextMenu({
 
       {/* Menu */}
       <div
-        className="fixed z-50 bg-terminal-bg-dark border border-terminal-border/40 rounded shadow-xl py-1 min-w-[160px]"
+        className="fixed z-50 vtt-context-menu py-1"
         style={{
-          left: Math.min(x, window.innerWidth - 180),
-          top: Math.min(y, window.innerHeight - 300),
+          left: Math.min(x, window.innerWidth - 200),
+          top: Math.min(y, window.innerHeight - 400),
         }}
       >
         {token && (
           <>
-            <div className="px-3 py-1 text-[10px] text-terminal-primary/40 font-mono uppercase tracking-wider">
+            <div className="px-3 py-1 vtt-section-label" style={{ marginBottom: 0 }}>
               Token: {token.name}
             </div>
             <MenuItem
@@ -144,11 +147,7 @@ export default function VTTContextMenu({
               onClick={() =>
                 dispatch({
                   type: "UPDATE_TOKEN",
-                  payload: {
-                    mapId,
-                    tokenId: token.id,
-                    updates: { visible: !token.visible },
-                  },
+                  payload: { mapId, tokenId: token.id, updates: { visible: !token.visible } },
                 })
               }
             />
@@ -158,14 +157,53 @@ export default function VTTContextMenu({
               onClick={() =>
                 dispatch({
                   type: "UPDATE_TOKEN",
-                  payload: {
-                    mapId,
-                    tokenId: token.id,
-                    updates: { locked: !token.locked },
-                  },
+                  payload: { mapId, tokenId: token.id, updates: { locked: !token.locked } },
                 })
               }
             />
+            <Separator />
+            <MenuItem
+              icon={RotateCw}
+              label="Rotate 45° CW"
+              onClick={() =>
+                dispatch({
+                  type: "UPDATE_TOKEN",
+                  payload: { mapId, tokenId: token.id, updates: { rotation: (token.rotation + 45) % 360 } },
+                })
+              }
+            />
+            <MenuItem
+              icon={RotateCcw}
+              label="Rotate 45° CCW"
+              onClick={() =>
+                dispatch({
+                  type: "UPDATE_TOKEN",
+                  payload: { mapId, tokenId: token.id, updates: { rotation: (token.rotation - 45 + 360) % 360 } },
+                })
+              }
+            />
+            <Separator />
+            <MenuItem
+              icon={ArrowUpToLine}
+              label="Bring to Front"
+              onClick={() =>
+                dispatch({
+                  type: "REORDER_TOKEN",
+                  payload: { mapId, tokenId: token.id, direction: "front" },
+                })
+              }
+            />
+            <MenuItem
+              icon={ArrowDownToLine}
+              label="Send to Back"
+              onClick={() =>
+                dispatch({
+                  type: "REORDER_TOKEN",
+                  payload: { mapId, tokenId: token.id, direction: "back" },
+                })
+              }
+            />
+            <Separator />
             <MenuItem
               icon={Copy}
               label="Duplicate"
@@ -202,7 +240,7 @@ export default function VTTContextMenu({
 
         {note && (
           <>
-            <div className="px-3 py-1 text-[10px] text-terminal-primary/40 font-mono uppercase tracking-wider">
+            <div className="px-3 py-1 vtt-section-label" style={{ marginBottom: 0 }}>
               Note: {note.title}
             </div>
             <MenuItem
@@ -216,11 +254,7 @@ export default function VTTContextMenu({
               onClick={() =>
                 dispatch({
                   type: "UPDATE_NOTE",
-                  payload: {
-                    mapId,
-                    noteId: note.id,
-                    updates: { visible: !note.visible },
-                  },
+                  payload: { mapId, noteId: note.id, updates: { visible: !note.visible } },
                 })
               }
             />
@@ -239,19 +273,56 @@ export default function VTTContextMenu({
           </>
         )}
 
-        {/* GM Layer toggle for selection */}
+        {/* Selection actions */}
         {hasSelection && (
           <>
-            <div className="px-3 py-1 text-[10px] text-terminal-primary/40 font-mono uppercase tracking-wider">
+            <div className="px-3 py-1 vtt-section-label" style={{ marginBottom: 0 }}>
               Selection ({(state.selectedTokenIds?.length || 0) + (state.selectedStrokeIds?.length || 0) + (state.selectedTextIds?.length || 0) + (state.selectedNoteIds?.length || 0)} items)
             </div>
             <MenuItem
-              icon={ShieldAlert}
-              label="Toggle GM Only"
+              icon={selectionVisibleToPlayers ? ShieldAlert : ShieldCheck}
+              label={selectionVisibleToPlayers ? "Hide from Players" : "Show to Players"}
               onClick={toggleGmOnlySelection}
+            />
+            <MenuItem
+              icon={Clipboard}
+              label="Copy"
+              onClick={() => dispatch({ type: "COPY_SELECTION" })}
+              shortcut="Ctrl+C"
+            />
+            <MenuItem
+              icon={Trash2}
+              label="Delete Selection"
+              onClick={() => {
+                if (!activeMap) return;
+                for (const tokenId of state.selectedTokenIds || []) {
+                  dispatch({ type: "REMOVE_TOKEN", payload: { mapId, tokenId } });
+                }
+                for (const strokeId of state.selectedStrokeIds || []) {
+                  dispatch({ type: "REMOVE_STROKE", payload: { mapId, strokeId } });
+                }
+                for (const textId of state.selectedTextIds || []) {
+                  dispatch({ type: "REMOVE_TEXT", payload: { mapId, textId } });
+                }
+                for (const noteId of state.selectedNoteIds || []) {
+                  dispatch({ type: "REMOVE_NOTE", payload: { mapId, noteId } });
+                }
+                dispatch({ type: "CLEAR_SELECTION" });
+              }}
+              danger
             />
             <Separator />
           </>
+        )}
+
+        {/* Clipboard paste */}
+        {hasClipboard && (
+          <MenuItem
+            icon={ClipboardPaste}
+            label="Paste"
+            onClick={() => dispatch({ type: "PASTE_CLIPBOARD", payload: { mapId } })}
+            shortcut="Ctrl+V"
+          />
         )}
 
         {/* General actions */}

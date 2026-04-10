@@ -5,7 +5,9 @@ import React, {
   useReducer,
   useEffect,
   useRef,
+  useState,
 } from "react";
+import { dbHelpers } from "@/lib/supabase";
 import type {
   VTTState,
   VTTMap,
@@ -17,17 +19,20 @@ import type {
   LightSource,
   VTTTool,
   LayerIndex,
+  LayerState,
   VTTSidebarPanel,
   VTTSession,
   VTTHistoryEntry,
   InitiativeEntry,
   Clock,
-  Handout,
   ParticleConfig,
   FogState,
   AudioState,
   AmbientTrack,
+  AmbientSlot,
   SFXSlot,
+  AudioPlaylist,
+  CustomLibraryTrack,
 } from "@/types/vtt";
 import {
   createDefaultVTTState,
@@ -37,7 +42,9 @@ import {
 // ─── Storage Keys ───────────────────────────────────────────────────────────
 
 const STORAGE_KEY = "vtt_session";
+const STORAGE_TS_KEY = "vtt_session_ts"; // ISO timestamp of last localStorage save
 const AUTOSAVE_INTERVAL = 120_000; // 2 minutes
+const DEBOUNCE_SAVE_MS = 2_000; // 2 seconds — debounced save after every state change
 
 // ─── Actions ────────────────────────────────────────────────────────────────
 
@@ -99,18 +106,27 @@ type VTTAction =
   | { type: "ADD_CLOCK"; payload: Clock }
   | { type: "REMOVE_CLOCK"; payload: string }
   | { type: "UPDATE_CLOCK"; payload: { id: string; updates: Partial<Clock> } }
-  // Handouts
-  | { type: "ADD_HANDOUT"; payload: Handout }
-  | { type: "REMOVE_HANDOUT"; payload: string }
-  | { type: "TOGGLE_HANDOUT_VISIBILITY"; payload: string }
   // Audio
   | { type: "SET_AUDIO"; payload: Partial<AudioState> }
-  | { type: "SET_AMBIENT_TRACK"; payload: { slot: "A" | "B"; track: AmbientTrack | null } }
+  | { type: "SET_AMBIENT_TRACK"; payload: { slot: AmbientSlot; track: AmbientTrack | null } }
   | { type: "SET_SFX_SLOT"; payload: { index: number; slot: Partial<SFXSlot> } }
+  | { type: "ADD_PLAYLIST"; payload: AudioPlaylist }
+  | { type: "REMOVE_PLAYLIST"; payload: string }
+  | { type: "ACTIVATE_PLAYLIST"; payload: string }
+  | { type: "UPDATE_PLAYLIST"; payload: { id: string; updates: Partial<AudioPlaylist> } }
+  | { type: "ADD_CUSTOM_LIBRARY_TRACK"; payload: CustomLibraryTrack }
+  | { type: "REMOVE_CUSTOM_LIBRARY_TRACK"; payload: string }
   // AoE Templates
   | { type: "ADD_AOE"; payload: import("@/types/vtt").AoETemplate }
   | { type: "REMOVE_AOE"; payload: string }
   | { type: "CLEAR_AOE" }
+  | { type: "UPDATE_AOE"; payload: { aoeId: string; updates: Partial<import("@/types/vtt").AoETemplate> } }
+  // Scene Props
+  | { type: "ADD_PROP"; payload: { mapId: string; prop: import("@/types/vtt").SceneProp } }
+  | { type: "REMOVE_PROP"; payload: { mapId: string; propId: string } }
+  | { type: "UPDATE_PROP"; payload: { mapId: string; propId: string; updates: Partial<import("@/types/vtt").SceneProp> } }
+  | { type: "SET_PROP_SELECTION"; payload: string[] }
+  | { type: "SET_PENDING_PROP"; payload: { imageUrl: string; name: string } | null }
   // Fog Brush
   | { type: "SET_FOG_BRUSH_SIZE"; payload: number }
   | { type: "SET_FOG_BRUSH_MODE"; payload: "reveal" | "conceal" }
@@ -118,13 +134,26 @@ type VTTAction =
   | { type: "SET_CANVAS_SIZE"; payload: { mapId: string; width: number; height: number } }
   // Presenter toggles
   | { type: "TOGGLE_INITIATIVE_PRESENTER" }
+  | { type: "TOGGLE_FOLLOW_ACTIVE_TURN" }
   // Selection
   | { type: "SET_SELECTION"; payload: string[] }
   | { type: "SET_STROKE_SELECTION"; payload: string[] }
   | { type: "SET_TEXT_SELECTION"; payload: string[] }
   | { type: "SET_NOTE_SELECTION"; payload: string[] }
-  | { type: "SET_FULL_SELECTION"; payload: { tokenIds: string[]; strokeIds: string[]; textIds: string[]; noteIds: string[] } }
+  | { type: "SET_AOE_SELECTION"; payload: string[] }
+  | { type: "SET_LIGHT_SELECTION"; payload: string[] }
+  | { type: "SET_FULL_SELECTION"; payload: { tokenIds: string[]; strokeIds: string[]; textIds: string[]; noteIds: string[]; aoeIds?: string[]; lightIds?: string[] } }
   | { type: "CLEAR_SELECTION" }
+  // Clipboard
+  | { type: "COPY_SELECTION" }
+  | { type: "PASTE_CLIPBOARD"; payload: { mapId: string } }
+  // Token ordering
+  | { type: "REORDER_TOKEN"; payload: { mapId: string; tokenId: string; direction: "front" | "back" } }
+  // Layers
+  | { type: "TOGGLE_LAYER_VISIBILITY"; payload: LayerIndex }
+  | { type: "TOGGLE_LAYER_LOCK"; payload: LayerIndex }
+  // Alignment
+  | { type: "ALIGN_SELECTION"; payload: { mapId: string; alignment: "left" | "right" | "top" | "bottom" | "center-h" | "center-v" | "distribute-h" | "distribute-v" } }
   // History
   | { type: "PUSH_HISTORY"; payload: VTTHistoryEntry }
   | { type: "UNDO" }
@@ -217,6 +246,16 @@ function applyHistoryReverse(state: VTTState, entry: VTTHistoryEntry): VTTState 
         ...m,
         lights: [...m.lights, entry.before as LightSource],
       }));
+    case "aoe-add":
+      return updateMapInState(state, mapId, (m) => ({
+        ...m,
+        aoeTemplates: (m.aoeTemplates || []).filter((a) => a.id !== (entry.after as any).id),
+      }));
+    case "aoe-remove":
+      return updateMapInState(state, mapId, (m) => ({
+        ...m,
+        aoeTemplates: [...(m.aoeTemplates || []), entry.before as any],
+      }));
     case "fog-update":
       return updateMapInState(state, mapId, (m) => ({
         ...m,
@@ -299,6 +338,16 @@ function applyHistoryForward(state: VTTState, entry: VTTHistoryEntry): VTTState 
         ...m,
         lights: m.lights.filter((l) => l.id !== (entry.before as any).id),
       }));
+    case "aoe-add":
+      return updateMapInState(state, mapId, (m) => ({
+        ...m,
+        aoeTemplates: [...(m.aoeTemplates || []), entry.after as any],
+      }));
+    case "aoe-remove":
+      return updateMapInState(state, mapId, (m) => ({
+        ...m,
+        aoeTemplates: (m.aoeTemplates || []).filter((a) => a.id !== (entry.before as any).id),
+      }));
     case "fog-update":
       return updateMapInState(state, mapId, (m) => ({
         ...m,
@@ -307,6 +356,39 @@ function applyHistoryForward(state: VTTState, entry: VTTHistoryEntry): VTTState 
     default:
       return state;
   }
+}
+
+// ─── Alignment helper ────────────────────────────────────────────────────────
+
+type AlignItem = { type: "token" | "stroke" | "text" | "note"; id: string };
+
+function applyAlignDelta(state: VTTState, mapId: string, item: AlignItem, dx: number, dy: number): VTTState {
+  if (dx === 0 && dy === 0) return state;
+  if (item.type === "token") {
+    return updateMapInState(state, mapId, (m) => ({
+      ...m,
+      tokens: m.tokens.map((t) => t.id === item.id ? { ...t, x: t.x + dx, y: t.y + dy } : t),
+    }));
+  }
+  if (item.type === "stroke") {
+    return updateMapInState(state, mapId, (m) => ({
+      ...m,
+      strokes: m.strokes.map((s) => s.id === item.id ? { ...s, points: s.points.map((p) => ({ x: p.x + dx, y: p.y + dy })) } : s),
+    }));
+  }
+  if (item.type === "text") {
+    return updateMapInState(state, mapId, (m) => ({
+      ...m,
+      texts: m.texts.map((t) => t.id === item.id ? { ...t, x: t.x + dx, y: t.y + dy } : t),
+    }));
+  }
+  if (item.type === "note") {
+    return updateMapInState(state, mapId, (m) => ({
+      ...m,
+      notes: m.notes.map((n) => n.id === item.id ? { ...n, x: n.x + dx, y: n.y + dy } : n),
+    }));
+  }
+  return state;
 }
 
 // ─── Reducer ────────────────────────────────────────────────────────────────
@@ -556,34 +638,19 @@ function vttReducer(state: VTTState, action: VTTAction): VTTState {
         ),
       };
 
-    // Handouts
-    case "ADD_HANDOUT":
-      return { ...state, handouts: [...state.handouts, action.payload] };
-    case "REMOVE_HANDOUT":
-      return {
-        ...state,
-        handouts: state.handouts.filter((h) => h.id !== action.payload),
-      };
-    case "TOGGLE_HANDOUT_VISIBILITY":
-      return {
-        ...state,
-        handouts: state.handouts.map((h) =>
-          h.id === action.payload ? { ...h, visible: !h.visible } : h
-        ),
-      };
-
     // Audio
     case "SET_AUDIO":
       return { ...state, audio: { ...state.audio, ...action.payload } };
-    case "SET_AMBIENT_TRACK":
+    case "SET_AMBIENT_TRACK": {
+      const slotKey = `ambient${action.payload.slot}` as keyof AudioState;
       return {
         ...state,
         audio: {
           ...state.audio,
-          [action.payload.slot === "A" ? "ambientA" : "ambientB"]:
-            action.payload.track,
+          [slotKey]: action.payload.track,
         },
       };
+    }
     case "SET_SFX_SLOT": {
       const slots = [...state.audio.sfxSlots];
       slots[action.payload.index] = {
@@ -592,6 +659,68 @@ function vttReducer(state: VTTState, action: VTTAction): VTTState {
       };
       return { ...state, audio: { ...state.audio, sfxSlots: slots } };
     }
+    case "ADD_PLAYLIST":
+      return {
+        ...state,
+        audio: {
+          ...state.audio,
+          playlists: [...(state.audio.playlists || []), action.payload],
+        },
+      };
+    case "REMOVE_PLAYLIST":
+      return {
+        ...state,
+        audio: {
+          ...state.audio,
+          playlists: (state.audio.playlists || []).filter((p) => p.id !== action.payload),
+          activePlaylistId: state.audio.activePlaylistId === action.payload ? null : state.audio.activePlaylistId,
+        },
+      };
+    case "ACTIVATE_PLAYLIST": {
+      const playlist = (state.audio.playlists || []).find((p) => p.id === action.payload);
+      if (!playlist) return state;
+      return {
+        ...state,
+        audio: {
+          ...state.audio,
+          activePlaylistId: action.payload,
+          ambientA: playlist.channels.A,
+          ambientB: playlist.channels.B,
+          ambientC: playlist.channels.C,
+          ambientD: playlist.channels.D,
+        },
+      };
+    }
+    case "UPDATE_PLAYLIST":
+      return {
+        ...state,
+        audio: {
+          ...state.audio,
+          playlists: (state.audio.playlists || []).map((p) =>
+            p.id === action.payload.id ? { ...p, ...action.payload.updates } : p
+          ),
+        },
+      };
+
+    // Custom library tracks
+    case "ADD_CUSTOM_LIBRARY_TRACK":
+      return {
+        ...state,
+        audio: {
+          ...state.audio,
+          customLibraryTracks: [...(state.audio.customLibraryTracks || []), action.payload],
+        },
+      };
+    case "REMOVE_CUSTOM_LIBRARY_TRACK":
+      return {
+        ...state,
+        audio: {
+          ...state.audio,
+          customLibraryTracks: (state.audio.customLibraryTracks || []).filter(
+            (t) => t.id !== action.payload
+          ),
+        },
+      };
 
     // AoE Templates (per-map)
     case "ADD_AOE":
@@ -612,6 +741,41 @@ function vttReducer(state: VTTState, action: VTTAction): VTTState {
         ...m,
         aoeTemplates: [],
       }));
+    case "UPDATE_AOE":
+      if (!state.activeMapId) return state;
+      return updateMapInState(state, state.activeMapId, (m) => ({
+        ...m,
+        aoeTemplates: (m.aoeTemplates || []).map((a) =>
+          a.id === action.payload.aoeId ? { ...a, ...action.payload.updates } : a
+        ),
+      }));
+
+    // Scene Props
+    case "ADD_PROP":
+      return updateMapInState(state, action.payload.mapId, (m) => ({
+        ...m,
+        props: [...(m.props || []), action.payload.prop],
+      }));
+    case "REMOVE_PROP":
+      return updateMapInState(state, action.payload.mapId, (m) => ({
+        ...m,
+        props: (m.props || []).filter((p) => p.id !== action.payload.propId),
+      }));
+    case "UPDATE_PROP":
+      return updateMapInState(state, action.payload.mapId, (m) => ({
+        ...m,
+        props: (m.props || []).map((p) =>
+          p.id === action.payload.propId ? { ...p, ...action.payload.updates } : p
+        ),
+      }));
+    case "SET_PROP_SELECTION":
+      return { ...state, selectedPropIds: action.payload };
+    case "SET_PENDING_PROP":
+      return {
+        ...state,
+        pendingPropImageUrl: action.payload?.imageUrl ?? null,
+        pendingPropName: action.payload?.name ?? "",
+      };
 
     // Fog Brush
     case "SET_FOG_BRUSH_SIZE":
@@ -630,6 +794,8 @@ function vttReducer(state: VTTState, action: VTTAction): VTTState {
     // Presenter toggles
     case "TOGGLE_INITIATIVE_PRESENTER":
       return { ...state, showInitiativeOnPresenter: !(state.showInitiativeOnPresenter ?? false) };
+    case "TOGGLE_FOLLOW_ACTIVE_TURN":
+      return { ...state, followActiveTurn: !(state.followActiveTurn ?? false) };
 
     // Selection
     case "SET_SELECTION":
@@ -640,6 +806,10 @@ function vttReducer(state: VTTState, action: VTTAction): VTTState {
       return { ...state, selectedTextIds: action.payload };
     case "SET_NOTE_SELECTION":
       return { ...state, selectedNoteIds: action.payload };
+    case "SET_AOE_SELECTION":
+      return { ...state, selectedAoEIds: action.payload };
+    case "SET_LIGHT_SELECTION":
+      return { ...state, selectedLightIds: action.payload };
     case "SET_FULL_SELECTION":
       return {
         ...state,
@@ -647,9 +817,200 @@ function vttReducer(state: VTTState, action: VTTAction): VTTState {
         selectedStrokeIds: action.payload.strokeIds,
         selectedTextIds: action.payload.textIds,
         selectedNoteIds: action.payload.noteIds,
+        selectedAoEIds: action.payload.aoeIds || [],
+        selectedLightIds: action.payload.lightIds || [],
       };
     case "CLEAR_SELECTION":
-      return { ...state, selectedTokenIds: [], selectedStrokeIds: [], selectedTextIds: [], selectedNoteIds: [] };
+      return { ...state, selectedTokenIds: [], selectedStrokeIds: [], selectedTextIds: [], selectedNoteIds: [], selectedAoEIds: [], selectedLightIds: [] };
+
+    // Clipboard
+    case "COPY_SELECTION": {
+      const activeMap = state.maps.find((m) => m.id === state.activeMapId);
+      if (!activeMap) return state;
+      return {
+        ...state,
+        clipboard: {
+          tokens: (state.selectedTokenIds || []).map((id) => activeMap.tokens.find((t) => t.id === id)).filter(Boolean) as Token[],
+          strokes: (state.selectedStrokeIds || []).map((id) => activeMap.strokes.find((s) => s.id === id)).filter(Boolean) as Stroke[],
+          texts: (state.selectedTextIds || []).map((id) => activeMap.texts.find((t) => t.id === id)).filter(Boolean) as TextOverlay[],
+          notes: (state.selectedNoteIds || []).map((id) => activeMap.notes.find((n) => n.id === id)).filter(Boolean) as MapNote[],
+        },
+      };
+    }
+    case "PASTE_CLIPBOARD": {
+      const clip = state.clipboard;
+      if (!clip) return state;
+      const mapId = action.payload.mapId;
+      const offset = 30;
+      const newTokenIds: string[] = [];
+      const newStrokeIds: string[] = [];
+      const newTextIds: string[] = [];
+      const newNoteIds: string[] = [];
+      let result = state;
+      for (const t of clip.tokens) {
+        const newId = crypto.randomUUID();
+        newTokenIds.push(newId);
+        result = updateMapInState(result, mapId, (m) => ({
+          ...m,
+          tokens: [...m.tokens, { ...t, id: newId, x: t.x + offset, y: t.y + offset, name: `${t.name}` }],
+        }));
+      }
+      for (const s of clip.strokes) {
+        const newId = crypto.randomUUID();
+        newStrokeIds.push(newId);
+        result = updateMapInState(result, mapId, (m) => ({
+          ...m,
+          strokes: [...m.strokes, { ...s, id: newId, points: s.points.map((p) => ({ x: p.x + offset, y: p.y + offset })) }],
+        }));
+      }
+      for (const t of clip.texts) {
+        const newId = crypto.randomUUID();
+        newTextIds.push(newId);
+        result = updateMapInState(result, mapId, (m) => ({
+          ...m,
+          texts: [...m.texts, { ...t, id: newId, x: t.x + offset, y: t.y + offset }],
+        }));
+      }
+      for (const n of clip.notes) {
+        const newId = crypto.randomUUID();
+        newNoteIds.push(newId);
+        result = updateMapInState(result, mapId, (m) => ({
+          ...m,
+          notes: [...m.notes, { ...n, id: newId, x: n.x + offset, y: n.y + offset }],
+        }));
+      }
+      return {
+        ...result,
+        selectedTokenIds: newTokenIds,
+        selectedStrokeIds: newStrokeIds,
+        selectedTextIds: newTextIds,
+        selectedNoteIds: newNoteIds,
+      };
+    }
+
+    // Token ordering
+    case "REORDER_TOKEN": {
+      const { mapId, tokenId, direction } = action.payload;
+      return updateMapInState(state, mapId, (m) => {
+        const idx = m.tokens.findIndex((t) => t.id === tokenId);
+        if (idx < 0) return m;
+        const tokens = [...m.tokens];
+        const [token] = tokens.splice(idx, 1);
+        if (direction === "front") tokens.push(token);
+        else tokens.unshift(token);
+        return { ...m, tokens };
+      });
+    }
+
+    // Layers
+    case "TOGGLE_LAYER_VISIBILITY": {
+      const layer = action.payload;
+      const current = state.layerStates?.[layer] ?? { visible: true, locked: false };
+      return {
+        ...state,
+        layerStates: {
+          ...state.layerStates,
+          [layer]: { ...current, visible: !current.visible },
+        },
+      };
+    }
+    case "TOGGLE_LAYER_LOCK": {
+      const layer = action.payload;
+      const current = state.layerStates?.[layer] ?? { visible: true, locked: false };
+      return {
+        ...state,
+        layerStates: {
+          ...state.layerStates,
+          [layer]: { ...current, locked: !current.locked },
+        },
+      };
+    }
+
+    // Alignment
+    case "ALIGN_SELECTION": {
+      const { mapId, alignment } = action.payload;
+      const map = state.maps.find((m) => m.id === mapId);
+      if (!map) return state;
+
+      const gridSize = map.grid.size || 50;
+      type ItemBox = { type: "token" | "stroke" | "text" | "note"; id: string; left: number; right: number; top: number; bottom: number; cx: number; cy: number };
+      const items: ItemBox[] = [];
+
+      for (const id of (state.selectedTokenIds || [])) {
+        const t = map.tokens.find((tk) => tk.id === id);
+        if (!t) continue;
+        const hs = (t.size * gridSize) / 2;
+        items.push({ type: "token", id, left: t.x - hs, right: t.x + hs, top: t.y - hs, bottom: t.y + hs, cx: t.x, cy: t.y });
+      }
+      for (const id of (state.selectedStrokeIds || [])) {
+        const s = map.strokes.find((sk) => sk.id === id);
+        if (!s || s.points.length === 0) continue;
+        let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+        for (const p of s.points) { minX = Math.min(minX, p.x); maxX = Math.max(maxX, p.x); minY = Math.min(minY, p.y); maxY = Math.max(maxY, p.y); }
+        items.push({ type: "stroke", id, left: minX, right: maxX, top: minY, bottom: maxY, cx: (minX + maxX) / 2, cy: (minY + maxY) / 2 });
+      }
+      for (const id of (state.selectedTextIds || [])) {
+        const t = map.texts.find((tx) => tx.id === id);
+        if (!t) continue;
+        const w = t.text.length * t.fontSize * 0.6;
+        items.push({ type: "text", id, left: t.x, right: t.x + w, top: t.y, bottom: t.y + t.fontSize, cx: t.x + w / 2, cy: t.y + t.fontSize / 2 });
+      }
+      for (const id of (state.selectedNoteIds || [])) {
+        const n = map.notes.find((nt) => nt.id === id);
+        if (!n) continue;
+        items.push({ type: "note", id, left: n.x - 8, right: n.x + 8, top: n.y - 8, bottom: n.y + 8, cx: n.x, cy: n.y });
+      }
+
+      if (items.length < 2) return state;
+
+      let result = state;
+      const allLeft = Math.min(...items.map((i) => i.left));
+      const allRight = Math.max(...items.map((i) => i.right));
+      const allTop = Math.min(...items.map((i) => i.top));
+      const allBottom = Math.max(...items.map((i) => i.bottom));
+      const allCenterH = (allLeft + allRight) / 2;
+      const allCenterV = (allTop + allBottom) / 2;
+
+      for (const item of items) {
+        let dx = 0, dy = 0;
+        switch (alignment) {
+          case "left": dx = allLeft - item.left; break;
+          case "right": dx = allRight - item.right; break;
+          case "top": dy = allTop - item.top; break;
+          case "bottom": dy = allBottom - item.bottom; break;
+          case "center-h": dx = allCenterH - item.cx; break;
+          case "center-v": dy = allCenterV - item.cy; break;
+          case "distribute-h":
+          case "distribute-v":
+            continue; // handled below
+        }
+        if (dx === 0 && dy === 0) continue;
+        result = applyAlignDelta(result, mapId, item, dx, dy);
+      }
+
+      if (alignment === "distribute-h" && items.length >= 3) {
+        const sorted = [...items].sort((a, b) => a.cx - b.cx);
+        const totalSpan = sorted[sorted.length - 1].cx - sorted[0].cx;
+        const spacing = totalSpan / (sorted.length - 1);
+        for (let i = 1; i < sorted.length - 1; i++) {
+          const targetCx = sorted[0].cx + spacing * i;
+          const dx = targetCx - sorted[i].cx;
+          result = applyAlignDelta(result, mapId, sorted[i], dx, 0);
+        }
+      }
+      if (alignment === "distribute-v" && items.length >= 3) {
+        const sorted = [...items].sort((a, b) => a.cy - b.cy);
+        const totalSpan = sorted[sorted.length - 1].cy - sorted[0].cy;
+        const spacing = totalSpan / (sorted.length - 1);
+        for (let i = 1; i < sorted.length - 1; i++) {
+          const targetCy = sorted[0].cy + spacing * i;
+          const dy = targetCy - sorted[i].cy;
+          result = applyAlignDelta(result, mapId, sorted[i], 0, dy);
+        }
+      }
+
+      return result;
+    }
 
     // History
     case "PUSH_HISTORY": {
@@ -693,6 +1054,35 @@ interface VTTContextValue {
 
 const VTTContext = createContext<VTTContextValue | null>(null);
 
+/** Write VTT state + timestamp to localStorage */
+function saveToLocalStorage(toSave: VTTState) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
+  localStorage.setItem(STORAGE_TS_KEY, new Date().toISOString());
+}
+
+/** Prepare a VTT state snapshot for persistence (strip ephemeral data) */
+function prepareForSave(state: VTTState): VTTState {
+  const toSave = JSON.parse(JSON.stringify(state)) as VTTState;
+  // Strip blob URLs for video maps (they can't persist across reloads)
+  for (const m of toSave.maps) {
+    if (m.isVideo && m.imageDataUrl?.startsWith("blob:")) {
+      m.imageDataUrl = null;
+    }
+  }
+  // Strip blob URLs from custom audio tracks (they can't persist)
+  if (toSave.audio?.customLibraryTracks) {
+    toSave.audio.customLibraryTracks = toSave.audio.customLibraryTracks.filter(
+      t => t.url && !t.url.startsWith('blob:')
+    );
+  }
+  // Don't persist transient selection state
+  toSave.selectedTokenIds = [];
+  toSave.selectedStrokeIds = [];
+  toSave.selectedTextIds = [];
+  toSave.selectedNoteIds = [];
+  return toSave;
+}
+
 // ─── Provider ───────────────────────────────────────────────────────────────
 
 export function VTTProvider({ children }: { children: React.ReactNode }) {
@@ -723,6 +1113,9 @@ export function VTTProvider({ children }: { children: React.ReactNode }) {
         if (parsed.showInitiativeOnPresenter === undefined) {
           (parsed as any).showInitiativeOnPresenter = false;
         }
+        if (parsed.followActiveTurn === undefined) {
+          (parsed as any).followActiveTurn = false;
+        }
         if (!parsed.selectedTokenIds) {
           (parsed as any).selectedTokenIds = [];
         }
@@ -741,6 +1134,28 @@ export function VTTProvider({ children }: { children: React.ReactNode }) {
             m.imageDataUrl = null;
           }
         }
+        // Migrate audio state: add channels C/D, playlists, remove crossfade
+        const audio = parsed.audio as any;
+        if (audio.ambientC === undefined) audio.ambientC = null;
+        if (audio.ambientD === undefined) audio.ambientD = null;
+        if (!audio.playlists) audio.playlists = [];
+        if (audio.activePlaylistId === undefined) audio.activePlaylistId = null;
+        if (!audio.customLibraryTracks) audio.customLibraryTracks = [];
+        // Remove custom tracks with stale blob URLs (they can't survive a reload)
+        audio.customLibraryTracks = audio.customLibraryTracks.filter(
+          (t: any) => t.url && !t.url.startsWith('blob:')
+        );
+        delete audio.crossfade;
+        // Remove legacy VTT handouts from state (now in NotesContext)
+        delete (parsed as any).handouts;
+        // Migrate: ensure layerStates exist
+        if (!(parsed as any).layerStates) {
+          (parsed as any).layerStates = {
+            0: { visible: true, locked: false },
+            1: { visible: true, locked: false },
+            2: { visible: true, locked: false },
+          };
+        }
         return parsed as VTTState;
       }
     } catch (e) {
@@ -754,28 +1169,155 @@ export function VTTProvider({ children }: { children: React.ReactNode }) {
     stateRef.current = state;
   }, [state]);
 
-  // Autosave every 2 minutes (strip non-persistent data like blob URLs)
+  // True once the Supabase reconciliation in loadAndMigrate has completed.
+  // The debounced save must not fire until this is set, otherwise it would
+  // persist stale Supabase data back to localStorage before the user's
+  // fresh localStorage state has been reconciled.
+  // Uses useState (not useRef) so that flipping it triggers a re-render,
+  // which re-evaluates the debounced save effect for the current state.
+  const [supabaseReconciled, setSupabaseReconciled] = useState(false);
+
+  // On mount: load from Supabase and reconcile with localStorage.
+  // localStorage is always written synchronously (including on beforeunload),
+  // so it may be newer than Supabase if the async save didn't complete.
+  useEffect(() => {
+    const applyMigrations = (s: any) => {
+      if (!s.selectedTokenIds) s.selectedTokenIds = [];
+      if (!s.selectedStrokeIds) s.selectedStrokeIds = [];
+      if (!s.selectedTextIds) s.selectedTextIds = [];
+      if (!s.selectedNoteIds) s.selectedNoteIds = [];
+      if (!s.layerStates) {
+        s.layerStates = {
+          0: { visible: true, locked: false },
+          1: { visible: true, locked: false },
+          2: { visible: true, locked: false },
+        };
+      }
+      for (const m of s.maps || []) {
+        if (!m.aoeTemplates) m.aoeTemplates = [];
+        if (m.imageScale === undefined) m.imageScale = 1;
+        if (m.imageOffsetX === undefined) m.imageOffsetX = 0;
+        if (m.imageOffsetY === undefined) m.imageOffsetY = 0;
+        if (m.imageNaturalWidth === undefined) m.imageNaturalWidth = 0;
+        if (m.imageNaturalHeight === undefined) m.imageNaturalHeight = 0;
+        if (m.isVideo && m.imageDataUrl?.startsWith("blob:")) {
+          m.imageDataUrl = null;
+        }
+      }
+      if (s.audio?.customLibraryTracks) {
+        s.audio.customLibraryTracks = s.audio.customLibraryTracks.filter(
+          (t: any) => t.url && !t.url.startsWith('blob:')
+        );
+      }
+    };
+
+    const loadAndMigrate = async () => {
+      try {
+        const dbResult = await dbHelpers.loadVTTSession();
+        if (dbResult) {
+          const { stateJson: dbState, updatedAt: supabaseTs } = dbResult;
+          const localTs = localStorage.getItem(STORAGE_TS_KEY);
+
+          // If localStorage has a newer timestamp than Supabase, prefer localStorage
+          // (this handles the case where beforeunload saved locally but async
+          // Supabase save didn't complete before page unload)
+          if (localTs && supabaseTs && new Date(localTs) > new Date(supabaseTs)) {
+            if (import.meta.env.DEV) console.log(
+              `VTT: localStorage is newer (${localTs}) than Supabase (${supabaseTs}), pushing to Supabase`
+            );
+            // The useReducer initializer already loaded from localStorage,
+            // so just push it to Supabase to sync up
+            const toSync = prepareForSave(stateRef.current);
+            dbHelpers.saveVTTSession(toSync).catch(e =>
+              console.warn("VTT: failed to sync localStorage state to Supabase:", e)
+            );
+            return;
+          }
+
+          // Supabase is newer (or same) — use it
+          applyMigrations(dbState);
+          dispatch({ type: "LOAD_SESSION", payload: dbState });
+
+          // Migrate any remaining base64 map images to Supabase Storage
+          for (const m of dbState.maps || []) {
+            if (m.imageDataUrl && m.imageDataUrl.startsWith("data:image/")) {
+              const mimeType = m.imageDataUrl.split(";")[0].split(":")[1];
+              const url = await dbHelpers.uploadVTTMapImageFromDataURL(m.imageDataUrl, m.id, mimeType);
+              if (url) {
+                dispatch({ type: "SET_MAP_IMAGE", payload: { mapId: m.id, dataUrl: url, width: m.imageNaturalWidth || m.width, height: m.imageNaturalHeight || m.height } });
+              }
+            }
+          }
+        } else {
+          // No Supabase state yet — migrate any base64 images from the localStorage state
+          const current = stateRef.current;
+          for (const m of current.maps) {
+            if (m.imageDataUrl && m.imageDataUrl.startsWith("data:image/")) {
+              const mimeType = m.imageDataUrl.split(";")[0].split(":")[1];
+              const url = await dbHelpers.uploadVTTMapImageFromDataURL(m.imageDataUrl, m.id, mimeType);
+              if (url) {
+                dispatch({ type: "SET_MAP_IMAGE", payload: { mapId: m.id, dataUrl: url, width: m.width, height: m.height } });
+              }
+            }
+          }
+        }
+      } catch (e) {
+        console.warn("Failed to load VTT session from Supabase:", e);
+      } finally {
+        setSupabaseReconciled(true);
+      }
+    };
+    loadAndMigrate();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Autosave every 2 minutes — write to Supabase + keep localStorage as fallback
   useEffect(() => {
     const interval = setInterval(() => {
       try {
-        const toSave = JSON.parse(JSON.stringify(stateRef.current)) as VTTState;
-        // Strip blob URLs for video maps (they can't persist)
-        for (const m of toSave.maps) {
-          if (m.isVideo && m.imageDataUrl?.startsWith("blob:")) {
-            m.imageDataUrl = null;
-          }
-        }
-        // Don't persist transient selection state
-        toSave.selectedTokenIds = [];
-        toSave.selectedStrokeIds = [];
-        toSave.selectedTextIds = [];
-        toSave.selectedNoteIds = [];
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
+        const toSave = prepareForSave(stateRef.current);
+        dbHelpers.saveVTTSession(toSave).catch(e => console.warn("VTT Supabase autosave failed:", e));
+        saveToLocalStorage(toSave);
       } catch (e) {
         console.warn("VTT autosave failed:", e);
       }
     }, AUTOSAVE_INTERVAL);
     return () => clearInterval(interval);
+  }, []);
+
+  // Debounced save on every state change — ensures deletions, edits, etc.
+  // persist within 2 seconds rather than waiting for the 2-minute autosave.
+  useEffect(() => {
+    // Don't save until Supabase reconciliation is complete. Otherwise we'd
+    // persist stale Supabase data (or the initial localStorage load) back
+    // before the timestamp comparison has decided which source is fresher.
+    if (!supabaseReconciled) return;
+    const timer = setTimeout(() => {
+      try {
+        const toSave = prepareForSave(stateRef.current);
+        dbHelpers.saveVTTSession(toSave).catch(e => console.warn("VTT debounced save failed:", e));
+        saveToLocalStorage(toSave);
+      } catch (e) {
+        console.warn("VTT debounced save failed:", e);
+      }
+    }, DEBOUNCE_SAVE_MS);
+    return () => clearTimeout(timer);
+  }, [state, supabaseReconciled]);
+
+  // Save on page unload to prevent data loss
+  useEffect(() => {
+    const handleUnload = () => {
+      try {
+        const toSave = prepareForSave(stateRef.current);
+        saveToLocalStorage(toSave);
+        // Note: Supabase async save may not complete during unload,
+        // but localStorage save is synchronous and will persist
+      } catch {
+        // Best-effort during unload
+      }
+    };
+    window.addEventListener("beforeunload", handleUnload);
+    return () => window.removeEventListener("beforeunload", handleUnload);
   }, []);
 
   const activeMap =
@@ -786,6 +1328,16 @@ export function VTTProvider({ children }: { children: React.ReactNode }) {
       const map = createDefaultMap(name);
       dispatch({ type: "ADD_MAP", payload: map });
       dispatch({ type: "SET_ACTIVE_MAP", payload: map.id });
+      // Save immediately so new maps persist without waiting for autosave
+      setTimeout(() => {
+        try {
+          const toSave = prepareForSave(stateRef.current);
+          dbHelpers.saveVTTSession(toSave).catch(e => console.warn("VTT save failed:", e));
+          saveToLocalStorage(toSave);
+        } catch (e) {
+          console.warn("VTT immediate save after addMap failed:", e);
+        }
+      }, 100); // Small delay to let state update propagate
       return map;
     },
     []
@@ -796,6 +1348,11 @@ export function VTTProvider({ children }: { children: React.ReactNode }) {
       const isVideo = file.type.startsWith("video/");
 
       if (isVideo) {
+        // Revoke old objectURL if replacing a video map
+        const oldMap = stateRef.current.maps.find((m) => m.id === mapId);
+        if (oldMap?.isVideo && oldMap.imageDataUrl) {
+          URL.revokeObjectURL(oldMap.imageDataUrl);
+        }
         // Use objectURL for video (dataURL would be too large)
         const url = URL.createObjectURL(file);
         const video = document.createElement("video");
@@ -833,6 +1390,37 @@ export function VTTProvider({ children }: { children: React.ReactNode }) {
           };
           video.onerror = () => reject(new Error("Failed to load video"));
           video.src = url;
+        });
+      }
+
+      // Upload to Supabase Storage, fall back to data URL if upload fails
+      let imageUrl: string | null = null;
+      try {
+        imageUrl = await dbHelpers.uploadVTTMapImage(file, mapId);
+      } catch (e) {
+        console.warn("Failed to upload map image to Supabase, falling back to data URL:", e);
+      }
+
+      if (imageUrl) {
+        return new Promise<void>((resolve, reject) => {
+          const img = new Image();
+          img.onload = () => {
+            const currentMap = stateRef.current.maps.find((m) => m.id === mapId);
+            const canvasW = currentMap?.width || 1920;
+            const canvasH = currentMap?.height || 1080;
+            const fitScale = Math.min(canvasW / img.naturalWidth, canvasH / img.naturalHeight);
+            dispatch({ type: "SET_MAP_IMAGE", payload: { mapId, dataUrl: imageUrl!, width: canvasW, height: canvasH } });
+            dispatch({
+              type: "UPDATE_MAP",
+              payload: {
+                id: mapId,
+                updates: { isVideo: false, imageScale: fitScale, imageOffsetX: 0, imageOffsetY: 0, imageNaturalWidth: img.naturalWidth, imageNaturalHeight: img.naturalHeight },
+              },
+            });
+            resolve();
+          };
+          img.onerror = () => reject(new Error("Failed to load image from URL"));
+          img.src = imageUrl!;
         });
       }
 
@@ -889,17 +1477,9 @@ export function VTTProvider({ children }: { children: React.ReactNode }) {
 
   const saveSession = useCallback(() => {
     try {
-      const toSave = JSON.parse(JSON.stringify(stateRef.current)) as VTTState;
-      for (const m of toSave.maps) {
-        if (m.isVideo && m.imageDataUrl?.startsWith("blob:")) {
-          m.imageDataUrl = null;
-        }
-      }
-      toSave.selectedTokenIds = [];
-      toSave.selectedStrokeIds = [];
-      toSave.selectedTextIds = [];
-      toSave.selectedNoteIds = [];
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
+      const toSave = prepareForSave(stateRef.current);
+      dbHelpers.saveVTTSession(toSave).catch(e => console.warn("VTT Supabase save failed:", e));
+      saveToLocalStorage(toSave);
     } catch (e) {
       console.warn("VTT save failed:", e);
     }

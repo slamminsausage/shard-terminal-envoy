@@ -32,7 +32,7 @@ export function SetupPanel({
     let hasAny = false;
     for (const [shipId, raw] of Object.entries(initiativeInputs)) {
       if (raw !== '') {
-        const n = parseInt(raw);
+        const n = parseInt(raw, 10);
         if (!isNaN(n)) {
           manualRolls[shipId] = n;
           hasAny = true;

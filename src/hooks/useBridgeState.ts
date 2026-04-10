@@ -293,10 +293,16 @@ export function useBridgeState() {
 
     const startPolling = () => {
       if (interval) return; // Already polling
-      interval = setInterval(() => {
-        void loadContacts(bridgeState.id);
-        void loadMessages(bridgeState.id);
-        void loadScans(bridgeState.id);
+      interval = setInterval(async () => {
+        try {
+          await Promise.all([
+            loadContacts(bridgeState.id),
+            loadMessages(bridgeState.id),
+            loadScans(bridgeState.id),
+          ]);
+        } catch (e) {
+          if (import.meta.env?.DEV) console.warn('Bridge polling error:', e);
+        }
       }, 5000);
     };
 
@@ -310,9 +316,11 @@ export function useBridgeState() {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
         // Tab became visible - refresh immediately then resume polling
-        void loadContacts(bridgeState.id);
-        void loadMessages(bridgeState.id);
-        void loadScans(bridgeState.id);
+        Promise.all([
+          loadContacts(bridgeState.id),
+          loadMessages(bridgeState.id),
+          loadScans(bridgeState.id),
+        ]).catch(e => { if (import.meta.env?.DEV) console.warn('Bridge refresh error:', e); });
         startPolling();
       } else {
         // Tab hidden - stop polling to save resources

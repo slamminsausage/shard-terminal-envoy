@@ -120,6 +120,13 @@ export interface CurrentLocation {
   sectorAbbr?: string;
   hex: string;
   worldName?: string;
+  // Numeric sector/hex coords for yah_sx/yah_sy/yah_hx/yah_hy marker params.
+  // Avoids TravellerMap's broken named-lookup and complex map-space conversion.
+  // sx/sy fetched async from the metadata API (cached); hx/hy parsed from hex string.
+  sx?: number;
+  sy?: number;
+  hx?: number;
+  hy?: number;
 }
 
 // ===== World Notes Types =====

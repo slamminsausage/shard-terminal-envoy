@@ -505,6 +505,36 @@ export default function VTTPlayerView() {
         });
       }
 
+      // Elevation badge
+      if (t.elevation && t.elevation !== 0) {
+        const elevLabel = (t.elevation > 0 ? "+" : "") + t.elevation;
+        const badgeColor = t.elevation > 0 ? "#00ccff" : "#ff8800";
+        const badgeX = t.x + halfSize - 2;
+        const badgeY = t.y - halfSize - 2;
+        ctx.save();
+        ctx.font = `bold 9px "Share Tech Mono", monospace`;
+        const bm = ctx.measureText(elevLabel);
+        const bw = bm.width + 6;
+        const bh = 12;
+        ctx.fillStyle = "#000000";
+        ctx.globalAlpha = 0.8;
+        ctx.beginPath();
+        ctx.roundRect(badgeX - bw / 2, badgeY - bh / 2, bw, bh, 3);
+        ctx.fill();
+        ctx.strokeStyle = badgeColor;
+        ctx.lineWidth = 1;
+        ctx.globalAlpha = 0.9;
+        ctx.beginPath();
+        ctx.roundRect(badgeX - bw / 2, badgeY - bh / 2, bw, bh, 3);
+        ctx.stroke();
+        ctx.fillStyle = badgeColor;
+        ctx.globalAlpha = 1;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(elevLabel, badgeX, badgeY);
+        ctx.restore();
+      }
+
       // Active turn indicator
       if (initiative.length > 0 && initiative[0].tokenId === t.id) {
         const pulse = 0.4 + 0.6 * Math.abs(Math.sin(Date.now() / 400));
@@ -581,15 +611,23 @@ export default function VTTPlayerView() {
       }
     }
 
-    // Dynamic lighting
-    if (map.lights.length > 0 && map.walls.length > 0) {
-      renderDynamicLighting(
-        ctx,
-        map.lights,
-        map.walls,
-        map.width,
-        map.height
-      );
+    // Dynamic lighting (combine map lights + token-emitted lights)
+    if (map.walls.length > 0) {
+      const tokenLights = map.tokens
+        .filter((t) => t.visible && (t.lightBrightRadius ?? 0) > 0)
+        .map((t) => ({
+          id: t.id + "-light",
+          x: t.x,
+          y: t.y,
+          radius: (t.lightBrightRadius ?? 0) * (map.grid.size || 50),
+          color: t.lightColor || "#ffaa44",
+          intensity: 1.0,
+          flickering: false,
+        }));
+      const allLights = [...map.lights, ...tokenLights];
+      if (allLights.length > 0) {
+        renderDynamicLighting(ctx, allLights, map.walls, map.width, map.height);
+      }
     }
 
     // GM pings
@@ -660,18 +698,31 @@ export default function VTTPlayerView() {
         style={{ display: particles.enabled ? "block" : "none" }}
       />
 
-      {/* Zoom indicator */}
+      {/* Zoom indicator + reset button */}
       {map && localZoom != null && (
-        <div className="absolute top-2 right-2 z-10 text-terminal-primary/30 text-xs font-mono">
-          {Math.round(localZoom * 100)}%
+        <div className="absolute top-2 right-2 z-10 flex items-center gap-2">
+          <span className="text-[rgba(0,255,0,0.3)] text-xs font-mono">
+            {Math.round(localZoom * 100)}%
+          </span>
+          <button
+            onClick={() => {
+              if (map) {
+                setLocalScroll({ x: map.scrollX, y: map.scrollY });
+                setLocalZoom(map.zoom);
+              }
+            }}
+            className="vtt-btn"
+          >
+            Reset View
+          </button>
         </div>
       )}
 
       {/* Initiative tracker */}
       {showInitiative && initiative.length > 0 && (
-        <div className="absolute top-2 left-2 z-10 bg-black/85 border border-terminal-primary/30 rounded-lg overflow-hidden min-w-[160px]">
-          <div className="px-3 py-1 border-b border-terminal-primary/20">
-            <span className="text-[9px] text-terminal-primary/50 uppercase tracking-wider font-mono">
+        <div className="absolute top-2 left-2 z-10 vtt-hud overflow-hidden min-w-[160px]">
+          <div className="vtt-sidebar-header py-1">
+            <span className="vtt-sidebar-title text-[9px]">
               Initiative
             </span>
           </div>
@@ -679,20 +730,20 @@ export default function VTTPlayerView() {
             {initiative.map((entry, index) => (
               <div
                 key={entry.id}
-                className={`flex items-center gap-2 px-2 py-1 border-b border-terminal-border/10 ${
+                className={`flex items-center gap-2 px-2 py-1 border-b border-[rgba(0,255,0,0.06)] ${
                   index === 0
-                    ? "bg-terminal-primary/10"
+                    ? "bg-[rgba(0,255,0,0.08)]"
                     : ""
                 }`}
               >
-                <span className="w-5 text-center text-terminal-primary font-mono text-xs font-bold flex-shrink-0">
+                <span className="w-5 text-center text-[var(--primary)] font-mono text-xs font-bold flex-shrink-0">
                   {entry.initiative}
                 </span>
                 <span
                   className={`text-[10px] font-mono flex-1 truncate ${
                     index === 0
-                      ? "text-terminal-primary"
-                      : "text-terminal-primary/60"
+                      ? "text-[var(--primary)]"
+                      : "text-[rgba(0,255,0,0.6)]"
                   }`}
                 >
                   {entry.name}
@@ -709,7 +760,7 @@ export default function VTTPlayerView() {
           {clocks.map((clock) => (
             <div
               key={clock.id}
-              className="bg-black/80 border border-terminal-primary/20 rounded px-2 py-1 text-terminal-primary/60 text-[10px] font-mono"
+              className="vtt-hud px-2 py-1 text-[rgba(0,255,0,0.6)] text-[10px] font-mono"
             >
               {clock.name}: {clock.filled}/{clock.segments}
             </div>
@@ -725,7 +776,7 @@ export default function VTTPlayerView() {
             alt={handout.name}
             className="max-w-[90%] max-h-[90%] object-contain"
           />
-          <div className="absolute bottom-4 text-center text-terminal-primary/60 text-xs font-mono">
+          <div className="absolute bottom-4 text-center text-[rgba(0,255,0,0.6)] text-xs font-mono">
             {handout.name}
           </div>
         </div>
@@ -734,21 +785,21 @@ export default function VTTPlayerView() {
       {/* Dice roll overlay */}
       {diceRoll && (
         <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 animate-in fade-in slide-in-from-bottom-4 duration-300">
-          <div className="bg-black/90 border border-terminal-primary/50 rounded-lg px-6 py-3 text-center shadow-[0_0_20px_rgba(0,255,0,0.15)]">
-            <div className="text-terminal-primary/60 text-[10px] font-mono uppercase tracking-wider mb-1">
+          <div className="vtt-hud px-6 py-3 text-center">
+            <div className="vtt-section-label text-center mb-1">
               {diceRoll.label}
             </div>
             <div className="flex items-center justify-center gap-1 mb-1">
               {diceRoll.dice.map((d, i) => (
                 <span
                   key={i}
-                  className="w-8 h-8 flex items-center justify-center bg-terminal-primary/10 border border-terminal-primary/30 rounded text-terminal-primary text-sm font-mono font-bold"
+                  className="w-8 h-8 flex items-center justify-center bg-[rgba(0,255,0,0.08)] border border-[rgba(0,255,0,0.25)] rounded text-[var(--primary)] text-sm font-mono font-bold"
                 >
                   {d}
                 </span>
               ))}
               {diceRoll.modifier !== 0 && (
-                <span className="text-terminal-primary/50 text-xs font-mono">
+                <span className="text-[rgba(0,255,0,0.5)] text-xs font-mono">
                   {diceRoll.modifier > 0 ? "+" : ""}
                   {diceRoll.modifier}
                 </span>
@@ -772,7 +823,7 @@ export default function VTTPlayerView() {
       {/* Connection status */}
       {!connected && (
         <div className="absolute inset-0 flex items-center justify-center">
-          <div className="text-terminal-primary/40 text-sm font-mono animate-pulse">
+          <div className="text-[rgba(0,255,0,0.4)] text-sm font-mono animate-pulse">
             Connecting to GM session...
           </div>
         </div>

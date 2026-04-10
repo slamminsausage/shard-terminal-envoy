@@ -6,6 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 interface QuestContextType {
   // State
   quests: Quest[];
+  questObjectives: Record<string, QuestObjective[]>;
   isLoading: boolean;
 
   // Quest CRUD
@@ -25,6 +26,7 @@ interface QuestContextType {
   updateObjective: (objectiveId: string, updates: Partial<QuestObjective>) => Promise<QuestObjective | null>;
   deleteObjective: (objectiveId: string) => Promise<boolean>;
   completeObjective: (objectiveId: string) => Promise<QuestObjective | null>;
+  reorderObjective: (questId: string, objectiveId: string, direction: 'up' | 'down') => Promise<void>;
 
   // Filters
   getQuestsByStatus: (status: QuestStatus) => Quest[];
@@ -47,6 +49,7 @@ interface QuestProviderProps {
 
 export const QuestProvider: React.FC<QuestProviderProps> = ({ children }) => {
   const [quests, setQuests] = useState<Quest[]>([]);
+  const [questObjectives, setQuestObjectives] = useState<Record<string, QuestObjective[]>>({});
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
@@ -149,6 +152,11 @@ export const QuestProvider: React.FC<QuestProviderProps> = ({ children }) => {
       await dbHelpers.deleteQuest(questId);
 
       setQuests(prev => prev.filter(q => q.id !== questId));
+      setQuestObjectives(prev => {
+        const next = { ...prev };
+        delete next[questId];
+        return next;
+      });
 
       toast({
         title: "Quest Deleted",
@@ -184,7 +192,9 @@ export const QuestProvider: React.FC<QuestProviderProps> = ({ children }) => {
   const getQuestObjectives = useCallback(async (questId: string): Promise<QuestObjective[]> => {
     try {
       const data = await dbHelpers.getQuestObjectives(questId);
-      return data as QuestObjective[];
+      const objectives = data as QuestObjective[];
+      setQuestObjectives(prev => ({ ...prev, [questId]: objectives }));
+      return objectives;
     } catch (error) {
       console.error('Failed to fetch quest objectives:', error);
       return [];
@@ -207,6 +217,10 @@ export const QuestProvider: React.FC<QuestProviderProps> = ({ children }) => {
       };
 
       const saved = await dbHelpers.saveQuestObjective(objectiveData);
+
+      // Refresh cache
+      const refreshed = await dbHelpers.getQuestObjectives(questId);
+      setQuestObjectives(prev => ({ ...prev, [questId]: refreshed as QuestObjective[] }));
 
       toast({
         title: "Objective Added",
@@ -231,6 +245,13 @@ export const QuestProvider: React.FC<QuestProviderProps> = ({ children }) => {
   ): Promise<QuestObjective | null> => {
     try {
       const updated = await dbHelpers.saveQuestObjective({ id: objectiveId, ...updates });
+
+      // Refresh cache if we know the quest_id
+      const questId = updates.quest_id || (updated as any)?.quest_id;
+      if (questId) {
+        const refreshed = await dbHelpers.getQuestObjectives(questId);
+        setQuestObjectives(prev => ({ ...prev, [questId]: refreshed as QuestObjective[] }));
+      }
 
       toast({
         title: "Objective Updated",
@@ -277,6 +298,44 @@ export const QuestProvider: React.FC<QuestProviderProps> = ({ children }) => {
     });
   }, [updateObjective]);
 
+  const reorderObjective = useCallback(async (questId: string, objectiveId: string, direction: 'up' | 'down'): Promise<void> => {
+    try {
+      const cached = questObjectives[questId];
+      const objectives = cached || await getQuestObjectives(questId);
+      const sorted = [...objectives].sort((a, b) => a.order_index - b.order_index);
+      const idx = sorted.findIndex(o => o.id === objectiveId);
+
+      if (idx < 0) return;
+      if (direction === 'up' && idx === 0) return;
+      if (direction === 'down' && idx === sorted.length - 1) return;
+
+      const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
+      const objA = sorted[idx];
+      const objB = sorted[swapIdx];
+
+      // Swap order_index values
+      const tempIndex = objA.order_index;
+      const newIndexA = objB.order_index;
+      const newIndexB = tempIndex;
+
+      await Promise.all([
+        dbHelpers.saveQuestObjective({ id: objA.id, order_index: newIndexA }),
+        dbHelpers.saveQuestObjective({ id: objB.id, order_index: newIndexB }),
+      ]);
+
+      // Refresh cache
+      const refreshed = await dbHelpers.getQuestObjectives(questId);
+      setQuestObjectives(prev => ({ ...prev, [questId]: refreshed as QuestObjective[] }));
+    } catch (error) {
+      console.error('Failed to reorder objective:', error);
+      toast({
+        title: "Error",
+        description: "Failed to reorder objective",
+        variant: "destructive",
+      });
+    }
+  }, [questObjectives, getQuestObjectives, toast]);
+
   // Filter helpers
   const getQuestsByStatus = useCallback((status: QuestStatus): Quest[] => {
     return quests.filter(q => q.status === status);
@@ -288,6 +347,7 @@ export const QuestProvider: React.FC<QuestProviderProps> = ({ children }) => {
 
   const value: QuestContextType = {
     quests,
+    questObjectives,
     isLoading,
     getAllQuests,
     getQuest,
@@ -301,6 +361,7 @@ export const QuestProvider: React.FC<QuestProviderProps> = ({ children }) => {
     updateObjective,
     deleteObjective,
     completeObjective,
+    reorderObjective,
     getQuestsByStatus,
     getActiveQuests,
   };

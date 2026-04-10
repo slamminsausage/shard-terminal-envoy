@@ -53,19 +53,19 @@ export const AddCargoDialog: React.FC<AddCargoDialogProps> = ({
     }
 
     const parsedTons = parseFloat(tons) || 1;
-    const parsedPrice = parseInt(purchasePrice) || 0;
+    const parsedPrice = parseInt(purchasePrice, 10) || 0;
 
     await purchaseTradeGood({
       name: name.trim(),
       trade_code: tradeCode || 'misc',
-      base_price: parseInt(basePrice) || parsedPrice,
+      base_price: parseInt(basePrice, 10) || parsedPrice,
       tons: parsedTons,
       purchase_price: parsedPrice,
       purchase_world: purchaseWorld || undefined,
       purchase_date: new Date().toISOString(),
       vehicle_id: selectedVehicle === 'none' ? undefined : selectedVehicle,
       is_speculation: isSpeculation,
-      broker_skill_used: parseInt(brokerSkill) || 0,
+      broker_skill_used: parseInt(brokerSkill, 10) || 0,
       notes: notes || undefined,
     });
 
@@ -74,7 +74,7 @@ export const AddCargoDialog: React.FC<AddCargoDialogProps> = ({
 
   // Calculate price per ton for display
   const pricePerTon = purchasePrice && tons
-    ? Math.round(parseInt(purchasePrice) / parseFloat(tons))
+    ? Math.round(parseInt(purchasePrice, 10) / parseFloat(tons))
     : 0;
 
   return (

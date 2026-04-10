@@ -18,7 +18,7 @@ export const PartyFundsCard: React.FC = () => {
   }, [getPartyFunds]);
 
   const handleAdjustment = async () => {
-    const amount = parseInt(adjustmentAmount);
+    const amount = parseInt(adjustmentAmount, 10);
     if (!amount || amount <= 0) return;
 
     const finalAmount = isIncome ? amount : -amount;
@@ -114,14 +114,14 @@ export const PartyFundsCard: React.FC = () => {
             <div className="flex gap-2">
               <Button
                 onClick={handleAdjustment}
-                disabled={!adjustmentAmount || parseInt(adjustmentAmount) <= 0}
+                disabled={!adjustmentAmount || parseInt(adjustmentAmount, 10) <= 0}
                 className={`flex-1 ${
                   isIncome
                     ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30 border border-green-500/50'
                     : 'bg-red-500/20 text-red-400 hover:bg-red-500/30 border border-red-500/50'
                 }`}
               >
-                {isIncome ? 'Add' : 'Spend'} {adjustmentAmount ? parseInt(adjustmentAmount).toLocaleString() : '0'} Cr
+                {isIncome ? 'Add' : 'Spend'} {adjustmentAmount ? parseInt(adjustmentAmount, 10).toLocaleString() : '0'} Cr
               </Button>
               <Button
                 onClick={() => {

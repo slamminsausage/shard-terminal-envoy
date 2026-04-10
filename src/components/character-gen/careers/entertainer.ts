@@ -127,7 +127,7 @@ const ENTERTAINER_EVENTS: GameEvent[] = [
     description: 'Disaster! Roll on the Mishap table but you are not ejected from this career.',
     resolution: {
       type: 'table_redirect',
-      table: 'injury',
+      table: 'mishap',
       displayText: 'Roll on the Mishap table (not ejected from career).',
     },
   },

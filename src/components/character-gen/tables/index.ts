@@ -18,17 +18,27 @@ export { INJURY_TABLE, getInjury, PHYSICAL_CHARACTERISTICS } from './injuryTable
 export {
   AGING_THRESHOLDS,
   AGING_CHARACTERISTICS,
-  AGING_EFFECTS,
-  ANAGATHICS,
+  MENTAL_CHARACTERISTICS,
+  AGING_EFFECTS_TABLE,
   getAgingThreshold,
-  getAgingEffects,
+  getAgingEffectLevel,
   checkAgingCrisis,
   rollAging,
   applyAgingEffects,
-  canAffordAnagathics,
+  // Anagathics
+  rollAnagathicsObtain,
+  rollAnagathicsCost,
+  // Medical bills
+  getCareerTier,
+  calculateMedicalCoverage,
+  calculateInjuryCost,
+  // Types
   type AgingThreshold,
-  type AgingEffect,
+  type AgingChoice,
+  type AgingEffectLevel,
   type AgingCrisisResult,
   type AgingRollResult,
-  type AnagathicsResult,
+  type AnagathicsObtainResult,
+  type CoverageTier,
+  type MedicalCoverageResult,
 } from './agingTable';

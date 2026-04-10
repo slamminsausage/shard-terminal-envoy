@@ -30,6 +30,7 @@ import AudioLogsPage from '../terminal/views/AudioLogsPage';
 import TerminalBootScreen from '../terminal/views/TerminalBootScreen';
 import PasswordPrompt from '../terminal/SecurityChallenge/PasswordPrompt';
 import RollCheckPrompt from '../terminal/SecurityChallenge/RollCheckPrompt';
+import ActionSequencePlayer from '../terminal/ActionSequence/ActionSequencePlayer';
 import { getTerminalBootProfile } from '@/lib/terminalBootProfiles';
 
 // New hooks
@@ -61,7 +62,7 @@ const getTerminalEffectClasses = (terminalId: string) => {
   return "terminal terminal-flicker";
 };
 
-export default function TerminalInterface() {
+function TerminalInterface() {
   const navigate = useNavigate();
   const hasInitialized = useRef(false);
   const typingCancelRef = useRef<(() => void) | null>(null);
@@ -87,24 +88,8 @@ export default function TerminalInterface() {
       session.resetPasswordAttempts();
       audioManager.playEffect('access_granted');
 
-      // Check if log has nested audio logs
-      if (session.selectedLog?.logs && Array.isArray(session.selectedLog.logs) && session.selectedLog.logs.length > 0) {
-        session.setShowAudioLogs(true);
-        session.setAudioLogsData(session.selectedLog.logs);
-        return;
-      }
-
-      // Otherwise type the content
-      if (session.selectedLog?.content) {
-        setLocalDisplayedText('');
-        setLocalTypingComplete(false);
-        const cancel = typeTextWithSound(
-          session.selectedLog.content,
-          setLocalDisplayedText,
-          () => setLocalTypingComplete(true),
-          { delay: 20 }
-        );
-        typingCancelRef.current = cancel;
+      if (session.selectedLog) {
+        showLogContent(session.selectedLog);
       }
     },
     onFailure: () => {
@@ -180,8 +165,9 @@ export default function TerminalInterface() {
 
     typingCancelRef.current = cancel;
 
-    // Load unlocked terminals
+    // Load unlocked terminals and completed actions
     loadUnlockedTerminals();
+    loadCompletedActions();
 
     return () => {
       if (typingCancelRef.current) {
@@ -233,6 +219,16 @@ export default function TerminalInterface() {
       session.setTerminalsError('Unable to sync unlocked terminals. Using cached codes.');
     } finally {
       session.setTerminalsLoading(false);
+    }
+  };
+
+  // Load completed actions from database
+  const loadCompletedActions = async () => {
+    try {
+      const actions = await dbHelpers.getCompletedActions();
+      session.setCompletedActions(actions);
+    } catch (error) {
+      console.error('Failed to load completed actions:', error);
     }
   };
 
@@ -338,6 +334,47 @@ export default function TerminalInterface() {
       return;
     }
 
+    // For action sequences: if already completed, show content with completion note
+    // If not completed, type content normally — LogDetailView shows INITIATE SEQUENCE button
+    if (log.type === 'action_sequence' && log.action_sequence) {
+      const persistKey = log.action_sequence.on_complete?.persist_key || log.action_sequence.id;
+      const isCompleted = session.completedActions.includes(persistKey);
+
+      if (isCompleted) {
+        const completionText = log.content
+          ? log.content + '\n\n>> [SEQUENCE PREVIOUSLY COMPLETED]\n>> ' + log.action_sequence.on_complete.message
+          : '>> [SEQUENCE PREVIOUSLY COMPLETED]\n>> ' + log.action_sequence.on_complete.message;
+
+        setLocalDisplayedText('');
+        setLocalTypingComplete(false);
+        const cancel = typeTextWithSound(
+          completionText,
+          setLocalDisplayedText,
+          () => setLocalTypingComplete(true),
+          { delay: 20 }
+        );
+        typingCancelRef.current = cancel;
+        return;
+      }
+
+      // Not yet completed: type content, player clicks INITIATE SEQUENCE when ready
+      if (log.content) {
+        setLocalDisplayedText('');
+        setLocalTypingComplete(false);
+        const cancel = typeTextWithSound(
+          log.content,
+          setLocalDisplayedText,
+          () => setLocalTypingComplete(true),
+          { delay: 20 }
+        );
+        typingCancelRef.current = cancel;
+      } else {
+        // No content preamble — go straight to sequence
+        session.setActiveSequence(log.action_sequence);
+      }
+      return;
+    }
+
     // Otherwise, type the content
     if (log.content) {
       setLocalDisplayedText('');
@@ -414,24 +451,8 @@ export default function TerminalInterface() {
     if (result.success) {
       audioManager.playEffect('access_granted');
 
-      // Check if log has nested audio logs
-      if (session.selectedLog?.logs && Array.isArray(session.selectedLog.logs) && session.selectedLog.logs.length > 0) {
-        session.setShowAudioLogs(true);
-        session.setAudioLogsData(session.selectedLog.logs);
-        return;
-      }
-
-      // Otherwise type the content
-      if (session.selectedLog?.content) {
-        setLocalDisplayedText('');
-        setLocalTypingComplete(false);
-        const cancel = typeTextWithSound(
-          session.selectedLog.content,
-          setLocalDisplayedText,
-          () => setLocalTypingComplete(true),
-          { delay: 20 }
-        );
-        typingCancelRef.current = cancel;
+      if (session.selectedLog) {
+        showLogContent(session.selectedLog);
       }
     } else {
       audioManager.playEffect('access_denied');
@@ -447,24 +468,8 @@ export default function TerminalInterface() {
     if (result.success) {
       audioManager.playEffect('access_granted');
 
-      // Check if log has nested audio logs
-      if (session.selectedLog?.logs && Array.isArray(session.selectedLog.logs) && session.selectedLog.logs.length > 0) {
-        session.setShowAudioLogs(true);
-        session.setAudioLogsData(session.selectedLog.logs);
-        return;
-      }
-
-      // Otherwise type the content
-      if (session.selectedLog?.content) {
-        setLocalDisplayedText('');
-        setLocalTypingComplete(false);
-        const cancel = typeTextWithSound(
-          session.selectedLog.content,
-          setLocalDisplayedText,
-          () => setLocalTypingComplete(true),
-          { delay: 20 }
-        );
-        typingCancelRef.current = cancel;
+      if (session.selectedLog) {
+        showLogContent(session.selectedLog);
       }
     } else {
       audioManager.playEffect('access_denied');
@@ -657,8 +662,42 @@ export default function TerminalInterface() {
               />
             )}
 
+            {/* Action Sequence Player */}
+            {session.activeSequence &&
+             session.selectedLog &&
+             !session.requiresPassword &&
+             !session.rollCheck &&
+             !session.specialRollCheck &&
+             !session.terminalPasswordRequired && (
+              <ActionSequencePlayer
+                sequence={session.activeSequence}
+                preambleText={session.selectedLog?.content}
+                onComplete={async () => {
+                  const actionId = session.activeSequence?.on_complete?.persist_key || session.activeSequence?.id;
+                  if (actionId) {
+                    session.addCompletedAction(actionId);
+                    try {
+                      await dbHelpers.addCompletedAction(actionId);
+                    } catch (error) {
+                      console.error('Failed to persist completed action:', error);
+                    }
+                  }
+                }}
+                onFail={() => {}}
+                onBack={() => {
+                  session.setActiveSequence(null);
+                  session.goToTerminal();
+                }}
+                onBackToTerminal={() => {
+                  session.setActiveSequence(null);
+                  session.goToTerminal();
+                }}
+              />
+            )}
+
             {/* Log Detail View */}
             {session.selectedLog &&
+             !session.activeSequence &&
              !session.requiresPassword &&
              !session.rollCheck &&
              !session.specialRollCheck &&
@@ -668,6 +707,11 @@ export default function TerminalInterface() {
                 displayedText={localDisplayedText}
                 typingComplete={localTypingComplete}
                 onBack={session.goToTerminal}
+                onInitiateSequence={
+                  session.selectedLog?.type === 'action_sequence' && session.selectedLog?.action_sequence
+                    ? () => session.setActiveSequence(session.selectedLog!.action_sequence!)
+                    : undefined
+                }
                 terminalCode={session.activeTerminal?.code || ''}
               />
             )}
@@ -681,6 +725,7 @@ export default function TerminalInterface() {
                 logs={session.logData}
                 onLogSelect={handleLogClick}
                 onBack={session.goToInit}
+                completedActions={session.completedActions}
               />
             )}
 
@@ -698,3 +743,5 @@ export default function TerminalInterface() {
     </div>
   );
 }
+
+export default React.memo(TerminalInterface);

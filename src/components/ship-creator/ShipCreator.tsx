@@ -275,7 +275,7 @@ export default function ShipCreator({ onComplete, onCancel }: ShipCreatorProps) 
             <select
               className="terminal-input"
               value={design.techLevel}
-              onChange={(e) => updateDesign({ techLevel: parseInt(e.target.value) })}
+              onChange={(e) => updateDesign({ techLevel: parseInt(e.target.value, 10) })}
             >
               {Array.from({ length: 15 }, (_, i) => i + 6).map((tl) => (
                 <option key={tl} value={tl}>TL {tl}</option>
@@ -295,7 +295,7 @@ export default function ShipCreator({ onComplete, onCancel }: ShipCreatorProps) 
               min={5}
               step={5}
               onChange={(e) => {
-                const val = parseInt(e.target.value) || 5;
+                const val = parseInt(e.target.value, 10) || 5;
                 updateDesign({ tonnage: Math.max(5, val) });
               }}
             />
@@ -552,7 +552,7 @@ export default function ShipCreator({ onComplete, onCancel }: ShipCreatorProps) 
                     min={0}
                     max={maxProt}
                     value={design.armorProtection}
-                    onChange={(e) => updateDesign({ armorProtection: parseInt(e.target.value) })}
+                    onChange={(e) => updateDesign({ armorProtection: parseInt(e.target.value, 10) })}
                     className="flex-1"
                     style={{ accentColor: 'var(--primary)' }}
                   />
@@ -723,7 +723,7 @@ export default function ShipCreator({ onComplete, onCancel }: ShipCreatorProps) 
               className="terminal-input flex-1"
               value={design.powerPlantTons}
               min={1}
-              onChange={(e) => updateDesign({ powerPlantTons: Math.max(1, parseInt(e.target.value) || 1) })}
+              onChange={(e) => updateDesign({ powerPlantTons: Math.max(1, parseInt(e.target.value, 10) || 1) })}
             />
             <button
               className="terminal-btn"
@@ -804,7 +804,7 @@ export default function ShipCreator({ onComplete, onCancel }: ShipCreatorProps) 
               value={design.additionalFuelWeeks ?? 0}
               min={0}
               max={52}
-              onChange={(e) => updateDesign({ additionalFuelWeeks: Math.max(0, parseInt(e.target.value) || 0) })}
+              onChange={(e) => updateDesign({ additionalFuelWeeks: Math.max(0, parseInt(e.target.value, 10) || 0) })}
             />
             <span className="text-xs font-mono" style={{ color: 'var(--text-dimmer)' }}>
               extra weeks ({4 + (design.additionalFuelWeeks ?? 0)} weeks total)
@@ -976,7 +976,7 @@ export default function ShipCreator({ onComplete, onCancel }: ShipCreatorProps) 
               value={design.additionalSensorStations}
               min={0}
               max={10}
-              onChange={(e) => updateDesign({ additionalSensorStations: Math.max(0, parseInt(e.target.value) || 0) })}
+              onChange={(e) => updateDesign({ additionalSensorStations: Math.max(0, parseInt(e.target.value, 10) || 0) })}
             />
             <span className="text-xs font-mono" style={{ color: 'var(--text-dimmer)' }}>
               1t + MCr0.5 each. Extra stations for dedicated sensor operators.
@@ -1295,7 +1295,7 @@ export default function ShipCreator({ onComplete, onCancel }: ShipCreatorProps) 
                     <input type="number" className="terminal-input" style={{ width: '80px' }}
                       value={mult} min={1} max={maxMult}
                       onChange={(e) => {
-                        const v = Math.max(1, Math.min(maxMult, parseInt(e.target.value) || 1));
+                        const v = Math.max(1, Math.min(maxMult, parseInt(e.target.value, 10) || 1));
                         updateDesign({ spinalMount: { ...design.spinalMount!, multiple: v } });
                       }} />
                     <span className="text-xs font-mono" style={{ color: 'var(--text-dimmer)' }}>
@@ -1394,7 +1394,7 @@ export default function ShipCreator({ onComplete, onCancel }: ShipCreatorProps) 
                   className="terminal-input"
                   value={design[field]}
                   min={0}
-                  onChange={(e) => updateDesign({ [field]: Math.max(0, parseInt(e.target.value) || 0) })}
+                  onChange={(e) => updateDesign({ [field]: Math.max(0, parseInt(e.target.value, 10) || 0) })}
                 />
                 <div className="text-xs mt-1" style={{ color: 'var(--text-dimmer)' }}>{st.description}</div>
               </div>
@@ -1411,7 +1411,7 @@ export default function ShipCreator({ onComplete, onCancel }: ShipCreatorProps) 
             style={{ width: '120px' }}
             value={design.lowBerths}
             min={0}
-            onChange={(e) => updateDesign({ lowBerths: Math.max(0, parseInt(e.target.value) || 0) })}
+            onChange={(e) => updateDesign({ lowBerths: Math.max(0, parseInt(e.target.value, 10) || 0) })}
           />
         </div>
 
@@ -1425,7 +1425,7 @@ export default function ShipCreator({ onComplete, onCancel }: ShipCreatorProps) 
               style={{ width: '120px' }}
               value={design.commonAreaTons}
               min={0}
-              onChange={(e) => updateDesign({ commonAreaTons: Math.max(0, parseInt(e.target.value) || 0) })}
+              onChange={(e) => updateDesign({ commonAreaTons: Math.max(0, parseInt(e.target.value, 10) || 0) })}
             />
             <button
               className="terminal-btn"
@@ -1469,7 +1469,7 @@ export default function ShipCreator({ onComplete, onCancel }: ShipCreatorProps) 
               className="terminal-input flex-1"
               value={design.cargoTons}
               min={0}
-              onChange={(e) => updateDesign({ cargoTons: Math.max(0, parseInt(e.target.value) || 0) })}
+              onChange={(e) => updateDesign({ cargoTons: Math.max(0, parseInt(e.target.value, 10) || 0) })}
             />
             <button
               className="terminal-btn"

@@ -6,7 +6,7 @@ export default function VTTLightingPanel() {
 
   if (!activeMap) {
     return (
-      <div className="flex items-center justify-center h-full text-terminal-primary/30 text-xs font-mono p-4 text-center">
+      <div className="vtt-empty">
         Load a map first
       </div>
     );
@@ -16,58 +16,56 @@ export default function VTTLightingPanel() {
     <div className="flex flex-col h-full overflow-y-auto p-3 space-y-4">
       {/* Display toggles */}
       <div>
-        <label className="flex items-center justify-between py-0.5 cursor-pointer">
-          <span className="text-xs text-terminal-primary/60 font-mono">Show Walls</span>
+        <label className="vtt-checkbox justify-between">
+          <span>Show Walls</span>
           <input
             type="checkbox"
             checked={state.showWalls}
             onChange={() => dispatch({ type: "TOGGLE_WALLS" })}
-            className="accent-green-500"
           />
         </label>
-        <label className="flex items-center justify-between py-0.5 cursor-pointer">
-          <span className="text-xs text-terminal-primary/60 font-mono">Show Lights</span>
+        <label className="vtt-checkbox justify-between">
+          <span>Show Lights</span>
           <input
             type="checkbox"
             checked={state.showLights}
             onChange={() => dispatch({ type: "TOGGLE_LIGHTS" })}
-            className="accent-green-500"
           />
         </label>
       </div>
 
       {/* Tool shortcuts */}
       <div>
-        <h4 className="text-[10px] text-terminal-primary/50 uppercase tracking-wider font-mono mb-1.5">
+        <h4 className="vtt-section-label mb-1.5">
           Quick Tools
         </h4>
         <div className="grid grid-cols-3 gap-1">
           <button
             onClick={() => dispatch({ type: "SET_TOOL", payload: "wall" })}
-            className={`px-2 py-1.5 text-xs font-mono rounded border transition-colors ${
+            className={`vtt-option ${
               state.activeTool === "wall"
-                ? "bg-orange-500/10 border-orange-500/50 text-orange-400"
-                : "border-terminal-border/30 text-terminal-primary/50 hover:text-terminal-primary"
+                ? "vtt-option--active bg-orange-500/10 border-orange-500/50 text-orange-400"
+                : ""
             }`}
           >
             Wall
           </button>
           <button
             onClick={() => dispatch({ type: "SET_TOOL", payload: "door" })}
-            className={`px-2 py-1.5 text-xs font-mono rounded border transition-colors ${
+            className={`vtt-option ${
               state.activeTool === "door"
-                ? "bg-cyan-500/10 border-cyan-500/50 text-cyan-400"
-                : "border-terminal-border/30 text-terminal-primary/50 hover:text-terminal-primary"
+                ? "vtt-option--active bg-cyan-500/10 border-cyan-500/50 text-cyan-400"
+                : ""
             }`}
           >
             Door
           </button>
           <button
             onClick={() => dispatch({ type: "SET_TOOL", payload: "light" })}
-            className={`px-2 py-1.5 text-xs font-mono rounded border transition-colors ${
+            className={`vtt-option ${
               state.activeTool === "light"
-                ? "bg-yellow-500/10 border-yellow-500/50 text-yellow-400"
-                : "border-terminal-border/30 text-terminal-primary/50 hover:text-terminal-primary"
+                ? "vtt-option--active bg-yellow-500/10 border-yellow-500/50 text-yellow-400"
+                : ""
             }`}
           >
             Light
@@ -78,7 +76,7 @@ export default function VTTLightingPanel() {
       {/* Walls list */}
       <div>
         <div className="flex items-center justify-between mb-1">
-          <h4 className="text-[10px] text-terminal-primary/50 uppercase tracking-wider font-mono">
+          <h4 className="vtt-section-label">
             Walls ({activeMap.walls.filter((w) => w.type === "wall").length})
           </h4>
           {activeMap.walls.filter((w) => w.type === "wall").length > 0 && (
@@ -93,7 +91,7 @@ export default function VTTLightingPanel() {
                     })
                   );
               }}
-              className="text-[10px] font-mono text-red-400/50 hover:text-red-400 transition-colors"
+              className="vtt-btn danger"
             >
               Clear All
             </button>
@@ -103,7 +101,7 @@ export default function VTTLightingPanel() {
 
       {/* Doors list */}
       <div>
-        <h4 className="text-[10px] text-terminal-primary/50 uppercase tracking-wider font-mono mb-1">
+        <h4 className="vtt-section-label mb-1">
           Doors ({activeMap.walls.filter((w) => w.type === "door").length})
         </h4>
         <div className="space-y-1">
@@ -112,7 +110,7 @@ export default function VTTLightingPanel() {
             .map((door) => (
               <div
                 key={door.id}
-                className="flex items-center justify-between px-2 py-1 rounded border border-terminal-border/20 bg-terminal-bg-dark/50"
+                className="vtt-list-item justify-between"
               >
                 <span className="text-xs font-mono text-cyan-400/70">
                   {door.doorOpen ? "Open" : "Closed"}
@@ -149,14 +147,14 @@ export default function VTTLightingPanel() {
 
       {/* Lights list */}
       <div>
-        <h4 className="text-[10px] text-terminal-primary/50 uppercase tracking-wider font-mono mb-1">
+        <h4 className="vtt-section-label mb-1">
           Lights ({activeMap.lights.length})
         </h4>
         <div className="space-y-1">
           {activeMap.lights.map((light) => (
             <div
               key={light.id}
-              className="flex items-center justify-between px-2 py-1 rounded border border-terminal-border/20 bg-terminal-bg-dark/50"
+              className="vtt-list-item justify-between"
             >
               <div className="flex items-center gap-2">
                 <Sun size={12} style={{ color: light.color }} />
@@ -191,11 +189,11 @@ export default function VTTLightingPanel() {
                       payload: {
                         mapId: activeMap.id,
                         lightId: light.id,
-                        updates: { radius: parseInt(e.target.value) },
+                        updates: { radius: parseInt(e.target.value, 10) },
                       },
                     })
                   }
-                  className="w-16 accent-yellow-500 h-1"
+                  className="vtt-slider w-16 accent-yellow-500"
                 />
                 <button
                   onClick={() =>
@@ -214,7 +212,7 @@ export default function VTTLightingPanel() {
         </div>
       </div>
 
-      <div className="text-[10px] text-terminal-primary/20 font-mono text-center pt-2">
+      <div className="vtt-empty pt-2">
         Use Wall/Door/Light tools on the canvas to add elements.
         <br />
         Dynamic lighting renders when both walls and lights exist.

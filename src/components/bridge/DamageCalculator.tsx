@@ -170,7 +170,7 @@ export function DamageCalculator({ isOpen, onClose, onApplyDamage }: DamageCalcu
               <Input
                 type="number"
                 value={effectOfHit}
-                onChange={(e) => setEffectOfHit(parseInt(e.target.value) || 0)}
+                onChange={(e) => setEffectOfHit(parseInt(e.target.value, 10) || 0)}
                 placeholder="0"
               />
               <p className="text-xs text-muted-foreground">
@@ -188,7 +188,7 @@ export function DamageCalculator({ isOpen, onClose, onApplyDamage }: DamageCalcu
                 <Input
                   type="number"
                   value={targetArmor}
-                  onChange={(e) => setTargetArmor(parseInt(e.target.value) || 0)}
+                  onChange={(e) => setTargetArmor(parseInt(e.target.value, 10) || 0)}
                   placeholder="0"
                 />
               </div>
@@ -201,7 +201,7 @@ export function DamageCalculator({ isOpen, onClose, onApplyDamage }: DamageCalcu
                 <Input
                   type="number"
                   value={targetScreens}
-                  onChange={(e) => setTargetScreens(parseInt(e.target.value) || 0)}
+                  onChange={(e) => setTargetScreens(parseInt(e.target.value, 10) || 0)}
                   placeholder="0"
                 />
                 <p className="text-xs text-muted-foreground">

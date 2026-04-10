@@ -223,9 +223,9 @@ export function useShipCombat({ contacts, updateContactFields, moveShip }: UseSh
   }, [addLog]);
 
   const endCombat = useCallback(async () => {
-    // Clear combat fields from all combatants
-    for (const c of combatants) {
-      await updateContactFields(c.id, {
+    // Clear combat fields from all combatants (batched for performance)
+    await Promise.all(combatants.map(c => {
+      const fields: Record<string, any> = {
         isInCombat: false,
         initiative: undefined,
         initiativeDetail: undefined,
@@ -246,12 +246,13 @@ export function useShipCombat({ contacts, updateContactFields, moveShip }: UseSh
         sandScreen: undefined,
         jumpChargeRounds: undefined,
         jumpCommitted: undefined,
-      });
-      // Mark destroyed ships as derelict
+      };
+      // Mark destroyed ships as derelict in the same update
       if ((c.hullCurrent ?? 0) <= 0) {
-        await updateContactFields(c.id, { status: 'derelict' });
+        fields.status = 'derelict';
       }
-    }
+      return updateContactFields(c.id, fields);
+    }));
     setIsActive(false);
     addLog('Combat ended.');
   }, [combatants, updateContactFields, addLog]);
@@ -299,6 +300,7 @@ export function useShipCombat({ contacts, updateContactFields, moveShip }: UseSh
     setSensorPlans(prev => { const n = { ...prev }; delete n[contactId]; return n; });
     setDogfightPlans(prev => { const n = { ...prev }; delete n[contactId]; return n; });
     setDockingPlans(prev => { const n = { ...prev }; delete n[contactId]; return n; });
+    // Bidirectional removal: clear locks where this contact is either the locker or the target
     setSensorLocks(prev => Object.fromEntries(Object.entries(prev).filter(([k, v]) => k !== contactId && v !== contactId)));
     setBoardingPressure(prev => { const n = { ...prev }; delete n[contactId]; return n; });
     setDockedWith(prev => {
@@ -362,7 +364,7 @@ export function useShipCombat({ contacts, updateContactFields, moveShip }: UseSh
       criticals,
       status: hullCurrent <= 0 ? 'derelict' : contact.status,
     });
-    // Clear sensor locks involving destroyed ships
+    // Bidirectional removal: clear locks where this contact is either the locker or the target
     if (hullCurrent <= 0) {
       setSensorLocks(prev => Object.fromEntries(Object.entries(prev).filter(([k, v]) => k !== contactId && v !== contactId)));
     }

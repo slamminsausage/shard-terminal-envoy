@@ -12,7 +12,7 @@ export default function VTTCharacterImport() {
 
   if (!activeMap) {
     return (
-      <div className="flex items-center justify-center h-full text-terminal-primary/30 font-mono text-xs p-4 text-center">
+      <div className="vtt-empty h-full flex items-center justify-center p-4">
         Select a map first
       </div>
     );
@@ -63,7 +63,7 @@ export default function VTTCharacterImport() {
 
   if (characters.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-full text-terminal-primary/30 font-mono text-xs p-4 text-center gap-2">
+      <div className="vtt-empty h-full flex flex-col items-center justify-center p-4 gap-2">
         <Users size={24} />
         No campaign characters found.
         <span className="text-[10px]">
@@ -75,14 +75,14 @@ export default function VTTCharacterImport() {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="p-3 border-b border-terminal-border/30">
+      <div className="vtt-panel-section">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-[10px] text-terminal-primary/50 uppercase tracking-wider font-mono">
+          <span className="vtt-section-label">
             Campaign Characters
           </span>
           <button
             onClick={importAll}
-            className="flex items-center gap-1 px-2 py-1 text-[10px] font-mono rounded border border-terminal-primary/30 text-terminal-primary/60 hover:text-terminal-primary hover:bg-terminal-primary/10 transition-colors"
+            className="vtt-btn"
           >
             <Plus size={10} /> Import All
           </button>
@@ -95,7 +95,7 @@ export default function VTTCharacterImport() {
           return (
             <div
               key={char.id}
-              className="flex items-center gap-2 p-2 rounded bg-terminal-bg-dark/50 border border-terminal-border/20 hover:border-terminal-border/40 transition-colors"
+              className="vtt-list-item"
             >
               {/* Avatar */}
               <div className="w-8 h-8 rounded-full bg-terminal-bg-dark border border-terminal-primary/30 flex items-center justify-center text-terminal-primary text-xs font-mono overflow-hidden flex-shrink-0">
@@ -130,7 +130,7 @@ export default function VTTCharacterImport() {
               ) : (
                 <button
                   onClick={() => importCharacter(char)}
-                  className="flex items-center gap-1 px-2 py-1 text-[10px] font-mono rounded border border-terminal-primary/30 text-terminal-primary/50 hover:text-terminal-primary hover:bg-terminal-primary/10 transition-colors"
+                  className="vtt-btn"
                 >
                   <Plus size={10} /> Add
                 </button>

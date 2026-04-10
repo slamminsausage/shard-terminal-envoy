@@ -52,8 +52,8 @@ export function AttackPanel({
 
         const hitRawStr = manualHitRolls[ship.id] ?? '';
         const damageRawStr = manualDamageRolls[ship.id] ?? '';
-        const parsedHit = parseInt(hitRawStr);
-        const parsedDamage = parseInt(damageRawStr);
+        const parsedHit = parseInt(hitRawStr, 10);
+        const parsedDamage = parseInt(damageRawStr, 10);
         const manualHit = hitRawStr !== '' && !isNaN(parsedHit) ? parsedHit : undefined;
         const manualDamage = damageRawStr !== '' && !isNaN(parsedDamage) ? parsedDamage : undefined;
 
@@ -125,7 +125,7 @@ export function AttackPanel({
                     <Input
                       type="number"
                       value={plan?.situationalDM ?? 0}
-                      onChange={e => onUpdateAttackPlan(ship.id, { situationalDM: parseInt(e.target.value) || 0 })}
+                      onChange={e => onUpdateAttackPlan(ship.id, { situationalDM: parseInt(e.target.value, 10) || 0 })}
                       className="h-6 text-[0.6rem] bg-black border-terminal-primary/30 text-terminal-primary px-1"
                     />
                   </div>

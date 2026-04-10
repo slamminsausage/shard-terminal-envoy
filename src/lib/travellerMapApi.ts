@@ -570,24 +570,36 @@ export function generateMapUrl(
     hideui?: boolean;
     galdir?: boolean;
     routes?: boolean;
-    yahSector?: string;
-    yahHex?: string;
+    // Numeric sector/hex coords for the YAH marker (yah_sx/yah_sy/yah_hx/yah_hy).
+    // These avoid TravellerMap's broken named-lookup entirely — no world lookup,
+    // no "not found" alerts. Fetched async from the metadata API and cached.
+    yahSx?: number;
+    yahSy?: number;
+    yahHx?: number;
+    yahHy?: number;
   } = {}
 ): string {
   const sectorFull = getSectorFullName(sector);
+  const sectorAbbr = getSectorAbbreviation(sectorFull);
   const {
     style = "terminal",
     scale = 32,
     galdir = false,
     routes = true,
-    yahSector,
-    yahHex,
+    yahSx,
+    yahSy,
+    yahHx,
+    yahHy,
   } = options;
 
   const paddedHex = padHex(hex);
 
-  // Use the /go/ URL format which properly handles sector+hex navigation
-  const url = new URL(`/go/${encodeURIComponent(sectorFull)}/${paddedHex}`, TRAVELLER_MAP_BASE_URL);
+  // Use ?sector=abbr&hex=XXXX instead of /go/abbr/XXXX.
+  // The /go/ route does a server-side world lookup and shows an error dialog for
+  // any hex it can't resolve — even valid worlds — making the iframe go black.
+  const url = new URL("/", TRAVELLER_MAP_BASE_URL);
+  url.searchParams.set("sector", sectorAbbr);
+  url.searchParams.set("hex", paddedHex);
   url.searchParams.set("style", style);
   url.searchParams.set("scale", scale.toString());
 
@@ -616,10 +628,15 @@ export function generateMapUrl(
     url.searchParams.set("routes", "0");
   }
 
-  // "You Are Here" marker support
-  if (yahSector && yahHex) {
-    url.searchParams.set("yah_sector", yahSector);
-    url.searchParams.set("yah_hex", padHex(yahHex));
+  // "You Are Here" marker using sector/hex integer coordinates (yah_sx/yah_sy/yah_hx/yah_hy).
+  // The API docs confirm these are a valid placement method and require no world lookup.
+  // NOTE: yah_x/yah_y uses map-space (not world-space), and yah_sector/yah_hex triggers
+  // a server-side lookup that fails. Sector/hex integers are the cleanest approach.
+  if (yahSx !== undefined && yahSy !== undefined && yahHx !== undefined && yahHy !== undefined) {
+    url.searchParams.set("yah_sx", yahSx.toString());
+    url.searchParams.set("yah_sy", yahSy.toString());
+    url.searchParams.set("yah_hx", yahHx.toString());
+    url.searchParams.set("yah_hy", yahHy.toString());
   }
 
   return url.toString();

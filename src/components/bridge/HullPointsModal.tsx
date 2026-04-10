@@ -139,7 +139,7 @@ export function HullPointsModal({ vehicle, onClose }: HullPointsModalProps) {
               type="number"
               value={currentHull}
               onChange={(e) => {
-                const val = parseInt(e.target.value) || 0;
+                const val = parseInt(e.target.value, 10) || 0;
                 setCurrentHull(Math.max(0, Math.min(maxHull, val)));
               }}
               min={0}

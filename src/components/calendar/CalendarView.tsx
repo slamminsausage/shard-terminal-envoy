@@ -46,7 +46,7 @@ export const CalendarView: React.FC = () => {
   const [eventRecurrenceDays, setEventRecurrenceDays] = useState('7');
 
   const handleAdvanceTime = async () => {
-    const days = parseInt(advanceDays) || 1;
+    const days = parseInt(advanceDays, 10) || 1;
     if (days > 0) {
       await advanceTime(days);
     }
@@ -64,7 +64,7 @@ export const CalendarView: React.FC = () => {
       event_date: eventDate,
       location: eventLocation || undefined,
       is_recurring: eventIsRecurring,
-      recurrence_days: eventIsRecurring ? parseInt(eventRecurrenceDays) || 7 : undefined,
+      recurrence_days: eventIsRecurring ? parseInt(eventRecurrenceDays, 10) || 7 : undefined,
       is_completed: false,
     });
 
