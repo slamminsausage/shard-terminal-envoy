@@ -32,6 +32,9 @@ export interface Rank {
   title: string;
   skillBonus?: string;
   bonusStat?: CharacteristicName;
+  /** If set, `bonusStat` becomes `max(bonusStatFloor, current + 1)` — used for
+   *  Traveller 2e ranks like "SOC 10 or SOC +1, whichever is higher". */
+  bonusStatFloor?: number;
 }
 
 // ============================================================================

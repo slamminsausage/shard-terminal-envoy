@@ -269,6 +269,9 @@ export const dbHelpers = {
     if (characterData.social_standing !== undefined) dbPayload.social_standing = characterData.social_standing;
     if (characterData.psionics !== undefined) dbPayload.psionics = characterData.psionics;
     if (characterData.initiative !== undefined) dbPayload.initiative = characterData.initiative;
+    if (characterData.current_strength !== undefined) dbPayload.current_strength = characterData.current_strength;
+    if (characterData.current_dexterity !== undefined) dbPayload.current_dexterity = characterData.current_dexterity;
+    if (characterData.current_endurance !== undefined) dbPayload.current_endurance = characterData.current_endurance;
 
     // Derived characteristics
     if (characterData.melee_dmg !== undefined) dbPayload.melee_dmg = characterData.melee_dmg;

@@ -5,13 +5,14 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Dices, User, Briefcase, Award, Save, ArrowRight, AlertCircle, RefreshCw, ChevronDown, ChevronUp, Star, Ship, Users, Lock } from 'lucide-react';
+import { Dices, User, Briefcase, Award, Save, ArrowRight, AlertCircle, RefreshCw, ChevronDown, ChevronUp, Star, Ship, Users, Rocket, Lock } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useCampaign } from '@/contexts/CampaignContext';
-import { ALL_CAREERS, BACKGROUND_SKILLS, getPreCareerEvent, CAREER_PRISONER, rollInitialParoleThreshold, CAREER_PSION, performPsiTesting, PSIONIC_TALENTS, getPrisonSubEvent, type PsiTestResult } from './careers';
-import type { CareerDefinition, Characteristics, CharacteristicName, StructuredEvent, EventOutcome, GameEvent, EventEffects } from './careers';
+import { getLocalStorage, setLocalStorage, removeLocalStorage } from '@/lib/localStorage';
+import { ALL_CAREERS, BACKGROUND_SKILLS, getPreCareerEvent, CAREER_PRISONER, rollInitialParoleThreshold, CAREER_PSION, performPsiTesting, PSIONIC_TALENTS, type PsiTestResult } from './careers';
+import type { CareerDefinition, Characteristics, StructuredEvent, EventOutcome, GameEvent, EventEffects, CharacteristicName } from './careers';
 import { isGameEvent } from './careers';
-import { rollDraft, type DraftResult, getLifeEvent, getInjury, getUnusualEvent, rollAging, applyAgingEffects, type AgingRollResult, type AgingEffectLevel, type AgingCrisisResult, checkAgingCrisis, rollAnagathicsObtain, rollAnagathicsCost, type AnagathicsObtainResult, calculateMedicalCoverage, calculateInjuryCost, type MedicalCoverageResult } from './tables';
+import { rollDraft, type DraftResult, getLifeEvent, getInjury, getUnusualEvent, rollAging, applyAgingEffects, type AgingRollResult, LIFE_EVENTS, INJURY_TABLE, UNUSUAL_EVENTS } from './tables';
 import { EventHandler } from './EventHandler';
 import { rollDiceExpression, rollDice as rollDiceUtil } from './eventProcessor';
 import { SpecialtySelector, needsSpecialtySelection, getBaseSkillName } from './SpecialtySelector';
@@ -302,8 +303,14 @@ const getRankTitle = (
 // ============================================================================
 
 export const CharacterGenerator: React.FC = () => {
-  const { saveCharacter, crewGroups, vehicles } = useCampaign();
+  const { saveCharacter, crewGroups, vehicles, currentPlayer } = useCampaign();
   const [step, setStep] = useState(1);
+
+  // Draft persistence state
+  const DRAFT_KEY = `traveller_chargen_draft${currentPlayer?.id ? `_${currentPlayer.id}` : ''}`;
+  const [showResumeDraft, setShowResumeDraft] = useState(false);
+  const [draftChecked, setDraftChecked] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Crew selection state for the final save step
   const [selectedCrewId, setSelectedCrewId] = useState<string>('');
@@ -422,8 +429,11 @@ export const CharacterGenerator: React.FC = () => {
   const [graduatedWithHonours, setGraduatedWithHonours] = useState(false);
   const [needsCommissionRoll, setNeedsCommissionRoll] = useState(false);
   const [commissionRollDM, setCommissionRollDM] = useState(0);
-  const [commissionPending, setCommissionPending] = useState(false);
+  const [commissionAttempted, setCommissionAttempted] = useState(false);
   const [commissionRollLog, setCommissionRollLog] = useState<string>('');
+  // Advancement edge-case flags, cleared when a new career is started.
+  const [forcedContinueInCareer, setForcedContinueInCareer] = useState(false);
+  const [forcedLeaveAfterTerm, setForcedLeaveAfterTerm] = useState(false);
   const [graduationRollLog, setGraduationRollLog] = useState<string>('');
   const [survivalRollLog, setSurvivalRollLog] = useState<string>('');
   const [advancementRollLog, setAdvancementRollLog] = useState<string>('');
@@ -443,6 +453,10 @@ export const CharacterGenerator: React.FC = () => {
   const [redirectTableRoll, setRedirectTableRoll] = useState<number | null>(null);
   const [redirectTableName, setRedirectTableName] = useState<string | null>(null);
 
+  // Pending table redirect state - shows table & manual roller before auto-rolling
+  const [pendingTableRedirect, setPendingTableRedirect] = useState<'life_events' | 'injury' | 'unusual_events' | null>(null);
+  const [pendingTableIsMishap, setPendingTableIsMishap] = useState(false);
+
   // Draft system state
   const [hasUsedDraft, setHasUsedDraft] = useState(false);
   const [draftRolled, setDraftRolled] = useState(false);
@@ -457,7 +471,10 @@ export const CharacterGenerator: React.FC = () => {
   const [pendingAnyTalentSource, setPendingAnyTalentSource] = useState<string>('');
 
   // End-of-term skill selection state
-  const [termSkillSelected, setTermSkillSelected] = useState<boolean>(false);
+  // Counter-based so advancement success can grant two rolls.
+  const [termSkillRollsUsed, setTermSkillRollsUsed] = useState<number>(0);
+  const [termSkillRollsAllowed, setTermSkillRollsAllowed] = useState<number>(1);
+  const termSkillSelected = termSkillRollsUsed >= termSkillRollsAllowed;
   const [expandedSkillTable, setExpandedSkillTable] = useState<string | null>(null);
   const [skillTableRollResult, setSkillTableRollResult] = useState<number | null>(null);
 
@@ -1336,9 +1353,16 @@ export const CharacterGenerator: React.FC = () => {
     setPendingSpecialtySkill(null);
     setPendingSpecialtySource('');
     // Reset end-of-term skill selection state
-    setTermSkillSelected(false);
+    setTermSkillRollsUsed(0);
+    setTermSkillRollsAllowed(1);
     setExpandedSkillTable(null);
     setSkillTableRollResult(null);
+    // Reset commission state
+    setCommissionAttempted(false);
+    setCommissionRollLog('');
+    // Reset advancement edge-case flags — they only apply between terms.
+    setForcedContinueInCareer(false);
+    setForcedLeaveAfterTerm(false);
     // Reset academy graduation skill selection state
     setAcademyGradSkillsSelected([]);
     setAcademyGradPendingSpecialty(null);
@@ -1487,25 +1511,17 @@ export const CharacterGenerator: React.FC = () => {
 
     const roll = manualRoll ?? rollDice(2, 6);
     const total = roll + dm;
-    let survived = total >= assignment.survivalTarget;
-    let survivalLog = `Survival Roll: ${roll} + ${dm} = ${total} (need ${assignment.survivalTarget}+)`;
-
-    // Anagathics: must make TWO survival checks per term
-    if (survived && characterData.isUsingAnagathics && !isPreCareer) {
-      const roll2 = rollDice(2, 6);
-      const total2 = roll2 + dm;
-      const survived2 = total2 >= assignment.survivalTarget;
-      survivalLog += ` | Anagathics 2nd check: ${roll2} + ${dm} = ${total2} (need ${assignment.survivalTarget}+)`;
-      if (!survived2) {
-        survived = false;
-      }
-    }
+    // Natural 2 always fails survival regardless of modifiers.
+    const naturalTwo = roll === 2;
+    const survived = !naturalTwo && total >= assignment.survivalTarget;
 
     setTermSurvived(survived);
 
     // Set survival/graduation roll log for regular careers
     if (!isPreCareer) {
-      setSurvivalRollLog(survivalLog);
+      setSurvivalRollLog(
+        `Survival Roll: ${roll} + ${dm} = ${total} (need ${assignment.survivalTarget}+)${naturalTwo ? ' — NATURAL 2: automatic failure' : ''}`
+      );
     }
 
     if (!survived) {
@@ -1683,6 +1699,18 @@ export const CharacterGenerator: React.FC = () => {
 
     setTermAdvanced(advanced);
 
+    // Edge case: natural 12 means the character cannot leave this career next term.
+    if (roll === 12) {
+      setForcedContinueInCareer(true);
+    }
+    // Edge case: total <= terms-in-career means the character must leave after this term.
+    const termsInThisCareer = characterData.lifepath_log.filter(
+      t => t.career === selectedCareer.name
+    ).length;
+    if (total <= termsInThisCareer) {
+      setForcedLeaveAfterTerm(true);
+    }
+
     // Build the roll log with details
     let dmBreakdown = `${charDM}`;
     if (eventAdvancementDM > 0) {
@@ -1734,19 +1762,130 @@ export const CharacterGenerator: React.FC = () => {
       }
 
       if (rankData.bonusStat) {
-        setCharacterData(prev => ({
-          ...prev,
-          characteristics: {
-            ...prev.characteristics,
-            [rankData.bonusStat]: {
-              ...prev.characteristics[rankData.bonusStat],
-              total: prev.characteristics[rankData.bonusStat].total + 1,
-              current: prev.characteristics[rankData.bonusStat].current + 1,
-            },
-          },
-        }));
-        setTermSkillsGained(prev => [...prev, `${rankData.bonusStat.toUpperCase()} +1 (rank bonus)`]);
+        applyRankStatBonus(rankData.bonusStat, rankData.bonusStatFloor);
       }
+    }
+
+    // Successful advancement grants a second skill-table roll this term.
+    if (advanced) {
+      setTermSkillRollsAllowed(2);
+    }
+  };
+
+  // Determine whether the character can attempt a commission this term.
+  const isEligibleForCommission = (): boolean => {
+    if (!selectedCareer) return false;
+    if (!['Army', 'Navy', 'Marines'].includes(selectedCareer.name)) return false;
+    if (isCommissioned) return false;
+    const termsInThisCareer = characterData.lifepath_log.filter(
+      t => t.career === selectedCareer.name
+    ).length;
+    const isFirstTermInCareer = termsInThisCareer === 0;
+    const socValue = characterData.characteristics.social.total;
+    return isFirstTermInCareer || socValue >= 9;
+  };
+
+  // Compose a short DM breakdown string for the commission UI.
+  const getCommissionDMBreakdown = (): string => {
+    if (!selectedCareer) return '';
+    const termsInThisCareer = characterData.lifepath_log.filter(
+      t => t.career === selectedCareer.name
+    ).length;
+    const isFirstTermInCareer = termsInThisCareer === 0;
+    const termPenalty = isFirstTermInCareer ? 0 : -termsInThisCareer;
+    const socDM = getDM(characterData.characteristics.social.total);
+    const academyDM = commissionRollDM === -999 ? 0 : commissionRollDM;
+    const parts: string[] = [];
+    if (socDM !== 0) parts.push(`SOC DM ${socDM >= 0 ? '+' : ''}${socDM}`);
+    if (termPenalty !== 0) parts.push(`${termPenalty} (terms in career)`);
+    if (academyDM !== 0) parts.push(`+${academyDM} (academy)`);
+    if (eventAdvancementDM !== 0) parts.push(`+${eventAdvancementDM} (event bonus)`);
+    if (commissionRollDM === -999) return ' (Auto-pass: Military Academy honours)';
+    return parts.length > 0 ? ` DM: ${parts.join(', ')}.` : '';
+  };
+
+  const runCommissionCheck = (manualRoll?: number) => {
+    if (!selectedCareer || commissionAttempted) return;
+    if (!isEligibleForCommission()) return;
+    const target = selectedCareer.commissionTarget ?? 8;
+
+    const termsInThisCareer = characterData.lifepath_log.filter(
+      t => t.career === selectedCareer.name
+    ).length;
+    const isFirstTermInCareer = termsInThisCareer === 0;
+    const termPenalty = isFirstTermInCareer ? 0 : -termsInThisCareer;
+
+    const socValue = characterData.characteristics.social.total;
+    const socDM = getDM(socValue);
+    const autoPass = commissionRollDM === -999;
+    const academyDM = autoPass ? 0 : commissionRollDM;
+    const totalDM = socDM + termPenalty + academyDM + eventAdvancementDM;
+
+    const roll = autoPass ? 12 : (manualRoll ?? rollDice(2, 6));
+    const total = roll + totalDM;
+    const success = autoPass || total >= target;
+
+    setCommissionRollLog(
+      autoPass
+        ? 'Commission: Auto-pass (Military Academy honours graduate)'
+        : `Commission Roll: ${roll} + ${totalDM} = ${total} (need ${target}+) ${success ? '✓ COMMISSIONED' : '✗ Failed'}`
+    );
+    setCommissionAttempted(true);
+
+    if (success) {
+      setIsCommissioned(true);
+      const officerRanks = selectedCareer.ranks.officer ?? [];
+      // On first commission, character jumps to officer rank 1 (index 0 in officer array).
+      setCharacterData(prev => ({ ...prev, rank: 0 }));
+      const rank1 = officerRanks[0];
+      if (rank1?.skillBonus) {
+        applySkillGain(rank1.skillBonus, 'Commission');
+        setTermSkillsGained(prev => [...prev, `${rank1.skillBonus} (Commission)`]);
+      }
+      if (rank1?.bonusStat) {
+        applyRankStatBonus(rank1.bonusStat, rank1.bonusStatFloor);
+      }
+
+      // Commission success: skip advancement this term, but still grant the
+      // second skill-table roll (commission counts as advancement success).
+      setTermAdvanced(false);
+      setTermSkillRollsAllowed(2);
+      setNeedsCommissionRoll(false);
+      setCommissionRollDM(0);
+      setEventAdvancementDM(0); // consumed
+    }
+    // On failure: leave termAdvanced === null so the advancement phase runs next.
+  };
+
+  /**
+   * Applies a rank's stat bonus, honouring an optional floor.
+   * Floor example: "SOC 10 or SOC +1, whichever is higher" -> bonusStatFloor: 10
+   */
+  const applyRankStatBonus = (statName: CharacteristicName, floor?: number) => {
+    setCharacterData(prev => {
+      const current = prev.characteristics[statName].total;
+      const target = floor !== undefined ? Math.max(floor, current + 1) : current + 1;
+      const delta = target - current;
+      if (delta <= 0) return prev;
+      return {
+        ...prev,
+        characteristics: {
+          ...prev.characteristics,
+          [statName]: {
+            ...prev.characteristics[statName],
+            total: target,
+            current: prev.characteristics[statName].current + delta,
+          },
+        },
+      };
+    });
+    // Use the latest-known total to compute the log delta; since state updates are async,
+    // recompute from the ref-like fresh state by reading `characterData` below.
+    const currentForLog = characterData.characteristics[statName].total;
+    const targetForLog = floor !== undefined ? Math.max(floor, currentForLog + 1) : currentForLog + 1;
+    const deltaForLog = targetForLog - currentForLog;
+    if (deltaForLog > 0) {
+      setTermSkillsGained(prev => [...prev, `${statName.toUpperCase()} +${deltaForLog} (rank bonus)`]);
     }
   };
 
@@ -2284,7 +2423,7 @@ export const CharacterGenerator: React.FC = () => {
         if (effects.injurySeverity === 'severe') {
           setPendingInjurySeverity('severe');
         }
-        handleTableRedirect(effects.rollOnTable as 'life_events' | 'injury' | 'aging' | 'draft' | 'unusual_events' | 'mishap' | 'prison_event');
+        handleTableRedirect(effects.rollOnTable as 'life_events' | 'injury' | 'aging' | 'draft' | 'unusual_events' | 'mishap' | 'prison_event', true);
         return; // Don't complete mishap yet - wait for redirected table to complete
       }
     }
@@ -2330,62 +2469,22 @@ export const CharacterGenerator: React.FC = () => {
     }
   };
 
-  // Handler for table redirects (Life Events, Injury, Mishap, etc.)
-  const handleTableRedirect = (table: 'life_events' | 'injury' | 'aging' | 'draft' | 'unusual_events' | 'mishap' | 'prison_event') => {
-    let roll: number;
-    let event: GameEvent | null = null;
-    let tableName = '';
-
+  // Handler for table redirects (Life Events, Injury, etc.)
+  // Instead of auto-rolling, shows the table and lets the user roll manually
+  const handleTableRedirect = (table: 'life_events' | 'injury' | 'aging' | 'draft' | 'unusual_events', isMishap = false) => {
     switch (table) {
       case 'life_events':
-        roll = rollDiceUtil(2, 6); // 2D6
-        event = getLifeEvent(roll);
-        tableName = 'Life Events';
-        break;
       case 'injury':
-        if (pendingInjurySeverity === 'severe') {
-          // Severe injury: roll twice, take the lower (worse) result
-          const roll1 = rollDiceUtil(1, 6);
-          const roll2 = rollDiceUtil(1, 6);
-          roll = Math.min(roll1, roll2);
-          event = getInjury(roll);
-          tableName = `Injury (Severe - rolled ${roll1} and ${roll2}, took ${roll})`;
-          setPendingInjurySeverity(null);
-        } else {
-          roll = rollDiceUtil(1, 6); // 1D6
-          event = getInjury(roll);
-          tableName = 'Injury';
-        }
-        break;
-      case 'mishap':
-        roll = rollDiceUtil(1, 6); // 1D6
-        if (selectedCareer?.mishapTable) {
-          const mishapIndex = Math.min(roll - 1, selectedCareer.mishapTable.length - 1);
-          const mishap = selectedCareer.mishapTable[mishapIndex];
-          if (isGameEvent(mishap)) {
-            event = mishap;
-          }
-        }
-        tableName = 'Mishap';
-        break;
       case 'unusual_events':
-        roll = rollDiceUtil(1, 6); // 1D6
-        event = getUnusualEvent(roll);
-        tableName = 'Unusual Events';
-        break;
-      case 'prison_event':
-        roll = rollDiceUtil(1, 6); // 1D6
-        event = getPrisonSubEvent(roll);
-        tableName = 'Prison Event';
-        break;
+        setPendingTableRedirect(table);
+        setPendingTableIsMishap(isMishap);
+        return;
       case 'aging':
-        // Aging table not yet implemented
         setTermSkillsGained(prev => [...prev, 'Roll on Aging table (not yet implemented)']);
         setGameEventCompleted(true);
         setEventResolved(true);
         return;
       case 'draft':
-        // Draft is handled separately
         setTermSkillsGained(prev => [...prev, 'Roll on Draft table (use draft system)']);
         setGameEventCompleted(true);
         setEventResolved(true);
@@ -2395,12 +2494,41 @@ export const CharacterGenerator: React.FC = () => {
         setEventResolved(true);
         return;
     }
+  };
+
+  // Execute the actual table roll after user clicks the roll button
+  const executeTableRedirectRoll = (manualRoll?: number) => {
+    if (!pendingTableRedirect) return;
+
+    let roll: number;
+    let event: GameEvent | null = null;
+    let tableName = '';
+
+    switch (pendingTableRedirect) {
+      case 'life_events':
+        roll = manualRoll ?? rollDiceUtil(2, 6);
+        event = getLifeEvent(roll);
+        tableName = 'Life Events';
+        break;
+      case 'injury':
+        roll = manualRoll ?? rollDiceUtil(1, 6);
+        event = getInjury(roll);
+        tableName = 'Injury';
+        break;
+      case 'unusual_events':
+        roll = manualRoll ?? rollDiceUtil(1, 6);
+        event = getUnusualEvent(roll);
+        tableName = 'Unusual Events';
+        break;
+      default:
+        return;
+    }
 
     if (event) {
       setRedirectedEvent(event);
       setRedirectTableRoll(roll);
       setRedirectTableName(tableName);
-      // Don't mark as completed yet - the redirected event needs to be processed
+      setPendingTableRedirect(null);
     }
   };
 
@@ -2413,6 +2541,7 @@ export const CharacterGenerator: React.FC = () => {
     setRedirectedEvent(null);
     setRedirectTableRoll(null);
     setRedirectTableName(null);
+    setPendingTableIsMishap(false);
   };
 
   // Handler for nested table redirects (e.g., Life Events -> Injury -> ...)
@@ -2437,6 +2566,7 @@ export const CharacterGenerator: React.FC = () => {
     setRedirectedEvent(null);
     setRedirectTableRoll(null);
     setRedirectTableName(null);
+    setPendingTableIsMishap(false);
 
     // Now finalize the mishap
     const assignment = selectedCareer.assignments[selectedAssignment];
@@ -2677,8 +2807,12 @@ export const CharacterGenerator: React.FC = () => {
       setTermSkillsGained(prev => [...prev, `${skillName} (${displayName})`]);
     }
 
-    // Mark that the skill has been selected for this term
-    setTermSkillSelected(true);
+    // Mark one skill roll used. If advancement granted a second roll,
+    // `termSkillSelected` (derived) stays false until both rolls are used,
+    // and the player can expand a different table (or collapse + re-expand the
+    // same one) to roll again. Leaving the table expanded lets them see the
+    // first roll result.
+    setTermSkillRollsUsed(prev => prev + 1);
   };
 
   // Legacy function - kept for compatibility but now just toggles the table
@@ -3221,7 +3355,12 @@ export const CharacterGenerator: React.FC = () => {
     setRedirectTableName(null);
     setPendingSpecialtySkill(null);
     setPendingSpecialtySource('');
-    setTermSkillSelected(false);
+    setTermSkillRollsUsed(0);
+    setTermSkillRollsAllowed(1);
+    setCommissionAttempted(false);
+    setCommissionRollLog('');
+    setForcedContinueInCareer(false);
+    setForcedLeaveAfterTerm(false);
     setExpandedSkillTable(null);
     setSkillTableRollResult(null);
     setBasicTrainingApplied(false);
@@ -3297,7 +3436,12 @@ export const CharacterGenerator: React.FC = () => {
     setPendingSpecialtySkill(null);
     setPendingSpecialtySource('');
     // Reset end-of-term skill selection state
-    setTermSkillSelected(false);
+    setTermSkillRollsUsed(0);
+    setTermSkillRollsAllowed(1);
+    setCommissionAttempted(false);
+    setCommissionRollLog('');
+    setForcedContinueInCareer(false);
+    setForcedLeaveAfterTerm(false);
     setExpandedSkillTable(null);
     setSkillTableRollResult(null);
     // Reset basic training state for new career
@@ -3399,6 +3543,7 @@ export const CharacterGenerator: React.FC = () => {
       };
 
       await saveCharacter(finalCharacterData);
+      removeLocalStorage(DRAFT_KEY);
       alert('Character created successfully!');
     } catch (error) {
       console.error('Failed to save character:', error);
@@ -3407,11 +3552,260 @@ export const CharacterGenerator: React.FC = () => {
   };
 
   // ============================================================================
+  // DRAFT PERSISTENCE
+  // ============================================================================
+
+  // Check for existing draft on mount
+  useEffect(() => {
+    if (draftChecked) return;
+    const draft = getLocalStorage<any>(DRAFT_KEY, null);
+    if (draft && draft.version === 1) {
+      setShowResumeDraft(true);
+    }
+    setDraftChecked(true);
+  }, [DRAFT_KEY, draftChecked]);
+
+  // Resume a saved draft
+  const resumeDraft = () => {
+    const draft = getLocalStorage<any>(DRAFT_KEY, null);
+    if (!draft) { setShowResumeDraft(false); return; }
+
+    setStep(draft.step || 1);
+    if (draft.characterData) setCharacterData(draft.characterData);
+    setSelectedAssignment(draft.selectedAssignment ?? 0);
+    setCurrentTerm(draft.currentTerm ?? 0);
+    // Resume at start of term, not mid-term
+    setIsInTerm(false);
+    setQualificationPassed(draft.qualificationPassed ?? null);
+    setHasUsedDraft(draft.hasUsedDraft ?? false);
+    setHasRolled(draft.hasRolled ?? false);
+    setCharacteristicRolls(draft.characteristicRolls ?? []);
+    setBackgroundSkillsRemaining(draft.backgroundSkillsRemaining ?? 0);
+    setIsCommissioned(draft.isCommissioned ?? false);
+    setNeedsCommissionRoll(draft.needsCommissionRoll ?? false);
+    setCommissionRollDM(draft.commissionRollDM ?? 0);
+    setBasicTrainingApplied(draft.basicTrainingApplied ?? false);
+    setAssignmentMode(draft.assignmentMode ?? 'auto');
+    setUseManualDice(draft.useManualDice ?? false);
+    setIsMusteringOut(draft.isMusteringOut ?? false);
+    setEventBenefitDMs(draft.eventBenefitDMs ?? []);
+    setExtraBenefitRolls(draft.extraBenefitRolls ?? 0);
+    setPreCareerGraduated(draft.preCareerGraduated ?? false);
+    setPreCareerFailedService(draft.preCareerFailedService ?? null);
+    setGraduatedWithHonours(draft.graduatedWithHonours ?? false);
+    setUniversitySkillLevel0(draft.universitySkillLevel0 ?? null);
+    setUniversitySkillLevel1(draft.universitySkillLevel1 ?? null);
+    setMilitaryAcademyService(draft.militaryAcademyService ?? null);
+    setPsiTestResult(draft.psiTestResult ?? null);
+    setShowPsiTesting(draft.showPsiTesting ?? false);
+
+    // Restore selectedCareer from name
+    if (draft.selectedCareerName) {
+      const career = ALL_CAREERS.find(c => c.name === draft.selectedCareerName);
+      if (career) setSelectedCareer(career);
+    }
+
+    // Restore selectedRace from raceId
+    if (draft.raceId) {
+      const race = RACES.find(r => r.id === draft.raceId);
+      if (race) setSelectedRace(race);
+    }
+
+    setShowResumeDraft(false);
+  };
+
+  // Auto-save draft on meaningful state changes (debounced)
+  useEffect(() => {
+    if (!draftChecked || showResumeDraft) return;
+    // Only save if there's meaningful progress
+    if (step <= 1 && !hasRolled && !characterData.name) return;
+
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      const draft = {
+        version: 1,
+        savedAt: new Date().toISOString(),
+        step,
+        characterData,
+        selectedCareerName: selectedCareer?.name ?? null,
+        selectedAssignment,
+        currentTerm,
+        isInTerm,
+        qualificationPassed,
+        hasUsedDraft,
+        hasRolled,
+        characteristicRolls,
+        backgroundSkillsRemaining,
+        isCommissioned,
+        needsCommissionRoll,
+        commissionRollDM,
+        basicTrainingApplied,
+        assignmentMode,
+        useManualDice,
+        isMusteringOut,
+        eventBenefitDMs,
+        extraBenefitRolls,
+        preCareerGraduated,
+        preCareerFailedService,
+        graduatedWithHonours,
+        universitySkillLevel0,
+        universitySkillLevel1,
+        militaryAcademyService,
+        psiTestResult,
+        showPsiTesting,
+        raceId: selectedRace?.id ?? 'human',
+      };
+      setLocalStorage(DRAFT_KEY, draft);
+    }, 500);
+
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, [step, characterData, selectedCareer, selectedAssignment, currentTerm, isInTerm,
+      qualificationPassed, hasUsedDraft, hasRolled, characteristicRolls, backgroundSkillsRemaining,
+      isCommissioned, needsCommissionRoll, commissionRollDM, basicTrainingApplied, isMusteringOut, draftChecked, showResumeDraft,
+      DRAFT_KEY, assignmentMode, useManualDice, eventBenefitDMs, extraBenefitRolls,
+      preCareerGraduated, preCareerFailedService, graduatedWithHonours,
+      universitySkillLevel0, universitySkillLevel1, militaryAcademyService,
+      psiTestResult, showPsiTesting, selectedRace]);
+
+  // Warn before closing/refreshing when there's progress
+  useEffect(() => {
+    const hasProgress = step > 1 || hasRolled || characterData.name.length > 0;
+    if (!hasProgress) return;
+
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+    };
+
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [step, hasRolled, characterData.name]);
+
+  // ============================================================================
+  // RENDER HELPERS
+  // ============================================================================
+
+  // Renders the pending table redirect UI (table display + roll button)
+  const renderPendingTableRedirect = () => {
+    if (!pendingTableRedirect) return null;
+
+    const tableConfig = {
+      life_events: { title: 'Life Events Table (2D6)', dice: 2, sides: 6, entries: LIFE_EVENTS, offset: 2 },
+      injury: { title: 'Injury Table (1D6)', dice: 1, sides: 6, entries: INJURY_TABLE, offset: 1 },
+      unusual_events: { title: 'Unusual Events Table (1D6)', dice: 1, sides: 6, entries: UNUSUAL_EVENTS, offset: 1 },
+    }[pendingTableRedirect];
+
+    if (!tableConfig) return null;
+
+    const minRoll = tableConfig.dice * 1;
+    const maxRoll = tableConfig.dice * tableConfig.sides;
+    const diceLabel = `${tableConfig.dice}D6`;
+
+    return (
+      <div className="space-y-3">
+        <Alert className="bg-blue-500/10 border-blue-500/50">
+          <AlertDescription className="text-blue-400">
+            <strong>Roll on the {tableConfig.title}</strong>
+          </AlertDescription>
+        </Alert>
+
+        {/* Display the full table */}
+        <div className="bg-black border border-terminal-primary/30 rounded p-3">
+          <h4 className="text-xs font-bold text-terminal-primary mb-2 uppercase tracking-wider">{tableConfig.title}</h4>
+          <div className="space-y-1 text-xs text-terminal-primary/70">
+            {tableConfig.entries.map((entry, idx) => (
+              <div key={entry.id} className="flex gap-2 py-0.5">
+                <span className="text-terminal-primary/50 w-6 text-right font-mono shrink-0">{idx + tableConfig.offset}.</span>
+                <span>{entry.description}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Roll button or manual entry */}
+        {useManualDice ? (
+          <div className="space-y-2">
+            <p className="text-xs text-blue-400">Enter your {diceLabel} roll result:</p>
+            <div className="flex gap-2">
+              <Input
+                type="number"
+                min={minRoll}
+                max={maxRoll}
+                value={manualDiceValue}
+                onChange={(e) => setManualDiceValue(e.target.value)}
+                placeholder={`Enter ${diceLabel} result (${minRoll}-${maxRoll})`}
+                className="bg-black border-terminal-primary/50 text-terminal-primary placeholder:text-terminal-primary/40"
+              />
+              <Button
+                onClick={() => {
+                  const val = parseInt(manualDiceValue);
+                  if (!isNaN(val) && val >= minRoll && val <= maxRoll) {
+                    executeTableRedirectRoll(val);
+                    setManualDiceValue('');
+                  }
+                }}
+                disabled={!manualDiceValue || isNaN(parseInt(manualDiceValue)) || parseInt(manualDiceValue) < minRoll || parseInt(manualDiceValue) > maxRoll}
+                className="bg-blue-500/20 text-blue-400 hover:bg-blue-500/30"
+              >
+                Submit Roll
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <Button
+            onClick={() => executeTableRedirectRoll()}
+            className="w-full bg-blue-500/20 text-blue-400 hover:bg-blue-500/30"
+          >
+            <Dices className="h-4 w-4 mr-2" />
+            Roll {tableConfig.title.replace(' Table ', ' ')}
+          </Button>
+        )}
+      </div>
+    );
+  };
+
+  // ============================================================================
   // RENDER
   // ============================================================================
 
   return (
     <div className="h-full flex flex-col bg-black text-terminal-primary font-mono">
+      {/* Resume Draft Dialog */}
+      {showResumeDraft && (
+        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
+          <Card className="bg-black border-2 border-terminal-primary/50 max-w-md w-full">
+            <CardHeader className="border-b border-terminal-primary/30">
+              <CardTitle className="text-terminal-primary font-['Orbitron'] tracking-wider flex items-center gap-2">
+                <RefreshCw className="h-5 w-5" />
+                Resume Character?
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4 pt-4">
+              <p className="text-terminal-primary/70 text-sm">
+                You have a character in progress. Would you like to resume where you left off or start fresh?
+              </p>
+              <div className="flex gap-3">
+                <Button
+                  onClick={resumeDraft}
+                  className="flex-1 bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30 border border-terminal-primary/50"
+                >
+                  Resume
+                </Button>
+                <Button
+                  onClick={() => {
+                    removeLocalStorage(DRAFT_KEY);
+                    setShowResumeDraft(false);
+                  }}
+                  variant="outline"
+                  className="flex-1 border-red-500/50 text-red-400 hover:bg-red-500/10"
+                >
+                  Start Fresh
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
       {/* Enhanced Header */}
       <div className="border-b border-terminal-primary/30 p-4 bg-gradient-to-r from-terminal-primary/5 via-transparent to-terminal-primary/5">
         <div className="flex items-center justify-between">
@@ -3459,25 +3853,34 @@ export const CharacterGenerator: React.FC = () => {
           {/* Enhanced Step Navigation */}
           <TabsList className="grid w-full grid-cols-6 bg-black/50 border border-terminal-primary/30 mb-4 p-1 gap-1">
             {['Basics', 'Characteristics', 'Background', 'Career', 'Terms', 'Review'].map((label, idx) => {
-              const isActive = step === idx + 1;
-              const isCompleted = step > idx + 1;
+              const targetStep = idx + 1;
+              const isActive = step === targetStep;
+              const isCompleted = step > targetStep;
+              // Lock steps 1-4 once career terms have started to prevent state corruption
+              const isLocked = targetStep <= 4 && (isInTerm || currentTerm > 0);
               return (
                 <TabsTrigger
                   key={label}
-                  value={`step${idx + 1}`}
-                  onClick={() => setStep(idx + 1)}
+                  value={`step${targetStep}`}
+                  onClick={() => {
+                    if (isLocked) return;
+                    setStep(targetStep);
+                  }}
                   className={`
                     text-xs font-bold transition-all duration-200 rounded
-                    ${isActive
+                    ${isLocked
+                      ? 'text-terminal-primary/20 cursor-not-allowed opacity-40'
+                      : isActive
                       ? 'bg-terminal-primary/20 text-terminal-primary border border-terminal-primary/50 shadow-[0_0_10px_rgba(0,255,0,0.3)]'
                       : isCompleted
                       ? 'bg-terminal-primary/10 text-terminal-primary/70 hover:bg-terminal-primary/15'
                       : 'text-terminal-primary/40 hover:text-terminal-primary/60 hover:bg-terminal-primary/5'
                     }
                   `}
+                  title={isLocked ? 'Career in progress — cannot go back' : undefined}
                 >
-                  <span className={`mr-1 ${isCompleted ? 'text-green-400' : ''}`}>
-                    {isCompleted ? '✓' : idx + 1}.
+                  <span className={`mr-1 ${isLocked ? 'text-terminal-primary/20' : isCompleted ? 'text-green-400' : ''}`}>
+                    {isLocked ? <Lock className="inline h-3 w-3" /> : isCompleted ? '✓' : targetStep}.
                   </span>
                   {label}
                 </TabsTrigger>
@@ -4976,7 +5379,7 @@ export const CharacterGenerator: React.FC = () => {
                     )}
 
                     {/* Pending Mishap GameEvent - requires player interaction */}
-                    {pendingMishapGameEvent && !redirectedEvent && (
+                    {pendingMishapGameEvent && !redirectedEvent && !pendingTableRedirect && (
                       <div className="space-y-2">
                         <Alert className="bg-yellow-500/10 border-yellow-500/50">
                           <AlertDescription className="text-yellow-400">
@@ -4988,9 +5391,21 @@ export const CharacterGenerator: React.FC = () => {
                           characteristics={characterData.characteristics}
                           skills={characterData.skills}
                           onComplete={handleMishapGameEventComplete}
-                          onTableRedirect={handleTableRedirect}
+                          onTableRedirect={(table) => handleTableRedirect(table, true)}
                           useManualDice={useManualDice}
                         />
+                      </div>
+                    )}
+
+                    {/* Pending Table Redirect from Mishap - show table and roller */}
+                    {pendingMishapGameEvent && pendingTableRedirect && pendingTableIsMishap && (
+                      <div className="space-y-2">
+                        <Alert className="bg-yellow-500/10 border-yellow-500/50">
+                          <AlertDescription className="text-yellow-400">
+                            <strong>Mishap {mishapRollNumber}:</strong> {pendingMishapGameEvent.description}
+                          </AlertDescription>
+                        </Alert>
+                        {renderPendingTableRedirect()}
                       </div>
                     )}
 
@@ -5141,12 +5556,28 @@ export const CharacterGenerator: React.FC = () => {
                         )}
                         <Alert className="bg-green-500/10 border-green-500/50">
                           <AlertDescription className="text-green-400">
-                            ✓ Survival check passed! Now roll for advancement.
+                            ✓ Survival check passed! Now roll for an event.
                           </AlertDescription>
                         </Alert>
+
+                        {/* EVENT TABLE */}
+                        {selectedCareer && selectedCareer.eventTable && (
+                          <div className="bg-black border border-terminal-primary/30 rounded p-3">
+                            <h4 className="text-xs font-bold text-blue-400 mb-2">Possible Events (2D6):</h4>
+                            <div className="space-y-1 text-xs text-terminal-primary/70">
+                              {(selectedCareer.eventTable || []).map((event, idx) => (
+                                <div key={idx} className="flex gap-2">
+                                  <span className="text-terminal-primary/50">{idx + 2}.</span>
+                                  <span>{getEventDescription(event)}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
                         {useManualDice ? (
                           <div className="space-y-2">
-                            <p className="text-xs text-blue-400">Enter your 2D6 roll result (DM will be applied automatically):</p>
+                            <p className="text-xs text-blue-400">Enter your 2D6 roll result for the event table:</p>
                             <div className="flex gap-2">
                               <Input
                                 type="number"
@@ -5161,24 +5592,24 @@ export const CharacterGenerator: React.FC = () => {
                                 onClick={() => {
                                   const val = parseInt(manualDiceValue, 10);
                                   if (!isNaN(val) && val >= 2 && val <= 12) {
-                                    runAdvancementCheck(val);
+                                    rollEvent(val);
                                     setManualDiceValue('');
                                   }
                                 }}
                                 disabled={!manualDiceValue || isNaN(parseInt(manualDiceValue, 10)) || parseInt(manualDiceValue, 10) < 2 || parseInt(manualDiceValue, 10) > 12}
                                 className="bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
                               >
-                                Submit Advancement Roll
+                                Submit Event Roll
                               </Button>
                             </div>
                           </div>
                         ) : (
                           <Button
-                            onClick={() => runAdvancementCheck()}
+                            onClick={() => rollEvent()}
                             className="w-full bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
                           >
                             <Dices className="h-4 w-4 mr-2" />
-                            Roll Advancement Check
+                            Roll Event (2D6)
                           </Button>
                         )}
                       </>
@@ -5186,7 +5617,130 @@ export const CharacterGenerator: React.FC = () => {
                   </div>
                 )}
 
-                {isInTerm && termSurvived === true && termAdvanced !== null && termEventRoll === null && (
+                {/* COMMISSION ROLL - after event is resolved, before advancement */}
+                {isInTerm && termSurvived === true && termEventRoll !== null && gameEventCompleted
+                  && !selectedCareer?.isPreCareer
+                  && isEligibleForCommission()
+                  && !commissionAttempted && (
+                  <div className="space-y-2">
+                    <Alert className="bg-blue-500/10 border-blue-500/50">
+                      <AlertDescription className="text-blue-400">
+                        <strong>Commission Opportunity</strong>
+                        <p className="mt-1 text-xs">
+                          You may attempt to earn a commission this term. Target: {selectedCareer?.commissionTarget ?? 8}+
+                          {getCommissionDMBreakdown()}
+                        </p>
+                      </AlertDescription>
+                    </Alert>
+                    {useManualDice ? (
+                      <div className="space-y-2">
+                        <p className="text-xs text-blue-400">Enter your 2D6 roll result for the commission roll:</p>
+                        <div className="flex gap-2">
+                          <Input
+                            type="number"
+                            min={2}
+                            max={12}
+                            value={manualDiceValue}
+                            onChange={(e) => setManualDiceValue(e.target.value)}
+                            placeholder="Enter 2D6 result (2-12)"
+                            className="bg-black border-terminal-primary/50 text-terminal-primary placeholder:text-terminal-primary/40"
+                          />
+                          <Button
+                            onClick={() => {
+                              const val = parseInt(manualDiceValue);
+                              if (!isNaN(val) && val >= 2 && val <= 12) {
+                                runCommissionCheck(val);
+                                setManualDiceValue('');
+                              }
+                            }}
+                            disabled={!manualDiceValue || isNaN(parseInt(manualDiceValue)) || parseInt(manualDiceValue) < 2 || parseInt(manualDiceValue) > 12}
+                            className="bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
+                          >
+                            Submit Commission Roll
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={() => runCommissionCheck()}
+                          className="flex-1 bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
+                        >
+                          <Dices className="h-4 w-4 mr-2" />
+                          Roll for Commission
+                        </Button>
+                        <Button
+                          variant="outline"
+                          onClick={() => setCommissionAttempted(true)}
+                          className="border-terminal-primary/50 text-terminal-primary hover:bg-terminal-primary/10"
+                        >
+                          Skip
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Commission roll result display */}
+                {isInTerm && commissionRollLog && (
+                  <div className="bg-terminal-primary/5 border border-terminal-primary/30 rounded p-3">
+                    <p className="text-xs text-terminal-primary/80 font-mono">{commissionRollLog}</p>
+                  </div>
+                )}
+
+                {/* ADVANCEMENT ROLL - after event resolved + commission resolved (or n/a) */}
+                {isInTerm && termSurvived === true && termEventRoll !== null && gameEventCompleted
+                  && !selectedCareer?.isPreCareer
+                  && termAdvanced === null
+                  && (!isEligibleForCommission() || commissionAttempted) && (
+                  <div className="space-y-2">
+                    <Alert className="bg-green-500/10 border-green-500/50">
+                      <AlertDescription className="text-green-400">
+                        Now roll for advancement.
+                      </AlertDescription>
+                    </Alert>
+                    {useManualDice ? (
+                      <div className="space-y-2">
+                        <p className="text-xs text-blue-400">Enter your 2D6 roll result (DM will be applied automatically):</p>
+                        <div className="flex gap-2">
+                          <Input
+                            type="number"
+                            min={2}
+                            max={12}
+                            value={manualDiceValue}
+                            onChange={(e) => setManualDiceValue(e.target.value)}
+                            placeholder="Enter 2D6 result (2-12)"
+                            className="bg-black border-terminal-primary/50 text-terminal-primary placeholder:text-terminal-primary/40"
+                          />
+                          <Button
+                            onClick={() => {
+                              const val = parseInt(manualDiceValue, 10);
+                              if (!isNaN(val) && val >= 2 && val <= 12) {
+                                runAdvancementCheck(val);
+                                setManualDiceValue('');
+                              }
+                            }}
+                            disabled={!manualDiceValue || isNaN(parseInt(manualDiceValue, 10)) || parseInt(manualDiceValue, 10) < 2 || parseInt(manualDiceValue, 10) > 12}
+                            className="bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
+                          >
+                            Submit Advancement Roll
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <Button
+                        onClick={() => runAdvancementCheck()}
+                        className="w-full bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
+                      >
+                        <Dices className="h-4 w-4 mr-2" />
+                        Roll Advancement Check
+                      </Button>
+                    )}
+                  </div>
+                )}
+
+                {/* ADVANCEMENT RESULT */}
+                {isInTerm && termAdvanced !== null && !selectedCareer?.isPreCareer && (
                   <div className="space-y-2">
                     {advancementRollLog && (
                       <div className="bg-terminal-primary/5 border border-terminal-primary/30 rounded p-3">
@@ -5206,65 +5760,20 @@ export const CharacterGenerator: React.FC = () => {
                         </AlertDescription>
                       </Alert>
                     )}
-
-                    {/* EVENT TABLE */}
-                    {selectedCareer && selectedCareer.eventTable && (
-                      <CareerTableDisplay
-                        title="Possible Events (2D6)"
-                        titleColor="text-blue-400"
-                        entries={(selectedCareer.eventTable || []).map((event, idx) => ({
-                          index: idx + 2,
-                          label: `${idx + 2}.`,
-                          description: getEventDescription(event),
-                        }))}
-                        highlightIndex={termEventRoll ?? undefined}
-                      />
-                    )}
-
-                    {useManualDice ? (
-                      <div className="space-y-2">
-                        <p className="text-xs text-blue-400">Enter your 2D6 roll result for the event table:</p>
-                        <div className="flex gap-2">
-                          <Input
-                            type="number"
-                            min={2}
-                            max={12}
-                            value={manualDiceValue}
-                            onChange={(e) => setManualDiceValue(e.target.value)}
-                            placeholder="Enter 2D6 result (2-12)"
-                            className="bg-black border-terminal-primary/50 text-terminal-primary placeholder:text-terminal-primary/40"
-                          />
-                          <Button
-                            onClick={() => {
-                              const val = parseInt(manualDiceValue, 10);
-                              if (!isNaN(val) && val >= 2 && val <= 12) {
-                                rollEvent(val);
-                                setManualDiceValue('');
-                              }
-                            }}
-                            disabled={!manualDiceValue || isNaN(parseInt(manualDiceValue, 10)) || parseInt(manualDiceValue, 10) < 2 || parseInt(manualDiceValue, 10) > 12}
-                            className="bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
-                          >
-                            Submit Event Roll
-                          </Button>
-                        </div>
-                      </div>
-                    ) : (
-                      <Button
-                        onClick={() => rollEvent()}
-                        className="w-full bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
-                      >
-                        <Dices className="h-4 w-4 mr-2" />
-                        Roll Event (2D6)
-                      </Button>
-                    )}
                   </div>
                 )}
 
                 {isInTerm && termEventRoll !== null && (
                   <div className="space-y-2">
+                    {/* Pending Table Redirect - show table and roller before rolling */}
+                    {pendingTableRedirect && !pendingTableIsMishap && (
+                      <div className="space-y-2">
+                        {renderPendingTableRedirect()}
+                      </div>
+                    )}
+
                     {/* Redirected Event (from table redirect like Life Events -> Injury) */}
-                    {redirectedEvent && (
+                    {redirectedEvent && !pendingTableIsMishap && (
                       <div className="space-y-2">
                         <Alert className="bg-blue-500/10 border-blue-500/50">
                           <AlertDescription className="text-blue-400">
@@ -5283,7 +5792,7 @@ export const CharacterGenerator: React.FC = () => {
                     )}
 
                     {/* New GameEvent System */}
-                    {currentGameEvent && !gameEventCompleted && !redirectedEvent && (
+                    {currentGameEvent && !gameEventCompleted && !redirectedEvent && !pendingTableRedirect && (
                       <div className="space-y-2">
                         <div className="bg-terminal-primary/5 border border-terminal-primary/30 rounded p-2 mb-2">
                           <p className="text-xs text-terminal-primary/60">Event Roll: {termEventRoll}</p>
@@ -5515,35 +6024,23 @@ export const CharacterGenerator: React.FC = () => {
                       />
                     )}
 
-                    {pendingAnyTalentSource && (
-                      <Card className="bg-purple-500/10 border-purple-500/40">
-                        <CardHeader>
-                          <CardTitle className="text-purple-300 text-sm">
-                            Choose Any Talent {pendingAnyTalentSource ? `(${pendingAnyTalentSource})` : ''}
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent className="grid grid-cols-2 gap-2">
-                          {PSIONIC_TALENTS.map((talent) => (
-                            <Button
-                              key={talent}
-                              type="button"
-                              variant="outline"
-                              className="border-purple-500/40 text-purple-200 hover:bg-purple-500/20"
-                              onClick={() => handleAnyTalentSelected(talent)}
-                            >
-                              {talent}
-                            </Button>
-                          ))}
-                        </CardContent>
-                      </Card>
-                    )}
-
-                    {/* Skill Gain Tables (only show for regular careers when event is resolved and no pending selectors) */}
-                    {!selectedCareer?.isPreCareer && !pendingSpecialtySkill && !pendingAnyTalentSource && ((!currentGameEvent || gameEventCompleted) && (!currentEvent || eventResolved)) && (
+                    {/* Skill Gain Tables (only show for regular careers when event is resolved and no pending specialty) */}
+                    {!selectedCareer?.isPreCareer && !pendingSpecialtySkill && ((!currentGameEvent || gameEventCompleted) && (!currentEvent || eventResolved)) && termAdvanced !== null && (
                       <div className="space-y-3">
                         <h4 className="text-sm font-bold text-terminal-primary uppercase">
-                          {termSkillSelected ? 'Skill Selected This Term' : 'Select One Skill Table'}
+                          {termSkillSelected
+                            ? 'Skill Rolls Complete'
+                            : termSkillRollsAllowed > 1
+                              ? `Select Skill Table (${termSkillRollsUsed + 1} of ${termSkillRollsAllowed})`
+                              : 'Select One Skill Table'}
                         </h4>
+                        {termSkillRollsAllowed === 2 && !termSkillSelected && (
+                          <Alert className="bg-green-500/10 border-green-500/50">
+                            <AlertDescription className="text-green-400 text-xs">
+                              Advancement success — you may roll on a skill table twice this term.
+                            </AlertDescription>
+                          </Alert>
+                        )}
 
                         {/* Skill Table Selection */}
                         <div className="space-y-2">
@@ -6055,6 +6552,20 @@ export const CharacterGenerator: React.FC = () => {
                       {agingPending && (
                         <p className="text-xs text-terminal-primary/50">Resolve aging effects before continuing.</p>
                       )}
+                      {forcedContinueInCareer && !agingPending && (
+                        <Alert className="bg-yellow-500/10 border-yellow-500/50">
+                          <AlertDescription className="text-yellow-400 text-xs">
+                            Natural 12 on advancement — you must continue in {selectedCareer?.name} next term. You cannot leave or muster out this term.
+                          </AlertDescription>
+                        </Alert>
+                      )}
+                      {forcedLeaveAfterTerm && !forcedContinueInCareer && !agingPending && (
+                        <Alert className="bg-red-500/10 border-red-500/50">
+                          <AlertDescription className="text-red-400 text-xs">
+                            Your advancement roll did not exceed your terms in this career — you must leave {selectedCareer?.name} after this term.
+                          </AlertDescription>
+                        </Alert>
+                      )}
 
                       {/* Anagathics offer between terms (SOC 10+, not in prisoner career, not using noAnagathics career) */}
                       {!agingPending && !showAnagathicsPrompt && characterData.characteristics.social.total >= 10 &&
@@ -6073,7 +6584,8 @@ export const CharacterGenerator: React.FC = () => {
                         {!forceLeaveCareer && !agingPending && (
                           <Button
                             onClick={startNewTerm}
-                            className="flex-1 bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30 border border-terminal-primary/50"
+                            disabled={forcedLeaveAfterTerm && !forcedContinueInCareer}
+                            className="flex-1 bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30 border border-terminal-primary/50 disabled:opacity-40 disabled:cursor-not-allowed"
                           >
                             Start Term {currentTerm + 1}
                           </Button>
@@ -6081,7 +6593,8 @@ export const CharacterGenerator: React.FC = () => {
                         {!agingPending && (
                           <Button
                             onClick={musterOut}
-                            className="flex-1 bg-red-500/20 text-red-400 hover:bg-red-500/30 border border-red-500/50"
+                            disabled={forcedContinueInCareer}
+                            className="flex-1 bg-red-500/20 text-red-400 hover:bg-red-500/30 border border-red-500/50 disabled:opacity-40 disabled:cursor-not-allowed"
                           >
                             Muster Out
                           </Button>
@@ -6091,16 +6604,18 @@ export const CharacterGenerator: React.FC = () => {
                         <div className="flex gap-2">
                           <Button
                             onClick={switchToNewCareer}
+                            disabled={forcedContinueInCareer}
                             variant="outline"
-                            className="flex-1 border-terminal-primary/50 text-terminal-primary hover:bg-terminal-primary/20"
+                            className="flex-1 border-terminal-primary/50 text-terminal-primary hover:bg-terminal-primary/20 disabled:opacity-40 disabled:cursor-not-allowed"
                           >
                             Switch Career
                           </Button>
                           {canSwitchAssignment() && (
                             <Button
                               onClick={startSwitchAssignment}
+                              disabled={forcedContinueInCareer}
                               variant="outline"
-                              className="flex-1 border-blue-500/50 text-blue-400 hover:bg-blue-500/20"
+                              className="flex-1 border-blue-500/50 text-blue-400 hover:bg-blue-500/20 disabled:opacity-40 disabled:cursor-not-allowed"
                             >
                               Switch Assignment
                             </Button>

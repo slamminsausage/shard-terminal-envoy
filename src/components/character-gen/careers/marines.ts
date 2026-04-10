@@ -378,7 +378,7 @@ export const CAREER_MARINES: CareerDefinition = {
   ranks: {
     enlisted: [
       { title: 'Marine', skillBonus: 'Gun Combat' },
-      { title: 'Lance Corporal', skillBonus: 'Gun Combat' },
+      { title: 'Lance Corporal', skillBonus: 'Melee' },
       { title: 'Corporal' },
       { title: 'Lance Sergeant', skillBonus: 'Leadership' },
       { title: 'Sergeant' },
@@ -390,8 +390,8 @@ export const CAREER_MARINES: CareerDefinition = {
       { title: 'Captain' },
       { title: 'Force Commander', skillBonus: 'Tactics' },
       { title: 'Lieutenant Colonel' },
-      { title: 'Colonel', bonusStat: 'social' },
-      { title: 'Brigadier' },
+      { title: 'Colonel' },
+      { title: 'Brigadier', bonusStat: 'social', bonusStatFloor: 10 },
     ],
   },
   mishapTable: [
