@@ -10,7 +10,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useCampaign } from '@/contexts/CampaignContext';
 import { getLocalStorage, setLocalStorage, removeLocalStorage } from '@/lib/localStorage';
 import { ALL_CAREERS, BACKGROUND_SKILLS, getPreCareerEvent, CAREER_PRISONER, rollInitialParoleThreshold, CAREER_PSION, performPsiTesting, PSIONIC_TALENTS, type PsiTestResult } from './careers';
-import type { CareerDefinition, Characteristics, StructuredEvent, EventOutcome, GameEvent, EventEffects } from './careers';
+import type { CareerDefinition, Characteristics, StructuredEvent, EventOutcome, GameEvent, EventEffects, CharacteristicName } from './careers';
 import { isGameEvent } from './careers';
 import { rollDraft, type DraftResult, getLifeEvent, getInjury, getUnusualEvent, rollAging, applyAgingEffects, type AgingRollResult, LIFE_EVENTS, INJURY_TABLE, UNUSUAL_EVENTS } from './tables';
 import { EventHandler } from './EventHandler';
@@ -413,6 +413,11 @@ export const CharacterGenerator: React.FC = () => {
   const [graduatedWithHonours, setGraduatedWithHonours] = useState(false);
   const [needsCommissionRoll, setNeedsCommissionRoll] = useState(false);
   const [commissionRollDM, setCommissionRollDM] = useState(0);
+  const [commissionAttempted, setCommissionAttempted] = useState(false);
+  const [commissionRollLog, setCommissionRollLog] = useState<string>('');
+  // Advancement edge-case flags, cleared when a new career is started.
+  const [forcedContinueInCareer, setForcedContinueInCareer] = useState(false);
+  const [forcedLeaveAfterTerm, setForcedLeaveAfterTerm] = useState(false);
   const [graduationRollLog, setGraduationRollLog] = useState<string>('');
   const [survivalRollLog, setSurvivalRollLog] = useState<string>('');
   const [advancementRollLog, setAdvancementRollLog] = useState<string>('');
@@ -449,7 +454,10 @@ export const CharacterGenerator: React.FC = () => {
   const [pendingSpecialtySource, setPendingSpecialtySource] = useState<string>(''); // For logging purposes
 
   // End-of-term skill selection state
-  const [termSkillSelected, setTermSkillSelected] = useState<boolean>(false);
+  // Counter-based so advancement success can grant two rolls.
+  const [termSkillRollsUsed, setTermSkillRollsUsed] = useState<number>(0);
+  const [termSkillRollsAllowed, setTermSkillRollsAllowed] = useState<number>(1);
+  const termSkillSelected = termSkillRollsUsed >= termSkillRollsAllowed;
   const [expandedSkillTable, setExpandedSkillTable] = useState<string | null>(null);
   const [skillTableRollResult, setSkillTableRollResult] = useState<number | null>(null);
 
@@ -1261,9 +1269,16 @@ export const CharacterGenerator: React.FC = () => {
     setPendingSpecialtySkill(null);
     setPendingSpecialtySource('');
     // Reset end-of-term skill selection state
-    setTermSkillSelected(false);
+    setTermSkillRollsUsed(0);
+    setTermSkillRollsAllowed(1);
     setExpandedSkillTable(null);
     setSkillTableRollResult(null);
+    // Reset commission state
+    setCommissionAttempted(false);
+    setCommissionRollLog('');
+    // Reset advancement edge-case flags — they only apply between terms.
+    setForcedContinueInCareer(false);
+    setForcedLeaveAfterTerm(false);
     // Reset academy graduation skill selection state
     setAcademyGradSkillsSelected([]);
     setAcademyGradPendingSpecialty(null);
@@ -1320,13 +1335,17 @@ export const CharacterGenerator: React.FC = () => {
 
     const roll = manualRoll ?? rollDice(2, 6);
     const total = roll + dm;
-    const survived = total >= assignment.survivalTarget;
+    // Natural 2 always fails survival regardless of modifiers.
+    const naturalTwo = roll === 2;
+    const survived = !naturalTwo && total >= assignment.survivalTarget;
 
     setTermSurvived(survived);
 
     // Set survival/graduation roll log for regular careers
     if (!isPreCareer) {
-      setSurvivalRollLog(`Survival Roll: ${roll} + ${dm} = ${total} (need ${assignment.survivalTarget}+)`);
+      setSurvivalRollLog(
+        `Survival Roll: ${roll} + ${dm} = ${total} (need ${assignment.survivalTarget}+)${naturalTwo ? ' — NATURAL 2: automatic failure' : ''}`
+      );
     }
 
     if (!survived) {
@@ -1533,6 +1552,18 @@ export const CharacterGenerator: React.FC = () => {
 
     setTermAdvanced(advanced);
 
+    // Edge case: natural 12 means the character cannot leave this career next term.
+    if (roll === 12) {
+      setForcedContinueInCareer(true);
+    }
+    // Edge case: total <= terms-in-career means the character must leave after this term.
+    const termsInThisCareer = characterData.lifepath_log.filter(
+      t => t.career === selectedCareer.name
+    ).length;
+    if (total <= termsInThisCareer) {
+      setForcedLeaveAfterTerm(true);
+    }
+
     // Build the roll log with details
     let dmBreakdown = `${charDM}`;
     if (eventAdvancementDM > 0) {
@@ -1584,19 +1615,130 @@ export const CharacterGenerator: React.FC = () => {
       }
 
       if (rankData.bonusStat) {
-        setCharacterData(prev => ({
-          ...prev,
-          characteristics: {
-            ...prev.characteristics,
-            [rankData.bonusStat]: {
-              ...prev.characteristics[rankData.bonusStat],
-              total: prev.characteristics[rankData.bonusStat].total + 1,
-              current: prev.characteristics[rankData.bonusStat].current + 1,
-            },
-          },
-        }));
-        setTermSkillsGained(prev => [...prev, `${rankData.bonusStat.toUpperCase()} +1 (rank bonus)`]);
+        applyRankStatBonus(rankData.bonusStat, rankData.bonusStatFloor);
       }
+    }
+
+    // Successful advancement grants a second skill-table roll this term.
+    if (advanced) {
+      setTermSkillRollsAllowed(2);
+    }
+  };
+
+  // Determine whether the character can attempt a commission this term.
+  const isEligibleForCommission = (): boolean => {
+    if (!selectedCareer) return false;
+    if (!['Army', 'Navy', 'Marines'].includes(selectedCareer.name)) return false;
+    if (isCommissioned) return false;
+    const termsInThisCareer = characterData.lifepath_log.filter(
+      t => t.career === selectedCareer.name
+    ).length;
+    const isFirstTermInCareer = termsInThisCareer === 0;
+    const socValue = characterData.characteristics.social.total;
+    return isFirstTermInCareer || socValue >= 9;
+  };
+
+  // Compose a short DM breakdown string for the commission UI.
+  const getCommissionDMBreakdown = (): string => {
+    if (!selectedCareer) return '';
+    const termsInThisCareer = characterData.lifepath_log.filter(
+      t => t.career === selectedCareer.name
+    ).length;
+    const isFirstTermInCareer = termsInThisCareer === 0;
+    const termPenalty = isFirstTermInCareer ? 0 : -termsInThisCareer;
+    const socDM = getDM(characterData.characteristics.social.total);
+    const academyDM = commissionRollDM === -999 ? 0 : commissionRollDM;
+    const parts: string[] = [];
+    if (socDM !== 0) parts.push(`SOC DM ${socDM >= 0 ? '+' : ''}${socDM}`);
+    if (termPenalty !== 0) parts.push(`${termPenalty} (terms in career)`);
+    if (academyDM !== 0) parts.push(`+${academyDM} (academy)`);
+    if (eventAdvancementDM !== 0) parts.push(`+${eventAdvancementDM} (event bonus)`);
+    if (commissionRollDM === -999) return ' (Auto-pass: Military Academy honours)';
+    return parts.length > 0 ? ` DM: ${parts.join(', ')}.` : '';
+  };
+
+  const runCommissionCheck = (manualRoll?: number) => {
+    if (!selectedCareer || commissionAttempted) return;
+    if (!isEligibleForCommission()) return;
+    const target = selectedCareer.commissionTarget ?? 8;
+
+    const termsInThisCareer = characterData.lifepath_log.filter(
+      t => t.career === selectedCareer.name
+    ).length;
+    const isFirstTermInCareer = termsInThisCareer === 0;
+    const termPenalty = isFirstTermInCareer ? 0 : -termsInThisCareer;
+
+    const socValue = characterData.characteristics.social.total;
+    const socDM = getDM(socValue);
+    const autoPass = commissionRollDM === -999;
+    const academyDM = autoPass ? 0 : commissionRollDM;
+    const totalDM = socDM + termPenalty + academyDM + eventAdvancementDM;
+
+    const roll = autoPass ? 12 : (manualRoll ?? rollDice(2, 6));
+    const total = roll + totalDM;
+    const success = autoPass || total >= target;
+
+    setCommissionRollLog(
+      autoPass
+        ? 'Commission: Auto-pass (Military Academy honours graduate)'
+        : `Commission Roll: ${roll} + ${totalDM} = ${total} (need ${target}+) ${success ? '✓ COMMISSIONED' : '✗ Failed'}`
+    );
+    setCommissionAttempted(true);
+
+    if (success) {
+      setIsCommissioned(true);
+      const officerRanks = selectedCareer.ranks.officer ?? [];
+      // On first commission, character jumps to officer rank 1 (index 0 in officer array).
+      setCharacterData(prev => ({ ...prev, rank: 0 }));
+      const rank1 = officerRanks[0];
+      if (rank1?.skillBonus) {
+        applySkillGain(rank1.skillBonus, 'Commission');
+        setTermSkillsGained(prev => [...prev, `${rank1.skillBonus} (Commission)`]);
+      }
+      if (rank1?.bonusStat) {
+        applyRankStatBonus(rank1.bonusStat, rank1.bonusStatFloor);
+      }
+
+      // Commission success: skip advancement this term, but still grant the
+      // second skill-table roll (commission counts as advancement success).
+      setTermAdvanced(false);
+      setTermSkillRollsAllowed(2);
+      setNeedsCommissionRoll(false);
+      setCommissionRollDM(0);
+      setEventAdvancementDM(0); // consumed
+    }
+    // On failure: leave termAdvanced === null so the advancement phase runs next.
+  };
+
+  /**
+   * Applies a rank's stat bonus, honouring an optional floor.
+   * Floor example: "SOC 10 or SOC +1, whichever is higher" -> bonusStatFloor: 10
+   */
+  const applyRankStatBonus = (statName: CharacteristicName, floor?: number) => {
+    setCharacterData(prev => {
+      const current = prev.characteristics[statName].total;
+      const target = floor !== undefined ? Math.max(floor, current + 1) : current + 1;
+      const delta = target - current;
+      if (delta <= 0) return prev;
+      return {
+        ...prev,
+        characteristics: {
+          ...prev.characteristics,
+          [statName]: {
+            ...prev.characteristics[statName],
+            total: target,
+            current: prev.characteristics[statName].current + delta,
+          },
+        },
+      };
+    });
+    // Use the latest-known total to compute the log delta; since state updates are async,
+    // recompute from the ref-like fresh state by reading `characterData` below.
+    const currentForLog = characterData.characteristics[statName].total;
+    const targetForLog = floor !== undefined ? Math.max(floor, currentForLog + 1) : currentForLog + 1;
+    const deltaForLog = targetForLog - currentForLog;
+    if (deltaForLog > 0) {
+      setTermSkillsGained(prev => [...prev, `${statName.toUpperCase()} +${deltaForLog} (rank bonus)`]);
     }
   };
 
@@ -2333,8 +2475,12 @@ export const CharacterGenerator: React.FC = () => {
       setTermSkillsGained(prev => [...prev, `${skillName} (${displayName})`]);
     }
 
-    // Mark that the skill has been selected for this term
-    setTermSkillSelected(true);
+    // Mark one skill roll used. If advancement granted a second roll,
+    // `termSkillSelected` (derived) stays false until both rolls are used,
+    // and the player can expand a different table (or collapse + re-expand the
+    // same one) to roll again. Leaving the table expanded lets them see the
+    // first roll result.
+    setTermSkillRollsUsed(prev => prev + 1);
   };
 
   // Legacy function - kept for compatibility but now just toggles the table
@@ -2723,7 +2869,12 @@ export const CharacterGenerator: React.FC = () => {
     setRedirectTableName(null);
     setPendingSpecialtySkill(null);
     setPendingSpecialtySource('');
-    setTermSkillSelected(false);
+    setTermSkillRollsUsed(0);
+    setTermSkillRollsAllowed(1);
+    setCommissionAttempted(false);
+    setCommissionRollLog('');
+    setForcedContinueInCareer(false);
+    setForcedLeaveAfterTerm(false);
     setExpandedSkillTable(null);
     setSkillTableRollResult(null);
     setBasicTrainingApplied(false);
@@ -2795,7 +2946,12 @@ export const CharacterGenerator: React.FC = () => {
     setPendingSpecialtySkill(null);
     setPendingSpecialtySource('');
     // Reset end-of-term skill selection state
-    setTermSkillSelected(false);
+    setTermSkillRollsUsed(0);
+    setTermSkillRollsAllowed(1);
+    setCommissionAttempted(false);
+    setCommissionRollLog('');
+    setForcedContinueInCareer(false);
+    setForcedLeaveAfterTerm(false);
     setExpandedSkillTable(null);
     setSkillTableRollResult(null);
     // Reset basic training state for new career
@@ -2936,6 +3092,8 @@ export const CharacterGenerator: React.FC = () => {
     setCharacteristicRolls(draft.characteristicRolls ?? []);
     setBackgroundSkillsRemaining(draft.backgroundSkillsRemaining ?? 0);
     setIsCommissioned(draft.isCommissioned ?? false);
+    setNeedsCommissionRoll(draft.needsCommissionRoll ?? false);
+    setCommissionRollDM(draft.commissionRollDM ?? 0);
     setBasicTrainingApplied(draft.basicTrainingApplied ?? false);
     setAssignmentMode(draft.assignmentMode ?? 'auto');
     setUseManualDice(draft.useManualDice ?? false);
@@ -2989,6 +3147,8 @@ export const CharacterGenerator: React.FC = () => {
         characteristicRolls,
         backgroundSkillsRemaining,
         isCommissioned,
+        needsCommissionRoll,
+        commissionRollDM,
         basicTrainingApplied,
         assignmentMode,
         useManualDice,
@@ -3011,7 +3171,7 @@ export const CharacterGenerator: React.FC = () => {
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
   }, [step, characterData, selectedCareer, selectedAssignment, currentTerm, isInTerm,
       qualificationPassed, hasUsedDraft, hasRolled, characteristicRolls, backgroundSkillsRemaining,
-      isCommissioned, basicTrainingApplied, isMusteringOut, draftChecked, showResumeDraft,
+      isCommissioned, needsCommissionRoll, commissionRollDM, basicTrainingApplied, isMusteringOut, draftChecked, showResumeDraft,
       DRAFT_KEY, assignmentMode, useManualDice, eventBenefitDMs, extraBenefitRolls,
       preCareerGraduated, preCareerFailedService, graduatedWithHonours,
       universitySkillLevel0, universitySkillLevel1, militaryAcademyService,
@@ -4697,12 +4857,28 @@ export const CharacterGenerator: React.FC = () => {
                         )}
                         <Alert className="bg-green-500/10 border-green-500/50">
                           <AlertDescription className="text-green-400">
-                            ✓ Survival check passed! Now roll for advancement.
+                            ✓ Survival check passed! Now roll for an event.
                           </AlertDescription>
                         </Alert>
+
+                        {/* EVENT TABLE */}
+                        {selectedCareer && selectedCareer.eventTable && (
+                          <div className="bg-black border border-terminal-primary/30 rounded p-3">
+                            <h4 className="text-xs font-bold text-blue-400 mb-2">Possible Events (2D6):</h4>
+                            <div className="space-y-1 text-xs text-terminal-primary/70">
+                              {(selectedCareer.eventTable || []).map((event, idx) => (
+                                <div key={idx} className="flex gap-2">
+                                  <span className="text-terminal-primary/50">{idx + 2}.</span>
+                                  <span>{getEventDescription(event)}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
                         {useManualDice ? (
                           <div className="space-y-2">
-                            <p className="text-xs text-blue-400">Enter your 2D6 roll result (DM will be applied automatically):</p>
+                            <p className="text-xs text-blue-400">Enter your 2D6 roll result for the event table:</p>
                             <div className="flex gap-2">
                               <Input
                                 type="number"
@@ -4717,24 +4893,24 @@ export const CharacterGenerator: React.FC = () => {
                                 onClick={() => {
                                   const val = parseInt(manualDiceValue);
                                   if (!isNaN(val) && val >= 2 && val <= 12) {
-                                    runAdvancementCheck(val);
+                                    rollEvent(val);
                                     setManualDiceValue('');
                                   }
                                 }}
                                 disabled={!manualDiceValue || isNaN(parseInt(manualDiceValue)) || parseInt(manualDiceValue) < 2 || parseInt(manualDiceValue) > 12}
                                 className="bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
                               >
-                                Submit Advancement Roll
+                                Submit Event Roll
                               </Button>
                             </div>
                           </div>
                         ) : (
                           <Button
-                            onClick={() => runAdvancementCheck()}
+                            onClick={() => rollEvent()}
                             className="w-full bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
                           >
                             <Dices className="h-4 w-4 mr-2" />
-                            Roll Advancement Check
+                            Roll Event (2D6)
                           </Button>
                         )}
                       </>
@@ -4742,7 +4918,130 @@ export const CharacterGenerator: React.FC = () => {
                   </div>
                 )}
 
-                {isInTerm && termSurvived === true && termAdvanced !== null && termEventRoll === null && (
+                {/* COMMISSION ROLL - after event is resolved, before advancement */}
+                {isInTerm && termSurvived === true && termEventRoll !== null && gameEventCompleted
+                  && !selectedCareer?.isPreCareer
+                  && isEligibleForCommission()
+                  && !commissionAttempted && (
+                  <div className="space-y-2">
+                    <Alert className="bg-blue-500/10 border-blue-500/50">
+                      <AlertDescription className="text-blue-400">
+                        <strong>Commission Opportunity</strong>
+                        <p className="mt-1 text-xs">
+                          You may attempt to earn a commission this term. Target: {selectedCareer?.commissionTarget ?? 8}+
+                          {getCommissionDMBreakdown()}
+                        </p>
+                      </AlertDescription>
+                    </Alert>
+                    {useManualDice ? (
+                      <div className="space-y-2">
+                        <p className="text-xs text-blue-400">Enter your 2D6 roll result for the commission roll:</p>
+                        <div className="flex gap-2">
+                          <Input
+                            type="number"
+                            min={2}
+                            max={12}
+                            value={manualDiceValue}
+                            onChange={(e) => setManualDiceValue(e.target.value)}
+                            placeholder="Enter 2D6 result (2-12)"
+                            className="bg-black border-terminal-primary/50 text-terminal-primary placeholder:text-terminal-primary/40"
+                          />
+                          <Button
+                            onClick={() => {
+                              const val = parseInt(manualDiceValue);
+                              if (!isNaN(val) && val >= 2 && val <= 12) {
+                                runCommissionCheck(val);
+                                setManualDiceValue('');
+                              }
+                            }}
+                            disabled={!manualDiceValue || isNaN(parseInt(manualDiceValue)) || parseInt(manualDiceValue) < 2 || parseInt(manualDiceValue) > 12}
+                            className="bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
+                          >
+                            Submit Commission Roll
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={() => runCommissionCheck()}
+                          className="flex-1 bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
+                        >
+                          <Dices className="h-4 w-4 mr-2" />
+                          Roll for Commission
+                        </Button>
+                        <Button
+                          variant="outline"
+                          onClick={() => setCommissionAttempted(true)}
+                          className="border-terminal-primary/50 text-terminal-primary hover:bg-terminal-primary/10"
+                        >
+                          Skip
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Commission roll result display */}
+                {isInTerm && commissionRollLog && (
+                  <div className="bg-terminal-primary/5 border border-terminal-primary/30 rounded p-3">
+                    <p className="text-xs text-terminal-primary/80 font-mono">{commissionRollLog}</p>
+                  </div>
+                )}
+
+                {/* ADVANCEMENT ROLL - after event resolved + commission resolved (or n/a) */}
+                {isInTerm && termSurvived === true && termEventRoll !== null && gameEventCompleted
+                  && !selectedCareer?.isPreCareer
+                  && termAdvanced === null
+                  && (!isEligibleForCommission() || commissionAttempted) && (
+                  <div className="space-y-2">
+                    <Alert className="bg-green-500/10 border-green-500/50">
+                      <AlertDescription className="text-green-400">
+                        Now roll for advancement.
+                      </AlertDescription>
+                    </Alert>
+                    {useManualDice ? (
+                      <div className="space-y-2">
+                        <p className="text-xs text-blue-400">Enter your 2D6 roll result (DM will be applied automatically):</p>
+                        <div className="flex gap-2">
+                          <Input
+                            type="number"
+                            min={2}
+                            max={12}
+                            value={manualDiceValue}
+                            onChange={(e) => setManualDiceValue(e.target.value)}
+                            placeholder="Enter 2D6 result (2-12)"
+                            className="bg-black border-terminal-primary/50 text-terminal-primary placeholder:text-terminal-primary/40"
+                          />
+                          <Button
+                            onClick={() => {
+                              const val = parseInt(manualDiceValue);
+                              if (!isNaN(val) && val >= 2 && val <= 12) {
+                                runAdvancementCheck(val);
+                                setManualDiceValue('');
+                              }
+                            }}
+                            disabled={!manualDiceValue || isNaN(parseInt(manualDiceValue)) || parseInt(manualDiceValue) < 2 || parseInt(manualDiceValue) > 12}
+                            className="bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
+                          >
+                            Submit Advancement Roll
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <Button
+                        onClick={() => runAdvancementCheck()}
+                        className="w-full bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
+                      >
+                        <Dices className="h-4 w-4 mr-2" />
+                        Roll Advancement Check
+                      </Button>
+                    )}
+                  </div>
+                )}
+
+                {/* ADVANCEMENT RESULT */}
+                {isInTerm && termAdvanced !== null && !selectedCareer?.isPreCareer && (
                   <div className="space-y-2">
                     {advancementRollLog && (
                       <div className="bg-terminal-primary/5 border border-terminal-primary/30 rounded p-3">
@@ -4761,59 +5060,6 @@ export const CharacterGenerator: React.FC = () => {
                           Did not advance this term.
                         </AlertDescription>
                       </Alert>
-                    )}
-
-                    {/* EVENT TABLE */}
-                    {selectedCareer && selectedCareer.eventTable && (
-                      <div className="bg-black border border-terminal-primary/30 rounded p-3">
-                        <h4 className="text-xs font-bold text-blue-400 mb-2">Possible Events (2D6):</h4>
-                        <div className="space-y-1 text-xs text-terminal-primary/70">
-                          {(selectedCareer.eventTable || []).map((event, idx) => (
-                            <div key={idx} className="flex gap-2">
-                              <span className="text-terminal-primary/50">{idx + 2}.</span>
-                              <span>{getEventDescription(event)}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {useManualDice ? (
-                      <div className="space-y-2">
-                        <p className="text-xs text-blue-400">Enter your 2D6 roll result for the event table:</p>
-                        <div className="flex gap-2">
-                          <Input
-                            type="number"
-                            min={2}
-                            max={12}
-                            value={manualDiceValue}
-                            onChange={(e) => setManualDiceValue(e.target.value)}
-                            placeholder="Enter 2D6 result (2-12)"
-                            className="bg-black border-terminal-primary/50 text-terminal-primary placeholder:text-terminal-primary/40"
-                          />
-                          <Button
-                            onClick={() => {
-                              const val = parseInt(manualDiceValue);
-                              if (!isNaN(val) && val >= 2 && val <= 12) {
-                                rollEvent(val);
-                                setManualDiceValue('');
-                              }
-                            }}
-                            disabled={!manualDiceValue || isNaN(parseInt(manualDiceValue)) || parseInt(manualDiceValue) < 2 || parseInt(manualDiceValue) > 12}
-                            className="bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
-                          >
-                            Submit Event Roll
-                          </Button>
-                        </div>
-                      </div>
-                    ) : (
-                      <Button
-                        onClick={() => rollEvent()}
-                        className="w-full bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
-                      >
-                        <Dices className="h-4 w-4 mr-2" />
-                        Roll Event (2D6)
-                      </Button>
                     )}
                   </div>
                 )}
@@ -5043,11 +5289,22 @@ export const CharacterGenerator: React.FC = () => {
                     )}
 
                     {/* Skill Gain Tables (only show for regular careers when event is resolved and no pending specialty) */}
-                    {!selectedCareer?.isPreCareer && !pendingSpecialtySkill && ((!currentGameEvent || gameEventCompleted) && (!currentEvent || eventResolved)) && (
+                    {!selectedCareer?.isPreCareer && !pendingSpecialtySkill && ((!currentGameEvent || gameEventCompleted) && (!currentEvent || eventResolved)) && termAdvanced !== null && (
                       <div className="space-y-3">
                         <h4 className="text-sm font-bold text-terminal-primary uppercase">
-                          {termSkillSelected ? 'Skill Selected This Term' : 'Select One Skill Table'}
+                          {termSkillSelected
+                            ? 'Skill Rolls Complete'
+                            : termSkillRollsAllowed > 1
+                              ? `Select Skill Table (${termSkillRollsUsed + 1} of ${termSkillRollsAllowed})`
+                              : 'Select One Skill Table'}
                         </h4>
+                        {termSkillRollsAllowed === 2 && !termSkillSelected && (
+                          <Alert className="bg-green-500/10 border-green-500/50">
+                            <AlertDescription className="text-green-400 text-xs">
+                              Advancement success — you may roll on a skill table twice this term.
+                            </AlertDescription>
+                          </Alert>
+                        )}
 
                         {/* Skill Table Selection */}
                         <div className="space-y-2">
@@ -5445,16 +5702,32 @@ export const CharacterGenerator: React.FC = () => {
                   ) : !isSwitchingAssignment ? (
                     // Regular career: show start next term, switch career, switch assignment, or muster out
                     <div className="space-y-2">
+                      {forcedContinueInCareer && (
+                        <Alert className="bg-yellow-500/10 border-yellow-500/50">
+                          <AlertDescription className="text-yellow-400 text-xs">
+                            Natural 12 on advancement — you must continue in {selectedCareer?.name} next term. You cannot leave or muster out this term.
+                          </AlertDescription>
+                        </Alert>
+                      )}
+                      {forcedLeaveAfterTerm && !forcedContinueInCareer && (
+                        <Alert className="bg-red-500/10 border-red-500/50">
+                          <AlertDescription className="text-red-400 text-xs">
+                            Your advancement roll did not exceed your terms in this career — you must leave {selectedCareer?.name} after this term.
+                          </AlertDescription>
+                        </Alert>
+                      )}
                       <div className="flex gap-2">
                         <Button
                           onClick={startNewTerm}
-                          className="flex-1 bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30 border border-terminal-primary/50"
+                          disabled={forcedLeaveAfterTerm && !forcedContinueInCareer}
+                          className="flex-1 bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30 border border-terminal-primary/50 disabled:opacity-40 disabled:cursor-not-allowed"
                         >
                           Start Term {currentTerm + 1}
                         </Button>
                         <Button
                           onClick={musterOut}
-                          className="flex-1 bg-red-500/20 text-red-400 hover:bg-red-500/30 border border-red-500/50"
+                          disabled={forcedContinueInCareer}
+                          className="flex-1 bg-red-500/20 text-red-400 hover:bg-red-500/30 border border-red-500/50 disabled:opacity-40 disabled:cursor-not-allowed"
                         >
                           Muster Out
                         </Button>
@@ -5462,16 +5735,18 @@ export const CharacterGenerator: React.FC = () => {
                       <div className="flex gap-2">
                         <Button
                           onClick={switchToNewCareer}
+                          disabled={forcedContinueInCareer}
                           variant="outline"
-                          className="flex-1 border-terminal-primary/50 text-terminal-primary hover:bg-terminal-primary/20"
+                          className="flex-1 border-terminal-primary/50 text-terminal-primary hover:bg-terminal-primary/20 disabled:opacity-40 disabled:cursor-not-allowed"
                         >
                           Switch Career
                         </Button>
                         {canSwitchAssignment() && (
                           <Button
                             onClick={startSwitchAssignment}
+                            disabled={forcedContinueInCareer}
                             variant="outline"
-                            className="flex-1 border-blue-500/50 text-blue-400 hover:bg-blue-500/20"
+                            className="flex-1 border-blue-500/50 text-blue-400 hover:bg-blue-500/20 disabled:opacity-40 disabled:cursor-not-allowed"
                           >
                             Switch Assignment
                           </Button>

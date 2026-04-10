@@ -297,11 +297,11 @@ export const CAREER_NAVY: CareerDefinition = {
     enlisted: [
       { title: 'Crewman', skillBonus: 'Mechanic' },
       { title: 'Able Spacehand' },
-      { title: 'Petty Officer', skillBonus: 'Vacc Suit' },
+      { title: 'Petty Officer 3rd Class', skillBonus: 'Vacc Suit' },
+      { title: 'Petty Officer 2nd Class' },
+      { title: 'Petty Officer 1st Class' },
       { title: 'Chief Petty Officer' },
       { title: 'Master Chief' },
-      { title: 'Warrant Officer' },
-      { title: 'Command Warrant Officer' },
     ],
     officer: [
       { title: 'Ensign', skillBonus: 'Melee' },
@@ -309,8 +309,7 @@ export const CAREER_NAVY: CareerDefinition = {
       { title: 'Lieutenant' },
       { title: 'Commander', skillBonus: 'Tactics' },
       { title: 'Captain' },
-      { title: 'Commodore', bonusStat: 'social' },
-      { title: 'Admiral', bonusStat: 'social' },
+      { title: 'Admiral', bonusStat: 'social', bonusStatFloor: 12 },
     ],
   },
   mishapTable: [
