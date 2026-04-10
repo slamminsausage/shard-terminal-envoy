@@ -2423,7 +2423,7 @@ export const CharacterGenerator: React.FC = () => {
         if (effects.injurySeverity === 'severe') {
           setPendingInjurySeverity('severe');
         }
-        handleTableRedirect(effects.rollOnTable as 'life_events' | 'injury' | 'aging' | 'draft' | 'unusual_events' | 'mishap' | 'prison_event');
+        handleTableRedirect(effects.rollOnTable as 'life_events' | 'injury' | 'aging' | 'draft' | 'unusual_events' | 'mishap' | 'prison_event', true);
         return; // Don't complete mishap yet - wait for redirected table to complete
       }
     }
@@ -6546,42 +6546,35 @@ export const CharacterGenerator: React.FC = () => {
                   ) : !isSwitchingAssignment ? (
                     // Regular career: show start next term, switch career, switch assignment, or muster out
                     <div className="space-y-2">
-                      {forcedContinueInCareer && (
+                      {forceLeaveCareer && !agingPending && (
+                        <p className="text-xs text-yellow-400">You must leave this career.</p>
+                      )}
+                      {agingPending && (
+                        <p className="text-xs text-terminal-primary/50">Resolve aging effects before continuing.</p>
+                      )}
+                      {forcedContinueInCareer && !agingPending && (
                         <Alert className="bg-yellow-500/10 border-yellow-500/50">
                           <AlertDescription className="text-yellow-400 text-xs">
                             Natural 12 on advancement — you must continue in {selectedCareer?.name} next term. You cannot leave or muster out this term.
                           </AlertDescription>
                         </Alert>
                       )}
-                      {forcedLeaveAfterTerm && !forcedContinueInCareer && (
+                      {forcedLeaveAfterTerm && !forcedContinueInCareer && !agingPending && (
                         <Alert className="bg-red-500/10 border-red-500/50">
                           <AlertDescription className="text-red-400 text-xs">
                             Your advancement roll did not exceed your terms in this career — you must leave {selectedCareer?.name} after this term.
                           </AlertDescription>
                         </Alert>
                       )}
-                      <div className="flex gap-2">
+
+                      {/* Anagathics offer between terms (SOC 10+, not in prisoner career, not using noAnagathics career) */}
+                      {!agingPending && !showAnagathicsPrompt && characterData.characteristics.social.total >= 10 &&
+                        !(selectedCareer?.noAnagathics) && (characterData.isUsingAnagathics || characterData.lifepath_log.length >= 4) && (
                         <Button
-                          onClick={startNewTerm}
-                          disabled={forcedLeaveAfterTerm && !forcedContinueInCareer}
-                          className="flex-1 bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30 border border-terminal-primary/50 disabled:opacity-40 disabled:cursor-not-allowed"
-                        >
-                          Start Term {currentTerm + 1}
-                        </Button>
-                        <Button
-                          onClick={musterOut}
-                          disabled={forcedContinueInCareer}
-                          className="flex-1 bg-red-500/20 text-red-400 hover:bg-red-500/30 border border-red-500/50 disabled:opacity-40 disabled:cursor-not-allowed"
-                        >
-                          Muster Out
-                        </Button>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button
-                          onClick={switchToNewCareer}
-                          disabled={forcedContinueInCareer}
+                          onClick={() => setShowAnagathicsPrompt(true)}
                           variant="outline"
-                          className="flex-1 border-terminal-primary/50 text-terminal-primary hover:bg-terminal-primary/20 disabled:opacity-40 disabled:cursor-not-allowed"
+                          size="sm"
+                          className="w-full border-blue-500/30 text-blue-400/70 hover:bg-blue-500/10"
                         >
                           {characterData.isUsingAnagathics ? 'Manage Anagathics' : 'Seek Anagathics'}
                         </Button>
@@ -6590,10 +6583,18 @@ export const CharacterGenerator: React.FC = () => {
                       <div className="flex gap-2">
                         {!forceLeaveCareer && !agingPending && (
                           <Button
-                            onClick={startSwitchAssignment}
+                            onClick={startNewTerm}
+                            disabled={forcedLeaveAfterTerm && !forcedContinueInCareer}
+                            className="flex-1 bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30 border border-terminal-primary/50 disabled:opacity-40 disabled:cursor-not-allowed"
+                          >
+                            Start Term {currentTerm + 1}
+                          </Button>
+                        )}
+                        {!agingPending && (
+                          <Button
+                            onClick={musterOut}
                             disabled={forcedContinueInCareer}
-                            variant="outline"
-                            className="flex-1 border-blue-500/50 text-blue-400 hover:bg-blue-500/20 disabled:opacity-40 disabled:cursor-not-allowed"
+                            className="flex-1 bg-red-500/20 text-red-400 hover:bg-red-500/30 border border-red-500/50 disabled:opacity-40 disabled:cursor-not-allowed"
                           >
                             Muster Out
                           </Button>
@@ -6603,16 +6604,18 @@ export const CharacterGenerator: React.FC = () => {
                         <div className="flex gap-2">
                           <Button
                             onClick={switchToNewCareer}
+                            disabled={forcedContinueInCareer}
                             variant="outline"
-                            className="flex-1 border-terminal-primary/50 text-terminal-primary hover:bg-terminal-primary/20"
+                            className="flex-1 border-terminal-primary/50 text-terminal-primary hover:bg-terminal-primary/20 disabled:opacity-40 disabled:cursor-not-allowed"
                           >
                             Switch Career
                           </Button>
                           {canSwitchAssignment() && (
                             <Button
                               onClick={startSwitchAssignment}
+                              disabled={forcedContinueInCareer}
                               variant="outline"
-                              className="flex-1 border-blue-500/50 text-blue-400 hover:bg-blue-500/20"
+                              className="flex-1 border-blue-500/50 text-blue-400 hover:bg-blue-500/20 disabled:opacity-40 disabled:cursor-not-allowed"
                             >
                               Switch Assignment
                             </Button>
