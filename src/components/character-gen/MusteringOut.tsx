@@ -67,9 +67,19 @@ interface MusteringOutProps {
     allies: number;
     contacts: number;
     equipment: string[];
+    gainedSkills: string[];
+    cashRollsUsed: number;
     benefitLog: BenefitRollResult[];
   }) => void;
   useManualDice?: boolean;
+  /** Lifetime cash rolls already taken (e.g. from prior between-career benefit sessions).
+   *  The 3-cash-roll cap is per character, not per career. */
+  initialCashRollsUsed?: number;
+  /** Header title override. Used for the between-career flow to distinguish it
+   *  from the final mustering-out screen. */
+  title?: string;
+  /** Button label override — e.g. "Continue" for between-career, "Finish" for final. */
+  completeLabel?: string;
 }
 
 // ============================================================================
@@ -178,6 +188,9 @@ export const MusteringOut: React.FC<MusteringOutProps> = ({
   characteristics: initialCharacteristics,
   onComplete,
   useManualDice = false,
+  initialCashRollsUsed = 0,
+  title = 'Mustering Out Benefits',
+  completeLabel = 'Finish Mustering Out',
 }) => {
   // Filter out pre-careers (they don't get benefits) and zero out careers that lost benefits
   const eligibleCareers = useMemo(() =>
@@ -218,7 +231,7 @@ export const MusteringOut: React.FC<MusteringOutProps> = ({
   }, [eligibleCareers]);
 
   // State
-  const [cashRollsUsed, setCashRollsUsed] = useState(0);
+  const [cashRollsUsed, setCashRollsUsed] = useState(initialCashRollsUsed);
   const [benefitLog, setBenefitLog] = useState<BenefitRollResult[]>([]);
   const [accumulatedCash, setAccumulatedCash] = useState(currentCash);
   const [accumulatedShipShares, setAccumulatedShipShares] = useState(currentShipShares);
@@ -227,6 +240,7 @@ export const MusteringOut: React.FC<MusteringOutProps> = ({
   const [accumulatedAllies, setAccumulatedAllies] = useState(0);
   const [accumulatedContacts, setAccumulatedContacts] = useState(0);
   const [accumulatedEquipment, setAccumulatedEquipment] = useState<string[]>([]);
+  const [accumulatedSkills, setAccumulatedSkills] = useState<string[]>([]);
   const [characteristics, setCharacteristics] = useState(initialCharacteristics);
 
   // Track available benefit DMs from events (each can only be used once)
@@ -449,8 +463,10 @@ export const MusteringOut: React.FC<MusteringOutProps> = ({
           }
           break;
         case 'skill':
-          // Skills from benefits - just log for now, would need skill system integration
+          // Skills from benefits (e.g. Prisoner benefit table). Tracked here
+          // and applied back in CharacterGenerator via applySkillGain.
           if (option.skill) {
+            setAccumulatedSkills(prev => [...prev, option.skill!]);
             appliedBenefits.push(`${option.skill} skill`);
           }
           break;
@@ -501,6 +517,8 @@ export const MusteringOut: React.FC<MusteringOutProps> = ({
       allies: accumulatedAllies,
       contacts: accumulatedContacts,
       equipment: accumulatedEquipment,
+      gainedSkills: accumulatedSkills,
+      cashRollsUsed,
       benefitLog,
     });
   };
@@ -515,7 +533,7 @@ export const MusteringOut: React.FC<MusteringOutProps> = ({
         <CardHeader className="pb-2">
           <CardTitle className="text-terminal-primary text-lg flex items-center gap-2">
             <Gift className="h-5 w-5" />
-            Mustering Out Benefits
+            {title}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -568,6 +586,20 @@ export const MusteringOut: React.FC<MusteringOutProps> = ({
                     <Award className="h-3 w-3" />
                   )}
                   {item}
+                </span>
+              ))}
+            </div>
+          )}
+
+          {/* Skills (e.g. Prisoner benefit table grants skills) */}
+          {accumulatedSkills.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {accumulatedSkills.map((skill, idx) => (
+                <span
+                  key={idx}
+                  className="bg-purple-500/20 text-purple-400 text-xs px-2 py-1 rounded flex items-center gap-1"
+                >
+                  <Award className="h-3 w-3" /> {skill}
                 </span>
               ))}
             </div>
@@ -814,7 +846,7 @@ export const MusteringOut: React.FC<MusteringOutProps> = ({
       >
         {totalRollsRemaining > 0
           ? `Complete All Rolls (${totalRollsRemaining} remaining)`
-          : 'Finish Mustering Out'
+          : completeLabel
         }
       </Button>
     </div>

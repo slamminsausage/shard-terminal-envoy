@@ -60,6 +60,11 @@ interface CareerRecord {
   benefitDMs: number[];      // Individual benefit DM bonuses (each used once during mustering out)
   extraBenefitRolls: number; // Extra benefit rolls from events
   isPreCareer: boolean;      // Pre-careers don't get benefits
+  /** True if benefit rolls for this career have already been processed — set
+   *  when the player voluntarily leaves a career mid-chargen and takes their
+   *  between-career mustering-out. Final mustering-out skips these so the
+   *  same career can't be benefit-rolled twice. */
+  benefitsTaken?: boolean;
 }
 
 interface CharacteristicValue {
@@ -487,6 +492,12 @@ export const CharacterGenerator: React.FC = () => {
   const [isMusteringOut, setIsMusteringOut] = useState(false);
   const [forceLeaveCareer, setForceLeaveCareer] = useState(false);
   const [pendingInjurySeverity, setPendingInjurySeverity] = useState<'severe' | null>(null);
+  // Between-career muster state — the CareerRecord of the career the player is
+  // leaving, plus a deferred "what to do after the muster completes" callback.
+  // The 3-cash-rolls-lifetime cap is enforced by passing `lifetimeCashRollsUsed`
+  // into <MusteringOut /> and updating it from the onComplete result.
+  const [midCareerMusterRecord, setMidCareerMusterRecord] = useState<CareerRecord | null>(null);
+  const [lifetimeCashRollsUsed, setLifetimeCashRollsUsed] = useState<number>(0);
 
   // Mishap GameEvent state - for mishaps that require player interaction (rolls, choices)
   const [pendingMishapGameEvent, setPendingMishapGameEvent] = useState<GameEvent | null>(null);
@@ -3060,6 +3071,9 @@ export const CharacterGenerator: React.FC = () => {
     allies: number;
     contacts: number;
     equipment: string[];
+    gainedSkills: string[];
+    cashRollsUsed: number;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     benefitLog: any[];
   }) => {
     // Calculate pension for qualifying careers
@@ -3084,7 +3098,20 @@ export const CharacterGenerator: React.FC = () => {
       allies: prev.allies + results.allies,
       contacts: prev.contacts + results.contacts,
       equipment: [...prev.equipment, ...results.equipment],
+      // Mark every remaining career as benefit-rolled so a resumed draft
+      // can't double-dip in final mustering-out.
+      careerHistory: prev.careerHistory.map(c =>
+        c.benefitsTaken ? c : { ...c, benefitsTaken: true }
+      ),
     }));
+
+    // Update lifetime cash-roll counter from final session.
+    setLifetimeCashRollsUsed(results.cashRollsUsed);
+
+    // Apply Prisoner-style skill benefits through the standard skill pipeline.
+    results.gainedSkills.forEach(skill => {
+      applySkillGain(skill, 'Mustering-out benefit');
+    });
 
     setIsMusteringOut(false);
     setStep(6); // Go to review
@@ -3277,11 +3304,10 @@ export const CharacterGenerator: React.FC = () => {
     setExtraBenefitRolls(0);
   };
 
-  // Switch to a new career after leaving current one (after mishap, etc.)
-  const switchToNewCareer = () => {
-    // Save current career to history (unless it's a pre-career, which don't get benefits)
-    saveCurrentCareerToHistory();
-
+  // Shared helper for resetting chargen state when the player returns to
+  // career selection. Called either directly by switchToNewCareer (when no
+  // between-career benefit rolls apply) or after a mid-career muster completes.
+  const resetForNewCareerSelection = () => {
     // Reset rank and terms_served for the new career (but keep age and other stats)
     setCharacterData(prev => ({
       ...prev,
@@ -3350,6 +3376,98 @@ export const CharacterGenerator: React.FC = () => {
 
     // Go back to career selection
     setStep(4);
+  };
+
+  // Switch to a new career after leaving current one. Per Traveller 2e
+  // (Core Rulebook p. 20/46) "Benefits are gained when a Traveller leaves a
+  // career" and can happen between careers, not only at the end of chargen —
+  // so we save history, then pause into a single-career MusteringOut session
+  // before resetting for career selection. Pre-careers and zero-term exits
+  // skip the benefit step.
+  const switchToNewCareer = () => {
+    const leavingCareer = selectedCareer;
+    const terms = currentTerm;
+
+    // Record the career in history first.
+    saveCurrentCareerToHistory();
+
+    if (leavingCareer && !leavingCareer.isPreCareer && terms > 0) {
+      // Eligible for between-career benefit rolls — pause transition.
+      const assignmentName = leavingCareer.assignments[selectedAssignment]?.name || '';
+      const record: CareerRecord = {
+        careerName: leavingCareer.name,
+        assignment: assignmentName,
+        termsServed: terms,
+        highestRank: characterData.rank,
+        isCommissioned,
+        benefitDMs: eventBenefitDMs,
+        extraBenefitRolls,
+        isPreCareer: false,
+      };
+      setMidCareerMusterRecord(record);
+      return;
+    }
+
+    // No benefits to roll (pre-career or zero terms) — reset immediately.
+    resetForNewCareerSelection();
+  };
+
+  // Called when the player finishes the between-career mustering-out session.
+  // Applies all accumulated gains, marks the leaving career as benefit-rolled
+  // so the final muster-out skips it, then proceeds with the career reset.
+  const handleMidCareerMusterComplete = (results: {
+    cash: number;
+    shipShares: number;
+    tasMembership: boolean;
+    ships: string[];
+    characteristics: typeof characterData.characteristics;
+    allies: number;
+    contacts: number;
+    equipment: string[];
+    gainedSkills: string[];
+    cashRollsUsed: number;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    benefitLog: any[];
+  }) => {
+    const leavingRecord = midCareerMusterRecord;
+    if (!leavingRecord) return;
+
+    setCharacterData(prev => ({
+      ...prev,
+      cash_on_hand: results.cash,
+      credits: results.cash,
+      shipShares: results.shipShares,
+      tasMembership: results.tasMembership,
+      ships: results.ships,
+      characteristics: results.characteristics,
+      allies: prev.allies + results.allies,
+      contacts: prev.contacts + results.contacts,
+      equipment: [...prev.equipment, ...results.equipment],
+      // Mark the leaving career's most-recent history entry as benefit-rolled.
+      careerHistory: (() => {
+        const history = [...prev.careerHistory];
+        for (let i = history.length - 1; i >= 0; i--) {
+          const c = history[i];
+          if (c.careerName === leavingRecord.careerName && !c.benefitsTaken) {
+            history[i] = { ...c, benefitsTaken: true };
+            break;
+          }
+        }
+        return history;
+      })(),
+    }));
+
+    // Persist the lifetime cash-roll counter (3 max across all careers).
+    setLifetimeCashRollsUsed(results.cashRollsUsed);
+
+    // Apply any Prisoner-style skill benefits through the standard skill-gain
+    // pipeline so specialty selection, limits, and normalization all work.
+    results.gainedSkills.forEach(skill => {
+      applySkillGain(skill, `${leavingRecord.careerName} benefit`);
+    });
+
+    setMidCareerMusterRecord(null);
+    resetForNewCareerSelection();
   };
 
   const selectNextCareerFromPreCareer = () => {
@@ -3549,6 +3667,8 @@ export const CharacterGenerator: React.FC = () => {
     setAssignmentMode(draft.assignmentMode ?? 'auto');
     setUseManualDice(draft.useManualDice ?? false);
     setIsMusteringOut(draft.isMusteringOut ?? false);
+    setMidCareerMusterRecord(draft.midCareerMusterRecord ?? null);
+    setLifetimeCashRollsUsed(draft.lifetimeCashRollsUsed ?? 0);
     setEventBenefitDMs(draft.eventBenefitDMs ?? []);
     setExtraBenefitRolls(draft.extraBenefitRolls ?? 0);
     setPreCareerGraduated(draft.preCareerGraduated ?? false);
@@ -3604,6 +3724,8 @@ export const CharacterGenerator: React.FC = () => {
         assignmentMode,
         useManualDice,
         isMusteringOut,
+        midCareerMusterRecord,
+        lifetimeCashRollsUsed,
         eventBenefitDMs,
         extraBenefitRolls,
         preCareerGraduated,
@@ -3624,6 +3746,7 @@ export const CharacterGenerator: React.FC = () => {
       qualificationPassed, hasUsedDraft, hasRolled, characteristicRolls, backgroundSkillsRemaining,
       isCommissioned, needsCommissionRoll, commissionRollDM, basicTrainingApplied, isMusteringOut, draftChecked, showResumeDraft,
       DRAFT_KEY, assignmentMode, useManualDice, eventBenefitDMs, extraBenefitRolls,
+      midCareerMusterRecord, lifetimeCashRollsUsed,
       preCareerGraduated, preCareerFailedService, graduatedWithHonours,
       universitySkillLevel0, universitySkillLevel1, militaryAcademyService,
       psiTestResult, showPsiTesting, selectedRace]);
@@ -5002,9 +5125,27 @@ export const CharacterGenerator: React.FC = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4 pt-4">
-                {isMusteringOut ? (
+                {midCareerMusterRecord ? (
                   <MusteringOut
-                    careerHistory={characterData.careerHistory}
+                    careerHistory={[midCareerMusterRecord]}
+                    lostBenefitCareers={characterData.lostBenefitCareers || []}
+                    currentCash={characterData.cash_on_hand}
+                    currentShipShares={characterData.shipShares}
+                    hasTasMembership={characterData.tasMembership}
+                    ships={characterData.ships}
+                    gamblerSkillLevel={parseInt(characterData.skills['Gambler']?.value || '0', 10) || 0}
+                    characteristics={characterData.characteristics}
+                    onComplete={handleMidCareerMusterComplete}
+                    useManualDice={useManualDice}
+                    initialCashRollsUsed={lifetimeCashRollsUsed}
+                    title={`Leaving ${midCareerMusterRecord.careerName} — Benefit Rolls`}
+                    completeLabel="Continue to Next Career"
+                  />
+                ) : isMusteringOut ? (
+                  <MusteringOut
+                    // Final mustering-out: skip careers that already had their
+                    // between-career benefit rolls so they can't double-dip.
+                    careerHistory={characterData.careerHistory.filter(c => !c.benefitsTaken)}
                     lostBenefitCareers={characterData.lostBenefitCareers || []}
                     currentCash={characterData.cash_on_hand}
                     currentShipShares={characterData.shipShares}
@@ -5014,6 +5155,7 @@ export const CharacterGenerator: React.FC = () => {
                     characteristics={characterData.characteristics}
                     onComplete={handleMusteringOutComplete}
                     useManualDice={useManualDice}
+                    initialCashRollsUsed={lifetimeCashRollsUsed}
                   />
                 ) : (
                 <>
