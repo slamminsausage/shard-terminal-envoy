@@ -1352,9 +1352,13 @@ export const CharacterGenerator: React.FC = () => {
     setEventOutcomeApplied(false);
     setPendingSpecialtySkill(null);
     setPendingSpecialtySource('');
-    // Reset end-of-term skill selection state
+    // Reset end-of-term skill selection state.
+    // Per Traveller 2e: the first term of a character's first career has no
+    // "training roll" — it only gets the 6 basic-training skills. Every other
+    // term gets 1 training roll, and successful advancement adds another.
+    const isVeryFirstTerm = newTermNumber === 1 && (characterData.totalCareerTerms || 0) === 0;
     setTermSkillRollsUsed(0);
-    setTermSkillRollsAllowed(1);
+    setTermSkillRollsAllowed(isVeryFirstTerm ? 0 : 1);
     setExpandedSkillTable(null);
     setSkillTableRollResult(null);
     // Reset commission state
@@ -1377,24 +1381,10 @@ export const CharacterGenerator: React.FC = () => {
     setNeedsMishapRoll(false);
     // Reset forced leave state
     setForceLeaveCareer(false);
-    // Reset commission state
-    setCommissionPending(false);
-    setCommissionRollLog('');
-
-    // Check if commission roll is needed (first term in a military career after pre-career graduation)
-    if (newTermNumber === 1 && needsCommissionRoll && selectedCareer?.commissionTarget) {
-      if (commissionRollDM <= -999) {
-        // Automatic commission (military academy with honours)
-        setIsCommissioned(true);
-        setCharacterData(prev => ({ ...prev, rank: 1 }));
-        setCommissionRollLog('Commission: Automatic (Military Academy Honours) → Commissioned as Officer (Rank O1)');
-        setTermSkillsGained(prev => [...prev, 'Automatic Commission (Honours) → Officer Rank O1']);
-        setNeedsCommissionRoll(false);
-      } else {
-        // Need to roll for commission
-        setCommissionPending(true);
-      }
-    }
+    // NOTE: commission state (commissionAttempted, commissionRollLog) is reset
+    // above. runCommissionCheck handles all paths — including military academy
+    // honours auto-pass via commissionRollDM === -999 — so the commission UI
+    // simply appears after events resolve for eligible characters.
 
     // Calculate age based on TOTAL terms completed across all careers
     // lifepath_log contains one entry per completed term
@@ -1414,33 +1404,6 @@ export const CharacterGenerator: React.FC = () => {
       applyBasicTraining();
     }
     // For subsequent careers, UI will show skill selection (handled in render)
-  };
-
-  // Roll for commission (military careers after pre-career graduation)
-  const rollCommission = (manualRoll?: number) => {
-    if (!selectedCareer?.commissionTarget) return;
-
-    const socMod = getDM(characterData.characteristics.social.current);
-    const target = selectedCareer.commissionTarget;
-    const dm = socMod + commissionRollDM;
-    const naturalRoll = manualRoll ?? rollDice(2, 6);
-    const total = naturalRoll + dm;
-    const passed = total >= target;
-
-    const dmBreakdown = `SOC DM ${socMod >= 0 ? '+' : ''}${socMod}${commissionRollDM !== 0 ? `, Pre-career DM ${commissionRollDM >= 0 ? '+' : ''}${commissionRollDM}` : ''}`;
-    const log = `Commission Roll: ${naturalRoll} + (${dmBreakdown}) = ${total} vs ${target}+ → ${passed ? 'COMMISSIONED' : 'Failed'}`;
-    setCommissionRollLog(log);
-    setCommissionPending(false);
-    setNeedsCommissionRoll(false);
-    setCommissionRollDM(0); // Reset after use - one-time bonus from pre-career
-
-    if (passed) {
-      setIsCommissioned(true);
-      setCharacterData(prev => ({ ...prev, rank: 1 }));
-      setTermSkillsGained(prev => [...prev, 'Commission Granted → Officer Rank O1']);
-    } else {
-      setTermSkillsGained(prev => [...prev, 'Commission Failed → Enlisted']);
-    }
   };
 
   // Process a mishap roll result (extracted for manual dice support)
@@ -1766,9 +1729,11 @@ export const CharacterGenerator: React.FC = () => {
       }
     }
 
-    // Successful advancement grants a second skill-table roll this term.
+    // Successful advancement grants an extra training roll this term. Use an
+    // additive increment so the base count (0 for first-career-first-term,
+    // 1 otherwise) is preserved correctly.
     if (advanced) {
-      setTermSkillRollsAllowed(2);
+      setTermSkillRollsAllowed(prev => prev + 1);
     }
   };
 
@@ -1846,10 +1811,10 @@ export const CharacterGenerator: React.FC = () => {
         applyRankStatBonus(rank1.bonusStat, rank1.bonusStatFloor);
       }
 
-      // Commission success: skip advancement this term, but still grant the
-      // second skill-table roll (commission counts as advancement success).
+      // Commission success: skip advancement this term.
+      // Per the rules (and confirmed in stress-test), a successful commission
+      // does NOT grant an extra training roll — only the rank 1 skill bonus.
       setTermAdvanced(false);
-      setTermSkillRollsAllowed(2);
       setNeedsCommissionRoll(false);
       setCommissionRollDM(0);
       setEventAdvancementDM(0); // consumed
@@ -3193,7 +3158,7 @@ export const CharacterGenerator: React.FC = () => {
         }));
         setCurrentTerm(0);
         setIsCommissioned(false);
-        setCommissionPending(false);
+        setCommissionAttempted(false);
         setCommissionRollLog('');
       }
     } else {
@@ -3239,7 +3204,7 @@ export const CharacterGenerator: React.FC = () => {
     setTermEventRoll(null);
     setTermSkillsGained([]);
     setIsCommissioned(false);
-    setCommissionPending(false);
+    setCommissionAttempted(false);
     setCommissionRollLog('');
     setBasicTrainingApplied(false);
     setBasicTrainingSkillSelected(null);
@@ -3337,7 +3302,7 @@ export const CharacterGenerator: React.FC = () => {
     setTermEventRoll(null);
     setTermSkillsGained([]);
     setIsCommissioned(false);
-    setCommissionPending(false);
+    setCommissionAttempted(false);
     setCommissionRollLog('');
     setPreCareerGraduated(false);
     setGraduatedWithHonours(false);
@@ -3357,8 +3322,6 @@ export const CharacterGenerator: React.FC = () => {
     setPendingSpecialtySource('');
     setTermSkillRollsUsed(0);
     setTermSkillRollsAllowed(1);
-    setCommissionAttempted(false);
-    setCommissionRollLog('');
     setForcedContinueInCareer(false);
     setForcedLeaveAfterTerm(false);
     setExpandedSkillTable(null);
@@ -3417,7 +3380,7 @@ export const CharacterGenerator: React.FC = () => {
     setTermEventRoll(null);
     setTermSkillsGained([]);
     setIsCommissioned(false);
-    setCommissionPending(false);
+    setCommissionAttempted(false);
     setCommissionRollLog('');
     setPreCareerGraduated(false);
     setGraduatedWithHonours(false);
@@ -3438,8 +3401,6 @@ export const CharacterGenerator: React.FC = () => {
     // Reset end-of-term skill selection state
     setTermSkillRollsUsed(0);
     setTermSkillRollsAllowed(1);
-    setCommissionAttempted(false);
-    setCommissionRollLog('');
     setForcedContinueInCareer(false);
     setForcedLeaveAfterTerm(false);
     setExpandedSkillTable(null);
@@ -5208,67 +5169,11 @@ export const CharacterGenerator: React.FC = () => {
                   </div>
                 )}
 
-                {/* COMMISSION ROLL (for military careers after pre-career graduation) */}
-                {isInTerm && commissionPending && basicTrainingApplied && (
-                  <div className="space-y-2">
-                    <Alert className="bg-amber-500/10 border-amber-500/50">
-                      <AlertCircle className="h-4 w-4" />
-                      <AlertDescription className="text-amber-400">
-                        <strong>Commission Roll:</strong> Roll SOC {selectedCareer?.commissionTarget}+ to enter as a commissioned officer.
-                        {commissionRollDM > 0 && ` (DM+${commissionRollDM} from pre-career)`}
-                      </AlertDescription>
-                    </Alert>
+                {/* Commission roll happens after events (see COMMISSION ROLL block below).
+                    The runCommissionCheck function handles SOC 9+/first-term eligibility,
+                    pre-career academy DMs, and military academy honours auto-pass. */}
 
-                    {useManualDice ? (
-                      <div className="space-y-2">
-                        <p className="text-xs text-blue-400">Enter your 2D6 roll result (DM will be applied automatically):</p>
-                        <div className="flex gap-2">
-                          <Input
-                            type="number"
-                            min={2}
-                            max={12}
-                            value={manualDiceValue}
-                            onChange={(e) => setManualDiceValue(e.target.value)}
-                            placeholder="Enter 2D6 result (2-12)"
-                            className="bg-black border-terminal-primary/50 text-terminal-primary placeholder:text-terminal-primary/40"
-                          />
-                          <Button
-                            onClick={() => {
-                              const val = parseInt(manualDiceValue);
-                              if (!isNaN(val) && val >= 2 && val <= 12) {
-                                rollCommission(val);
-                                setManualDiceValue('');
-                              }
-                            }}
-                            disabled={!manualDiceValue || isNaN(parseInt(manualDiceValue)) || parseInt(manualDiceValue) < 2 || parseInt(manualDiceValue) > 12}
-                            className="bg-amber-500/20 text-amber-400 hover:bg-amber-500/30"
-                          >
-                            Submit Commission Roll
-                          </Button>
-                        </div>
-                      </div>
-                    ) : (
-                      <Button
-                        onClick={() => rollCommission()}
-                        className="w-full bg-amber-500/20 text-amber-400 hover:bg-amber-500/30"
-                      >
-                        <Dices className="h-4 w-4 mr-2" />
-                        Roll Commission Check (SOC {selectedCareer?.commissionTarget}+)
-                      </Button>
-                    )}
-                  </div>
-                )}
-
-                {/* Commission roll result display */}
-                {commissionRollLog && (
-                  <Alert className={isCommissioned ? "bg-green-500/10 border-green-500/50" : "bg-red-500/10 border-red-500/50"}>
-                    <AlertDescription className={isCommissioned ? "text-green-400" : "text-red-400"}>
-                      {commissionRollLog}
-                    </AlertDescription>
-                  </Alert>
-                )}
-
-                {isInTerm && termSurvived === null && basicTrainingApplied && !commissionPending && (
+                {isInTerm && termSurvived === null && basicTrainingApplied && (
                   <div className="space-y-2">
                     <Alert className="bg-terminal-primary/5 border-terminal-primary/30">
                       <AlertCircle className="h-4 w-4" />
