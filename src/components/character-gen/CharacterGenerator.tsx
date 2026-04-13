@@ -2139,9 +2139,31 @@ export const CharacterGenerator: React.FC = () => {
         setTermSkillsGained(prev => [...prev, `DM+${effects.advancementDM} to next advancement roll`]);
       }
       if (effects.autoPromotion) {
-        // Grant a very large advancement DM to guarantee promotion
-        setEventAdvancementDM(prev => prev + 99);
-        setTermSkillsGained(prev => [...prev, 'Automatic promotion this term']);
+        // Immediately promote rank by 1 (separate from advancement roll).
+        // The advancement roll still runs normally afterwards and can grant
+        // a second rank increase in the same term.
+        if (selectedCareer) {
+          const assignmentName = selectedCareer.assignments[selectedAssignment]?.name;
+          const ranks = getRanksForCareer(selectedCareer, isCommissioned, assignmentName);
+          setCharacterData(prev => {
+            if (prev.rank < ranks.length - 1) {
+              const newRank = prev.rank + 1;
+              const rankData = ranks[newRank];
+              const logEntry = `Auto-promoted to ${rankData.title}`;
+              // Apply rank skill bonus inline
+              if (rankData.skillBonus) {
+                applySkillGain(rankData.skillBonus, 'Auto-Promotion');
+                setTermSkillsGained(p => [...p, `${rankData.skillBonus} (Auto-Promotion: ${rankData.title})`]);
+              }
+              if (rankData.bonusStat) {
+                applyRankStatBonus(rankData.bonusStat, rankData.bonusStatFloor);
+              }
+              setTermSkillsGained(p => [...p, logEntry]);
+              return { ...prev, rank: newRank };
+            }
+            return prev;
+          });
+        }
       }
       if (effects.benefitDM && effects.benefitDM > 0) {
         // Add each benefit DM as a separate entry (each can only be used once)
@@ -2398,7 +2420,27 @@ export const CharacterGenerator: React.FC = () => {
         setEventAdvancementDM(prev => prev + effects.advancementDM!);
       }
       if (effects.autoPromotion) {
-        setEventAdvancementDM(prev => prev + 99);
+        // Immediately promote rank by 1 (same logic as the GameEvent path above)
+        if (selectedCareer) {
+          const assignmentName = selectedCareer.assignments[selectedAssignment]?.name;
+          const ranks = getRanksForCareer(selectedCareer, isCommissioned, assignmentName);
+          setCharacterData(prev => {
+            if (prev.rank < ranks.length - 1) {
+              const newRank = prev.rank + 1;
+              const rankData = ranks[newRank];
+              if (rankData.skillBonus) {
+                applySkillGain(rankData.skillBonus, 'Auto-Promotion');
+                setTermSkillsGained(p => [...p, `${rankData.skillBonus} (Auto-Promotion: ${rankData.title})`]);
+              }
+              if (rankData.bonusStat) {
+                applyRankStatBonus(rankData.bonusStat, rankData.bonusStatFloor);
+              }
+              setTermSkillsGained(p => [...p, `Auto-promoted to ${rankData.title}`]);
+              return { ...prev, rank: newRank };
+            }
+            return prev;
+          });
+        }
       }
       if (effects.qualificationDM) {
         setCharacterData(prev => ({
@@ -2796,12 +2838,17 @@ export const CharacterGenerator: React.FC = () => {
       setTermSkillsGained(prev => [...prev, `${skillName} (${displayName})`]);
     }
 
-    // Mark one skill roll used. If advancement granted a second roll,
-    // `termSkillSelected` (derived) stays false until both rolls are used,
-    // and the player can expand a different table (or collapse + re-expand the
-    // same one) to roll again. Leaving the table expanded lets them see the
-    // first roll result.
-    setTermSkillRollsUsed(prev => prev + 1);
+    // Mark one skill roll used.
+    const usedAfterThisRoll = termSkillRollsUsed + 1;
+    setTermSkillRollsUsed(usedAfterThisRoll);
+
+    // If more rolls remain, reset the table UI so the skill tables re-appear
+    // fresh for the next pick. The skill already rolled is logged in
+    // "Skills Gained This Term" so the player can still see it.
+    if (usedAfterThisRoll < termSkillRollsAllowed) {
+      setExpandedSkillTable(null);
+      setSkillTableRollResult(null);
+    }
   };
 
   // Legacy function - kept for compatibility but now just toggles the table
@@ -4785,7 +4832,16 @@ export const CharacterGenerator: React.FC = () => {
                             borderWidth: selectedAssignment === idx ? '2px' : '1px',
                             boxShadow: selectedAssignment === idx ? `0 0 15px ${selectedTheme.glowColor}` : 'none',
                           }}
-                          onClick={() => setSelectedAssignment(idx)}
+                          onClick={() => {
+                            setSelectedAssignment(idx);
+                            // Auto-set military academy service from assignment name
+                            if (selectedCareer?.preCareerType === 'military_academy') {
+                              const aName = selectedCareer.assignments[idx].name;
+                              if (aName.includes('Army')) setMilitaryAcademyService('Army');
+                              else if (aName.includes('Marine')) setMilitaryAcademyService('Marines');
+                              else if (aName.includes('Navy')) setMilitaryAcademyService('Navy');
+                            }
+                          }}
                         >
                           <CardContent className="p-3">
                             <h4
@@ -4986,7 +5042,7 @@ export const CharacterGenerator: React.FC = () => {
                         )}
 
                         {/* MILITARY ACADEMY SERVICE SELECTION */}
-                        {selectedCareer?.preCareerType === 'military_academy' && (
+                        {selectedCareer?.preCareerType === 'military_academy' && !militaryAcademyService && (
                           <div className="bg-terminal-primary/5 border border-terminal-primary/30 rounded p-4 space-y-3">
                             <h4 className="text-sm font-bold text-terminal-primary">Select Your Military Service</h4>
                             <p className="text-xs text-terminal-primary/70">
@@ -5360,6 +5416,15 @@ export const CharacterGenerator: React.FC = () => {
                       </Alert>
                     )}
 
+                    {/* Show skills already gained this term (visible between multi-roll picks) */}
+                    {termSkillRollsUsed > 0 && termSkillsGained.length > 0 && (
+                      <div className="bg-terminal-primary/5 border border-terminal-primary/30 rounded p-2">
+                        <p className="text-xs text-terminal-primary/70">
+                          {termSkillsGained.map(s => s).join(', ')}
+                        </p>
+                      </div>
+                    )}
+
                     {/* Skill Table Selection */}
                     <div className="space-y-2">
                       {/* Personal Development */}
@@ -5653,6 +5718,18 @@ export const CharacterGenerator: React.FC = () => {
                       </div>
                     </div>
                   </div>
+                )}
+
+                {/* Specialty selector for training-roll phase (before survival).
+                    The main specialty selector lives inside the event-roll block, so
+                    it's unreachable when training rolls trigger a specialty choice. */}
+                {isInTerm && termSurvived === null && pendingSpecialtySkill && (
+                  <SpecialtySelector
+                    baseSkill={pendingSpecialtySkill}
+                    currentSkills={characterData.skills}
+                    onSelect={handleSpecialtySelected}
+                    title={`Choose ${pendingSpecialtySkill} Specialization${pendingSpecialtySource ? ` (${pendingSpecialtySource})` : ''}`}
+                  />
                 )}
 
                 {isInTerm && termSurvived === null && basicTrainingApplied
