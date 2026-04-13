@@ -60,6 +60,11 @@ interface CareerRecord {
   benefitDMs: number[];      // Individual benefit DM bonuses (each used once during mustering out)
   extraBenefitRolls: number; // Extra benefit rolls from events
   isPreCareer: boolean;      // Pre-careers don't get benefits
+  /** True if benefit rolls for this career have already been processed — set
+   *  when the player voluntarily leaves a career mid-chargen and takes their
+   *  between-career mustering-out. Final mustering-out skips these so the
+   *  same career can't be benefit-rolled twice. */
+  benefitsTaken?: boolean;
 }
 
 interface CharacteristicValue {
@@ -470,13 +475,18 @@ export const CharacterGenerator: React.FC = () => {
   const [pendingSpecialtySource, setPendingSpecialtySource] = useState<string>(''); // For logging purposes
   const [pendingAnyTalentSource, setPendingAnyTalentSource] = useState<string>('');
 
-  // End-of-term skill selection state
-  // Counter-based so advancement success can grant two rolls.
+  // Training-roll phase state (happens at the START of a term, per Traveller 2e).
+  // Counter-based so advancement success (from the previous term) can grant a
+  // second roll this term via `carriedAdvancementBonus`.
   const [termSkillRollsUsed, setTermSkillRollsUsed] = useState<number>(0);
   const [termSkillRollsAllowed, setTermSkillRollsAllowed] = useState<number>(1);
   const termSkillSelected = termSkillRollsUsed >= termSkillRollsAllowed;
   const [expandedSkillTable, setExpandedSkillTable] = useState<string | null>(null);
   const [skillTableRollResult, setSkillTableRollResult] = useState<number | null>(null);
+  // Set when advancement succeeds in a term; consumed by the NEXT term's
+  // startNewTerm to grant an extra training roll. Cleared on career switch so
+  // the bonus can't bleed into a fresh career.
+  const [carriedAdvancementBonus, setCarriedAdvancementBonus] = useState<boolean>(false);
 
   // Event DM bonuses state - track bonuses granted by events for next roll
   const [eventAdvancementDM, setEventAdvancementDM] = useState<number>(0);
@@ -487,6 +497,12 @@ export const CharacterGenerator: React.FC = () => {
   const [isMusteringOut, setIsMusteringOut] = useState(false);
   const [forceLeaveCareer, setForceLeaveCareer] = useState(false);
   const [pendingInjurySeverity, setPendingInjurySeverity] = useState<'severe' | null>(null);
+  // Between-career muster state — the CareerRecord of the career the player is
+  // leaving, plus a deferred "what to do after the muster completes" callback.
+  // The 3-cash-rolls-lifetime cap is enforced by passing `lifetimeCashRollsUsed`
+  // into <MusteringOut /> and updating it from the onComplete result.
+  const [midCareerMusterRecord, setMidCareerMusterRecord] = useState<CareerRecord | null>(null);
+  const [lifetimeCashRollsUsed, setLifetimeCashRollsUsed] = useState<number>(0);
 
   // Mishap GameEvent state - for mishaps that require player interaction (rolls, choices)
   const [pendingMishapGameEvent, setPendingMishapGameEvent] = useState<GameEvent | null>(null);
@@ -1352,13 +1368,20 @@ export const CharacterGenerator: React.FC = () => {
     setEventOutcomeApplied(false);
     setPendingSpecialtySkill(null);
     setPendingSpecialtySource('');
-    // Reset end-of-term skill selection state.
-    // Per Traveller 2e: the first term of a character's first career has no
-    // "training roll" — it only gets the 6 basic-training skills. Every other
-    // term gets 1 training roll, and successful advancement adds another.
+    // Training-roll phase happens at the START of the term (per Traveller 2e
+    // Core Rulebook pp. 20, 46). Base count:
+    //   - Very first term of very first career: 0 rolls (basic training package
+    //     of 6 service skills is applied instead).
+    //   - Any other term: 1 roll.
+    // Plus: if the character advanced in the previous term AND stayed in the
+    // same career, they get a second roll this term (carried bonus). The bonus
+    // is cleared on career switch so it can't bleed across careers.
     const isVeryFirstTerm = newTermNumber === 1 && (characterData.totalCareerTerms || 0) === 0;
+    const baseRolls = isVeryFirstTerm ? 0 : 1;
+    const bonusRolls = carriedAdvancementBonus ? 1 : 0;
     setTermSkillRollsUsed(0);
-    setTermSkillRollsAllowed(isVeryFirstTerm ? 0 : 1);
+    setTermSkillRollsAllowed(baseRolls + bonusRolls);
+    setCarriedAdvancementBonus(false);
     setExpandedSkillTable(null);
     setSkillTableRollResult(null);
     // Reset commission state
@@ -1729,11 +1752,12 @@ export const CharacterGenerator: React.FC = () => {
       }
     }
 
-    // Successful advancement grants an extra training roll this term. Use an
-    // additive increment so the base count (0 for first-career-first-term,
-    // 1 otherwise) is preserved correctly.
+    // Successful advancement grants an extra training roll NEXT term (not this
+    // one, per Traveller 2e Core Rulebook p. 20/46). The flag is consumed by
+    // the next startNewTerm call and cleared on any career-reset path so it
+    // can't carry across a career switch.
     if (advanced) {
-      setTermSkillRollsAllowed(prev => prev + 1);
+      setCarriedAdvancementBonus(true);
     }
   };
 
@@ -3060,6 +3084,9 @@ export const CharacterGenerator: React.FC = () => {
     allies: number;
     contacts: number;
     equipment: string[];
+    gainedSkills: string[];
+    cashRollsUsed: number;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     benefitLog: any[];
   }) => {
     // Calculate pension for qualifying careers
@@ -3084,7 +3111,20 @@ export const CharacterGenerator: React.FC = () => {
       allies: prev.allies + results.allies,
       contacts: prev.contacts + results.contacts,
       equipment: [...prev.equipment, ...results.equipment],
+      // Mark every remaining career as benefit-rolled so a resumed draft
+      // can't double-dip in final mustering-out.
+      careerHistory: prev.careerHistory.map(c =>
+        c.benefitsTaken ? c : { ...c, benefitsTaken: true }
+      ),
     }));
+
+    // Update lifetime cash-roll counter from final session.
+    setLifetimeCashRollsUsed(results.cashRollsUsed);
+
+    // Apply Prisoner-style skill benefits through the standard skill pipeline.
+    results.gainedSkills.forEach(skill => {
+      applySkillGain(skill, 'Mustering-out benefit');
+    });
 
     setIsMusteringOut(false);
     setStep(6); // Go to review
@@ -3209,6 +3249,8 @@ export const CharacterGenerator: React.FC = () => {
     setBasicTrainingApplied(false);
     setBasicTrainingSkillSelected(null);
     setForceLeaveCareer(false);
+    // Forced career change (draft/drifter) — advancement bonus does not carry.
+    setCarriedAdvancementBonus(false);
 
     if (choice === 'drifter') {
       // Enter Drifter career
@@ -3277,11 +3319,10 @@ export const CharacterGenerator: React.FC = () => {
     setExtraBenefitRolls(0);
   };
 
-  // Switch to a new career after leaving current one (after mishap, etc.)
-  const switchToNewCareer = () => {
-    // Save current career to history (unless it's a pre-career, which don't get benefits)
-    saveCurrentCareerToHistory();
-
+  // Shared helper for resetting chargen state when the player returns to
+  // career selection. Called either directly by switchToNewCareer (when no
+  // between-career benefit rolls apply) or after a mid-career muster completes.
+  const resetForNewCareerSelection = () => {
     // Reset rank and terms_served for the new career (but keep age and other stats)
     setCharacterData(prev => ({
       ...prev,
@@ -3322,6 +3363,8 @@ export const CharacterGenerator: React.FC = () => {
     setPendingSpecialtySource('');
     setTermSkillRollsUsed(0);
     setTermSkillRollsAllowed(1);
+    // Advancement bonus does not carry across a career switch.
+    setCarriedAdvancementBonus(false);
     setForcedContinueInCareer(false);
     setForcedLeaveAfterTerm(false);
     setExpandedSkillTable(null);
@@ -3350,6 +3393,98 @@ export const CharacterGenerator: React.FC = () => {
 
     // Go back to career selection
     setStep(4);
+  };
+
+  // Switch to a new career after leaving current one. Per Traveller 2e
+  // (Core Rulebook p. 20/46) "Benefits are gained when a Traveller leaves a
+  // career" and can happen between careers, not only at the end of chargen —
+  // so we save history, then pause into a single-career MusteringOut session
+  // before resetting for career selection. Pre-careers and zero-term exits
+  // skip the benefit step.
+  const switchToNewCareer = () => {
+    const leavingCareer = selectedCareer;
+    const terms = currentTerm;
+
+    // Record the career in history first.
+    saveCurrentCareerToHistory();
+
+    if (leavingCareer && !leavingCareer.isPreCareer && terms > 0) {
+      // Eligible for between-career benefit rolls — pause transition.
+      const assignmentName = leavingCareer.assignments[selectedAssignment]?.name || '';
+      const record: CareerRecord = {
+        careerName: leavingCareer.name,
+        assignment: assignmentName,
+        termsServed: terms,
+        highestRank: characterData.rank,
+        isCommissioned,
+        benefitDMs: eventBenefitDMs,
+        extraBenefitRolls,
+        isPreCareer: false,
+      };
+      setMidCareerMusterRecord(record);
+      return;
+    }
+
+    // No benefits to roll (pre-career or zero terms) — reset immediately.
+    resetForNewCareerSelection();
+  };
+
+  // Called when the player finishes the between-career mustering-out session.
+  // Applies all accumulated gains, marks the leaving career as benefit-rolled
+  // so the final muster-out skips it, then proceeds with the career reset.
+  const handleMidCareerMusterComplete = (results: {
+    cash: number;
+    shipShares: number;
+    tasMembership: boolean;
+    ships: string[];
+    characteristics: typeof characterData.characteristics;
+    allies: number;
+    contacts: number;
+    equipment: string[];
+    gainedSkills: string[];
+    cashRollsUsed: number;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    benefitLog: any[];
+  }) => {
+    const leavingRecord = midCareerMusterRecord;
+    if (!leavingRecord) return;
+
+    setCharacterData(prev => ({
+      ...prev,
+      cash_on_hand: results.cash,
+      credits: results.cash,
+      shipShares: results.shipShares,
+      tasMembership: results.tasMembership,
+      ships: results.ships,
+      characteristics: results.characteristics,
+      allies: prev.allies + results.allies,
+      contacts: prev.contacts + results.contacts,
+      equipment: [...prev.equipment, ...results.equipment],
+      // Mark the leaving career's most-recent history entry as benefit-rolled.
+      careerHistory: (() => {
+        const history = [...prev.careerHistory];
+        for (let i = history.length - 1; i >= 0; i--) {
+          const c = history[i];
+          if (c.careerName === leavingRecord.careerName && !c.benefitsTaken) {
+            history[i] = { ...c, benefitsTaken: true };
+            break;
+          }
+        }
+        return history;
+      })(),
+    }));
+
+    // Persist the lifetime cash-roll counter (3 max across all careers).
+    setLifetimeCashRollsUsed(results.cashRollsUsed);
+
+    // Apply any Prisoner-style skill benefits through the standard skill-gain
+    // pipeline so specialty selection, limits, and normalization all work.
+    results.gainedSkills.forEach(skill => {
+      applySkillGain(skill, `${leavingRecord.careerName} benefit`);
+    });
+
+    setMidCareerMusterRecord(null);
+    resetForNewCareerSelection();
   };
 
   const selectNextCareerFromPreCareer = () => {
@@ -3398,9 +3533,12 @@ export const CharacterGenerator: React.FC = () => {
     setRedirectTableName(null);
     setPendingSpecialtySkill(null);
     setPendingSpecialtySource('');
-    // Reset end-of-term skill selection state
+    // Reset training-roll phase state for the new career
     setTermSkillRollsUsed(0);
     setTermSkillRollsAllowed(1);
+    // Pre-career cannot advance, so there's no bonus to carry — but reset
+    // defensively to keep this path symmetric with resetForNewCareerSelection.
+    setCarriedAdvancementBonus(false);
     setForcedContinueInCareer(false);
     setForcedLeaveAfterTerm(false);
     setExpandedSkillTable(null);
@@ -3549,6 +3687,9 @@ export const CharacterGenerator: React.FC = () => {
     setAssignmentMode(draft.assignmentMode ?? 'auto');
     setUseManualDice(draft.useManualDice ?? false);
     setIsMusteringOut(draft.isMusteringOut ?? false);
+    setMidCareerMusterRecord(draft.midCareerMusterRecord ?? null);
+    setLifetimeCashRollsUsed(draft.lifetimeCashRollsUsed ?? 0);
+    setCarriedAdvancementBonus(draft.carriedAdvancementBonus ?? false);
     setEventBenefitDMs(draft.eventBenefitDMs ?? []);
     setExtraBenefitRolls(draft.extraBenefitRolls ?? 0);
     setPreCareerGraduated(draft.preCareerGraduated ?? false);
@@ -3604,6 +3745,9 @@ export const CharacterGenerator: React.FC = () => {
         assignmentMode,
         useManualDice,
         isMusteringOut,
+        midCareerMusterRecord,
+        lifetimeCashRollsUsed,
+        carriedAdvancementBonus,
         eventBenefitDMs,
         extraBenefitRolls,
         preCareerGraduated,
@@ -3624,6 +3768,7 @@ export const CharacterGenerator: React.FC = () => {
       qualificationPassed, hasUsedDraft, hasRolled, characteristicRolls, backgroundSkillsRemaining,
       isCommissioned, needsCommissionRoll, commissionRollDM, basicTrainingApplied, isMusteringOut, draftChecked, showResumeDraft,
       DRAFT_KEY, assignmentMode, useManualDice, eventBenefitDMs, extraBenefitRolls,
+      midCareerMusterRecord, lifetimeCashRollsUsed, carriedAdvancementBonus,
       preCareerGraduated, preCareerFailedService, graduatedWithHonours,
       universitySkillLevel0, universitySkillLevel1, militaryAcademyService,
       psiTestResult, showPsiTesting, selectedRace]);
@@ -5002,9 +5147,27 @@ export const CharacterGenerator: React.FC = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4 pt-4">
-                {isMusteringOut ? (
+                {midCareerMusterRecord ? (
                   <MusteringOut
-                    careerHistory={characterData.careerHistory}
+                    careerHistory={[midCareerMusterRecord]}
+                    lostBenefitCareers={characterData.lostBenefitCareers || []}
+                    currentCash={characterData.cash_on_hand}
+                    currentShipShares={characterData.shipShares}
+                    hasTasMembership={characterData.tasMembership}
+                    ships={characterData.ships}
+                    gamblerSkillLevel={parseInt(characterData.skills['Gambler']?.value || '0', 10) || 0}
+                    characteristics={characterData.characteristics}
+                    onComplete={handleMidCareerMusterComplete}
+                    useManualDice={useManualDice}
+                    initialCashRollsUsed={lifetimeCashRollsUsed}
+                    title={`Leaving ${midCareerMusterRecord.careerName} — Benefit Rolls`}
+                    completeLabel="Continue to Next Career"
+                  />
+                ) : isMusteringOut ? (
+                  <MusteringOut
+                    // Final mustering-out: skip careers that already had their
+                    // between-career benefit rolls so they can't double-dip.
+                    careerHistory={characterData.careerHistory.filter(c => !c.benefitsTaken)}
                     lostBenefitCareers={characterData.lostBenefitCareers || []}
                     currentCash={characterData.cash_on_hand}
                     currentShipShares={characterData.shipShares}
@@ -5014,6 +5177,7 @@ export const CharacterGenerator: React.FC = () => {
                     characteristics={characterData.characteristics}
                     onComplete={handleMusteringOutComplete}
                     useManualDice={useManualDice}
+                    initialCashRollsUsed={lifetimeCashRollsUsed}
                   />
                 ) : (
                 <>
@@ -5173,7 +5337,326 @@ export const CharacterGenerator: React.FC = () => {
                     The runCommissionCheck function handles SOC 9+/first-term eligibility,
                     pre-career academy DMs, and military academy honours auto-pass. */}
 
-                {isInTerm && termSurvived === null && basicTrainingApplied && (
+                {/* TRAINING ROLL PHASE - happens at the START of a term (per Traveller 2e
+                    Core Rulebook pp. 20/46). Very first term of very first career has 0
+                    rolls (it gets the 6-skill basic training package instead). Every other
+                    term gets 1 roll, plus an additional roll if the character advanced in
+                    the previous term AND stayed in the same career. */}
+                {isInTerm && termSurvived === null && basicTrainingApplied
+                  && !selectedCareer?.isPreCareer
+                  && !pendingSpecialtySkill
+                  && !termSkillSelected && (
+                  <div className="space-y-3">
+                    <h4 className="text-sm font-bold text-terminal-primary uppercase">
+                      {termSkillRollsAllowed > 1
+                        ? `Training Roll (${termSkillRollsUsed + 1} of ${termSkillRollsAllowed})`
+                        : 'Training Roll'}
+                    </h4>
+                    {termSkillRollsAllowed === 2 && (
+                      <Alert className="bg-green-500/10 border-green-500/50">
+                        <AlertDescription className="text-green-400 text-xs">
+                          Last term's advancement success — you may roll on a skill table twice this term.
+                        </AlertDescription>
+                      </Alert>
+                    )}
+
+                    {/* Skill Table Selection */}
+                    <div className="space-y-2">
+                      {/* Personal Development */}
+                      <div className="border border-terminal-primary/30 rounded overflow-hidden">
+                        <Button
+                          onClick={() => toggleSkillTable('personal')}
+                          disabled={termSkillSelected}
+                          variant="ghost"
+                          className={`w-full justify-between border-0 ${
+                            expandedSkillTable === 'personal'
+                              ? 'bg-terminal-primary/20 text-terminal-primary'
+                              : 'text-terminal-primary hover:bg-terminal-primary/10'
+                          } ${termSkillSelected ? 'opacity-50' : ''}`}
+                        >
+                          <span>Personal Development</span>
+                          {expandedSkillTable === 'personal' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                        </Button>
+                        {expandedSkillTable === 'personal' && (
+                          <div className="p-3 bg-terminal-primary/5 border-t border-terminal-primary/30">
+                            <div className="grid grid-cols-2 gap-1 mb-3">
+                              {selectedCareer?.skillTables.personalDevelopment.map((skill, idx) => (
+                                <div
+                                  key={idx}
+                                  className={`text-xs p-2 rounded ${
+                                    skillTableRollResult === idx + 1
+                                      ? 'bg-green-500/30 border border-green-500 text-green-400 font-bold'
+                                      : 'bg-terminal-primary/10 text-terminal-primary/80'
+                                  }`}
+                                >
+                                  <span className="font-mono">{idx + 1}.</span> {skill}
+                                </div>
+                              ))}
+                            </div>
+                            {!skillTableRollResult && (
+                              useManualDice ? (
+                                <div className="flex gap-2">
+                                  <Input
+                                    type="number"
+                                    min={1}
+                                    max={6}
+                                    value={manualDiceValue}
+                                    onChange={(e) => setManualDiceValue(e.target.value)}
+                                    placeholder="1D6 (1-6)"
+                                    className="bg-black border-terminal-primary/50 text-terminal-primary placeholder:text-terminal-primary/40 w-24"
+                                  />
+                                  <Button
+                                    onClick={() => {
+                                      const val = parseInt(manualDiceValue);
+                                      if (!isNaN(val) && val >= 1 && val <= 6) {
+                                        rollSkillFromExpandedTable(val);
+                                        setManualDiceValue('');
+                                      }
+                                    }}
+                                    disabled={!manualDiceValue || isNaN(parseInt(manualDiceValue)) || parseInt(manualDiceValue) < 1 || parseInt(manualDiceValue) > 6}
+                                    className="flex-1 bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30 border border-terminal-primary/50"
+                                  >
+                                    Submit Skill Roll
+                                  </Button>
+                                </div>
+                              ) : (
+                                <Button
+                                  onClick={() => rollSkillFromExpandedTable()}
+                                  className="w-full bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30 border border-terminal-primary/50"
+                                >
+                                  <Dices className="h-4 w-4 mr-2" />
+                                  Roll 1D6
+                                </Button>
+                              )
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Service Skills */}
+                      <div className="border border-terminal-primary/30 rounded overflow-hidden">
+                        <Button
+                          onClick={() => toggleSkillTable('service')}
+                          disabled={termSkillSelected}
+                          variant="ghost"
+                          className={`w-full justify-between border-0 ${
+                            expandedSkillTable === 'service'
+                              ? 'bg-terminal-primary/20 text-terminal-primary'
+                              : 'text-terminal-primary hover:bg-terminal-primary/10'
+                          } ${termSkillSelected ? 'opacity-50' : ''}`}
+                        >
+                          <span>Service Skills</span>
+                          {expandedSkillTable === 'service' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                        </Button>
+                        {expandedSkillTable === 'service' && (
+                          <div className="p-3 bg-terminal-primary/5 border-t border-terminal-primary/30">
+                            <div className="grid grid-cols-2 gap-1 mb-3">
+                              {selectedCareer?.skillTables.serviceSkills.map((skill, idx) => (
+                                <div
+                                  key={idx}
+                                  className={`text-xs p-2 rounded ${
+                                    skillTableRollResult === idx + 1
+                                      ? 'bg-green-500/30 border border-green-500 text-green-400 font-bold'
+                                      : 'bg-terminal-primary/10 text-terminal-primary/80'
+                                  }`}
+                                >
+                                  <span className="font-mono">{idx + 1}.</span> {skill}
+                                </div>
+                              ))}
+                            </div>
+                            {!skillTableRollResult && (
+                              useManualDice ? (
+                                <div className="flex gap-2">
+                                  <Input
+                                    type="number"
+                                    min={1}
+                                    max={6}
+                                    value={manualDiceValue}
+                                    onChange={(e) => setManualDiceValue(e.target.value)}
+                                    placeholder="1D6 (1-6)"
+                                    className="bg-black border-terminal-primary/50 text-terminal-primary placeholder:text-terminal-primary/40 w-24"
+                                  />
+                                  <Button
+                                    onClick={() => {
+                                      const val = parseInt(manualDiceValue);
+                                      if (!isNaN(val) && val >= 1 && val <= 6) {
+                                        rollSkillFromExpandedTable(val);
+                                        setManualDiceValue('');
+                                      }
+                                    }}
+                                    disabled={!manualDiceValue || isNaN(parseInt(manualDiceValue)) || parseInt(manualDiceValue) < 1 || parseInt(manualDiceValue) > 6}
+                                    className="flex-1 bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30 border border-terminal-primary/50"
+                                  >
+                                    Submit Skill Roll
+                                  </Button>
+                                </div>
+                              ) : (
+                                <Button
+                                  onClick={() => rollSkillFromExpandedTable()}
+                                  className="w-full bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30 border border-terminal-primary/50"
+                                >
+                                  <Dices className="h-4 w-4 mr-2" />
+                                  Roll 1D6
+                                </Button>
+                              )
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Advanced Education (EDU 8+) */}
+                      {selectedCareer?.skillTables.advancedEducation && characterData.characteristics.education.total >= 8 && (
+                        <div className="border border-terminal-primary/30 rounded overflow-hidden">
+                          <Button
+                            onClick={() => toggleSkillTable('advanced')}
+                            disabled={termSkillSelected}
+                            variant="ghost"
+                            className={`w-full justify-between border-0 ${
+                              expandedSkillTable === 'advanced'
+                                ? 'bg-terminal-primary/20 text-terminal-primary'
+                                : 'text-terminal-primary hover:bg-terminal-primary/10'
+                            } ${termSkillSelected ? 'opacity-50' : ''}`}
+                          >
+                            <span>Advanced Education (EDU 8+)</span>
+                            {expandedSkillTable === 'advanced' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                          </Button>
+                          {expandedSkillTable === 'advanced' && (
+                            <div className="p-3 bg-terminal-primary/5 border-t border-terminal-primary/30">
+                              <div className="grid grid-cols-2 gap-1 mb-3">
+                                {selectedCareer?.skillTables.advancedEducation?.map((skill, idx) => (
+                                  <div
+                                    key={idx}
+                                    className={`text-xs p-2 rounded ${
+                                      skillTableRollResult === idx + 1
+                                        ? 'bg-green-500/30 border border-green-500 text-green-400 font-bold'
+                                        : 'bg-terminal-primary/10 text-terminal-primary/80'
+                                    }`}
+                                  >
+                                    <span className="font-mono">{idx + 1}.</span> {skill}
+                                  </div>
+                                ))}
+                              </div>
+                              {!skillTableRollResult && (
+                                useManualDice ? (
+                                  <div className="flex gap-2">
+                                    <Input
+                                      type="number"
+                                      min={1}
+                                      max={6}
+                                      value={manualDiceValue}
+                                      onChange={(e) => setManualDiceValue(e.target.value)}
+                                      placeholder="1D6 (1-6)"
+                                      className="bg-black border-terminal-primary/50 text-terminal-primary placeholder:text-terminal-primary/40 w-24"
+                                    />
+                                    <Button
+                                      onClick={() => {
+                                        const val = parseInt(manualDiceValue);
+                                        if (!isNaN(val) && val >= 1 && val <= 6) {
+                                          rollSkillFromExpandedTable(val);
+                                          setManualDiceValue('');
+                                        }
+                                      }}
+                                      disabled={!manualDiceValue || isNaN(parseInt(manualDiceValue)) || parseInt(manualDiceValue) < 1 || parseInt(manualDiceValue) > 6}
+                                      className="flex-1 bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30 border border-terminal-primary/50"
+                                    >
+                                      Submit Skill Roll
+                                    </Button>
+                                  </div>
+                                ) : (
+                                  <Button
+                                    onClick={() => rollSkillFromExpandedTable()}
+                                    className="w-full bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30 border border-terminal-primary/50"
+                                  >
+                                    <Dices className="h-4 w-4 mr-2" />
+                                    Roll 1D6
+                                  </Button>
+                                )
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Specialist Skills */}
+                      <div className="border border-terminal-primary/30 rounded overflow-hidden">
+                        <Button
+                          onClick={() => toggleSkillTable('specialist')}
+                          disabled={termSkillSelected}
+                          variant="ghost"
+                          className={`w-full justify-between border-0 ${
+                            expandedSkillTable === 'specialist'
+                              ? 'bg-terminal-primary/20 text-terminal-primary'
+                              : 'text-terminal-primary hover:bg-terminal-primary/10'
+                          } ${termSkillSelected ? 'opacity-50' : ''}`}
+                        >
+                          <span>Specialist ({selectedCareer?.assignments[selectedAssignment].name})</span>
+                          {expandedSkillTable === 'specialist' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                        </Button>
+                        {expandedSkillTable === 'specialist' && (
+                          <div className="p-3 bg-terminal-primary/5 border-t border-terminal-primary/30">
+                            <div className="grid grid-cols-2 gap-1 mb-3">
+                              {(() => {
+                                const assignmentName = selectedCareer?.assignments[selectedAssignment]?.name || '';
+                                const specialistSkills = selectedCareer?.skillTables.specialist[assignmentName] || [];
+                                return specialistSkills.map((skill, idx) => (
+                                  <div
+                                    key={idx}
+                                    className={`text-xs p-2 rounded ${
+                                      skillTableRollResult === idx + 1
+                                        ? 'bg-green-500/30 border border-green-500 text-green-400 font-bold'
+                                        : 'bg-terminal-primary/10 text-terminal-primary/80'
+                                    }`}
+                                  >
+                                    <span className="font-mono">{idx + 1}.</span> {skill}
+                                  </div>
+                                ));
+                              })()}
+                            </div>
+                            {!skillTableRollResult && (
+                              useManualDice ? (
+                                <div className="flex gap-2">
+                                  <Input
+                                    type="number"
+                                    min={1}
+                                    max={6}
+                                    value={manualDiceValue}
+                                    onChange={(e) => setManualDiceValue(e.target.value)}
+                                    placeholder="1D6 (1-6)"
+                                    className="bg-black border-terminal-primary/50 text-terminal-primary placeholder:text-terminal-primary/40 w-24"
+                                  />
+                                  <Button
+                                    onClick={() => {
+                                      const val = parseInt(manualDiceValue);
+                                      if (!isNaN(val) && val >= 1 && val <= 6) {
+                                        rollSkillFromExpandedTable(val);
+                                        setManualDiceValue('');
+                                      }
+                                    }}
+                                    disabled={!manualDiceValue || isNaN(parseInt(manualDiceValue)) || parseInt(manualDiceValue) < 1 || parseInt(manualDiceValue) > 6}
+                                    className="flex-1 bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30 border border-terminal-primary/50"
+                                  >
+                                    Submit Skill Roll
+                                  </Button>
+                                </div>
+                              ) : (
+                                <Button
+                                  onClick={() => rollSkillFromExpandedTable()}
+                                  className="w-full bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30 border border-terminal-primary/50"
+                                >
+                                  <Dices className="h-4 w-4 mr-2" />
+                                  Roll 1D6
+                                </Button>
+                              )
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {isInTerm && termSurvived === null && basicTrainingApplied
+                  && (selectedCareer?.isPreCareer || termSkillSelected) && (
                   <div className="space-y-2">
                     <Alert className="bg-terminal-primary/5 border-terminal-primary/30">
                       <AlertCircle className="h-4 w-4" />
@@ -5929,327 +6412,19 @@ export const CharacterGenerator: React.FC = () => {
                       />
                     )}
 
-                    {/* Skill Gain Tables (only show for regular careers when event is resolved and no pending specialty) */}
-                    {!selectedCareer?.isPreCareer && !pendingSpecialtySkill && ((!currentGameEvent || gameEventCompleted) && (!currentEvent || eventResolved)) && termAdvanced !== null && (
-                      <div className="space-y-3">
-                        <h4 className="text-sm font-bold text-terminal-primary uppercase">
-                          {termSkillSelected
-                            ? 'Skill Rolls Complete'
-                            : termSkillRollsAllowed > 1
-                              ? `Select Skill Table (${termSkillRollsUsed + 1} of ${termSkillRollsAllowed})`
-                              : 'Select One Skill Table'}
-                        </h4>
-                        {termSkillRollsAllowed === 2 && !termSkillSelected && (
-                          <Alert className="bg-green-500/10 border-green-500/50">
-                            <AlertDescription className="text-green-400 text-xs">
-                              Advancement success — you may roll on a skill table twice this term.
-                            </AlertDescription>
-                          </Alert>
-                        )}
-
-                        {/* Skill Table Selection */}
-                        <div className="space-y-2">
-                          {/* Personal Development */}
-                          <div className="border border-terminal-primary/30 rounded overflow-hidden">
-                            <Button
-                              onClick={() => toggleSkillTable('personal')}
-                              disabled={termSkillSelected}
-                              variant="ghost"
-                              className={`w-full justify-between border-0 ${
-                                expandedSkillTable === 'personal'
-                                  ? 'bg-terminal-primary/20 text-terminal-primary'
-                                  : 'text-terminal-primary hover:bg-terminal-primary/10'
-                              } ${termSkillSelected ? 'opacity-50' : ''}`}
-                            >
-                              <span>Personal Development</span>
-                              {expandedSkillTable === 'personal' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                            </Button>
-                            {expandedSkillTable === 'personal' && (
-                              <div className="p-3 bg-terminal-primary/5 border-t border-terminal-primary/30">
-                                <div className="grid grid-cols-2 gap-1 mb-3">
-                                  {selectedCareer?.skillTables.personalDevelopment.map((skill, idx) => (
-                                    <div
-                                      key={idx}
-                                      className={`text-xs p-2 rounded ${
-                                        skillTableRollResult === idx + 1
-                                          ? 'bg-green-500/30 border border-green-500 text-green-400 font-bold'
-                                          : 'bg-terminal-primary/10 text-terminal-primary/80'
-                                      }`}
-                                    >
-                                      <span className="font-mono">{idx + 1}.</span> {skill}
-                                    </div>
-                                  ))}
-                                </div>
-                                {!skillTableRollResult && (
-                                  useManualDice ? (
-                                    <div className="flex gap-2">
-                                      <Input
-                                        type="number"
-                                        min={1}
-                                        max={6}
-                                        value={manualDiceValue}
-                                        onChange={(e) => setManualDiceValue(e.target.value)}
-                                        placeholder="1D6 (1-6)"
-                                        className="bg-black border-terminal-primary/50 text-terminal-primary placeholder:text-terminal-primary/40 w-24"
-                                      />
-                                      <Button
-                                        onClick={() => {
-                                          const val = parseInt(manualDiceValue);
-                                          if (!isNaN(val) && val >= 1 && val <= 6) {
-                                            rollSkillFromExpandedTable(val);
-                                            setManualDiceValue('');
-                                          }
-                                        }}
-                                        disabled={!manualDiceValue || isNaN(parseInt(manualDiceValue)) || parseInt(manualDiceValue) < 1 || parseInt(manualDiceValue) > 6}
-                                        className="flex-1 bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30 border border-terminal-primary/50"
-                                      >
-                                        Submit Skill Roll
-                                      </Button>
-                                    </div>
-                                  ) : (
-                                    <Button
-                                      onClick={() => rollSkillFromExpandedTable()}
-                                      className="w-full bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30 border border-terminal-primary/50"
-                                    >
-                                      <Dices className="h-4 w-4 mr-2" />
-                                      Roll 1D6
-                                    </Button>
-                                  )
-                                )}
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Service Skills */}
-                          <div className="border border-terminal-primary/30 rounded overflow-hidden">
-                            <Button
-                              onClick={() => toggleSkillTable('service')}
-                              disabled={termSkillSelected}
-                              variant="ghost"
-                              className={`w-full justify-between border-0 ${
-                                expandedSkillTable === 'service'
-                                  ? 'bg-terminal-primary/20 text-terminal-primary'
-                                  : 'text-terminal-primary hover:bg-terminal-primary/10'
-                              } ${termSkillSelected ? 'opacity-50' : ''}`}
-                            >
-                              <span>Service Skills</span>
-                              {expandedSkillTable === 'service' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                            </Button>
-                            {expandedSkillTable === 'service' && (
-                              <div className="p-3 bg-terminal-primary/5 border-t border-terminal-primary/30">
-                                <div className="grid grid-cols-2 gap-1 mb-3">
-                                  {selectedCareer?.skillTables.serviceSkills.map((skill, idx) => (
-                                    <div
-                                      key={idx}
-                                      className={`text-xs p-2 rounded ${
-                                        skillTableRollResult === idx + 1
-                                          ? 'bg-green-500/30 border border-green-500 text-green-400 font-bold'
-                                          : 'bg-terminal-primary/10 text-terminal-primary/80'
-                                      }`}
-                                    >
-                                      <span className="font-mono">{idx + 1}.</span> {skill}
-                                    </div>
-                                  ))}
-                                </div>
-                                {!skillTableRollResult && (
-                                  useManualDice ? (
-                                    <div className="flex gap-2">
-                                      <Input
-                                        type="number"
-                                        min={1}
-                                        max={6}
-                                        value={manualDiceValue}
-                                        onChange={(e) => setManualDiceValue(e.target.value)}
-                                        placeholder="1D6 (1-6)"
-                                        className="bg-black border-terminal-primary/50 text-terminal-primary placeholder:text-terminal-primary/40 w-24"
-                                      />
-                                      <Button
-                                        onClick={() => {
-                                          const val = parseInt(manualDiceValue);
-                                          if (!isNaN(val) && val >= 1 && val <= 6) {
-                                            rollSkillFromExpandedTable(val);
-                                            setManualDiceValue('');
-                                          }
-                                        }}
-                                        disabled={!manualDiceValue || isNaN(parseInt(manualDiceValue)) || parseInt(manualDiceValue) < 1 || parseInt(manualDiceValue) > 6}
-                                        className="flex-1 bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30 border border-terminal-primary/50"
-                                      >
-                                        Submit Skill Roll
-                                      </Button>
-                                    </div>
-                                  ) : (
-                                    <Button
-                                      onClick={() => rollSkillFromExpandedTable()}
-                                      className="w-full bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30 border border-terminal-primary/50"
-                                    >
-                                      <Dices className="h-4 w-4 mr-2" />
-                                      Roll 1D6
-                                    </Button>
-                                  )
-                                )}
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Advanced Education (EDU 8+) */}
-                          {selectedCareer?.skillTables.advancedEducation && characterData.characteristics.education.total >= 8 && (
-                            <div className="border border-terminal-primary/30 rounded overflow-hidden">
-                              <Button
-                                onClick={() => toggleSkillTable('advanced')}
-                                disabled={termSkillSelected}
-                                variant="ghost"
-                                className={`w-full justify-between border-0 ${
-                                  expandedSkillTable === 'advanced'
-                                    ? 'bg-terminal-primary/20 text-terminal-primary'
-                                    : 'text-terminal-primary hover:bg-terminal-primary/10'
-                                } ${termSkillSelected ? 'opacity-50' : ''}`}
-                              >
-                                <span>Advanced Education (EDU 8+)</span>
-                                {expandedSkillTable === 'advanced' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                              </Button>
-                              {expandedSkillTable === 'advanced' && (
-                                <div className="p-3 bg-terminal-primary/5 border-t border-terminal-primary/30">
-                                  <div className="grid grid-cols-2 gap-1 mb-3">
-                                    {selectedCareer?.skillTables.advancedEducation?.map((skill, idx) => (
-                                      <div
-                                        key={idx}
-                                        className={`text-xs p-2 rounded ${
-                                          skillTableRollResult === idx + 1
-                                            ? 'bg-green-500/30 border border-green-500 text-green-400 font-bold'
-                                            : 'bg-terminal-primary/10 text-terminal-primary/80'
-                                        }`}
-                                      >
-                                        <span className="font-mono">{idx + 1}.</span> {skill}
-                                      </div>
-                                    ))}
-                                  </div>
-                                  {!skillTableRollResult && (
-                                    useManualDice ? (
-                                      <div className="flex gap-2">
-                                        <Input
-                                          type="number"
-                                          min={1}
-                                          max={6}
-                                          value={manualDiceValue}
-                                          onChange={(e) => setManualDiceValue(e.target.value)}
-                                          placeholder="1D6 (1-6)"
-                                          className="bg-black border-terminal-primary/50 text-terminal-primary placeholder:text-terminal-primary/40 w-24"
-                                        />
-                                        <Button
-                                          onClick={() => {
-                                            const val = parseInt(manualDiceValue);
-                                            if (!isNaN(val) && val >= 1 && val <= 6) {
-                                              rollSkillFromExpandedTable(val);
-                                              setManualDiceValue('');
-                                            }
-                                          }}
-                                          disabled={!manualDiceValue || isNaN(parseInt(manualDiceValue)) || parseInt(manualDiceValue) < 1 || parseInt(manualDiceValue) > 6}
-                                          className="flex-1 bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30 border border-terminal-primary/50"
-                                        >
-                                          Submit Skill Roll
-                                        </Button>
-                                      </div>
-                                    ) : (
-                                      <Button
-                                        onClick={() => rollSkillFromExpandedTable()}
-                                        className="w-full bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30 border border-terminal-primary/50"
-                                      >
-                                        <Dices className="h-4 w-4 mr-2" />
-                                        Roll 1D6
-                                      </Button>
-                                    )
-                                  )}
-                                </div>
-                              )}
-                            </div>
-                          )}
-
-                          {/* Specialist Skills */}
-                          <div className="border border-terminal-primary/30 rounded overflow-hidden">
-                            <Button
-                              onClick={() => toggleSkillTable('specialist')}
-                              disabled={termSkillSelected}
-                              variant="ghost"
-                              className={`w-full justify-between border-0 ${
-                                expandedSkillTable === 'specialist'
-                                  ? 'bg-terminal-primary/20 text-terminal-primary'
-                                  : 'text-terminal-primary hover:bg-terminal-primary/10'
-                              } ${termSkillSelected ? 'opacity-50' : ''}`}
-                            >
-                              <span>Specialist ({selectedCareer?.assignments[selectedAssignment].name})</span>
-                              {expandedSkillTable === 'specialist' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                            </Button>
-                            {expandedSkillTable === 'specialist' && (
-                              <div className="p-3 bg-terminal-primary/5 border-t border-terminal-primary/30">
-                                <div className="grid grid-cols-2 gap-1 mb-3">
-                                  {(() => {
-                                    const assignmentName = selectedCareer?.assignments[selectedAssignment]?.name || '';
-                                    const specialistSkills = selectedCareer?.skillTables.specialist[assignmentName] || [];
-                                    return specialistSkills.map((skill, idx) => (
-                                      <div
-                                        key={idx}
-                                        className={`text-xs p-2 rounded ${
-                                          skillTableRollResult === idx + 1
-                                            ? 'bg-green-500/30 border border-green-500 text-green-400 font-bold'
-                                            : 'bg-terminal-primary/10 text-terminal-primary/80'
-                                        }`}
-                                      >
-                                        <span className="font-mono">{idx + 1}.</span> {skill}
-                                      </div>
-                                    ));
-                                  })()}
-                                </div>
-                                {!skillTableRollResult && (
-                                  useManualDice ? (
-                                    <div className="flex gap-2">
-                                      <Input
-                                        type="number"
-                                        min={1}
-                                        max={6}
-                                        value={manualDiceValue}
-                                        onChange={(e) => setManualDiceValue(e.target.value)}
-                                        placeholder="1D6 (1-6)"
-                                        className="bg-black border-terminal-primary/50 text-terminal-primary placeholder:text-terminal-primary/40 w-24"
-                                      />
-                                      <Button
-                                        onClick={() => {
-                                          const val = parseInt(manualDiceValue);
-                                          if (!isNaN(val) && val >= 1 && val <= 6) {
-                                            rollSkillFromExpandedTable(val);
-                                            setManualDiceValue('');
-                                          }
-                                        }}
-                                        disabled={!manualDiceValue || isNaN(parseInt(manualDiceValue)) || parseInt(manualDiceValue) < 1 || parseInt(manualDiceValue) > 6}
-                                        className="flex-1 bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30 border border-terminal-primary/50"
-                                      >
-                                        Submit Skill Roll
-                                      </Button>
-                                    </div>
-                                  ) : (
-                                    <Button
-                                      onClick={() => rollSkillFromExpandedTable()}
-                                      className="w-full bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30 border border-terminal-primary/50"
-                                    >
-                                      <Dices className="h-4 w-4 mr-2" />
-                                      Roll 1D6
-                                    </Button>
-                                  )
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-
-                        {termSkillsGained.length > 0 && (
-                          <div className="bg-terminal-primary/5 border border-terminal-primary/30 rounded p-3">
-                            <h5 className="text-xs font-bold text-terminal-primary uppercase mb-2">Skills Gained This Term:</h5>
-                            <ul className="text-xs text-terminal-primary/80 space-y-1">
-                              {termSkillsGained.map((skill, idx) => (
-                                <li key={idx}>• {skill}</li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
+                    {/* Skill Gain Tables moved to the start of the term (they fire BEFORE
+                        survival/events/commission/advancement per Traveller 2e pp. 20/46).
+                        The "Skills Gained This Term" summary below stays here so the player
+                        can review rank-bonus and event-granted skills alongside training rolls
+                        when they reach the end of the term. */}
+                    {!selectedCareer?.isPreCareer && !pendingSpecialtySkill && termSkillsGained.length > 0 && (
+                      <div className="bg-terminal-primary/5 border border-terminal-primary/30 rounded p-3">
+                        <h5 className="text-xs font-bold text-terminal-primary uppercase mb-2">Skills Gained This Term:</h5>
+                        <ul className="text-xs text-terminal-primary/80 space-y-1">
+                          {termSkillsGained.map((skill, idx) => (
+                            <li key={idx}>• {skill}</li>
+                          ))}
+                        </ul>
                       </div>
                     )}
 
@@ -6357,7 +6532,7 @@ export const CharacterGenerator: React.FC = () => {
 
                     {((!currentGameEvent || gameEventCompleted) && (!currentEvent || eventResolved) && !pendingSpecialtySkill && !pendingAnyTalentSource &&
                       !(selectedCareer?.preCareerType === 'military_academy' && termSurvived && academyGradSkillsSelected.length < 3) &&
-                      (selectedCareer?.isPreCareer || termSkillSelected)) && (
+                      (selectedCareer?.isPreCareer || termAdvanced !== null)) && (
                       <Button
                         onClick={completeTerm}
                         className="w-full bg-green-500/20 text-green-400 hover:bg-green-500/30 border border-green-500/50"
