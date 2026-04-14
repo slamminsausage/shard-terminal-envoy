@@ -2653,8 +2653,14 @@ export const CharacterGenerator: React.FC = () => {
     const currentSkill = currentSkills[skillKey];
     const currentValue = currentSkill ? parseInt(currentSkill.value, 10) || 0 : 0;
 
-    // Check individual skill limit (max level 4)
-    if (currentValue >= 4) {
+    // Jack-of-All-Trades is capped at level 3 (reduces untrained penalty to 0 at max).
+    const normalized = skillKey.toLowerCase().replace(/[\s_]+/g, '-');
+    if (normalized === 'jack-of-all-trades') {
+      if (currentValue >= 3) {
+        return { allowed: false, reason: 'Jack-of-All-Trades is already at maximum level 3' };
+      }
+    } else if (currentValue >= 4) {
+      // Check individual skill limit (max level 4)
       return { allowed: false, reason: 'Skill is already at maximum level 4' };
     }
 

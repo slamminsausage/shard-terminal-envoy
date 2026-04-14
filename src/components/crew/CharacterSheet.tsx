@@ -1373,9 +1373,11 @@ const SkillDMDisplay = ({ proficient, rawValue, jackState, isPsionic }: SkillDMD
 
   let penalty = -3;
   if (jackState?.proficient) {
-    const level = Number(jackState.value ?? 0);
-    const reduction = Math.min(Math.max(level, 0) + 1, 2);
-    penalty = Math.min(penalty + reduction, -1);
+    // Being proficient in Jack-of-All-Trades counts as at least level 1; cap at level 3.
+    // Level 1: -2, Level 2: -1, Level 3: 0 (never higher).
+    const rawLevel = Number(jackState.value ?? 0);
+    const effectiveLevel = Math.min(Math.max(rawLevel, 1), 3);
+    penalty = Math.min(-3 + effectiveLevel, 0);
   }
 
   return <span className="text-xs font-mono w-10 text-center text-muted-foreground">{penalty}</span>;
