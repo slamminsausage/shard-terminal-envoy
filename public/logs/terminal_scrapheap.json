@@ -1,0 +1,50 @@
+[
+  {
+    "title": "Scrapheap Survey — Informal Listing",
+    "location": "General Access Terminal — The Scrapheap, Lower City Outskirts",
+    "date": "APPROX. 6 YEARS PRIOR",
+    "author": "Unknown — Salvager, informal notation",
+    "content": "SCRAPHEAP INVENTORY — WHAT'S ACTUALLY DOWN HERE\n\nThis is for my own use. If you're reading it you either hacked the terminal or I'm dead.\n\nHull count as of last walk: forty-three identifiable wrecks. Another dozen or so buried under the newer stuff.\n\nNotable:\n\n— A 200-ton scout variant, Imperial registry scrubbed. Aft section intact. Jump coils gone but the life support housing is usable.\n— Two Fat Traders, both down. One upper deck still liveable — someone's already set up in it, I can see the power draw on the grid. Lower cargo deck flooded with chemical runoff.\n— What might be a pre-Collapse hull, very deep in. Can't get close. The metal is the wrong color and the welds don't look like any technique I know. Couldn't find an access point. Left it alone.\n\nThe fake red flags at the entrance are just cloth. They're enough to keep most people out. The ones who know they're fake are already the kind of people who know to be careful anyway.\n\nThis is good real estate if you don't mind the smell and you don't mind not asking questions about what's in the lower decks of some of these hulls.\n\nI think something is living in the pre-Collapse hull. I have not gone back to verify this.",
+    "security_level": "unlocked",
+    "requires_roll": false
+  },
+  {
+    "title": "Mercifuge — Vessel Registry (Skull Orbital)",
+    "location": "General Access Terminal — The Scrapheap, Lower City Outskirts",
+    "date": "CURRENT CYCLE",
+    "author": "Skull Orbital — Docking Registry",
+    "content": "VESSEL: MERCIFUGE\nHull Class: 400-ton armed salvager\nTransponder: Active, unmasked\nOwner of Record: SEALED — INDEPENDENT OPERATOR\nCurrent Berth: Skull Orbital, Bay 7-C\nArrival: Three days prior to current cycle\n\nNote: Vessel arrived without filing a cargo manifest. Standard for this port.\nNote: One crew member disembarked at the Skull and did not re-board. Crew remaining on vessel: three.\nNote: Vessel has a hardpoint configuration inconsistent with its listed salvager classification. The additional armament is not concealed. We note this and do not act on it.\n\nNote: The disembarked crew member was female, cybernetic right arm, moved like she knew where she was going. She did not ask for directions. She went straight to a groundcar and headed for the lower city.\n\nNote: She has not returned to the vessel as of current cycle. The remaining crew are maintaining a quiet watch.\n\n— Flag for observation. Do not approach.",
+    "security_level": "restricted",
+    "requires_roll": true,
+    "roll_check": {
+      "difficulty": 8,
+      "skill": "Electronics (computers)",
+      "on_success": "Skull docking registry accessed. Mercifuge located. Crew detail noted.",
+      "on_failure": "Registry partition locked. Standard access insufficient."
+    }
+  },
+  {
+    "title": "Old Fat Trader — Partial Systems Log",
+    "location": "General Access Terminal — The Scrapheap, Lower City Outskirts",
+    "date": "MULTIPLE DATES — OLDEST APPROX. 15 YEARS",
+    "author": "Unknown — Multiple authors, Scrapheap residents",
+    "content": "This terminal has been running off a salvaged power cell for as long as anyone can remember. We use it when we have something to say.\n\n—\n\n'The upper deck is habitable. The lower deck is not. Don't open the cargo iris. We sealed it for a reason.'\n\n—\n\n'Someone has moved into the bridge. Don't know who. She has a metal arm and a very large weapon resting on the captain's chair. She has not bothered anyone. She pays the boys to run messages. I suggest we extend her the same courtesy she has extended us.'\n\n—\n\n'The woman in the bridge is negotiating with the gangs. I have heard the name Vallis and the name Irontooth. She is making a case for someone who is not here. I don't know what she is offering but the boys say she pays well and doesn't ask them to go anywhere dangerous.'\n\n—\n\n[Most recent entry — date not recorded]\n\n'New people in the Scrapheap tonight. Not residents. Moving carefully, which means they know something. The woman in the bridge knows they are coming. I saw her adjust the machinegun when the sensors pinged.\n\nI am going to be somewhere else for a while.'",
+    "security_level": "unlocked",
+    "requires_roll": false
+  },
+  {
+    "title": "Unknown Hull — Deep Scrapheap Survey Note",
+    "location": "General Access Terminal — The Scrapheap, Lower City Outskirts",
+    "date": "APPROX. 12 YEARS PRIOR",
+    "author": "Salvager — Name: Hest Vorin (deceased, cause unrelated)",
+    "content": "I went back to look at the old hull. The one buried at the south end, under the Sindalian-era junkers.\n\nI brought a cutter and a sensor wand.\n\nThe hull material is not in any database I have access to. Not Imperial alloy. Not Vargr standard. Not anything from the Hierate that I have ever catalogued.\n\nThe welds — or what I thought were welds — are not seams. They are part of the material itself. Like it grew that way. Like the hull was grown, not constructed.\n\nI found what might be a hatch. No mechanism I could identify. No power draw. Just a slightly different texture in the surface, shaped like a door.\n\nI put my hand flat against it.\n\nThe surface was warm. Not from ambient temperature — I checked. Internally warm.\n\nI did not open it.\n\nI am filing this note because I think someone should know it is there. I am not going back. Not for money. Not for anything.\n\nIf something lives in it, it knows I was there. I think it was polite enough not to make a thing of it.\n\nI am choosing to interpret that as a social contract and I intend to hold up my end.",
+    "security_level": "restricted",
+    "requires_roll": true,
+    "roll_check": {
+      "difficulty": 11,
+      "skill": "Electronics (computers)",
+      "on_success": "Old survey note recovered. Hull description does not match any known manufacturer.",
+      "on_failure": "File corrupted or access blocked. Partial data only."
+    }
+  }
+]

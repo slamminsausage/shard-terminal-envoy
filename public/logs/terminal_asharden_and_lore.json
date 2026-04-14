@@ -1,0 +1,59 @@
+[
+  {
+    "title": "Asharden Camp — Intake Notice",
+    "location": "General Access Terminal — Asharden Camp, Upper City Edge",
+    "date": "CURRENT CYCLE (STANDING NOTICE)",
+    "author": "Camp Administration — Volunteer Staff",
+    "content": "ASHARDEN CAMP — NOTICE TO NEW ARRIVALS\n\nIf you arrived on Theev without enough money to stay in the Upper City and without enough fight to survive in the Lower City, you are probably standing in front of this terminal.\n\nWe can provide:\n— Bunk space (shared)\n— One meal per day\n— Basic medical (very basic)\n— A locked box for valuables (the lock is not reliable; we are honest about this)\n\nWe cannot provide:\n— Safety in the lower city after you leave here\n— Passage offworld (we have been trying to arrange this for some residents for a long time)\n— Any influence over the gangs, the Widows, or anyone with actual power\n\nNote: Some residents of this camp have accepted work arrangements offered by Lower City operators. This is a choice. We do not recommend it. We have seen where it leads. We document it anyway because documentation is what we have.\n\nIf someone offers you work and it sounds too simple, it is not simple.\n\n—\n\n[Handwritten on the terminal casing, not in the file:]\n\nVii Lon is still here. She's been here six weeks. She came with a corporate team and the team is gone. She needs passage. She can pay, a little. She's not dangerous. Someone help her.",
+    "security_level": "unlocked",
+    "requires_roll": false
+  },
+  {
+    "title": "Asharden Camp — Resident Testimonials (Selected)",
+    "location": "General Access Terminal — Asharden Camp, Upper City Edge",
+    "date": "MULTIPLE DATES — LAST SIX MONTHS",
+    "author": "Camp Volunteer — Collected oral histories",
+    "content": "We ask residents to share their story if they want to. Some do. This is a selection.\n\n—\n\n'I came on a salvage contract. The company that hired us doesn't exist anymore. I don't know what happened to it. I know that we recovered something from a derelict in the Reach that our employer was very excited about and that three days later the employer stopped answering communications. Whatever it was they found, I don't have it anymore. Someone took it from the cargo lock while we were docked. I didn't see who.'\n\n—\n\n'I used to work for a research outfit. I signed too many agreements to say who. We were working on recovered materials. Old stuff. Alien, maybe, or just very old human — nobody could agree. There was a fragment. Looked like black glass but heavier and it ran warm and it made the electronics in the lab do strange things. They shut the project down and fired everyone and I ended up here. I think about that fragment a lot. I think someone else has it now. I hope they know to be careful with it.'\n\n—\n\n'My employer is dead. I know who killed him. I cannot do anything about it here. If you are reading this and you have resources, find me. My name is Vii Lon. I was employed by the Tobia Commerce Guild. What I know about what happened is worth something to the right person.'\n\n—\n\n[Final entry, no name, handwritten after the typed record:]\n\n'I am not here by accident. I will not say more than that in a public terminal.'",
+    "security_level": "unlocked",
+    "requires_roll": false
+  },
+  {
+    "title": "Murghen Consortium — Services and Rates",
+    "location": "General Access Terminal — Cliff District, Upper City",
+    "date": "CURRENT CYCLE",
+    "author": "Murghen Consortium — Johanna Murghen, Commander",
+    "content": "THE MURGHEN CONSORTIUM — PROFESSIONAL MILITARY SOLUTIONS\n\nWe are based on Theev. We have been based on Theev for eleven years. We have approximately nine hundred trained personnel and our own vessels. We do not ask questions about the target. We do not ask questions about the employer. We ask questions about payment.\n\nMinimum contract: eight weeks.\nService types available: escort, assault, boarding, garrison, extraction, suppression, and a category we list as 'resolution' which means we will handle things that other firms decline to put in writing.\n\nWe do not accept contracts against the Widows, against the Skull's orbital infrastructure, or against parties currently under formal protection of the three major gangs simultaneously. Everything else is a matter of price.\n\n—\n\nNote from the Commander: We recently completed a contract for a party that I am not at liberty to name, involving recovery of a sealed container from a vessel in deep Reach space. The container was recovered. It was not opened by my personnel. Whatever is in it is the client's business. I mention this only because the client has not yet collected, and the container is starting to cause minor equipment malfunctions in the storage bay where it is being held.\n\nIf the client is reading this: please come and get your property.\n\nSoon.",
+    "security_level": "unlocked",
+    "requires_roll": false
+  },
+  {
+    "title": "Old Trade Records — Sindalian Empire Era (Fragment)",
+    "location": "General Access Terminal — Cliff District, Upper City",
+    "date": "ORIGINAL: PRE-COLLAPSE — RECOVERED AND FILED APPROX. 30 YEARS PRIOR",
+    "author": "Sindalian Imperial Trade Office — Trojan Reach Division (Archived Fragment)",
+    "content": "TRADE MANIFEST — PARTIAL RECOVERY\n\nNote from archivist: This fragment was recovered from a cache in the Cliff District. Origin unknown. The original document dates to the Sindalian period. We are filing it as a curiosity. Some of it is intact.\n\n—\n\n[LEGIBLE SECTION:]\n\nLot 7: Three units of mineral origin, unclassified. Recovered from a site in the outer Reach. Described by recovery team as 'dark, semi-reflective, of uniform internal composition.' Biological activity: none detected. Weight: inconsistent with apparent volume. The scales read a different number each time.\n\nDelivered to: [NAME REDACTED — original document damage]\n\nNote from recovery team: The units were found alongside what appeared to be structural remnants of a much larger object. The site itself showed no geological explanation for the composition of the surrounding material. The recovery team's engineer described the site as 'a scar, like something hit this place from a very great height, a very long time ago.' We are filing this for the record.\n\n[ILLEGIBLE SECTION — document damage]\n\n[FINAL LEGIBLE LINE:]\n\n'The devices in the hold kept losing calibration. We reset them four times in one day. The engineer says this is not possible. The engineer is usually right about things.'\n\n—\n\n[Filed note, modern hand:]\n\nWhoever these materials ended up with, it wasn't the Empire for long. The collapse took everything. But things like this have a way of turning up again eventually.",
+    "security_level": "restricted",
+    "requires_roll": true,
+    "roll_check": {
+      "difficulty": 9,
+      "skill": "Electronics (computers)",
+      "on_success": "Archived trade fragment accessed. The Sindalian entry is strange. The weight inconsistency is unexplained.",
+      "on_failure": "Archive partition locked. Historical records require elevated access."
+    }
+  },
+  {
+    "title": "Widow Network Internal — Anomalous Signal Report",
+    "location": "General Access Terminal — Blacksand Downport (Deep Partition)",
+    "date": "APPROX. 3 MONTHS PRIOR",
+    "author": "Widow Administrative Office — Signals Division",
+    "content": "ANOMALOUS SIGNAL REPORT — INTERNAL USE ONLY\n\nThis file should not be accessible from any external terminal. If you are reading it, we have a problem.\n\n—\n\nA repeating signal was detected approximately three months ago originating from inside Blacksand City.\n\nThe signal does not match any known communication protocol.\n\nIt is not in any language we have on file.\n\nIt repeats at irregular intervals — between nine and forty-three minutes. The intervals do not follow a mathematical pattern we can identify.\n\nThe signal source has been triangulated to the lower city, broadly. We have not been able to narrow it further. It appears to move.\n\n—\n\nOf note: Two of our officers who were assigned to trace the signal reported disturbing dreams on the same night. Both described the same imagery independently: a city made of black glass under a sky with the wrong number of stars. Towers. Something moving in the towers.\n\nBoth officers were reassigned. Neither has spoken about it since.\n\n—\n\nOf additional note: The signal briefly intensified four days ago. The intensification coincided with the arrival of a vessel using Krrsh clearance codes.\n\nWe are noting this correlation without drawing a conclusion.\n\nWe are watching.",
+    "security_level": "restricted",
+    "requires_roll": true,
+    "roll_check": {
+      "difficulty": 13,
+      "skill": "Electronics (computers)",
+      "on_success": "Deep Widow partition accessed. There is a signal. It noticed you arriving.",
+      "on_failure": "Partition locked. This file does not exist at your clearance level."
+    }
+  }
+]

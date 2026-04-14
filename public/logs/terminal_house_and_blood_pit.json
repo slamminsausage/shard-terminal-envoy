@@ -1,0 +1,50 @@
+[
+  {
+    "title": "The House Without Questions — Public Notice",
+    "location": "General Access Terminal — The House Without Questions, Lower City",
+    "date": "UNKNOWN — NOTICE UNDATED BY POLICY",
+    "author": "The House Without Questions",
+    "content": "IF YOU HAVE NOWHERE ELSE TO GO.\n\nCome to the House. We will take you in. We will clothe you, feed you, and protect you. We will ask you nothing.\n\nIf you have something you need done, come to the House. Tell us what it is. If it can be done, we will tell you what it costs. If you pay, it will be done. We will ask you nothing about why.\n\nWe have been here longer than this city. We have been here longer than most things on this world.\n\nWe do not advertise what we have accomplished. We do not keep records that anyone else can read. We do not confirm or deny any specific task on our behalf.\n\nWhat we will tell you: we have never failed to accomplish a task that was within the bounds of the possible. We have occasionally had to redefine what 'possible' means, but we have not failed.\n\nWe do not accept tasks that require us to harm those who have previously sheltered with us. This is the only restriction.\n\nEverything else is a matter of price.\n\n—\n\n[Handwritten at the bottom, clearly not official:]\n\nI sheltered here once. Three years ago. They didn't ask me anything. I stayed for nine days and they fed me and no one touched me and when I left they didn't ask me where I was going.\n\nI don't know what they are. I don't know how old. I know they were here before the Brotherhood and before His Grace and before the gangs.\n\nI know they are still here.\n\nThat's worth something.",
+    "security_level": "unlocked",
+    "requires_roll": false
+  },
+  {
+    "title": "House Without Questions — Intake Log (Partial)",
+    "location": "General Access Terminal — The House Without Questions, Lower City",
+    "date": "CURRENT AND HISTORICAL — PARTIAL ONLY",
+    "author": "House Without Questions — Internal Archive (Partial Leak)",
+    "content": "INTAKE RECORD — PARTIAL EXCERPT\n\nNote: This file should not be accessible from a public terminal. We are investigating how it was exposed.\n\n—\n\nGuest, unnamed. Duration: 4 days. No questions asked. Departed safely.\nGuest, unnamed. Duration: 1 day. Medical attention provided. Departed safely.\nGuest, unnamed. Duration: 22 days. Extended stay, distressed condition on arrival. No questions asked. Departed. Status thereafter: unknown.\nGuest, unnamed. Repeat guest, third visit. Still no questions asked. We note this without comment.\n\n—\n\nTask log excerpt:\n\nTask requested: Location of a specific individual known to frequent the Scrapheap. Task completed. Client satisfied.\nTask requested: Retrieval of a locked data container from a vessel in Skull docking. Task completed. Client satisfied.\nTask requested: Information regarding a vessel called Misery's Company and its last known associates. Task accepted. Task ongoing.\n\n—\n\nNote appended by House administration: The last task was requested three days ago. The client asked specifically about a Captain Ferrik Redthane. We are fulfilling our obligation. We are also noting that two other parties have asked similar questions this cycle. The House does not share client information. The House also does not pretend not to notice patterns.",
+    "security_level": "restricted",
+    "requires_roll": true,
+    "roll_check": {
+      "difficulty": 12,
+      "skill": "Electronics (computers)",
+      "on_success": "Partial House internal log accessed. Someone else is looking for Ferrik too.",
+      "on_failure": "Access denied. Partition locked with architecture that doesn't match anything standard."
+    }
+  },
+  {
+    "title": "Blood Pit — Tonight's Card",
+    "location": "General Access Terminal — Blood Pit Arena, Lower City",
+    "date": "CURRENT CYCLE",
+    "author": "Blood Pit Management",
+    "content": "BLOOD PIT — TONIGHT'S CARD\n\nDoors open at half-cycle. Bets accepted until the second bell.\n\nEvent 1: Melee bracket, four contestants. Three volunteers, one not. Standard rules (none).\n\nEvent 2: Alien predator exhibition. Species: Undisclosed. Origin: Foreven Sector, recovered from a derelict. Handler advises spectators in the first three rows to sign the disclaimer.\n\nEvent 3: Steel cage. Two contestants. Both volunteers. Personal grievance match — details posted at the betting desk.\n\nEvent 4: The main event. Gladiator versus robot. The robot has been modified. Our technician says it is now operating outside its original design parameters and he is not entirely comfortable with what it has started to do between events. We consider this excellent atmosphere.\n\n—\n\nSpecial notice: A private booth has been reserved for this evening by a party who paid double for guaranteed privacy. We note this only because it is unusual enough to mention to the management log. All other guests: standard seating.\n\n—\n\nNote from the management: If you see something in the lower pens that you cannot identify, do not attempt to interact with it. We are still determining where it came from and whether it is ours.",
+    "security_level": "unlocked",
+    "requires_roll": false
+  },
+  {
+    "title": "Blood Pit — Historical Bout Record",
+    "location": "General Access Terminal — Blood Pit Arena, Lower City",
+    "date": "MULTIPLE DATES — SPANNING APPROX. 20 YEARS",
+    "author": "Blood Pit Management — Historical Archive",
+    "content": "HISTORICAL BOUT RECORD — SELECTED HIGHLIGHTS\n\nYear 1094: The bout known as 'The Wildeman Affair.' A Vargr combatant — unregistered, entered under the alias 'Mad Dog' — defeated three consecutive opponents including a modified security drone and a K'Kree sharpshooter on a bet. Left before we could offer a contract. Still have the name on file if he ever comes back.\n\nYear 1096: Exhibition match, alien specimen versus three armed volunteers. Specimen was described on intake as 'petrified, probably inert.' It was not inert. Volunteers did not survive. Specimen was eventually subdued. We do not discuss the method. We have a strict policy now about intake classification.\n\nYear 1098: The last time anyone brought in a specimen from that Foreven derelict sale. We are not accepting further stock from that particular source.\n\nYear 1101: Corporate-sponsored grudge match. Sponsors wished to remain anonymous. Combatant lost. The sponsors were less interested in the fight than in testing something they had fitted to the combatant. What they were testing was not disclosed to us. We are noting this retroactively because we found a piece of equipment in the pit afterward that none of our staff recognized.\n\n[The last line of the file has been partially overwritten with a single phrase, author unknown:]\n\n'The stone was not the only one.'",
+    "security_level": "restricted",
+    "requires_roll": true,
+    "roll_check": {
+      "difficulty": 10,
+      "skill": "Electronics (computers)",
+      "on_success": "Historical record accessed. The 1096 specimen entry is deeply unusual.",
+      "on_failure": "Archive partition locked. Historical records not available at this access level."
+    }
+  }
+]

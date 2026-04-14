@@ -1,0 +1,44 @@
+[
+  {
+    "title": "Guest Services Directory — The Grand Hotel",
+    "location": "General Access Terminal — The Grand Hotel, Upper City",
+    "date": "CURRENT CYCLE (STANDING NOTICE)",
+    "author": "Grand Hotel Guest Services",
+    "content": "WELCOME TO THE GRAND HOTEL — BLACKSAND CITY\n\nThe Grand Hotel is pleased to receive you.\n\nWe are the finest establishment on Theev, and we are aware that the competition is not stiff. We nonetheless take pride in our standard of service.\n\nGuests are reminded that the Grand Hotel operates exclusively under the Law of the Lords. Weapons may be carried but not discharged. Disputes may be conducted but not violently. Conduct that embarrasses our other guests will result in ejection. Conduct that embarrasses us significantly will result in something worse.\n\nAmenities:\n— Private dining suites (bookable in advance)\n— Secure communications (encrypted, not monitored — or so we tell everyone)\n— Medical services (discreet, no questions, additional fee applies)\n— Currency exchange (we accept most things of value)\n\nA note to our Imperial visitors: You are welcome here. We ask only that you do not make your affiliation obvious. Certain other guests find it distracting.\n\nA note to everyone else: The same applies in reverse.\n\nEnjoy your stay.",
+    "security_level": "unlocked",
+    "requires_roll": false
+  },
+  {
+    "title": "Current Guest Register — Confidential",
+    "location": "General Access Terminal — The Grand Hotel, Upper City",
+    "date": "CURRENT CYCLE",
+    "author": "Grand Hotel Guest Registry — Administrative Partition",
+    "content": "CURRENT GUEST REGISTER — CONFIDENTIAL\n\nRoom 4: 'Mr. Renval.' Paid in cash. Has requested no housekeeping. Has not left his room in three days. Food trays returned empty.\n\nRoom 7: Admiral Darokyn. Suite. Long-term occupancy. Staff instructed to address him by title and not to ask questions about the naval uniform.\n\nRoom 9: Representative of the Murghen Consortium. Name withheld by request. Has received four visitors since arrival. Meetings have averaged ninety minutes each.\n\nRoom 12: 'Gesh.' Registered as an independent trader. Has been asking questions about recent arrivals. We are logging his inquiries as a matter of policy.\n\nRoom 15: Vacant. Held on standing reservation. Name on reservation: REDTHANE. Reservation has not been claimed in several months. Reservation fee continues to be paid remotely. We do not ask by whom.",
+    "security_level": "restricted",
+    "requires_roll": true,
+    "roll_check": {
+      "difficulty": 9,
+      "skill": "Electronics (computers)",
+      "on_success": "Guest registry accessed. Handle this information carefully.",
+      "on_failure": "Administrative partition locked. Guest privacy protocols active."
+    }
+  },
+  {
+    "title": "Rose Pavilion — Reservation Notice",
+    "location": "General Access Terminal — The Grand Hotel, Upper City",
+    "date": "CURRENT CYCLE",
+    "author": "Rose Pavilion Reservations",
+    "content": "THE ROSE PAVILION\n\nBlacksand City's finest dining establishment. Private booths available for parties of two to eight. Booth soundproofing guaranteed. Staff discretion absolute.\n\nReservations recommended. Walk-ins accepted if the party is sufficiently notable.\n\nCurrent reservations on file:\n— Admiral Darokyn holds a standing reservation at his preferred table. He dines most evenings. He occasionally receives guests. If you have business with the Admiral, the Rose Pavilion is his preferred venue for that sort of thing.\n\n— A private booth has been reserved for this evening under a name we are not authorized to share. The reservation includes a request that the booth remain unsurveilled. We have honored this request. We always do.\n\nNote: The Rose Pavilion does not ask what is being discussed in its private booths. We do not want to know. This is not an invitation to tell us.",
+    "security_level": "unlocked",
+    "requires_roll": false
+  },
+  {
+    "title": "Cliff District — Procurement Listings",
+    "location": "General Access Terminal — The Grand Hotel, Upper City",
+    "date": "CURRENT CYCLE (ROTATING)",
+    "author": "Cliff District Consortium — Anonymized Listings",
+    "content": "CLIFF DISTRICT — CURRENT PROCUREMENT LISTINGS\n\nNote: All transactions conducted through intermediaries. No direct contact with vendors. All items sold as-is, no warranty, no Imperial compliance documentation.\n\n—\n\nLOT 1: Military-grade accelerator rounds, 500 units. Origin unlisted. Condition: New.\nLOT 2: Portable communications jammer. TL12. Slight casing damage. Functional.\nLOT 3: Psionic suppression field emitter. Condition: Unknown. Vendor notes: 'Do not turn it on inside.' Reason for note: unspecified.\nLOT 4: Mercenary services — Murghen Consortium. Eight-week minimum contract. Rates on application. Approximately 900 personnel available.\nLOT 5: Navigation data, three restricted systems. Acquisition method: unspecified. Accuracy: claimed 98%.\nLOT 6: One (1) item recovered from a derelict in Foreven Sector. Vendor describes it as 'a fragment of something dark. Glassy. Pulses faintly when near electronics.' No further description available. Vendor has requested the item leave their possession as soon as possible. Price: negotiable. Vendor's emphasis: immediately.\n\n—\n\n'Going off the cliff' means you are dealing in things the Imperium would prefer did not exist. Everyone here already knows that.",
+    "security_level": "unlocked",
+    "requires_roll": false
+  }
+]
