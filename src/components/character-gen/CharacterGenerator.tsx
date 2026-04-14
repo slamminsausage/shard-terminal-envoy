@@ -3555,10 +3555,18 @@ export const CharacterGenerator: React.FC = () => {
     const leavingRecord = midCareerMusterRecord;
     if (!leavingRecord) return;
 
+    // Settle accumulated debts against this mid-career payout so a player can't
+    // dodge anagathics/medical bills by leaving the career early.
+    const anagathicsOwed = characterData.anagathicsTotalCost || 0;
+    const priorMedicalDebt = characterData.medicalDebt || 0;
+    const totalOwed = anagathicsOwed + priorMedicalDebt;
+    const cashAfterDebt = Math.max(0, results.cash - totalOwed);
+    const remainingDebt = Math.max(0, totalOwed - results.cash);
+
     setCharacterData(prev => ({
       ...prev,
-      cash_on_hand: results.cash,
-      credits: results.cash,
+      cash_on_hand: cashAfterDebt,
+      credits: cashAfterDebt,
       shipShares: results.shipShares,
       tasMembership: results.tasMembership,
       ships: results.ships,
@@ -3566,6 +3574,10 @@ export const CharacterGenerator: React.FC = () => {
       allies: prev.allies + results.allies,
       contacts: prev.contacts + results.contacts,
       equipment: [...prev.equipment, ...results.equipment],
+      // Accumulated anagathics debt is rolled into medicalDebt; reset
+      // anagathicsTotalCost since it has now been settled/consolidated.
+      anagathicsTotalCost: 0,
+      medicalDebt: remainingDebt,
       // Mark the leaving career's most-recent history entry as benefit-rolled.
       careerHistory: (() => {
         const history = [...prev.careerHistory];
@@ -3789,6 +3801,8 @@ export const CharacterGenerator: React.FC = () => {
     setIsCommissioned(draft.isCommissioned ?? false);
     setNeedsCommissionRoll(draft.needsCommissionRoll ?? false);
     setCommissionRollDM(draft.commissionRollDM ?? 0);
+    setCommissionAttempted(draft.commissionAttempted ?? false);
+    setCommissionRollLog(draft.commissionRollLog ?? '');
     setBasicTrainingApplied(draft.basicTrainingApplied ?? false);
     setAssignmentMode(draft.assignmentMode ?? 'auto');
     setUseManualDice(draft.useManualDice ?? false);
@@ -3806,6 +3820,30 @@ export const CharacterGenerator: React.FC = () => {
     setMilitaryAcademyService(draft.militaryAcademyService ?? null);
     setPsiTestResult(draft.psiTestResult ?? null);
     setShowPsiTesting(draft.showPsiTesting ?? false);
+    // Training-roll counters (per-term, cleared each startNewTerm — but must
+    // survive a refresh that lands mid-term-boundary).
+    setTermSkillRollsUsed(draft.termSkillRollsUsed ?? 0);
+    setTermSkillRollsAllowed(draft.termSkillRollsAllowed ?? 1);
+    // Specialty-picker state
+    setPendingSpecialtySkill(draft.pendingSpecialtySkill ?? null);
+    setPendingSpecialtySource(draft.pendingSpecialtySource ?? '');
+    // Advancement edge-case flags
+    setForcedContinueInCareer(draft.forcedContinueInCareer ?? false);
+    setForcedLeaveAfterTerm(draft.forcedLeaveAfterTerm ?? false);
+    // Aging state — crucial because aging is triggered AFTER completeTerm sets
+    // isInTerm=false, and the whole flow lives in the "between terms" UI. If we
+    // don't persist these, a mid-aging refresh silently skips aging entirely.
+    setAgingResult(draft.agingResult ?? null);
+    setAgingPending(draft.agingPending ?? false);
+    setAgingPhysicalChosen(draft.agingPhysicalChosen ?? false);
+    setAgingMentalChosen(draft.agingMentalChosen ?? false);
+    setAgingCrisis(draft.agingCrisis ?? null);
+    setAgingCrisisAcknowledged(draft.agingCrisisAcknowledged ?? false);
+    setAgingChosenEffects(draft.agingChosenEffects ?? []);
+    // Anagathics + medical UI state (same between-term window as aging)
+    setShowAnagathicsPrompt(draft.showAnagathicsPrompt ?? false);
+    setAnagathicsRollResult(draft.anagathicsRollResult ?? null);
+    setPendingMedicalBill(draft.pendingMedicalBill ?? null);
 
     // Restore selectedCareer from name
     if (draft.selectedCareerName) {
@@ -3847,6 +3885,8 @@ export const CharacterGenerator: React.FC = () => {
         isCommissioned,
         needsCommissionRoll,
         commissionRollDM,
+        commissionAttempted,
+        commissionRollLog,
         basicTrainingApplied,
         assignmentMode,
         useManualDice,
@@ -3865,6 +3905,27 @@ export const CharacterGenerator: React.FC = () => {
         psiTestResult,
         showPsiTesting,
         raceId: selectedRace?.id ?? 'human',
+        // Training-roll counters (per-term, cleared each startNewTerm)
+        termSkillRollsUsed,
+        termSkillRollsAllowed,
+        // Specialty-picker state
+        pendingSpecialtySkill,
+        pendingSpecialtySource,
+        // Advancement edge-case flags
+        forcedContinueInCareer,
+        forcedLeaveAfterTerm,
+        // Aging state
+        agingResult,
+        agingPending,
+        agingPhysicalChosen,
+        agingMentalChosen,
+        agingCrisis,
+        agingCrisisAcknowledged,
+        agingChosenEffects,
+        // Anagathics + medical UI state
+        showAnagathicsPrompt,
+        anagathicsRollResult,
+        pendingMedicalBill,
       };
       setLocalStorage(DRAFT_KEY, draft);
     }, 500);
@@ -3872,12 +3933,19 @@ export const CharacterGenerator: React.FC = () => {
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
   }, [step, characterData, selectedCareer, selectedAssignment, currentTerm, isInTerm,
       qualificationPassed, hasUsedDraft, hasRolled, characteristicRolls, backgroundSkillsRemaining,
-      isCommissioned, needsCommissionRoll, commissionRollDM, basicTrainingApplied, isMusteringOut, draftChecked, showResumeDraft,
+      isCommissioned, needsCommissionRoll, commissionRollDM, commissionAttempted, commissionRollLog,
+      basicTrainingApplied, isMusteringOut, draftChecked, showResumeDraft,
       DRAFT_KEY, assignmentMode, useManualDice, eventBenefitDMs, extraBenefitRolls,
       midCareerMusterRecord, lifetimeCashRollsUsed, carriedAdvancementBonus,
       preCareerGraduated, preCareerFailedService, graduatedWithHonours,
       universitySkillLevel0, universitySkillLevel1, militaryAcademyService,
-      psiTestResult, showPsiTesting, selectedRace]);
+      psiTestResult, showPsiTesting, selectedRace,
+      termSkillRollsUsed, termSkillRollsAllowed,
+      pendingSpecialtySkill, pendingSpecialtySource,
+      forcedContinueInCareer, forcedLeaveAfterTerm,
+      agingResult, agingPending, agingPhysicalChosen, agingMentalChosen,
+      agingCrisis, agingCrisisAcknowledged, agingChosenEffects,
+      showAnagathicsPrompt, anagathicsRollResult, pendingMedicalBill]);
 
   // Warn before closing/refreshing when there's progress
   useEffect(() => {
