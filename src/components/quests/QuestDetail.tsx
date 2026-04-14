@@ -9,7 +9,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, Plus, Check, X, Trash2, CheckCircle, XCircle, ChevronUp, ChevronDown, Pencil } from 'lucide-react';
+import { ArrowLeft, Plus, Check, X, Trash2, CheckCircle, XCircle, ChevronUp, ChevronDown, Pencil, Eye, EyeOff } from 'lucide-react';
 import { format } from 'date-fns';
 import { useCampaign } from '@/contexts/CampaignContext';
 
@@ -52,6 +52,7 @@ export const QuestDetail: React.FC<QuestDetailProps> = ({ questId, onClose }) =>
   const [editLocation, setEditLocation] = useState('');
   const [editNotes, setEditNotes] = useState('');
   const [editGmNotes, setEditGmNotes] = useState('');
+  const [editIsHidden, setEditIsHidden] = useState(false);
 
   // Rewards edit mode
   const [isEditingRewards, setIsEditingRewards] = useState(false);
@@ -67,6 +68,13 @@ export const QuestDetail: React.FC<QuestDetailProps> = ({ questId, onClose }) =>
   const loadQuestData = async () => {
     const questData = await getQuest(questId);
     if (questData) {
+      // Non-GMs should never land on a hidden quest detail page. If they
+      // somehow reach this state (e.g. a quest was hidden after selection),
+      // bounce them back to the quest list.
+      if (questData.is_hidden && !isGM) {
+        onClose();
+        return;
+      }
       setQuest(questData);
     }
 
@@ -156,6 +164,7 @@ export const QuestDetail: React.FC<QuestDetailProps> = ({ questId, onClose }) =>
     setEditLocation(quest.location || '');
     setEditNotes(quest.notes || '');
     setEditGmNotes(quest.gm_notes || '');
+    setEditIsHidden(!!quest.is_hidden);
     setIsEditingDetails(true);
   };
 
@@ -168,11 +177,19 @@ export const QuestDetail: React.FC<QuestDetailProps> = ({ questId, onClose }) =>
       location: editLocation,
       notes: editNotes,
       gm_notes: editGmNotes,
+      // Only GMs can change visibility; preserve existing value otherwise.
+      ...(isGM ? { is_hidden: editIsHidden } : {}),
     });
     if (updated) {
       setQuest(updated);
     }
     setIsEditingDetails(false);
+  };
+
+  const toggleHidden = async () => {
+    if (!quest || !isGM) return;
+    const updated = await updateQuest(questId, { is_hidden: !quest.is_hidden });
+    if (updated) setQuest(updated);
   };
 
   // Rewards editing
@@ -252,10 +269,31 @@ export const QuestDetail: React.FC<QuestDetailProps> = ({ questId, onClose }) =>
                 {quest.category.toUpperCase()}
               </Badge>
             )}
+            {isGM && quest.is_hidden && (
+              <Badge className="bg-purple-500/20 text-purple-300 border-purple-500/50">
+                <EyeOff className="h-3 w-3 mr-1" />
+                HIDDEN FROM PLAYERS
+              </Badge>
+            )}
           </div>
         </div>
 
         <div className="flex gap-2">
+          {isGM && (
+            <Button
+              onClick={toggleHidden}
+              variant="outline"
+              size="sm"
+              title={quest.is_hidden ? 'Reveal to players' : 'Hide from players'}
+              className="border-purple-500/50 text-purple-300 hover:bg-purple-500/20"
+            >
+              {quest.is_hidden ? (
+                <><Eye className="h-4 w-4 mr-1" />Reveal</>
+              ) : (
+                <><EyeOff className="h-4 w-4 mr-1" />Hide</>
+              )}
+            </Button>
+          )}
           <Select value={quest.status} onValueChange={(v) => handleStatusChange(v as QuestStatus)}>
             <SelectTrigger className="w-[140px] bg-black border-terminal-primary/50 text-terminal-primary">
               <SelectValue />
@@ -583,6 +621,26 @@ export const QuestDetail: React.FC<QuestDetailProps> = ({ questId, onClose }) =>
                           className="bg-black border-terminal-primary/50 text-terminal-primary resize-none"
                         />
                       </div>
+                      {isGM && (
+                        <div className="rounded border border-purple-500/40 bg-purple-500/5 p-3">
+                          <label className="flex items-start gap-2 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={editIsHidden}
+                              onChange={(e) => setEditIsHidden(e.target.checked)}
+                              className="mt-1 rounded border-purple-500/50"
+                            />
+                            <div>
+                              <span className="text-sm text-purple-300 font-medium">
+                                Hidden from players
+                              </span>
+                              <p className="text-xs text-purple-300/70 mt-0.5">
+                                Players will not see this quest in their log while hidden.
+                              </p>
+                            </div>
+                          </label>
+                        </div>
+                      )}
                       {isGM && (
                         <div>
                           <label className="text-xs text-terminal-primary/70 uppercase mb-1 block">GM Notes</label>
