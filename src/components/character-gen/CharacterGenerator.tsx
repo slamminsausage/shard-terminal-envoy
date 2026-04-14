@@ -12,7 +12,17 @@ import { getLocalStorage, setLocalStorage, removeLocalStorage } from '@/lib/loca
 import { ALL_CAREERS, BACKGROUND_SKILLS, getPreCareerEvent, CAREER_PRISONER, rollInitialParoleThreshold, CAREER_PSION, performPsiTesting, PSIONIC_TALENTS, type PsiTestResult } from './careers';
 import type { CareerDefinition, Characteristics, StructuredEvent, EventOutcome, GameEvent, EventEffects, CharacteristicName } from './careers';
 import { isGameEvent } from './careers';
-import { rollDraft, type DraftResult, getLifeEvent, getInjury, getUnusualEvent, rollAging, applyAgingEffects, type AgingRollResult, LIFE_EVENTS, INJURY_TABLE, UNUSUAL_EVENTS } from './tables';
+import {
+  rollDraft, type DraftResult,
+  getLifeEvent, getInjury, getUnusualEvent,
+  rollAging, applyAgingEffects, checkAgingCrisis, getAgingThreshold,
+  type AgingRollResult, type AgingCrisisResult,
+  rollAnagathicsObtain, rollAnagathicsCost,
+  type AnagathicsObtainResult,
+  calculateMedicalCoverage, calculateInjuryCost,
+  type MedicalCoverageResult,
+  LIFE_EVENTS, INJURY_TABLE, UNUSUAL_EVENTS,
+} from './tables';
 import { EventHandler } from './EventHandler';
 import { rollDiceExpression, rollDice as rollDiceUtil } from './eventProcessor';
 import { SpecialtySelector, needsSpecialtySelection, getBaseSkillName } from './SpecialtySelector';
@@ -1499,15 +1509,43 @@ export const CharacterGenerator: React.FC = () => {
     const total = roll + dm;
     // Natural 2 always fails survival regardless of modifiers.
     const naturalTwo = roll === 2;
-    const survived = !naturalTwo && total >= assignment.survivalTarget;
+    const firstPassed = !naturalTwo && total >= assignment.survivalTarget;
+
+    // Anagathics rule: while using anagathics, roll TWO survival checks.
+    // If either roll fails, the character suffers a mishap. Does not apply to
+    // pre-career "graduation" rolls, which are mechanically distinct.
+    const onAnagathics = !isPreCareer && !!characterData.isUsingAnagathics;
+    let secondRoll: number | null = null;
+    let secondTotal: number | null = null;
+    let secondNaturalTwo = false;
+    let secondPassed = true;
+    if (onAnagathics) {
+      secondRoll = rollDice(2, 6);
+      secondTotal = secondRoll + dm;
+      secondNaturalTwo = secondRoll === 2;
+      secondPassed = !secondNaturalTwo && secondTotal >= assignment.survivalTarget;
+    }
+    const survived = firstPassed && secondPassed;
 
     setTermSurvived(survived);
 
     // Set survival/graduation roll log for regular careers
     if (!isPreCareer) {
-      setSurvivalRollLog(
-        `Survival Roll: ${roll} + ${dm} = ${total} (need ${assignment.survivalTarget}+)${naturalTwo ? ' — NATURAL 2: automatic failure' : ''}`
-      );
+      if (onAnagathics && secondRoll !== null && secondTotal !== null) {
+        const firstNote = naturalTwo ? ' NATURAL 2' : '';
+        const secondNote = secondNaturalTwo ? ' NATURAL 2' : '';
+        setSurvivalRollLog(
+          `Anagathics — TWO survival checks required. ` +
+          `Roll 1: ${roll} + ${dm} = ${total}${firstNote} | ` +
+          `Roll 2: ${secondRoll} + ${dm} = ${secondTotal}${secondNote} ` +
+          `(need ${assignment.survivalTarget}+ on both). ` +
+          (survived ? 'Both passed.' : 'FAILED — mishap.')
+        );
+      } else {
+        setSurvivalRollLog(
+          `Survival Roll: ${roll} + ${dm} = ${total} (need ${assignment.survivalTarget}+)${naturalTwo ? ' — NATURAL 2: automatic failure' : ''}`
+        );
+      }
     }
 
     if (!survived) {
@@ -2953,18 +2991,20 @@ export const CharacterGenerator: React.FC = () => {
       }
     }
 
-    // Deduct anagathics cost if using
+    // Accrue anagathics cost if using. Per the rules this is paid out of the
+    // Traveller's eventual mustering-out cash benefits, so it is not taken from
+    // cash_on_hand during character generation — it accumulates and is settled
+    // at mustering out (any shortfall becomes debt).
     if (characterData.isUsingAnagathics) {
-      const { cost } = rollAnagathicsCost();
+      const { roll, cost } = rollAnagathicsCost();
       setCharacterData(prev => ({
         ...prev,
         anagathicsTotalCost: (prev.anagathicsTotalCost || 0) + cost,
-        cash_on_hand: Math.max(0, prev.cash_on_hand - cost),
-        medicalDebt: prev.cash_on_hand < cost
-          ? (prev.medicalDebt || 0) + (cost - prev.cash_on_hand)
-          : prev.medicalDebt,
       }));
-      setTermSkillsGained(prev => [...prev, `Anagathics cost: Cr${cost.toLocaleString()}`]);
+      setTermSkillsGained(prev => [
+        ...prev,
+        `Anagathics cost: Cr${cost.toLocaleString()} (${roll} × Cr25,000) — deducted from mustering-out benefits`,
+      ]);
     }
 
     setIsInTerm(false);
@@ -3152,10 +3192,19 @@ export const CharacterGenerator: React.FC = () => {
       }
     });
 
+    // Deduct accumulated debts from the final cash benefits. Any shortfall
+    // becomes starting debt (tracked in medicalDebt for now — the Traveller
+    // starts play owing that amount).
+    const anagathicsOwed = characterData.anagathicsTotalCost || 0;
+    const priorMedicalDebt = characterData.medicalDebt || 0;
+    const totalOwed = anagathicsOwed + priorMedicalDebt;
+    const cashAfterDebt = Math.max(0, results.cash - totalOwed);
+    const remainingDebt = Math.max(0, totalOwed - results.cash);
+
     setCharacterData(prev => ({
       ...prev,
-      cash_on_hand: results.cash,
-      credits: results.cash,
+      cash_on_hand: cashAfterDebt,
+      credits: cashAfterDebt,
       pension: totalPension,
       shipShares: results.shipShares,
       tasMembership: results.tasMembership,
@@ -3164,6 +3213,10 @@ export const CharacterGenerator: React.FC = () => {
       allies: prev.allies + results.allies,
       contacts: prev.contacts + results.contacts,
       equipment: [...prev.equipment, ...results.equipment],
+      // Accumulated anagathics debt is rolled into medicalDebt; reset
+      // anagathicsTotalCost since it has now been settled/consolidated.
+      anagathicsTotalCost: 0,
+      medicalDebt: remainingDebt,
       // Mark every remaining career as benefit-rolled so a resumed draft
       // can't double-dip in final mustering-out.
       careerHistory: prev.careerHistory.map(c =>
@@ -6730,9 +6783,9 @@ export const CharacterGenerator: React.FC = () => {
                         </Alert>
                       )}
 
-                      {/* Anagathics offer between terms (SOC 10+, not in prisoner career, not using noAnagathics career) */}
+                      {/* Anagathics offer at the start of any term (SOC 10+, not using noAnagathics career). */}
                       {!agingPending && !showAnagathicsPrompt && characterData.characteristics.social.total >= 10 &&
-                        !(selectedCareer?.noAnagathics) && (characterData.isUsingAnagathics || characterData.lifepath_log.length >= 4) && (
+                        !(selectedCareer?.noAnagathics) && (
                         <Button
                           onClick={() => setShowAnagathicsPrompt(true)}
                           variant="outline"
@@ -7067,8 +7120,12 @@ export const CharacterGenerator: React.FC = () => {
                       <div className="space-y-2">
                         <p className="text-xs text-terminal-primary/70">
                           You are currently using anagathics (started term {characterData.anagathicsStartTerm}).
-                          Cost: 1D × Cr25,000 per term. Aging DM: +{(characterData.lifepath_log.length - (characterData.anagathicsStartTerm || 0) + 2)}.
-                          You must make two survival checks per term.
+                          Cost: 1D × Cr25,000 per term (deducted from your eventual mustering-out benefits).
+                          Aging DM: +{(characterData.lifepath_log.length - (characterData.anagathicsStartTerm || 0) + 2)}.
+                          You must make two survival checks per term — failing either one causes a mishap.
+                        </p>
+                        <p className="text-xs text-yellow-400/80">
+                          Accrued anagathics cost so far: Cr{(characterData.anagathicsTotalCost || 0).toLocaleString()}
                         </p>
                         <div className="flex gap-2">
                           <Button
