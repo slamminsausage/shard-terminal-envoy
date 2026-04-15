@@ -46,5 +46,85 @@
       "on_success": "Historical record accessed. The 1096 specimen entry is deeply unusual.",
       "on_failure": "Archive partition locked. Historical records not available at this access level."
     }
+  },
+  {
+    "title": "Blood Pit — Private Booth Access Override",
+    "location": "General Access Terminal — Blood Pit Arena, Lower City",
+    "date": "CURRENT CYCLE",
+    "author": "Blood Pit Arena — Booking Management System",
+    "security_level": "high",
+    "content": "The Blood Pit management terminal includes a booth booking and access control system. Tonight's private booth reservation was paid at double rate and flagged for guaranteed privacy.\n\nThe booth door is locked from the arena side. A booking override can release it without triggering the management alert.\n\n[INTERACTIVE TERMINAL — AWAITING INPUT]",
+    "type": "action_sequence",
+    "action_sequence": {
+      "id": "blood-pit-vip-booth",
+      "category": "door_unlock",
+      "steps": [
+        {
+          "type": "auto",
+          "lines": [
+            ">> BLOOD PIT ARENA — BOOKING MANAGEMENT SYSTEM v1.1",
+            ">> TONIGHT'S RESERVATIONS:",
+            ">> GENERAL ADMISSION — OPEN",
+            ">> RINGSIDE BLOCK A — SOLD OUT",
+            ">> RINGSIDE BLOCK B — 4 SEATS REMAINING",
+            ">> PRIVATE BOOTH — RESERVED (PAYMENT: DOUBLE RATE)",
+            ">> BOOTH RESERVATION NAME: [WITHHELD BY REQUEST]",
+            "",
+            ">> BOOTH DOOR STATUS: LOCKED",
+            ">> OVERRIDE AVAILABLE TO MANAGEMENT CREDENTIALS"
+          ],
+          "delay": 30,
+          "pause_after": 600
+        },
+        {
+          "type": "prompt",
+          "prompt_text": "ENTER MANAGEMENT OVERRIDE CODE:",
+          "accept": ["PRIVATE", "BOOTH", "VIP", "RESERVED", "OVERRIDE", "MANAGEMENT"],
+          "reject_message": "INVALID OVERRIDE CODE. ACCESS DENIED.",
+          "max_attempts": 3,
+          "sound_on_accept": "access_granted",
+          "sound_on_reject": "access_denied"
+        },
+        {
+          "type": "auto",
+          "lines": [
+            ">> OVERRIDE CODE ACCEPTED.",
+            ">> VERIFYING MANAGEMENT CREDENTIALS...",
+            ">> BYPASSING RESERVATION PRIVACY LOCK..."
+          ],
+          "delay": 35,
+          "pause_after": 300
+        },
+        {
+          "type": "progress",
+          "label": "DISENGAGING BOOTH DOOR LOCK...",
+          "duration": 2000,
+          "segments": 16,
+          "sound_on_complete": "seal_disengage",
+          "complete_message": "BOOTH DOOR UNLOCKED"
+        },
+        {
+          "type": "auto",
+          "lines": [
+            ">> PRIVATE BOOTH — ACCESS GRANTED.",
+            ">> BOOTH PRIVACY LOCK: DISENGAGED",
+            ">> NOTE: RESERVATION HOLDER HAS NOT YET ARRIVED.",
+            ">> NOTE: SECOND PARTY TO RESERVATION ALREADY INSIDE.",
+            ">> NOTE: MANAGEMENT ALERT HAS BEEN SUPPRESSED."
+          ],
+          "delay": 35,
+          "pause_after": 400
+        }
+      ],
+      "on_complete": {
+        "message": "The booth door releases with a heavy click. Inside: a small, dark room smelling of old smoke and something chemical. Two chairs face the arena glass. On the back wall, scratched into the plaster in small, careful letters, is a note left by a previous occupant: 'If you're reading this, you already know what they're negotiating. Don't interrupt until the second bell.' The handwriting is old. The advice may not be.",
+        "sound": "door_unlock",
+        "persist_key": "blood-pit-vip-booth"
+      },
+      "on_failure": {
+        "message": "OVERRIDE REJECTED. Booth door remains locked. Management alert has been triggered — arena staff have been notified of an unauthorized access attempt at the private booth terminal.",
+        "sound": "access_denied"
+      }
+    }
   }
 ]

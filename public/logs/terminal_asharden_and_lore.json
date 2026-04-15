@@ -55,5 +55,101 @@
       "on_success": "Deep Widow partition accessed. There is a signal. It noticed you arriving.",
       "on_failure": "Partition locked. This file does not exist at your clearance level."
     }
+  },
+  {
+    "title": "Widow Signals Division — Anomalous Source Triangulation",
+    "location": "General Access Terminal — Blacksand Downport (Deep Partition)",
+    "date": "CURRENT CYCLE",
+    "author": "Widow Administrative Office — Signals Division (Restricted)",
+    "security_level": "restricted",
+    "content": "The Widow Signals Division has been tracking an unidentified repeating signal for approximately three months. The signal does not match any known protocol. It repeats at irregular intervals between nine and forty-three minutes.\n\nThe division has triangulation data from three prior attempts, each inconclusive. A fourth attempt using a selected sensor array may produce a more precise fix.\n\n[INTERACTIVE TERMINAL — AWAITING INPUT]",
+    "type": "action_sequence",
+    "action_sequence": {
+      "id": "widow-signal-triangulation",
+      "category": "system_override",
+      "steps": [
+        {
+          "type": "auto",
+          "lines": [
+            ">> WIDOW SIGNALS DIVISION — TRIANGULATION INTERFACE v4.1",
+            ">> SIGNAL PROFILE: UNKNOWN — NOT IN ANY DATABASE",
+            ">> REPEAT INTERVAL: 9–43 MINUTES (IRREGULAR)",
+            ">> PATTERN: NOT MATHEMATICAL — NOT RANDOM",
+            ">> PRIOR TRIANGULATION ATTEMPTS: 3 (ALL INCONCLUSIVE)",
+            "",
+            ">> AVAILABLE SENSOR ARRAYS:",
+            ">> [1] NORTH SPIRE RELAY",
+            ">> [2] SOUTH CANYON GRID",
+            ">> [3] LOWER CITY MESH (DEGRADED — 60% COVERAGE)",
+            ">> [4] SKULL ORBITAL UPLINK (HIGHEST RESOLUTION)",
+            "",
+            ">> SELECT ARRAY TO ACTIVATE:"
+          ],
+          "delay": 30,
+          "pause_after": 700
+        },
+        {
+          "type": "choice",
+          "prompt_text": "ACTIVATE SENSOR ARRAY:",
+          "options": [
+            "NORTH SPIRE RELAY — City upper tier coverage",
+            "SOUTH CANYON GRID — Lower city canyon coverage",
+            "LOWER CITY MESH — Degraded, 60% coverage",
+            "SKULL ORBITAL UPLINK — Highest resolution, longest delay"
+          ],
+          "sound_on_accept": "access_granted"
+        },
+        {
+          "type": "auto",
+          "lines": [
+            ">> SENSOR ARRAY ACTIVATED.",
+            ">> CROSS-REFERENCING WITH PRIOR TRIANGULATION DATA...",
+            ">> AWAITING SIGNAL PULSE..."
+          ],
+          "delay": 35,
+          "pause_after": 500
+        },
+        {
+          "type": "progress",
+          "label": "RUNNING TRIANGULATION — PLEASE WAIT FOR SIGNAL PULSE...",
+          "duration": 4000,
+          "segments": 22,
+          "sound_on_complete": "data_download",
+          "complete_message": "TRIANGULATION COMPLETE — PARTIAL FIX ACHIEVED"
+        },
+        {
+          "type": "auto",
+          "lines": [
+            ">> TRIANGULATION RESULT:",
+            ">> ACCURACY: 34% — SIGNAL IS MOBILE",
+            ">> SOURCE REGION: APPROX. 200M RADIUS — EASTERN SCRAPHEAP",
+            ">> CURRENT BEARING: MOVING — TOWARD LOWER CANYON",
+            "",
+            ">> NOTE: SIGNAL BRIEFLY INTENSIFIED DURING TRIANGULATION.",
+            ">> NOTE: INTENSITY SPIKE CORRELATED WITH YOUR ACCESS OF THIS TERMINAL.",
+            "",
+            ">> INTERNAL COMMS — SIGNALS DIVISION:",
+            ">> 'ONE OF OUR OFFICERS JUST REPORTED SEEING SOMETHING.'",
+            ">> 'HE HAS BEEN INSTRUCTED TO STAY WHERE HE IS.'",
+            ">> 'HE IS NOT STAYING WHERE HE IS.'",
+            "",
+            ">> FURTHER COMMUNICATIONS: CUT OFF."
+          ],
+          "delay": 45,
+          "sound": "warning",
+          "sound_at_line": 5,
+          "pause_after": 1200
+        }
+      ],
+      "on_complete": {
+        "message": "The triangulation result sits on the screen: eastern Scrapheap, 200-metre radius, moving. The signal intensified the moment you accessed this terminal — it noticed the query. The Widow officer who went to investigate has stopped responding. The Scrapheap. The pre-Collapse hull. The warm surface. The coordinates from the hull's own terminal. And now a signal that moves, that responds to attention, that has been active in this city for three months — since before you arrived, but not by much.",
+        "sound": "warning",
+        "persist_key": "widow-signal-triangulation"
+      },
+      "on_failure": {
+        "message": "TRIANGULATION ABORTED. Signal went silent during the attempt — for the first time since it was first detected three months ago. The silence lasted exactly 4.3 seconds. Then it resumed. As if it had been listening.",
+        "sound": "access_denied"
+      }
+    }
   }
 ]

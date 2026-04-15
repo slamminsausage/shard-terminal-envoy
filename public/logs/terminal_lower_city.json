@@ -49,5 +49,79 @@
       "on_success": "Widow internal street report accessed. Someone is running operations out of the Scrapheap.",
       "on_failure": "Access denied. Widow partition locked."
     }
+  },
+  {
+    "title": "Church of the Traveller — Brother Aeshan's Coordinate Record",
+    "location": "General Access Terminal — Church of the Traveller, Lower City",
+    "date": "CURRENT CYCLE",
+    "author": "Church of the Traveller — Doctrinal Archive (Private Partition)",
+    "security_level": "high",
+    "content": "The Church of the Traveller maintains a private doctrinal archive alongside its public records. Brother Aeshan has been filing personal entries for several months. The public sermon mentions 'a place between the stars where things are waiting to be remembered.'\n\nAeshan has been recording coordinates. He says he dreams them. He will not discuss them in public.\n\n[INTERACTIVE TERMINAL — AWAITING INPUT]",
+    "type": "action_sequence",
+    "action_sequence": {
+      "id": "church-aeshan-starmap",
+      "category": "data_extraction",
+      "steps": [
+        {
+          "type": "auto",
+          "lines": [
+            ">> CHURCH OF THE TRAVELLER — DOCTRINAL ARCHIVE v1.0",
+            ">> PUBLIC RECORDS: ACCESSIBLE",
+            ">> PRIVATE DOCTRINAL FILES: ENCRYPTED",
+            ">> AESHAN, BROTHER — PERSONAL ENTRIES: 14 FILES",
+            ">> MOST RECENT ENTRY: 9 DAYS AGO",
+            "",
+            ">> ENCRYPTION: STANDARD ECCLESIASTICAL — LOW GRADE",
+            ">> INITIATING DECRYPT..."
+          ],
+          "delay": 30,
+          "pause_after": 600
+        },
+        {
+          "type": "prompt",
+          "prompt_text": "SPECIFY SEARCH TERM:",
+          "accept": ["AESHAN", "STAR MAP", "COORDINATES", "SERMON", "DREAMS", "STARS"],
+          "reject_message": "NO MATCHING FILES FOUND.",
+          "max_attempts": 3,
+          "sound_on_accept": "access_granted",
+          "sound_on_reject": "access_denied"
+        },
+        {
+          "type": "progress",
+          "label": "DECRYPTING BROTHER AESHAN'S PRIVATE ENTRIES...",
+          "duration": 2500,
+          "segments": 18,
+          "sound_on_complete": "data_download",
+          "complete_message": "ENTRIES DECRYPTED — 14 FILES RECOVERED"
+        },
+        {
+          "type": "auto",
+          "lines": [
+            ">> RECOVERED — AESHAN PRIVATE ENTRY, MOST RECENT:",
+            ">> 'I HAVE NOW DREAMED IT SEVENTEEN TIMES.'",
+            ">> 'THE COORDINATES DO NOT MATCH ANY IMPERIAL CHART.'",
+            ">> 'NOT A WORLD. A SCAR. SOMETHING HIT IT.'",
+            ">> 'IT IS STILL THERE. IT SHOWS ON CHARTS AS A GRAVITATIONAL ANOMALY.'",
+            ">> 'THREE DREAMERS HAVE REACHED IT. THEY DO NOT COME BACK.'",
+            ">> 'NOT TO US. PERHAPS TO SOMETHING ELSE.'",
+            "",
+            ">> COORDINATE STRING (RAW): [APPENDED TO RECORD]",
+            ">> NOTE: COORDINATE DOES NOT APPEAR IN ANY KNOWN DATABASE."
+          ],
+          "delay": 45,
+          "sound": "warning",
+          "sound_at_line": 0,
+          "pause_after": 900
+        }
+      ],
+      "on_complete": {
+        "message": "Brother Aeshan's private entries are methodical — a churchman recording something he cannot explain in the only framework he has. Seventeen dreams. The same place each time. A gravitational anomaly that doesn't appear in Imperial charts or any standard navigation database. He has been sending the coordinates to no one. He does not know who to tell. Three people, he writes, have already gone there — pilgrims who took his words literally. None returned. He is not sure if he considers that a tragedy or confirmation.",
+        "persist_key": "church-aeshan-starmap"
+      },
+      "on_failure": {
+        "message": "DECRYPT FAILED. Ecclesiastical archive lock held — the Church uses a rotating key that expired after Brother Aeshan's last entry. The files cannot be accessed without a current key, which only Aeshan has.",
+        "sound": "access_denied"
+      }
+    }
   }
 ]

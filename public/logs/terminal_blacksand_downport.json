@@ -40,5 +40,87 @@
       "on_success": "Internal security notation accessed. You are being watched.",
       "on_failure": "Access denied. Administrative partition locked."
     }
+  },
+  {
+    "title": "Skull Orbital — Bay 17 Restricted Registry Pull",
+    "location": "General Access Terminal — Blacksand Downport",
+    "date": "CURRENT CYCLE",
+    "author": "Skull Orbital Docking Control — Restricted Partition",
+    "security_level": "restricted",
+    "content": "Bay 17 is listed in the public registry as: Transponder REDACTED — KRRSH CLEARANCE. Flag: Independent.\n\nThe Krrsh clearance codes suppress the standard registry entry. A deeper pull against the Skull Orbital control partition should recover the underlying record.\n\n[INTERACTIVE TERMINAL — AWAITING INPUT]",
+    "type": "action_sequence",
+    "action_sequence": {
+      "id": "blacksand-bay17-registry",
+      "category": "data_extraction",
+      "steps": [
+        {
+          "type": "auto",
+          "lines": [
+            ">> SKULL ORBITAL — DOCKING REGISTRY INTERFACE v1.9",
+            ">> PARTITION: RESTRICTED — KRRSH SUPPRESSION LAYER DETECTED",
+            ">> SUPPRESSION CODES ACTIVE ON: BAY 17",
+            "",
+            ">> INITIATING BYPASS AGAINST SUPPRESSION LAYER..."
+          ],
+          "delay": 35,
+          "pause_after": 700
+        },
+        {
+          "type": "prompt",
+          "prompt_text": "SPECIFY REGISTRY TARGET:",
+          "accept": ["BAY 17", "17", "REGISTRY", "PULL", "QUERY BAY 17"],
+          "reject_message": "TARGET NOT FOUND. SPECIFY A VALID BAY NUMBER.",
+          "max_attempts": 3,
+          "sound_on_accept": "access_granted",
+          "sound_on_reject": "access_denied"
+        },
+        {
+          "type": "auto",
+          "lines": [
+            ">> QUERYING SKULL ORBITAL DEEP REGISTRY...",
+            ">> STRIPPING KRRSH SUPPRESSION LAYER...",
+            ">> CROSS-REFERENCING WIDOW FLAGGING DATABASE..."
+          ],
+          "delay": 40,
+          "pause_after": 400
+        },
+        {
+          "type": "progress",
+          "label": "PULLING UNREDACTED REGISTRY ENTRY...",
+          "duration": 3000,
+          "segments": 20,
+          "sound_on_complete": "data_download",
+          "complete_message": "REGISTRY ENTRY RECOVERED"
+        },
+        {
+          "type": "auto",
+          "lines": [
+            ">> BAY 17 — UNREDACTED RECORD:",
+            ">> VESSEL: UNNAMED (HULL UNREGISTERED)",
+            ">> TRANSPONDER: SUPPRESSED — KRRSH PROXY CODES",
+            ">> FLAG: INDEPENDENT (DRINAX EMBASSY CONTACT — UNVERIFIED)",
+            ">> CREW: MULTIPLE — COUNT INDETERMINATE",
+            ">> WIDOW FLAG: LEVEL 2 OBSERVATION",
+            ">> FLAG NOTE: 'DO NOT APPROACH WITHOUT WIDOW CLEARANCE.'",
+            ">> FLAG NOTE: 'CORRELATED WITH ANOMALOUS SIGNAL INTENSIFICATION.'",
+            "",
+            ">> THEY KNOW EXACTLY WHO YOU ARE."
+          ],
+          "delay": 40,
+          "sound": "warning",
+          "sound_at_line": 8,
+          "pause_after": 600
+        }
+      ],
+      "on_complete": {
+        "message": "The unredacted record sits on the screen. The Widows filed a Level 2 observation flag the moment your ship docked — before you'd spoken to anyone. They know the Krrsh codes are proxied. They know the Drinax connection. The public registry shows nothing. Their internal record shows everything. You have been watched from the moment you arrived.",
+        "sound": "access_granted",
+        "persist_key": "blacksand-bay17-registry"
+      },
+      "on_failure": {
+        "message": "BYPASS FAILED. Skull Orbital partition locked. Your access attempt has been logged by Widow Administrative Office. Elevated observation status is now active.",
+        "sound": "access_denied"
+      }
+    }
   }
 ]
