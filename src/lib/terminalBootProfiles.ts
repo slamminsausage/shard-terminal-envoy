@@ -66,6 +66,15 @@ const TERMINAL_CATEGORIES: Record<string, TerminalCategory> = {
   // Government / official
   'drinax_gat':      'government',
   'tppadmin':        'government',
+
+  // Blacksand City / Theev arc
+  'blacksand_downport': 'public-kiosk',  // port kiosk, free access
+  'grand_hotel':        'corporate',     // hotel with a slick corporate veneer
+  'scrapheap':          'corrupted',     // pre-Collapse hull, unknown signal, something living inside
+  'house_blood_pit':    'criminal',      // criminal organisations, lower city
+  'ferrik_intel':       'government',    // Widow intel network + Planetary Authority bounty
+  'lower_city':         'public-kiosk',  // canyon-level public kiosk
+  'asharden_lore':      'corrupted',     // Widow anomalous signal, Sindalian fragments, wrong stars
 };
 
 export const getTerminalCategory = (code: string): TerminalCategory =>

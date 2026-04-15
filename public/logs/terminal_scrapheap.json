@@ -46,5 +46,83 @@
       "on_success": "Old survey note recovered. Hull description does not match any known manufacturer.",
       "on_failure": "File corrupted or access blocked. Partial data only."
     }
+  },
+  {
+    "title": "Unknown Hull — Interface Attempt",
+    "location": "Exterior Terminal — Unknown Hull, Deep Scrapheap, South End",
+    "date": "CURRENT CYCLE",
+    "author": "Unknown — Automated Response",
+    "security_level": "restricted",
+    "content": "There is a terminal mounted on the outer surface of the unknown hull. It was not there six years ago, according to the salvager's survey. It is there now.\n\nThe screen is already active. Nothing visible is running it. The hull surface beneath it is warm to the touch.\n\n[INTERACTIVE TERMINAL — AWAITING INPUT]",
+    "type": "action_sequence",
+    "action_sequence": {
+      "id": "scrapheap-hull-interface",
+      "category": "system_override",
+      "steps": [
+        {
+          "type": "auto",
+          "lines": [
+            ">> INTERFACE DETECTED",
+            ">> PROTOCOL: NON-STANDARD",
+            ">> NOT IMPERIAL. NOT VARGR. NOT ASLAN. NOT ON FILE.",
+            ">> SIGNAL ORIGIN: INTERNAL — HULL ITSELF",
+            "",
+            ">> POWER SOURCE: NONE DETECTED",
+            ">> OPERATING TEMPERATURE: 31.4°C (AMBIENT: 18.2°C)",
+            ">> THE SURFACE HAS BEEN THIS TEMPERATURE FOR AT LEAST TWELVE YEARS.",
+            "",
+            ">> AWAITING INPUT."
+          ],
+          "delay": 50,
+          "pause_after": 1400
+        },
+        {
+          "type": "prompt",
+          "prompt_text": "TRANSMIT SIGNAL:",
+          "accept": ["IDENTIFY", "HELLO", "CONTACT", "OPEN", "WHO ARE YOU", "SPEAK"],
+          "reject_message": "...",
+          "max_attempts": 5,
+          "sound_on_accept": "warning"
+        },
+        {
+          "type": "auto",
+          "lines": [
+            ">> .",
+            ">> ..",
+            ">> ...",
+            "",
+            ">> RESPONSE RECEIVED.",
+            ">> TRANSLATION: IMPOSSIBLE.",
+            ">> PHONETIC APPROXIMATION (ACCURACY: UNKNOWN):",
+            "",
+            ">> 'WE HAVE BEEN HERE BEFORE YOU.'",
+            ">> 'WE REMEMBER THE FIRST FIRE.'",
+            ">> 'YOU ARE VERY SMALL.'",
+            "",
+            ">> NOTE: THIS TERMINAL HAS LOGGED YOUR BIOMETRIC SIGNATURE.",
+            ">> NOTE: WE DID NOT PROGRAM IT TO DO THAT."
+          ],
+          "delay": 55,
+          "sound": "warning",
+          "sound_at_line": 4,
+          "pause_after": 1800
+        },
+        {
+          "type": "progress",
+          "label": "RECEIVING COORDINATE PACKET — SOURCE: INTERNAL HULL TRANSMISSION...",
+          "duration": 3500,
+          "segments": 20,
+          "complete_message": "COORDINATE PACKET RECEIVED — NOT IN ANY KNOWN CHART"
+        }
+      ],
+      "on_complete": {
+        "message": "The terminal displays a coordinate string that matches nothing in the Imperial charts — or any chart at all. Beneath the terminal, scratched into the hull surface in a script that predates the Third Imperium, is a single symbol. You have seen this symbol before: in the Sindalian trade manifest fragment, filed thirty years ago. In the description of the Black Glass artifact listed in the Cliff District procurement listings. Three sources. Three data points. One mark. Whatever this hull is, it is not the only one.",
+        "persist_key": "scrapheap-hull-interface"
+      },
+      "on_failure": {
+        "message": "The screen goes dark. The hull surface, which has been warm for at least twelve years according to every record anyone kept, is now cold. This is the first time this has happened. You have the distinct sense that it is deliberate.",
+        "sound": "access_denied"
+      }
+    }
   }
 ]

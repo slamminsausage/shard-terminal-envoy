@@ -39,6 +39,94 @@
     }
   },
   {
+    "title": "Darokyn Files — Classified Partition Extraction",
+    "location": "General Access Terminal — Grand Hotel, Upper City (Administrative Partition)",
+    "date": "APPROX. 8 MONTHS PRIOR",
+    "author": "Darokyn Retinue — Internal Personnel Office (Sealed Partition)",
+    "security_level": "restricted",
+    "content": "The Darokyn personnel file for Ferrik Redthane contains a sealed partition marked CLASSIFIED — ACCESS RESTRICTED TO FLAG STAFF.\n\nThe unclassified portion states only that Redthane 'departed following an incident that the Admiral has chosen not to detail.' The classified portion contains the actual incident record.\n\nBreaking the partition requires stripping a non-standard encryption layer the retinue uses for sensitive personnel actions.\n\n[INTERACTIVE TERMINAL — AWAITING INPUT]",
+    "type": "action_sequence",
+    "action_sequence": {
+      "id": "ferrik-expulsion-classified",
+      "category": "data_extraction",
+      "steps": [
+        {
+          "type": "auto",
+          "lines": [
+            ">> DAROKYN RETINUE — PERSONNEL ARCHIVE v2.0",
+            ">> FILE: REDTHANE, FERRIK — STATUS: EXPELLED",
+            ">> PARTITION DETECTED: CLASSIFIED — FLAG STAFF ONLY",
+            ">> ENCRYPTION: AES-CLASS — NON-STANDARD RETINUE VARIANT",
+            "",
+            ">> CLASSIFIED PARTITION SIZE: 4.2 KB",
+            ">> ESTIMATED CONTENT: INCIDENT RECORD — FULL ACCOUNT",
+            "",
+            ">> INITIATING PARTITION STRIP..."
+          ],
+          "delay": 35,
+          "pause_after": 700
+        },
+        {
+          "type": "prompt",
+          "prompt_text": "ENTER BYPASS COMMAND:",
+          "accept": ["BYPASS", "OVERRIDE", "ADMIN", "DECRYPT", "STRIP", "UNLOCK"],
+          "reject_message": "COMMAND NOT RECOGNISED. PARTITION REMAINS LOCKED.",
+          "max_attempts": 3,
+          "sound_on_accept": "access_granted",
+          "sound_on_reject": "access_denied"
+        },
+        {
+          "type": "auto",
+          "lines": [
+            ">> PARTITION STRIP INITIATED.",
+            ">> REMOVING ENCRYPTION HEADERS...",
+            ">> BYPASSING FLAG-STAFF CREDENTIAL CHECK..."
+          ],
+          "delay": 40,
+          "pause_after": 300
+        },
+        {
+          "type": "progress",
+          "label": "EXTRACTING CLASSIFIED INCIDENT RECORD...",
+          "duration": 4000,
+          "segments": 24,
+          "sound_on_complete": "data_download",
+          "complete_message": "PARTITION STRIPPED — RECORD RECOVERED"
+        },
+        {
+          "type": "auto",
+          "lines": [
+            ">> CLASSIFIED RECORD — INCIDENT SUMMARY:",
+            ">> DATE: APPROX. 8 MONTHS PRIOR",
+            ">> LOCATION: BORITE SYSTEM — OUTER BELT — DERELICT VESSEL",
+            ">> REDTHANE WAS FIRST ABOARD. HE FOUND SOMETHING.",
+            ">> THREE CREW DIED IN THE SUBSEQUENT INCIDENT.",
+            ">> TWO OF DAROKYN'S OFFICERS WITNESSED THE FIND.",
+            ">> BOTH HAVE REFUSED TO DESCRIBE WHAT THEY SAW.",
+            ">> DAROKYN CHOSE EXPULSION OVER COURT-MARTIAL.",
+            ">> A COURT-MARTIAL REQUIRES DISCLOSURE.",
+            ">> THE FIND ITSELF IS NOT DESCRIBED IN ANY FILE.",
+            ">> THE FIND IS WHY REDTHANE CHANGED HIS PRIORITIES.",
+            ">> END OF RECOVERED RECORD."
+          ],
+          "delay": 40,
+          "sound": "warning",
+          "sound_at_line": 3,
+          "pause_after": 800
+        }
+      ],
+      "on_complete": {
+        "message": "The classified record is sparse — whoever wrote it was careful. But the shape is clear: Redthane boarded a derelict in Borite's outer belt and found something that changed what he was willing to do. Three people died. Two witnesses won't speak. Darokyn buried it rather than put it on record in a court-martial. Whatever Redthane found on that derelict is the reason for everything that followed — the Torpol and Clarke attacks, the falling out, the bounty. The question is what it was.",
+        "sound": "access_granted",
+        "persist_key": "ferrik-expulsion-classified"
+      },
+      "on_failure": {
+        "message": "PARTITION STRIP FAILED. Retinue encryption layer held. Access attempt has been logged against this terminal's session ID. If the Admiral reviews the log, he will know someone tried.",
+        "sound": "access_denied"
+      }
+    }
+  },
+  {
     "title": "Krrsh — Statement (Informal, Post-Rescue)",
     "location": "General Access Terminal — Blacksand Downport (Filed by arriving crew)",
     "date": "CURRENT CYCLE",

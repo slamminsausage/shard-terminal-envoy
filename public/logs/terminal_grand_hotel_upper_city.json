@@ -24,6 +24,88 @@
     }
   },
   {
+    "title": "Grand Hotel — Surveillance Blind Spot Override",
+    "location": "General Access Terminal — The Grand Hotel, Upper City",
+    "date": "CURRENT CYCLE",
+    "author": "Grand Hotel Security Systems — Administrative Node",
+    "security_level": "high",
+    "content": "The Grand Hotel operates a full-coverage internal surveillance network. All common areas, corridors, and dining rooms are monitored continuously.\n\nThe system allows zone-by-zone override for authorized maintenance. A 12-minute window can be opened before auto-restore detects the loop.\n\n[INTERACTIVE TERMINAL — AWAITING INPUT]",
+    "type": "action_sequence",
+    "action_sequence": {
+      "id": "grand-hotel-surveillance",
+      "category": "system_override",
+      "steps": [
+        {
+          "type": "auto",
+          "lines": [
+            ">> GRAND HOTEL SECURITY — SURVEILLANCE MANAGEMENT v3.2",
+            ">> ACTIVE CAMERA ZONES: 4",
+            ">> ZONE A — Main Lobby & Entrance (6 cameras)",
+            ">> ZONE B — Guest Corridors, Floors 1-3 (8 cameras)",
+            ">> ZONE C — Rose Pavilion & Private Dining (4 cameras)",
+            ">> ZONE D — Service Passages & Staff Access (5 cameras)",
+            "",
+            ">> SELECT ZONE TO SUPPRESS:"
+          ],
+          "delay": 30,
+          "pause_after": 600
+        },
+        {
+          "type": "choice",
+          "prompt_text": "SELECT CAMERA ZONE TO DISABLE:",
+          "options": [
+            "ZONE A — Main Lobby & Entrance",
+            "ZONE B — Guest Corridors, Floors 1-3",
+            "ZONE C — Rose Pavilion & Private Dining",
+            "ZONE D — Service Passages & Staff Access"
+          ],
+          "sound_on_accept": "access_granted"
+        },
+        {
+          "type": "auto",
+          "lines": [
+            ">> ISOLATING SELECTED ZONE...",
+            ">> INJECTING LOOP FEED — LAST 30 SECONDS OF CLEAN FOOTAGE",
+            ">> DISABLING MOTION DETECTION FOR ZONE..."
+          ],
+          "delay": 40,
+          "sound": "warning",
+          "sound_at_line": 0,
+          "pause_after": 300
+        },
+        {
+          "type": "progress",
+          "label": "OVERRIDING SURVEILLANCE FEEDS...",
+          "duration": 2000,
+          "segments": 16,
+          "sound_on_complete": "alarm_disable",
+          "complete_message": "CAMERA FEEDS SUPPRESSED — LOOP ACTIVE"
+        },
+        {
+          "type": "auto",
+          "lines": [
+            ">> OVERRIDE COMPLETE.",
+            ">> ESTIMATED BLIND WINDOW: 12 MINUTES",
+            ">> AUTO-RESTORE TRIGGERS AT FAILOVER — NO MANUAL EXTENSION POSSIBLE",
+            ">> NOTE: STAFF ROUNDS CONTINUE ON STANDARD SCHEDULE.",
+            ">> !! CAMERAS ARE BLIND. STAFF ARE NOT. !!"
+          ],
+          "delay": 35,
+          "pause_after": 400
+        }
+      ],
+      "on_complete": {
+        "message": "The selected zone's cameras freeze on their last frames. A looped feed now plays for anyone watching the monitoring station — the corridor or dining room appears quiet and empty. You have twelve minutes before the failover system detects the inconsistency. The hotel staff still walk their rounds on schedule. The cameras are blind. The staff are not.",
+        "sound": "alarm_disable",
+        "persist_key": "grand-hotel-surveillance"
+      },
+      "on_failure": {
+        "message": "OVERRIDE REJECTED. Surveillance feeds remain active. Anomalous access attempt flagged for security review. Hotel management has been notified.",
+        "sound": "access_denied"
+      }
+    }
+  },
+  {
     "title": "Rose Pavilion — Reservation Notice",
     "location": "General Access Terminal — The Grand Hotel, Upper City",
     "date": "CURRENT CYCLE",
