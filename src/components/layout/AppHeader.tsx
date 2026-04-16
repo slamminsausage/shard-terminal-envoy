@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import { useCalendar } from "@/contexts/CalendarContext";
 import { useCampaign } from "@/contexts/CampaignContext";
 import { CrtThemePicker } from "@/components/CrtThemePicker";
+import { ActiveCharacterSwitcher } from "@/components/layout/ActiveCharacterSwitcher";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 type HeaderTab = {
@@ -218,6 +219,7 @@ export default function AppHeader({
         {/* Player info + logout */}
         {currentPlayer && (
           <div className="flex items-center gap-1.5 flex-shrink-0">
+            <ActiveCharacterSwitcher />
             <div className="flex items-center gap-1 text-[11px] font-mono text-terminal-primary/80 border border-terminal-primary/25 px-2 py-0.5 rounded whitespace-nowrap">
               {isGM ? <Shield size={10} className="text-yellow-400" /> : <User size={10} />}
               <span className={isGM ? "text-yellow-400" : ""}>{currentPlayer.name}</span>

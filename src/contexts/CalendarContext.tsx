@@ -1,7 +1,9 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef, ReactNode } from 'react';
 import { CalendarEvent, ImperialDate } from '@/types/calendar';
 import { dbHelpers } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
+import { useCampaign } from '@/contexts/CampaignContext';
+import { isItemVisibleToViewer } from '@/lib/crewVisibility';
 import {
   getCurrentImperialDate,
   parseImperialDate,
@@ -49,10 +51,21 @@ interface CalendarProviderProps {
 
 export const CalendarProvider: React.FC<CalendarProviderProps> = ({ children }) => {
   const [currentDate, setCurrentDateState] = useState<ImperialDate | null>(null);
-  const [events, setEvents] = useState<CalendarEvent[]>([]);
-  const [upcomingEvents, setUpcomingEvents] = useState<CalendarEvent[]>([]);
+  const [allEvents, setAllEvents] = useState<CalendarEvent[]>([]);
+  const [allUpcomingEvents, setAllUpcomingEvents] = useState<CalendarEvent[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const { isGM, activeCrewId } = useCampaign();
+
+  const events = useMemo(() => {
+    if (isGM) return allEvents;
+    return allEvents.filter((e) => isItemVisibleToViewer(e, activeCrewId, isGM));
+  }, [allEvents, isGM, activeCrewId]);
+
+  const upcomingEvents = useMemo(() => {
+    if (isGM) return allUpcomingEvents;
+    return allUpcomingEvents.filter((e) => isItemVisibleToViewer(e, activeCrewId, isGM));
+  }, [allUpcomingEvents, isGM, activeCrewId]);
 
   // Mount guard to prevent setState on unmounted provider
   const mountedRef = useRef(true);
@@ -90,7 +103,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({ children }) 
         // Load all events
         const eventsData = await dbHelpers.getAllCalendarEvents();
         if (cancelled) return;
-        setEvents(eventsData as CalendarEvent[]);
+        setAllEvents(eventsData as CalendarEvent[]);
       } catch (error) {
         if (cancelled) return;
         console.error('Failed to load calendar data:', error);
@@ -113,7 +126,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({ children }) 
     const loadUpcoming = async () => {
       try {
         const data = await dbHelpers.getUpcomingCalendarEvents(currentDate.formatted, 10);
-        if (!cancelled) setUpcomingEvents(data as CalendarEvent[]);
+        if (!cancelled) setAllUpcomingEvents(data as CalendarEvent[]);
       } catch (error) {
         if (!cancelled) console.error('Failed to fetch upcoming events:', error);
       }
@@ -157,7 +170,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({ children }) 
     try {
       const data = await dbHelpers.getAllCalendarEvents();
       if (!mountedRef.current) return;
-      setEvents(data as CalendarEvent[]);
+      setAllEvents(data as CalendarEvent[]);
     } catch (error) {
       if (!mountedRef.current) return;
       console.error('Failed to fetch events:', error);
@@ -176,7 +189,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({ children }) 
 
     try {
       const data = await dbHelpers.getUpcomingCalendarEvents(currentDate.formatted, limit);
-      if (mountedRef.current) setUpcomingEvents(data as CalendarEvent[]);
+      if (mountedRef.current) setAllUpcomingEvents(data as CalendarEvent[]);
     } catch (error) {
       if (mountedRef.current) console.error('Failed to fetch upcoming events:', error);
     }
@@ -200,7 +213,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({ children }) 
       if (!mountedRef.current) return null;
       const savedEvent = saved as CalendarEvent;
 
-      setEvents(prev => [...prev, savedEvent]);
+      setAllEvents(prev => [...prev, savedEvent]);
 
       toast({
         title: "Event Created",
@@ -229,7 +242,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({ children }) 
       if (!mountedRef.current) return null;
       const updatedEvent = updated as CalendarEvent;
 
-      setEvents(prev =>
+      setAllEvents(prev =>
         prev.map(e => e.id === eventId ? updatedEvent : e)
       );
 
@@ -256,8 +269,8 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({ children }) 
       await dbHelpers.deleteCalendarEvent(eventId);
       if (!mountedRef.current) return false;
 
-      setEvents(prev => prev.filter(e => e.id !== eventId));
-      setUpcomingEvents(prev => prev.filter(e => e.id !== eventId));
+      setAllEvents(prev => prev.filter(e => e.id !== eventId));
+      setAllUpcomingEvents(prev => prev.filter(e => e.id !== eventId));
 
       toast({
         title: "Event Deleted",

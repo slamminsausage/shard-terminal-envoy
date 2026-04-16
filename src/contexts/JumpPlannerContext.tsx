@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from "react";
+import React, { createContext, useContext, useState, useCallback, useEffect, useMemo, useRef } from "react";
 import {
   getJumpWorlds,
   calculateRoute,
@@ -12,6 +12,8 @@ import {
 } from "@/lib/travellerMapApi";
 import { dbHelpers } from "@/lib/supabase";
 import { toast } from "sonner";
+import { useCampaign } from "@/contexts/CampaignContext";
+import { isItemVisibleToViewer } from "@/lib/crewVisibility";
 import type {
   JumpWorld,
   RouteLeg,
@@ -169,6 +171,7 @@ export function JumpPlannerProvider({ children }: { children: React.ReactNode })
   const stateRef = useRef(state);
   useEffect(() => { stateRef.current = state; }, [state]);
   const initialLoadComplete = useRef(false);
+  const { isGM, activeCrewId } = useCampaign();
 
   // Load player location from Supabase (with localStorage fallback) on mount
   useEffect(() => {
@@ -733,10 +736,41 @@ export function JumpPlannerProvider({ children }: { children: React.ReactNode })
     setState((prev) => ({ ...prev, error: null }));
   }, []);
 
+  // ===== Per-crew visibility filtering =====
+  // Raw state keeps every row; consumers see only what the active viewer may see.
+  // GMs bypass the filter entirely.
+
+  const visibleAllNotes = useMemo(() => {
+    if (isGM) return state.allNotes;
+    return state.allNotes.filter((n) => isItemVisibleToViewer(n, activeCrewId, isGM));
+  }, [state.allNotes, isGM, activeCrewId]);
+
+  const visibleCurrentNote = useMemo(() => {
+    if (!state.currentNote) return state.currentNote;
+    if (isGM) return state.currentNote;
+    return isItemVisibleToViewer(state.currentNote, activeCrewId, isGM)
+      ? state.currentNote
+      : null;
+  }, [state.currentNote, isGM, activeCrewId]);
+
+  const visibleHexMarkers = useMemo(() => {
+    if (isGM) return state.hexMarkers;
+    return state.hexMarkers.filter((m) => isItemVisibleToViewer(m, activeCrewId, isGM));
+  }, [state.hexMarkers, isGM, activeCrewId]);
+
+  const visibleCurrentHexMarkers = useMemo(() => {
+    if (isGM) return state.currentHexMarkers;
+    return state.currentHexMarkers.filter((m) => isItemVisibleToViewer(m, activeCrewId, isGM));
+  }, [state.currentHexMarkers, isGM, activeCrewId]);
+
   // ===== Context Value =====
 
   const value: JumpPlannerContextValue = {
     ...state,
+    allNotes: visibleAllNotes,
+    currentNote: visibleCurrentNote,
+    hexMarkers: visibleHexMarkers,
+    currentHexMarkers: visibleCurrentHexMarkers,
     setCurrentLocation,
     setPlayerLocation,
     handleMapClick,

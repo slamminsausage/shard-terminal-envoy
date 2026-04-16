@@ -1,7 +1,9 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode } from 'react';
 import { Quest, QuestObjective, QuestStatus } from '@/types/quest';
 import { dbHelpers } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
+import { useCampaign } from './CampaignContext';
+import { isItemVisibleToViewer } from '@/lib/crewVisibility';
 
 interface QuestContextType {
   // State
@@ -48,17 +50,26 @@ interface QuestProviderProps {
 }
 
 export const QuestProvider: React.FC<QuestProviderProps> = ({ children }) => {
-  const [quests, setQuests] = useState<Quest[]>([]);
+  // `allQuests` is the raw unfiltered list from the database. `quests`
+  // (exposed on context below) is the per-viewer filtered view: GMs see
+  // everything, players see only quests matching their active crew.
+  const [allQuests, setAllQuests] = useState<Quest[]>([]);
   const [questObjectives, setQuestObjectives] = useState<Record<string, QuestObjective[]>>({});
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const { isGM, activeCrewId } = useCampaign();
+
+  const quests = useMemo(() => {
+    if (isGM) return allQuests;
+    return allQuests.filter(q => isItemVisibleToViewer(q, activeCrewId, isGM));
+  }, [allQuests, isGM, activeCrewId]);
 
   // Load all quests on mount
   const getAllQuests = useCallback(async () => {
     setIsLoading(true);
     try {
       const data = await dbHelpers.getAllQuests();
-      setQuests(data as Quest[]);
+      setAllQuests(data as Quest[]);
     } catch (error) {
       console.error('Failed to fetch quests:', error);
       toast({
@@ -78,12 +89,18 @@ export const QuestProvider: React.FC<QuestProviderProps> = ({ children }) => {
   const getQuest = useCallback(async (questId: string): Promise<Quest | null> => {
     try {
       const data = await dbHelpers.getQuest(questId);
-      return data as Quest | null;
+      const quest = data as Quest | null;
+      if (!quest) return null;
+      // Enforce crew scoping on per-ID reads so a non-GM cannot view a
+      // crew-scoped quest they shouldn't see by deep-linking or staying on
+      // the detail page after switching active character.
+      if (!isItemVisibleToViewer(quest, activeCrewId, isGM)) return null;
+      return quest;
     } catch (error) {
       console.error('Failed to fetch quest:', error);
       return null;
     }
-  }, []);
+  }, [activeCrewId, isGM]);
 
   const createQuest = useCallback(async (questData: Partial<Quest>): Promise<Quest | null> => {
     try {
@@ -102,7 +119,7 @@ export const QuestProvider: React.FC<QuestProviderProps> = ({ children }) => {
       const saved = await dbHelpers.saveQuest(newQuest);
       const savedQuest = saved as Quest;
 
-      setQuests(prev => [savedQuest, ...prev]);
+      setAllQuests(prev => [savedQuest, ...prev]);
 
       toast({
         title: "Quest Created",
@@ -126,7 +143,7 @@ export const QuestProvider: React.FC<QuestProviderProps> = ({ children }) => {
       const updated = await dbHelpers.saveQuest({ id: questId, ...updates });
       const updatedQuest = updated as Quest;
 
-      setQuests(prev =>
+      setAllQuests(prev =>
         prev.map(q => q.id === questId ? updatedQuest : q)
       );
 
@@ -151,7 +168,7 @@ export const QuestProvider: React.FC<QuestProviderProps> = ({ children }) => {
     try {
       await dbHelpers.deleteQuest(questId);
 
-      setQuests(prev => prev.filter(q => q.id !== questId));
+      setAllQuests(prev => prev.filter(q => q.id !== questId));
       setQuestObjectives(prev => {
         const next = { ...prev };
         delete next[questId];

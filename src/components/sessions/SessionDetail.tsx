@@ -13,6 +13,8 @@ import { ArrowLeft, Plus, Clock, User, MapPin, Trash2, ExternalLink, Pencil, X, 
 import { format } from 'date-fns';
 import { SessionStatus, LogEntryType } from '@/types/session';
 import { useCampaign } from '@/contexts/CampaignContext';
+import { CrewVisibilitySelector } from '@/components/crew/CrewVisibilitySelector';
+import { CrewVisibilityBadge } from '@/components/crew/CrewVisibilityBadge';
 
 const LOG_CHANNEL_NAME = "shard-session-log";
 
@@ -45,9 +47,13 @@ export const SessionDetail: React.FC<SessionDetailProps> = ({ sessionId, onClose
 
   const loadSessionData = async () => {
     const sessionData = await getSession(sessionId);
-    if (sessionData) {
-      setSession(sessionData);
+    if (!sessionData) {
+      // Session missing or filtered out by crew scope — skip loading logs.
+      setSession(null);
+      setLogs([]);
+      return;
     }
+    setSession(sessionData);
 
     const logsData = await getSessionLogs(sessionId);
     setLogs(logsData);
@@ -224,7 +230,7 @@ export const SessionDetail: React.FC<SessionDetailProps> = ({ sessionId, onClose
               <Trash2 className="h-4 w-4" />
             </Button>
           </div>
-          <div className="flex items-center gap-4 text-sm text-terminal-primary/70 mt-1">
+          <div className="flex items-center gap-4 text-sm text-terminal-primary/70 mt-1 flex-wrap">
             <span>Session #{session.session_number}</span>
             <span>&bull;</span>
             <span>{format(new Date(session.session_date), 'MMMM dd, yyyy')}</span>
@@ -234,6 +240,7 @@ export const SessionDetail: React.FC<SessionDetailProps> = ({ sessionId, onClose
                 <span>Imperial: {session.in_game_date}</span>
               </>
             )}
+            {isGM && <CrewVisibilityBadge ids={session.visible_crew_ids} />}
           </div>
         </div>
       </div>
@@ -490,6 +497,19 @@ export const SessionDetail: React.FC<SessionDetailProps> = ({ sessionId, onClose
                 <div>
                   <h3 className="text-sm font-semibold text-terminal-primary mb-2">In-Game Time Elapsed</h3>
                   <p className="text-terminal-primary/80">{session.in_game_time_elapsed}</p>
+                </div>
+              )}
+              {isGM && (
+                <div>
+                  <h3 className="text-sm font-semibold text-terminal-primary mb-2">Crew Scope</h3>
+                  <CrewVisibilitySelector
+                    value={session.visible_crew_ids ?? null}
+                    onChange={async (ids) => {
+                      await updateSession(sessionId, { visible_crew_ids: ids });
+                      const refreshed = await getSession(sessionId);
+                      if (refreshed) setSession(refreshed);
+                    }}
+                  />
                 </div>
               )}
             </CardContent>

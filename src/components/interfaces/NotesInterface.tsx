@@ -15,6 +15,8 @@ import { dbHelpers } from '@/lib/supabase';
 import { ThumbnailCropper } from '@/components/ui/ThumbnailCropper';
 import { MediaDialog } from '@/components/ui/MediaDialog';
 import { toast } from 'sonner';
+import { CrewVisibilitySelector } from '@/components/crew/CrewVisibilitySelector';
+import { CrewVisibilityBadge } from '@/components/crew/CrewVisibilityBadge';
 
 const FOLDERS: { value: NoteFolder; label: string; emoji: string }[] = [
   { value: 'general', label: 'General', emoji: '📝' },
@@ -65,6 +67,7 @@ export const NotesInterface: React.FC<NotesInterfaceProps> = ({ defaultTab = 'no
   const [newNoteContent, setNewNoteContent] = useState('');
   const [newNoteFolder, setNewNoteFolder] = useState<NoteFolder>('general');
   const [newNoteThumbnailUrl, setNewNoteThumbnailUrl] = useState('');
+  const [newNoteVisibleCrewIds, setNewNoteVisibleCrewIds] = useState<string[] | null>(null);
   const [isUploadingNewNoteThumbnail, setIsUploadingNewNoteThumbnail] = useState(false);
   const [selectedFolder, setSelectedFolder] = useState<NoteFolder | 'all'>('all');
   const [showNewNoteForm, setShowNewNoteForm] = useState(false);
@@ -81,6 +84,7 @@ export const NotesInterface: React.FC<NotesInterfaceProps> = ({ defaultTab = 'no
   const [newHandoutType, setNewHandoutType] = useState<'text' | 'image' | 'video'>('text');
   const [newHandoutContent, setNewHandoutContent] = useState('');
   const [newHandoutMediaUrl, setNewHandoutMediaUrl] = useState('');
+  const [newHandoutVisibleCrewIds, setNewHandoutVisibleCrewIds] = useState<string[] | null>(null);
   const handoutFileInputRef = useRef<HTMLInputElement>(null);
 
   const handleHandoutFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -119,12 +123,14 @@ export const NotesInterface: React.FC<NotesInterfaceProps> = ({ defaultTab = 'no
         mediaUrl: newHandoutType !== 'text' ? newHandoutMediaUrl : undefined,
         isVisible: false,
         tags: [],
+        visible_crew_ids: newHandoutVisibleCrewIds,
       });
       setNewHandoutTitle('');
       setNewHandoutDescription('');
       setNewHandoutContent('');
       setNewHandoutMediaUrl('');
       setNewHandoutType('text');
+      setNewHandoutVisibleCrewIds(null);
       setShowNewHandoutForm(false);
       if (handoutFileInputRef.current) handoutFileInputRef.current.value = '';
       toast.success('Handout created');
@@ -160,11 +166,13 @@ export const NotesInterface: React.FC<NotesInterfaceProps> = ({ defaultTab = 'no
           createdBy: isGMMode ? 'gm' : 'player',
           tags: [],
           thumbnailUrl: newNoteThumbnailUrl || undefined,
+          visibleCrewIds: isGMMode ? newNoteVisibleCrewIds : null,
         });
         setNewNoteTitle('');
         setNewNoteContent('');
         setNewNoteFolder('general');
         setNewNoteThumbnailUrl('');
+        setNewNoteVisibleCrewIds(null);
         setShowNewNoteForm(false);
       } catch (error) {
         console.error('Failed to add player note:', error);
@@ -379,6 +387,13 @@ export const NotesInterface: React.FC<NotesInterfaceProps> = ({ defaultTab = 'no
                     </div>
                   )}
 
+                  {isGMMode && (
+                    <CrewVisibilitySelector
+                      value={newNoteVisibleCrewIds}
+                      onChange={setNewNoteVisibleCrewIds}
+                    />
+                  )}
+
                   <div className="flex gap-2">
                     <Button
                       onClick={handleAddPlayerNote}
@@ -441,6 +456,7 @@ export const NotesInterface: React.FC<NotesInterfaceProps> = ({ defaultTab = 'no
                       }
                     }}
                     showCreator={isGMMode}
+                    isGM={isGMMode}
                   />
                 ))}
               </div>
@@ -565,6 +581,11 @@ export const NotesInterface: React.FC<NotesInterfaceProps> = ({ defaultTab = 'no
                     </div>
                   )}
 
+                  <CrewVisibilitySelector
+                    value={newHandoutVisibleCrewIds}
+                    onChange={setNewHandoutVisibleCrewIds}
+                  />
+
                   <div className="flex gap-2">
                     <Button
                       onClick={handleAddHandout}
@@ -636,6 +657,7 @@ interface NoteCardProps {
   onCancel: () => void;
   onDelete: () => Promise<void>;
   showCreator?: boolean;
+  isGM?: boolean;
 }
 
 const NoteCard: React.FC<NoteCardProps> = ({
@@ -646,11 +668,13 @@ const NoteCard: React.FC<NoteCardProps> = ({
   onCancel,
   onDelete,
   showCreator,
+  isGM,
 }) => {
   const [title, setTitle] = useState(note.title);
   const [content, setContent] = useState(note.content);
   const [folder, setFolder] = useState<NoteFolder>((note.folder as NoteFolder) || 'general');
   const [thumbnailUrl, setThumbnailUrl] = useState(note.thumbnailUrl || '');
+  const [visibleCrewIds, setVisibleCrewIds] = useState<string[] | null>(note.visibleCrewIds ?? null);
   const [isUploadingThumbnail, setIsUploadingThumbnail] = useState(false);
   const [cropperOpen, setCropperOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -821,9 +845,22 @@ const NoteCard: React.FC<NoteCardProps> = ({
             </div>
           )}
 
+          {isGM && (
+            <CrewVisibilitySelector
+              value={visibleCrewIds}
+              onChange={setVisibleCrewIds}
+            />
+          )}
+
           <div className="flex gap-2">
             <Button
-              onClick={() => onSave({ title, content, folder, thumbnailUrl })}
+              onClick={() => onSave({
+                title,
+                content,
+                folder,
+                thumbnailUrl,
+                ...(isGM ? { visibleCrewIds } : {}),
+              })}
               size="sm"
               className="bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
             >
@@ -865,6 +902,11 @@ const NoteCard: React.FC<NoteCardProps> = ({
                 <Badge className="ml-2 bg-terminal-primary/20 text-terminal-primary border-terminal-primary/50 text-xs">
                   {note.createdBy === 'gm' ? 'GM' : 'Player'}
                 </Badge>
+              )}
+              {isGM && (
+                <span className="ml-2 inline-block align-middle">
+                  <CrewVisibilityBadge ids={note.visibleCrewIds} />
+                </span>
               )}
             </CardDescription>
           </div>
@@ -974,11 +1016,14 @@ const HandoutCard: React.FC<HandoutCardProps> = ({ handout, isGM, onToggleVisibi
         </div>
         {/* Visibility badge */}
         {isGM && (
-          <Badge className={`mt-1 text-[10px] ${handout.isVisible
-            ? 'bg-green-500/10 text-green-400/70 border-green-500/30'
-            : 'bg-terminal-primary/5 text-terminal-primary/40 border-terminal-primary/20'}`}>
-            {handout.isVisible ? 'Visible to players' : 'Hidden'}
-          </Badge>
+          <div className="mt-1 flex flex-wrap items-center gap-1">
+            <Badge className={`text-[10px] ${handout.isVisible
+              ? 'bg-green-500/10 text-green-400/70 border-green-500/30'
+              : 'bg-terminal-primary/5 text-terminal-primary/40 border-terminal-primary/20'}`}>
+              {handout.isVisible ? 'Visible to players' : 'Hidden'}
+            </Badge>
+            <CrewVisibilityBadge ids={handout.visible_crew_ids} />
+          </div>
         )}
       </CardHeader>
       <Separator className="bg-terminal-primary/30" />

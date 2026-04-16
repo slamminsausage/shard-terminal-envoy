@@ -4,6 +4,7 @@ import { useJumpPlanner } from "@/contexts/JumpPlannerContext";
 import { useCampaign } from "@/contexts/CampaignContext";
 import { getAllMarkerTypes, MARKER_ICONS } from "@/config/markerTypes";
 import type { HexMarker, MarkerType } from "@/types/navigation";
+import { CrewVisibilitySelector } from "@/components/crew/CrewVisibilitySelector";
 
 interface MarkerEditorModalProps {
   isOpen: boolean;
@@ -34,6 +35,7 @@ export function MarkerEditorModal({
     is_active: true,
     is_visible_to_players: true,
     display_order: 0,
+    visible_crew_ids: null,
   });
 
   const [showIconPicker, setShowIconPicker] = useState(false);
@@ -54,6 +56,7 @@ export function MarkerEditorModal({
         is_active: marker.is_active !== false,
         is_visible_to_players: marker.is_visible_to_players !== false,
         display_order: marker.display_order || 0,
+        visible_crew_ids: marker.visible_crew_ids ?? null,
       });
     } else {
       setFormData({
@@ -66,6 +69,7 @@ export function MarkerEditorModal({
         is_active: true,
         is_visible_to_players: true,
         display_order: 0,
+        visible_crew_ids: null,
       });
     }
   }, [marker, isOpen]);
@@ -292,6 +296,19 @@ export function MarkerEditorModal({
                 </span>
               </label>
             </div>
+
+            {/* Per-crew visibility (GM only) */}
+            {isGM && (
+              <div className="border-t border-terminal-bg-border pt-4">
+                <label className="block text-sm text-terminal-text-dimmer mb-2">
+                  CREW SCOPE
+                </label>
+                <CrewVisibilitySelector
+                  value={formData.visible_crew_ids ?? null}
+                  onChange={(ids) => setFormData({ ...formData, visible_crew_ids: ids })}
+                />
+              </div>
+            )}
           </div>
 
           {/* Actions */}

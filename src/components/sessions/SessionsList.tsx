@@ -10,6 +10,8 @@ import { format } from 'date-fns';
 import { SessionCreator } from './SessionCreator';
 import { AnimatedList } from '@/components/ui/AnimatedList';
 import { SessionDetail } from './SessionDetail';
+import { CrewVisibilityBadge } from '@/components/crew/CrewVisibilityBadge';
+import { useCampaign } from '@/contexts/CampaignContext';
 
 const statusColors: Record<SessionStatus, string> = {
   planned: 'bg-blue-500/20 text-blue-400 border-blue-500/50',
@@ -25,6 +27,7 @@ const statusLabels: Record<SessionStatus, string> = {
 
 export const SessionsList: React.FC = () => {
   const { sessions, isLoading, setCurrentSession, deleteSession } = useSession();
+  const { isGM } = useCampaign();
   const [showCreator, setShowCreator] = useState(false);
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
 
@@ -90,13 +93,14 @@ export const SessionsList: React.FC = () => {
                 <CardHeader className="pb-3">
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
                         <span className="text-terminal-primary/70 text-sm">
                           Session #{session.session_number}
                         </span>
                         <Badge className={statusColors[session.status]}>
                           {statusLabels[session.status]}
                         </Badge>
+                        {isGM && <CrewVisibilityBadge ids={session.visible_crew_ids} />}
                       </div>
                       <CardTitle className="text-terminal-primary">{session.title}</CardTitle>
                     </div>

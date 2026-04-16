@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { X, Save } from 'lucide-react';
 import { useCampaign } from '@/contexts/CampaignContext';
+import { CrewVisibilitySelector } from '@/components/crew/CrewVisibilitySelector';
 
 interface QuestCreatorProps {
   onClose: () => void;
@@ -32,6 +33,7 @@ export const QuestCreator: React.FC<QuestCreatorProps> = ({ onClose }) => {
   // Default GM-created quests to hidden so drafts don't accidentally leak to
   // players before the GM is ready to run them.
   const [isHidden, setIsHidden] = useState<boolean>(isGM);
+  const [visibleCrewIds, setVisibleCrewIds] = useState<string[] | null>(null);
 
   const handleCreate = async () => {
     if (!title.trim()) {
@@ -53,6 +55,7 @@ export const QuestCreator: React.FC<QuestCreatorProps> = ({ onClose }) => {
       notes: notes || undefined,
       gm_notes: isGM ? gmNotes || undefined : undefined,
       is_hidden: isGM ? isHidden : false,
+      visible_crew_ids: isGM ? visibleCrewIds : null,
       date_accepted: new Date().toISOString(),
     });
 
@@ -273,6 +276,13 @@ export const QuestCreator: React.FC<QuestCreatorProps> = ({ onClose }) => {
               </div>
             </label>
           </div>
+        )}
+
+        {isGM && (
+          <CrewVisibilitySelector
+            value={visibleCrewIds}
+            onChange={setVisibleCrewIds}
+          />
         )}
 
         {isGM && (

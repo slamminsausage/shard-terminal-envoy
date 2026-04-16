@@ -12,6 +12,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { ArrowLeft, Plus, Check, X, Trash2, CheckCircle, XCircle, ChevronUp, ChevronDown, Pencil, Eye, EyeOff } from 'lucide-react';
 import { format } from 'date-fns';
 import { useCampaign } from '@/contexts/CampaignContext';
+import { CrewVisibilitySelector } from '@/components/crew/CrewVisibilitySelector';
+import { CrewVisibilityBadge } from '@/components/crew/CrewVisibilityBadge';
 
 interface QuestDetailProps {
   questId: string;
@@ -53,6 +55,7 @@ export const QuestDetail: React.FC<QuestDetailProps> = ({ questId, onClose }) =>
   const [editNotes, setEditNotes] = useState('');
   const [editGmNotes, setEditGmNotes] = useState('');
   const [editIsHidden, setEditIsHidden] = useState(false);
+  const [editVisibleCrewIds, setEditVisibleCrewIds] = useState<string[] | null>(null);
 
   // Rewards edit mode
   const [isEditingRewards, setIsEditingRewards] = useState(false);
@@ -67,16 +70,20 @@ export const QuestDetail: React.FC<QuestDetailProps> = ({ questId, onClose }) =>
 
   const loadQuestData = async () => {
     const questData = await getQuest(questId);
-    if (questData) {
-      // Non-GMs should never land on a hidden quest detail page. If they
-      // somehow reach this state (e.g. a quest was hidden after selection),
-      // bounce them back to the quest list.
-      if (questData.is_hidden && !isGM) {
-        onClose();
-        return;
-      }
-      setQuest(questData);
+    if (!questData) {
+      // Quest missing or filtered out by crew scope — bounce back to the
+      // list and skip loading objectives so they don't leak either.
+      onClose();
+      return;
     }
+    // Non-GMs should never land on a hidden quest detail page. If they
+    // somehow reach this state (e.g. a quest was hidden after selection),
+    // bounce them back to the quest list.
+    if (questData.is_hidden && !isGM) {
+      onClose();
+      return;
+    }
+    setQuest(questData);
 
     const objectivesData = await getQuestObjectives(questId);
     setObjectives(objectivesData);
@@ -165,6 +172,7 @@ export const QuestDetail: React.FC<QuestDetailProps> = ({ questId, onClose }) =>
     setEditNotes(quest.notes || '');
     setEditGmNotes(quest.gm_notes || '');
     setEditIsHidden(!!quest.is_hidden);
+    setEditVisibleCrewIds(quest.visible_crew_ids ?? null);
     setIsEditingDetails(true);
   };
 
@@ -178,7 +186,7 @@ export const QuestDetail: React.FC<QuestDetailProps> = ({ questId, onClose }) =>
       notes: editNotes,
       gm_notes: editGmNotes,
       // Only GMs can change visibility; preserve existing value otherwise.
-      ...(isGM ? { is_hidden: editIsHidden } : {}),
+      ...(isGM ? { is_hidden: editIsHidden, visible_crew_ids: editVisibleCrewIds } : {}),
     });
     if (updated) {
       setQuest(updated);
@@ -275,6 +283,7 @@ export const QuestDetail: React.FC<QuestDetailProps> = ({ questId, onClose }) =>
                 HIDDEN FROM PLAYERS
               </Badge>
             )}
+            {isGM && <CrewVisibilityBadge ids={quest.visible_crew_ids} />}
           </div>
         </div>
 
@@ -640,6 +649,12 @@ export const QuestDetail: React.FC<QuestDetailProps> = ({ questId, onClose }) =>
                             </div>
                           </label>
                         </div>
+                      )}
+                      {isGM && (
+                        <CrewVisibilitySelector
+                          value={editVisibleCrewIds}
+                          onChange={setEditVisibleCrewIds}
+                        />
                       )}
                       {isGM && (
                         <div>

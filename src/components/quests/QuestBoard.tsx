@@ -10,6 +10,7 @@ import { QuestCreator } from './QuestCreator';
 import { QuestDetail } from './QuestDetail';
 import { AnimatedList } from '@/components/ui/AnimatedList';
 import { useCampaign } from '@/contexts/CampaignContext';
+import { CrewVisibilityBadge } from '@/components/crew/CrewVisibilityBadge';
 
 const statusColors: Record<QuestStatus, string> = {
   active: 'bg-green-500/20 text-green-400 border-green-500/50',
@@ -152,6 +153,9 @@ export const QuestBoard: React.FC = () => {
                             <EyeOff className="h-3 w-3 mr-1" />
                             Hidden
                           </Badge>
+                        )}
+                        {isGM && (
+                          <CrewVisibilityBadge ids={quest.visible_crew_ids} />
                         )}
                       </div>
                       <CardTitle className="text-terminal-primary">{quest.title}</CardTitle>
