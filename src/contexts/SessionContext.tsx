@@ -81,12 +81,18 @@ export const SessionProvider: React.FC<SessionProviderProps> = ({ children }) =>
   const getSession = useCallback(async (sessionId: string): Promise<Session | null> => {
     try {
       const data = await dbHelpers.getSession(sessionId);
-      return data as Session | null;
+      const session = data as Session | null;
+      if (!session) return null;
+      // Enforce crew scoping on per-ID reads so a non-GM cannot view a
+      // crew-scoped session (or its logs) by deep-linking or remaining on
+      // the detail page after switching active character.
+      if (!isItemVisibleToViewer(session, activeCrewId, isGM)) return null;
+      return session;
     } catch (error) {
       console.error('Failed to fetch session:', error);
       return null;
     }
-  }, []);
+  }, [activeCrewId, isGM]);
 
   const createSession = useCallback(async (sessionData: Partial<Session>): Promise<Session | null> => {
     try {

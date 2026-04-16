@@ -89,12 +89,18 @@ export const QuestProvider: React.FC<QuestProviderProps> = ({ children }) => {
   const getQuest = useCallback(async (questId: string): Promise<Quest | null> => {
     try {
       const data = await dbHelpers.getQuest(questId);
-      return data as Quest | null;
+      const quest = data as Quest | null;
+      if (!quest) return null;
+      // Enforce crew scoping on per-ID reads so a non-GM cannot view a
+      // crew-scoped quest they shouldn't see by deep-linking or staying on
+      // the detail page after switching active character.
+      if (!isItemVisibleToViewer(quest, activeCrewId, isGM)) return null;
+      return quest;
     } catch (error) {
       console.error('Failed to fetch quest:', error);
       return null;
     }
-  }, []);
+  }, [activeCrewId, isGM]);
 
   const createQuest = useCallback(async (questData: Partial<Quest>): Promise<Quest | null> => {
     try {

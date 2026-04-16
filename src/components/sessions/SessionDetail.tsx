@@ -47,9 +47,13 @@ export const SessionDetail: React.FC<SessionDetailProps> = ({ sessionId, onClose
 
   const loadSessionData = async () => {
     const sessionData = await getSession(sessionId);
-    if (sessionData) {
-      setSession(sessionData);
+    if (!sessionData) {
+      // Session missing or filtered out by crew scope — skip loading logs.
+      setSession(null);
+      setLogs([]);
+      return;
     }
+    setSession(sessionData);
 
     const logsData = await getSessionLogs(sessionId);
     setLogs(logsData);

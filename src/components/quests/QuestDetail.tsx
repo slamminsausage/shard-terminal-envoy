@@ -70,16 +70,20 @@ export const QuestDetail: React.FC<QuestDetailProps> = ({ questId, onClose }) =>
 
   const loadQuestData = async () => {
     const questData = await getQuest(questId);
-    if (questData) {
-      // Non-GMs should never land on a hidden quest detail page. If they
-      // somehow reach this state (e.g. a quest was hidden after selection),
-      // bounce them back to the quest list.
-      if (questData.is_hidden && !isGM) {
-        onClose();
-        return;
-      }
-      setQuest(questData);
+    if (!questData) {
+      // Quest missing or filtered out by crew scope — bounce back to the
+      // list and skip loading objectives so they don't leak either.
+      onClose();
+      return;
     }
+    // Non-GMs should never land on a hidden quest detail page. If they
+    // somehow reach this state (e.g. a quest was hidden after selection),
+    // bounce them back to the quest list.
+    if (questData.is_hidden && !isGM) {
+      onClose();
+      return;
+    }
+    setQuest(questData);
 
     const objectivesData = await getQuestObjectives(questId);
     setObjectives(objectivesData);
