@@ -24,6 +24,9 @@ export interface Session {
 
   created_at: string;
   updated_at: string;
+
+  /** Per-crew scoping. NULL/empty = visible to all crews. */
+  visible_crew_ids?: string[] | null;
 }
 
 export interface SessionLogEntry {

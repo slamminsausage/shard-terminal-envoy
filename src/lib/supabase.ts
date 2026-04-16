@@ -1330,6 +1330,7 @@ export const dbHelpers = {
         folder: note.folder || 'general',
         tags: note.tags || [],
         thumbnail_url: note.thumbnailUrl || null,
+        visible_crew_ids: note.visibleCrewIds ?? null,
       };
 
       // Check if note exists
@@ -2812,7 +2813,10 @@ export const dbHelpers = {
     }
   },
 
-  async updatePlayer(id: string, updates: Partial<Pick<Player, 'name' | 'role' | 'is_active' | 'access_code'>>): Promise<boolean> {
+  async updatePlayer(
+    id: string,
+    updates: Partial<Pick<Player, 'name' | 'role' | 'is_active' | 'access_code' | 'active_character_id'>>,
+  ): Promise<boolean> {
     if (supabaseDisabled) {
       const players = getLocalGameSetting<Player[]>('players') || [];
       const idx = players.findIndex(p => p.id === id);
@@ -3031,6 +3035,7 @@ export const dbHelpers = {
         tags: handout.tags || [],
         created_at: handout.createdAt || now,
         updated_at: now,
+        visible_crew_ids: handout.visible_crew_ids ?? null,
       };
 
       const { data, error } = await supabase

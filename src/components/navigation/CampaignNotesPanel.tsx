@@ -3,6 +3,8 @@ import { AccordionPanel } from "./AccordionPanel";
 import type { WorldStatus } from "@/types/navigation";
 import { Loader2 } from "lucide-react";
 import { useCampaign } from "@/contexts/CampaignContext";
+import { CrewVisibilitySelector } from "@/components/crew/CrewVisibilitySelector";
+import { CrewVisibilityBadge } from "@/components/crew/CrewVisibilityBadge";
 
 const STATUS_OPTIONS: { value: WorldStatus; label: string; color: string }[] = [
   { value: "UNKNOWN", label: "Unknown", color: "var(--text-dimmer)" },
@@ -148,6 +150,20 @@ export function CampaignNotesPanel() {
                 Entire note is GM-only
               </span>
             </label>
+          )}
+
+          {/* Per-crew visibility (GM only) */}
+          {isGM && (
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="text-terminal-text-dimmer text-xs">CREW SCOPE:</span>
+                <CrewVisibilityBadge ids={currentNote.visible_crew_ids} showAllCrews />
+              </div>
+              <CrewVisibilitySelector
+                value={currentNote.visible_crew_ids ?? null}
+                onChange={(ids) => updateNote({ visible_crew_ids: ids })}
+              />
+            </div>
           )}
 
           {/* Last Visited */}

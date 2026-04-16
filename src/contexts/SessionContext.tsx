@@ -1,7 +1,9 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode } from 'react';
 import { Session, SessionLogEntry, SessionReward } from '@/types/session';
 import { dbHelpers } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
+import { useCampaign } from '@/contexts/CampaignContext';
+import { isItemVisibleToViewer } from '@/lib/crewVisibility';
 
 interface SessionContextType {
   // State
@@ -43,17 +45,23 @@ interface SessionProviderProps {
 }
 
 export const SessionProvider: React.FC<SessionProviderProps> = ({ children }) => {
-  const [sessions, setSessions] = useState<Session[]>([]);
+  const [allSessions, setAllSessions] = useState<Session[]>([]);
   const [currentSession, setCurrentSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const { isGM, activeCrewId } = useCampaign();
+
+  const sessions = useMemo(() => {
+    if (isGM) return allSessions;
+    return allSessions.filter((s) => isItemVisibleToViewer(s, activeCrewId, isGM));
+  }, [allSessions, isGM, activeCrewId]);
 
   // Load all sessions on mount
   const getAllSessions = useCallback(async () => {
     setIsLoading(true);
     try {
       const data = await dbHelpers.getAllSessions();
-      setSessions(data as Session[]);
+      setAllSessions(data as Session[]);
     } catch (error) {
       console.error('Failed to fetch sessions:', error);
       toast({
@@ -84,9 +92,9 @@ export const SessionProvider: React.FC<SessionProviderProps> = ({ children }) =>
     try {
       const newSession = {
         player_id: 'campaign',
-        session_number: sessions.length + 1,
+        session_number: allSessions.length + 1,
         session_date: new Date().toISOString(),
-        title: sessionData.title || `Session ${sessions.length + 1}`,
+        title: sessionData.title || `Session ${allSessions.length + 1}`,
         status: sessionData.status || 'planned',
         ...sessionData,
       };
@@ -94,7 +102,7 @@ export const SessionProvider: React.FC<SessionProviderProps> = ({ children }) =>
       const saved = await dbHelpers.saveSession(newSession);
       const savedSession = saved as Session;
 
-      setSessions(prev => [savedSession, ...prev]);
+      setAllSessions(prev => [savedSession, ...prev]);
 
       toast({
         title: "Session Created",
@@ -111,14 +119,14 @@ export const SessionProvider: React.FC<SessionProviderProps> = ({ children }) =>
       });
       return null;
     }
-  }, [sessions.length, toast]);
+  }, [allSessions.length, toast]);
 
   const updateSession = useCallback(async (sessionId: string, updates: Partial<Session>): Promise<Session | null> => {
     try {
       const updated = await dbHelpers.saveSession({ id: sessionId, ...updates });
       const updatedSession = updated as Session;
 
-      setSessions(prev =>
+      setAllSessions(prev =>
         prev.map(s => s.id === sessionId ? updatedSession : s)
       );
 
@@ -147,7 +155,7 @@ export const SessionProvider: React.FC<SessionProviderProps> = ({ children }) =>
     try {
       await dbHelpers.deleteSession(sessionId);
 
-      setSessions(prev => prev.filter(s => s.id !== sessionId));
+      setAllSessions(prev => prev.filter(s => s.id !== sessionId));
 
       if (currentSession?.id === sessionId) {
         setCurrentSession(null);

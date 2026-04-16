@@ -1,7 +1,8 @@
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, useMemo } from 'react';
 import { PlayerNote, Handout } from '@/types/notes';
 import { dbHelpers } from '@/lib/supabase';
 import { useCampaign } from '@/contexts/CampaignContext';
+import { isItemVisibleToViewer } from '@/lib/crewVisibility';
 
 interface NotesContextType {
   // Player notes
@@ -24,9 +25,21 @@ interface NotesContextType {
 const NotesContext = createContext<NotesContextType | undefined>(undefined);
 
 export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { isGM: isGMMode } = useCampaign();
-  const [playerNotes, setPlayerNotes] = useState<PlayerNote[]>([]);
-  const [handouts, setHandouts] = useState<Handout[]>([]);
+  const { isGM: isGMMode, activeCrewId } = useCampaign();
+  // Raw unfiltered collections; the `playerNotes` and `handouts` exposed on
+  // context are derived from these with per-crew visibility applied.
+  const [allPlayerNotes, setAllPlayerNotes] = useState<PlayerNote[]>([]);
+  const [allHandouts, setAllHandouts] = useState<Handout[]>([]);
+
+  const playerNotes = useMemo(() => {
+    if (isGMMode) return allPlayerNotes;
+    return allPlayerNotes.filter(n => isItemVisibleToViewer(n, activeCrewId, isGMMode));
+  }, [allPlayerNotes, isGMMode, activeCrewId]);
+
+  const handouts = useMemo(() => {
+    if (isGMMode) return allHandouts;
+    return allHandouts.filter(h => isItemVisibleToViewer(h, activeCrewId, isGMMode));
+  }, [allHandouts, isGMMode, activeCrewId]);
 
   // Load data from database on mount
   useEffect(() => {
@@ -97,7 +110,7 @@ export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               if (migrated) {
                 // Reload from database after migration
                 const migratedNotes = await dbHelpers.getAllPlayerNotes();
-                setPlayerNotes(migratedNotes.map((n: any) => ({
+                setAllPlayerNotes(migratedNotes.map((n: any) => ({
                   id: n.id,
                   title: n.title,
                   content: n.content,
@@ -107,6 +120,7 @@ export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                   folder: n.folder,
                   tags: n.tags || [],
                   thumbnailUrl: n.thumbnail_url || undefined,
+                  visibleCrewIds: n.visible_crew_ids ?? null,
                 })));
 
                 // Clear localStorage after successful migration
@@ -117,7 +131,7 @@ export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           }
         } else {
           // Load notes from database
-          setPlayerNotes(dbNotes.map((n: any) => ({
+          setAllPlayerNotes(dbNotes.map((n: any) => ({
             id: n.id,
             title: n.title,
             content: n.content,
@@ -127,6 +141,7 @@ export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             folder: n.folder,
             tags: n.tags || [],
             thumbnailUrl: n.thumbnail_url || undefined,
+            visibleCrewIds: n.visible_crew_ids ?? null,
           })));
         }
 
@@ -156,7 +171,7 @@ export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               }
 
               if (import.meta.env.DEV) console.log(`Migrated ${migratedCount}/${migratedHandouts.length} handouts to DB`);
-              setHandouts(migratedHandouts);
+              setAllHandouts(migratedHandouts);
               localStorage.removeItem('traveller_handouts');
             }
           }
@@ -174,8 +189,9 @@ export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             tags: row.tags || [],
             createdAt: row.created_at,
             updatedAt: row.updated_at,
+            visible_crew_ids: row.visible_crew_ids ?? null,
           }));
-          setHandouts(mapped);
+          setAllHandouts(mapped);
         }
       } catch (error) {
         console.error('Error loading data:', error);
@@ -216,7 +232,7 @@ export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     try {
       await dbHelpers.savePlayerNote(newNote);
-      setPlayerNotes(prev => [...prev, newNote]);
+      setAllPlayerNotes(prev => [...prev, newNote]);
     } catch (error) {
       console.error('Failed to add player note:', error);
       throw error;
@@ -252,7 +268,7 @@ export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     try {
       await dbHelpers.savePlayerNote(updatedNote);
-      setPlayerNotes(prev =>
+      setAllPlayerNotes(prev =>
         prev.map(note => note.id === id ? updatedNote : note)
       );
     } catch (error) {
@@ -270,7 +286,7 @@ export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }
 
       await dbHelpers.deletePlayerNote(id);
-      setPlayerNotes(prev => prev.filter(note => note.id !== id));
+      setAllPlayerNotes(prev => prev.filter(note => note.id !== id));
     } catch (error) {
       console.error('Failed to delete player note:', error);
       throw error;
@@ -310,11 +326,11 @@ export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     } catch (error) {
       console.error('Failed to save handout to DB:', error);
     }
-    setHandouts(prev => [...prev, newHandout]);
+    setAllHandouts(prev => [...prev, newHandout]);
   }, []);
 
   const updateHandout = useCallback((id: string, updates: Partial<Handout>) => {
-    setHandouts(prev => {
+    setAllHandouts(prev => {
       const updated = prev.map(handout =>
         handout.id === id
           ? { ...handout, ...updates, updatedAt: new Date().toISOString() }
@@ -334,11 +350,11 @@ export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       dbHelpers.deleteHandoutMedia(id),
       dbHelpers.deleteHandout(id),
     ]);
-    setHandouts(prev => prev.filter(handout => handout.id !== id));
+    setAllHandouts(prev => prev.filter(handout => handout.id !== id));
   }, []);
 
   const toggleHandoutVisibility = useCallback((id: string) => {
-    setHandouts(prev => {
+    setAllHandouts(prev => {
       const updated = prev.map(h =>
         h.id === id
           ? { ...h, isVisible: !h.isVisible, updatedAt: new Date().toISOString() }

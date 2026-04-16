@@ -21,6 +21,9 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { format } from 'date-fns';
+import { useCampaign } from '@/contexts/CampaignContext';
+import { CrewVisibilitySelector } from '@/components/crew/CrewVisibilitySelector';
+import { CrewVisibilityBadge } from '@/components/crew/CrewVisibilityBadge';
 
 export const CalendarView: React.FC = () => {
   const {
@@ -33,6 +36,7 @@ export const CalendarView: React.FC = () => {
     isLoading
   } = useCalendar();
 
+  const { isGM } = useCampaign();
   const [showEventForm, setShowEventForm] = useState(false);
   const [advanceDays, setAdvanceDays] = useState('1');
 
@@ -44,6 +48,7 @@ export const CalendarView: React.FC = () => {
   const [eventLocation, setEventLocation] = useState('');
   const [eventIsRecurring, setEventIsRecurring] = useState(false);
   const [eventRecurrenceDays, setEventRecurrenceDays] = useState('7');
+  const [eventVisibleCrewIds, setEventVisibleCrewIds] = useState<string[] | null>(null);
 
   const handleAdvanceTime = async () => {
     const days = parseInt(advanceDays, 10) || 1;
@@ -66,6 +71,7 @@ export const CalendarView: React.FC = () => {
       is_recurring: eventIsRecurring,
       recurrence_days: eventIsRecurring ? parseInt(eventRecurrenceDays, 10) || 7 : undefined,
       is_completed: false,
+      ...(isGM ? { visible_crew_ids: eventVisibleCrewIds } : {}),
     });
 
     // Reset form
@@ -76,6 +82,7 @@ export const CalendarView: React.FC = () => {
     setEventLocation('');
     setEventIsRecurring(false);
     setEventRecurrenceDays('7');
+    setEventVisibleCrewIds(null);
     setShowEventForm(false);
   };
 
@@ -275,6 +282,18 @@ export const CalendarView: React.FC = () => {
                   />
                 </div>
               )}
+
+              {isGM && (
+                <div className="sm:col-span-2">
+                  <label className="text-xs text-terminal-primary/70 mb-1 block">
+                    Crew Scope
+                  </label>
+                  <CrewVisibilitySelector
+                    value={eventVisibleCrewIds}
+                    onChange={setEventVisibleCrewIds}
+                  />
+                </div>
+              )}
             </div>
 
             <div className="flex gap-2">
@@ -340,6 +359,7 @@ export const CalendarView: React.FC = () => {
                             Completed
                           </Badge>
                         )}
+                        {isGM && <CrewVisibilityBadge ids={event.visible_crew_ids} />}
                       </div>
                       <CardTitle className={`text-terminal-primary ${event.is_completed ? 'line-through' : ''}`}>
                         {event.title}
