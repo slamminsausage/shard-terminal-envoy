@@ -1063,10 +1063,28 @@ function saveToLocalStorage(toSave: VTTState) {
 /** Prepare a VTT state snapshot for persistence (strip ephemeral data) */
 function prepareForSave(state: VTTState): VTTState {
   const toSave = JSON.parse(JSON.stringify(state)) as VTTState;
-  // Strip blob URLs for video maps (they can't persist across reloads)
+  // Strip blob URLs from any map (they can't persist across reloads or devices).
+  // Video maps normally hold a Supabase Storage URL now; blobs only appear as a
+  // same-session fallback when the upload failed.
   for (const m of toSave.maps) {
-    if (m.isVideo && m.imageDataUrl?.startsWith("blob:")) {
+    if (m.imageDataUrl?.startsWith("blob:")) {
       m.imageDataUrl = null;
+    }
+  }
+  // Drop SFX slots that never got a persistent URL (e.g. same-session blob).
+  if (toSave.audio?.sfxSlots) {
+    for (let i = 0; i < toSave.audio.sfxSlots.length; i++) {
+      const s = toSave.audio.sfxSlots[i];
+      if (s?.url?.startsWith("blob:")) {
+        toSave.audio.sfxSlots[i] = { ...s, url: "" };
+      }
+    }
+  }
+  // Same for ambient channels.
+  for (const slot of ["ambientA", "ambientB", "ambientC", "ambientD"] as const) {
+    const track = toSave.audio?.[slot];
+    if (track?.url?.startsWith("blob:")) {
+      (toSave.audio as any)[slot] = null;
     }
   }
   // Strip blob URLs from custom audio tracks (they can't persist)
@@ -1348,16 +1366,26 @@ export function VTTProvider({ children }: { children: React.ReactNode }) {
       const isVideo = file.type.startsWith("video/");
 
       if (isVideo) {
-        // Revoke old objectURL if replacing a video map
+        // Revoke old objectURL if replacing a video map that still has one
         const oldMap = stateRef.current.maps.find((m) => m.id === mapId);
-        if (oldMap?.isVideo && oldMap.imageDataUrl) {
+        if (oldMap?.isVideo && oldMap.imageDataUrl?.startsWith("blob:")) {
           URL.revokeObjectURL(oldMap.imageDataUrl);
         }
-        // Use objectURL for video (dataURL would be too large)
-        const url = URL.createObjectURL(file);
+
+        // Upload to Supabase Storage so the video persists across reloads
+        // and other devices. Fall back to a same-session blob URL if upload fails.
+        let videoUrl: string | null = null;
+        try {
+          videoUrl = await dbHelpers.uploadVTTMapImage(file, mapId);
+        } catch (e) {
+          console.warn("Failed to upload video map to Supabase, using local blob URL:", e);
+        }
+        if (!videoUrl) videoUrl = URL.createObjectURL(file);
+
         const video = document.createElement("video");
         video.muted = true;
         video.preload = "metadata";
+        if (!videoUrl.startsWith("blob:")) video.crossOrigin = "anonymous";
 
         return new Promise<void>((resolve, reject) => {
           video.onloadedmetadata = () => {
@@ -1370,7 +1398,7 @@ export function VTTProvider({ children }: { children: React.ReactNode }) {
 
             dispatch({
               type: "SET_MAP_IMAGE",
-              payload: { mapId, dataUrl: url, width: canvasW, height: canvasH },
+              payload: { mapId, dataUrl: videoUrl!, width: canvasW, height: canvasH },
             });
             dispatch({
               type: "UPDATE_MAP",
@@ -1389,7 +1417,7 @@ export function VTTProvider({ children }: { children: React.ReactNode }) {
             resolve();
           };
           video.onerror = () => reject(new Error("Failed to load video"));
-          video.src = url;
+          video.src = videoUrl!;
         });
       }
 
