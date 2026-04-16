@@ -2,6 +2,7 @@ import { useRef, useEffect, useCallback } from "react";
 import { useVTT } from "@/contexts/VTTContext";
 import type { AmbientSlot } from "@/types/vtt";
 import { toast } from "sonner";
+import { dbHelpers } from "@/lib/supabase";
 
 const SLOTS: AmbientSlot[] = ["A", "B", "C", "D"];
 
@@ -183,9 +184,23 @@ export function useVTTAudio() {
   // ─── Load ambient track ───────────────────────────────────────────
 
   const loadAmbient = useCallback(
-    (slot: AmbientSlot, file: File) => {
+    async (slot: AmbientSlot, file: File) => {
       const ctx = ensureContext();
-      const url = URL.createObjectURL(file);
+      const trackId = crypto.randomUUID();
+
+      // Upload to Supabase Storage so the track survives a reload and is
+      // reachable from other devices.
+      let url: string | null = null;
+      try {
+        url = await dbHelpers.uploadVTTAudioFile(file, trackId);
+      } catch (e) {
+        console.warn("Failed to upload ambient track to Supabase:", e);
+      }
+
+      if (!url) {
+        toast.error("Failed to upload audio track. Check your connection and try again.");
+        return;
+      }
 
       // Crossfade out old track if one is playing
       if (ambientElRefs.current[slot] && !ambientElRefs.current[slot]!.paused) {
@@ -205,15 +220,14 @@ export function useVTTAudio() {
       ambientSourceRefs.current[slot] = source;
       ambientElRefs.current[slot] = el;
 
-      // Store metadata (not data URL to avoid localStorage bloat)
       dispatch({
         type: "SET_AMBIENT_TRACK",
         payload: {
           slot,
           track: {
-            id: crypto.randomUUID(),
+            id: trackId,
             name: file.name,
-            url: "", // Don't store data URL — file must be re-loaded on refresh
+            url,
             volume: 0.7,
             pan: 0,
             loop: true,
@@ -313,9 +327,10 @@ export function useVTTAudio() {
       ensureContext();
       tryPlay(el);
     } else {
-      // If no element but there's a library track in state, reload it
+      // If no element but there's a track with a persistent URL in state
+      // (library or uploaded-to-Supabase), reload it.
       const track = getTrack(slot);
-      if (track?.isLibrary && track.url) {
+      if (track?.url && !track.url.startsWith("blob:")) {
         loadLibraryTrack(slot, track.url, track.name);
       }
     }
@@ -379,10 +394,25 @@ export function useVTTAudio() {
   // ─── SFX ──────────────────────────────────────────────────────────
 
   const loadSFX = useCallback(
-    (slotIndex: number, file: File) => {
-      const url = URL.createObjectURL(file);
-      const el = new Audio(url);
+    async (slotIndex: number, file: File) => {
+      // Upload to Supabase Storage so the SFX survives reloads and is
+      // available on other devices. Key each slot by a stable id so repeated
+      // replacements don't leak orphaned files.
+      const trackId = `sfx-slot-${slotIndex}`;
+      let url: string | null = null;
+      try {
+        url = await dbHelpers.uploadVTTAudioFile(file, trackId);
+      } catch (e) {
+        console.warn("Failed to upload SFX to Supabase:", e);
+      }
 
+      if (!url) {
+        toast.error("Failed to upload SFX. Check your connection and try again.");
+        return;
+      }
+
+      const el = new Audio(url);
+      el.crossOrigin = "anonymous";
       sfxElementsRef.current[slotIndex]?.pause();
       sfxElementsRef.current[slotIndex] = el;
 
@@ -392,7 +422,7 @@ export function useVTTAudio() {
           index: slotIndex,
           slot: {
             name: file.name,
-            url: "", // Don't store data URL
+            url,
             isLibrary: false,
           },
         },
