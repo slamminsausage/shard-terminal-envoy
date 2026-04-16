@@ -82,8 +82,7 @@ export const CrewVisibilitySelector: React.FC<CrewVisibilitySelectorProps> = ({
         {crewGroups.map(group => (
           <label key={group.id} className="flex items-center gap-2 cursor-pointer">
             <Checkbox
-              checked={!allCrews && selected.includes(group.id)}
-              disabled={allCrews}
+              checked={selected.includes(group.id)}
               onCheckedChange={() => toggleCrew(group.id)}
             />
             <span
