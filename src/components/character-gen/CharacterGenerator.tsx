@@ -18,7 +18,7 @@ import { SpecialtySelector, needsSpecialtySelection, getBaseSkillName } from './
 import { MusteringOut } from './MusteringOut';
 import { RACES, getRaceById, applyRaceModifiers, type Race, type RaceTrait } from './races';
 import { getCareerTheme, getCareerCardStyle, getCareerTextStyle, type CareerTheme } from './careerThemes';
-import { CREW_POSITION_PRESETS } from '@/types/database';
+import { CREW_POSITION_PRESETS, type TermRecord } from '@/types/database';
 import { AnimatedDiceValue } from './AnimatedDiceValue';
 
 // ============================================================================
@@ -29,23 +29,6 @@ interface SkillState {
   proficient: boolean;
   value: string;
   customLabel?: string;
-}
-
-interface TermRecord {
-  termNumber: number;
-  career: string;
-  assignment: string;
-  age: number;
-  survivalRoll: string;
-  survived: boolean;
-  advancementRoll?: string;
-  advanced: boolean;
-  rank: number;
-  rankTitle: string;
-  event: string;
-  skillsGained: string[];
-  mishap?: string;
-  isCommissioned?: boolean;
 }
 
 // Track each career served for mustering out benefits
@@ -137,6 +120,9 @@ interface CharacterData {
   // Event-granted career effects
   eventQualificationDM?: number;  // DM bonus to next qualification roll from events
   allowedCareers?: string[];      // Careers unlocked by events (bypass qualification)
+
+  // Anagathics tracking: once taken, every subsequent term requires two Survival rolls.
+  hasAnagathics?: boolean;
 }
 
 // ============================================================================
@@ -345,6 +331,8 @@ export const CharacterGenerator: React.FC = () => {
     // Event-granted career effects
     eventQualificationDM: 0,
     allowedCareers: [],
+    // Anagathics
+    hasAnagathics: false,
   });
 
   // Psionic testing state
@@ -406,6 +394,7 @@ export const CharacterGenerator: React.FC = () => {
   const [graduatedWithHonours, setGraduatedWithHonours] = useState(false);
   const [needsCommissionRoll, setNeedsCommissionRoll] = useState(false);
   const [commissionRollDM, setCommissionRollDM] = useState(0);
+  const [commissionRollLog, setCommissionRollLog] = useState<string>('');
   const [graduationRollLog, setGraduationRollLog] = useState<string>('');
   const [survivalRollLog, setSurvivalRollLog] = useState<string>('');
   const [advancementRollLog, setAdvancementRollLog] = useState<string>('');
@@ -1242,6 +1231,7 @@ export const CharacterGenerator: React.FC = () => {
     setTermSkillsGained([]);
     setGraduationRollLog('');
     setSurvivalRollLog('');
+    setCommissionRollLog('');
     setAdvancementRollLog('');
     setCurrentEvent(null);
     setEventRollResult(null);
@@ -1309,13 +1299,40 @@ export const CharacterGenerator: React.FC = () => {
 
     const roll = manualRoll ?? rollDice(2, 6);
     const total = roll + dm;
-    const survived = total >= assignment.survivalTarget;
+    const firstSurvived = total >= assignment.survivalTarget;
+
+    // Anagathics: RAW requires two Survival rolls per term after the character
+    // has taken anagathics. The second roll is always auto-generated so that
+    // manual-dice users aren't prompted twice per term.
+    const anagathicsActive =
+      !isPreCareer &&
+      characterData.hasAnagathics === true &&
+      !selectedCareer.noAnagathics;
+    const secondRoll = anagathicsActive ? rollDice(2, 6) : null;
+    const secondTotal = secondRoll !== null ? secondRoll + dm : null;
+    const secondSurvived =
+      secondTotal !== null ? secondTotal >= assignment.survivalTarget : true;
+
+    const survived = firstSurvived && secondSurvived;
+
+    // Combined roll description reused in logs and lifepath records so the
+    // second roll shows up alongside the first when anagathics is active.
+    const rollDesc = `${roll} + ${dm} = ${total} (need ${assignment.survivalTarget}+)`;
+    const rollDescWithAnagathics =
+      anagathicsActive && secondRoll !== null && secondTotal !== null
+        ? `${rollDesc}; 2nd (anagathics, auto): ${secondRoll} + ${dm} = ${secondTotal}`
+        : rollDesc;
 
     setTermSurvived(survived);
 
     // Set survival/graduation roll log for regular careers
     if (!isPreCareer) {
-      setSurvivalRollLog(`Survival Roll: ${roll} + ${dm} = ${total} (need ${assignment.survivalTarget}+)`);
+      const firstLine = `Survival Roll: ${roll} + ${dm} = ${total} (need ${assignment.survivalTarget}+)`;
+      const secondLine =
+        anagathicsActive && secondRoll !== null && secondTotal !== null
+          ? `\nAnagathics 2nd Survival Roll (auto): ${secondRoll} + ${dm} = ${secondTotal} (need ${assignment.survivalTarget}+)`
+          : '';
+      setSurvivalRollLog(`${firstLine}${secondLine}`);
     }
 
     if (!survived) {
@@ -1383,7 +1400,7 @@ export const CharacterGenerator: React.FC = () => {
             career: selectedCareer.name,
             assignment: assignment.name,
             age: characterData.age,
-            survivalRoll: `${roll} + ${dm} = ${total} (need ${assignment.survivalTarget}+)`,
+            survivalRoll: rollDescWithAnagathics,
             survived: false,
             advanced: false,
             rank: characterData.rank,
@@ -1505,6 +1522,51 @@ export const CharacterGenerator: React.FC = () => {
         // Pre-careers skip advancement and go straight to events after graduation
       }
     }
+  };
+
+  // First commission attempt for a pre-career graduate entering a service
+  // career (Navy / Marines / Army). Consumes `commissionRollDM` on first try
+  // regardless of outcome; a Military-Academy-honours sentinel of -999
+  // auto-passes the check.
+  const runCommissionCheck = (manualRoll?: number) => {
+    if (!selectedCareer || !needsCommissionRoll || isCommissioned) return;
+    if (typeof selectedCareer.commissionTarget !== 'number') return;
+
+    const officerRanks = selectedCareer.ranks.officer;
+    if (!officerRanks || officerRanks.length === 0) return;
+
+    // Military Academy honours: automatic commission.
+    if (commissionRollDM === -999) {
+      setIsCommissioned(true);
+      setCharacterData(prev => ({ ...prev, rank: 0 }));
+      setCommissionRollLog('Military Academy honours — automatic commission.');
+      setCommissionRollDM(0);
+      setNeedsCommissionRoll(false);
+      return;
+    }
+
+    const socDM = getDM(characterData.characteristics.social.total);
+    const roll = manualRoll ?? rollDice(2, 6);
+    const totalDM = socDM + commissionRollDM;
+    const total = roll + totalDM;
+    const commissioned = total >= selectedCareer.commissionTarget;
+
+    const dmBreakdown =
+      commissionRollDM !== 0
+        ? `${socDM} + ${commissionRollDM} (pre-career)`
+        : `${socDM}`;
+    setCommissionRollLog(
+      `Commission Roll: ${roll} + ${dmBreakdown} = ${total} (need ${selectedCareer.commissionTarget}+). ${commissioned ? 'Commissioned!' : 'Remains enlisted.'}`
+    );
+
+    if (commissioned) {
+      setIsCommissioned(true);
+      setCharacterData(prev => ({ ...prev, rank: 0 }));
+    }
+
+    // Consume the pre-career DM on first attempt regardless of outcome.
+    setCommissionRollDM(0);
+    setNeedsCommissionRoll(false);
   };
 
   const runAdvancementCheck = (manualRoll?: number) => {
@@ -2683,6 +2745,7 @@ export const CharacterGenerator: React.FC = () => {
     setGraduatedWithHonours(false);
     setGraduationRollLog('');
     setSurvivalRollLog('');
+    setCommissionRollLog('');
     setAdvancementRollLog('');
     setCurrentEvent(null);
     setEventRollResult(null);
@@ -2754,6 +2817,7 @@ export const CharacterGenerator: React.FC = () => {
     setGraduatedWithHonours(false);
     setGraduationRollLog('');
     setSurvivalRollLog('');
+    setCommissionRollLog('');
     setAdvancementRollLog('');
     setCurrentEvent(null);
     setEventRollResult(null);
@@ -2866,6 +2930,8 @@ export const CharacterGenerator: React.FC = () => {
         // Crew assignment
         crew_id: selectedCrewId || undefined,
         crew_position: selectedPosition || undefined,
+        // Lifepath history (term-by-term)
+        lifepath_log: characterData.lifepath_log,
       };
 
       await saveCharacter(finalCharacterData);
@@ -3988,8 +4054,19 @@ export const CharacterGenerator: React.FC = () => {
                   />
                 ) : (
                 <>
-                {/* Manual Dice Toggle */}
-                <div className="flex items-center justify-end gap-2 mb-2">
+                {/* Manual Dice Toggle + Anagathics Toggle */}
+                <div className="flex items-center justify-end gap-4 mb-2">
+                  <label className="text-xs text-terminal-primary/60 cursor-pointer flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={characterData.hasAnagathics === true}
+                      onChange={(e) => {
+                        setCharacterData(prev => ({ ...prev, hasAnagathics: e.target.checked }));
+                      }}
+                      className="accent-terminal-primary"
+                    />
+                    <span>Anagathics active (2 Survival rolls / term)</span>
+                  </label>
                   <label className="text-xs text-terminal-primary/60 cursor-pointer flex items-center gap-2">
                     <input
                       type="checkbox"
@@ -4155,7 +4232,76 @@ export const CharacterGenerator: React.FC = () => {
                   </div>
                 )}
 
-                {isInTerm && termSurvived === null && basicTrainingApplied && (
+                {/* COMMISSION ROLL (pre-career graduates entering a service career) */}
+                {isInTerm && termSurvived === null && basicTrainingApplied &&
+                  needsCommissionRoll && !isCommissioned &&
+                  typeof selectedCareer?.commissionTarget === 'number' && (
+                  <div className="space-y-2">
+                    <Alert className="bg-purple-500/10 border-purple-500/50">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription className="text-purple-300">
+                        <strong>Commission Roll:</strong>{' '}
+                        {commissionRollDM === -999
+                          ? 'Military Academy honours grant automatic commission.'
+                          : `Roll 2D6 + SOC DM${commissionRollDM ? ` + ${commissionRollDM} (pre-career)` : ''} vs ${selectedCareer.commissionTarget}+. The pre-career DM is consumed after this attempt.`}
+                      </AlertDescription>
+                    </Alert>
+                    {commissionRollDM === -999 ? (
+                      <Button
+                        onClick={() => runCommissionCheck()}
+                        className="w-full bg-purple-500/20 text-purple-300 hover:bg-purple-500/30"
+                      >
+                        Accept Automatic Commission
+                      </Button>
+                    ) : useManualDice ? (
+                      <div className="space-y-2">
+                        <p className="text-xs text-blue-400">Enter your 2D6 commission roll (DM applied automatically):</p>
+                        <div className="flex gap-2">
+                          <Input
+                            type="number"
+                            min={2}
+                            max={12}
+                            value={manualDiceValue}
+                            onChange={(e) => setManualDiceValue(e.target.value)}
+                            placeholder="Enter 2D6 result (2-12)"
+                            className="bg-black border-terminal-primary/50 text-terminal-primary placeholder:text-terminal-primary/40"
+                          />
+                          <Button
+                            onClick={() => {
+                              const val = parseInt(manualDiceValue);
+                              if (!isNaN(val) && val >= 2 && val <= 12) {
+                                runCommissionCheck(val);
+                                setManualDiceValue('');
+                              }
+                            }}
+                            disabled={!manualDiceValue || isNaN(parseInt(manualDiceValue)) || parseInt(manualDiceValue) < 2 || parseInt(manualDiceValue) > 12}
+                            className="bg-purple-500/20 text-purple-300 hover:bg-purple-500/30"
+                          >
+                            Submit Commission Roll
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <Button
+                        onClick={() => runCommissionCheck()}
+                        className="w-full bg-purple-500/20 text-purple-300 hover:bg-purple-500/30"
+                      >
+                        <Dices className="h-4 w-4 mr-2" />
+                        Roll Commission Check
+                      </Button>
+                    )}
+                  </div>
+                )}
+
+                {/* Commission roll log (persists after resolution, before survival) */}
+                {commissionRollLog && (
+                  <div className="bg-terminal-primary/5 border border-terminal-primary/30 rounded p-2">
+                    <p className="text-xs text-terminal-primary/70 font-mono">{commissionRollLog}</p>
+                  </div>
+                )}
+
+                {isInTerm && termSurvived === null && basicTrainingApplied &&
+                  !(needsCommissionRoll && typeof selectedCareer?.commissionTarget === 'number' && !isCommissioned) && (
                   <div className="space-y-2">
                     <Alert className="bg-terminal-primary/5 border-terminal-primary/30">
                       <AlertCircle className="h-4 w-4" />

@@ -2,6 +2,25 @@
 
 export type PlayerRole = 'gm' | 'player';
 
+// Per-term entry in a character's lifepath history.
+// Persisted as a JSONB column on the characters table.
+export interface TermRecord {
+  termNumber: number;
+  career: string;
+  assignment: string;
+  age: number;
+  survivalRoll: string;
+  survived: boolean;
+  advancementRoll?: string;
+  advanced: boolean;
+  rank: number;
+  rankTitle: string;
+  event: string;
+  skillsGained: string[];
+  mishap?: string;
+  isCommissioned?: boolean;
+}
+
 export interface Player {
   id: string;
   name: string;
@@ -93,6 +112,9 @@ export interface Character {
   // Crew assignment
   crew_id?: string;        // references CrewGroup.id
   crew_position?: string;  // job aboard ship (e.g. 'Pilot', 'Engineer', custom)
+
+  // Term-by-term lifepath history (JSONB)
+  lifepath_log?: TermRecord[];
 
   created_at: string;
   updated_at: string;

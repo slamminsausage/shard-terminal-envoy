@@ -291,6 +291,9 @@ export const dbHelpers = {
     if (characterData.crew_id !== undefined) dbPayload.crew_id = characterData.crew_id;
     if (characterData.crew_position !== undefined) dbPayload.crew_position = characterData.crew_position;
 
+    // Lifepath history (JSONB)
+    if (characterData.lifepath_log !== undefined) dbPayload.lifepath_log = characterData.lifepath_log;
+
     try {
       if (characterData.id) {
         // Update existing character
