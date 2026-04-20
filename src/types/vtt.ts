@@ -24,6 +24,21 @@ export const LAYER_TOKEN = 1;
 export const LAYER_GM = 2;
 export type LayerIndex = typeof LAYER_MAP | typeof LAYER_TOKEN | typeof LAYER_GM;
 
+export interface LayerState {
+  visible: boolean;
+  locked: boolean;
+}
+
+// --- Bounding Box ---
+
+export interface BoundingBox {
+  cx: number;
+  cy: number;
+  width: number;
+  height: number;
+  rotation: number; // degrees
+}
+
 // --- Tools ---
 
 export type VTTTool =
@@ -57,6 +72,11 @@ export interface Stroke {
   layer: LayerIndex;
   opacity?: number;
   gmOnly?: boolean;
+  rotation?: number;
+  scaleX?: number;
+  scaleY?: number;
+  originX?: number;
+  originY?: number;
 }
 
 // --- Text Overlays ---
@@ -71,6 +91,9 @@ export interface TextOverlay {
   fontFamily?: string;
   layer: LayerIndex;
   gmOnly?: boolean;
+  rotation?: number;
+  scaleX?: number;
+  scaleY?: number;
 }
 
 // --- Notes (GM Pins) ---
@@ -84,6 +107,8 @@ export interface MapNote {
   color: string;
   icon?: string;
   visible: boolean;
+  rotation?: number;
+  scale?: number;
 }
 
 // --- Tokens ---
@@ -111,6 +136,13 @@ export interface Token {
   showHpBar: boolean;
   locked: boolean;
   visible: boolean; // GM can hide tokens from presenter
+  // Movement & positioning
+  moveSpeed?: number; // grid cells of normal movement (default 6)
+  elevation?: number; // vertical position for 3D combat
+  // Token light emission
+  lightBrightRadius?: number; // grid units of bright light
+  lightDimRadius?: number; // grid units of dim light
+  lightColor?: string; // light color (default #ffaa44)
 }
 
 // --- Fog of War ---
@@ -170,6 +202,8 @@ export interface Particle {
   life: number;
   maxLife: number;
   color: string;
+  rotation: number;
+  phase: number;
 }
 
 export interface ParticleConfig {
@@ -220,6 +254,7 @@ export interface VTTMap {
   walls: Wall[];
   lights: LightSource[];
   aoeTemplates: AoETemplate[];
+  props: SceneProp[];
   grid: GridConfig;
   // Viewport state
   scrollX: number;
@@ -235,12 +270,16 @@ export interface VTTMap {
 export interface AmbientTrack {
   id: string;
   name: string;
-  /** Data URL or object URL from local file */
+  /** Data URL, object URL, or path to built-in file (e.g. "/audio/file.mp3") */
   url: string;
   volume: number;
   pan: number;
   loop: boolean;
+  /** Whether this is a built-in library track (path-based, not data URL) */
+  isLibrary?: boolean;
 }
+
+export type AmbientSlot = "A" | "B" | "C" | "D";
 
 export interface SFXSlot {
   id: number;
@@ -248,8 +287,33 @@ export interface SFXSlot {
   url: string;
   volume: number;
   loop: boolean;
-  /** Keyboard shortcut key (e.g. "1"-"9", "a"-"i") */
+  /** Keyboard shortcut key (e.g. "1"-"9") */
   hotkey?: string;
+  /** Category for organization */
+  category?: string;
+  /** Whether this is a built-in library track */
+  isLibrary?: boolean;
+}
+
+export interface AudioPlaylist {
+  id: string;
+  name: string;
+  /** Which tracks to load into which channels when this playlist is activated */
+  channels: {
+    A: AmbientTrack | null;
+    B: AmbientTrack | null;
+    C: AmbientTrack | null;
+    D: AmbientTrack | null;
+  };
+}
+
+/** A user-added track in the sound library */
+export interface CustomLibraryTrack {
+  id: string;
+  name: string;
+  /** Supabase Storage URL or path */
+  url: string;
+  category: "Ambient" | "Music" | "SFX" | "Story";
 }
 
 export interface AudioState {
@@ -257,8 +321,30 @@ export interface AudioState {
   muted: boolean;
   ambientA: AmbientTrack | null;
   ambientB: AmbientTrack | null;
-  crossfade: number; // 0 = full A, 1 = full B
+  ambientC: AmbientTrack | null;
+  ambientD: AmbientTrack | null;
   sfxSlots: SFXSlot[];
+  playlists: AudioPlaylist[];
+  activePlaylistId: string | null;
+  /** User-uploaded tracks added to the sound library */
+  customLibraryTracks: CustomLibraryTrack[];
+}
+
+// --- Scene Props (placed image assets on the map) ---
+
+export interface SceneProp {
+  id: string;
+  name: string;
+  imageUrl: string;  // Public URL or data URL
+  x: number;        // World-space center X
+  y: number;        // World-space center Y
+  width: number;    // World-space width
+  height: number;   // World-space height
+  rotation: number; // Degrees
+  opacity: number;  // 0–1
+  layer: LayerIndex;
+  locked: boolean;
+  visible: boolean;
 }
 
 // --- AoE Templates ---
@@ -301,15 +387,6 @@ export interface Clock {
   color: string;
 }
 
-// --- Handouts ---
-
-export interface Handout {
-  id: string;
-  name: string;
-  imageDataUrl: string;
-  visible: boolean;
-}
-
 // --- Measurement ---
 
 export interface Measurement {
@@ -328,7 +405,6 @@ export interface VTTSession {
   audio: AudioState;
   initiative: InitiativeEntry[];
   clocks: Clock[];
-  handouts: Handout[];
   particles: ParticleConfig;
   gridDefaults: GridConfig;
 }
@@ -350,6 +426,11 @@ export type VTTActionType =
   | "wall-remove"
   | "light-add"
   | "light-remove"
+  | "aoe-add"
+  | "aoe-remove"
+  | "prop-add"
+  | "prop-remove"
+  | "prop-update"
   | "fog-update";
 
 export interface VTTHistoryEntry {
@@ -383,9 +464,6 @@ export interface VTTState {
   initiative: InitiativeEntry[];
   clocks: Clock[];
 
-  // Handouts
-  handouts: Handout[];
-
   // History
   history: VTTHistoryEntry[];
   historyIndex: number;
@@ -400,24 +478,52 @@ export interface VTTState {
 
   // Presenter toggles
   showInitiativeOnPresenter: boolean;
+  followActiveTurn: boolean;
 
   // Selection
   selectedTokenIds: string[];
   selectedStrokeIds: string[];
   selectedTextIds: string[];
   selectedNoteIds: string[];
+  selectedAoEIds: string[];
+  selectedLightIds: string[];
+  selectedPropIds: string[];
+
+  // Pending prop placement (armed for placing on canvas)
+  pendingPropImageUrl: string | null;
+  pendingPropName: string;
 
   // Fog brush settings
   fogBrushSize: number;
   fogBrushMode: "reveal" | "conceal";
 
+  // Clipboard
+  clipboard: { tokens: Token[]; strokes: Stroke[]; texts: TextOverlay[]; notes: MapNote[] } | null;
+
+  // Layers
+  layerStates: Record<number, LayerState>;
+
   // Sidebar
   sidebarPanel: VTTSidebarPanel | null;
 }
 
+// --- Object Grouping ---
+
+export interface ObjectGroup {
+  id: string;
+  name: string;
+  tokenIds: string[];
+  strokeIds: string[];
+  textIds: string[];
+  noteIds: string[];
+  locked: boolean;
+}
+
 export type VTTSidebarPanel =
   | "maps"
+  | "layers"
   | "tokens"
+  | "notes"
   | "characters"
   | "drawing"
   | "fog"
@@ -430,6 +536,7 @@ export type VTTSidebarPanel =
   | "handouts"
   | "aoe"
   | "dice"
+  | "assets"
   | "settings";
 
 // --- Default Factories ---
@@ -474,7 +581,8 @@ export function createDefaultAudio(): AudioState {
     muted: false,
     ambientA: null,
     ambientB: null,
-    crossfade: 0.5,
+    ambientC: null,
+    ambientD: null,
     sfxSlots: Array.from({ length: 18 }, (_, i) => ({
       id: i,
       name: "",
@@ -482,6 +590,9 @@ export function createDefaultAudio(): AudioState {
       volume: 0.7,
       loop: false,
     })),
+    playlists: [],
+    activePlaylistId: null,
+    customLibraryTracks: [],
   };
 }
 
@@ -505,6 +616,7 @@ export function createDefaultMap(name: string = "New Map"): VTTMap {
     walls: [],
     lights: [],
     aoeTemplates: [],
+    props: [],
     grid: createDefaultGrid(),
     scrollX: 0,
     scrollY: 0,
@@ -527,7 +639,6 @@ export function createDefaultVTTState(): VTTState {
     particles: createDefaultParticles(),
     initiative: [],
     clocks: [],
-    handouts: [],
     history: [],
     historyIndex: -1,
     showGrid: true,
@@ -541,8 +652,19 @@ export function createDefaultVTTState(): VTTState {
     selectedStrokeIds: [],
     selectedTextIds: [],
     selectedNoteIds: [],
+    selectedAoEIds: [],
+    selectedLightIds: [],
+    selectedPropIds: [],
+    pendingPropImageUrl: null,
+    pendingPropName: "",
     fogBrushSize: 40,
     fogBrushMode: "reveal",
+    layerStates: {
+      0: { visible: true, locked: false },
+      1: { visible: true, locked: false },
+      2: { visible: true, locked: false },
+    },
+    clipboard: null,
     sidebarPanel: "maps",
   };
 }

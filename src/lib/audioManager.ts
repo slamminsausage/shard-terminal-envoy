@@ -14,7 +14,12 @@ class AudioManager {
       'connection': '/audio/connection-lost.mp3',
       'interference': '/audio/signal-interference.mp3',
       'static': '/audio/static-hum.mp3',
-      'terminal': '/audio/terminal-hum.mp3'
+      'terminal': '/audio/terminal-hum.mp3',
+      'door_unlock': '/audio/door-unlock.wav',
+      'alarm_disable': '/audio/alarm-disable.wav',
+      'data_download': '/audio/data-download.wav',
+      'power_down': '/audio/power-down.wav',
+      'seal_disengage': '/audio/seal-disengage.wav'
     };
 
     Object.entries(soundFiles).forEach(([key, src]) => {
@@ -48,7 +53,10 @@ class AudioManager {
       sound.addEventListener('error', cleanup);
 
       sound.play().catch(e => {
-        console.warn('Audio play failed:', e);
+        // NotAllowedError is expected before user interacts with the page
+        if (e.name !== 'NotAllowedError') {
+          console.warn('Audio play failed:', e);
+        }
         cleanup();
       });
     } catch (error) {
@@ -63,7 +71,11 @@ class AudioManager {
       const ambient = this.sounds[track];
       ambient.loop = true;
       ambient.volume = this.volume * 0.5;
-      ambient.play().catch(e => console.warn('Ambient play failed:', e));
+      ambient.play().catch(e => {
+        if (e.name !== 'NotAllowedError') {
+          console.warn('Ambient play failed:', e);
+        }
+      });
     } catch (error) {
       console.warn(`Failed to play ambient: ${track}`, error);
     }

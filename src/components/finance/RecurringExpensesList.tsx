@@ -25,12 +25,12 @@ export const RecurringExpensesList: React.FC = () => {
   }, [getAllRecurringExpenses]);
 
   const handleCreate = async () => {
-    if (!name.trim() || !amount || parseInt(amount) <= 0) return;
+    if (!name.trim() || !amount || parseInt(amount, 10) <= 0) return;
 
     await addRecurringExpense({
       name,
       description: description || undefined,
-      amount: parseInt(amount),
+      amount: parseInt(amount, 10),
       frequency,
     });
 
@@ -168,7 +168,7 @@ export const RecurringExpensesList: React.FC = () => {
             <div className="flex gap-2">
               <Button
                 onClick={handleCreate}
-                disabled={!name.trim() || !amount || parseInt(amount) <= 0}
+                disabled={!name.trim() || !amount || parseInt(amount, 10) <= 0}
                 size="sm"
                 className="bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
               >

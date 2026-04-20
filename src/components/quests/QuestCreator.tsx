@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { X, Save } from 'lucide-react';
 import { useCampaign } from '@/contexts/CampaignContext';
+import { CrewVisibilitySelector } from '@/components/crew/CrewVisibilitySelector';
 
 interface QuestCreatorProps {
   onClose: () => void;
@@ -29,6 +30,10 @@ export const QuestCreator: React.FC<QuestCreatorProps> = ({ onClose }) => {
   const [rewardOther, setRewardOther] = useState('');
   const [notes, setNotes] = useState('');
   const [gmNotes, setGmNotes] = useState('');
+  // Default GM-created quests to hidden so drafts don't accidentally leak to
+  // players before the GM is ready to run them.
+  const [isHidden, setIsHidden] = useState<boolean>(isGM);
+  const [visibleCrewIds, setVisibleCrewIds] = useState<string[] | null>(null);
 
   const handleCreate = async () => {
     if (!title.trim()) {
@@ -43,12 +48,14 @@ export const QuestCreator: React.FC<QuestCreatorProps> = ({ onClose }) => {
       status,
       priority,
       category,
-      reward_credits: parseInt(rewardCredits) || 0,
-      reward_xp: parseInt(rewardXp) || 0,
+      reward_credits: parseInt(rewardCredits, 10) || 0,
+      reward_xp: parseInt(rewardXp, 10) || 0,
       reward_items: rewardItems || undefined,
       reward_other: rewardOther || undefined,
       notes: notes || undefined,
       gm_notes: isGM ? gmNotes || undefined : undefined,
+      is_hidden: isGM ? isHidden : false,
+      visible_crew_ids: isGM ? visibleCrewIds : null,
       date_accepted: new Date().toISOString(),
     });
 
@@ -248,6 +255,35 @@ export const QuestCreator: React.FC<QuestCreatorProps> = ({ onClose }) => {
             className="bg-black border-terminal-primary/50 text-terminal-primary resize-none"
           />
         </div>
+
+        {isGM && (
+          <div className="rounded border border-purple-500/40 bg-purple-500/5 p-3">
+            <label className="flex items-start gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={isHidden}
+                onChange={(e) => setIsHidden(e.target.checked)}
+                className="mt-1 rounded border-purple-500/50"
+              />
+              <div>
+                <span className="text-sm text-purple-300 font-medium">
+                  Hidden from players
+                </span>
+                <p className="text-xs text-purple-300/70 mt-0.5">
+                  Draft this quest privately. Players will not see it until you
+                  toggle it visible from the quest log.
+                </p>
+              </div>
+            </label>
+          </div>
+        )}
+
+        {isGM && (
+          <CrewVisibilitySelector
+            value={visibleCrewIds}
+            onChange={setVisibleCrewIds}
+          />
+        )}
 
         {isGM && (
           <div>

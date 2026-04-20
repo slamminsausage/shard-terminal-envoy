@@ -29,7 +29,7 @@ function roll2d6(): number {
   return Math.floor(Math.random() * 6) + 1 + Math.floor(Math.random() * 6) + 1;
 }
 
-export default function CombatInterface() {
+function CombatInterface() {
   const { characters, saveCharacter } = useCampaign();
   const [combatants, setCombatants] = useState<Combatant[]>([]);
   const [currentRound, setCurrentRound] = useState(1);
@@ -872,7 +872,7 @@ export default function CombatInterface() {
                           value={combatant.armor}
                           onChange={(e) =>
                             handleUpdateCombatant(combatant.id, {
-                              armor: parseInt(e.target.value) || 0
+                              armor: parseInt(e.target.value, 10) || 0
                             })
                           }
                           className="terminal-input h-8 text-xs"
@@ -952,7 +952,7 @@ export default function CombatInterface() {
                     <input
                       type="number"
                       value={npcInitiative}
-                      onChange={(e) => setNpcInitiative(parseInt(e.target.value) || 0)}
+                      onChange={(e) => setNpcInitiative(parseInt(e.target.value, 10) || 0)}
                       className="terminal-input"
                     />
                   </div>
@@ -961,7 +961,7 @@ export default function CombatInterface() {
                     <input
                       type="number"
                       value={npcArmor}
-                      onChange={(e) => setNpcArmor(parseInt(e.target.value) || 0)}
+                      onChange={(e) => setNpcArmor(parseInt(e.target.value, 10) || 0)}
                       className="terminal-input"
                     />
                   </div>
@@ -995,7 +995,7 @@ export default function CombatInterface() {
                     <input
                       type="number"
                       value={npcHits}
-                      onChange={(e) => setNpcHits(parseInt(e.target.value) || 10)}
+                      onChange={(e) => setNpcHits(parseInt(e.target.value, 10) || 10)}
                       className="terminal-input"
                     />
                   </div>
@@ -1006,7 +1006,7 @@ export default function CombatInterface() {
                       <input
                         type="number"
                         value={npcStr}
-                        onChange={(e) => setNpcStr(parseInt(e.target.value) || 7)}
+                        onChange={(e) => setNpcStr(parseInt(e.target.value, 10) || 7)}
                         className="terminal-input"
                       />
                     </div>
@@ -1015,7 +1015,7 @@ export default function CombatInterface() {
                       <input
                         type="number"
                         value={npcDex}
-                        onChange={(e) => setNpcDex(parseInt(e.target.value) || 7)}
+                        onChange={(e) => setNpcDex(parseInt(e.target.value, 10) || 7)}
                         className="terminal-input"
                       />
                     </div>
@@ -1024,7 +1024,7 @@ export default function CombatInterface() {
                       <input
                         type="number"
                         value={npcEnd}
-                        onChange={(e) => setNpcEnd(parseInt(e.target.value) || 7)}
+                        onChange={(e) => setNpcEnd(parseInt(e.target.value, 10) || 7)}
                         className="terminal-input"
                       />
                     </div>
@@ -1092,7 +1092,7 @@ export default function CombatInterface() {
                   <input
                     type="number"
                     value={manualInitiative}
-                    onChange={(e) => setManualInitiative(parseInt(e.target.value) || 0)}
+                    onChange={(e) => setManualInitiative(parseInt(e.target.value, 10) || 0)}
                     className="terminal-input h-10 w-24 text-center text-xl font-bold font-['Orbitron']"
                     autoFocus
                   />
@@ -1158,7 +1158,7 @@ export default function CombatInterface() {
                     <input
                       type="number"
                       value={initiativeBonus}
-                      onChange={(e) => setInitiativeBonus(parseInt(e.target.value) || 0)}
+                      onChange={(e) => setInitiativeBonus(parseInt(e.target.value, 10) || 0)}
                       className="terminal-input h-8 w-20 text-center"
                     />
                   </div>
@@ -1208,3 +1208,5 @@ export default function CombatInterface() {
     </div>
   );
 }
+
+export default React.memo(CombatInterface);

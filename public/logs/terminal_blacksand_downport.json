@@ -1,0 +1,126 @@
+[
+  {
+    "title": "Visitor Orientation — Blacksand City Network",
+    "location": "General Access Terminal — Blacksand Downport",
+    "date": "CURRENT CYCLE (STANDING NOTICE)",
+    "author": "Widow Administrative Office — Blacksand City",
+    "content": "WELCOME TO THEEV.\n\nYou have been cleared through the Skull. This means someone vouched for you, or you bought your way in, or both. Either way, you are here now.\n\nThe Law of the Lords applies in this starport, in the Upper City, and in any building or zone marked with red flags. Under the Law of the Lords: no murder, no weapons fire, no conduct that disturbs the calm and tranquility of the city.\n\nEverywhere else — the canyons, the lower streets, any unflagged zone — the Law of the Street applies. The only restriction in street zones is a prohibition on any weapon capable of breaching environmental containment.\n\nThe punishment for violating either law is the same.\n\nDeath.\n\nThe red flag zones move. A building that is protected today may not be protected tomorrow. Plan accordingly.\n\nThe Widows are always watching. You will not see them until it is relevant.\n\nWelcome to Blacksand City.",
+    "security_level": "unlocked",
+    "requires_roll": false
+  },
+  {
+    "title": "Docking Registry — Bay Assignments (Current Cycle)",
+    "location": "General Access Terminal — Blacksand Downport",
+    "date": "CURRENT CYCLE",
+    "author": "Downport Bay Control — Automated",
+    "content": "BAY ASSIGNMENTS — ACTIVE VESSELS\n\nBay 4: Registered. Transponder masked. Flag: Independent.\nBay 7: Registered. Transponder: MERCIFUGE. Hull class: 400-ton armed salvager. Flag: Independent. Owner record: SEALED.\nBay 9: Registered. Transponder masked. Flag: Vallis. Restricted access.\nBay 11: Registered. Transponder: IRON COVENANT. Hull class: 600-ton corsair. Flag: Irontooth.\nBay 14: Registered. Transponder masked. Flag: Darokyn. Restricted access.\nBay 17: Registered. New arrival. Transponder: [REDACTED — KRRSH CLEARANCE]. Flag: Independent.\n\n—\n\nNOTE: Bay doors close and seal on docking. Environmental breach protocols active at all times. Any discharge of weapons within bay superstructure triggers automatic Widow response.\n\nAll vessels remain impounded until Skull release code is issued or departure fee is paid.\n\nDeparture fees are non-negotiable.",
+    "security_level": "unlocked",
+    "requires_roll": false
+  },
+  {
+    "title": "Shipyard Notice — Kallos Shipyards",
+    "location": "General Access Terminal — Blacksand Downport",
+    "date": "CURRENT CYCLE (STANDING NOTICE)",
+    "author": "Kallos Shipyards Front Office",
+    "content": "KALLOS SHIPYARDS — ACQUISITION, REFITTING, RECYCLING\n\nWe buy ships. We sell ships. We ask no questions about where either came from.\n\nHull assessments available for a modest fee. No Imperial registry required. No transponder history examined.\n\nNote regarding recycled vessels: Stripping takes approximately ten days for vessels under 600 tons. Larger hulls on request. We do not accept vessels with active tracking beacons unless the beacon has been disabled prior to arrival. We will not disable it for you. We do not know how.\n\nNote regarding new acquisitions: Our current inventory includes three scout hulls, one armed merchant (transponder scrubbed), and what appears to be a decommissioned Imperial customs cutter. The cutter is priced to move.\n\nWe do not inquire into intended use. We recommend you extend us the same courtesy.\n\nKallos Shipyards. Discretion guaranteed or your money back.\n\n(Money-back policy has never been exercised. We intend to keep it that way.)",
+    "security_level": "unlocked",
+    "requires_roll": false
+  },
+  {
+    "title": "Arrivals Log — Security Notation",
+    "location": "General Access Terminal — Blacksand Downport",
+    "date": "CURRENT CYCLE",
+    "author": "Widow Administrative Office — Internal",
+    "content": "ARRIVALS — SECURITY NOTATION — CURRENT CYCLE\n\nVessel via Krrsh clearance codes. Hull unregistered. Crew: multiple. Manifests not filed. No affiliation declared.\n\nNote: Krrsh clearance codes are considered valid. Krrsh himself is not currently on Theev. His codes being used without him present is unusual.\n\nNote: A spy named Gesh has already filed an inquiry regarding this vessel's association with Drinax. Gesh's inquiry has been logged. We do not act on third-party inquiries without cause.\n\nNote: Crew has been met and orientation provided. Standard watch assigned. Elevated if they enter lower city without escort.\n\n— Recommend observation. Do not intervene unless Lord's Law is broken.",
+    "security_level": "restricted",
+    "requires_roll": true,
+    "roll_check": {
+      "difficulty": 10,
+      "skill": "Electronics (computers)",
+      "on_success": "Internal security notation accessed. You are being watched.",
+      "on_failure": "Access denied. Administrative partition locked."
+    }
+  },
+  {
+    "title": "Skull Orbital — Bay 17 Restricted Registry Pull",
+    "location": "General Access Terminal — Blacksand Downport",
+    "date": "CURRENT CYCLE",
+    "author": "Skull Orbital Docking Control — Restricted Partition",
+    "security_level": "restricted",
+    "content": "Bay 17 is listed in the public registry as: Transponder REDACTED — KRRSH CLEARANCE. Flag: Independent.\n\nThe Krrsh clearance codes suppress the standard registry entry. A deeper pull against the Skull Orbital control partition should recover the underlying record.\n\n[INTERACTIVE TERMINAL — AWAITING INPUT]",
+    "type": "action_sequence",
+    "action_sequence": {
+      "id": "blacksand-bay17-registry",
+      "category": "data_extraction",
+      "steps": [
+        {
+          "type": "auto",
+          "lines": [
+            ">> SKULL ORBITAL — DOCKING REGISTRY INTERFACE v1.9",
+            ">> PARTITION: RESTRICTED — KRRSH SUPPRESSION LAYER DETECTED",
+            ">> SUPPRESSION CODES ACTIVE ON: BAY 17",
+            "",
+            ">> INITIATING BYPASS AGAINST SUPPRESSION LAYER..."
+          ],
+          "delay": 35,
+          "pause_after": 700
+        },
+        {
+          "type": "prompt",
+          "prompt_text": "SPECIFY REGISTRY TARGET:",
+          "accept": ["BAY 17", "17", "REGISTRY", "PULL", "QUERY BAY 17"],
+          "reject_message": "TARGET NOT FOUND. SPECIFY A VALID BAY NUMBER.",
+          "max_attempts": 3,
+          "sound_on_accept": "access_granted",
+          "sound_on_reject": "access_denied"
+        },
+        {
+          "type": "auto",
+          "lines": [
+            ">> QUERYING SKULL ORBITAL DEEP REGISTRY...",
+            ">> STRIPPING KRRSH SUPPRESSION LAYER...",
+            ">> CROSS-REFERENCING WIDOW FLAGGING DATABASE..."
+          ],
+          "delay": 40,
+          "pause_after": 400
+        },
+        {
+          "type": "progress",
+          "label": "PULLING UNREDACTED REGISTRY ENTRY...",
+          "duration": 3000,
+          "segments": 20,
+          "sound_on_complete": "data_download",
+          "complete_message": "REGISTRY ENTRY RECOVERED"
+        },
+        {
+          "type": "auto",
+          "lines": [
+            ">> BAY 17 — UNREDACTED RECORD:",
+            ">> VESSEL: UNNAMED (HULL UNREGISTERED)",
+            ">> TRANSPONDER: SUPPRESSED — KRRSH PROXY CODES",
+            ">> FLAG: INDEPENDENT (DRINAX EMBASSY CONTACT — UNVERIFIED)",
+            ">> CREW: MULTIPLE — COUNT INDETERMINATE",
+            ">> WIDOW FLAG: LEVEL 2 OBSERVATION",
+            ">> FLAG NOTE: 'DO NOT APPROACH WITHOUT WIDOW CLEARANCE.'",
+            ">> FLAG NOTE: 'CORRELATED WITH ANOMALOUS SIGNAL INTENSIFICATION.'",
+            "",
+            ">> THEY KNOW EXACTLY WHO YOU ARE."
+          ],
+          "delay": 40,
+          "sound": "warning",
+          "sound_at_line": 8,
+          "pause_after": 600
+        }
+      ],
+      "on_complete": {
+        "message": "The unredacted record sits on the screen. The Widows filed a Level 2 observation flag the moment your ship docked — before you'd spoken to anyone. They know the Krrsh codes are proxied. They know the Drinax connection. The public registry shows nothing. Their internal record shows everything. You have been watched from the moment you arrived.",
+        "sound": "access_granted",
+        "persist_key": "blacksand-bay17-registry"
+      },
+      "on_failure": {
+        "message": "BYPASS FAILED. Skull Orbital partition locked. Your access attempt has been logged by Widow Administrative Office. Elevated observation status is now active.",
+        "sound": "access_denied"
+      }
+    }
+  }
+]

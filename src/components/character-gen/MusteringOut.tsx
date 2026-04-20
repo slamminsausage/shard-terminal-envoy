@@ -5,12 +5,14 @@
 
 import React, { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dices, Gift, Coins, Ship, Shield, Swords, Star, Users, Award } from 'lucide-react';
 import { ALL_CAREERS } from './careers';
 import type { CareerDefinition, BenefitTableRow, BenefitOption, BenefitEntry } from './careers/types';
+import { CareerTableDisplay } from './CareerTableDisplay';
 
 // ============================================================================
 // TYPES
@@ -42,6 +44,7 @@ interface BenefitRollResult {
 
 interface MusteringOutProps {
   careerHistory: CareerRecord[];
+  lostBenefitCareers?: string[];
   currentCash: number;
   currentShipShares: number;
   hasTasMembership: boolean;
@@ -64,8 +67,19 @@ interface MusteringOutProps {
     allies: number;
     contacts: number;
     equipment: string[];
+    gainedSkills: string[];
+    cashRollsUsed: number;
     benefitLog: BenefitRollResult[];
   }) => void;
+  useManualDice?: boolean;
+  /** Lifetime cash rolls already taken (e.g. from prior between-career benefit sessions).
+   *  The 3-cash-roll cap is per character, not per career. */
+  initialCashRollsUsed?: number;
+  /** Header title override. Used for the between-career flow to distinguish it
+   *  from the final mustering-out screen. */
+  title?: string;
+  /** Button label override — e.g. "Continue" for between-career, "Finish" for final. */
+  completeLabel?: string;
 }
 
 // ============================================================================
@@ -165,6 +179,7 @@ const formatBenefitEntry = (entry: BenefitEntry): string => {
 
 export const MusteringOut: React.FC<MusteringOutProps> = ({
   careerHistory,
+  lostBenefitCareers = [],
   currentCash,
   currentShipShares,
   hasTasMembership,
@@ -172,11 +187,20 @@ export const MusteringOut: React.FC<MusteringOutProps> = ({
   gamblerSkillLevel,
   characteristics: initialCharacteristics,
   onComplete,
+  useManualDice = false,
+  initialCashRollsUsed = 0,
+  title = 'Mustering Out Benefits',
+  completeLabel = 'Finish Mustering Out',
 }) => {
-  // Filter out pre-careers (they don't get benefits)
+  // Filter out pre-careers (they don't get benefits) and zero out careers that lost benefits
   const eligibleCareers = useMemo(() =>
-    careerHistory.filter(c => !c.isPreCareer),
-    [careerHistory]
+    careerHistory
+      .filter(c => !c.isPreCareer)
+      .map(c => lostBenefitCareers.includes(c.careerName)
+        ? { ...c, termsServed: 0, highestRank: 0, extraBenefitRolls: 0 }
+        : c
+      ),
+    [careerHistory, lostBenefitCareers]
   );
 
   // Calculate total benefit rolls per career
@@ -207,7 +231,7 @@ export const MusteringOut: React.FC<MusteringOutProps> = ({
   }, [eligibleCareers]);
 
   // State
-  const [cashRollsUsed, setCashRollsUsed] = useState(0);
+  const [cashRollsUsed, setCashRollsUsed] = useState(initialCashRollsUsed);
   const [benefitLog, setBenefitLog] = useState<BenefitRollResult[]>([]);
   const [accumulatedCash, setAccumulatedCash] = useState(currentCash);
   const [accumulatedShipShares, setAccumulatedShipShares] = useState(currentShipShares);
@@ -216,10 +240,15 @@ export const MusteringOut: React.FC<MusteringOutProps> = ({
   const [accumulatedAllies, setAccumulatedAllies] = useState(0);
   const [accumulatedContacts, setAccumulatedContacts] = useState(0);
   const [accumulatedEquipment, setAccumulatedEquipment] = useState<string[]>([]);
+  const [accumulatedSkills, setAccumulatedSkills] = useState<string[]>([]);
   const [characteristics, setCharacteristics] = useState(initialCharacteristics);
 
   // Track available benefit DMs from events (each can only be used once)
   const [availableBenefitDMs, setAvailableBenefitDMs] = useState<number[]>(initialBenefitDMPool);
+  // Player toggle: whether to apply an event DM to the next roll
+  const [applyEventDM, setApplyEventDM] = useState(false);
+  // Manual dice input
+  const [manualDiceValue, setManualDiceValue] = useState('');
 
   // Track rolls remaining per career
   const [rollsRemaining, setRollsRemaining] = useState<Record<string, number>>(() => {
@@ -251,7 +280,7 @@ export const MusteringOut: React.FC<MusteringOutProps> = ({
   /**
    * Roll for cash benefit
    */
-  const rollCash = (careerIdx: number) => {
+  const rollCash = (careerIdx: number, manualRoll?: number) => {
     const career = careerBenefits[careerIdx];
     const careerKey = `${career.careerName}-${careerIdx}`;
 
@@ -260,12 +289,12 @@ export const MusteringOut: React.FC<MusteringOutProps> = ({
     const careerDef = getCareerDefinition(career.careerName);
     if (!careerDef?.benefitsTable) return;
 
-    // Use one event benefit DM if available (auto-apply highest first)
-    const eventDM = availableBenefitDMs.length > 0 ? availableBenefitDMs[0] : 0;
+    // Only use event DM if player has toggled it on
+    const eventDM = (applyEventDM && availableBenefitDMs.length > 0) ? availableBenefitDMs[0] : 0;
 
     // Calculate DM: event DM (one use) + rank DM + Gambler skill
     const dm = eventDM + career.rankDM + gamblerSkillLevel;
-    const roll = rollDice(1, 6);
+    const roll = manualRoll ?? rollDice(1, 6);
     const total = Math.min(Math.max(roll + dm, 1), 7); // Clamp to 1-7
 
     const benefitRow = careerDef.benefitsTable[total - 1];
@@ -278,9 +307,10 @@ export const MusteringOut: React.FC<MusteringOutProps> = ({
       [careerKey]: prev[careerKey] - 1,
     }));
 
-    // Consume the event DM (remove from pool)
+    // Consume the event DM if used (remove from pool) and reset toggle
     if (eventDM > 0) {
       setAvailableBenefitDMs(prev => prev.slice(1));
+      setApplyEventDM(false);
     }
 
     const result: BenefitRollResult = {
@@ -307,7 +337,7 @@ export const MusteringOut: React.FC<MusteringOutProps> = ({
   /**
    * Roll for benefit (non-cash)
    */
-  const rollBenefit = (careerIdx: number) => {
+  const rollBenefit = (careerIdx: number, manualRoll?: number) => {
     const career = careerBenefits[careerIdx];
     const careerKey = `${career.careerName}-${careerIdx}`;
 
@@ -316,12 +346,12 @@ export const MusteringOut: React.FC<MusteringOutProps> = ({
     const careerDef = getCareerDefinition(career.careerName);
     if (!careerDef?.benefitsTable) return;
 
-    // Use one event benefit DM if available (auto-apply highest first)
-    const eventDM = availableBenefitDMs.length > 0 ? availableBenefitDMs[0] : 0;
+    // Only use event DM if player has toggled it on
+    const eventDM = (applyEventDM && availableBenefitDMs.length > 0) ? availableBenefitDMs[0] : 0;
 
     // Calculate DM: event DM (one use) + rank DM (no Gambler for non-cash)
     const dm = eventDM + career.rankDM;
-    const roll = rollDice(1, 6);
+    const roll = manualRoll ?? rollDice(1, 6);
     const total = Math.min(Math.max(roll + dm, 1), 7);
 
     const benefitRow = careerDef.benefitsTable[total - 1];
@@ -332,9 +362,10 @@ export const MusteringOut: React.FC<MusteringOutProps> = ({
       [careerKey]: prev[careerKey] - 1,
     }));
 
-    // Consume the event DM (remove from pool)
+    // Consume the event DM if used (remove from pool) and reset toggle
     if (eventDM > 0) {
       setAvailableBenefitDMs(prev => prev.slice(1));
+      setApplyEventDM(false);
     }
 
     setLastRollResult({
@@ -432,8 +463,10 @@ export const MusteringOut: React.FC<MusteringOutProps> = ({
           }
           break;
         case 'skill':
-          // Skills from benefits - just log for now, would need skill system integration
+          // Skills from benefits (e.g. Prisoner benefit table). Tracked here
+          // and applied back in CharacterGenerator via applySkillGain.
           if (option.skill) {
+            setAccumulatedSkills(prev => [...prev, option.skill!]);
             appliedBenefits.push(`${option.skill} skill`);
           }
           break;
@@ -484,6 +517,8 @@ export const MusteringOut: React.FC<MusteringOutProps> = ({
       allies: accumulatedAllies,
       contacts: accumulatedContacts,
       equipment: accumulatedEquipment,
+      gainedSkills: accumulatedSkills,
+      cashRollsUsed,
       benefitLog,
     });
   };
@@ -498,7 +533,7 @@ export const MusteringOut: React.FC<MusteringOutProps> = ({
         <CardHeader className="pb-2">
           <CardTitle className="text-terminal-primary text-lg flex items-center gap-2">
             <Gift className="h-5 w-5" />
-            Mustering Out Benefits
+            {title}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -551,6 +586,20 @@ export const MusteringOut: React.FC<MusteringOutProps> = ({
                     <Award className="h-3 w-3" />
                   )}
                   {item}
+                </span>
+              ))}
+            </div>
+          )}
+
+          {/* Skills (e.g. Prisoner benefit table grants skills) */}
+          {accumulatedSkills.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {accumulatedSkills.map((skill, idx) => (
+                <span
+                  key={idx}
+                  className="bg-purple-500/20 text-purple-400 text-xs px-2 py-1 rounded flex items-center gap-1"
+                >
+                  <Award className="h-3 w-3" /> {skill}
                 </span>
               ))}
             </div>
@@ -615,14 +664,28 @@ export const MusteringOut: React.FC<MusteringOutProps> = ({
       {/* Career Benefit Rolls */}
       {totalRollsRemaining > 0 && !pendingBenefitChoice ? (
         <div className="space-y-3">
-          {/* Show available benefit DMs from events */}
+          {/* Show available benefit DMs from events with player toggle */}
           {availableBenefitDMs.length > 0 && (
             <Alert className="border-amber-500/30 bg-amber-500/10">
               <Award className="h-4 w-4 text-amber-400" />
               <AlertDescription className="text-amber-300/80 text-sm">
-                <span className="font-semibold">{availableBenefitDMs.length} Event DM{availableBenefitDMs.length !== 1 ? 's' : ''} Available:</span>
-                {' '}[{availableBenefitDMs.map(dm => `+${dm}`).join(', ')}]
-                <span className="text-amber-300/60 ml-2">(Auto-applied one per roll, highest first)</span>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="font-semibold">{availableBenefitDMs.length} Event DM{availableBenefitDMs.length !== 1 ? 's' : ''} Available:</span>
+                    {' '}[{availableBenefitDMs.map(dm => `+${dm}`).join(', ')}]
+                  </div>
+                  <label className="flex items-center gap-2 cursor-pointer ml-3">
+                    <input
+                      type="checkbox"
+                      checked={applyEventDM}
+                      onChange={(e) => setApplyEventDM(e.target.checked)}
+                      className="accent-amber-400"
+                    />
+                    <span className={applyEventDM ? 'text-amber-300 font-semibold' : 'text-amber-300/60'}>
+                      Apply DM+{availableBenefitDMs[0]} to next roll
+                    </span>
+                  </label>
+                </div>
               </AlertDescription>
             </Alert>
           )}
@@ -646,38 +709,96 @@ export const MusteringOut: React.FC<MusteringOutProps> = ({
                         {career.rankDM > 0 && ` • DM+${career.rankDM} from rank`}
                       </div>
                     </div>
-                    <div className="flex gap-2">
-                      <Button
-                        onClick={() => rollCash(idx)}
-                        disabled={!canRollCash}
-                        size="sm"
-                        variant="outline"
-                        className={canRollCash
-                          ? "border-green-500/50 text-green-400 hover:bg-green-500/20"
-                          : "border-gray-500/30 text-gray-500 cursor-not-allowed"
-                        }
-                      >
-                        <Coins className="h-4 w-4 mr-1" />
-                        Cash
-                      </Button>
-                      <Button
-                        onClick={() => rollBenefit(idx)}
-                        size="sm"
-                        variant="outline"
-                        className="border-terminal-primary/50 text-terminal-primary hover:bg-terminal-primary/20"
-                      >
-                        <Gift className="h-4 w-4 mr-1" />
-                        Benefit
-                      </Button>
-                    </div>
+                    {useManualDice ? (
+                      <div className="space-y-2 mt-2">
+                        <p className="text-xs text-blue-400">Enter your 1D6 roll result:</p>
+                        <div className="flex gap-2">
+                          <Input
+                            type="number"
+                            min={1}
+                            max={6}
+                            value={manualDiceValue}
+                            onChange={(e) => setManualDiceValue(e.target.value)}
+                            placeholder="1D6 (1-6)"
+                            className="bg-black border-terminal-primary/50 text-terminal-primary placeholder:text-terminal-primary/40 w-24"
+                          />
+                          <Button
+                            onClick={() => {
+                              const val = parseInt(manualDiceValue);
+                              if (!isNaN(val) && val >= 1 && val <= 6) {
+                                rollCash(idx, val);
+                                setManualDiceValue('');
+                              }
+                            }}
+                            disabled={!canRollCash || !manualDiceValue || isNaN(parseInt(manualDiceValue)) || parseInt(manualDiceValue) < 1 || parseInt(manualDiceValue) > 6}
+                            size="sm"
+                            variant="outline"
+                            className={canRollCash
+                              ? "border-green-500/50 text-green-400 hover:bg-green-500/20"
+                              : "border-gray-500/30 text-gray-500 cursor-not-allowed"
+                            }
+                          >
+                            <Coins className="h-4 w-4 mr-1" />
+                            Cash
+                          </Button>
+                          <Button
+                            onClick={() => {
+                              const val = parseInt(manualDiceValue);
+                              if (!isNaN(val) && val >= 1 && val <= 6) {
+                                rollBenefit(idx, val);
+                                setManualDiceValue('');
+                              }
+                            }}
+                            disabled={!manualDiceValue || isNaN(parseInt(manualDiceValue)) || parseInt(manualDiceValue) < 1 || parseInt(manualDiceValue) > 6}
+                            size="sm"
+                            variant="outline"
+                            className="border-terminal-primary/50 text-terminal-primary hover:bg-terminal-primary/20"
+                          >
+                            <Gift className="h-4 w-4 mr-1" />
+                            Benefit
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={() => rollCash(idx)}
+                          disabled={!canRollCash}
+                          size="sm"
+                          variant="outline"
+                          className={canRollCash
+                            ? "border-green-500/50 text-green-400 hover:bg-green-500/20"
+                            : "border-gray-500/30 text-gray-500 cursor-not-allowed"
+                          }
+                        >
+                          <Coins className="h-4 w-4 mr-1" />
+                          Cash
+                        </Button>
+                        <Button
+                          onClick={() => rollBenefit(idx)}
+                          size="sm"
+                          variant="outline"
+                          className="border-terminal-primary/50 text-terminal-primary hover:bg-terminal-primary/20"
+                        >
+                          <Gift className="h-4 w-4 mr-1" />
+                          Benefit
+                        </Button>
+                      </div>
+                    )}
                   </div>
 
-                  {/* Show benefit table preview */}
+                  {/* Show benefit table (collapsible) */}
                   {careerDef?.benefitsTable && (
-                    <div className="mt-2 text-xs text-terminal-primary/50 font-mono">
-                      Benefits: {careerDef.benefitsTable.slice(0, 3).map((row, i) =>
-                        formatBenefitEntry(row.benefit)
-                      ).join(' • ')}...
+                    <div className="mt-2">
+                      <CareerTableDisplay
+                        title={`${career.careerName} Benefits Table (1D6)`}
+                        titleColor="text-amber-400"
+                        entries={careerDef.benefitsTable.map((row, i) => ({
+                          index: i + 1,
+                          label: `${i + 1}.`,
+                          description: `Cash: Cr${(row.cash || 0).toLocaleString()} | Benefit: ${formatBenefitEntry(row.benefit)}`,
+                        }))}
+                      />
                     </div>
                   )}
                 </CardContent>
@@ -725,7 +846,7 @@ export const MusteringOut: React.FC<MusteringOutProps> = ({
       >
         {totalRollsRemaining > 0
           ? `Complete All Rolls (${totalRollsRemaining} remaining)`
-          : 'Finish Mustering Out'
+          : completeLabel
         }
       </Button>
     </div>

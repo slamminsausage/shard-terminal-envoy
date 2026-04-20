@@ -44,6 +44,9 @@ export interface CalendarEvent {
 
   created_at: string;
   updated_at: string;
+
+  /** Per-crew scoping. NULL/empty = visible to all crews. */
+  visible_crew_ids?: string[] | null;
 }
 
 export type EventType = 'reminder' | 'session' | 'payment' | 'arrival' | 'departure';

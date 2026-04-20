@@ -5,10 +5,12 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Plus, Trophy, AlertCircle, Target } from 'lucide-react';
+import { Plus, Trophy, AlertCircle, Target, Eye, EyeOff } from 'lucide-react';
 import { QuestCreator } from './QuestCreator';
 import { QuestDetail } from './QuestDetail';
 import { AnimatedList } from '@/components/ui/AnimatedList';
+import { useCampaign } from '@/contexts/CampaignContext';
+import { CrewVisibilityBadge } from '@/components/crew/CrewVisibilityBadge';
 
 const statusColors: Record<QuestStatus, string> = {
   active: 'bg-green-500/20 text-green-400 border-green-500/50',
@@ -32,17 +34,27 @@ const categoryIcons = {
 };
 
 export const QuestBoard: React.FC = () => {
-  const { quests, isLoading } = useQuest();
+  const { quests, isLoading, updateQuest } = useQuest();
+  const { isGM } = useCampaign();
   const [showCreator, setShowCreator] = useState(false);
   const [selectedQuestId, setSelectedQuestId] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState<QuestStatus | 'all'>('all');
 
-  const filteredQuests = filterStatus === 'all'
-    ? quests
-    : quests.filter(q => q.status === filterStatus);
+  // Non-GMs never see hidden quests. GMs see them all, flagged with a badge.
+  const visibleQuests = isGM ? quests : quests.filter(q => !q.is_hidden);
 
-  const activeCount = quests.filter(q => q.status === 'active').length;
-  const completedCount = quests.filter(q => q.status === 'completed').length;
+  const filteredQuests = filterStatus === 'all'
+    ? visibleQuests
+    : visibleQuests.filter(q => q.status === filterStatus);
+
+  const activeCount = visibleQuests.filter(q => q.status === 'active').length;
+  const completedCount = visibleQuests.filter(q => q.status === 'completed').length;
+  const hiddenCount = isGM ? quests.filter(q => q.is_hidden).length : 0;
+
+  const toggleHidden = async (e: React.MouseEvent, questId: string, currentHidden: boolean) => {
+    e.stopPropagation();
+    await updateQuest(questId, { is_hidden: !currentHidden });
+  };
 
   if (selectedQuestId) {
     return <QuestDetail questId={selectedQuestId} onClose={() => setSelectedQuestId(null)} />;
@@ -55,6 +67,7 @@ export const QuestBoard: React.FC = () => {
           <h2 className="text-xl font-bold text-terminal-primary">Quest Log</h2>
           <p className="text-terminal-primary/70 text-sm">
             Active: {activeCount} • Completed: {completedCount}
+            {isGM && hiddenCount > 0 && ` • Hidden: ${hiddenCount}`}
           </p>
         </div>
         <Button
@@ -135,9 +148,29 @@ export const QuestBoard: React.FC = () => {
                         <Badge className={priorityColors[quest.priority]}>
                           {quest.priority}
                         </Badge>
+                        {isGM && quest.is_hidden && (
+                          <Badge className="bg-purple-500/20 text-purple-300 border-purple-500/50">
+                            <EyeOff className="h-3 w-3 mr-1" />
+                            Hidden
+                          </Badge>
+                        )}
+                        {isGM && (
+                          <CrewVisibilityBadge ids={quest.visible_crew_ids} />
+                        )}
                       </div>
                       <CardTitle className="text-terminal-primary">{quest.title}</CardTitle>
                     </div>
+                    {isGM && (
+                      <Button
+                        onClick={(e) => toggleHidden(e, quest.id, !!quest.is_hidden)}
+                        variant="ghost"
+                        size="sm"
+                        title={quest.is_hidden ? 'Reveal to players' : 'Hide from players'}
+                        className="text-terminal-primary/70 hover:bg-terminal-primary/20 hover:text-terminal-primary"
+                      >
+                        {quest.is_hidden ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+                      </Button>
+                    )}
                   </div>
                 </CardHeader>
                 <CardContent>

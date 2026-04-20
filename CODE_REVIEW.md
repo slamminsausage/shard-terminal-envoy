@@ -667,4 +667,246 @@ Run `npm audit fix` to address known dependency vulnerabilities.
 
 ---
 
+---
+
+## Code Review Round 3 — 2026-03-25
+
+### Bugs & Critical Issues
+
+#### 1. **Race Condition in `endCombat()` — Sequential Async Loop** — HIGH
+**Location**: `src/hooks/useShipCombat.ts:225-257`
+
+The `endCombat` function iterates over `combatants` with a sequential `for...of` + `await` loop, making two separate DB calls per destroyed ship. If the `combatants` array changes mid-loop (e.g., via a concurrent state update), stale references cause errors.
+
+**Fix**: Use `Promise.all()` to batch updates, and combine hull-zero status updates into a single call per contact.
+
+---
+
+#### 2. **Stale Closure in JumpPlannerContext `handleMapClick`** — HIGH
+**Location**: `src/contexts/JumpPlannerContext.tsx:251-270`
+
+The `useEffect` that listens for `postMessage` events calls `handleMapClick(x, y)` but only includes `state.jumpRating` in its dependency array — not `handleMapClick` itself. If `handleMapClick` is redefined (e.g., when other state it depends on changes), the event listener retains the stale version.
+
+**Fix**: Add `handleMapClick` to the dependency array, or use a ref to always call the latest version.
+
+---
+
+#### 3. **Silent Error Swallowing in `supabase.ts`** — HIGH
+**Location**: `src/lib/supabase.ts:502, 552`
+
+Empty `catch { /* ignore */ }` blocks around JSON.parse operations mean corrupted localStorage data is silently discarded. Users get no indication that their local fallback data is broken.
+
+**Fix**: Log a warning in dev mode and consider clearing the corrupted key so it doesn't persistently fail.
+
+---
+
+#### 4. **Weak Session Token Generation** — HIGH (Security)
+**Location**: `src/contexts/CampaignContext.tsx:50-54`
+
+Session tokens are generated with `Math.random().toString(36)`, which is not cryptographically secure and is predictable.
+
+**Fix**: Use `crypto.getRandomValues()` and convert to hex/base64 for session token generation.
+
+---
+
+#### 5. **`partyFunds` Circular Dependency in FinanceContext** — MEDIUM
+**Location**: `src/contexts/FinanceContext.tsx:57-88`
+
+The `recalculateBalance` callback depends on `partyFunds` in its dependency array but also calls `setPartyFunds` within itself. Rapid successive calls can read stale values of `partyFunds` before the previous `setState` has flushed.
+
+**Fix**: Use a ref (`partyFundsRef`) to always read the latest value, matching the pattern used in CampaignContext.
+
+---
+
+#### 6. **Unhandled Errors in Bridge Polling** — MEDIUM
+**Location**: `src/hooks/useBridgeState.ts:296-300`
+
+The `setInterval` polling loop calls `void loadContacts()`, `void loadMessages()`, `void loadScans()` without catching errors. If the database becomes unavailable, errors are silently discarded and the user sees stale data with no indication of a problem.
+
+**Fix**: Wrap polling calls in try/catch and surface a "connection lost" indicator after N consecutive failures.
+
+---
+
+#### 7. **`parseInt` Without Radix in EventHandler** — MEDIUM
+**Location**: `src/components/character-gen/EventHandler.tsx:80`
+
+`parseInt(directMatch.value)` without a radix parameter could produce unexpected results if the string starts with `0` (octal interpretation in older engines).
+
+**Fix**: Use `parseInt(directMatch.value, 10)` or `Number(directMatch.value)`.
+
+---
+
+#### 8. **Bidirectional Sensor Lock Removal** — LOW
+**Location**: `src/hooks/useShipCombat.ts:302, 367`
+
+```typescript
+setSensorLocks(prev => Object.fromEntries(
+  Object.entries(prev).filter(([k, v]) => k !== contactId && v !== contactId)
+));
+```
+
+This removes a lock if EITHER the key OR value matches the contactId. While possibly intentional (removing all locks involving a destroyed ship), this behavior is undocumented and could surprise maintainers. If a ship is the target of multiple locks, all are removed.
+
+**Fix**: Add a comment documenting the intentional bidirectional removal, or split into separate removal logic if only one direction is intended.
+
+---
+
+### Unwired Features & Dead Code
+
+#### 9. **Extensive Unused Context Functions**
+
+Many context providers export functions that are never consumed by any component:
+
+| Context | Unused Functions |
+|---------|-----------------|
+| **BridgeContext** | `removeContact()`, `updateContactStatus()`, `updateContactFacing()`, `updateContactHull()`, `setMode()`, `updateNavigation()` |
+| **JumpPlannerContext** | `clearError()`, `planRoute()`, `saveNote()`, `deleteMarker()` |
+| **FinanceContext** | `getTransactionsByCategory()`, `calculateNetIncome()` |
+| **InventoryContext** | `getItem()`, `createTemplate()`, `deleteTemplate()` |
+| **TradeContext** | `calculatePotentialProfit()`, `getCargoByVehicle()`, `getAllMarketRolls()` |
+| **CalendarContext** | `setCurrentDate()`, `getAllEvents()`, `formatDate()` |
+| **PlayerContext** | `validateAccessCode()` |
+| **SessionContext** | `addReward()` |
+
+**Impact**: These represent either scaffolded features that were never wired to UI, or internal helpers that shouldn't be in the public context API. They add confusion for maintainers and bloat the context value objects (triggering unnecessary re-renders when the value object identity changes).
+
+**Fix**: Either wire these to UI components, move them to internal-only helpers, or remove them if truly unneeded.
+
+---
+
+#### 10. **PlayerContext Is Completely Unwired** — HIGH
+**Location**: `src/contexts/PlayerContext.tsx`
+
+The entire `PlayerContext` defines a `PlayerProvider` component and `usePlayer` hook with 14 exported methods (`validateAccessCode`, `logout`, `refreshData`, `saveCharacter`, `saveVehicle`, `createNewCharacter`, `createNewVehicle`, `deleteCharacter`, `deleteVehicle`, etc.) — but it is **never imported in `App.tsx`**, never added to the provider hierarchy, and never consumed by any component. This is a fully dead context duplicating functionality that lives in `CampaignContext`.
+
+**Fix**: Remove entirely, or integrate into the auth/data architecture if it was intended to replace parts of CampaignContext.
+
+---
+
+#### 11. **`getDefaultAttitudeFromLawLevel()` Exported But Never Called** — LOW
+**Location**: `src/lib/piracy/tables.ts:78-84`
+
+This utility function maps law levels to port attitudes but is never called. It should likely be used in `PortReputationPanel` to auto-populate port attitude when creating new ports.
+
+---
+
+#### 12. **NexaInterface Still Unwired** (previously reported)
+**Location**: `src/components/interfaces/NexaInterface.tsx`
+
+Still not registered in MainframeShell tabs. Consider either wiring it up or removing the dead component.
+
+---
+
+#### 13. **AutoSaveIndicator Still Unused** (previously reported)
+**Location**: `src/components/AutoSaveIndicator.tsx`
+
+Defined but never imported or rendered anywhere.
+
+---
+
+### Architecture & Performance Issues
+
+#### 12. **Deep Provider Nesting Causes Cascading Re-renders** — HIGH
+**Location**: `src/App.tsx:45-93`
+
+14 context providers are nested sequentially. Any state change in an outer provider (e.g., CampaignProvider) causes all inner providers and their children to potentially re-render.
+
+**Fix**:
+- Split `CampaignContext` (922 lines) into `AuthContext` and `CampaignDataContext` — auth changes rarely, campaign data changes often
+- Memoize context value objects with `useMemo` to prevent unnecessary identity changes
+- Consider a flat composition pattern where independent providers aren't nested
+
+---
+
+#### 13. **TanStack React Query Installed But Underutilized** — MEDIUM
+**Location**: `src/App.tsx:43` (QueryClient created), various contexts
+
+React Query is initialized but contexts use manual `useState` + `useCallback` + `useEffect` for all data fetching. This means the app misses out on request deduplication, automatic refetch on window focus, optimistic updates, and cache management.
+
+**Fix**: Migrate data fetching operations to `useQuery()` and mutations to `useMutation()`. Start with the heaviest fetchers: CampaignContext character/vehicle loading, BridgeContext contact/message polling.
+
+---
+
+#### 14. **Missing Memoization Throughout** — MEDIUM
+
+- `MainframeShell.tsx:36-46`: `tabs` array is recreated on every render, causing AppHeader to re-render
+- `CrewInterface`: Character filtering/mapping logic not memoized — re-filters all characters on every keystroke
+- `CharacterSheet`: Renders massive skill definition arrays without memoization
+- Zero `React.memo` exports on tab content components
+
+**Fix**: Memoize the `tabs` array, add `React.memo` to tab interface components, and use `useMemo` for derived data like filtered/sorted lists.
+
+---
+
+#### 15. **No Loading/Empty States for Data-Dependent UI** — MEDIUM
+
+Most tab interfaces render immediately without waiting for data. No skeleton states, no "no data found" messages, no retry buttons on failure. Users see blank space while Supabase queries resolve.
+
+**Fix**: Add `isLoading` state to contexts, create terminal-themed skeleton components, and add empty state messages.
+
+---
+
+#### 16. **Sequential Supabase Queries in `refreshData()`** — MEDIUM
+**Location**: `src/contexts/CampaignContext.tsx:355-427`
+
+`refreshData` calls `getAllCharacters()`, `getAllVehicles()`, and `getAllCrewGroups()` sequentially. These are independent queries that could run in parallel.
+
+**Fix**: Use `Promise.all([getAllCharacters(), getAllVehicles(), getAllCrewGroups()])` to parallelize.
+
+---
+
+#### 17. **Accessibility Gaps** — MEDIUM
+
+- No `aria-live` regions for real-time updates (bridge messages, combat round changes)
+- No focus management when switching tabs
+- Form inputs in character sheets may lack associated labels
+- CRT overlay effects (scanlines, phosphor glow) may reduce readability for visually impaired users
+- No high-contrast mode option
+
+**Fix**: Add `aria-live="polite"` to bridge and combat containers, manage focus on tab change, audit form labels, and consider a high-contrast toggle.
+
+---
+
+### Improvement Recommendations
+
+#### Quick Wins (< 1 hour each)
+1. **Memoize `tabs` array** in MainframeShell with `useMemo`
+2. **Use `crypto.getRandomValues()`** for session tokens
+3. **Add radix to all `parseInt` calls** across the codebase
+4. **Parallelize `refreshData()`** queries with `Promise.all`
+5. **Add dev-mode warnings** to empty catch blocks in supabase.ts
+6. **Remove or document unused context functions** — trim the public API
+
+#### Medium Effort (1-4 hours each)
+7. **Split CampaignContext** into Auth + Data contexts
+8. **Add `React.memo`** to all tab interface components
+9. **Add loading skeletons** for main tab interfaces
+10. **Add `aria-live` regions** to bridge console and combat interface
+11. **Wire up error handling** for bridge polling with connection status indicator
+12. **Batch ship combat `endCombat()` updates** with Promise.all
+
+#### Larger Efforts (1+ days each)
+13. **Migrate to React Query** for data fetching in contexts
+14. **Add test coverage** for context providers and authentication flow (currently ~5 test files for 215+ components)
+15. **Code-split tab interfaces** with `React.lazy()` + `Suspense` (bundle is 1.8MB)
+16. **Wire up unused BridgeContext functions** to admin bridge UI or remove them
+17. **Implement `InventoryContext` template system** or remove dead `createTemplate`/`deleteTemplate` functions
+
+---
+
+### Summary
+
+The codebase is well-structured with good patterns (ref-based state sync, offline-first fallbacks, typed career data). The main areas for improvement are:
+
+1. **State management**: Stale closures, missing deps, cascading re-renders from deep nesting
+2. **Dead code**: ~30 unused context functions representing scaffolded but unwired features
+3. **Performance**: Missing memoization, sequential queries, no code splitting
+4. **Security**: Weak session token generation
+5. **Testing**: Only 5 test files for 215+ components — critical paths are untested
+6. **UX polish**: No loading/empty states, no error recovery UI, accessibility gaps
+
+The highest-impact fixes are splitting CampaignContext, parallelizing DB queries, securing session tokens, and memoizing expensive renders.
+
+---
+
 *End of Code Review*

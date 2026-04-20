@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useRef, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback, useMemo, ReactNode } from 'react';
 import { Character, Vehicle, Player, CrewGroup } from '@/types/database';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from "@/integrations/supabase/client";
@@ -48,10 +48,9 @@ const getStoredPlayer = (): Player | null => {
 };
 
 const generateSessionToken = (): string => {
-  const timestamp = Date.now().toString(36);
-  const randomPart = Math.random().toString(36).substring(2, 15);
-  const additionalRandom = Math.random().toString(36).substring(2, 15);
-  return `${timestamp}-${randomPart}-${additionalRandom}`;
+  const array = new Uint8Array(24);
+  crypto.getRandomValues(array);
+  return Array.from(array, b => b.toString(16).padStart(2, '0')).join('');
 };
 
 const createLocalSession = (player: Player) => {
@@ -91,6 +90,11 @@ interface CampaignContextType {
   characters: Character[];
   vehicles: Vehicle[];
   crewGroups: CrewGroup[];
+
+  // Active-character context (drives per-crew content visibility)
+  activeCharacter: Character | null;
+  activeCrewId: string | null;
+  setActiveCharacter: (characterId: string | null) => Promise<void>;
 
   // Authentication methods
   checkAuthentication: () => boolean;
@@ -357,25 +361,24 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
     try {
       const player = currentPlayerRef.current;
 
+      // Fetch all data in parallel for better performance
+      const [allChars, vehiclesData, crewGroupsData] = await Promise.all([
+        dbHelpers.getAllCharacters(),
+        dbHelpers.getAllVehicles(),
+        dbHelpers.getAllCrewGroups(),
+      ]);
+
       // GM sees all characters; players see all PCs + NPCs (editing controlled at UI level)
-      let charactersData: any[];
-      if (!player || player.role === 'gm') {
-        charactersData = await dbHelpers.getAllCharacters();
-      } else {
-        const allChars = await dbHelpers.getAllCharacters();
-        charactersData = allChars.filter((c: any) =>
-          c.player_id === player.id ||
-          c.player_id === 'campaign' ||
-          c.character_type === 'npc' ||
-          (c.character_type || 'pc') === 'pc'
-        );
-      }
+      const charactersData = (!player || player.role === 'gm')
+        ? allChars
+        : allChars.filter((c: any) =>
+            c.player_id === player.id ||
+            c.player_id === 'campaign' ||
+            c.character_type === 'npc' ||
+            (c.character_type || 'pc') === 'pc'
+          );
       setCharacters(charactersData as Character[]);
-
-      const vehiclesData = await dbHelpers.getAllVehicles();
       setVehicles(vehiclesData as Vehicle[]);
-
-      const crewGroupsData = await dbHelpers.getAllCrewGroups();
       setCrewGroups(crewGroupsData as CrewGroup[]);
     } catch (error) {
       console.error('Failed to refresh data:', error);
@@ -885,6 +888,50 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
     }
   };
 
+  // ─── Active character (drives per-crew content visibility) ─────
+  //
+  // A player picks which of their characters they're "playing as" right now;
+  // the selected character's crew_id is what the visibility filter checks
+  // against. GMs don't need this (they bypass filtering), but the field is
+  // harmless for them. If no active character is set but the player owns at
+  // least one character with a crew, auto-pick the first one so new players
+  // aren't stuck seeing no crew-scoped content after an upgrade.
+  const activeCharacter = useMemo<Character | null>(() => {
+    if (!currentPlayer) return null;
+    const owned = characters.filter(c =>
+      c.player_id === currentPlayer.id && (c.character_type || 'pc') === 'pc'
+    );
+    if (owned.length === 0) return null;
+    const explicitId = currentPlayer.active_character_id;
+    if (explicitId) {
+      const match = owned.find(c => c.id === explicitId);
+      if (match) return match;
+    }
+    // Fallback: first owned character that has a crew assigned, else first owned.
+    return owned.find(c => !!c.crew_id) || owned[0] || null;
+  }, [currentPlayer, characters]);
+
+  const activeCrewId = activeCharacter?.crew_id || null;
+
+  const setActiveCharacter = useCallback(async (characterId: string | null): Promise<void> => {
+    const player = currentPlayerRef.current;
+    if (!player || player.id === 'legacy-gm') return;
+
+    // Optimistic local update.
+    const updatedPlayer: Player = { ...player, active_character_id: characterId };
+    setCurrentPlayer(updatedPlayer);
+    currentPlayerRef.current = updatedPlayer;
+    localStorage.setItem(PLAYER_STORAGE_KEY, JSON.stringify(updatedPlayer));
+
+    // Persist to database. Best-effort: if it fails we keep the optimistic
+    // value so the UI stays responsive; next refresh will reconcile.
+    try {
+      await dbHelpers.updatePlayer(player.id, { active_character_id: characterId });
+    } catch (error) {
+      console.error('Failed to persist active character:', error);
+    }
+  }, []);
+
   const value: CampaignContextType = {
     isAuthenticated,
     isLoading,
@@ -893,6 +940,9 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
     characters,
     vehicles,
     crewGroups,
+    activeCharacter,
+    activeCrewId,
+    setActiveCharacter,
     checkAuthentication,
     login,
     register,

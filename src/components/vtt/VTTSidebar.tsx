@@ -14,6 +14,9 @@ import VTTSettingsPanel from "./VTTSettingsPanel";
 import VTTCharacterImport from "./VTTCharacterImport";
 import VTTScenePresets from "./VTTScenePresets";
 import VTTAoEPanel from "./VTTAoEPanel";
+import VTTLayersPanel from "./VTTLayersPanel";
+import VTTNotesPanel from "./VTTNotesPanel";
+import VTTAssetsPanel from "./VTTAssetsPanel";
 import { X } from "lucide-react";
 
 export default function VTTSidebar() {
@@ -23,6 +26,7 @@ export default function VTTSidebar() {
 
   const panelLabels: Record<string, string> = {
     maps: "Maps",
+    layers: "Layers",
     tokens: "Tokens",
     characters: "Characters",
     drawing: "Drawing",
@@ -34,21 +38,23 @@ export default function VTTSidebar() {
     initiative: "Initiative",
     clocks: "Clocks",
     handouts: "Handouts",
+    notes: "Campaign Notes",
     aoe: "AoE Templates",
     dice: "Dice Roller",
+    assets: "Asset Library",
     settings: "Settings",
   };
 
   return (
-    <div className="w-64 h-full bg-terminal-bg-dark/95 border-l border-terminal-border/30 flex flex-col">
+    <div className="vtt-sidebar">
       {/* Header */}
-      <div className="flex items-center justify-between px-3 py-2 border-b border-terminal-border/30">
-        <span className="text-terminal-primary text-xs font-mono uppercase tracking-wider">
+      <div className="vtt-sidebar-header">
+        <span className="vtt-sidebar-title">
           {panelLabels[state.sidebarPanel] || state.sidebarPanel}
         </span>
         <button
           onClick={() => dispatch({ type: "SET_SIDEBAR", payload: null })}
-          className="text-terminal-primary/50 hover:text-terminal-primary transition-colors"
+          className="vtt-btn-icon"
         >
           <X size={14} />
         </button>
@@ -57,6 +63,7 @@ export default function VTTSidebar() {
       {/* Panel content */}
       <div className="flex-1 overflow-hidden">
         {state.sidebarPanel === "maps" && <VTTMapLibrary />}
+        {state.sidebarPanel === "layers" && <VTTLayersPanel />}
         {state.sidebarPanel === "tokens" && <VTTTokenPanel />}
         {state.sidebarPanel === "characters" && <VTTCharacterImport />}
         {state.sidebarPanel === "drawing" && <VTTDrawingPanel />}
@@ -66,10 +73,12 @@ export default function VTTSidebar() {
         {state.sidebarPanel === "initiative" && <VTTInitiativePanel />}
         {state.sidebarPanel === "clocks" && <VTTClocksPanel />}
         {state.sidebarPanel === "handouts" && <VTTHandoutsPanel />}
+        {state.sidebarPanel === "notes" && <VTTNotesPanel />}
         {state.sidebarPanel === "aoe" && <VTTAoEPanel />}
         {state.sidebarPanel === "fog" && <VTTFogPanel />}
         {state.sidebarPanel === "lighting" && <VTTLightingPanel />}
         {state.sidebarPanel === "dice" && <VTTDiceRoller />}
+        {state.sidebarPanel === "assets" && <VTTAssetsPanel />}
         {state.sidebarPanel === "settings" && <VTTSettingsPanel />}
       </div>
     </div>

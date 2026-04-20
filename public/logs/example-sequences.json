@@ -1,0 +1,247 @@
+[
+  {
+    "title": "Airlock Gamma Override Console",
+    "location": "Access Control — Gamma Wing",
+    "date": "092-1105",
+    "author": "Station Management System",
+    "security_level": "restricted",
+    "content": "AIRLOCK GAMMA — MANUAL OVERRIDE CONSOLE\n\nThe portside maintenance corridor has been sealed under emergency lockdown protocol. Standard atmospheric equalization is offline. Magnetic seal integrity reads at 94%. Hydraulic pressure is nominal.\n\nManual override is available to authorized personnel.\n\n[INTERACTIVE TERMINAL — AWAITING INPUT]",
+    "type": "action_sequence",
+    "action_sequence": {
+      "id": "seqtest-airlock-gamma",
+      "category": "door_unlock",
+      "steps": [
+        {
+          "type": "auto",
+          "lines": [
+            ">> AIRLOCK GAMMA CONTROL INTERFACE v2.4.1",
+            ">> STATUS: EMERGENCY LOCKDOWN — MAGNETIC SEAL ENGAGED",
+            ">> ATMOSPHERIC PRESSURE: 0.3 ATM (CAUTION)",
+            ">> HYDRAULIC PRESSURE: NOMINAL",
+            "",
+            ">> OVERRIDE AVAILABLE — AUTHORIZATION REQUIRED"
+          ],
+          "delay": 35,
+          "pause_after": 600
+        },
+        {
+          "type": "prompt",
+          "prompt_text": "ENTER OVERRIDE COMMAND:",
+          "accept": ["DISENGAGE", "OVERRIDE", "UNLOCK", "OPEN"],
+          "reject_message": "UNRECOGNIZED COMMAND. ACCESS ATTEMPT LOGGED.",
+          "max_attempts": 3,
+          "sound_on_accept": "access_granted",
+          "sound_on_reject": "access_denied"
+        },
+        {
+          "type": "auto",
+          "lines": [
+            ">> OVERRIDE COMMAND ACCEPTED",
+            ">> BYPASSING SAFETY INTERLOCK...",
+            ">> ATMOSPHERIC EQUALIZATION: DISABLED (MANUAL OVERRIDE)"
+          ],
+          "delay": 40,
+          "sound": "warning",
+          "sound_at_line": 1,
+          "pause_after": 400
+        },
+        {
+          "type": "progress",
+          "label": "DISENGAGING MAGNETIC SEAL...",
+          "duration": 2500,
+          "segments": 20,
+          "sound_on_complete": "seal_disengage",
+          "complete_message": "MAGNETIC SEAL DISENGAGED"
+        },
+        {
+          "type": "auto",
+          "lines": [
+            ">> CYCLING HYDRAULIC ACTUATORS...",
+            ">> DOOR MECHANISM: RELEASING",
+            ">> AIRLOCK GAMMA STATUS: ██ UNLOCKED ██"
+          ],
+          "delay": 45,
+          "sound": "door_unlock",
+          "sound_at_line": 2,
+          "pause_after": 300
+        }
+      ],
+      "on_complete": {
+        "message": "Airlock Gamma groans open with a rush of stale, recycled air. The portside maintenance corridor stretches ahead — dark and cold, but passable. Emergency lighting flickers in amber strips along the floor.",
+        "sound": "door_unlock",
+        "persist_key": "seqtest-airlock-gamma"
+      },
+      "on_failure": {
+        "message": "SECURITY LOCKOUT ENGAGED. Terminal access revoked. Airlock remains sealed. Security team has been notified.",
+        "sound": "access_denied"
+      }
+    }
+  },
+  {
+    "title": "Security Camera Override — Zone 4",
+    "location": "Security Systems — Zone Control",
+    "date": "092-1105",
+    "author": "Security Subsystem",
+    "security_level": "high",
+    "content": "SECURITY CAMERA MANAGEMENT — ZONE 4\n\nZone 4 surveillance feeds are active across 3 camera clusters. Live monitoring is enabled. Disabling cameras will create a blind spot for approximately 12 minutes before automatic failover restores coverage.\n\n[INTERACTIVE TERMINAL — AWAITING INPUT]",
+    "type": "action_sequence",
+    "action_sequence": {
+      "id": "seqtest-cameras-zone4",
+      "category": "system_override",
+      "steps": [
+        {
+          "type": "auto",
+          "lines": [
+            ">> SECURITY CAMERA MANAGEMENT v1.8.3",
+            ">> ZONE 4 — 3 CAMERA CLUSTERS ACTIVE",
+            ">> FEED STATUS: LIVE MONITORING ENABLED",
+            ">> RECORDING: CONTINUOUS (48-HR ROLLING BUFFER)"
+          ],
+          "delay": 30,
+          "pause_after": 500
+        },
+        {
+          "type": "choice",
+          "prompt_text": "SELECT CAMERA CLUSTER TO DISABLE:",
+          "options": [
+            "CLUSTER A — Corridor Junction (3 cameras)",
+            "CLUSTER B — Cargo Bay Entrance (2 cameras)",
+            "CLUSTER C — Emergency Exit Passage (2 cameras)",
+            "ALL CLUSTERS — Full Zone Blackout (7 cameras)"
+          ],
+          "sound_on_accept": "access_granted"
+        },
+        {
+          "type": "auto",
+          "lines": [
+            ">> INITIATING CAMERA OVERRIDE...",
+            ">> INJECTING LOOP FEED (LAST 30 SECONDS)...",
+            ">> DISABLING MOTION DETECTION..."
+          ],
+          "delay": 40,
+          "sound": "warning",
+          "sound_at_line": 0,
+          "pause_after": 300
+        },
+        {
+          "type": "progress",
+          "label": "OVERRIDING SURVEILLANCE FEEDS...",
+          "duration": 2000,
+          "segments": 16,
+          "sound_on_complete": "alarm_disable",
+          "complete_message": "CAMERA FEEDS DISABLED — LOOP ACTIVE"
+        },
+        {
+          "type": "auto",
+          "lines": [
+            ">> SURVEILLANCE OVERRIDE COMPLETE",
+            ">> ESTIMATED BLIND WINDOW: 12 MINUTES",
+            ">> AUTO-RESTORE WILL TRIGGER AT FAILOVER",
+            ">> !! NO TRACE LEFT IN STANDARD AUDIT LOG !!"
+          ],
+          "delay": 35,
+          "pause_after": 200
+        }
+      ],
+      "on_complete": {
+        "message": "The camera feeds flicker and freeze on their last frames. A looped recording now plays on the monitoring station — to anyone watching, the corridors appear empty and still. You have approximately 12 minutes before the system's failover detects the loop.",
+        "sound": "alarm_disable",
+        "persist_key": "seqtest-cameras-zone4"
+      },
+      "on_failure": {
+        "message": "OVERRIDE REJECTED. Camera feeds remain active. Anomalous access pattern flagged for security review.",
+        "sound": "access_denied"
+      }
+    }
+  },
+  {
+    "title": "Encrypted Research Data — Extraction Console",
+    "location": "Research Data Archive — Level 3",
+    "date": "088-1105",
+    "author": "Archive Management System",
+    "security_level": "high",
+    "requires_roll": true,
+    "roll_check": {
+      "difficulty": 8,
+      "skill": "Electronics (Computers)",
+      "on_success": "Encryption bypassed. Archive access granted.",
+      "on_failure": "Decryption failed. Access denied."
+    },
+    "content": "RESEARCH DATA ARCHIVE — EXTRACTION CONSOLE\n\nThis terminal provides access to encrypted research files stored in the Level 3 archive. Data extraction requires mounting an external storage device and initiating a secure transfer protocol.\n\nWARNING: Unauthorized data extraction is a capital offense under Corporate Security Directive 7-Alpha.\n\n[INTERACTIVE TERMINAL — AWAITING INPUT]",
+    "type": "action_sequence",
+    "action_sequence": {
+      "id": "seqtest-data-extraction",
+      "category": "data_extraction",
+      "steps": [
+        {
+          "type": "auto",
+          "lines": [
+            ">> RESEARCH DATA ARCHIVE v3.1.0",
+            ">> ENCRYPTION: AES-512 MILITARY GRADE",
+            ">> AVAILABLE FILES: 47 (342 MB TOTAL)",
+            ">> EXTERNAL DEVICE PORT: DETECTED"
+          ],
+          "delay": 30,
+          "pause_after": 400
+        },
+        {
+          "type": "prompt",
+          "prompt_text": "MOUNT EXTERNAL DEVICE? ENTER COMMAND:",
+          "accept": ["MOUNT", "MOUNT DEVICE", "CONNECT", "ATTACH"],
+          "reject_message": "UNKNOWN COMMAND. DEVICE NOT MOUNTED.",
+          "max_attempts": 3,
+          "sound_on_accept": "connection"
+        },
+        {
+          "type": "auto",
+          "lines": [
+            ">> EXTERNAL DEVICE MOUNTED: /dev/ext0",
+            ">> DEVICE CAPACITY: 2.1 GB (SUFFICIENT)",
+            ">> INITIATING SECURE TRANSFER PROTOCOL...",
+            ">> DECRYPTING FILE HEADERS..."
+          ],
+          "delay": 35,
+          "sound": "data_download",
+          "sound_at_line": 2,
+          "pause_after": 300
+        },
+        {
+          "type": "progress",
+          "label": "TRANSFERRING ENCRYPTED DATA...",
+          "duration": 4000,
+          "segments": 24,
+          "sound_on_complete": "data_download",
+          "complete_message": "TRANSFER COMPLETE — 342 MB WRITTEN"
+        },
+        {
+          "type": "auto",
+          "lines": [
+            ">> VERIFYING DATA INTEGRITY... CHECKSUM OK",
+            ">> WIPING TRANSFER LOGS...",
+            ">> UNMOUNTING DEVICE...",
+            ">> EXTRACTION COMPLETE"
+          ],
+          "delay": 40,
+          "pause_after": 200
+        }
+      ],
+      "on_complete": {
+        "message": "The data drive's indicator light glows steady green — 342 megabytes of encrypted research files successfully extracted. The transfer logs have been wiped, but the archive's access counter has incremented. Someone thorough might notice.",
+        "sound": "access_granted",
+        "persist_key": "seqtest-data-extraction"
+      },
+      "on_failure": {
+        "message": "TRANSFER ABORTED. External device ejected. Security alert triggered — data remains in archive.",
+        "sound": "access_denied"
+      }
+    }
+  },
+  {
+    "title": "Station Status Report",
+    "location": "General Access",
+    "date": "092-1105",
+    "author": "Station Management",
+    "content": "FACILITY STATUS REPORT — CURRENT CYCLE\n\nPower Grid: 73% operational (Sections 4-7 offline)\nLife Support: Active in all occupied zones\nGravity: Standard (1.0G) in habitation, 0.6G in cargo\nAtmosphere: Nominal in sealed areas, vacuum in breached sections\n\nPersonnel: 0 detected (automated systems only)\nSecurity: Partial lockdown — select areas restricted\n\nNote: Emergency power reserves at 41%. Estimated runtime: 72 hours at current consumption.",
+    "security_level": "low"
+  }
+]

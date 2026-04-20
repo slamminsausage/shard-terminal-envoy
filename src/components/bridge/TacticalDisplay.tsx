@@ -150,8 +150,8 @@ export function TacticalDisplay({
     if (!el) return;
     const handleWheel = (e: WheelEvent) => {
       e.preventDefault();
-      const delta = e.deltaY > 0 ? 1.12 : 0.88;
-      setZoom(prev => Math.max(0.15, Math.min(3, prev * delta)));
+      const factor = 1 - e.deltaY * 0.002;
+      setZoom(prev => Math.max(0.15, Math.min(3, prev * factor)));
     };
     el.addEventListener('wheel', handleWheel, { passive: false });
     return () => el.removeEventListener('wheel', handleWheel);
@@ -184,7 +184,7 @@ export function TacticalDisplay({
       if (e.touches.length === 2 && touchStartDistance.current) {
         e.preventDefault();
         const dist = getTouchDist(e.touches);
-        const ratio = touchStartDistance.current / dist;
+        const ratio = dist / touchStartDistance.current;
         setZoom(Math.max(0.15, Math.min(3, touchStartZoom.current * ratio)));
       } else if (e.touches.length === 1 && isDragging.current && dragStart.current) {
         e.preventDefault();

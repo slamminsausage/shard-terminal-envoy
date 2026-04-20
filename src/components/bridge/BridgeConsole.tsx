@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useScreenShake } from "@/hooks/useScreenShake";
 import type { FireTrail } from "./TacticalDisplay";
 import { useBridge } from "@/contexts/BridgeContext";
@@ -19,7 +19,7 @@ import { CombatReadout } from "./combat/CombatReadout";
 import type { BridgeMessage, Contact, NewContact } from "@/lib/bridge/bridgeTypes";
 import { toast } from "sonner";
 
-export function BridgeConsole() {
+function BridgeConsoleInner() {
   const {
     bridgeState,
     contacts,
@@ -459,3 +459,5 @@ export function BridgeConsole() {
     </div>
   );
 }
+
+export const BridgeConsole = React.memo(BridgeConsoleInner);

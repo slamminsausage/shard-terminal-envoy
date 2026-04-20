@@ -347,6 +347,7 @@ const DRIFTER_EVENTS: GameEvent[] = [
     resolution: {
       type: 'automatic',
       effects: {
+        autoPromotion: true,
         message: 'You thrive on adversity. You are automatically promoted this term.',
       },
     },

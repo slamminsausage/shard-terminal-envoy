@@ -54,7 +54,7 @@ export default function RollCheckPrompt({
 
   const handleManualRoll = () => {
     setError('');
-    const roll = parseInt(manualRoll);
+    const roll = parseInt(manualRoll, 10);
 
     // Validate manual roll (must be 2-12)
     if (isNaN(roll) || roll < 2 || roll > 12) {

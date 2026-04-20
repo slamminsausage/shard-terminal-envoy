@@ -30,6 +30,13 @@ export interface Player {
   last_accessed: string | null;
   created_at: string;
   auth_user_id?: string | null;
+  /**
+   * The character this player is currently "playing as". Its `crew_id`
+   * drives per-crew content visibility in West Marches style play.
+   * Null/undefined means no active character selected — the viewer is
+   * treated as having no crew.
+   */
+  active_character_id?: string | null;
 }
 
 export interface Character {

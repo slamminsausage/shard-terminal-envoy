@@ -18,7 +18,7 @@ export default function VTTFogPanel() {
     <div className="flex flex-col h-full p-3 space-y-4">
       {/* Enable/Disable */}
       <div className="flex items-center justify-between">
-        <label className="text-[10px] text-terminal-primary/50 uppercase tracking-wider font-mono">
+        <label className="vtt-section-label">
           Fog of War
         </label>
         <button
@@ -31,11 +31,7 @@ export default function VTTFogPanel() {
               },
             })
           }
-          className={`flex items-center gap-1 px-2 py-1 text-[10px] font-mono rounded border transition-colors ${
-            fog.enabled
-              ? "bg-terminal-primary/20 border-terminal-primary/50 text-terminal-primary"
-              : "border-terminal-border/30 text-terminal-primary/40"
-          }`}
+          className={`vtt-option ${fog.enabled ? "vtt-option--active" : ""}`}
         >
           {fog.enabled ? <Eye size={10} /> : <EyeOff size={10} />}
           {fog.enabled ? "On" : "Off"}
@@ -44,7 +40,7 @@ export default function VTTFogPanel() {
 
       {/* Tool selection */}
       <div>
-        <label className="text-[10px] text-terminal-primary/50 uppercase tracking-wider font-mono block mb-1.5">
+        <label className="vtt-section-label block mb-1.5">
           Fog Brush
         </label>
         <div className="flex gap-1">
@@ -58,11 +54,7 @@ export default function VTTFogPanel() {
               onClick={() =>
                 dispatch({ type: "SET_TOOL", payload: tool as any })
               }
-              className={`flex-1 text-xs font-mono py-1.5 rounded border transition-colors ${
-                state.activeTool === tool
-                  ? "bg-terminal-primary/20 border-terminal-primary/50 text-terminal-primary"
-                  : "border-terminal-border/30 text-terminal-primary/40 hover:text-terminal-primary/60"
-              }`}
+              className={`vtt-option flex-1 ${state.activeTool === tool ? "vtt-option--active" : ""}`}
             >
               {label}
             </button>
@@ -73,7 +65,7 @@ export default function VTTFogPanel() {
       {/* Opacity */}
       <div>
         <div className="flex items-center justify-between mb-0.5">
-          <label className="text-[10px] text-terminal-primary/50 uppercase tracking-wider font-mono">
+          <label className="vtt-section-label">
             Opacity
           </label>
           <span className="text-[10px] text-terminal-primary/40 font-mono">
@@ -95,13 +87,13 @@ export default function VTTFogPanel() {
               },
             })
           }
-          className="w-full accent-green-500 h-1"
+          className="vtt-slider"
         />
       </div>
 
       {/* Fog color */}
       <div>
-        <label className="text-[10px] text-terminal-primary/50 uppercase tracking-wider font-mono block mb-1">
+        <label className="vtt-section-label block mb-1">
           Fog Color
         </label>
         <div className="flex items-center gap-2">
@@ -128,7 +120,7 @@ export default function VTTFogPanel() {
       {/* Brush Size */}
       <div>
         <div className="flex items-center justify-between mb-0.5">
-          <label className="text-[10px] text-terminal-primary/50 uppercase tracking-wider font-mono">
+          <label className="vtt-section-label">
             Brush Size
           </label>
           <span className="text-[10px] text-terminal-primary/40 font-mono">
@@ -144,16 +136,16 @@ export default function VTTFogPanel() {
           onChange={(e) =>
             dispatch({
               type: "SET_FOG_BRUSH_SIZE",
-              payload: parseInt(e.target.value),
+              payload: parseInt(e.target.value, 10),
             })
           }
-          className="w-full accent-green-500 h-1"
+          className="vtt-slider"
         />
       </div>
 
       {/* Brush Mode */}
       <div>
-        <label className="text-[10px] text-terminal-primary/50 uppercase tracking-wider font-mono block mb-1.5">
+        <label className="vtt-section-label block mb-1.5">
           Brush Mode
         </label>
         <div className="flex gap-1">
@@ -166,11 +158,7 @@ export default function VTTFogPanel() {
               onClick={() =>
                 dispatch({ type: "SET_FOG_BRUSH_MODE", payload: mode })
               }
-              className={`flex-1 text-xs font-mono py-1.5 rounded border transition-colors ${
-                state.fogBrushMode === mode
-                  ? "bg-terminal-primary/20 border-terminal-primary/50 text-terminal-primary"
-                  : "border-terminal-border/30 text-terminal-primary/40 hover:text-terminal-primary/60"
-              }`}
+              className={`vtt-option flex-1 ${state.fogBrushMode === mode ? "vtt-option--active" : ""}`}
             >
               {label}
             </button>
@@ -195,7 +183,7 @@ export default function VTTFogPanel() {
             },
           })
         }
-        className="flex items-center gap-1 justify-center px-2 py-1.5 text-[10px] font-mono rounded border border-red-500/30 text-red-400/60 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+        className="vtt-btn danger justify-center w-full"
       >
         <Eraser size={10} /> Reset All Fog
       </button>

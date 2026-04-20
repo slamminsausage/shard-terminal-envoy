@@ -520,23 +520,23 @@ const CharacterSheet = ({ characterId, readOnly }: CharacterSheetProps = {}) => 
         name: header.name,
         species: header.species,
         gender: "", // Add if needed
-        age: parseInt(header.age) || 0,
+        age: parseInt(header.age, 10) || 0,
         homeworld: header.homeworld,
         rads: header.rads,
         species_traits: header.speciesTraits,
         notes: notes,
         career: "", // Add if needed
         rank: "", // Add if needed
-        strength: parseInt(characteristics.strength.total) || 7,
-        dexterity: parseInt(characteristics.dexterity.total) || 7,
-        endurance: parseInt(characteristics.endurance.total) || 7,
-        current_strength: parseInt(characteristics.strength.current) || undefined,
-        current_dexterity: parseInt(characteristics.dexterity.current) || undefined,
-        current_endurance: parseInt(characteristics.endurance.current) || undefined,
-        intellect: parseInt(characteristics.intellect.total) || 7,
-        education: parseInt(characteristics.education.total) || 7,
-        social_standing: parseInt(characteristics.social.total) || 7,
-        psionics: parseInt(characteristics.psionics.total) || 0,
+        strength: parseInt(characteristics.strength.total, 10) || 7,
+        dexterity: parseInt(characteristics.dexterity.total, 10) || 7,
+        endurance: parseInt(characteristics.endurance.total, 10) || 7,
+        current_strength: parseInt(characteristics.strength.current, 10) || undefined,
+        current_dexterity: parseInt(characteristics.dexterity.current, 10) || undefined,
+        current_endurance: parseInt(characteristics.endurance.current, 10) || undefined,
+        intellect: parseInt(characteristics.intellect.total, 10) || 7,
+        education: parseInt(characteristics.education.total, 10) || 7,
+        social_standing: parseInt(characteristics.social.total, 10) || 7,
+        psionics: parseInt(characteristics.psionics.total, 10) || 0,
         melee_dmg: 0,
         ranged_dmg: 0,
         lifeblood: 0,
@@ -544,12 +544,12 @@ const CharacterSheet = ({ characterId, readOnly }: CharacterSheetProps = {}) => 
         terms_served: 0,
         skills: skills,
         equipment: equipment,
-        credits: parseInt(finances.cashOnHand) || 0,
-        debt: parseInt(finances.debt) || 0,
-        pension: parseInt(finances.pension) || 0,
-        ship_payments: parseInt(finances.shipPayments) || 0,
-        living_cost: parseInt(finances.livingCost) || 0,
-        cash_on_hand: parseInt(finances.cashOnHand) || 0,
+        credits: parseInt(finances.cashOnHand, 10) || 0,
+        debt: parseInt(finances.debt, 10) || 0,
+        pension: parseInt(finances.pension, 10) || 0,
+        ship_payments: parseInt(finances.shipPayments, 10) || 0,
+        living_cost: parseInt(finances.livingCost, 10) || 0,
+        cash_on_hand: parseInt(finances.cashOnHand, 10) || 0,
         study_skill: studyPeriod.skill,
         study_weeks: studyPeriod.weeks,
         study_complete: studyPeriod.complete,
@@ -1220,7 +1220,7 @@ const customGroups = skillDefinitions.filter(def => def.isCustomGroup);
           weapons={weapons}
           armour={armourRows}
           equipment={equipment}
-          strengthScore={parseInt(characteristics.strength?.current || "7")}
+          strengthScore={parseInt(characteristics.strength?.current || "7", 10)}
         />
       </section>
 
@@ -1391,9 +1391,11 @@ const SkillDMDisplay = ({ proficient, rawValue, jackState, isPsionic }: SkillDMD
 
   let penalty = -3;
   if (jackState?.proficient) {
-    const level = Number(jackState.value ?? 0);
-    const reduction = Math.min(Math.max(level, 0) + 1, 2);
-    penalty = Math.min(penalty + reduction, -1);
+    // Being proficient in Jack-of-All-Trades counts as at least level 1; cap at level 3.
+    // Level 1: -2, Level 2: -1, Level 3: 0 (never higher).
+    const rawLevel = Number(jackState.value ?? 0);
+    const effectiveLevel = Math.min(Math.max(rawLevel, 1), 3);
+    penalty = Math.min(-3 + effectiveLevel, 0);
   }
 
   return <span className="text-xs font-mono w-10 text-center text-muted-foreground">{penalty}</span>;

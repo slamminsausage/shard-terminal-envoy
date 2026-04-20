@@ -8,6 +8,8 @@ export interface PlayerNote {
   folder?: string; // e.g., "planets", "locations", "npcs", "general"
   tags?: string[];
   thumbnailUrl?: string; // for NPC portraits and other note thumbnails
+  /** Per-crew scoping (camelCase in-memory). NULL/empty = visible to all crews. */
+  visibleCrewIds?: string[] | null;
 }
 
 export interface Handout {
@@ -22,6 +24,8 @@ export interface Handout {
   updatedAt: string;
   isVisible: boolean; // GM controls visibility to players
   tags?: string[];
+  /** Per-crew scoping. NULL/empty = visible to all crews. */
+  visible_crew_ids?: string[] | null;
 }
 
 export type NoteFolder = 'general' | 'planets' | 'locations' | 'npcs' | 'quests' | 'items' | 'other';

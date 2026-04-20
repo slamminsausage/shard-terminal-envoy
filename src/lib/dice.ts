@@ -113,6 +113,11 @@ export function getCharacteristicDM(value: number): number {
  *
  * - Proficient: Use skill level directly (+0 to +6)
  * - Unproficient: -3 penalty (reduced by Jack-of-All-Trades)
+ *
+ * Jack-of-All-Trades (when proficient, capped at level 3):
+ *   - Level 1: untrained penalty -2
+ *   - Level 2: untrained penalty -1
+ *   - Level 3: untrained penalty  0 (cap — never higher)
  */
 export function getSkillDM(proficient: boolean, level: number, jackLevel?: number): number {
   if (proficient) {
@@ -122,8 +127,9 @@ export function getSkillDM(proficient: boolean, level: number, jackLevel?: numbe
   // Unproficient penalty: -3 (reduced by Jack-of-All-Trades)
   let penalty = -3;
   if (jackLevel !== undefined && jackLevel > 0) {
-    const reduction = Math.min(jackLevel + 1, 2);
-    penalty = Math.min(penalty + reduction, -1);
+    // Being proficient in JoT counts as at least level 1; cap at level 3.
+    const effectiveLevel = Math.min(jackLevel, 3);
+    penalty = Math.min(-3 + effectiveLevel, 0);
   }
   return penalty;
 }

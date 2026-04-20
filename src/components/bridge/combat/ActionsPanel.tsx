@@ -47,7 +47,7 @@ function useManualRolls() {
   const get = (key: string): number | undefined => {
     const v = rolls[key];
     if (v === undefined || v === '') return undefined;
-    const n = parseInt(v);
+    const n = parseInt(v, 10);
     return isNaN(n) ? undefined : n;
   };
   const set = (key: string, val: string) => setRolls(prev => ({ ...prev, [key]: val }));

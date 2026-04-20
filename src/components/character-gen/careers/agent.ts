@@ -30,8 +30,8 @@ const AGENT_EVENTS: GameEvent[] = [
     description: 'Disaster! Roll on the Mishap table but you are not ejected from this career.',
     resolution: {
       type: 'table_redirect',
-      table: 'injury',
-      displayText: 'Roll on the Injury table to determine the severity of the disaster.',
+      table: 'mishap',
+      displayText: 'Roll on the Mishap table but you are not ejected from this career.',
     },
   },
 
@@ -165,6 +165,7 @@ const AGENT_EVENTS: GameEvent[] = [
     resolution: {
       type: 'automatic',
       effects: {
+        advancementDM: 2,
         message: 'Your dedication is noticed. Gain DM+2 to your next advancement roll.',
       },
     },
@@ -240,10 +241,24 @@ const AGENT_EVENTS: GameEvent[] = [
           label: 'DM+4 to Advancement',
           description: 'Your mentor puts in a good word',
           effects: {
+            advancementDM: 4,
             message: 'Your mentor\'s recommendation gives you DM+4 to an advancement roll.',
           },
         },
       ],
+    },
+  },
+
+  // Roll 12 - Major conspiracy
+  {
+    id: 'agent-event-12',
+    description: 'Your efforts uncover a major conspiracy against your employers.',
+    resolution: {
+      type: 'automatic',
+      effects: {
+        autoPromotion: true,
+        message: 'You uncover a major conspiracy against your employers. You are automatically promoted.',
+      },
     },
   },
 ];
@@ -327,6 +342,7 @@ export const CAREER_AGENT: CareerDefinition = {
             description: 'Leave career with DM+4 to next Qualification roll, but gain a Rival.',
             effects: {
               rivals: 1,
+              qualificationDM: 4,
               message: 'You accept the deal. DM+4 to your next Qualification roll, but you gain a Rival.',
             },
           },

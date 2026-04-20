@@ -14,7 +14,7 @@ export default function VTTClocksPanel() {
     const clock: Clock = {
       id: crypto.randomUUID(),
       name: newName.trim() || `Clock ${state.clocks.length + 1}`,
-      segments: Math.max(2, Math.min(12, parseInt(newSegments) || 4)),
+      segments: Math.max(2, Math.min(12, parseInt(newSegments, 10) || 4)),
       filled: 0,
       color: CLOCK_COLORS[state.clocks.length % CLOCK_COLORS.length],
     };
@@ -32,7 +32,7 @@ export default function VTTClocksPanel() {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="p-3 border-b border-terminal-border/30 space-y-2">
+      <div className="vtt-panel-section space-y-2">
         <div className="flex gap-1">
           <input
             type="text"
@@ -40,7 +40,7 @@ export default function VTTClocksPanel() {
             onChange={(e) => setNewName(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleAdd()}
             placeholder="Clock name..."
-            className="flex-1 bg-terminal-bg-dark border border-terminal-border/30 text-terminal-primary text-xs px-2 py-1 rounded font-mono placeholder:text-terminal-primary/30 focus:border-terminal-primary/50 focus:outline-none"
+            className="vtt-input flex-1"
           />
           <input
             type="number"
@@ -48,11 +48,11 @@ export default function VTTClocksPanel() {
             onChange={(e) => setNewSegments(e.target.value)}
             min={2}
             max={12}
-            className="w-10 bg-terminal-bg-dark border border-terminal-border/30 text-terminal-primary text-xs px-1 py-1 rounded font-mono text-center focus:border-terminal-primary/50 focus:outline-none"
+            className="vtt-input w-10 text-center"
           />
           <button
             onClick={handleAdd}
-            className="flex items-center justify-center w-7 h-7 bg-terminal-primary/10 text-terminal-primary border border-terminal-primary/30 rounded hover:bg-terminal-primary/20 transition-colors"
+            className="vtt-btn justify-center w-7 h-7"
           >
             <Plus size={14} />
           </button>
@@ -61,7 +61,7 @@ export default function VTTClocksPanel() {
 
       <div className="flex-1 overflow-y-auto p-3 space-y-4">
         {state.clocks.length === 0 ? (
-          <div className="text-terminal-primary/30 text-xs font-mono text-center py-8">
+          <div className="vtt-empty">
             No clocks yet.
             <br />
             Create one above.

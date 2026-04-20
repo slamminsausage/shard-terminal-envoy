@@ -145,7 +145,7 @@ export function CombatReadout({ events, onDismiss }: CombatReadoutProps) {
   if (visible.length === 0) return null;
 
   return (
-    <div className="combat-readout-container">
+    <div className="combat-readout-container" role="status" aria-live="assertive" aria-label="Combat alerts">
       {visible.map((event, i) => (
         <ReadoutCard key={event.id} event={event} onDismiss={onDismiss} index={i} />
       ))}

@@ -1,10 +1,9 @@
-import React, { Suspense, useEffect, useState } from "react";
+import React, { Suspense, useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Terminal, Users, Radar, Navigation, BookOpen, Swords, Skull, Layout } from "lucide-react";
 import AppHeader from "./layout/AppHeader";
 import AppFooter from "./layout/AppFooter";
 import TerminalLoadingSkeleton from "./TerminalLoadingSkeleton";
-import { useTabNavigationShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { KeyboardShortcutOverlay } from "./KeyboardShortcutOverlay";
 import { lazyWithRetry, lazyNamedWithRetry } from "@/lib/lazyWithRetry";
 
@@ -33,7 +32,7 @@ export default function MainframeShell() {
     }
   }, [activeTab]);
 
-  const tabs = [
+  const tabs = useMemo(() => [
     { id: "terminal", label: "Terminal", icon: Terminal },
     { id: "crew", label: "Crew", icon: Users },
     { id: "vehicles", label: "Hangar", emoji: "🛦" },
@@ -43,11 +42,7 @@ export default function MainframeShell() {
     { id: "piracy", label: "Piracy", icon: Skull },
     { id: "combat", label: "Combat", icon: Swords },
     { id: "vtt", label: "VTT", icon: Layout }
-  ];
-
-  // Enable keyboard shortcuts for tab navigation (1-8)
-  const tabIds = tabs.map(tab => tab.id);
-  useTabNavigationShortcuts(setActiveTab, tabIds);
+  ], []);
 
   // ? key to show shortcut overlay
   useEffect(() => {
@@ -106,7 +101,6 @@ export default function MainframeShell() {
       {/* Keyboard shortcut overlay */}
       {showShortcuts && (
         <KeyboardShortcutOverlay
-          tabs={tabs}
           onClose={() => setShowShortcuts(false)}
         />
       )}

@@ -69,50 +69,44 @@ export default function VTTNoteModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-      <div className="bg-terminal-bg-dark border border-terminal-border/40 rounded-lg shadow-xl w-80 flex flex-col">
+    <div className="vtt-modal-overlay">
+      <div className="vtt-modal w-80 flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-terminal-border/30">
-          <h3 className="text-terminal-primary text-sm font-mono uppercase tracking-wider">
+        <div className="vtt-modal-header">
+          <h3 className="vtt-modal-title">
             {note ? "Edit Note" : "New Note"}
           </h3>
-          <button onClick={onClose} className="text-terminal-primary/50 hover:text-terminal-primary">
+          <button onClick={onClose} className="vtt-btn-icon">
             <X size={16} />
           </button>
         </div>
 
-        <div className="p-4 space-y-3">
+        <div className="vtt-modal-body space-y-3">
           <div>
-            <label className="text-[10px] text-terminal-primary/50 uppercase tracking-wider font-mono block mb-1">
-              Title
-            </label>
+            <label className="vtt-section-label">Title</label>
             <input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Note title..."
-              className="w-full bg-terminal-bg-dark border border-terminal-border/30 text-terminal-primary text-xs px-2 py-1.5 rounded font-mono placeholder:text-terminal-primary/20 focus:border-terminal-primary/50 focus:outline-none"
+              className="vtt-input"
               autoFocus
             />
           </div>
 
           <div>
-            <label className="text-[10px] text-terminal-primary/50 uppercase tracking-wider font-mono block mb-1">
-              Content
-            </label>
+            <label className="vtt-section-label">Content</label>
             <textarea
               value={content}
               onChange={(e) => setContent(e.target.value)}
               placeholder="Note content..."
               rows={5}
-              className="w-full bg-terminal-bg-dark border border-terminal-border/30 text-terminal-primary text-xs px-2 py-1.5 rounded font-mono placeholder:text-terminal-primary/20 focus:border-terminal-primary/50 focus:outline-none resize-none"
+              className="vtt-input resize-none"
             />
           </div>
 
           <div>
-            <label className="text-[10px] text-terminal-primary/50 uppercase tracking-wider font-mono block mb-1">
-              Color
-            </label>
+            <label className="vtt-section-label">Color</label>
             <div className="flex gap-1.5">
               {NOTE_COLORS.map((c) => (
                 <button
@@ -120,8 +114,8 @@ export default function VTTNoteModal({
                   onClick={() => setColor(c)}
                   className={`w-6 h-6 rounded border-2 transition-all ${
                     color === c
-                      ? "border-terminal-primary scale-110"
-                      : "border-transparent hover:border-terminal-primary/30"
+                      ? "border-[var(--primary)] scale-110"
+                      : "border-transparent hover:border-[rgba(0,255,0,0.3)]"
                   }`}
                   style={{ backgroundColor: c }}
                 />
@@ -129,37 +123,27 @@ export default function VTTNoteModal({
             </div>
           </div>
 
-          <label className="flex items-center gap-1.5 text-xs text-terminal-primary/60 font-mono cursor-pointer">
+          <label className="vtt-checkbox">
             <input
               type="checkbox"
               checked={visible}
               onChange={(e) => setVisible(e.target.checked)}
-              className="accent-green-500"
             />
             Visible on map
           </label>
         </div>
 
-        <div className="flex gap-2 px-4 py-3 border-t border-terminal-border/30">
+        <div className="flex gap-2 px-4 py-3 border-t border-[rgba(0,255,0,0.15)]">
           {note && (
-            <button
-              onClick={handleDelete}
-              className="flex items-center gap-1 px-3 py-1.5 text-xs font-mono rounded border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-colors"
-            >
+            <button onClick={handleDelete} className="vtt-btn danger">
               <Trash2 size={12} /> Delete
             </button>
           )}
           <div className="flex-1" />
-          <button
-            onClick={onClose}
-            className="px-3 py-1.5 text-xs font-mono rounded border border-terminal-border/30 text-terminal-primary/50 hover:text-terminal-primary transition-colors"
-          >
+          <button onClick={onClose} className="vtt-btn" style={{ background: 'transparent', boxShadow: 'none' }}>
             Cancel
           </button>
-          <button
-            onClick={handleSave}
-            className="px-3 py-1.5 text-xs font-mono rounded border border-terminal-primary/50 text-terminal-primary bg-terminal-primary/10 hover:bg-terminal-primary/20 transition-colors"
-          >
+          <button onClick={handleSave} className="vtt-btn">
             Save
           </button>
         </div>
