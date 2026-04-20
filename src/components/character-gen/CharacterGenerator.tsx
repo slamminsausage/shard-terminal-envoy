@@ -2051,10 +2051,13 @@ export const CharacterGenerator: React.FC = () => {
             let newValue: number;
             if (requireExisting) {
               newValue = currentValue + Math.max(grantedLevel, 1);
-            } else if (currentValue >= grantedLevel) {
+            } else if (grantedLevel > 0 && currentValue >= grantedLevel) {
+              // RAW: "if you already have the skill at that level or higher,
+              // increase it by one instead". Only applies for granted level ≥ 1;
+              // a level-0 grant just confers basic proficiency.
               newValue = currentValue + 1;
             } else {
-              newValue = grantedLevel;
+              newValue = Math.max(currentValue, grantedLevel);
             }
             setTermSkillsGained(log => [...log, `${skillName} → ${newValue} (event)`]);
             return {
@@ -2262,40 +2265,6 @@ export const CharacterGenerator: React.FC = () => {
       if (effects.mustLeaveCareer) {
         setForceLeaveCareer(true);
         setTermSkillsGained(prev => [...prev, 'You must leave this career.']);
-      }
-
-      // Auto-promotion: skip the advancement roll and bump rank + bonuses.
-      if (effects.autoPromotion && selectedCareer) {
-        const assignmentName = selectedCareer.assignments[selectedAssignment]?.name;
-        const ranks = getRanksForCareer(selectedCareer, isCommissioned, assignmentName);
-        if (characterData.rank < ranks.length - 1) {
-          const newRank = characterData.rank + 1;
-          const rankData = ranks[newRank];
-          setCharacterData(prev => ({ ...prev, rank: newRank }));
-          if (rankData.skillBonus) {
-            applySkillGain(rankData.skillBonus, 'Rank Bonus');
-            setTermSkillsGained(prev => [...prev, `${rankData.skillBonus} (Rank Bonus)`]);
-          }
-          if (rankData.bonusStat) {
-            setCharacterData(prev => ({
-              ...prev,
-              characteristics: {
-                ...prev.characteristics,
-                [rankData.bonusStat!]: {
-                  ...prev.characteristics[rankData.bonusStat!],
-                  total: prev.characteristics[rankData.bonusStat!].total + 1,
-                  current: prev.characteristics[rankData.bonusStat!].current + 1,
-                },
-              },
-            }));
-            setTermSkillsGained(prev => [...prev, `${rankData.bonusStat!.toUpperCase()} +1 (rank bonus)`]);
-          }
-          setTermAdvanced(true);
-          setAdvancementRollLog('Auto-promoted by event — no advancement roll required.');
-          setTermSkillsGained(prev => [...prev, `Auto-promoted to ${rankData.title}`]);
-        } else {
-          setTermSkillsGained(prev => [...prev, 'Auto-promotion (already at max rank)']);
-        }
       }
 
       // Handle table redirects (e.g., rollOnTable: 'injury')

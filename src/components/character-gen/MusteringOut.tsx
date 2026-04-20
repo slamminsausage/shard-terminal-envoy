@@ -205,7 +205,7 @@ export const MusteringOut: React.FC<MusteringOutProps> = ({
     careerHistory
       .filter(c => !c.isPreCareer)
       .map(c => lostBenefitCareers.includes(c.careerName)
-        ? { ...c, termsServed: 0, highestRank: 0, extraBenefitRolls: 0 }
+        ? { ...c, termsServed: 0, highestRank: 0, extraBenefitRolls: 0, isCommissioned: false }
         : c
       ),
     [careerHistory, lostBenefitCareers]
