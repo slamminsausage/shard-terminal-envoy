@@ -374,8 +374,8 @@ export const CAREER_ARMY: CareerDefinition = {
       { title: 'Captain' },
       { title: 'Major', skillBonus: 'Tactics' },
       { title: 'Lieutenant Colonel' },
-      { title: 'Colonel' },
-      { title: 'General', bonusStat: 'social', bonusStatFloor: 10 },
+      { title: 'Colonel', bonusStat: 'social' },
+      { title: 'General', bonusStat: 'social' },
     ],
   },
   mishapTable: [

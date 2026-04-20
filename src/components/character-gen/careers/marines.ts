@@ -390,8 +390,8 @@ export const CAREER_MARINES: CareerDefinition = {
       { title: 'Captain' },
       { title: 'Force Commander', skillBonus: 'Tactics' },
       { title: 'Lieutenant Colonel' },
-      { title: 'Colonel' },
-      { title: 'Brigadier', bonusStat: 'social', bonusStatFloor: 10 },
+      { title: 'Colonel', bonusStat: 'social' },
+      { title: 'Brigadier', bonusStat: 'social' },
     ],
   },
   mishapTable: [

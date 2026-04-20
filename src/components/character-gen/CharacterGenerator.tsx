@@ -29,7 +29,7 @@ import { SpecialtySelector, needsSpecialtySelection, getBaseSkillName } from './
 import { MusteringOut } from './MusteringOut';
 import { RACES, getRaceById, applyRaceModifiers, type Race, type RaceTrait } from './races';
 import { getCareerTheme, getCareerCardStyle, getCareerTextStyle, type CareerTheme } from './careerThemes';
-import { CREW_POSITION_PRESETS } from '@/types/database';
+import { CREW_POSITION_PRESETS, type TermRecord } from '@/types/database';
 import { AnimatedDiceValue } from './AnimatedDiceValue';
 import { CareerTableDisplay } from './CareerTableDisplay';
 
@@ -41,23 +41,6 @@ interface SkillState {
   proficient: boolean;
   value: string;
   customLabel?: string;
-}
-
-interface TermRecord {
-  termNumber: number;
-  career: string;
-  assignment: string;
-  age: number;
-  survivalRoll: string;
-  survived: boolean;
-  advancementRoll?: string;
-  advanced: boolean;
-  rank: number;
-  rankTitle: string;
-  event: string;
-  skillsGained: string[];
-  mishap?: string;
-  isCommissioned?: boolean;
 }
 
 // Track each career served for mustering out benefits
@@ -156,14 +139,8 @@ interface CharacterData {
   eventQualificationDM?: number;  // DM bonus to next qualification roll from events
   allowedCareers?: string[];      // Careers unlocked by events (bypass qualification)
 
-  // Anagathics tracking
-  isUsingAnagathics?: boolean;        // Currently using anagathics
-  anagathicsStartTerm?: number;       // Total term number when anagathics started
-  anagathicsTotalCost?: number;       // Total anagathics cost accumulated
-
-  // Medical bills tracking
-  medicalDebt?: number;               // Accumulated unpaid medical bills
-  agingCrisisFailQualification?: boolean;  // Auto-fail next qualification after aging crisis
+  // Anagathics tracking: once taken, every subsequent term requires two Survival rolls.
+  hasAnagathics?: boolean;
 }
 
 // ============================================================================
@@ -380,6 +357,8 @@ export const CharacterGenerator: React.FC = () => {
     // Event-granted career effects
     eventQualificationDM: 0,
     allowedCareers: [],
+    // Anagathics
+    hasAnagathics: false,
   });
 
   // Psionic testing state
@@ -444,11 +423,7 @@ export const CharacterGenerator: React.FC = () => {
   const [graduatedWithHonours, setGraduatedWithHonours] = useState(false);
   const [needsCommissionRoll, setNeedsCommissionRoll] = useState(false);
   const [commissionRollDM, setCommissionRollDM] = useState(0);
-  const [commissionAttempted, setCommissionAttempted] = useState(false);
   const [commissionRollLog, setCommissionRollLog] = useState<string>('');
-  // Advancement edge-case flags, cleared when a new career is started.
-  const [forcedContinueInCareer, setForcedContinueInCareer] = useState(false);
-  const [forcedLeaveAfterTerm, setForcedLeaveAfterTerm] = useState(false);
   const [graduationRollLog, setGraduationRollLog] = useState<string>('');
   const [survivalRollLog, setSurvivalRollLog] = useState<string>('');
   const [advancementRollLog, setAdvancementRollLog] = useState<string>('');
@@ -1371,6 +1346,7 @@ export const CharacterGenerator: React.FC = () => {
     setTermSkillsGained([]);
     setGraduationRollLog('');
     setSurvivalRollLog('');
+    setCommissionRollLog('');
     setAdvancementRollLog('');
     setCurrentEvent(null);
     setEventRollResult(null);
@@ -1507,45 +1483,40 @@ export const CharacterGenerator: React.FC = () => {
 
     const roll = manualRoll ?? rollDice(2, 6);
     const total = roll + dm;
-    // Natural 2 always fails survival regardless of modifiers.
-    const naturalTwo = roll === 2;
-    const firstPassed = !naturalTwo && total >= assignment.survivalTarget;
+    const firstSurvived = total >= assignment.survivalTarget;
 
-    // Anagathics rule: while using anagathics, roll TWO survival checks.
-    // If either roll fails, the character suffers a mishap. Does not apply to
-    // pre-career "graduation" rolls, which are mechanically distinct.
-    const onAnagathics = !isPreCareer && !!characterData.isUsingAnagathics;
-    let secondRoll: number | null = null;
-    let secondTotal: number | null = null;
-    let secondNaturalTwo = false;
-    let secondPassed = true;
-    if (onAnagathics) {
-      secondRoll = rollDice(2, 6);
-      secondTotal = secondRoll + dm;
-      secondNaturalTwo = secondRoll === 2;
-      secondPassed = !secondNaturalTwo && secondTotal >= assignment.survivalTarget;
-    }
-    const survived = firstPassed && secondPassed;
+    // Anagathics: RAW requires two Survival rolls per term after the character
+    // has taken anagathics. The second roll is always auto-generated so that
+    // manual-dice users aren't prompted twice per term.
+    const anagathicsActive =
+      !isPreCareer &&
+      characterData.hasAnagathics === true &&
+      !selectedCareer.noAnagathics;
+    const secondRoll = anagathicsActive ? rollDice(2, 6) : null;
+    const secondTotal = secondRoll !== null ? secondRoll + dm : null;
+    const secondSurvived =
+      secondTotal !== null ? secondTotal >= assignment.survivalTarget : true;
+
+    const survived = firstSurvived && secondSurvived;
+
+    // Combined roll description reused in logs and lifepath records so the
+    // second roll shows up alongside the first when anagathics is active.
+    const rollDesc = `${roll} + ${dm} = ${total} (need ${assignment.survivalTarget}+)`;
+    const rollDescWithAnagathics =
+      anagathicsActive && secondRoll !== null && secondTotal !== null
+        ? `${rollDesc}; 2nd (anagathics, auto): ${secondRoll} + ${dm} = ${secondTotal}`
+        : rollDesc;
 
     setTermSurvived(survived);
 
     // Set survival/graduation roll log for regular careers
     if (!isPreCareer) {
-      if (onAnagathics && secondRoll !== null && secondTotal !== null) {
-        const firstNote = naturalTwo ? ' NATURAL 2' : '';
-        const secondNote = secondNaturalTwo ? ' NATURAL 2' : '';
-        setSurvivalRollLog(
-          `Anagathics — TWO survival checks required. ` +
-          `Roll 1: ${roll} + ${dm} = ${total}${firstNote} | ` +
-          `Roll 2: ${secondRoll} + ${dm} = ${secondTotal}${secondNote} ` +
-          `(need ${assignment.survivalTarget}+ on both). ` +
-          (survived ? 'Both passed.' : 'FAILED — mishap.')
-        );
-      } else {
-        setSurvivalRollLog(
-          `Survival Roll: ${roll} + ${dm} = ${total} (need ${assignment.survivalTarget}+)${naturalTwo ? ' — NATURAL 2: automatic failure' : ''}`
-        );
-      }
+      const firstLine = `Survival Roll: ${roll} + ${dm} = ${total} (need ${assignment.survivalTarget}+)`;
+      const secondLine =
+        anagathicsActive && secondRoll !== null && secondTotal !== null
+          ? `\nAnagathics 2nd Survival Roll (auto): ${secondRoll} + ${dm} = ${secondTotal} (need ${assignment.survivalTarget}+)`
+          : '';
+      setSurvivalRollLog(`${firstLine}${secondLine}`);
     }
 
     if (!survived) {
@@ -1593,10 +1564,41 @@ export const CharacterGenerator: React.FC = () => {
           terms_served: currentTerm,
         }));
       } else {
-        // Regular career mishap - if manual dice is on, wait for player to roll
-        if (useManualDice) {
-          setNeedsMishapRoll(true);
-          return; // Wait for manual mishap roll
+        // Regular career mishap
+        const mishapRoll = rollDice(1, 6);
+        const mishapEntry = selectedCareer.mishapTable[mishapRoll - 1];
+        setMishapRollNumber(mishapRoll);
+
+        // Check if this mishap is a GameEvent (has rolls/choices)
+        if (mishapEntry && typeof mishapEntry === 'object' && 'resolution' in mishapEntry) {
+          // GameEvent mishap - needs player interaction through EventHandler
+          setPendingMishapGameEvent(mishapEntry as GameEvent);
+          // Don't log the term yet - wait for GameEvent resolution
+        } else {
+          // Simple string mishap - log immediately
+          const mishap = mishapEntry ? getMishapDescription(mishapEntry) : 'Injured. Roll on the Injury table.';
+          const ranks = getRanksForCareer(selectedCareer, isCommissioned, assignment.name);
+
+          const termRecord: TermRecord = {
+            termNumber: currentTerm,
+            career: selectedCareer.name,
+            assignment: assignment.name,
+            age: characterData.age,
+            survivalRoll: rollDescWithAnagathics,
+            survived: false,
+            advanced: false,
+            rank: characterData.rank,
+            rankTitle: ranks[characterData.rank]?.title || 'Rank 0',
+            event: `MISHAP: ${mishap}`,
+            skillsGained: [],
+            mishap,
+          };
+
+          setCharacterData(prev => ({
+            ...prev,
+            lifepath_log: [...prev.lifepath_log, termRecord],
+            terms_served: currentTerm,
+          }));
         }
         const mishapRoll = rollDice(1, 6);
         applyMishapRoll(mishapRoll);
@@ -1706,6 +1708,51 @@ export const CharacterGenerator: React.FC = () => {
         // Pre-careers skip advancement and go straight to events after graduation
       }
     }
+  };
+
+  // First commission attempt for a pre-career graduate entering a service
+  // career (Navy / Marines / Army). Consumes `commissionRollDM` on first try
+  // regardless of outcome; a Military-Academy-honours sentinel of -999
+  // auto-passes the check.
+  const runCommissionCheck = (manualRoll?: number) => {
+    if (!selectedCareer || !needsCommissionRoll || isCommissioned) return;
+    if (typeof selectedCareer.commissionTarget !== 'number') return;
+
+    const officerRanks = selectedCareer.ranks.officer;
+    if (!officerRanks || officerRanks.length === 0) return;
+
+    // Military Academy honours: automatic commission.
+    if (commissionRollDM === -999) {
+      setIsCommissioned(true);
+      setCharacterData(prev => ({ ...prev, rank: 0 }));
+      setCommissionRollLog('Military Academy honours — automatic commission.');
+      setCommissionRollDM(0);
+      setNeedsCommissionRoll(false);
+      return;
+    }
+
+    const socDM = getDM(characterData.characteristics.social.total);
+    const roll = manualRoll ?? rollDice(2, 6);
+    const totalDM = socDM + commissionRollDM;
+    const total = roll + totalDM;
+    const commissioned = total >= selectedCareer.commissionTarget;
+
+    const dmBreakdown =
+      commissionRollDM !== 0
+        ? `${socDM} + ${commissionRollDM} (pre-career)`
+        : `${socDM}`;
+    setCommissionRollLog(
+      `Commission Roll: ${roll} + ${dmBreakdown} = ${total} (need ${selectedCareer.commissionTarget}+). ${commissioned ? 'Commissioned!' : 'Remains enlisted.'}`
+    );
+
+    if (commissioned) {
+      setIsCommissioned(true);
+      setCharacterData(prev => ({ ...prev, rank: 0 }));
+    }
+
+    // Consume the pre-career DM on first attempt regardless of outcome.
+    setCommissionRollDM(0);
+    setNeedsCommissionRoll(false);
   };
 
   const runAdvancementCheck = (manualRoll?: number) => {
@@ -3455,6 +3502,7 @@ export const CharacterGenerator: React.FC = () => {
     setGraduatedWithHonours(false);
     setGraduationRollLog('');
     setSurvivalRollLog('');
+    setCommissionRollLog('');
     setAdvancementRollLog('');
     setCurrentEvent(null);
     setEventRollResult(null);
@@ -3639,6 +3687,7 @@ export const CharacterGenerator: React.FC = () => {
     setGraduatedWithHonours(false);
     setGraduationRollLog('');
     setSurvivalRollLog('');
+    setCommissionRollLog('');
     setAdvancementRollLog('');
     setCurrentEvent(null);
     setEventRollResult(null);
@@ -3757,6 +3806,8 @@ export const CharacterGenerator: React.FC = () => {
         // Crew assignment
         crew_id: selectedCrewId || undefined,
         crew_position: selectedPosition || undefined,
+        // Lifepath history (term-by-term)
+        lifepath_log: characterData.lifepath_log,
       };
 
       await saveCharacter(finalCharacterData);
@@ -5364,6 +5415,32 @@ export const CharacterGenerator: React.FC = () => {
                   />
                 ) : (
                 <>
+                {/* Manual Dice Toggle + Anagathics Toggle */}
+                <div className="flex items-center justify-end gap-4 mb-2">
+                  <label className="text-xs text-terminal-primary/60 cursor-pointer flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={characterData.hasAnagathics === true}
+                      onChange={(e) => {
+                        setCharacterData(prev => ({ ...prev, hasAnagathics: e.target.checked }));
+                      }}
+                      className="accent-terminal-primary"
+                    />
+                    <span>Anagathics active (2 Survival rolls / term)</span>
+                  </label>
+                  <label className="text-xs text-terminal-primary/60 cursor-pointer flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={useManualDice}
+                      onChange={(e) => {
+                        setUseManualDice(e.target.checked);
+                        setManualDiceValue('');
+                      }}
+                      className="accent-terminal-primary"
+                    />
+                    <span>Manual Dice Entry (use physical dice)</span>
+                  </label>
+                </div>
 
                 {/* Career Status Panel */}
                 <div
@@ -5516,351 +5593,76 @@ export const CharacterGenerator: React.FC = () => {
                   </div>
                 )}
 
-                {/* Commission roll happens after events (see COMMISSION ROLL block below).
-                    The runCommissionCheck function handles SOC 9+/first-term eligibility,
-                    pre-career academy DMs, and military academy honours auto-pass. */}
-
-                {/* TRAINING ROLL PHASE - happens at the START of a term (per Traveller 2e
-                    Core Rulebook pp. 20/46). Very first term of very first career has 0
-                    rolls (it gets the 6-skill basic training package instead). Every other
-                    term gets 1 roll, plus an additional roll if the character advanced in
-                    the previous term AND stayed in the same career. */}
-                {isInTerm && termSurvived === null && basicTrainingApplied
-                  && !selectedCareer?.isPreCareer
-                  && !pendingSpecialtySkill
-                  && !termSkillSelected && (
-                  <div className="space-y-3">
-                    <h4 className="text-sm font-bold text-terminal-primary uppercase">
-                      {termSkillRollsAllowed > 1
-                        ? `Training Roll (${termSkillRollsUsed + 1} of ${termSkillRollsAllowed})`
-                        : 'Training Roll'}
-                    </h4>
-                    {termSkillRollsAllowed === 2 && (
-                      <Alert className="bg-green-500/10 border-green-500/50">
-                        <AlertDescription className="text-green-400 text-xs">
-                          Last term's advancement success — you may roll on a skill table twice this term.
-                        </AlertDescription>
-                      </Alert>
-                    )}
-
-                    {/* Show skills already gained this term (visible between multi-roll picks) */}
-                    {termSkillRollsUsed > 0 && termSkillsGained.length > 0 && (
-                      <div className="bg-terminal-primary/5 border border-terminal-primary/30 rounded p-2">
-                        <p className="text-xs text-terminal-primary/70">
-                          {termSkillsGained.map(s => s).join(', ')}
-                        </p>
-                      </div>
-                    )}
-
-                    {/* Skill Table Selection */}
-                    <div className="space-y-2">
-                      {/* Personal Development */}
-                      <div className="border border-terminal-primary/30 rounded overflow-hidden">
-                        <Button
-                          onClick={() => toggleSkillTable('personal')}
-                          disabled={termSkillSelected}
-                          variant="ghost"
-                          className={`w-full justify-between border-0 ${
-                            expandedSkillTable === 'personal'
-                              ? 'bg-terminal-primary/20 text-terminal-primary'
-                              : 'text-terminal-primary hover:bg-terminal-primary/10'
-                          } ${termSkillSelected ? 'opacity-50' : ''}`}
-                        >
-                          <span>Personal Development</span>
-                          {expandedSkillTable === 'personal' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                        </Button>
-                        {expandedSkillTable === 'personal' && (
-                          <div className="p-3 bg-terminal-primary/5 border-t border-terminal-primary/30">
-                            <div className="grid grid-cols-2 gap-1 mb-3">
-                              {selectedCareer?.skillTables.personalDevelopment.map((skill, idx) => (
-                                <div
-                                  key={idx}
-                                  className={`text-xs p-2 rounded ${
-                                    skillTableRollResult === idx + 1
-                                      ? 'bg-green-500/30 border border-green-500 text-green-400 font-bold'
-                                      : 'bg-terminal-primary/10 text-terminal-primary/80'
-                                  }`}
-                                >
-                                  <span className="font-mono">{idx + 1}.</span> {skill}
-                                </div>
-                              ))}
-                            </div>
-                            {!skillTableRollResult && (
-                              useManualDice ? (
-                                <div className="flex gap-2">
-                                  <Input
-                                    type="number"
-                                    min={1}
-                                    max={6}
-                                    value={manualDiceValue}
-                                    onChange={(e) => setManualDiceValue(e.target.value)}
-                                    placeholder="1D6 (1-6)"
-                                    className="bg-black border-terminal-primary/50 text-terminal-primary placeholder:text-terminal-primary/40 w-24"
-                                  />
-                                  <Button
-                                    onClick={() => {
-                                      const val = parseInt(manualDiceValue);
-                                      if (!isNaN(val) && val >= 1 && val <= 6) {
-                                        rollSkillFromExpandedTable(val);
-                                        setManualDiceValue('');
-                                      }
-                                    }}
-                                    disabled={!manualDiceValue || isNaN(parseInt(manualDiceValue)) || parseInt(manualDiceValue) < 1 || parseInt(manualDiceValue) > 6}
-                                    className="flex-1 bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30 border border-terminal-primary/50"
-                                  >
-                                    Submit Skill Roll
-                                  </Button>
-                                </div>
-                              ) : (
-                                <Button
-                                  onClick={() => rollSkillFromExpandedTable()}
-                                  className="w-full bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30 border border-terminal-primary/50"
-                                >
-                                  <Dices className="h-4 w-4 mr-2" />
-                                  Roll 1D6
-                                </Button>
-                              )
-                            )}
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Service Skills */}
-                      <div className="border border-terminal-primary/30 rounded overflow-hidden">
-                        <Button
-                          onClick={() => toggleSkillTable('service')}
-                          disabled={termSkillSelected}
-                          variant="ghost"
-                          className={`w-full justify-between border-0 ${
-                            expandedSkillTable === 'service'
-                              ? 'bg-terminal-primary/20 text-terminal-primary'
-                              : 'text-terminal-primary hover:bg-terminal-primary/10'
-                          } ${termSkillSelected ? 'opacity-50' : ''}`}
-                        >
-                          <span>Service Skills</span>
-                          {expandedSkillTable === 'service' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                        </Button>
-                        {expandedSkillTable === 'service' && (
-                          <div className="p-3 bg-terminal-primary/5 border-t border-terminal-primary/30">
-                            <div className="grid grid-cols-2 gap-1 mb-3">
-                              {selectedCareer?.skillTables.serviceSkills.map((skill, idx) => (
-                                <div
-                                  key={idx}
-                                  className={`text-xs p-2 rounded ${
-                                    skillTableRollResult === idx + 1
-                                      ? 'bg-green-500/30 border border-green-500 text-green-400 font-bold'
-                                      : 'bg-terminal-primary/10 text-terminal-primary/80'
-                                  }`}
-                                >
-                                  <span className="font-mono">{idx + 1}.</span> {skill}
-                                </div>
-                              ))}
-                            </div>
-                            {!skillTableRollResult && (
-                              useManualDice ? (
-                                <div className="flex gap-2">
-                                  <Input
-                                    type="number"
-                                    min={1}
-                                    max={6}
-                                    value={manualDiceValue}
-                                    onChange={(e) => setManualDiceValue(e.target.value)}
-                                    placeholder="1D6 (1-6)"
-                                    className="bg-black border-terminal-primary/50 text-terminal-primary placeholder:text-terminal-primary/40 w-24"
-                                  />
-                                  <Button
-                                    onClick={() => {
-                                      const val = parseInt(manualDiceValue);
-                                      if (!isNaN(val) && val >= 1 && val <= 6) {
-                                        rollSkillFromExpandedTable(val);
-                                        setManualDiceValue('');
-                                      }
-                                    }}
-                                    disabled={!manualDiceValue || isNaN(parseInt(manualDiceValue)) || parseInt(manualDiceValue) < 1 || parseInt(manualDiceValue) > 6}
-                                    className="flex-1 bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30 border border-terminal-primary/50"
-                                  >
-                                    Submit Skill Roll
-                                  </Button>
-                                </div>
-                              ) : (
-                                <Button
-                                  onClick={() => rollSkillFromExpandedTable()}
-                                  className="w-full bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30 border border-terminal-primary/50"
-                                >
-                                  <Dices className="h-4 w-4 mr-2" />
-                                  Roll 1D6
-                                </Button>
-                              )
-                            )}
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Advanced Education (EDU 8+) */}
-                      {selectedCareer?.skillTables.advancedEducation && characterData.characteristics.education.total >= 8 && (
-                        <div className="border border-terminal-primary/30 rounded overflow-hidden">
+                {/* COMMISSION ROLL (pre-career graduates entering a service career) */}
+                {isInTerm && termSurvived === null && basicTrainingApplied &&
+                  needsCommissionRoll && !isCommissioned &&
+                  typeof selectedCareer?.commissionTarget === 'number' && (
+                  <div className="space-y-2">
+                    <Alert className="bg-purple-500/10 border-purple-500/50">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription className="text-purple-300">
+                        <strong>Commission Roll:</strong>{' '}
+                        {commissionRollDM === -999
+                          ? 'Military Academy honours grant automatic commission.'
+                          : `Roll 2D6 + SOC DM${commissionRollDM ? ` + ${commissionRollDM} (pre-career)` : ''} vs ${selectedCareer.commissionTarget}+. The pre-career DM is consumed after this attempt.`}
+                      </AlertDescription>
+                    </Alert>
+                    {commissionRollDM === -999 ? (
+                      <Button
+                        onClick={() => runCommissionCheck()}
+                        className="w-full bg-purple-500/20 text-purple-300 hover:bg-purple-500/30"
+                      >
+                        Accept Automatic Commission
+                      </Button>
+                    ) : useManualDice ? (
+                      <div className="space-y-2">
+                        <p className="text-xs text-blue-400">Enter your 2D6 commission roll (DM applied automatically):</p>
+                        <div className="flex gap-2">
+                          <Input
+                            type="number"
+                            min={2}
+                            max={12}
+                            value={manualDiceValue}
+                            onChange={(e) => setManualDiceValue(e.target.value)}
+                            placeholder="Enter 2D6 result (2-12)"
+                            className="bg-black border-terminal-primary/50 text-terminal-primary placeholder:text-terminal-primary/40"
+                          />
                           <Button
-                            onClick={() => toggleSkillTable('advanced')}
-                            disabled={termSkillSelected}
-                            variant="ghost"
-                            className={`w-full justify-between border-0 ${
-                              expandedSkillTable === 'advanced'
-                                ? 'bg-terminal-primary/20 text-terminal-primary'
-                                : 'text-terminal-primary hover:bg-terminal-primary/10'
-                            } ${termSkillSelected ? 'opacity-50' : ''}`}
+                            onClick={() => {
+                              const val = parseInt(manualDiceValue);
+                              if (!isNaN(val) && val >= 2 && val <= 12) {
+                                runCommissionCheck(val);
+                                setManualDiceValue('');
+                              }
+                            }}
+                            disabled={!manualDiceValue || isNaN(parseInt(manualDiceValue)) || parseInt(manualDiceValue) < 2 || parseInt(manualDiceValue) > 12}
+                            className="bg-purple-500/20 text-purple-300 hover:bg-purple-500/30"
                           >
-                            <span>Advanced Education (EDU 8+)</span>
-                            {expandedSkillTable === 'advanced' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                            Submit Commission Roll
                           </Button>
-                          {expandedSkillTable === 'advanced' && (
-                            <div className="p-3 bg-terminal-primary/5 border-t border-terminal-primary/30">
-                              <div className="grid grid-cols-2 gap-1 mb-3">
-                                {selectedCareer?.skillTables.advancedEducation?.map((skill, idx) => (
-                                  <div
-                                    key={idx}
-                                    className={`text-xs p-2 rounded ${
-                                      skillTableRollResult === idx + 1
-                                        ? 'bg-green-500/30 border border-green-500 text-green-400 font-bold'
-                                        : 'bg-terminal-primary/10 text-terminal-primary/80'
-                                    }`}
-                                  >
-                                    <span className="font-mono">{idx + 1}.</span> {skill}
-                                  </div>
-                                ))}
-                              </div>
-                              {!skillTableRollResult && (
-                                useManualDice ? (
-                                  <div className="flex gap-2">
-                                    <Input
-                                      type="number"
-                                      min={1}
-                                      max={6}
-                                      value={manualDiceValue}
-                                      onChange={(e) => setManualDiceValue(e.target.value)}
-                                      placeholder="1D6 (1-6)"
-                                      className="bg-black border-terminal-primary/50 text-terminal-primary placeholder:text-terminal-primary/40 w-24"
-                                    />
-                                    <Button
-                                      onClick={() => {
-                                        const val = parseInt(manualDiceValue);
-                                        if (!isNaN(val) && val >= 1 && val <= 6) {
-                                          rollSkillFromExpandedTable(val);
-                                          setManualDiceValue('');
-                                        }
-                                      }}
-                                      disabled={!manualDiceValue || isNaN(parseInt(manualDiceValue)) || parseInt(manualDiceValue) < 1 || parseInt(manualDiceValue) > 6}
-                                      className="flex-1 bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30 border border-terminal-primary/50"
-                                    >
-                                      Submit Skill Roll
-                                    </Button>
-                                  </div>
-                                ) : (
-                                  <Button
-                                    onClick={() => rollSkillFromExpandedTable()}
-                                    className="w-full bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30 border border-terminal-primary/50"
-                                  >
-                                    <Dices className="h-4 w-4 mr-2" />
-                                    Roll 1D6
-                                  </Button>
-                                )
-                              )}
-                            </div>
-                          )}
                         </div>
-                      )}
-
-                      {/* Specialist Skills */}
-                      <div className="border border-terminal-primary/30 rounded overflow-hidden">
-                        <Button
-                          onClick={() => toggleSkillTable('specialist')}
-                          disabled={termSkillSelected}
-                          variant="ghost"
-                          className={`w-full justify-between border-0 ${
-                            expandedSkillTable === 'specialist'
-                              ? 'bg-terminal-primary/20 text-terminal-primary'
-                              : 'text-terminal-primary hover:bg-terminal-primary/10'
-                          } ${termSkillSelected ? 'opacity-50' : ''}`}
-                        >
-                          <span>Specialist ({selectedCareer?.assignments[selectedAssignment].name})</span>
-                          {expandedSkillTable === 'specialist' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                        </Button>
-                        {expandedSkillTable === 'specialist' && (
-                          <div className="p-3 bg-terminal-primary/5 border-t border-terminal-primary/30">
-                            <div className="grid grid-cols-2 gap-1 mb-3">
-                              {(() => {
-                                const assignmentName = selectedCareer?.assignments[selectedAssignment]?.name || '';
-                                const specialistSkills = selectedCareer?.skillTables.specialist[assignmentName] || [];
-                                return specialistSkills.map((skill, idx) => (
-                                  <div
-                                    key={idx}
-                                    className={`text-xs p-2 rounded ${
-                                      skillTableRollResult === idx + 1
-                                        ? 'bg-green-500/30 border border-green-500 text-green-400 font-bold'
-                                        : 'bg-terminal-primary/10 text-terminal-primary/80'
-                                    }`}
-                                  >
-                                    <span className="font-mono">{idx + 1}.</span> {skill}
-                                  </div>
-                                ));
-                              })()}
-                            </div>
-                            {!skillTableRollResult && (
-                              useManualDice ? (
-                                <div className="flex gap-2">
-                                  <Input
-                                    type="number"
-                                    min={1}
-                                    max={6}
-                                    value={manualDiceValue}
-                                    onChange={(e) => setManualDiceValue(e.target.value)}
-                                    placeholder="1D6 (1-6)"
-                                    className="bg-black border-terminal-primary/50 text-terminal-primary placeholder:text-terminal-primary/40 w-24"
-                                  />
-                                  <Button
-                                    onClick={() => {
-                                      const val = parseInt(manualDiceValue);
-                                      if (!isNaN(val) && val >= 1 && val <= 6) {
-                                        rollSkillFromExpandedTable(val);
-                                        setManualDiceValue('');
-                                      }
-                                    }}
-                                    disabled={!manualDiceValue || isNaN(parseInt(manualDiceValue)) || parseInt(manualDiceValue) < 1 || parseInt(manualDiceValue) > 6}
-                                    className="flex-1 bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30 border border-terminal-primary/50"
-                                  >
-                                    Submit Skill Roll
-                                  </Button>
-                                </div>
-                              ) : (
-                                <Button
-                                  onClick={() => rollSkillFromExpandedTable()}
-                                  className="w-full bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30 border border-terminal-primary/50"
-                                >
-                                  <Dices className="h-4 w-4 mr-2" />
-                                  Roll 1D6
-                                </Button>
-                              )
-                            )}
-                          </div>
-                        )}
                       </div>
-                    </div>
+                    ) : (
+                      <Button
+                        onClick={() => runCommissionCheck()}
+                        className="w-full bg-purple-500/20 text-purple-300 hover:bg-purple-500/30"
+                      >
+                        <Dices className="h-4 w-4 mr-2" />
+                        Roll Commission Check
+                      </Button>
+                    )}
                   </div>
                 )}
 
-                {/* Specialty selector for training-roll phase (before survival).
-                    The main specialty selector lives inside the event-roll block, so
-                    it's unreachable when training rolls trigger a specialty choice. */}
-                {isInTerm && termSurvived === null && pendingSpecialtySkill && (
-                  <SpecialtySelector
-                    baseSkill={pendingSpecialtySkill}
-                    currentSkills={characterData.skills}
-                    onSelect={handleSpecialtySelected}
-                    title={`Choose ${pendingSpecialtySkill} Specialization${pendingSpecialtySource ? ` (${pendingSpecialtySource})` : ''}`}
-                  />
+                {/* Commission roll log (persists after resolution, before survival) */}
+                {commissionRollLog && (
+                  <div className="bg-terminal-primary/5 border border-terminal-primary/30 rounded p-2">
+                    <p className="text-xs text-terminal-primary/70 font-mono">{commissionRollLog}</p>
+                  </div>
                 )}
 
-                {isInTerm && termSurvived === null && basicTrainingApplied
-                  && (selectedCareer?.isPreCareer || termSkillSelected) && (
+                {isInTerm && termSurvived === null && basicTrainingApplied &&
+                  !(needsCommissionRoll && typeof selectedCareer?.commissionTarget === 'number' && !isCommissioned) && (
                   <div className="space-y-2">
                     <Alert className="bg-terminal-primary/5 border-terminal-primary/30">
                       <AlertCircle className="h-4 w-4" />

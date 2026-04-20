@@ -359,8 +359,9 @@ export const CAREER_NAVY: CareerDefinition = {
       { title: 'Sublieutenant', skillBonus: 'Leadership' },
       { title: 'Lieutenant' },
       { title: 'Commander', skillBonus: 'Tactics' },
-      { title: 'Captain' },
-      { title: 'Admiral', bonusStat: 'social', bonusStatFloor: 12 },
+      { title: 'Captain', bonusStat: 'social' },
+      { title: 'Commodore', bonusStat: 'social' },
+      { title: 'Admiral', bonusStat: 'social' },
     ],
   },
   mishapTable: [
