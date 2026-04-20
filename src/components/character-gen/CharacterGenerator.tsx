@@ -423,7 +423,10 @@ export const CharacterGenerator: React.FC = () => {
   const [graduatedWithHonours, setGraduatedWithHonours] = useState(false);
   const [needsCommissionRoll, setNeedsCommissionRoll] = useState(false);
   const [commissionRollDM, setCommissionRollDM] = useState(0);
+  const [commissionAttempted, setCommissionAttempted] = useState(false);
   const [commissionRollLog, setCommissionRollLog] = useState<string>('');
+  const [forcedContinueInCareer, setForcedContinueInCareer] = useState(false);
+  const [forcedLeaveAfterTerm, setForcedLeaveAfterTerm] = useState(false);
   const [graduationRollLog, setGraduationRollLog] = useState<string>('');
   const [survivalRollLog, setSurvivalRollLog] = useState<string>('');
   const [advancementRollLog, setAdvancementRollLog] = useState<string>('');
@@ -1582,41 +1585,10 @@ export const CharacterGenerator: React.FC = () => {
           terms_served: currentTerm,
         }));
       } else {
-        // Regular career mishap
-        const mishapRoll = rollDice(1, 6);
-        const mishapEntry = selectedCareer.mishapTable[mishapRoll - 1];
-        setMishapRollNumber(mishapRoll);
-
-        // Check if this mishap is a GameEvent (has rolls/choices)
-        if (mishapEntry && typeof mishapEntry === 'object' && 'resolution' in mishapEntry) {
-          // GameEvent mishap - needs player interaction through EventHandler
-          setPendingMishapGameEvent(mishapEntry as GameEvent);
-          // Don't log the term yet - wait for GameEvent resolution
-        } else {
-          // Simple string mishap - log immediately
-          const mishap = mishapEntry ? getMishapDescription(mishapEntry) : 'Injured. Roll on the Injury table.';
-          const ranks = getRanksForCareer(selectedCareer, isCommissioned, assignment.name);
-
-          const termRecord: TermRecord = {
-            termNumber: currentTerm,
-            career: selectedCareer.name,
-            assignment: assignment.name,
-            age: characterData.age,
-            survivalRoll: rollDescWithAnagathics,
-            survived: false,
-            advanced: false,
-            rank: characterData.rank,
-            rankTitle: ranks[characterData.rank]?.title || 'Rank 0',
-            event: `MISHAP: ${mishap}`,
-            skillsGained: [],
-            mishap,
-          };
-
-          setCharacterData(prev => ({
-            ...prev,
-            lifepath_log: [...prev.lifepath_log, termRecord],
-            terms_served: currentTerm,
-          }));
+        // Regular career mishap - if manual dice is on, wait for player to roll
+        if (useManualDice) {
+          setNeedsMishapRoll(true);
+          return; // Wait for manual mishap roll
         }
         const mishapRoll = rollDice(1, 6);
         applyMishapRoll(mishapRoll);
@@ -1726,76 +1698,6 @@ export const CharacterGenerator: React.FC = () => {
         // Pre-careers skip advancement and go straight to events after graduation
       }
     }
-  };
-
-  // First commission attempt for a pre-career graduate entering a service
-  // career (Navy / Marines / Army). Consumes `commissionRollDM` on first try
-  // regardless of outcome; a Military-Academy-honours sentinel of -999
-  // auto-passes the check.
-  const runCommissionCheck = (manualRoll?: number) => {
-    if (!selectedCareer || !needsCommissionRoll || isCommissioned) return;
-    if (typeof selectedCareer.commissionTarget !== 'number') return;
-
-    const officerRanks = selectedCareer.ranks.officer;
-    if (!officerRanks || officerRanks.length === 0) return;
-
-    const applyOfficerRank0Bonuses = () => {
-      const rank0 = officerRanks[0];
-      if (!rank0) return;
-      if (rank0.skillBonus) {
-        applySkillGain(rank0.skillBonus, 'Rank Bonus (commission)');
-        setTermSkillsGained(prev => [...prev, `${rank0.skillBonus} (commission)`]);
-      }
-      if (rank0.bonusStat) {
-        setCharacterData(prev => ({
-          ...prev,
-          characteristics: {
-            ...prev.characteristics,
-            [rank0.bonusStat!]: {
-              ...prev.characteristics[rank0.bonusStat!],
-              total: prev.characteristics[rank0.bonusStat!].total + 1,
-              current: prev.characteristics[rank0.bonusStat!].current + 1,
-            },
-          },
-        }));
-        setTermSkillsGained(prev => [...prev, `${rank0.bonusStat!.toUpperCase()} +1 (commission)`]);
-      }
-    };
-
-    // Military Academy honours: automatic commission.
-    if (commissionRollDM === -999) {
-      setIsCommissioned(true);
-      setCharacterData(prev => ({ ...prev, rank: 0 }));
-      setCommissionRollLog('Military Academy honours — automatic commission.');
-      applyOfficerRank0Bonuses();
-      setCommissionRollDM(0);
-      setNeedsCommissionRoll(false);
-      return;
-    }
-
-    const socDM = getDM(characterData.characteristics.social.total);
-    const roll = manualRoll ?? rollDice(2, 6);
-    const totalDM = socDM + commissionRollDM;
-    const total = roll + totalDM;
-    const commissioned = total >= selectedCareer.commissionTarget;
-
-    const dmBreakdown =
-      commissionRollDM !== 0
-        ? `${socDM} + ${commissionRollDM} (pre-career)`
-        : `${socDM}`;
-    setCommissionRollLog(
-      `Commission Roll: ${roll} + ${dmBreakdown} = ${total} (need ${selectedCareer.commissionTarget}+). ${commissioned ? 'Commissioned!' : 'Remains enlisted.'}`
-    );
-
-    if (commissioned) {
-      setIsCommissioned(true);
-      setCharacterData(prev => ({ ...prev, rank: 0 }));
-      applyOfficerRank0Bonuses();
-    }
-
-    // Consume the pre-career DM on first attempt regardless of outcome.
-    setCommissionRollDM(0);
-    setNeedsCommissionRoll(false);
   };
 
   const runAdvancementCheck = (manualRoll?: number) => {
