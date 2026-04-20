@@ -450,6 +450,8 @@ export const CharacterGenerator: React.FC = () => {
   // Draft system state
   const [hasUsedDraft, setHasUsedDraft] = useState(false);
   const [draftRolled, setDraftRolled] = useState(false);
+  const [awaitingDraftManualRoll, setAwaitingDraftManualRoll] = useState(false);
+  const [draftManualInput, setDraftManualInput] = useState('');
 
   // Basic Training state
   const [basicTrainingApplied, setBasicTrainingApplied] = useState(false);
@@ -963,10 +965,26 @@ export const CharacterGenerator: React.FC = () => {
       alert('You have already used your draft. You must become a Drifter.');
       return;
     }
+    if (useManualDice) {
+      // Defer to runDraftRoll once the player enters their 1D6 result.
+      setAwaitingDraftManualRoll(true);
+      setDraftManualInput('');
+      return;
+    }
+    resolveDraft(rollDraft());
+  };
 
-    const draftResult: DraftResult = rollDraft();
+  const runDraftRoll = (manualRoll: number) => {
+    if (hasUsedDraft) return;
+    const clamped = Math.min(6, Math.max(1, Math.trunc(manualRoll)));
+    resolveDraft(rollDraft(clamped));
+  };
+
+  const resolveDraft = (draftResult: DraftResult) => {
     setHasUsedDraft(true);
     setDraftRolled(true);
+    setAwaitingDraftManualRoll(false);
+    setDraftManualInput('');
 
     // Find the career
     const career = ALL_CAREERS.find(c => c.name === draftResult.careerName);
@@ -1721,11 +1739,35 @@ export const CharacterGenerator: React.FC = () => {
     const officerRanks = selectedCareer.ranks.officer;
     if (!officerRanks || officerRanks.length === 0) return;
 
+    const applyOfficerRank0Bonuses = () => {
+      const rank0 = officerRanks[0];
+      if (!rank0) return;
+      if (rank0.skillBonus) {
+        applySkillGain(rank0.skillBonus, 'Rank Bonus (commission)');
+        setTermSkillsGained(prev => [...prev, `${rank0.skillBonus} (commission)`]);
+      }
+      if (rank0.bonusStat) {
+        setCharacterData(prev => ({
+          ...prev,
+          characteristics: {
+            ...prev.characteristics,
+            [rank0.bonusStat!]: {
+              ...prev.characteristics[rank0.bonusStat!],
+              total: prev.characteristics[rank0.bonusStat!].total + 1,
+              current: prev.characteristics[rank0.bonusStat!].current + 1,
+            },
+          },
+        }));
+        setTermSkillsGained(prev => [...prev, `${rank0.bonusStat!.toUpperCase()} +1 (commission)`]);
+      }
+    };
+
     // Military Academy honours: automatic commission.
     if (commissionRollDM === -999) {
       setIsCommissioned(true);
       setCharacterData(prev => ({ ...prev, rank: 0 }));
       setCommissionRollLog('Military Academy honours — automatic commission.');
+      applyOfficerRank0Bonuses();
       setCommissionRollDM(0);
       setNeedsCommissionRoll(false);
       return;
@@ -1748,6 +1790,7 @@ export const CharacterGenerator: React.FC = () => {
     if (commissioned) {
       setIsCommissioned(true);
       setCharacterData(prev => ({ ...prev, rank: 0 }));
+      applyOfficerRank0Bonuses();
     }
 
     // Consume the pre-career DM on first attempt regardless of outcome.
@@ -2092,16 +2135,26 @@ export const CharacterGenerator: React.FC = () => {
   // Handler for new GameEvent system completion
   const handleGameEventComplete = (effects: EventEffects | undefined, messages: string[]) => {
     if (effects) {
-      // Apply skills
+      // Apply skills (RAW: "if you already have the skill at that level or
+      // higher, increase it by one instead"; requireExisting events always
+      // increment by the granted level on the skill the player owns).
       if (effects.skills?.choices) {
-        const level = effects.skills.level ?? 1;
+        const grantedLevel = effects.skills.level ?? 1;
+        const requireExisting = effects.skills.requireExisting === true;
         effects.skills.choices.forEach(skillName => {
           const skillKey = normalizeSkillName(skillName);
           setCharacterData(prev => {
             const currentSkill = prev.skills[skillKey];
             const currentValue = currentSkill ? parseInt(currentSkill.value, 10) || 0 : 0;
-            // For level 0, just ensure proficiency; for higher, set to max of current or target
-            const newValue = level === 0 ? Math.max(currentValue, 0) : Math.max(currentValue, level);
+            let newValue: number;
+            if (requireExisting) {
+              newValue = currentValue + Math.max(grantedLevel, 1);
+            } else if (currentValue >= grantedLevel) {
+              newValue = currentValue + 1;
+            } else {
+              newValue = grantedLevel;
+            }
+            setTermSkillsGained(log => [...log, `${skillName} → ${newValue} (event)`]);
             return {
               ...prev,
               skills: {
@@ -2110,7 +2163,6 @@ export const CharacterGenerator: React.FC = () => {
               },
             };
           });
-          setTermSkillsGained(prev => [...prev, `${skillName} ${level} (event)`]);
         });
       }
 
@@ -2308,6 +2360,40 @@ export const CharacterGenerator: React.FC = () => {
       if (effects.mustLeaveCareer) {
         setForceLeaveCareer(true);
         setTermSkillsGained(prev => [...prev, 'You must leave this career.']);
+      }
+
+      // Auto-promotion: skip the advancement roll and bump rank + bonuses.
+      if (effects.autoPromotion && selectedCareer) {
+        const assignmentName = selectedCareer.assignments[selectedAssignment]?.name;
+        const ranks = getRanksForCareer(selectedCareer, isCommissioned, assignmentName);
+        if (characterData.rank < ranks.length - 1) {
+          const newRank = characterData.rank + 1;
+          const rankData = ranks[newRank];
+          setCharacterData(prev => ({ ...prev, rank: newRank }));
+          if (rankData.skillBonus) {
+            applySkillGain(rankData.skillBonus, 'Rank Bonus');
+            setTermSkillsGained(prev => [...prev, `${rankData.skillBonus} (Rank Bonus)`]);
+          }
+          if (rankData.bonusStat) {
+            setCharacterData(prev => ({
+              ...prev,
+              characteristics: {
+                ...prev.characteristics,
+                [rankData.bonusStat!]: {
+                  ...prev.characteristics[rankData.bonusStat!],
+                  total: prev.characteristics[rankData.bonusStat!].total + 1,
+                  current: prev.characteristics[rankData.bonusStat!].current + 1,
+                },
+              },
+            }));
+            setTermSkillsGained(prev => [...prev, `${rankData.bonusStat!.toUpperCase()} +1 (rank bonus)`]);
+          }
+          setTermAdvanced(true);
+          setAdvancementRollLog('Auto-promoted by event — no advancement roll required.');
+          setTermSkillsGained(prev => [...prev, `Auto-promoted to ${rankData.title}`]);
+        } else {
+          setTermSkillsGained(prev => [...prev, 'Auto-promotion (already at max rank)']);
+        }
       }
 
       // Handle table redirects (e.g., rollOnTable: 'injury')
@@ -2587,7 +2673,7 @@ export const CharacterGenerator: React.FC = () => {
 
   // Handler for table redirects (Life Events, Injury, etc.)
   // Instead of auto-rolling, shows the table and lets the user roll manually
-  const handleTableRedirect = (table: 'life_events' | 'injury' | 'aging' | 'draft' | 'unusual_events', isMishap = false) => {
+  const handleTableRedirect = (table: 'life_events' | 'injury' | 'aging' | 'draft' | 'unusual_events' | 'mishap' | 'prison_event', isMishap = false) => {
     switch (table) {
       case 'life_events':
       case 'injury':
@@ -2595,6 +2681,29 @@ export const CharacterGenerator: React.FC = () => {
         setPendingTableRedirect(table);
         setPendingTableIsMishap(isMishap);
         return;
+      case 'mishap': {
+        // Roll on the current career's Mishap table without ejecting the
+        // character (used by events like Noble #2 "Disaster"). The mishap
+        // entries are GameEvents, so they render through the standard
+        // redirected-event UI and apply effects via handleGameEventComplete,
+        // which does NOT terminate the career.
+        if (!selectedCareer || !selectedCareer.mishapTable) {
+          setGameEventCompleted(true);
+          setEventResolved(true);
+          return;
+        }
+        const roll = rollDiceUtil(1, 6);
+        const mishapEntry = selectedCareer.mishapTable[roll - 1];
+        if (mishapEntry && typeof mishapEntry === 'object' && 'resolution' in mishapEntry) {
+          setRedirectedEvent(mishapEntry as GameEvent);
+          setRedirectTableRoll(roll);
+          setRedirectTableName(`${selectedCareer.name} Mishap (no ejection)`);
+        } else {
+          setGameEventCompleted(true);
+          setEventResolved(true);
+        }
+        return;
+      }
       case 'aging':
         setTermSkillsGained(prev => [...prev, 'Roll on Aging table (not yet implemented)']);
         setGameEventCompleted(true);
@@ -2645,6 +2754,10 @@ export const CharacterGenerator: React.FC = () => {
       setRedirectTableRoll(roll);
       setRedirectTableName(tableName);
       setPendingTableRedirect(null);
+    } else {
+      setPendingTableRedirect(null);
+      setGameEventCompleted(true);
+      setEventResolved(true);
     }
   };
 
@@ -5277,22 +5390,61 @@ export const CharacterGenerator: React.FC = () => {
                           </AlertDescription>
                         </Alert>
 
-                        <div className="grid grid-cols-2 gap-2">
-                          <Button
-                            onClick={enterDraft}
-                            disabled={hasUsedDraft}
-                            className="bg-yellow-600/20 text-yellow-400 hover:bg-yellow-600/30 border border-yellow-600/50"
-                          >
-                            <Dices className="h-4 w-4 mr-2" />
-                            Enter Draft
-                          </Button>
-                          <Button
-                            onClick={becomeDrifter}
-                            className="bg-orange-600/20 text-orange-400 hover:bg-orange-600/30 border border-orange-600/50"
-                          >
-                            Become Drifter
-                          </Button>
-                        </div>
+                        {awaitingDraftManualRoll ? (
+                          <div className="space-y-2 bg-yellow-600/5 border border-yellow-600/40 rounded p-2">
+                            <p className="text-xs text-yellow-300">
+                              Enter your 1D6 draft roll: 1=Navy, 2=Army, 3=Marines, 4=Merchant (Merchant Marine), 5=Scout, 6=Agent (Law Enforcement).
+                            </p>
+                            <div className="flex gap-2">
+                              <Input
+                                type="number"
+                                min={1}
+                                max={6}
+                                value={draftManualInput}
+                                onChange={(e) => setDraftManualInput(e.target.value)}
+                                placeholder="1-6"
+                                className="bg-black border-terminal-primary/50 text-terminal-primary placeholder:text-terminal-primary/40"
+                              />
+                              <Button
+                                onClick={() => {
+                                  const val = parseInt(draftManualInput);
+                                  if (!isNaN(val) && val >= 1 && val <= 6) {
+                                    runDraftRoll(val);
+                                  }
+                                }}
+                                disabled={!draftManualInput || isNaN(parseInt(draftManualInput)) || parseInt(draftManualInput) < 1 || parseInt(draftManualInput) > 6}
+                                className="bg-yellow-600/20 text-yellow-400 hover:bg-yellow-600/30"
+                              >
+                                Submit Draft Roll
+                              </Button>
+                            </div>
+                            <Button
+                              onClick={() => { setAwaitingDraftManualRoll(false); setDraftManualInput(''); }}
+                              variant="outline"
+                              size="sm"
+                              className="text-xs border-yellow-600/40 text-yellow-300"
+                            >
+                              Cancel
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="grid grid-cols-2 gap-2">
+                            <Button
+                              onClick={enterDraft}
+                              disabled={hasUsedDraft}
+                              className="bg-yellow-600/20 text-yellow-400 hover:bg-yellow-600/30 border border-yellow-600/50"
+                            >
+                              <Dices className="h-4 w-4 mr-2" />
+                              Enter Draft
+                            </Button>
+                            <Button
+                              onClick={becomeDrifter}
+                              className="bg-orange-600/20 text-orange-400 hover:bg-orange-600/30 border border-orange-600/50"
+                            >
+                              Become Drifter
+                            </Button>
+                          </div>
+                        )}
 
                         {hasUsedDraft && (
                           <Alert className="bg-yellow-500/10 border-yellow-500/50">

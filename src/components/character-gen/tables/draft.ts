@@ -18,10 +18,12 @@ export const DRAFT_TABLE: DraftResult[] = [
 ];
 
 /**
- * Roll on the draft table
- * @returns Draft result with career name and assignment (if specific)
+ * Roll on the draft table.
+ * @param manualRoll - optional 1-6 value; when provided, used instead of the RNG.
+ * @returns Draft result with career name and assignment (if specific).
  */
-export function rollDraft(): DraftResult {
-  const roll = Math.floor(Math.random() * 6) + 1; // 1-6
-  return DRAFT_TABLE[roll - 1];
+export function rollDraft(manualRoll?: number): DraftResult {
+  const roll = manualRoll ?? Math.floor(Math.random() * 6) + 1; // 1-6
+  const clamped = Math.min(6, Math.max(1, roll));
+  return DRAFT_TABLE[clamped - 1];
 }
