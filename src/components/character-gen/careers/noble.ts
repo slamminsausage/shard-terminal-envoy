@@ -158,7 +158,7 @@ const NOBLE_EVENTS: GameEvent[] = [
     resolution: {
       type: 'table_redirect',
       table: 'mishap',
-      displayText: 'Roll on the Mishap table (not ejected from career).',
+      displayText: 'Roll on the Noble Mishap table (you remain in the career).',
     },
   },
 

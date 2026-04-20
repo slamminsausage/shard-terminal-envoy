@@ -95,22 +95,30 @@ const rollDice = (dice: number = 1, sides: number = 6): number => {
 };
 
 /**
- * Calculate benefit rolls for a career
+ * Calculate benefit rolls for a career.
+ *
+ * Commissioned officers enter at rank 0 (array index for Ensign/2nd Lt),
+ * which maps to O1 in MgT rank numbering. Shift the rank by +1 for
+ * commissioned characters so reaching any officer rank grants the +1
+ * benefit roll the rules require.
  */
 const calculateBenefitRolls = (
   termsServed: number,
   highestRank: number,
-  extraRolls: number = 0
+  extraRolls: number = 0,
+  isCommissioned: boolean = false
 ): { rolls: number; rankDM: number } => {
   let rolls = termsServed;
   let rankDM = 0;
 
-  if (highestRank >= 5) {
+  const effectiveRank = isCommissioned ? highestRank + 1 : highestRank;
+
+  if (effectiveRank >= 5) {
     rolls += 3;
     rankDM = 1;
-  } else if (highestRank >= 3) {
+  } else if (effectiveRank >= 3) {
     rolls += 2;
-  } else if (highestRank >= 1) {
+  } else if (effectiveRank >= 1) {
     rolls += 1;
   }
 
@@ -197,7 +205,7 @@ export const MusteringOut: React.FC<MusteringOutProps> = ({
     careerHistory
       .filter(c => !c.isPreCareer)
       .map(c => lostBenefitCareers.includes(c.careerName)
-        ? { ...c, termsServed: 0, highestRank: 0, extraBenefitRolls: 0 }
+        ? { ...c, termsServed: 0, highestRank: 0, extraBenefitRolls: 0, isCommissioned: false }
         : c
       ),
     [careerHistory, lostBenefitCareers]
@@ -209,7 +217,8 @@ export const MusteringOut: React.FC<MusteringOutProps> = ({
       const { rolls, rankDM } = calculateBenefitRolls(
         career.termsServed,
         career.highestRank,
-        career.extraBenefitRolls
+        career.extraBenefitRolls,
+        career.isCommissioned
       );
       return {
         ...career,
@@ -436,9 +445,9 @@ export const MusteringOut: React.FC<MusteringOutProps> = ({
             setAccumulatedTAS(true);
             appliedBenefits.push('TAS Membership');
           } else {
-            // Already have TAS, gain ship share instead
-            setAccumulatedShipShares(prev => prev + 1);
-            appliedBenefits.push('1 Ship Share (already have TAS)');
+            // RAW: additional TAS memberships convert to 2 ship shares each.
+            setAccumulatedShipShares(prev => prev + 2);
+            appliedBenefits.push('2 Ship Shares (already have TAS)');
           }
           break;
         case 'ally':
