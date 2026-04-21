@@ -1,19 +1,19 @@
 [
   {
-    "title": "Guest Services Directory — The Grand Hotel",
-    "location": "General Access Terminal — The Grand Hotel, Upper City",
+    "title": "Guest Services Directory \u2014 The Grand Hotel",
+    "location": "General Access Terminal \u2014 The Grand Hotel, Upper City",
     "date": "CURRENT CYCLE (STANDING NOTICE)",
     "author": "Grand Hotel Guest Services",
-    "content": "WELCOME TO THE GRAND HOTEL — BLACKSAND CITY\n\nThe Grand Hotel is pleased to receive you.\n\nWe are the finest establishment on Theev, and we are aware that the competition is not stiff. We nonetheless take pride in our standard of service.\n\nGuests are reminded that the Grand Hotel operates exclusively under the Law of the Lords. Weapons may be carried but not discharged. Disputes may be conducted but not violently. Conduct that embarrasses our other guests will result in ejection. Conduct that embarrasses us significantly will result in something worse.\n\nAmenities:\n— Private dining suites (bookable in advance)\n— Secure communications (encrypted, not monitored — or so we tell everyone)\n— Medical services (discreet, no questions, additional fee applies)\n— Currency exchange (we accept most things of value)\n\nA note to our Imperial visitors: You are welcome here. We ask only that you do not make your affiliation obvious. Certain other guests find it distracting.\n\nA note to everyone else: The same applies in reverse.\n\nEnjoy your stay.",
+    "content": "WELCOME TO THE GRAND HOTEL \u2014 BLACKSAND CITY\n\nThe Grand Hotel is pleased to receive you.\n\nWe are the finest establishment on Theev, and we are aware that the competition is not stiff. We nonetheless take pride in our standard of service.\n\nGuests are reminded that the Grand Hotel operates exclusively under the Law of the Lords. Weapons may be carried but not discharged. Disputes may be conducted but not violently. Conduct that embarrasses our other guests will result in ejection. Conduct that embarrasses us significantly will result in something worse.\n\nAmenities:\n\u2014 Private dining suites (bookable in advance)\n\u2014 Secure communications (encrypted, not monitored \u2014 or so we tell everyone)\n\u2014 Medical services (discreet, no questions, additional fee applies)\n\u2014 Currency exchange (we accept most things of value)\n\nA note to our Imperial visitors: You are welcome here. We ask only that you do not make your affiliation obvious. Certain other guests find it distracting.\n\nA note to everyone else: The same applies in reverse.\n\nEnjoy your stay.",
     "security_level": "unlocked",
     "requires_roll": false
   },
   {
-    "title": "Current Guest Register — Confidential",
-    "location": "General Access Terminal — The Grand Hotel, Upper City",
+    "title": "Current Guest Register \u2014 Confidential",
+    "location": "General Access Terminal \u2014 The Grand Hotel, Upper City",
     "date": "CURRENT CYCLE",
-    "author": "Grand Hotel Guest Registry — Administrative Partition",
-    "content": "CURRENT GUEST REGISTER — CONFIDENTIAL\n\nRoom 4: 'Mr. Renval.' Paid in cash. Has requested no housekeeping. Has not left his room in three days. Food trays returned empty.\n\nRoom 7: Admiral Darokyn. Suite. Long-term occupancy. Staff instructed to address him by title and not to ask questions about the naval uniform.\n\nRoom 9: Representative of the Murghen Consortium. Name withheld by request. Has received four visitors since arrival. Meetings have averaged ninety minutes each.\n\nRoom 12: 'Gesh.' Registered as an independent trader. Has been asking questions about recent arrivals. We are logging his inquiries as a matter of policy.\n\nRoom 15: Vacant. Held on standing reservation. Name on reservation: REDTHANE. Reservation has not been claimed in several months. Reservation fee continues to be paid remotely. We do not ask by whom.",
+    "author": "Grand Hotel Guest Registry \u2014 Administrative Partition",
+    "content": "CURRENT GUEST REGISTER \u2014 CONFIDENTIAL\n\nRoom 4: 'Mr. Renval.' Paid in cash. Has requested no housekeeping. Has not left his room in three days. Food trays returned empty.\n\nRoom 7: Admiral Darokyn. Suite. Long-term occupancy. Staff instructed to address him by title and not to ask questions about the naval uniform.\n\nRoom 9: Representative of the Murghen Consortium. Name withheld by request. Has received four visitors since arrival. Meetings have averaged ninety minutes each.\n\nRoom 12: 'Gesh.' Registered as an independent trader. Has been asking questions about recent arrivals. We are logging his inquiries as a matter of policy.\n\nRoom 15: Vacant. Held on standing reservation. Name on reservation: REDTHANE. Reservation has not been claimed in several months. Reservation fee continues to be paid remotely. We do not ask by whom.",
     "security_level": "restricted",
     "requires_roll": true,
     "roll_check": {
@@ -24,12 +24,12 @@
     }
   },
   {
-    "title": "Grand Hotel — Surveillance Blind Spot Override",
-    "location": "General Access Terminal — The Grand Hotel, Upper City",
+    "title": "Grand Hotel \u2014 Surveillance Blind Spot Override",
+    "location": "General Access Terminal \u2014 The Grand Hotel, Upper City",
     "date": "CURRENT CYCLE",
-    "author": "Grand Hotel Security Systems — Administrative Node",
+    "author": "Grand Hotel Security Systems \u2014 Administrative Node",
     "security_level": "high",
-    "content": "The Grand Hotel operates a full-coverage internal surveillance network. All common areas, corridors, and dining rooms are monitored continuously.\n\nThe system allows zone-by-zone override for authorized maintenance. A 12-minute window can be opened before auto-restore detects the loop.\n\n[INTERACTIVE TERMINAL — AWAITING INPUT]",
+    "content": "The Grand Hotel operates a full-coverage internal surveillance network. All common areas, corridors, and dining rooms are monitored continuously.\n\nThe system allows zone-by-zone override for authorized maintenance. A 12-minute window can be opened before auto-restore detects the loop.\n\n[INTERACTIVE TERMINAL \u2014 AWAITING INPUT]",
     "type": "action_sequence",
     "action_sequence": {
       "id": "grand-hotel-surveillance",
@@ -38,12 +38,12 @@
         {
           "type": "auto",
           "lines": [
-            ">> GRAND HOTEL SECURITY — SURVEILLANCE MANAGEMENT v3.2",
+            ">> GRAND HOTEL SECURITY \u2014 SURVEILLANCE MANAGEMENT v3.2",
             ">> ACTIVE CAMERA ZONES: 4",
-            ">> ZONE A — Main Lobby & Entrance (6 cameras)",
-            ">> ZONE B — Guest Corridors, Floors 1-3 (8 cameras)",
-            ">> ZONE C — Rose Pavilion & Private Dining (4 cameras)",
-            ">> ZONE D — Service Passages & Staff Access (5 cameras)",
+            ">> ZONE A \u2014 Main Lobby & Entrance (6 cameras)",
+            ">> ZONE B \u2014 Guest Corridors, Floors 1-3 (8 cameras)",
+            ">> ZONE C \u2014 Rose Pavilion & Private Dining (4 cameras)",
+            ">> ZONE D \u2014 Service Passages & Staff Access (5 cameras)",
             "",
             ">> SELECT ZONE TO SUPPRESS:"
           ],
@@ -54,10 +54,10 @@
           "type": "choice",
           "prompt_text": "SELECT CAMERA ZONE TO DISABLE:",
           "options": [
-            "ZONE A — Main Lobby & Entrance",
-            "ZONE B — Guest Corridors, Floors 1-3",
-            "ZONE C — Rose Pavilion & Private Dining",
-            "ZONE D — Service Passages & Staff Access"
+            "ZONE A \u2014 Main Lobby & Entrance",
+            "ZONE B \u2014 Guest Corridors, Floors 1-3",
+            "ZONE C \u2014 Rose Pavilion & Private Dining",
+            "ZONE D \u2014 Service Passages & Staff Access"
           ],
           "sound_on_accept": "access_granted"
         },
@@ -65,7 +65,7 @@
           "type": "auto",
           "lines": [
             ">> ISOLATING SELECTED ZONE...",
-            ">> INJECTING LOOP FEED — LAST 30 SECONDS OF CLEAN FOOTAGE",
+            ">> INJECTING LOOP FEED \u2014 LAST 30 SECONDS OF CLEAN FOOTAGE",
             ">> DISABLING MOTION DETECTION FOR ZONE..."
           ],
           "delay": 40,
@@ -79,14 +79,14 @@
           "duration": 2000,
           "segments": 16,
           "sound_on_complete": "alarm_disable",
-          "complete_message": "CAMERA FEEDS SUPPRESSED — LOOP ACTIVE"
+          "complete_message": "CAMERA FEEDS SUPPRESSED \u2014 LOOP ACTIVE"
         },
         {
           "type": "auto",
           "lines": [
             ">> OVERRIDE COMPLETE.",
             ">> ESTIMATED BLIND WINDOW: 12 MINUTES",
-            ">> AUTO-RESTORE TRIGGERS AT FAILOVER — NO MANUAL EXTENSION POSSIBLE",
+            ">> AUTO-RESTORE TRIGGERS AT FAILOVER \u2014 NO MANUAL EXTENSION POSSIBLE",
             ">> NOTE: STAFF ROUNDS CONTINUE ON STANDARD SCHEDULE.",
             ">> !! CAMERAS ARE BLIND. STAFF ARE NOT. !!"
           ],
@@ -95,7 +95,7 @@
         }
       ],
       "on_complete": {
-        "message": "The selected zone's cameras freeze on their last frames. A looped feed now plays for anyone watching the monitoring station — the corridor or dining room appears quiet and empty. You have twelve minutes before the failover system detects the inconsistency. The hotel staff still walk their rounds on schedule. The cameras are blind. The staff are not.",
+        "message": "The selected zone's cameras freeze on their last frames. A looped feed now plays for anyone watching the monitoring station \u2014 the corridor or dining room appears quiet and empty. You have twelve minutes before the failover system detects the inconsistency. The hotel staff still walk their rounds on schedule. The cameras are blind. The staff are not.",
         "sound": "alarm_disable",
         "persist_key": "grand-hotel-surveillance"
       },
@@ -106,21 +106,30 @@
     }
   },
   {
-    "title": "Rose Pavilion — Reservation Notice",
-    "location": "General Access Terminal — The Grand Hotel, Upper City",
+    "title": "Rose Pavilion \u2014 Reservation Notice",
+    "location": "General Access Terminal \u2014 The Grand Hotel, Upper City",
     "date": "CURRENT CYCLE",
     "author": "Rose Pavilion Reservations",
-    "content": "THE ROSE PAVILION\n\nBlacksand City's finest dining establishment. Private booths available for parties of two to eight. Booth soundproofing guaranteed. Staff discretion absolute.\n\nReservations recommended. Walk-ins accepted if the party is sufficiently notable.\n\nCurrent reservations on file:\n— Admiral Darokyn holds a standing reservation at his preferred table. He dines most evenings. He occasionally receives guests. If you have business with the Admiral, the Rose Pavilion is his preferred venue for that sort of thing.\n\n— A private booth has been reserved for this evening under a name we are not authorized to share. The reservation includes a request that the booth remain unsurveilled. We have honored this request. We always do.\n\nNote: The Rose Pavilion does not ask what is being discussed in its private booths. We do not want to know. This is not an invitation to tell us.",
+    "content": "THE ROSE PAVILION\n\nBlacksand City's finest dining establishment. Private booths available for parties of two to eight. Booth soundproofing guaranteed. Staff discretion absolute.\n\nReservations recommended. Walk-ins accepted if the party is sufficiently notable.\n\nCurrent reservations on file:\n\u2014 Admiral Darokyn holds a standing reservation at his preferred table. He dines most evenings. He occasionally receives guests. If you have business with the Admiral, the Rose Pavilion is his preferred venue for that sort of thing.\n\n\u2014 A private booth has been reserved for this evening under a name we are not authorized to share. The reservation includes a request that the booth remain unsurveilled. We have honored this request. We always do.\n\nNote: The Rose Pavilion does not ask what is being discussed in its private booths. We do not want to know. This is not an invitation to tell us.",
     "security_level": "unlocked",
     "requires_roll": false
   },
   {
-    "title": "Cliff District — Procurement Listings",
-    "location": "General Access Terminal — The Grand Hotel, Upper City",
+    "title": "Cliff District \u2014 Procurement Listings",
+    "location": "General Access Terminal \u2014 The Grand Hotel, Upper City",
     "date": "CURRENT CYCLE (ROTATING)",
-    "author": "Cliff District Consortium — Anonymized Listings",
-    "content": "CLIFF DISTRICT — CURRENT PROCUREMENT LISTINGS\n\nNote: All transactions conducted through intermediaries. No direct contact with vendors. All items sold as-is, no warranty, no Imperial compliance documentation.\n\n—\n\nLOT 1: Military-grade accelerator rounds, 500 units. Origin unlisted. Condition: New.\nLOT 2: Portable communications jammer. TL12. Slight casing damage. Functional.\nLOT 3: Psionic suppression field emitter. Condition: Unknown. Vendor notes: 'Do not turn it on inside.' Reason for note: unspecified.\nLOT 4: Mercenary services — Murghen Consortium. Eight-week minimum contract. Rates on application. Approximately 900 personnel available.\nLOT 5: Navigation data, three restricted systems. Acquisition method: unspecified. Accuracy: claimed 98%.\nLOT 6: One (1) item recovered from a derelict in Foreven Sector. Vendor describes it as 'a fragment of something dark. Glassy. Pulses faintly when near electronics.' No further description available. Vendor has requested the item leave their possession as soon as possible. Price: negotiable. Vendor's emphasis: immediately.\n\n—\n\n'Going off the cliff' means you are dealing in things the Imperium would prefer did not exist. Everyone here already knows that.",
+    "author": "Cliff District Consortium \u2014 Anonymized Listings",
+    "content": "CLIFF DISTRICT \u2014 CURRENT PROCUREMENT LISTINGS\n\nNote: All transactions conducted through intermediaries. No direct contact with vendors. All items sold as-is, no warranty, no Imperial compliance documentation.\n\n\u2014\n\nLOT 1: Military-grade accelerator rounds, 500 units. Origin unlisted. Condition: New.\nLOT 2: Portable communications jammer. TL12. Slight casing damage. Functional.\nLOT 3: Psionic suppression field emitter. Condition: Unknown. Vendor notes: 'Do not turn it on inside.' Reason for note: unspecified.\nLOT 4: Mercenary services \u2014 Murghen Consortium. Eight-week minimum contract. Rates on application. Approximately 900 personnel available.\nLOT 5: Navigation data, three restricted systems. Acquisition method: unspecified. Accuracy: claimed 98%.\nLOT 6: One (1) item recovered from a derelict in Foreven Sector. Vendor describes it as 'a fragment of something dark. Glassy. Pulses faintly when near electronics.' No further description available. Vendor has requested the item leave their possession as soon as possible. Price: negotiable. Vendor's emphasis: immediately.\n\n\u2014\n\n'Going off the cliff' means you are dealing in things the Imperium would prefer did not exist. Everyone here already knows that.",
     "security_level": "unlocked",
+    "requires_roll": false
+  },
+  {
+    "title": "Concierge Advisory \u2014 Private Salon Routing",
+    "location": "Grand Hotel Internal Concierge Partition",
+    "date": "CURRENT CYCLE",
+    "author": "Senior Concierge Nera Voss",
+    "content": "Upper city guests keep asking for \"private dining\" when what they actually want is meetings without names attached. We route those parties through the Rose Pavilion service corridor and bill everything to floral maintenance.\n\nTwo off-world crews booked mirrored slots this week and never crossed paths. One arrived polished and diplomatic; the other wore dock grime and spoke like belt salvage crews. Both asked about available pilots and temporary registry counsel.\n\n[[redacted diff=9 skill=\"Broker\" attempts=2]]\nIf either crew asks for the \"Moonglass Room,\" deny politely once, then offer \"Cliff Tea Service\" instead. That's the phrase chain that moves them to unlogged booths with jammer glass.[[/redacted]]\n\nPlease stop letting armed guests use the west lift. Last incident cost us three chandeliers.",
+    "security_level": "medium",
     "requires_roll": false
   }
 ]

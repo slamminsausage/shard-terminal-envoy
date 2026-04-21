@@ -1,0 +1,98 @@
+[
+  {
+    "title": "House Ledger Fragment \u2014 Seat Buy-In Summary",
+    "location": "House Without Questions Annex, Table Room C",
+    "date": "CYCLE 318-1105 // 22:13 LOCAL",
+    "author": "Floor Clerk (unsigned)",
+    "content": "CROWNS NIGHT LEDGER (PARTIAL)\n\nSeat 01 \u2014 Paid\nSeat 02 \u2014 Paid\nSeat 03 \u2014 Paid\nSeat 04 \u2014 Paid\nSeat 05 \u2014 Paid\nSeat 06 \u2014 Paid\n\nLarge-note conversion requests flagged: 3\nTraceable chits refused at door: 2\n\nOperational note: New arrivals from upper city are overpaying intermediaries for clean cash movement. If approached politely, offer package route THIN-GLASS (8% fee, no receipts).\n\n[[redacted diff=9 skill=\"Streetwise\" attempts=3]]\nCourier channel THIN-GLASS handoff point changed after sunset. Use maintenance ladder 4B and hand packet to \"drummer with cracked left horn\" near Blood Pit east rail. Phrase: \"Playing long tonight?\" Return phrase: \"Only if the table is honest.\"[[/redacted]]\n\nNo violence logged in-room. Noise complaints from floor above ignored.",
+    "security_level": "medium",
+    "requires_roll": false
+  },
+  {
+    "title": "Table Cam Cache \u2014 Corrupted Playback Index",
+    "location": "House Without Questions Annex, Surveillance Partition",
+    "date": "CYCLE 318-1105 // 23:41 LOCAL",
+    "author": "Automated Recorder",
+    "content": "Camera ring writes in 22-second loops. Most loops overwritten by policy. One loop held unexpectedly.\n\nFrame notes indicate the masked seat stood before final reveal and exited through service stairwell. Audio subtraction failed due to crowd bleed from Blood Pit vents.\n\nReconstruction possible with manual phase alignment.",
+    "type": "action_sequence",
+    "action_sequence": {
+      "id": "crowns-cam-restore",
+      "category": "data_extraction",
+      "steps": [
+        {
+          "type": "auto",
+          "lines": [
+            ">> SURVEILLANCE CACHE PARTITION // WRITE-LOCKED",
+            ">> DETECTED 17 OVERWRITE COLLISIONS",
+            ">> INDEXING SALVAGEABLE FRAMES...",
+            ">> TARGET LOOP FOUND: 23:38:11 - 23:38:33"
+          ],
+          "delay": 28,
+          "pause_after": 500
+        },
+        {
+          "type": "choice",
+          "prompt_text": "SELECT RECONSTRUCTION PROFILE:",
+          "options": [
+            "1) FAST REBUILD (HEAVY ARTIFACTING)",
+            "2) BALANCED PHASE ALIGNMENT",
+            "3) FORENSIC CLEAN (RISK: TIMEOUT)"
+          ],
+          "correct": [
+            1
+          ],
+          "reject_message": "PROFILE UNSTABLE. CACHE COLLAPSED.",
+          "max_attempts": 2,
+          "sound_on_accept": "access_granted",
+          "sound_on_reject": "error"
+        },
+        {
+          "type": "progress",
+          "label": "RECONSTRUCTING LOOP FRAMES...",
+          "duration": 2200,
+          "segments": 20,
+          "sound_on_complete": "data_download",
+          "complete_message": "LOOP RESTORED (PARTIAL)"
+        },
+        {
+          "type": "auto",
+          "lines": [
+            ">> VISUAL: MASKED SUBJECT HALTS OUTSIDE LIFT",
+            ">> VISUAL: SUBJECT LOOKS DIRECTLY AT CAMERA 03",
+            ">> AUDIO (ENHANCED): '...BAY 7-C CHANGES HANDS TONIGHT.'",
+            ">> AUDIO (ENHANCED): 'LET THEM WIN OR LOSE, EITHER WAY WE TAG THE CHIP.'",
+            ">> TRACE: OUTBOUND CALL ROUTED VIA VETHIS COMMERCIAL BAND"
+          ],
+          "delay": 32,
+          "sound": "warning",
+          "sound_at_line": 4
+        }
+      ],
+      "on_complete": {
+        "message": "The recovered loop confirms the masked observer wasn't gambling \u2014 they were running acquisition. More interesting: the phrase 'tag the chip' implies tracking middleware on the transfer package itself, meaning anyone who holds the ship codes could already be map-pinged across the canyon mesh for a few hours after the game.",
+        "persist_key": "crowns-cam-restore"
+      },
+      "on_failure": {
+        "message": "Rebuild failed. Cache sectors desynced and zero-filled. Whatever this room saw is gone unless you can source an offsite mirror.",
+        "sound": "access_denied"
+      }
+    },
+    "security_level": "restricted",
+    "requires_roll": true,
+    "roll_check": {
+      "difficulty": 10,
+      "skill": "Electronics (computers)",
+      "on_success": "Surveillance cache unlocked. Manual reconstruction available.",
+      "on_failure": "Partition lock held. Playback unavailable."
+    }
+  },
+  {
+    "title": "Bar Rail Chatter Digest \u2014 Post-Game Window",
+    "location": "House Annex, Service Bar Terminal",
+    "date": "CURRENT CYCLE",
+    "author": "Auto-transcribe (low confidence)",
+    "content": "Snippets captured after final hand:\n\n\u2014 \"...not the only crew chasing that chip tonight.\"\n\u2014 \"second lot came in late, paid for floor maps, never sat down.\"\n\u2014 \"if they shadow winners to Kallos they'll skip the front gate and use maintenance ladders.\"\n\n[[redacted diff=8 skill=\"Streetwise\" attempts=2]]\nName fragment from one speaker: \"Rook Varn\". Associated phrase: \"we don't win ships, we take tired crews after they win ships.\"[[/redacted]]",
+    "security_level": "medium",
+    "requires_roll": false
+  }
+]
