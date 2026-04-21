@@ -20,6 +20,7 @@ import VideoPlayer from '../VideoPlayer';
 import { useGlitchText } from '@/hooks/useGlitchText';
 import { getTerminalBootProfile } from '@/lib/terminalBootProfiles';
 import { LogDetailGauges } from '../TerminalGauges';
+import { parseLogContent, hasRedactedMarkers } from '@/lib/parseLogContent';
 
 interface LogEntry {
   title: string;
@@ -84,15 +85,35 @@ export default function LogDetailView({
   const { accentColor, dimColor } = profile;
   const secColor = SECURITY_COLORS[log.security_level || ''] || accentColor;
 
+  // Content with redacted markers can't be usefully streamed by the
+  // char-by-char typewriter (it would reveal the hidden text) — bypass
+  // the typewriter and render immediately with inline RedactedBlocks.
+  const hasRedacted = useMemo(
+    () => hasRedactedMarkers(log.content),
+    [log.content]
+  );
+
   // Once typing completes, start live glitch flicker on the original content
   const flickeredText = useGlitchText({
     text: log.content || '',
     terminalCode,
-    active: typingComplete,
+    active: typingComplete && !hasRedacted,
   });
 
   // During typing: show the typewriter output; after typing: show flickered version
   const visibleText = typingComplete ? flickeredText : displayedText;
+
+  // Parsed nodes (used when content contains redacted markers)
+  const parsedNodes = useMemo(
+    () =>
+      hasRedacted
+        ? parseLogContent(log.content || '', {
+            accentColor,
+            dimColor,
+          })
+        : null,
+    [hasRedacted, log.content, accentColor, dimColor]
+  );
 
   // Typing progress (0-100)
   const progress = log.content
@@ -162,8 +183,8 @@ export default function LogDetailView({
           </span>
         </div>
 
-        {/* Data stream progress bar (visible during typing) */}
-        {!typingComplete && (
+        {/* Data stream progress bar (visible during typing, unless redacted) */}
+        {!typingComplete && !hasRedacted && (
           <div className="mt-2">
             <div className="flex items-center gap-2">
               <div
@@ -195,10 +216,19 @@ export default function LogDetailView({
       <div className="flex-1 overflow-auto flex">
         {/* Log content */}
         <div className="flex-1 p-4">
-          <div className="whitespace-pre-wrap text-sm font-mono mb-4" style={{ color: 'var(--primary)' }}>
-            {visibleText}
-            {!typingComplete && (
-              <span className="animate-pulse" style={{ color: accentColor }}>█</span>
+          <div
+            className="whitespace-pre-wrap text-sm font-mono mb-4"
+            style={{ color: 'var(--primary)' }}
+          >
+            {hasRedacted ? (
+              <>{parsedNodes}</>
+            ) : (
+              <>
+                {visibleText}
+                {!typingComplete && (
+                  <span className="animate-pulse" style={{ color: accentColor }}>█</span>
+                )}
+              </>
             )}
           </div>
 

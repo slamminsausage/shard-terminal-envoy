@@ -23,15 +23,16 @@ import { dbHelpers } from '@/lib/supabase';
 
 // New components
 import LoadingScreen from '../terminal/views/LoadingScreen';
-import InitScreen from '../terminal/views/InitScreen';
+import PromptInitScreen from '../terminal/views/PromptInitScreen';
 import TerminalView from '../terminal/views/TerminalView';
 import LogDetailView from '../terminal/views/LogDetailView';
 import AudioLogsPage from '../terminal/views/AudioLogsPage';
-import TerminalBootScreen from '../terminal/views/TerminalBootScreen';
+import ConnectingScreen from '@/components/effects/ConnectingScreen';
 import PasswordPrompt from '../terminal/SecurityChallenge/PasswordPrompt';
 import RollCheckPrompt from '../terminal/SecurityChallenge/RollCheckPrompt';
 import ActionSequencePlayer from '../terminal/ActionSequence/ActionSequencePlayer';
 import { getTerminalBootProfile } from '@/lib/terminalBootProfiles';
+import { getTerminalTheme } from '@/lib/terminalThemes';
 
 // New hooks
 import { useTerminalSession } from '@/hooks/useTerminalSession';
@@ -483,28 +484,6 @@ function TerminalInterface() {
     }
   };
 
-  // Command history navigation for access code input
-  const handleInitInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      const recalled = session.recallHistory('back');
-      session.setInputCode(recalled);
-      return;
-    }
-
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      const recalled = session.recallHistory('forward');
-      session.setInputCode(recalled);
-      return;
-    }
-
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      handleAccessCode(null);
-    }
-  };
-
   // Render Deep Core terminal (always takes priority)
   if (session.showDeepCore) {
     return <DeepCoreTerminal onBack={() => {
@@ -548,27 +527,35 @@ function TerminalInterface() {
         />
       )}
 
-      {/* Connecting View — per-terminal themed boot screen */}
-      {session.currentView === 'connecting' && session.activeTerminal && (
-        <TerminalBootScreen terminal={session.activeTerminal} />
-      )}
+      {/* Connecting View — per-terminal themed packet viz boot screen */}
+      {session.currentView === 'connecting' && session.activeTerminal && (() => {
+        const theme = getTerminalTheme(session.activeTerminal.code);
+        return (
+          <div className="w-full h-full">
+            <ConnectingScreen
+              style={theme.vizStyle}
+              accentColor={theme.accentColor}
+              dimColor={theme.dimColor}
+              bgColor={theme.bgColor}
+              headerLabel={theme.headerLabel}
+              label={session.activeTerminal.name}
+              onSkip={() => session.setView('terminal')}
+            />
+          </div>
+        );
+      })()}
 
-      {/* Init View */}
+      {/* Init View — command-line prompt with matrix backdrop */}
       {session.currentView === 'init' && (
-      <InitScreen
-        inputCode={session.inputCode}
-        onCodeChange={session.setInputCode}
-        onSubmit={() => handleAccessCode(null)}
-        unlockedTerminals={unlockedTerminalsList}
-        loading={session.terminalsLoading}
-        statusMessage="Use ARROW UP/DOWN to recall previous access codes."
-        errorMessage={session.terminalsError}
-        onKeyDown={handleInitInputKeyDown}
-        onTerminalSelect={(code) => {
-          session.setInputCode(code);
-          handleAccessCode(code);
-        }}
-      />
+        <PromptInitScreen
+          unlockedTerminals={unlockedTerminalsList}
+          loading={session.terminalsLoading}
+          errorMessage={session.terminalsError}
+          onConnect={(code) => {
+            session.setInputCode(code);
+            handleAccessCode(code);
+          }}
+        />
       )}
 
       {/* Terminal/Log View */}
