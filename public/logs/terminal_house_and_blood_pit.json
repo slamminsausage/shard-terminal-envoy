@@ -1,19 +1,19 @@
 [
   {
-    "title": "The House Without Questions — Public Notice",
-    "location": "General Access Terminal — The House Without Questions, Lower City",
-    "date": "UNKNOWN — NOTICE UNDATED BY POLICY",
+    "title": "The House Without Questions \u2014 Public Notice",
+    "location": "General Access Terminal \u2014 The House Without Questions, Lower City",
+    "date": "UNKNOWN \u2014 NOTICE UNDATED BY POLICY",
     "author": "The House Without Questions",
-    "content": "IF YOU HAVE NOWHERE ELSE TO GO.\n\nCome to the House. We will take you in. We will clothe you, feed you, and protect you. We will ask you nothing.\n\nIf you have something you need done, come to the House. Tell us what it is. If it can be done, we will tell you what it costs. If you pay, it will be done. We will ask you nothing about why.\n\nWe have been here longer than this city. We have been here longer than most things on this world.\n\nWe do not advertise what we have accomplished. We do not keep records that anyone else can read. We do not confirm or deny any specific task on our behalf.\n\nWhat we will tell you: we have never failed to accomplish a task that was within the bounds of the possible. We have occasionally had to redefine what 'possible' means, but we have not failed.\n\nWe do not accept tasks that require us to harm those who have previously sheltered with us. This is the only restriction.\n\nEverything else is a matter of price.\n\n—\n\n[Handwritten at the bottom, clearly not official:]\n\nI sheltered here once. Three years ago. They didn't ask me anything. I stayed for nine days and they fed me and no one touched me and when I left they didn't ask me where I was going.\n\nI don't know what they are. I don't know how old. I know they were here before the Brotherhood and before His Grace and before the gangs.\n\nI know they are still here.\n\nThat's worth something.",
+    "content": "IF YOU HAVE NOWHERE ELSE TO GO.\n\nCome to the House. We will take you in. We will clothe you, feed you, and protect you. We will ask you nothing.\n\nIf you have something you need done, come to the House. Tell us what it is. If it can be done, we will tell you what it costs. If you pay, it will be done. We will ask you nothing about why.\n\nWe have been here longer than this city. We have been here longer than most things on this world.\n\nWe do not advertise what we have accomplished. We do not keep records that anyone else can read. We do not confirm or deny any specific task on our behalf.\n\nWhat we will tell you: we have never failed to accomplish a task that was within the bounds of the possible. We have occasionally had to redefine what 'possible' means, but we have not failed.\n\nWe do not accept tasks that require us to harm those who have previously sheltered with us. This is the only restriction.\n\nEverything else is a matter of price.\n\n\u2014\n\n[Handwritten at the bottom, clearly not official:]\n\nI sheltered here once. Three years ago. They didn't ask me anything. I stayed for nine days and they fed me and no one touched me and when I left they didn't ask me where I was going.\n\nI don't know what they are. I don't know how old. I know they were here before the Brotherhood and before His Grace and before the gangs.\n\nI know they are still here.\n\nThat's worth something.",
     "security_level": "unlocked",
     "requires_roll": false
   },
   {
-    "title": "House Without Questions — Intake Log (Partial)",
-    "location": "General Access Terminal — The House Without Questions, Lower City",
-    "date": "CURRENT AND HISTORICAL — PARTIAL ONLY",
-    "author": "House Without Questions — Internal Archive (Partial Leak)",
-    "content": "INTAKE RECORD — PARTIAL EXCERPT\n\nNote: This file should not be accessible from a public terminal. We are investigating how it was exposed.\n\n—\n\nGuest, unnamed. Duration: 4 days. No questions asked. Departed safely.\nGuest, unnamed. Duration: 1 day. Medical attention provided. Departed safely.\nGuest, unnamed. Duration: 22 days. Extended stay, distressed condition on arrival. No questions asked. Departed. Status thereafter: unknown.\nGuest, unnamed. Repeat guest, third visit. Still no questions asked. We note this without comment.\n\n—\n\nTask log excerpt:\n\nTask requested: Location of a specific individual known to frequent the Scrapheap. Task completed. Client satisfied.\nTask requested: Retrieval of a locked data container from a vessel in Skull docking. Task completed. Client satisfied.\nTask requested: Information regarding a vessel called Misery's Company and its last known associates. Task accepted. Task ongoing.\n\n—\n\nNote appended by House administration: The last task was requested three days ago. The client asked specifically about a Captain Ferrik Redthane. We are fulfilling our obligation. We are also noting that two other parties have asked similar questions this cycle. The House does not share client information. The House also does not pretend not to notice patterns.",
+    "title": "House Without Questions \u2014 Intake Log (Partial)",
+    "location": "General Access Terminal \u2014 The House Without Questions, Lower City",
+    "date": "CURRENT AND HISTORICAL \u2014 PARTIAL ONLY",
+    "author": "House Without Questions \u2014 Internal Archive (Partial Leak)",
+    "content": "INTAKE RECORD \u2014 PARTIAL EXCERPT\n\nNote: This file should not be accessible from a public terminal. We are investigating how it was exposed.\n\n\u2014\n\nGuest, unnamed. Duration: 4 days. No questions asked. Departed safely.\nGuest, unnamed. Duration: 1 day. Medical attention provided. Departed safely.\nGuest, unnamed. Duration: 22 days. Extended stay, distressed condition on arrival. No questions asked. Departed. Status thereafter: unknown.\nGuest, unnamed. Repeat guest, third visit. Still no questions asked. We note this without comment.\n\n\u2014\n\nTask log excerpt:\n\nTask requested: Location of a specific individual known to frequent the Scrapheap. Task completed. Client satisfied.\nTask requested: Retrieval of a locked data container from a vessel in Skull docking. Task completed. Client satisfied.\nTask requested: Information regarding a vessel called Misery's Company and its last known associates. Task accepted. Task ongoing.\n\n\u2014\n\nNote appended by House administration: The last task was requested three days ago. The client asked specifically about a Captain Ferrik Redthane. We are fulfilling our obligation. We are also noting that two other parties have asked similar questions this cycle. The House does not share client information. The House also does not pretend not to notice patterns.",
     "security_level": "restricted",
     "requires_roll": true,
     "roll_check": {
@@ -24,20 +24,20 @@
     }
   },
   {
-    "title": "Blood Pit — Tonight's Card",
-    "location": "General Access Terminal — Blood Pit Arena, Lower City",
+    "title": "Blood Pit \u2014 Tonight's Card",
+    "location": "General Access Terminal \u2014 Blood Pit Arena, Lower City",
     "date": "CURRENT CYCLE",
     "author": "Blood Pit Management",
-    "content": "BLOOD PIT — TONIGHT'S CARD\n\nDoors open at half-cycle. Bets accepted until the second bell.\n\nEvent 1: Melee bracket, four contestants. Three volunteers, one not. Standard rules (none).\n\nEvent 2: Alien predator exhibition. Species: Undisclosed. Origin: Foreven Sector, recovered from a derelict. Handler advises spectators in the first three rows to sign the disclaimer.\n\nEvent 3: Steel cage. Two contestants. Both volunteers. Personal grievance match — details posted at the betting desk.\n\nEvent 4: The main event. Gladiator versus robot. The robot has been modified. Our technician says it is now operating outside its original design parameters and he is not entirely comfortable with what it has started to do between events. We consider this excellent atmosphere.\n\n—\n\nSpecial notice: A private booth has been reserved for this evening by a party who paid double for guaranteed privacy. We note this only because it is unusual enough to mention to the management log. All other guests: standard seating.\n\n—\n\nNote from the management: If you see something in the lower pens that you cannot identify, do not attempt to interact with it. We are still determining where it came from and whether it is ours.",
+    "content": "BLOOD PIT \u2014 TONIGHT'S CARD\n\nDoors open at half-cycle. Bets accepted until the second bell.\n\nEvent 1: Melee bracket, four contestants. Three volunteers, one not. Standard rules (none).\n\nEvent 2: Alien predator exhibition. Species: Undisclosed. Origin: Foreven Sector, recovered from a derelict. Handler advises spectators in the first three rows to sign the disclaimer.\n\nEvent 3: Steel cage. Two contestants. Both volunteers. Personal grievance match \u2014 details posted at the betting desk.\n\nEvent 4: The main event. Gladiator versus robot. The robot has been modified. Our technician says it is now operating outside its original design parameters and he is not entirely comfortable with what it has started to do between events. We consider this excellent atmosphere.\n\n\u2014\n\nSpecial notice: A private booth has been reserved for this evening by a party who paid double for guaranteed privacy. We note this only because it is unusual enough to mention to the management log. All other guests: standard seating.\n\n\u2014\n\nNote from the management: If you see something in the lower pens that you cannot identify, do not attempt to interact with it. We are still determining where it came from and whether it is ours.",
     "security_level": "unlocked",
     "requires_roll": false
   },
   {
-    "title": "Blood Pit — Historical Bout Record",
-    "location": "General Access Terminal — Blood Pit Arena, Lower City",
-    "date": "MULTIPLE DATES — SPANNING APPROX. 20 YEARS",
-    "author": "Blood Pit Management — Historical Archive",
-    "content": "HISTORICAL BOUT RECORD — SELECTED HIGHLIGHTS\n\nYear 1094: The bout known as 'The Wildeman Affair.' A Vargr combatant — unregistered, entered under the alias 'Mad Dog' — defeated three consecutive opponents including a modified security drone and a K'Kree sharpshooter on a bet. Left before we could offer a contract. Still have the name on file if he ever comes back.\n\nYear 1096: Exhibition match, alien specimen versus three armed volunteers. Specimen was described on intake as 'petrified, probably inert.' It was not inert. Volunteers did not survive. Specimen was eventually subdued. We do not discuss the method. We have a strict policy now about intake classification.\n\nYear 1098: The last time anyone brought in a specimen from that Foreven derelict sale. We are not accepting further stock from that particular source.\n\nYear 1101: Corporate-sponsored grudge match. Sponsors wished to remain anonymous. Combatant lost. The sponsors were less interested in the fight than in testing something they had fitted to the combatant. What they were testing was not disclosed to us. We are noting this retroactively because we found a piece of equipment in the pit afterward that none of our staff recognized.\n\n[The last line of the file has been partially overwritten with a single phrase, author unknown:]\n\n'The stone was not the only one.'",
+    "title": "Blood Pit \u2014 Historical Bout Record",
+    "location": "General Access Terminal \u2014 Blood Pit Arena, Lower City",
+    "date": "MULTIPLE DATES \u2014 SPANNING APPROX. 20 YEARS",
+    "author": "Blood Pit Management \u2014 Historical Archive",
+    "content": "HISTORICAL BOUT RECORD \u2014 SELECTED HIGHLIGHTS\n\nYear 1094: The bout known as 'The Wildeman Affair.' A Vargr combatant \u2014 unregistered, entered under the alias 'Mad Dog' \u2014 defeated three consecutive opponents including a modified security drone and a K'Kree sharpshooter on a bet. Left before we could offer a contract. Still have the name on file if he ever comes back.\n\nYear 1096: Exhibition match, alien specimen versus three armed volunteers. Specimen was described on intake as 'petrified, probably inert.' It was not inert. Volunteers did not survive. Specimen was eventually subdued. We do not discuss the method. We have a strict policy now about intake classification.\n\nYear 1098: The last time anyone brought in a specimen from that Foreven derelict sale. We are not accepting further stock from that particular source.\n\nYear 1101: Corporate-sponsored grudge match. Sponsors wished to remain anonymous. Combatant lost. The sponsors were less interested in the fight than in testing something they had fitted to the combatant. What they were testing was not disclosed to us. We are noting this retroactively because we found a piece of equipment in the pit afterward that none of our staff recognized.\n\n[The last line of the file has been partially overwritten with a single phrase, author unknown:]\n\n'The stone was not the only one.'",
     "security_level": "restricted",
     "requires_roll": true,
     "roll_check": {
@@ -48,12 +48,12 @@
     }
   },
   {
-    "title": "Blood Pit — Private Booth Access Override",
-    "location": "General Access Terminal — Blood Pit Arena, Lower City",
+    "title": "Blood Pit \u2014 Private Booth Access Override",
+    "location": "General Access Terminal \u2014 Blood Pit Arena, Lower City",
     "date": "CURRENT CYCLE",
-    "author": "Blood Pit Arena — Booking Management System",
+    "author": "Blood Pit Arena \u2014 Booking Management System",
     "security_level": "high",
-    "content": "The Blood Pit management terminal includes a booth booking and access control system. Tonight's private booth reservation was paid at double rate and flagged for guaranteed privacy.\n\nThe booth door is locked from the arena side. A booking override can release it without triggering the management alert.\n\n[INTERACTIVE TERMINAL — AWAITING INPUT]",
+    "content": "The Blood Pit management terminal includes a booth booking and access control system. Tonight's private booth reservation was paid at double rate and flagged for guaranteed privacy.\n\nThe booth door is locked from the arena side. A booking override can release it without triggering the management alert.\n\n[INTERACTIVE TERMINAL \u2014 AWAITING INPUT]",
     "type": "action_sequence",
     "action_sequence": {
       "id": "blood-pit-vip-booth",
@@ -62,12 +62,12 @@
         {
           "type": "auto",
           "lines": [
-            ">> BLOOD PIT ARENA — BOOKING MANAGEMENT SYSTEM v1.1",
+            ">> BLOOD PIT ARENA \u2014 BOOKING MANAGEMENT SYSTEM v1.1",
             ">> TONIGHT'S RESERVATIONS:",
-            ">> GENERAL ADMISSION — OPEN",
-            ">> RINGSIDE BLOCK A — SOLD OUT",
-            ">> RINGSIDE BLOCK B — 4 SEATS REMAINING",
-            ">> PRIVATE BOOTH — RESERVED (PAYMENT: DOUBLE RATE)",
+            ">> GENERAL ADMISSION \u2014 OPEN",
+            ">> RINGSIDE BLOCK A \u2014 SOLD OUT",
+            ">> RINGSIDE BLOCK B \u2014 4 SEATS REMAINING",
+            ">> PRIVATE BOOTH \u2014 RESERVED (PAYMENT: DOUBLE RATE)",
             ">> BOOTH RESERVATION NAME: [WITHHELD BY REQUEST]",
             "",
             ">> BOOTH DOOR STATUS: LOCKED",
@@ -79,7 +79,14 @@
         {
           "type": "prompt",
           "prompt_text": "ENTER MANAGEMENT OVERRIDE CODE:",
-          "accept": ["PRIVATE", "BOOTH", "VIP", "RESERVED", "OVERRIDE", "MANAGEMENT"],
+          "accept": [
+            "PRIVATE",
+            "BOOTH",
+            "VIP",
+            "RESERVED",
+            "OVERRIDE",
+            "MANAGEMENT"
+          ],
           "reject_message": "INVALID OVERRIDE CODE. ACCESS DENIED.",
           "max_attempts": 3,
           "sound_on_accept": "access_granted",
@@ -106,7 +113,7 @@
         {
           "type": "auto",
           "lines": [
-            ">> PRIVATE BOOTH — ACCESS GRANTED.",
+            ">> PRIVATE BOOTH \u2014 ACCESS GRANTED.",
             ">> BOOTH PRIVACY LOCK: DISENGAGED",
             ">> NOTE: RESERVATION HOLDER HAS NOT YET ARRIVED.",
             ">> NOTE: SECOND PARTY TO RESERVATION ALREADY INSIDE.",
@@ -122,9 +129,18 @@
         "persist_key": "blood-pit-vip-booth"
       },
       "on_failure": {
-        "message": "OVERRIDE REJECTED. Booth door remains locked. Management alert has been triggered — arena staff have been notified of an unauthorized access attempt at the private booth terminal.",
+        "message": "OVERRIDE REJECTED. Booth door remains locked. Management alert has been triggered \u2014 arena staff have been notified of an unauthorized access attempt at the private booth terminal.",
         "sound": "access_denied"
       }
     }
+  },
+  {
+    "title": "House Side Pot Memo \u2014 Team Entry Variants",
+    "location": "House Without Questions, Floor Manager Console",
+    "date": "CURRENT CYCLE",
+    "author": "Pit/House Joint Office",
+    "content": "Standard cards tables cap at six seats. Team entries are still legal if buy-in is met per seat and each declared proxy remains visible to cameras.\n\nOperational warning: second off-world crew asked whether a debt marker can be settled with future cargo claim instead of credits. House answer remains no. Blood Pit answer remains yes, depending on witness quality.\n\n[[redacted diff=9 skill=\"Gambler\" attempts=3]]\nIf a crew cannot raise full stake, offer ORCHID-LATCH package: one sponsored seat + one collateral rider. Collateral defaults transfer temporary claim on tender craft, not main hull.[[/redacted]]",
+    "security_level": "medium",
+    "requires_roll": false
   }
 ]
