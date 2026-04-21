@@ -28,6 +28,15 @@
 import React, { useEffect, useRef, useState } from 'react';
 import DataStreamBg from '@/components/effects/DataStreamBg';
 import { QUICK_CONNECT_CODES } from '@/lib/terminalThemes';
+import {
+  TERMINAL_ACCENT,
+  TERMINAL_ACCENT_BRIGHT,
+  TERMINAL_DIM,
+  TERMINAL_DIM_SOFT,
+  TERMINAL_ERROR,
+  TERMINAL_WARN,
+  withAlpha,
+} from '@/lib/terminalPalette';
 
 interface Terminal {
   code: string;
@@ -47,9 +56,9 @@ interface PromptInitScreenProps {
 }
 
 const BANNER_LINES: Array<{ text: string; size: string; color: string }> = [
-  { text: 'TRAVELLER TERMINAL',         size: '2rem',  color: '#00ff88' },
-  { text: 'MAINFRAME INTERFACE v5.0',   size: '0.9rem', color: '#00cc66' },
-  { text: 'SHARD://MAINFRAME/ACCESS',   size: '0.7rem', color: '#007733' },
+  { text: 'TRAVELLER TERMINAL',         size: '2rem',   color: TERMINAL_ACCENT },
+  { text: 'MAINFRAME INTERFACE v5.0',   size: '0.9rem', color: withAlpha(TERMINAL_ACCENT, 0.82) },
+  { text: 'SHARD://MAINFRAME/ACCESS',   size: '0.7rem', color: TERMINAL_DIM },
 ];
 
 const INTRO_LINES: HistoryEntry[] = [
@@ -196,13 +205,13 @@ export default function PromptInitScreen({
       className="relative w-full h-full flex items-center justify-center"
       style={{
         backgroundColor: '#000',
-        color: '#00ff88',
+        color: TERMINAL_ACCENT,
         fontFamily: '"Share Tech Mono", monospace',
       }}
       onClick={() => inputRef.current?.focus()}
     >
       {/* Matrix data-stream backdrop */}
-      <DataStreamBg accentColor="#00ff88" opacity={0.14} />
+      <DataStreamBg accentColor={TERMINAL_ACCENT} opacity={0.14} />
 
       {/* Scanline overlay */}
       <div
@@ -211,8 +220,7 @@ export default function PromptInitScreen({
           position: 'absolute',
           inset: 0,
           pointerEvents: 'none',
-          background:
-            'repeating-linear-gradient(180deg, rgba(0,255,136,0.035) 0px, rgba(0,255,136,0.035) 1px, transparent 1px, transparent 3px)',
+          background: `repeating-linear-gradient(180deg, ${withAlpha(TERMINAL_ACCENT, 0.035)} 0px, ${withAlpha(TERMINAL_ACCENT, 0.035)} 1px, transparent 1px, transparent 3px)`,
           mixBlendMode: 'overlay',
         }}
       />
@@ -232,7 +240,7 @@ export default function PromptInitScreen({
                 fontSize: line.size,
                 letterSpacing: '0.35em',
                 color: line.color,
-                textShadow: `0 0 18px ${line.color}66`,
+                textShadow: `0 0 18px ${withAlpha(line.color, 0.4)}`,
                 lineHeight: 1.4,
               }}
             >
@@ -245,8 +253,7 @@ export default function PromptInitScreen({
         <div
           style={{
             height: 1,
-            background:
-              'linear-gradient(90deg, transparent, #00ff8855, transparent)',
+            background: `linear-gradient(90deg, transparent, ${withAlpha(TERMINAL_ACCENT, 0.33)}, transparent)`,
             margin: '0.5rem 0 1rem',
           }}
         />
@@ -270,15 +277,15 @@ export default function PromptInitScreen({
                 whiteSpace: 'pre-wrap',
                 color:
                   entry.type === 'prompt'
-                    ? '#00ff88'
+                    ? TERMINAL_ACCENT
                     : entry.type === 'error'
-                      ? '#ff4444'
+                      ? TERMINAL_ERROR
                       : entry.type === 'info'
-                        ? '#00cc66'
-                        : '#88ffaa',
+                        ? withAlpha(TERMINAL_ACCENT, 0.75)
+                        : TERMINAL_ACCENT_BRIGHT,
                 textShadow:
                   entry.type === 'prompt'
-                    ? '0 0 6px #00ff8855'
+                    ? `0 0 6px ${withAlpha(TERMINAL_ACCENT, 0.35)}`
                     : undefined,
                 marginBottom: '0.15rem',
               }}
@@ -289,7 +296,7 @@ export default function PromptInitScreen({
 
           {/* Active prompt */}
           <div style={{ display: 'flex', alignItems: 'center' }}>
-            <span style={{ color: '#00ff88', marginRight: '0.4rem' }}>
+            <span style={{ color: TERMINAL_ACCENT, marginRight: '0.4rem' }}>
               shard@mainframe:~$
             </span>
             <input
@@ -305,12 +312,12 @@ export default function PromptInitScreen({
                 background: 'transparent',
                 border: 'none',
                 outline: 'none',
-                color: '#00ff88',
+                color: TERMINAL_ACCENT,
                 fontFamily: 'inherit',
                 fontSize: 'inherit',
                 flex: 1,
-                caretColor: '#00ff88',
-                textShadow: '0 0 6px #00ff8855',
+                caretColor: TERMINAL_ACCENT,
+                textShadow: `0 0 6px ${withAlpha(TERMINAL_ACCENT, 0.35)}`,
               }}
             />
             <span
@@ -319,15 +326,15 @@ export default function PromptInitScreen({
                 width: 9,
                 height: 16,
                 marginLeft: -2,
-                background: '#00ff88',
-                boxShadow: '0 0 6px #00ff88aa',
+                background: TERMINAL_ACCENT,
+                boxShadow: `0 0 6px ${withAlpha(TERMINAL_ACCENT, 0.66)}`,
                 animation: 'promptCursorBlink 1s steps(2) infinite',
               }}
             />
           </div>
 
           {errorMessage && (
-            <div style={{ color: '#ff8844', marginTop: '0.25rem' }}>
+            <div style={{ color: TERMINAL_WARN, marginTop: '0.25rem' }}>
               {errorMessage}
             </div>
           )}
@@ -357,20 +364,20 @@ export default function PromptInitScreen({
                 fontFamily: 'Orbitron, sans-serif',
                 fontSize: '0.72rem',
                 letterSpacing: '0.2em',
-                color: '#00ff88',
-                background: 'rgba(0,255,136,0.08)',
-                border: '1px solid #00ff8855',
+                color: TERMINAL_ACCENT,
+                background: withAlpha(TERMINAL_ACCENT, 0.08),
+                border: `1px solid ${withAlpha(TERMINAL_ACCENT, 0.33)}`,
                 padding: '0.5rem 1rem',
                 cursor: loading ? 'wait' : 'pointer',
-                textShadow: '0 0 6px #00ff8855',
+                textShadow: `0 0 6px ${withAlpha(TERMINAL_ACCENT, 0.35)}`,
                 transition: 'all 0.15s',
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'rgba(0,255,136,0.2)';
-                e.currentTarget.style.boxShadow = '0 0 10px #00ff8855';
+                e.currentTarget.style.background = withAlpha(TERMINAL_ACCENT, 0.2);
+                e.currentTarget.style.boxShadow = `0 0 10px ${withAlpha(TERMINAL_ACCENT, 0.35)}`;
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'rgba(0,255,136,0.08)';
+                e.currentTarget.style.background = withAlpha(TERMINAL_ACCENT, 0.08);
                 e.currentTarget.style.boxShadow = 'none';
               }}
             >
@@ -385,7 +392,7 @@ export default function PromptInitScreen({
             marginTop: '0.75rem',
             fontSize: '0.62rem',
             letterSpacing: '0.2em',
-            color: '#00553388',
+            color: TERMINAL_DIM_SOFT,
           }}
         >
           ↑ / ↓ RECALL COMMAND  ·  TAB AUTOCOMPLETE  ·  ESC BACK
