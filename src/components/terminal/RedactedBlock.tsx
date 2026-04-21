@@ -14,6 +14,13 @@
 import { useState } from 'react';
 import DiceRoller from './DiceRoller';
 import CorruptedText from './CorruptedText';
+import {
+  TERMINAL_ACCENT,
+  TERMINAL_DIM,
+  TERMINAL_SUCCESS,
+  TERMINAL_ERROR,
+  withAlpha,
+} from '@/lib/terminalPalette';
 
 export interface RedactedBlockProps {
   content: string;
@@ -41,11 +48,17 @@ export default function RedactedBlock({
   difficulty = 10,
   skill = 'Electronics (Computers)',
   maxAttempts = 3,
-  accentColor = '#00ff88',
-  dimColor = '#006633',
+  accentColor = TERMINAL_ACCENT,
+  dimColor = TERMINAL_DIM,
 }: RedactedBlockProps) {
   const [unlocked, setUnlocked] = useState(false);
   const [locked, setLocked] = useState(false);
+
+  const stateColor = unlocked
+    ? TERMINAL_SUCCESS
+    : locked
+      ? TERMINAL_ERROR
+      : accentColor;
 
   return (
     <span
@@ -54,19 +67,30 @@ export default function RedactedBlock({
         verticalAlign: 'baseline',
         padding: '0.15rem 0.3rem',
         borderRadius: 3,
-        border: `1px dashed ${unlocked ? '#00ff8844' : locked ? '#ff444466' : `${accentColor}44`}`,
-        backgroundColor: unlocked ? '#00ff8808' : locked ? '#ff444411' : 'rgba(0,0,0,0.35)',
+        border: `1px dashed ${withAlpha(stateColor, 0.35)}`,
+        backgroundColor: withAlpha(stateColor, unlocked ? 0.04 : locked ? 0.08 : 0.03),
         transition: 'all 0.3s',
         whiteSpace: 'pre-wrap',
       }}
     >
       {unlocked ? (
-        <CorruptedText text={content} intensity={0.03} color="#aaffcc" />
+        <CorruptedText
+          text={content}
+          intensity={0.03}
+          color={withAlpha(TERMINAL_SUCCESS, 0.85)}
+        />
       ) : locked ? (
-        <span style={{ color: '#ff6666', letterSpacing: '0.05em' }}>
+        <span style={{ color: TERMINAL_ERROR, letterSpacing: '0.05em' }}>
           {fillBlocks(content)}
           {'  '}
-          <span style={{ fontSize: '0.65rem', color: '#ff4444' }}>
+          <span
+            style={{
+              fontFamily: 'Orbitron, sans-serif',
+              fontSize: '0.6rem',
+              letterSpacing: '0.22em',
+              color: TERMINAL_ERROR,
+            }}
+          >
             ✕ PERMANENTLY LOCKED
           </span>
         </span>
@@ -74,9 +98,9 @@ export default function RedactedBlock({
         <>
           <span
             style={{
-              color: '#ff4444',
+              color: TERMINAL_ERROR,
               letterSpacing: '0.05em',
-              textShadow: '0 0 4px #ff444455',
+              textShadow: `0 0 4px ${withAlpha(TERMINAL_ERROR, 0.35)}`,
               userSelect: 'none',
             }}
           >

@@ -1,16 +1,28 @@
 /**
  * DiceRoller — inline 2d6 skill-check roller.
  *
- * Used by RedactedBlock for in-log decryption attempts. Animates two
- * dice briefly before settling on the result, then reports success/fail.
+ * Styled to match the LogDetailView panel aesthetic:
+ *   [DECRYPT · DC 10]  d1 d2 = TOTAL   [ ROLL ]
  *
- * Each roller maintains its own exhaustion count so repeated rolls
- * can eventually lock the content out after `maxAttempts`.
+ * Orbitron caps for labels, Share Tech Mono for dice, bordered mini-panel
+ * with accent background. Used by RedactedBlock for in-log decryption
+ * attempts.
+ *
+ * Each roller owns its own exhaustion count so repeated rolls can
+ * eventually lock the content out after `maxAttempts`.
  */
 
 import { useState } from 'react';
-import { roll2d6, type DiceRoll } from '@/lib/dice';
+import type { DiceRoll } from '@/lib/dice';
 import audioManager from '@/lib/audioManager';
+import {
+  TERMINAL_ACCENT,
+  TERMINAL_DIM,
+  TERMINAL_SUCCESS,
+  TERMINAL_ERROR,
+  TERMINAL_WARN,
+  withAlpha,
+} from '@/lib/terminalPalette';
 
 interface DiceRollerProps {
   difficulty: number;
@@ -25,8 +37,8 @@ interface DiceRollerProps {
 export default function DiceRoller({
   difficulty,
   skill = 'Electronics (Computers)',
-  accentColor = '#00ff88',
-  dimColor = '#006633',
+  accentColor = TERMINAL_ACCENT,
+  dimColor = TERMINAL_DIM,
   maxAttempts = 3,
   onResult,
   onExhausted,
@@ -81,97 +93,157 @@ export default function DiceRoller({
 
   const locked = resolved === 'fail' && attempts >= maxAttempts;
   const won = resolved === 'success';
-  const btnColor = won
-    ? '#00ff88'
+  const stateColor = won
+    ? TERMINAL_SUCCESS
     : locked
-      ? '#ff4444'
+      ? TERMINAL_ERROR
       : accentColor;
+
+  const labelFont = { fontFamily: 'Orbitron, sans-serif' } as const;
+  const monoFont = { fontFamily: 'Share Tech Mono, monospace' } as const;
 
   return (
     <span
       style={{
         display: 'inline-flex',
-        alignItems: 'center',
-        gap: '0.5rem',
-        padding: '0.15rem 0.5rem',
-        border: `1px solid ${btnColor}55`,
-        backgroundColor: `${btnColor}11`,
-        borderRadius: 3,
-        fontFamily: 'Share Tech Mono, monospace',
-        fontSize: '0.68rem',
+        alignItems: 'stretch',
         verticalAlign: 'baseline',
+        border: `1px solid ${withAlpha(stateColor, 0.4)}`,
+        background: withAlpha(stateColor, 0.06),
+        borderRadius: 2,
+        overflow: 'hidden',
+        fontSize: '0.7rem',
+        lineHeight: 1.4,
       }}
     >
-      <span style={{ color: dimColor }}>
-        DEC {difficulty}+
+      {/* Label strip */}
+      <span
+        style={{
+          ...labelFont,
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '0.45rem',
+          padding: '0.2rem 0.55rem',
+          background: withAlpha(stateColor, 0.12),
+          borderRight: `1px solid ${withAlpha(stateColor, 0.25)}`,
+          fontSize: '0.6rem',
+          letterSpacing: '0.22em',
+          textTransform: 'uppercase',
+          color: stateColor,
+          textShadow: `0 0 6px ${withAlpha(stateColor, 0.4)}`,
+        }}
+      >
+        <span>DECRYPT</span>
+        <span style={{ color: withAlpha(stateColor, 0.55) }}>·</span>
+        <span style={{ color: withAlpha(stateColor, 0.85) }}>DC {difficulty}</span>
       </span>
-      {dice && (
-        <span
-          style={{
-            color: btnColor,
-            fontWeight: 'bold',
-            minWidth: 32,
-            textAlign: 'center',
-            textShadow: `0 0 6px ${btnColor}66`,
-          }}
-        >
-          [{dice[0]}·{dice[1]}={dice[0] + dice[1]}]
-        </span>
-      )}
-      {!dice && !rolling && (
-        <span style={{ color: `${dimColor}99`, minWidth: 32, textAlign: 'center' }}>
-          [·,·]
-        </span>
-      )}
+
+      {/* Dice readout */}
+      <span
+        style={{
+          ...monoFont,
+          display: 'inline-flex',
+          alignItems: 'center',
+          padding: '0.2rem 0.6rem',
+          minWidth: 74,
+          justifyContent: 'center',
+          color: dice ? stateColor : withAlpha(dimColor, 0.9),
+          textShadow: dice ? `0 0 6px ${withAlpha(stateColor, 0.45)}` : 'none',
+          letterSpacing: '0.05em',
+          borderRight: `1px solid ${withAlpha(stateColor, 0.15)}`,
+        }}
+      >
+        {dice ? (
+          <>
+            {dice[0]}<span style={{ opacity: 0.5, margin: '0 0.25rem' }}>·</span>{dice[1]}
+            <span style={{ opacity: 0.5, margin: '0 0.3rem' }}>=</span>
+            <strong style={{ fontWeight: 700 }}>{dice[0] + dice[1]}</strong>
+          </>
+        ) : (
+          <span style={{ letterSpacing: '0.25em' }}>— · —</span>
+        )}
+      </span>
+
+      {/* Action / status */}
       {!resolved && (
         <button
+          type="button"
           onClick={rollNow}
           disabled={rolling}
           style={{
-            fontFamily: 'inherit',
-            fontSize: 'inherit',
-            color: btnColor,
-            background: 'transparent',
-            border: `1px solid ${btnColor}55`,
-            padding: '0 0.4rem',
-            cursor: rolling ? 'wait' : 'pointer',
-            opacity: rolling ? 0.6 : 1,
+            ...labelFont,
+            fontSize: '0.6rem',
+            letterSpacing: '0.22em',
             textTransform: 'uppercase',
-            letterSpacing: '0.05em',
+            padding: '0 0.85rem',
+            background: 'transparent',
+            border: 'none',
+            cursor: rolling ? 'wait' : 'pointer',
+            color: stateColor,
+            textShadow: `0 0 6px ${withAlpha(stateColor, 0.45)}`,
+            opacity: rolling ? 0.6 : 1,
           }}
           title={`Attempt decryption — ${skill}`}
         >
-          {rolling ? 'ROLLING…' : 'ROLL'}
+          {rolling ? '· ROLLING ·' : '▶ ROLL'}
         </button>
       )}
+
       {won && (
-        <span style={{ color: '#00ff88', letterSpacing: '0.05em' }}>
+        <span
+          style={{
+            ...labelFont,
+            display: 'inline-flex',
+            alignItems: 'center',
+            padding: '0 0.85rem',
+            fontSize: '0.6rem',
+            letterSpacing: '0.22em',
+            color: TERMINAL_SUCCESS,
+            textShadow: `0 0 8px ${withAlpha(TERMINAL_SUCCESS, 0.5)}`,
+          }}
+        >
           ✓ DECRYPTED
         </span>
       )}
+
       {locked && (
-        <span style={{ color: '#ff4444', letterSpacing: '0.05em' }}>
+        <span
+          style={{
+            ...labelFont,
+            display: 'inline-flex',
+            alignItems: 'center',
+            padding: '0 0.85rem',
+            fontSize: '0.6rem',
+            letterSpacing: '0.22em',
+            color: TERMINAL_ERROR,
+            textShadow: `0 0 8px ${withAlpha(TERMINAL_ERROR, 0.5)}`,
+          }}
+        >
           ✕ LOCKED
         </span>
       )}
+
       {resolved === 'fail' && !locked && (
         <button
+          type="button"
           onClick={rollNow}
           disabled={rolling}
           style={{
-            fontFamily: 'inherit',
-            fontSize: 'inherit',
-            color: '#ffaa00',
-            background: 'transparent',
-            border: '1px solid #ffaa0055',
-            padding: '0 0.4rem',
-            cursor: 'pointer',
+            ...labelFont,
+            fontSize: '0.6rem',
+            letterSpacing: '0.22em',
             textTransform: 'uppercase',
-            letterSpacing: '0.05em',
+            padding: '0 0.85rem',
+            background: 'transparent',
+            border: 'none',
+            borderLeft: `1px solid ${withAlpha(TERMINAL_WARN, 0.3)}`,
+            cursor: 'pointer',
+            color: TERMINAL_WARN,
+            textShadow: `0 0 6px ${withAlpha(TERMINAL_WARN, 0.45)}`,
           }}
-          title={`Retry (${maxAttempts - attempts} left)`}
+          title={`Retry (${maxAttempts - attempts} attempts left)`}
         >
-          RETRY {maxAttempts - attempts}
+          ↻ RETRY · {maxAttempts - attempts}
         </button>
       )}
     </span>
