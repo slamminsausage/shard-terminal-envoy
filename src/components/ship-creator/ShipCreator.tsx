@@ -180,25 +180,25 @@ export default function ShipCreator({ onComplete, onCancel }: ShipCreatorProps) 
 
           {/* Key stats */}
           <div className="grid grid-cols-2 gap-2 text-xs font-mono">
-            <div className="p-2 rounded" style={{ background: 'rgba(0,255,0,0.05)', border: '1px solid rgba(0,255,0,0.2)' }}>
+            <div className="p-2 rounded" style={{ background: 'rgba(58, 226, 179,0.05)', border: '1px solid rgba(58, 226, 179,0.2)' }}>
               <div style={{ color: 'var(--text-dimmer)' }}>HULL PTS</div>
               <div style={{ color: 'var(--primary)', fontFamily: 'Orbitron, sans-serif', fontSize: '1rem' }}>
                 {calc.hullPoints}
               </div>
             </div>
-            <div className="p-2 rounded" style={{ background: 'rgba(0,255,0,0.05)', border: '1px solid rgba(0,255,0,0.2)' }}>
+            <div className="p-2 rounded" style={{ background: 'rgba(58, 226, 179,0.05)', border: '1px solid rgba(58, 226, 179,0.2)' }}>
               <div style={{ color: 'var(--text-dimmer)' }}>COST</div>
               <div style={{ color: 'var(--secondary)', fontFamily: 'Orbitron, sans-serif', fontSize: '0.85rem' }}>
                 MCr{costMCr.toFixed(1)}
               </div>
             </div>
-            <div className="p-2 rounded" style={{ background: 'rgba(0,255,0,0.05)', border: '1px solid rgba(0,255,0,0.2)' }}>
+            <div className="p-2 rounded" style={{ background: 'rgba(58, 226, 179,0.05)', border: '1px solid rgba(58, 226, 179,0.2)' }}>
               <div style={{ color: 'var(--text-dimmer)' }}>THRUST</div>
               <div style={{ color: 'var(--primary)', fontFamily: 'Orbitron, sans-serif', fontSize: '1rem' }}>
                 {design.manoeuvreRating}G
               </div>
             </div>
-            <div className="p-2 rounded" style={{ background: 'rgba(0,255,0,0.05)', border: '1px solid rgba(0,255,0,0.2)' }}>
+            <div className="p-2 rounded" style={{ background: 'rgba(58, 226, 179,0.05)', border: '1px solid rgba(58, 226, 179,0.2)' }}>
               <div style={{ color: 'var(--text-dimmer)' }}>JUMP</div>
               <div style={{ color: 'var(--primary)', fontFamily: 'Orbitron, sans-serif', fontSize: '1rem' }}>
                 J-{design.jumpRating}
@@ -207,7 +207,7 @@ export default function ShipCreator({ onComplete, onCancel }: ShipCreatorProps) 
           </div>
 
           {/* Cargo remaining */}
-          <div className="text-xs font-mono p-2 rounded" style={{ background: 'rgba(0,255,0,0.05)', border: '1px solid rgba(0,255,0,0.2)' }}>
+          <div className="text-xs font-mono p-2 rounded" style={{ background: 'rgba(58, 226, 179,0.05)', border: '1px solid rgba(58, 226, 179,0.2)' }}>
             <div style={{ color: 'var(--text-dimmer)' }}>REMAINING TONNAGE</div>
             <div style={{
               color: calc.remainingTonnage < 0 ? 'var(--danger)' : 'var(--primary)',
@@ -437,9 +437,9 @@ export default function ShipCreator({ onComplete, onCancel }: ShipCreatorProps) 
                   key={option.id}
                   className={`p-3 rounded cursor-pointer transition-all ${conflicting && !isSelected ? 'opacity-40 cursor-not-allowed' : ''}`}
                   style={{
-                    background: isSelected ? 'rgba(0,255,0,0.12)' : 'rgba(0,255,0,0.03)',
-                    border: `1px solid ${isSelected ? 'var(--primary)' : 'rgba(0,255,0,0.2)'}`,
-                    boxShadow: isSelected ? '0 0 10px rgba(0,255,0,0.2)' : 'none',
+                    background: isSelected ? 'rgba(58, 226, 179,0.12)' : 'rgba(58, 226, 179,0.03)',
+                    border: `1px solid ${isSelected ? 'var(--primary)' : 'rgba(58, 226, 179,0.2)'}`,
+                    boxShadow: isSelected ? '0 0 10px rgba(58, 226, 179,0.2)' : 'none',
                   }}
                   onClick={() => {
                     if (conflicting && !isSelected) return;
@@ -752,7 +752,7 @@ export default function ShipCreator({ onComplete, onCancel }: ShipCreatorProps) 
                 <span>{pJump} Power</span>
               </div>
             )}
-            <div className="flex justify-between pt-1" style={{ borderTop: '1px solid rgba(0,255,0,0.2)' }}>
+            <div className="flex justify-between pt-1" style={{ borderTop: '1px solid rgba(58, 226, 179,0.2)' }}>
               <span style={{ color: 'var(--primary)' }}>Total Required (pre-weapons/equip)</span>
               <span style={{ color: 'var(--primary)' }}>{totalNeeded} Power</span>
             </div>
@@ -862,8 +862,8 @@ export default function ShipCreator({ onComplete, onCancel }: ShipCreatorProps) 
             <div
               className="p-3 rounded cursor-pointer transition-all"
               style={{
-                background: design.holographicControls ? 'rgba(0,255,0,0.12)' : 'rgba(0,255,0,0.03)',
-                border: `1px solid ${design.holographicControls ? 'var(--primary)' : 'rgba(0,255,0,0.2)'}`,
+                background: design.holographicControls ? 'rgba(58, 226, 179,0.12)' : 'rgba(58, 226, 179,0.03)',
+                border: `1px solid ${design.holographicControls ? 'var(--primary)' : 'rgba(58, 226, 179,0.2)'}`,
               }}
               onClick={() => updateDesign({ holographicControls: !design.holographicControls })}
             >
@@ -910,8 +910,8 @@ export default function ShipCreator({ onComplete, onCancel }: ShipCreatorProps) 
         <div
           className="p-3 rounded cursor-pointer transition-all"
           style={{
-            background: design.computerBis ? 'rgba(0,255,0,0.12)' : 'rgba(0,255,0,0.03)',
-            border: `1px solid ${design.computerBis ? 'var(--primary)' : 'rgba(0,255,0,0.2)'}`,
+            background: design.computerBis ? 'rgba(58, 226, 179,0.12)' : 'rgba(58, 226, 179,0.03)',
+            border: `1px solid ${design.computerBis ? 'var(--primary)' : 'rgba(58, 226, 179,0.2)'}`,
           }}
           onClick={() => updateDesign({ computerBis: !design.computerBis })}
         >
@@ -1095,7 +1095,7 @@ export default function ShipCreator({ onComplete, onCancel }: ShipCreatorProps) 
     };
 
     const statBadge = (label: string, value: string) => (
-      <span key={label} className="text-xs font-mono px-1.5 py-0.5 rounded" style={{ background: 'rgba(0,255,0,0.08)', border: '1px solid rgba(0,255,0,0.2)', color: 'var(--text-dim)' }}>
+      <span key={label} className="text-xs font-mono px-1.5 py-0.5 rounded" style={{ background: 'rgba(58, 226, 179,0.08)', border: '1px solid rgba(58, 226, 179,0.2)', color: 'var(--text-dim)' }}>
         {label}: {value}
       </span>
     );
@@ -1105,7 +1105,7 @@ export default function ShipCreator({ onComplete, onCancel }: ShipCreatorProps) 
         <SectionHeader step={10} title="WEAPONS & SCREENS" subtitle="Turrets, barbettes, bays, spinal mounts, and defensive screens" />
 
         {/* Hardpoint summary */}
-        <div className="p-3 rounded text-xs font-mono" style={{ background: 'rgba(0,255,0,0.05)', border: '1px solid rgba(0,255,0,0.2)' }}>
+        <div className="p-3 rounded text-xs font-mono" style={{ background: 'rgba(58, 226, 179,0.05)', border: '1px solid rgba(58, 226, 179,0.2)' }}>
           {isSmallCraft ? (
             <span style={{ color: 'var(--text-dim)' }}>
               FIRMPOINTS available: {calc.firmpoints - calc.usedFirmpoints}/{calc.firmpoints} (small craft)
@@ -1143,7 +1143,7 @@ export default function ShipCreator({ onComplete, onCancel }: ShipCreatorProps) 
             {design.weapons.map((inst, mountIdx) => {
               const mount = WEAPON_MOUNTS.find((m) => m.id === inst.mountType)!;
               return (
-                <div key={mountIdx} className="p-3 rounded" style={{ background: 'rgba(0,255,0,0.04)', border: '1px solid rgba(0,255,0,0.2)' }}>
+                <div key={mountIdx} className="p-3 rounded" style={{ background: 'rgba(58, 226, 179,0.04)', border: '1px solid rgba(58, 226, 179,0.2)' }}>
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-xs font-mono font-bold" style={{ color: 'var(--primary)' }}>
                       {mount.name} {inst.isFirmpoint ? '(Firmpoint)' : '(Hardpoint)'}
@@ -1159,7 +1159,7 @@ export default function ShipCreator({ onComplete, onCancel }: ShipCreatorProps) 
                       const wd = TURRET_WEAPONS.find((w) => w.id === wId);
                       return (
                         <span key={wIdx} className="text-xs font-mono flex items-center gap-1 px-2 py-0.5 rounded"
-                          style={{ background: 'rgba(0,255,0,0.1)', border: '1px solid rgba(0,255,0,0.3)', color: 'var(--primary)' }}>
+                          style={{ background: 'rgba(58, 226, 179,0.1)', border: '1px solid rgba(58, 226, 179,0.3)', color: 'var(--primary)' }}>
                           {wd?.name ?? wId}
                           <button style={{ color: 'var(--danger)', fontWeight: 'bold', background: 'none', border: 'none', cursor: 'pointer', padding: '0 2px', fontSize: '0.7rem' }}
                             onClick={() => removeWeaponFromMount(mountIdx, wIdx)}>×</button>
@@ -1197,7 +1197,7 @@ export default function ShipCreator({ onComplete, onCancel }: ShipCreatorProps) 
                 const qty = inst?.quantity ?? 0;
                 return (
                   <div key={b.id} className="p-2 rounded flex items-center justify-between"
-                    style={{ background: qty > 0 ? 'rgba(0,255,0,0.08)' : 'rgba(0,255,0,0.03)', border: `1px solid ${qty > 0 ? 'var(--primary)' : 'rgba(0,255,0,0.15)'}` }}>
+                    style={{ background: qty > 0 ? 'rgba(58, 226, 179,0.08)' : 'rgba(58, 226, 179,0.03)', border: `1px solid ${qty > 0 ? 'var(--primary)' : 'rgba(58, 226, 179,0.15)'}` }}>
                     <div className="flex-1 min-w-0">
                       <div className="text-xs font-mono font-bold truncate" style={{ color: qty > 0 ? 'var(--primary)' : 'var(--text-dim)' }}>{b.name}</div>
                       <div className="flex flex-wrap gap-1 mt-1">
@@ -1234,7 +1234,7 @@ export default function ShipCreator({ onComplete, onCancel }: ShipCreatorProps) 
                       const qty = inst?.quantity ?? 0;
                       return (
                         <div key={b.id} className="p-2 rounded flex items-center justify-between"
-                          style={{ background: qty > 0 ? 'rgba(0,255,0,0.08)' : 'rgba(0,255,0,0.03)', border: `1px solid ${qty > 0 ? 'var(--primary)' : 'rgba(0,255,0,0.15)'}` }}>
+                          style={{ background: qty > 0 ? 'rgba(58, 226, 179,0.08)' : 'rgba(58, 226, 179,0.03)', border: `1px solid ${qty > 0 ? 'var(--primary)' : 'rgba(58, 226, 179,0.15)'}` }}>
                           <div className="flex-1 min-w-0">
                             <div className="text-xs font-mono font-bold truncate" style={{ color: qty > 0 ? 'var(--primary)' : 'var(--text-dim)' }}>{b.name}</div>
                             <div className="flex flex-wrap gap-1 mt-1">
@@ -1268,7 +1268,7 @@ export default function ShipCreator({ onComplete, onCancel }: ShipCreatorProps) 
                 const isSelected = design.spinalMount?.weaponId === s.id;
                 return (
                   <div key={s.id} className="p-2 rounded cursor-pointer"
-                    style={{ background: isSelected ? 'rgba(0,255,0,0.12)' : 'rgba(0,255,0,0.03)', border: `1px solid ${isSelected ? 'var(--primary)' : 'rgba(0,255,0,0.15)'}` }}
+                    style={{ background: isSelected ? 'rgba(58, 226, 179,0.12)' : 'rgba(58, 226, 179,0.03)', border: `1px solid ${isSelected ? 'var(--primary)' : 'rgba(58, 226, 179,0.15)'}` }}
                     onClick={() => updateDesign({ spinalMount: isSelected ? undefined : { weaponId: s.id, multiple: 1 } })}>
                     <div className="text-xs font-mono font-bold" style={{ color: isSelected ? 'var(--primary)' : 'var(--text-dim)' }}>
                       {isSelected ? '◉' : '○'} {s.name}
@@ -1286,7 +1286,7 @@ export default function ShipCreator({ onComplete, onCancel }: ShipCreatorProps) 
               const totalTons = calculateSpinalMountTons(spinal, mult);
               const maxMult = Math.floor(spinal.maxSizeTons / spinal.baseSizeTons);
               return (
-                <div className="p-3 rounded" style={{ background: 'rgba(0,255,0,0.06)', border: '1px solid rgba(0,255,0,0.3)' }}>
+                <div className="p-3 rounded" style={{ background: 'rgba(58, 226, 179,0.06)', border: '1px solid rgba(58, 226, 179,0.3)' }}>
                   <div className="text-xs font-mono font-bold mb-2" style={{ color: 'var(--primary)' }}>
                     {spinal.name} — {mult}× ({totalTons}t of {Math.floor(design.tonnage / 2)}t max)
                   </div>
@@ -1318,7 +1318,7 @@ export default function ShipCreator({ onComplete, onCancel }: ShipCreatorProps) 
                 const qty = inst?.quantity ?? 0;
                 return (
                   <div key={p.id} className="p-2 rounded flex items-center justify-between"
-                    style={{ background: qty > 0 ? 'rgba(0,255,0,0.08)' : 'rgba(0,255,0,0.03)', border: `1px solid ${qty > 0 ? 'var(--primary)' : 'rgba(0,255,0,0.15)'}` }}>
+                    style={{ background: qty > 0 ? 'rgba(58, 226, 179,0.08)' : 'rgba(58, 226, 179,0.03)', border: `1px solid ${qty > 0 ? 'var(--primary)' : 'rgba(58, 226, 179,0.15)'}` }}>
                     <div className="flex-1 min-w-0">
                       <div className="text-xs font-mono font-bold truncate" style={{ color: qty > 0 ? 'var(--primary)' : 'var(--text-dim)' }}>
                         {p.name}
@@ -1348,7 +1348,7 @@ export default function ShipCreator({ onComplete, onCancel }: ShipCreatorProps) 
               const qty = inst?.quantity ?? 0;
               return (
                 <div key={s.id} className="p-3 rounded flex items-start justify-between gap-3"
-                  style={{ background: qty > 0 ? 'rgba(0,255,0,0.08)' : 'rgba(0,255,0,0.03)', border: `1px solid ${qty > 0 ? 'var(--primary)' : 'rgba(0,255,0,0.15)'}` }}>
+                  style={{ background: qty > 0 ? 'rgba(58, 226, 179,0.08)' : 'rgba(58, 226, 179,0.03)', border: `1px solid ${qty > 0 ? 'var(--primary)' : 'rgba(58, 226, 179,0.15)'}` }}>
                   <div className="flex-1 min-w-0">
                     <div className="text-xs font-mono font-bold" style={{ color: qty > 0 ? 'var(--primary)' : 'var(--text-dim)' }}>{s.name}</div>
                     <div className="flex flex-wrap gap-1 mt-1 mb-1">
@@ -1526,7 +1526,7 @@ export default function ShipCreator({ onComplete, onCancel }: ShipCreatorProps) 
                     <span>{tons}t</span>
                   </div>
                 ))}
-                <div className="flex justify-between pt-1 mt-1" style={{ borderTop: '1px solid rgba(0,255,0,0.3)', color: 'var(--primary)' }}>
+                <div className="flex justify-between pt-1 mt-1" style={{ borderTop: '1px solid rgba(58, 226, 179,0.3)', color: 'var(--primary)' }}>
                   <span className="font-bold">TOTAL</span>
                   <span className="font-bold">{calc.totalTonnageUsed}t / {design.tonnage}t</span>
                 </div>
@@ -1650,17 +1650,17 @@ export default function ShipCreator({ onComplete, onCancel }: ShipCreatorProps) 
                   className="text-xs font-mono px-2 py-1 rounded transition-all cursor-pointer"
                   style={{
                     background: isActive
-                      ? 'rgba(0,255,0,0.2)'
+                      ? 'rgba(58, 226, 179,0.2)'
                       : isComplete
-                      ? 'rgba(0,255,0,0.08)'
+                      ? 'rgba(58, 226, 179,0.08)'
                       : 'transparent',
-                    border: `1px solid ${isActive ? 'var(--primary)' : isComplete ? 'rgba(0,255,0,0.3)' : 'rgba(0,255,0,0.15)'}`,
+                    border: `1px solid ${isActive ? 'var(--primary)' : isComplete ? 'rgba(58, 226, 179,0.3)' : 'rgba(58, 226, 179,0.15)'}`,
                     color: isActive
                       ? 'var(--primary)'
                       : isComplete
                       ? 'var(--text-dim)'
                       : 'var(--text-dimmer)',
-                    boxShadow: isActive ? '0 0 10px rgba(0,255,0,0.3)' : 'none',
+                    boxShadow: isActive ? '0 0 10px rgba(58, 226, 179,0.3)' : 'none',
                   }}
                   onClick={() => setStep(stepNum)}
                 >
@@ -1685,7 +1685,7 @@ export default function ShipCreator({ onComplete, onCancel }: ShipCreatorProps) 
         </div>
 
         {/* Navigation */}
-        <div className="flex justify-between items-center mt-6 pt-4" style={{ borderTop: '1px solid rgba(0,255,0,0.2)' }}>
+        <div className="flex justify-between items-center mt-6 pt-4" style={{ borderTop: '1px solid rgba(58, 226, 179,0.2)' }}>
           <button
             className="terminal-btn"
             onClick={prevStep}
@@ -1728,7 +1728,7 @@ function SectionHeader({ step, title, subtitle }: { step: number; title: string;
         <div
           className="w-8 h-8 rounded flex items-center justify-center text-sm font-bold"
           style={{
-            background: 'rgba(0,255,0,0.15)',
+            background: 'rgba(58, 226, 179,0.15)',
             border: '1px solid var(--primary)',
             color: 'var(--primary)',
             fontFamily: 'Orbitron, sans-serif',
@@ -1784,9 +1784,9 @@ function ConfigOption({
     <div
       className="p-3 rounded cursor-pointer transition-all"
       style={{
-        background: selected ? 'rgba(0,255,0,0.12)' : 'rgba(0,255,0,0.03)',
-        border: `1px solid ${selected ? 'var(--primary)' : 'rgba(0,255,0,0.2)'}`,
-        boxShadow: selected ? '0 0 10px rgba(0,255,0,0.2)' : 'none',
+        background: selected ? 'rgba(58, 226, 179,0.12)' : 'rgba(58, 226, 179,0.03)',
+        border: `1px solid ${selected ? 'var(--primary)' : 'rgba(58, 226, 179,0.2)'}`,
+        boxShadow: selected ? '0 0 10px rgba(58, 226, 179,0.2)' : 'none',
       }}
       onClick={onClick}
     >
@@ -1816,7 +1816,7 @@ function ConfigOption({
 
 function StatBox({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="p-3 rounded" style={{ background: 'rgba(0,255,0,0.04)', border: '1px solid rgba(0,255,0,0.2)' }}>
+    <div className="p-3 rounded" style={{ background: 'rgba(58, 226, 179,0.04)', border: '1px solid rgba(58, 226, 179,0.2)' }}>
       <div className="text-xs font-mono mb-2" style={{
         color: 'var(--text-dim)',
         textTransform: 'uppercase',

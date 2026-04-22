@@ -345,7 +345,7 @@ export default function PromptInitScreen({
           style={{
             marginTop: '1rem',
             paddingTop: '1rem',
-            borderTop: '1px solid #00ff8822',
+            borderTop: '1px solid #3ae2b322',
             display: 'flex',
             gap: '0.5rem',
             flexWrap: 'wrap',

@@ -24,7 +24,7 @@ export default function VideoPlayer({
   src,
   label,
   className = '',
-  accentColor = '#00ff00',
+  accentColor = '#3ae2b3',
 }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [error, setError] = useState<string | null>(null);

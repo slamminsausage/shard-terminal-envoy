@@ -395,7 +395,7 @@ export function NPCGenerator({ onNPCSaved }: NPCGeneratorProps) {
                   Object.entries(generated.skills).map(([key, val]) => (
                     <span
                       key={key}
-                      className="px-2 py-1 text-xs font-mono border rounded border-[var(--primary-dim)] text-[var(--primary)] bg-[rgba(0,255,0,0.05)]"
+                      className="px-2 py-1 text-xs font-mono border rounded border-[var(--primary-dim)] text-[var(--primary)] bg-[rgba(58, 226, 179,0.05)]"
                     >
                       {key.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')} {val.value}
                     </span>

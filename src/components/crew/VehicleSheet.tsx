@@ -903,7 +903,7 @@ const VehicleSheet = ({ vehicleId }: VehicleSheetProps) => {
                     {members.length > 0 ? (
                       <div className="space-y-1">
                         {members.map(m => {
-                          const typeColor = (m.character_type || 'pc') === 'pc' ? '#00ff00' : '#00ccff';
+                          const typeColor = (m.character_type || 'pc') === 'pc' ? '#3ae2b3' : '#00ccff';
                           return (
                             <div key={m.id} className="flex items-center gap-2 px-3 py-1 text-xs font-mono border border-primary/10 rounded bg-background/30">
                               <span className="text-[0.55rem] font-bold px-1 py-0.5 rounded border uppercase"

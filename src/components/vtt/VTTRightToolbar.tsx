@@ -67,7 +67,7 @@ export default function VTTRightToolbar() {
         className={`flex flex-col items-center justify-center gap-0 py-1 w-full rounded transition-all ${
           active
             ? "vtt-btn-icon--active"
-            : "text-[rgba(0,255,0,0.4)] hover:text-[var(--primary)] hover:bg-[rgba(0,255,0,0.06)]"
+            : "text-[rgba(58, 226, 179,0.4)] hover:text-[var(--primary)] hover:bg-[rgba(58, 226, 179,0.06)]"
         }`}
         title={label}
       >

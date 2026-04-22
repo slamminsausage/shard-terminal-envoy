@@ -3,7 +3,7 @@ import { useVTT } from "@/contexts/VTTContext";
 import type { Clock } from "@/types/vtt";
 import { Plus, Trash2 } from "lucide-react";
 
-const CLOCK_COLORS = ["#00ff00", "#00ccff", "#ff6600", "#ff3344", "#ffcc00", "#aa44ff"];
+const CLOCK_COLORS = ["#3ae2b3", "#00ccff", "#ff6600", "#ff3344", "#ffcc00", "#aa44ff"];
 
 export default function VTTClocksPanel() {
   const { state, dispatch } = useVTT();

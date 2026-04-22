@@ -24,7 +24,7 @@ export function renderBoundingBoxHandles(
   ctx.rotate((bbox.rotation * Math.PI) / 180);
 
   // Dashed bounding rectangle
-  ctx.strokeStyle = "#00ff00";
+  ctx.strokeStyle = "#3ae2b3";
   ctx.lineWidth = 1.5 / zoom;
   ctx.setLineDash([4 / zoom, 3 / zoom]);
   ctx.strokeRect(-hw, -hh, bbox.width, bbox.height);
@@ -38,7 +38,7 @@ export function renderBoundingBoxHandles(
     { x: hw, y: hh },
   ];
 
-  ctx.fillStyle = "#00ff00";
+  ctx.fillStyle = "#3ae2b3";
   ctx.strokeStyle = "#003300";
   ctx.lineWidth = 1 / zoom;
   for (const c of corners) {
@@ -82,7 +82,7 @@ export function renderBoundingBoxHandles(
   }
 
   // Dimension label
-  ctx.fillStyle = "#00ff00cc";
+  ctx.fillStyle = "#3ae2b3cc";
   ctx.font = `${Math.max(10, 10 / zoom)}px "Share Tech Mono", monospace`;
   ctx.textAlign = "center";
   ctx.textBaseline = "top";

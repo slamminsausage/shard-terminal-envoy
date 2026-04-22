@@ -5,30 +5,36 @@
    CSS VARIABLES - Design System
    =================================== */
 :root {
-  /* Primary Colors - UPDATED */
-  --primary: #00ff00;          /* Brighter green */
-  --primary-dim: #00aa00;      /* Dimmed green */
-  --primary-dark: #004400;     /* Dark green for buttons */
-  --primary-light: #00ff88;    /* Light green for friendly/active states */
-  --primary-mid: #00aa55;      /* Mid green for borders/highlights */
-  --secondary: #00ccff;        /* Cyan accents */
-  --warning: #ff6600;          /* Orange warnings */
-  --warning-alt: #ffaa00;      /* Alternative warning yellow */
-  --danger: #ff3344;           /* Red alerts */
-  --danger-alt: #ff4455;       /* Alternative danger red */
-  --danger-light: #ff8899;     /* Light danger for text */
-  --focus-outline: #99ff99;    /* Accessible focus hue */
+  /*
+   * Palette — mirror of src/lib/terminalPalette.ts.
+   * Keep these values in sync with TERMINAL_ACCENT / TERMINAL_DIM / etc.
+   * All terminal UI in the app reads from these custom properties.
+   */
 
-  /* Backgrounds - UPDATED */
-  --bg-dark: #000000;          /* Pure black */
-  --bg-panel: #0a0a0a;         /* Very dark panel */
-  --bg-panel-alt: #0d1210;     /* Alternative dark panel (greenish tint) */
-  --bg-darker: #0a0e0c;        /* Darker background for inputs */
-  --bg-border: #1a2420;        /* Dark border color */
-  --border: #00ff00;           /* Bright green borders */
-  --text-dim: #00aa00;         /* Dimmed green text */
-  --text-dimmer: #446655;      /* Very dim gray-green text */
-  --text-muted: #88bbaa;       /* Muted greenish text */
+  /* Primary Colors — mint/teal CRT */
+  --primary: #3ae2b3;          /* Main accent (TERMINAL_ACCENT) */
+  --primary-dim: #1b6c57;      /* Dim text / borders (TERMINAL_DIM) */
+  --primary-dark: #0c3a2e;     /* Deep shadow for buttons */
+  --primary-light: #5af0c4;    /* Hover / highlight (TERMINAL_ACCENT_BRIGHT) */
+  --primary-mid: #2cb291;      /* Mid tone for borders/highlights */
+  --secondary: #00ccff;        /* Cyan accents */
+  --warning: #ffaa00;          /* Amber warning (TERMINAL_WARN) */
+  --warning-alt: #ffcc33;
+  --danger: #ff4a5c;           /* Red alert (TERMINAL_ERROR) */
+  --danger-alt: #ff6677;
+  --danger-light: #ff99a5;
+  --focus-outline: #8fe9cb;
+
+  /* Backgrounds */
+  --bg-dark: #000000;
+  --bg-panel: #05100d;          /* Panel with a hint of mint */
+  --bg-panel-alt: #081915;
+  --bg-darker: #030907;
+  --bg-border: #12382d;         /* Dim mint border */
+  --border: #3ae2b3;            /* Default border = primary */
+  --text-dim: #1b6c57;
+  --text-dimmer: #124739;
+  --text-muted: #6fb59c;
 
   /* Neutral Colors */
   --neutral-light: #cccccc;    /* Light gray for neutral states */
@@ -37,18 +43,18 @@
   /* Effects - UPDATED */
   --scanline-opacity: 0.05;    /* Slightly more visible */
   --glow-intensity: 15px;      /* Stronger glow */
-  --header-gradient: linear-gradient(180deg, rgba(0, 255, 0, 0.12) 0%, rgba(0, 0, 0, 0.65) 100%);
-  --header-shadow: 0 2px 18px rgba(0, 255, 0, 0.2);
+  --header-gradient: linear-gradient(180deg, color-mix(in srgb, var(--primary) 12%, transparent) 0%, rgba(0, 0, 0, 0.65) 100%);
+  --header-shadow: 0 2px 18px color-mix(in srgb, var(--primary) 20%, transparent);
 
   /* Typography */
   --font-display: 'Orbitron', sans-serif;
   --font-mono: 'Share Tech Mono', monospace;
 
   /* Tabs */
-  --tab-bg: rgba(0, 255, 0, 0.08);
-  --tab-border: rgba(0, 255, 0, 0.5);
-  --tab-active-bg: rgba(0, 255, 0, 0.14);
-  --tab-active-shadow: 0 0 16px rgba(0, 255, 0, 0.3);
+  --tab-bg: color-mix(in srgb, var(--primary) 8%, transparent);
+  --tab-border: color-mix(in srgb, var(--primary) 50%, transparent);
+  --tab-active-bg: color-mix(in srgb, var(--primary) 14%, transparent);
+  --tab-active-shadow: 0 0 16px color-mix(in srgb, var(--primary) 30%, transparent);
 }
 
 /* ===================================
@@ -107,7 +113,7 @@
   border-radius: 4px;
   overflow: hidden;
   position: relative;
-  box-shadow: 0 0 15px rgba(0, 255, 0, 0.3);
+  box-shadow: 0 0 15px color-mix(in srgb, var(--primary) 30%, transparent);
 }
 
 .panel::before {
@@ -122,7 +128,7 @@
 }
 
 .panel-header {
-  background: rgba(0, 255, 0, 0.1);
+  background: color-mix(in srgb, var(--primary) 10%, transparent);
   padding: 10px 16px;
   border-bottom: 2px solid var(--primary);
   font-family: 'Orbitron', sans-serif;
@@ -184,7 +190,7 @@
    BUTTON STYLES
    =================================== */
 .terminal-btn {
-  background: linear-gradient(180deg, rgba(0, 68, 0, 0.8) 0%, rgba(0, 34, 0, 0.6) 100%);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--primary-dark) 80%, transparent) 0%, color-mix(in srgb, var(--primary-dark) 60%, transparent) 100%);
   border: 2px solid var(--primary);
   border-radius: 2px;
   padding: 10px 20px;
@@ -196,18 +202,18 @@
   cursor: pointer;
   transition: all 0.2s ease;
   text-transform: uppercase;
-  box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--primary) 30%, transparent);
 }
 
 .terminal-btn:hover {
-  background: linear-gradient(180deg, rgba(0, 85, 0, 0.9) 0%, rgba(0, 51, 0, 0.7) 100%);
-  box-shadow: 0 0 20px rgba(0, 255, 0, 0.6);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--primary-dark) 90%, transparent) 0%, color-mix(in srgb, var(--primary-dark) 70%, transparent) 100%);
+  box-shadow: 0 0 20px color-mix(in srgb, var(--primary) 60%, transparent);
   border-color: var(--primary);
 }
 
 .terminal-btn:active {
   transform: translateY(1px);
-  box-shadow: 0 0 15px rgba(0, 255, 0, 0.5);
+  box-shadow: 0 0 15px color-mix(in srgb, var(--primary) 50%, transparent);
 }
 
 .terminal-btn:disabled {
@@ -216,43 +222,43 @@
 }
 
 .terminal-btn.primary {
-  background: linear-gradient(180deg, rgba(0, 85, 0, 0.9) 0%, rgba(0, 51, 0, 0.7) 100%);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--primary-dark) 90%, transparent) 0%, color-mix(in srgb, var(--primary-dark) 70%, transparent) 100%);
   border-color: var(--primary);
-  box-shadow: 0 0 15px rgba(0, 255, 0, 0.4);
+  box-shadow: 0 0 15px color-mix(in srgb, var(--primary) 40%, transparent);
 }
 
 .terminal-btn.secondary {
-  background: linear-gradient(180deg, rgba(0, 204, 255, 0.2) 0%, rgba(0, 153, 204, 0.1) 100%);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--secondary) 20%, transparent) 0%, color-mix(in srgb, var(--secondary) 10%, transparent) 100%);
   border-color: var(--secondary);
   color: var(--secondary);
-  box-shadow: 0 0 10px rgba(0, 204, 255, 0.3);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--secondary) 30%, transparent);
 }
 
 .terminal-btn.secondary:hover {
-  background: linear-gradient(180deg, rgba(0, 204, 255, 0.3) 0%, rgba(0, 153, 204, 0.2) 100%);
-  box-shadow: 0 0 15px rgba(0, 204, 255, 0.5);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--secondary) 30%, transparent) 0%, color-mix(in srgb, var(--secondary) 20%, transparent) 100%);
+  box-shadow: 0 0 15px color-mix(in srgb, var(--secondary) 50%, transparent);
 }
 
 .terminal-btn.warning {
-  background: linear-gradient(180deg, rgba(255, 102, 0, 0.2) 0%, rgba(204, 68, 0, 0.1) 100%);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--warning) 20%, transparent) 0%, color-mix(in srgb, var(--warning) 10%, transparent) 100%);
   border-color: var(--warning);
   color: var(--warning);
-  box-shadow: 0 0 10px rgba(255, 102, 0, 0.3);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--warning) 30%, transparent);
 }
 
 .terminal-btn.warning:hover {
-  box-shadow: 0 0 15px rgba(255, 102, 0, 0.5);
+  box-shadow: 0 0 15px color-mix(in srgb, var(--warning) 50%, transparent);
 }
 
 .terminal-btn.danger {
-  background: linear-gradient(180deg, rgba(255, 51, 68, 0.2) 0%, rgba(204, 34, 51, 0.1) 100%);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--danger) 20%, transparent) 0%, color-mix(in srgb, var(--danger) 10%, transparent) 100%);
   border-color: var(--danger);
   color: var(--danger);
-  box-shadow: 0 0 10px rgba(255, 51, 68, 0.3);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--danger) 30%, transparent);
 }
 
 .terminal-btn.danger:hover {
-  box-shadow: 0 0 15px rgba(255, 51, 68, 0.5);
+  box-shadow: 0 0 15px color-mix(in srgb, var(--danger) 50%, transparent);
 }
 
 /* ===================================
@@ -267,7 +273,7 @@
 .app-shell-title {
   font-family: var(--font-display);
   color: var(--primary);
-  text-shadow: 0 0 8px rgba(0, 255, 0, 0.35);
+  text-shadow: 0 0 8px color-mix(in srgb, var(--primary) 35%, transparent);
   letter-spacing: 0.12em;
 }
 
@@ -306,15 +312,15 @@
   border-color: var(--tab-border);
   background: var(--tab-bg);
   color: var(--primary);
-  box-shadow: 0 0 6px rgba(0, 255, 0, 0.2);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--primary) 20%, transparent);
 }
 
 @keyframes tab-active-pulse {
   0%, 100% {
-    box-shadow: 0 0 12px rgba(0, 255, 0, 0.2), inset 0 0 8px rgba(0, 255, 0, 0.05);
+    box-shadow: 0 0 12px color-mix(in srgb, var(--primary) 20%, transparent), inset 0 0 8px color-mix(in srgb, var(--primary) 5%, transparent);
   }
   50% {
-    box-shadow: 0 0 20px rgba(0, 255, 0, 0.4), inset 0 0 12px rgba(0, 255, 0, 0.1);
+    box-shadow: 0 0 20px color-mix(in srgb, var(--primary) 40%, transparent), inset 0 0 12px color-mix(in srgb, var(--primary) 10%, transparent);
   }
 }
 
@@ -322,7 +328,7 @@
   color: var(--primary);
   border-color: var(--border);
   background: var(--tab-active-bg);
-  text-shadow: 0 0 8px rgba(0, 255, 0, 0.45);
+  text-shadow: 0 0 8px color-mix(in srgb, var(--primary) 45%, transparent);
   animation: tab-active-pulse 2.5s ease-in-out infinite;
 }
 
@@ -352,14 +358,14 @@
   outline: none;
   transition: all 0.2s ease;
   width: 100%;
-  box-shadow: inset 0 0 10px rgba(0, 255, 0, 0.1);
+  box-shadow: inset 0 0 10px color-mix(in srgb, var(--primary) 10%, transparent);
 }
 
 .terminal-input:focus {
   border-color: var(--primary);
   box-shadow:
-    0 0 15px rgba(0, 255, 0, 0.4),
-    inset 0 0 15px rgba(0, 255, 0, 0.2);
+    0 0 15px color-mix(in srgb, var(--primary) 40%, transparent),
+    inset 0 0 15px color-mix(in srgb, var(--primary) 20%, transparent);
 }
 
 .terminal-input::placeholder {
@@ -457,7 +463,7 @@
 }
 
 .terminal-grid-item {
-  background: rgba(0, 255, 0, 0.05);
+  background: color-mix(in srgb, var(--primary) 5%, transparent);
   border: 1px solid var(--border);
   border-radius: 2px;
   padding: 12px;
@@ -469,15 +475,15 @@
 }
 
 .terminal-grid-item:hover {
-  background: rgba(0, 255, 0, 0.1);
+  background: color-mix(in srgb, var(--primary) 10%, transparent);
   border-color: var(--primary-dim);
-  box-shadow: 0 0 10px rgba(0, 255, 0, 0.2);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--primary) 20%, transparent);
 }
 
 .terminal-grid-item.active {
-  background: rgba(0, 255, 0, 0.15);
+  background: color-mix(in srgb, var(--primary) 15%, transparent);
   border-color: var(--primary);
-  box-shadow: 0 0 15px rgba(0, 255, 0, 0.3);
+  box-shadow: 0 0 15px color-mix(in srgb, var(--primary) 30%, transparent);
 }
 
 /* ===================================
@@ -505,11 +511,11 @@
   max-width: 600px;
   max-height: 80vh;
   overflow: hidden;
-  box-shadow: 0 0 40px rgba(0, 255, 0, 0.4);
+  box-shadow: 0 0 40px color-mix(in srgb, var(--primary) 40%, transparent);
 }
 
 .modal-header {
-  background: rgba(0, 255, 0, 0.15);
+  background: color-mix(in srgb, var(--primary) 15%, transparent);
   padding: 12px 16px;
   border-bottom: 2px solid var(--primary);
   display: flex;
@@ -617,7 +623,7 @@
 /* Terminal select styling */
 select.terminal-input {
   appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2300aa00' d='M2 4l4 4 4-4'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%231b6c57' d='M2 4l4 4 4-4'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 12px center;
   padding-right: 36px;
@@ -625,8 +631,8 @@ select.terminal-input {
 }
 
 select.terminal-input option {
-  background: #0a0a0a;
-  color: #00ff00;
+  background: var(--bg-panel);
+  color: var(--primary);
   padding: 8px;
 }
 
@@ -638,7 +644,7 @@ textarea.terminal-input {
 
 /* World list items */
 .world-list-item {
-  background: rgba(0, 255, 0, 0.02);
+  background: color-mix(in srgb, var(--primary) 2%, transparent);
   border: 1px solid #1a2420;
   padding: 8px 12px;
   cursor: pointer;
@@ -646,14 +652,14 @@ textarea.terminal-input {
 }
 
 .world-list-item:hover {
-  background: rgba(0, 255, 0, 0.08);
-  border-color: rgba(0, 255, 0, 0.3);
+  background: color-mix(in srgb, var(--primary) 8%, transparent);
+  border-color: color-mix(in srgb, var(--primary) 30%, transparent);
 }
 
 .world-list-item.selected {
-  background: rgba(0, 255, 0, 0.12);
+  background: color-mix(in srgb, var(--primary) 12%, transparent);
   border-color: var(--primary);
-  box-shadow: 0 0 10px rgba(0, 255, 0, 0.2);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--primary) 20%, transparent);
 }
 
 /* Zone colors */
@@ -663,7 +669,7 @@ textarea.terminal-input {
 
 /* Route display */
 .route-leg {
-  border-left: 2px solid rgba(0, 255, 0, 0.3);
+  border-left: 2px solid color-mix(in srgb, var(--primary) 30%, transparent);
   padding-left: 12px;
   margin-left: 8px;
 }
@@ -686,15 +692,15 @@ textarea.terminal-input {
 }
 
 .jump-rating-btn:hover {
-  border-color: rgba(0, 255, 0, 0.5);
+  border-color: color-mix(in srgb, var(--primary) 50%, transparent);
   color: var(--primary);
 }
 
 .jump-rating-btn.active {
   border-color: var(--primary);
-  background: rgba(0, 255, 0, 0.2);
+  background: color-mix(in srgb, var(--primary) 20%, transparent);
   color: var(--primary);
-  box-shadow: 0 0 10px rgba(0, 255, 0, 0.4);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--primary) 40%, transparent);
 }
 
 /* ===================================
@@ -1115,9 +1121,9 @@ textarea.terminal-input {
   background: var(--bg-darker);
   color: var(--primary-light);
   font-family: var(--font-mono);
-  border: 1px solid rgba(0, 255, 0, 0.3);
+  border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent);
   border-radius: 4px;
-  box-shadow: 0 0 32px rgba(0, 255, 0, 0.12);
+  box-shadow: 0 0 32px color-mix(in srgb, var(--primary) 12%, transparent);
   overflow: hidden;
 }
 
@@ -1128,7 +1134,7 @@ textarea.terminal-input {
   gap: 0.25rem;
   padding: 1rem 1.5rem;
   border-bottom: 1px solid var(--bg-border);
-  background: linear-gradient(180deg, rgba(0, 255, 136, 0.05) 0%, transparent 100%);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--primary) 5%, transparent) 0%, transparent 100%);
 }
 
 @media (min-width: 768px) {
@@ -1146,7 +1152,7 @@ textarea.terminal-input {
   font-size: 1.25rem;
   letter-spacing: 0.2em;
   color: var(--primary);
-  text-shadow: 0 0 20px rgba(0, 255, 0, 0.4);
+  text-shadow: 0 0 20px color-mix(in srgb, var(--primary) 40%, transparent);
   text-transform: uppercase;
 }
 
@@ -1180,19 +1186,19 @@ textarea.terminal-input {
 /* Terminal-styled card component */
 .terminal-card {
   background: var(--bg-panel);
-  border: 1px solid rgba(0, 255, 0, 0.3);
+  border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent);
   border-radius: 4px;
   overflow: hidden;
 }
 
 .terminal-card:hover {
-  border-color: rgba(0, 255, 0, 0.5);
+  border-color: color-mix(in srgb, var(--primary) 50%, transparent);
 }
 
 .terminal-card-header {
   padding: 0.75rem 1rem;
-  border-bottom: 1px solid rgba(0, 255, 0, 0.2);
-  background: rgba(0, 255, 0, 0.05);
+  border-bottom: 1px solid color-mix(in srgb, var(--primary) 20%, transparent);
+  background: color-mix(in srgb, var(--primary) 5%, transparent);
 }
 
 .terminal-card-title {
@@ -1217,7 +1223,7 @@ textarea.terminal-input {
 .terminal-tabs-list {
   display: grid;
   background: var(--bg-dark);
-  border: 1px solid rgba(0, 255, 0, 0.3);
+  border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent);
   border-radius: 4px;
   padding: 2px;
 }
@@ -1240,13 +1246,13 @@ textarea.terminal-input {
 
 .terminal-tab-trigger:hover {
   color: var(--primary);
-  background: rgba(0, 255, 0, 0.1);
+  background: color-mix(in srgb, var(--primary) 10%, transparent);
 }
 
 .terminal-tab-trigger[data-state="active"] {
   color: var(--primary);
-  background: rgba(0, 255, 0, 0.2);
-  box-shadow: 0 0 10px rgba(0, 255, 0, 0.2);
+  background: color-mix(in srgb, var(--primary) 20%, transparent);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--primary) 20%, transparent);
 }
 
 /* Terminal list item - for crew/vehicle/contact lists */
@@ -1255,7 +1261,7 @@ textarea.terminal-input {
   justify-content: space-between;
   align-items: center;
   padding: 0.75rem 1rem;
-  background: rgba(0, 255, 0, 0.02);
+  background: color-mix(in srgb, var(--primary) 2%, transparent);
   border: 1px solid var(--bg-border);
   border-radius: 4px;
   font-family: var(--font-mono);
@@ -1264,14 +1270,14 @@ textarea.terminal-input {
 }
 
 .terminal-list-item:hover {
-  background: rgba(0, 255, 0, 0.08);
-  border-color: rgba(0, 255, 0, 0.3);
+  background: color-mix(in srgb, var(--primary) 8%, transparent);
+  border-color: color-mix(in srgb, var(--primary) 30%, transparent);
 }
 
 .terminal-list-item.selected {
-  background: rgba(0, 255, 0, 0.12);
+  background: color-mix(in srgb, var(--primary) 12%, transparent);
   border-color: var(--primary);
-  box-shadow: 0 0 10px rgba(0, 255, 0, 0.2);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--primary) 20%, transparent);
 }
 
 .terminal-list-item.empty {
@@ -1353,27 +1359,27 @@ textarea.terminal-input {
   font-size: 0.65rem;
   font-family: var(--font-mono);
   color: var(--primary);
-  background: rgba(0, 255, 0, 0.1);
-  border: 1px solid rgba(0, 255, 0, 0.3);
+  background: color-mix(in srgb, var(--primary) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent);
   border-radius: 2px;
 }
 
 .terminal-badge.warning {
   color: var(--warning);
-  background: rgba(255, 102, 0, 0.1);
-  border-color: rgba(255, 102, 0, 0.3);
+  background: color-mix(in srgb, var(--warning) 10%, transparent);
+  border-color: color-mix(in srgb, var(--warning) 30%, transparent);
 }
 
 .terminal-badge.danger {
   color: var(--danger);
-  background: rgba(255, 51, 68, 0.1);
-  border-color: rgba(255, 51, 68, 0.3);
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
+  border-color: color-mix(in srgb, var(--danger) 30%, transparent);
 }
 
 .terminal-badge.secondary {
   color: var(--secondary);
-  background: rgba(0, 204, 255, 0.1);
-  border-color: rgba(0, 204, 255, 0.3);
+  background: color-mix(in srgb, var(--secondary) 10%, transparent);
+  border-color: color-mix(in srgb, var(--secondary) 30%, transparent);
 }
 
 /* ===================================
@@ -1385,39 +1391,39 @@ textarea.terminal-input {
 .marker-emoji,
 .panel-content span[role="img"],
 button span:not(.lucide):not(.sr-only):not([class*="text-"]) {
-  filter: sepia(100%) hue-rotate(50deg) saturate(3) brightness(1.3) contrast(1.1);
-  text-shadow: 0 0 8px rgba(0, 255, 0, 0.6);
+  filter: sepia(100%) hue-rotate(110deg) saturate(3) brightness(1.3) contrast(1.1);
+  text-shadow: 0 0 8px color-mix(in srgb, var(--primary) 60%, transparent);
   font-style: normal;
 }
 
 /* Marker panel emoji icons - bright green with strong glow */
 .hex-marker-icon {
-  filter: sepia(100%) hue-rotate(50deg) saturate(4) brightness(1.4) contrast(1.2) !important;
-  text-shadow: 0 0 10px rgba(0, 255, 0, 0.8), 0 0 5px rgba(0, 255, 0, 0.5) !important;
+  filter: sepia(100%) hue-rotate(110deg) saturate(4) brightness(1.4) contrast(1.2) !important;
+  text-shadow: 0 0 10px color-mix(in srgb, var(--primary) 80%, transparent), 0 0 5px color-mix(in srgb, var(--primary) 50%, transparent) !important;
   display: inline-block;
 }
 
 /* Emoji in modal/editor forms - green phosphor */
 .marker-icon-display {
-  filter: sepia(100%) hue-rotate(50deg) saturate(4) brightness(1.3) contrast(1.1) !important;
-  text-shadow: 0 0 10px rgba(0, 255, 0, 0.7) !important;
+  filter: sepia(100%) hue-rotate(110deg) saturate(4) brightness(1.3) contrast(1.1) !important;
+  text-shadow: 0 0 10px color-mix(in srgb, var(--primary) 70%, transparent) !important;
 }
 
 /* Icon picker grid buttons */
 .icon-picker-button span {
-  filter: sepia(100%) hue-rotate(50deg) saturate(3) brightness(1.2) !important;
-  text-shadow: 0 0 8px rgba(0, 255, 0, 0.5) !important;
+  filter: sepia(100%) hue-rotate(110deg) saturate(3) brightness(1.2) !important;
+  text-shadow: 0 0 8px color-mix(in srgb, var(--primary) 50%, transparent) !important;
 }
 
 /* Legend emoji icons - subtle green with hint of original color */
 .marker-legend-icon {
-  filter: sepia(80%) hue-rotate(50deg) saturate(2.5) brightness(1.2) contrast(1.1) !important;
-  text-shadow: 0 0 8px rgba(0, 255, 0, 0.6) !important;
+  filter: sepia(80%) hue-rotate(110deg) saturate(2.5) brightness(1.2) contrast(1.1) !important;
+  text-shadow: 0 0 8px color-mix(in srgb, var(--primary) 60%, transparent) !important;
 }
 
 /* Marker type selector dropdown options */
 select option {
-  filter: sepia(100%) hue-rotate(50deg) saturate(3);
+  filter: sepia(100%) hue-rotate(110deg) saturate(3);
 }
 
 /* Make sure lucide icons and text aren't affected */
@@ -1527,9 +1533,9 @@ input[type="color"] {
   flex-direction: column;
   align-items: center;
   padding: 0.25rem 0.15rem;
-  background: linear-gradient(180deg, rgba(0, 255, 0, 0.04) 0%, var(--bg-panel) 100%);
-  border-color: rgba(0, 255, 0, 0.2);
-  box-shadow: inset 0 0 20px rgba(0, 255, 0, 0.03);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--primary) 4%, transparent) 0%, var(--bg-panel) 100%);
+  border-color: color-mix(in srgb, var(--primary) 20%, transparent);
+  box-shadow: inset 0 0 20px color-mix(in srgb, var(--primary) 3%, transparent);
   user-select: none;
 }
 
@@ -1541,7 +1547,7 @@ input[type="color"] {
   width: 1.75rem;
   height: 1.75rem;
   border-radius: 4px;
-  color: rgba(0, 255, 0, 0.45);
+  color: color-mix(in srgb, var(--primary) 45%, transparent);
   background: transparent;
   border: 1px solid transparent;
   transition: all 0.2s ease;
@@ -1550,24 +1556,24 @@ input[type="color"] {
 
 .vtt-btn-icon:hover {
   color: var(--primary);
-  background: rgba(0, 255, 0, 0.08);
-  border-color: rgba(0, 255, 0, 0.15);
+  background: color-mix(in srgb, var(--primary) 8%, transparent);
+  border-color: color-mix(in srgb, var(--primary) 15%, transparent);
 }
 
 .vtt-btn-icon--active {
   color: var(--primary);
-  background: rgba(0, 255, 0, 0.15);
-  border-color: rgba(0, 255, 0, 0.4);
-  box-shadow: 0 0 8px rgba(0, 255, 0, 0.2), inset 0 0 6px rgba(0, 255, 0, 0.05);
+  background: color-mix(in srgb, var(--primary) 15%, transparent);
+  border-color: color-mix(in srgb, var(--primary) 40%, transparent);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--primary) 20%, transparent), inset 0 0 6px color-mix(in srgb, var(--primary) 5%, transparent);
 }
 
 /* VTT toolbar separator */
 .vtt-separator {
   width: 1.25rem;
   height: 0;
-  border-top: 1px solid rgba(0, 255, 0, 0.15);
+  border-top: 1px solid color-mix(in srgb, var(--primary) 15%, transparent);
   margin: 0.3rem 0;
-  box-shadow: 0 0 4px rgba(0, 255, 0, 0.1);
+  box-shadow: 0 0 4px color-mix(in srgb, var(--primary) 10%, transparent);
 }
 
 /* VTT Sidebar container */
@@ -1576,9 +1582,9 @@ input[type="color"] {
   height: 100%;
   display: flex;
   flex-direction: column;
-  background: linear-gradient(180deg, rgba(0, 255, 0, 0.03) 0%, var(--bg-panel) 40%, var(--bg-dark) 100%);
-  border-left: 1px solid rgba(0, 255, 0, 0.25);
-  box-shadow: -2px 0 20px rgba(0, 255, 0, 0.06), inset 2px 0 12px rgba(0, 255, 0, 0.02);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--primary) 3%, transparent) 0%, var(--bg-panel) 40%, var(--bg-dark) 100%);
+  border-left: 1px solid color-mix(in srgb, var(--primary) 25%, transparent);
+  box-shadow: -2px 0 20px color-mix(in srgb, var(--primary) 6%, transparent), inset 2px 0 12px color-mix(in srgb, var(--primary) 2%, transparent);
 }
 
 /* VTT Sidebar header */
@@ -1587,8 +1593,8 @@ input[type="color"] {
   align-items: center;
   justify-content: space-between;
   padding: 0.6rem 0.75rem;
-  border-bottom: 1px solid rgba(0, 255, 0, 0.25);
-  background: linear-gradient(180deg, rgba(0, 255, 0, 0.08) 0%, rgba(0, 255, 0, 0.02) 100%);
+  border-bottom: 1px solid color-mix(in srgb, var(--primary) 25%, transparent);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--primary) 8%, transparent) 0%, color-mix(in srgb, var(--primary) 2%, transparent) 100%);
 }
 
 .vtt-sidebar-title {
@@ -1598,7 +1604,7 @@ input[type="color"] {
   letter-spacing: 0.15em;
   color: var(--primary);
   text-transform: uppercase;
-  text-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
+  text-shadow: 0 0 10px color-mix(in srgb, var(--primary) 30%, transparent);
 }
 
 /* VTT Section label */
@@ -1607,7 +1613,7 @@ input[type="color"] {
   font-size: 0.625rem;
   font-family: 'Orbitron', sans-serif;
   font-weight: 700;
-  color: rgba(0, 255, 0, 0.5);
+  color: color-mix(in srgb, var(--primary) 50%, transparent);
   text-transform: uppercase;
   letter-spacing: 0.12em;
   margin-bottom: 0.35rem;
@@ -1617,7 +1623,7 @@ input[type="color"] {
 .vtt-input {
   width: 100%;
   background: var(--bg-dark);
-  border: 1px solid rgba(0, 255, 0, 0.2);
+  border: 1px solid color-mix(in srgb, var(--primary) 20%, transparent);
   border-radius: 4px;
   padding: 0.35rem 0.5rem;
   color: var(--primary);
@@ -1625,16 +1631,16 @@ input[type="color"] {
   font-size: 0.75rem;
   outline: none;
   transition: all 0.2s ease;
-  box-shadow: inset 0 0 6px rgba(0, 255, 0, 0.04);
+  box-shadow: inset 0 0 6px color-mix(in srgb, var(--primary) 4%, transparent);
 }
 
 .vtt-input:focus {
-  border-color: rgba(0, 255, 0, 0.5);
-  box-shadow: 0 0 8px rgba(0, 255, 0, 0.15), inset 0 0 8px rgba(0, 255, 0, 0.06);
+  border-color: color-mix(in srgb, var(--primary) 50%, transparent);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--primary) 15%, transparent), inset 0 0 8px color-mix(in srgb, var(--primary) 6%, transparent);
 }
 
 .vtt-input::placeholder {
-  color: rgba(0, 255, 0, 0.25);
+  color: color-mix(in srgb, var(--primary) 25%, transparent);
 }
 
 /* VTT Compact button */
@@ -1644,8 +1650,8 @@ input[type="color"] {
   justify-content: center;
   gap: 0.25rem;
   padding: 0.3rem 0.6rem;
-  background: linear-gradient(180deg, rgba(0, 68, 0, 0.5) 0%, rgba(0, 34, 0, 0.3) 100%);
-  border: 1px solid rgba(0, 255, 0, 0.35);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--primary-dark) 50%, transparent) 0%, color-mix(in srgb, var(--primary-dark) 30%, transparent) 100%);
+  border: 1px solid color-mix(in srgb, var(--primary) 35%, transparent);
   border-radius: 4px;
   color: var(--primary);
   font-family: var(--font-mono);
@@ -1655,13 +1661,13 @@ input[type="color"] {
   cursor: pointer;
   transition: all 0.2s ease;
   text-transform: uppercase;
-  box-shadow: 0 0 6px rgba(0, 255, 0, 0.1);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--primary) 10%, transparent);
 }
 
 .vtt-btn:hover {
-  background: linear-gradient(180deg, rgba(0, 85, 0, 0.6) 0%, rgba(0, 51, 0, 0.4) 100%);
-  box-shadow: 0 0 12px rgba(0, 255, 0, 0.25);
-  border-color: rgba(0, 255, 0, 0.5);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--primary-dark) 60%, transparent) 0%, color-mix(in srgb, var(--primary-dark) 40%, transparent) 100%);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--primary) 25%, transparent);
+  border-color: color-mix(in srgb, var(--primary) 50%, transparent);
 }
 
 .vtt-btn:active {
@@ -1676,37 +1682,37 @@ input[type="color"] {
 
 /* VTT Button variants */
 .vtt-btn.danger {
-  background: linear-gradient(180deg, rgba(255, 51, 68, 0.15) 0%, rgba(204, 34, 51, 0.08) 100%);
-  border-color: rgba(255, 51, 68, 0.35);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--danger) 15%, transparent) 0%, color-mix(in srgb, var(--danger) 8%, transparent) 100%);
+  border-color: color-mix(in srgb, var(--danger) 35%, transparent);
   color: var(--danger);
-  box-shadow: 0 0 6px rgba(255, 51, 68, 0.1);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--danger) 10%, transparent);
 }
 
 .vtt-btn.danger:hover {
-  background: linear-gradient(180deg, rgba(255, 51, 68, 0.25) 0%, rgba(204, 34, 51, 0.15) 100%);
-  box-shadow: 0 0 12px rgba(255, 51, 68, 0.2);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--danger) 25%, transparent) 0%, color-mix(in srgb, var(--danger) 15%, transparent) 100%);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--danger) 20%, transparent);
 }
 
 .vtt-btn.secondary {
-  background: linear-gradient(180deg, rgba(0, 204, 255, 0.12) 0%, rgba(0, 153, 204, 0.06) 100%);
-  border-color: rgba(0, 204, 255, 0.35);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--secondary) 12%, transparent) 0%, color-mix(in srgb, var(--secondary) 6%, transparent) 100%);
+  border-color: color-mix(in srgb, var(--secondary) 35%, transparent);
   color: var(--secondary);
-  box-shadow: 0 0 6px rgba(0, 204, 255, 0.1);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--secondary) 10%, transparent);
 }
 
 .vtt-btn.secondary:hover {
-  box-shadow: 0 0 12px rgba(0, 204, 255, 0.2);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--secondary) 20%, transparent);
 }
 
 .vtt-btn.warning {
-  background: linear-gradient(180deg, rgba(255, 204, 0, 0.12) 0%, rgba(204, 153, 0, 0.06) 100%);
-  border-color: rgba(255, 204, 0, 0.35);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--warning) 12%, transparent) 0%, color-mix(in srgb, var(--warning) 6%, transparent) 100%);
+  border-color: color-mix(in srgb, var(--warning) 35%, transparent);
   color: #ffcc00;
-  box-shadow: 0 0 6px rgba(255, 204, 0, 0.1);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--warning) 10%, transparent);
 }
 
 .vtt-btn.warning:hover {
-  box-shadow: 0 0 12px rgba(255, 204, 0, 0.2);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--warning) 20%, transparent);
 }
 
 /* VTT Option button — for toggle groups / preset selectors */
@@ -1715,24 +1721,24 @@ input[type="color"] {
   font-size: 0.625rem;
   padding: 0.3rem 0.4rem;
   border-radius: 4px;
-  border: 1px solid rgba(0, 255, 0, 0.2);
-  color: rgba(0, 255, 0, 0.4);
+  border: 1px solid color-mix(in srgb, var(--primary) 20%, transparent);
+  color: color-mix(in srgb, var(--primary) 40%, transparent);
   background: transparent;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .vtt-option:hover {
-  color: rgba(0, 255, 0, 0.65);
-  border-color: rgba(0, 255, 0, 0.3);
-  background: rgba(0, 255, 0, 0.04);
+  color: color-mix(in srgb, var(--primary) 65%, transparent);
+  border-color: color-mix(in srgb, var(--primary) 30%, transparent);
+  background: color-mix(in srgb, var(--primary) 4%, transparent);
 }
 
 .vtt-option--active {
   color: var(--primary);
-  border-color: rgba(0, 255, 0, 0.5);
-  background: rgba(0, 255, 0, 0.12);
-  box-shadow: 0 0 8px rgba(0, 255, 0, 0.15);
+  border-color: color-mix(in srgb, var(--primary) 50%, transparent);
+  background: color-mix(in srgb, var(--primary) 12%, transparent);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--primary) 15%, transparent);
 }
 
 /* VTT List item */
@@ -1741,28 +1747,28 @@ input[type="color"] {
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem;
-  background: rgba(0, 255, 0, 0.02);
-  border: 1px solid rgba(0, 255, 0, 0.1);
+  background: color-mix(in srgb, var(--primary) 2%, transparent);
+  border: 1px solid color-mix(in srgb, var(--primary) 10%, transparent);
   border-radius: 4px;
   transition: all 0.2s ease;
   cursor: pointer;
 }
 
 .vtt-list-item:hover {
-  background: rgba(0, 255, 0, 0.06);
-  border-color: rgba(0, 255, 0, 0.25);
-  box-shadow: 0 0 8px rgba(0, 255, 0, 0.08);
+  background: color-mix(in srgb, var(--primary) 6%, transparent);
+  border-color: color-mix(in srgb, var(--primary) 25%, transparent);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--primary) 8%, transparent);
 }
 
 .vtt-list-item--active {
-  background: rgba(0, 255, 0, 0.1);
-  border-color: rgba(0, 255, 0, 0.4);
-  box-shadow: 0 0 10px rgba(0, 255, 0, 0.12);
+  background: color-mix(in srgb, var(--primary) 10%, transparent);
+  border-color: color-mix(in srgb, var(--primary) 40%, transparent);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--primary) 12%, transparent);
 }
 
 /* VTT Empty state */
 .vtt-empty {
-  color: rgba(0, 255, 0, 0.25);
+  color: color-mix(in srgb, var(--primary) 25%, transparent);
   font-family: var(--font-mono);
   font-size: 0.75rem;
   text-align: center;
@@ -1783,9 +1789,9 @@ input[type="color"] {
 
 .vtt-modal {
   background: var(--bg-panel);
-  border: 1px solid rgba(0, 255, 0, 0.35);
+  border: 1px solid color-mix(in srgb, var(--primary) 35%, transparent);
   border-radius: 6px;
-  box-shadow: 0 0 30px rgba(0, 255, 0, 0.15), 0 0 60px rgba(0, 255, 0, 0.05);
+  box-shadow: 0 0 30px color-mix(in srgb, var(--primary) 15%, transparent), 0 0 60px color-mix(in srgb, var(--primary) 5%, transparent);
   max-height: 85vh;
   overflow: hidden;
   animation: slideInUp 0.2s ease;
@@ -1796,8 +1802,8 @@ input[type="color"] {
   align-items: center;
   justify-content: space-between;
   padding: 0.6rem 0.75rem;
-  border-bottom: 1px solid rgba(0, 255, 0, 0.25);
-  background: linear-gradient(180deg, rgba(0, 255, 0, 0.08) 0%, rgba(0, 255, 0, 0.02) 100%);
+  border-bottom: 1px solid color-mix(in srgb, var(--primary) 25%, transparent);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--primary) 8%, transparent) 0%, color-mix(in srgb, var(--primary) 2%, transparent) 100%);
 }
 
 .vtt-modal-title {
@@ -1807,7 +1813,7 @@ input[type="color"] {
   letter-spacing: 0.12em;
   color: var(--primary);
   text-transform: uppercase;
-  text-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
+  text-shadow: 0 0 10px color-mix(in srgb, var(--primary) 30%, transparent);
 }
 
 .vtt-modal-body {
@@ -1823,13 +1829,13 @@ input[type="color"] {
   gap: 0.4rem;
   font-family: var(--font-mono);
   font-size: 0.625rem;
-  color: rgba(0, 255, 0, 0.5);
+  color: color-mix(in srgb, var(--primary) 50%, transparent);
   cursor: pointer;
   transition: color 0.15s ease;
 }
 
 .vtt-checkbox:hover {
-  color: rgba(0, 255, 0, 0.7);
+  color: color-mix(in srgb, var(--primary) 70%, transparent);
 }
 
 .vtt-checkbox input[type="checkbox"] {
@@ -1853,32 +1859,32 @@ input[type="color"] {
   font-size: 0.5rem;
   border-radius: 2px;
   color: var(--primary);
-  background: rgba(0, 255, 0, 0.1);
-  border: 1px solid rgba(0, 255, 0, 0.25);
+  background: color-mix(in srgb, var(--primary) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--primary) 25%, transparent);
 }
 
 .vtt-badge.danger {
   color: var(--danger);
-  background: rgba(255, 51, 68, 0.1);
-  border-color: rgba(255, 51, 68, 0.25);
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
+  border-color: color-mix(in srgb, var(--danger) 25%, transparent);
 }
 
 .vtt-badge.warning {
   color: #ffcc00;
-  background: rgba(255, 204, 0, 0.1);
-  border-color: rgba(255, 204, 0, 0.25);
+  background: color-mix(in srgb, var(--warning) 10%, transparent);
+  border-color: color-mix(in srgb, var(--warning) 25%, transparent);
 }
 
 .vtt-badge.secondary {
   color: var(--secondary);
-  background: rgba(0, 204, 255, 0.1);
-  border-color: rgba(0, 204, 255, 0.25);
+  background: color-mix(in srgb, var(--secondary) 10%, transparent);
+  border-color: color-mix(in srgb, var(--secondary) 25%, transparent);
 }
 
 /* VTT Panel section with subtle top border */
 .vtt-panel-section {
   padding: 0.75rem;
-  border-bottom: 1px solid rgba(0, 255, 0, 0.1);
+  border-bottom: 1px solid color-mix(in srgb, var(--primary) 10%, transparent);
 }
 
 /* VTT Token avatar circle */
@@ -1887,7 +1893,7 @@ input[type="color"] {
   height: 2rem;
   border-radius: 50%;
   background: var(--bg-dark);
-  border: 1px solid rgba(0, 255, 0, 0.3);
+  border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1901,25 +1907,25 @@ input[type="color"] {
 }
 
 .vtt-avatar:hover {
-  border-color: rgba(0, 255, 0, 0.6);
-  box-shadow: 0 0 8px rgba(0, 255, 0, 0.15);
+  border-color: color-mix(in srgb, var(--primary) 60%, transparent);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--primary) 15%, transparent);
 }
 
 /* VTT floating HUD */
 .vtt-hud {
   background: rgba(0, 0, 0, 0.92);
-  border: 1px solid rgba(0, 255, 0, 0.35);
+  border: 1px solid color-mix(in srgb, var(--primary) 35%, transparent);
   border-radius: 6px;
-  box-shadow: 0 0 20px rgba(0, 255, 0, 0.12), 0 4px 16px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 0 20px color-mix(in srgb, var(--primary) 12%, transparent), 0 4px 16px rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(8px);
 }
 
 /* VTT Context menu */
 .vtt-context-menu {
   background: var(--bg-panel);
-  border: 1px solid rgba(0, 255, 0, 0.3);
+  border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent);
   border-radius: 6px;
-  box-shadow: 0 0 20px rgba(0, 255, 0, 0.1), 0 4px 20px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 0 20px color-mix(in srgb, var(--primary) 10%, transparent), 0 4px 20px rgba(0, 0, 0, 0.5);
   overflow: hidden;
   min-width: 10rem;
   animation: fadeIn 0.1s ease;
@@ -1932,28 +1938,28 @@ input[type="color"] {
   padding: 0.4rem 0.75rem;
   font-family: var(--font-mono);
   font-size: 0.75rem;
-  color: rgba(0, 255, 0, 0.6);
+  color: color-mix(in srgb, var(--primary) 60%, transparent);
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 .vtt-context-menu-item:hover {
   color: var(--primary);
-  background: rgba(0, 255, 0, 0.1);
+  background: color-mix(in srgb, var(--primary) 10%, transparent);
 }
 
 .vtt-context-menu-item.danger {
-  color: rgba(255, 51, 68, 0.6);
+  color: color-mix(in srgb, var(--danger) 60%, transparent);
 }
 
 .vtt-context-menu-item.danger:hover {
   color: var(--danger);
-  background: rgba(255, 51, 68, 0.1);
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
 }
 
 .vtt-context-menu-separator {
   height: 0;
-  border-top: 1px solid rgba(0, 255, 0, 0.12);
+  border-top: 1px solid color-mix(in srgb, var(--primary) 12%, transparent);
   margin: 0.2rem 0;
 }
 
@@ -1972,9 +1978,9 @@ input[type="color"] {
 
 .vtt-shortcut-panel {
   background: var(--bg-panel);
-  border: 1px solid rgba(0, 255, 0, 0.35);
+  border: 1px solid color-mix(in srgb, var(--primary) 35%, transparent);
   border-radius: 8px;
-  box-shadow: 0 0 40px rgba(0, 255, 0, 0.12);
+  box-shadow: 0 0 40px color-mix(in srgb, var(--primary) 12%, transparent);
   padding: 1.5rem;
   max-width: 600px;
   max-height: 80vh;
@@ -1990,8 +1996,8 @@ input[type="color"] {
   font-family: var(--font-mono);
   font-size: 0.625rem;
   color: var(--primary);
-  background: rgba(0, 255, 0, 0.08);
-  border: 1px solid rgba(0, 255, 0, 0.3);
+  background: color-mix(in srgb, var(--primary) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent);
   border-radius: 3px;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }

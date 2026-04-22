@@ -4186,7 +4186,7 @@ export const CharacterGenerator: React.FC = () => {
                     ${isLocked
                       ? 'text-terminal-primary/20 cursor-not-allowed opacity-40'
                       : isActive
-                      ? 'bg-terminal-primary/20 text-terminal-primary border border-terminal-primary/50 shadow-[0_0_10px_rgba(0,255,0,0.3)]'
+                      ? 'bg-terminal-primary/20 text-terminal-primary border border-terminal-primary/50 shadow-[0_0_10px_rgba(58, 226, 179,0.3)]'
                       : isCompleted
                       ? 'bg-terminal-primary/10 text-terminal-primary/70 hover:bg-terminal-primary/15'
                       : 'text-terminal-primary/40 hover:text-terminal-primary/60 hover:bg-terminal-primary/5'
@@ -4331,7 +4331,7 @@ export const CharacterGenerator: React.FC = () => {
                 <Button
                   onClick={() => setStep(2)}
                   disabled={!characterData.name}
-                  className="w-full bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30 border border-terminal-primary/50 transition-all duration-200 hover:shadow-[0_0_15px_rgba(0,255,0,0.3)]"
+                  className="w-full bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30 border border-terminal-primary/50 transition-all duration-200 hover:shadow-[0_0_15px_rgba(58, 226, 179,0.3)]"
                 >
                   Continue to Characteristics
                   <ArrowRight className="h-4 w-4 ml-2" />
@@ -7240,7 +7240,7 @@ export const CharacterGenerator: React.FC = () => {
                                         className="h-full rounded-full transition-all duration-500"
                                         style={{
                                           width: `${barWidth}%`,
-                                          backgroundColor: value >= 10 ? '#22c55e' : value >= 7 ? '#00ff00' : value >= 5 ? '#eab308' : '#ef4444',
+                                          backgroundColor: value >= 10 ? '#22c55e' : value >= 7 ? '#3ae2b3' : value >= 5 ? '#eab308' : '#ef4444',
                                         }}
                                       />
                                     </div>

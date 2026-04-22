@@ -38,7 +38,7 @@ export default function VTTMapLibrary() {
           grid: {
             enabled: true,
             size: gridSize,
-            color: "#00ff00",
+            color: "#3ae2b3",
             opacity: 0.15,
             snap: true,
             style: gridStyle,

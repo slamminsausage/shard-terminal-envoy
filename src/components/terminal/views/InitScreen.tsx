@@ -60,7 +60,7 @@ export default function InitScreen({
     <div
       className="min-h-screen flex items-center justify-center p-8"
       style={{
-        background: 'radial-gradient(ellipse at center, rgba(0, 255, 0, 0.05) 0%, rgba(0, 0, 0, 1) 70%)'
+        background: 'radial-gradient(ellipse at center, rgba(58, 226, 179, 0.05) 0%, rgba(0, 0, 0, 1) 70%)'
       }}
     >
       <div className="w-full max-w-2xl">

@@ -148,7 +148,7 @@ const BOOT_PROFILES: Record<TerminalCategory, TerminalBootProfile> = {
   personal: {
     category: 'personal',
     headerLabel: 'PRIVATE NODE // PERSONAL SYSTEM',
-    accentColor: '#00ff88',
+    accentColor: '#3ae2b3',
     dimColor:    '#006633',
     bootMessages: [
       '>> PERSONAL NODE // PRIVATE SYSTEM',
@@ -202,7 +202,7 @@ const BOOT_PROFILES: Record<TerminalCategory, TerminalBootProfile> = {
   research: {
     category: 'research',
     headerLabel: 'RESEARCH NETWORK — SECURE ACCESS',
-    accentColor: '#00ff00',
+    accentColor: '#3ae2b3',
     dimColor:    '#006600',
     bootMessages: [
       '>> LYSANI RESEARCH NETWORK // SECURE PARTITION',
@@ -276,7 +276,7 @@ const BOOT_PROFILES: Record<TerminalCategory, TerminalBootProfile> = {
   default: {
     category: 'default',
     headerLabel: 'TRAVELLER TERMINAL // SYSTEM BOOT',
-    accentColor: '#00ff00',
+    accentColor: '#3ae2b3',
     dimColor:    '#006600',
     bootMessages: [
       '>> INITIALIZING TERMINAL SUBSYSTEMS...',

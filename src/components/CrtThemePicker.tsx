@@ -3,7 +3,7 @@ import { useCrtTheme, type CrtTheme } from '@/hooks/useCrtTheme';
 import { cn } from '@/lib/utils';
 
 const themes: { id: CrtTheme; label: string; color: string }[] = [
-  { id: 'green', label: 'Green Phosphor', color: '#00ff00' },
+  { id: 'green', label: 'Green Phosphor', color: '#3ae2b3' },
   { id: 'amber', label: 'Amber Phosphor', color: '#FFB000' },
   { id: 'blue', label: 'Blue Phosphor', color: '#00BFFF' },
 ];

@@ -15,7 +15,7 @@ interface MatrixRainProps {
  * screensaver and the subtle DataStreamBg variant.
  */
 export default function MatrixRain({
-  accentColor = '#00ff00',
+  accentColor = '#3ae2b3',
   opacity = 0.85,
   speed = 1.2,
   fontSize = 14,

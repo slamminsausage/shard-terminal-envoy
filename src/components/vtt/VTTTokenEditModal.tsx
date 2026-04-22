@@ -87,7 +87,7 @@ export default function VTTTokenEditModal({
   const addCondition = () => {
     const trimmed = conditionInput.trim();
     if (!trimmed) return;
-    const colors = ["#ff3344", "#ff6600", "#ffcc00", "#00ccff", "#aa44ff", "#00ff00"];
+    const colors = ["#ff3344", "#ff6600", "#ffcc00", "#00ccff", "#aa44ff", "#3ae2b3"];
     const color = colors[token.conditions.length % colors.length];
     update({
       conditions: [...token.conditions, { name: trimmed, color }],
@@ -121,14 +121,14 @@ export default function VTTTokenEditModal({
           {/* Token image preview */}
           <div className="flex items-center gap-3">
             <div
-              className="w-14 h-14 rounded-full border-2 border-[rgba(0,255,0,0.3)] bg-[var(--bg-dark)] flex items-center justify-center overflow-hidden cursor-pointer hover:border-[rgba(0,255,0,0.6)] transition-colors"
+              className="w-14 h-14 rounded-full border-2 border-[rgba(58, 226, 179,0.3)] bg-[var(--bg-dark)] flex items-center justify-center overflow-hidden cursor-pointer hover:border-[rgba(58, 226, 179,0.6)] transition-colors"
               onClick={handleImageUpload}
               title="Click to upload image"
             >
               {token.imageDataUrl ? (
                 <img src={token.imageDataUrl} alt={name} className="w-full h-full object-cover" />
               ) : (
-                <span className="text-[rgba(0,255,0,0.3)] text-lg font-mono">
+                <span className="text-[rgba(58, 226, 179,0.3)] text-lg font-mono">
                   {name.charAt(0).toUpperCase()}
                 </span>
               )}
@@ -143,7 +143,7 @@ export default function VTTTokenEditModal({
               />
               <button
                 onClick={handleImageUpload}
-                className="text-[10px] text-[rgba(0,255,0,0.4)] font-mono mt-1 hover:text-[rgba(0,255,0,0.6)]"
+                className="text-[10px] text-[rgba(58, 226, 179,0.4)] font-mono mt-1 hover:text-[rgba(58, 226, 179,0.6)]"
               >
                 Upload Image
               </button>
@@ -160,7 +160,7 @@ export default function VTTTokenEditModal({
                 onChange={(e) => setHp(parseInt(e.target.value, 10) || 0)}
                 className="vtt-input w-16 text-center"
               />
-              <span className="text-[rgba(0,255,0,0.3)] text-xs">/</span>
+              <span className="text-[rgba(58, 226, 179,0.3)] text-xs">/</span>
               <input
                 type="number"
                 value={maxHp}
@@ -225,7 +225,7 @@ export default function VTTTokenEditModal({
             <label className="vtt-section-label">Light Emission</label>
             <div className="flex items-center gap-2">
               <div className="flex-1">
-                <span className="text-[9px] text-[rgba(0,255,0,0.3)] font-mono">Bright</span>
+                <span className="text-[9px] text-[rgba(58, 226, 179,0.3)] font-mono">Bright</span>
                 <input
                   type="number"
                   min={0}
@@ -236,7 +236,7 @@ export default function VTTTokenEditModal({
                 />
               </div>
               <div className="flex-1">
-                <span className="text-[9px] text-[rgba(0,255,0,0.3)] font-mono">Dim</span>
+                <span className="text-[9px] text-[rgba(58, 226, 179,0.3)] font-mono">Dim</span>
                 <input
                   type="number"
                   min={0}
@@ -250,7 +250,7 @@ export default function VTTTokenEditModal({
                 type="color"
                 value={lightColor}
                 onChange={(e) => setLightColor(e.target.value)}
-                className="w-8 h-6 rounded border border-[rgba(0,255,0,0.2)] bg-transparent cursor-pointer mt-3"
+                className="w-8 h-6 rounded border border-[rgba(58, 226, 179,0.2)] bg-transparent cursor-pointer mt-3"
               />
             </div>
           </div>
@@ -269,9 +269,9 @@ export default function VTTTokenEditModal({
               />
               <input
                 type="color"
-                value={auraColor || "#00ff0033"}
+                value={auraColor || "#3ae2b333"}
                 onChange={(e) => setAuraColor(e.target.value)}
-                className="w-8 h-6 rounded border border-[rgba(0,255,0,0.2)] bg-transparent cursor-pointer"
+                className="w-8 h-6 rounded border border-[rgba(58, 226, 179,0.2)] bg-transparent cursor-pointer"
               />
             </div>
           </div>
@@ -349,7 +349,7 @@ export default function VTTTokenEditModal({
         </div>
 
         {/* Footer */}
-        <div className="flex gap-2 px-4 py-3 border-t border-[rgba(0,255,0,0.15)]">
+        <div className="flex gap-2 px-4 py-3 border-t border-[rgba(58, 226, 179,0.15)]">
           <button onClick={handleDelete} className="vtt-btn danger">
             <Trash2 size={12} /> Delete
           </button>

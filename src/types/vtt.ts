@@ -545,7 +545,7 @@ export function createDefaultGrid(): GridConfig {
   return {
     enabled: true,
     size: 50,
-    color: "#00ff00",
+    color: "#3ae2b3",
     opacity: 0.15,
     snap: true,
     style: "square",
@@ -633,7 +633,7 @@ export function createDefaultVTTState(): VTTState {
     activeMapId: null,
     activeTool: "cursor",
     activeLayer: LAYER_TOKEN,
-    drawColor: "#00ff00",
+    drawColor: "#3ae2b3",
     drawWidth: 3,
     audio: createDefaultAudio(),
     particles: createDefaultParticles(),

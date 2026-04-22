@@ -111,7 +111,7 @@ export default function ConnectingScreen({
   const lineColor = (msg: string) => {
     if (msg.includes('[ERROR]') || msg.includes('ERROR')) return '#ff4444';
     if (msg.includes('[WARNING]') || msg.includes('WARN')) return '#ffaa00';
-    if (msg.includes('OK') || msg.includes('PASS') || msg.includes('GRANTED')) return '#00ff88';
+    if (msg.includes('OK') || msg.includes('PASS') || msg.includes('GRANTED')) return '#3ae2b3';
     return accentColor;
   };
 

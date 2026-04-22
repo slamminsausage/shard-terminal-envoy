@@ -65,7 +65,7 @@ export default function VTTZoomControl() {
       {/* Zoom In button */}
       <button
         onClick={() => setZoomCentered(zoom + ZOOM_STEP)}
-        className="vtt-btn-icon border border-[rgba(0,255,0,0.2)] bg-black/70"
+        className="vtt-btn-icon border border-[rgba(58, 226, 179,0.2)] bg-black/70"
         title="Zoom In"
       >
         <Plus size={14} />
@@ -97,14 +97,14 @@ export default function VTTZoomControl() {
       {/* Zoom Out button */}
       <button
         onClick={() => setZoomCentered(zoom - ZOOM_STEP)}
-        className="vtt-btn-icon border border-[rgba(0,255,0,0.2)] bg-black/70"
+        className="vtt-btn-icon border border-[rgba(58, 226, 179,0.2)] bg-black/70"
         title="Zoom Out"
       >
         <Minus size={14} />
       </button>
 
       {/* Percentage display */}
-      <div className="text-[10px] text-[rgba(0,255,0,0.5)] font-mono mt-0.5">
+      <div className="text-[10px] text-[rgba(58, 226, 179,0.5)] font-mono mt-0.5">
         {pct}%
       </div>
     </div>

@@ -5,7 +5,7 @@ import type { LayerIndex } from "@/types/vtt";
 
 const LAYER_DEFS: { index: LayerIndex; name: string; color: string }[] = [
   { index: LAYER_GM, name: "GM Layer", color: "#ff6600" },
-  { index: LAYER_TOKEN, name: "Token Layer", color: "#00ff00" },
+  { index: LAYER_TOKEN, name: "Token Layer", color: "#3ae2b3" },
   { index: LAYER_MAP, name: "Map Layer", color: "#00ccff" },
 ];
 

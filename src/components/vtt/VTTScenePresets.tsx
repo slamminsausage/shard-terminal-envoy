@@ -54,7 +54,7 @@ const SCENE_PRESETS: ScenePreset[] = [
     name: "Misty Forest",
     description: "Light fog drifting through",
     particles: { preset: "fog" as WeatherPresetName },
-    gridColor: "#00ff0015",
+    gridColor: "#3ae2b315",
   },
   {
     id: "space",

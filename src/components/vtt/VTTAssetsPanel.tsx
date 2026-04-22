@@ -101,11 +101,11 @@ export default function VTTAssetsPanel() {
   return (
     <div className="flex flex-col h-full text-[var(--primary)] font-mono text-xs">
       {/* Upload + header */}
-      <div className="p-2 border-b border-[rgba(0,255,0,0.15)] flex items-center gap-2">
+      <div className="p-2 border-b border-[rgba(58, 226, 179,0.15)] flex items-center gap-2">
         <button
           onClick={handleUpload}
           disabled={uploading}
-          className="flex items-center gap-1.5 px-2 py-1 bg-[rgba(0,255,0,0.08)] border border-[rgba(0,255,0,0.3)] rounded hover:bg-[rgba(0,255,0,0.15)] transition-colors disabled:opacity-50"
+          className="flex items-center gap-1.5 px-2 py-1 bg-[rgba(58, 226, 179,0.08)] border border-[rgba(58, 226, 179,0.3)] rounded hover:bg-[rgba(58, 226, 179,0.15)] transition-colors disabled:opacity-50"
         >
           <Upload size={11} />
           {uploading ? "Uploading…" : "Upload Images"}
@@ -113,7 +113,7 @@ export default function VTTAssetsPanel() {
         <button
           onClick={loadAssets}
           disabled={loading}
-          className="px-2 py-1 border border-[rgba(0,255,0,0.2)] rounded hover:bg-[rgba(0,255,0,0.08)] transition-colors disabled:opacity-40 text-[10px]"
+          className="px-2 py-1 border border-[rgba(58, 226, 179,0.2)] rounded hover:bg-[rgba(58, 226, 179,0.08)] transition-colors disabled:opacity-40 text-[10px]"
           title="Refresh"
         >
           ↻
@@ -122,11 +122,11 @@ export default function VTTAssetsPanel() {
 
       {/* Pending placement notice */}
       {state.pendingPropImageUrl && (
-        <div className="flex items-center gap-1 px-2 py-1 bg-[rgba(0,255,0,0.1)] border-b border-[rgba(0,255,0,0.2)] text-[10px]">
+        <div className="flex items-center gap-1 px-2 py-1 bg-[rgba(58, 226, 179,0.1)] border-b border-[rgba(58, 226, 179,0.2)] text-[10px]">
           <span className="text-[var(--primary)] animate-pulse">● ARMED — click map to place</span>
           <button
             onClick={() => dispatch({ type: "SET_PENDING_PROP", payload: null })}
-            className="ml-auto text-[rgba(0,255,0,0.5)] hover:text-[var(--primary)]"
+            className="ml-auto text-[rgba(58, 226, 179,0.5)] hover:text-[var(--primary)]"
           >
             <X size={10} />
           </button>
@@ -136,10 +136,10 @@ export default function VTTAssetsPanel() {
       {/* Asset grid */}
       <div className="flex-1 overflow-y-auto p-2">
         {loading && (
-          <div className="text-center py-4 text-[rgba(0,255,0,0.4)]">Loading assets…</div>
+          <div className="text-center py-4 text-[rgba(58, 226, 179,0.4)]">Loading assets…</div>
         )}
         {!loading && assets.length === 0 && (
-          <div className="text-center py-6 text-[rgba(0,255,0,0.35)] space-y-1">
+          <div className="text-center py-6 text-[rgba(58, 226, 179,0.35)] space-y-1">
             <ImageIcon size={24} className="mx-auto mb-2 opacity-30" />
             <div>No assets yet</div>
             <div className="text-[10px]">Upload JPEG, PNG, or GIF images</div>
@@ -154,8 +154,8 @@ export default function VTTAssetsPanel() {
                 key={asset.name}
                 className={`relative group rounded border cursor-pointer transition-all ${
                   armed
-                    ? "border-[var(--primary)] bg-[rgba(0,255,0,0.12)] shadow-[0_0_8px_rgba(0,255,0,0.3)]"
-                    : "border-[rgba(0,255,0,0.2)] hover:border-[rgba(0,255,0,0.5)] hover:bg-[rgba(0,255,0,0.06)]"
+                    ? "border-[var(--primary)] bg-[rgba(58, 226, 179,0.12)] shadow-[0_0_8px_rgba(58, 226, 179,0.3)]"
+                    : "border-[rgba(58, 226, 179,0.2)] hover:border-[rgba(58, 226, 179,0.5)] hover:bg-[rgba(58, 226, 179,0.06)]"
                 }`}
                 onClick={() => handleArm(asset)}
                 title={armed ? "Click to disarm" : `Click to arm "${label}" for placement`}
@@ -170,7 +170,7 @@ export default function VTTAssetsPanel() {
                   />
                 </div>
                 {/* Name */}
-                <div className="px-1 py-0.5 text-[9px] truncate text-[rgba(0,255,0,0.7)]">
+                <div className="px-1 py-0.5 text-[9px] truncate text-[rgba(58, 226, 179,0.7)]">
                   {label}
                 </div>
                 {/* Armed badge */}
@@ -201,8 +201,8 @@ export default function VTTAssetsPanel() {
         const props = (state.maps.find((m) => m.id === state.activeMapId)?.props || []);
         if (props.length === 0) return null;
         return (
-          <div className="border-t border-[rgba(0,255,0,0.15)] p-2">
-            <div className="text-[10px] text-[rgba(0,255,0,0.5)] mb-1">
+          <div className="border-t border-[rgba(58, 226, 179,0.15)] p-2">
+            <div className="text-[10px] text-[rgba(58, 226, 179,0.5)] mb-1">
               Placed on map ({props.length})
             </div>
             <div className="space-y-1 max-h-28 overflow-y-auto">
@@ -211,8 +211,8 @@ export default function VTTAssetsPanel() {
                   key={p.id}
                   className={`flex items-center gap-1.5 px-1 py-0.5 rounded cursor-pointer text-[10px] transition-colors ${
                     (state.selectedPropIds || []).includes(p.id)
-                      ? "bg-[rgba(0,255,0,0.12)] text-[var(--primary)]"
-                      : "text-[rgba(0,255,0,0.6)] hover:bg-[rgba(0,255,0,0.06)]"
+                      ? "bg-[rgba(58, 226, 179,0.12)] text-[var(--primary)]"
+                      : "text-[rgba(58, 226, 179,0.6)] hover:bg-[rgba(58, 226, 179,0.06)]"
                   }`}
                   onClick={() =>
                     dispatch({ type: "SET_PROP_SELECTION", payload: [(state.selectedPropIds || []).includes(p.id) ? "" : p.id].filter(Boolean) })

@@ -272,7 +272,7 @@ export function TaskbarGauges({ accentColor, terminalCode }: { accentColor: stri
       <MiniBar label="MEM" color={accentColor} seed={terminalCode} />
       <MiniBar label="CPU" color={accentColor} seed={terminalCode + 'cpu'} />
       <StatusLight label="TX" color={accentColor} blinkRate={800} />
-      <StatusLight label="RX" color="#00ff00" blinkRate={1200} />
+      <StatusLight label="RX" color="#3ae2b3" blinkRate={1200} />
     </div>
   );
 }
@@ -300,7 +300,7 @@ export function LogDetailGauges({ accentColor, terminalCode }: { accentColor: st
         <NumericReadout label="LATENCY" unit="ms" color={accentColor} seed={terminalCode + 'lat'} min={2} max={180} decimals={0} />
       </div>
       <div className="flex items-center gap-2 mt-0.5">
-        <StatusLight label="LINK" color="#00ff00" />
+        <StatusLight label="LINK" color="#3ae2b3" />
         <StatusLight label="SYNC" color={accentColor} blinkRate={1500} />
         <StatusLight label="ERR" color="#ff4444" blinkRate={0} />
         <SegmentDisplay label="PID" color={accentColor} seed={terminalCode + 'pid'} digits={3} />
