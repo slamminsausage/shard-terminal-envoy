@@ -2,11 +2,12 @@
  * DiceRoller — inline 2d6 skill-check roller.
  *
  * Styled to match the LogDetailView panel aesthetic:
- *   [DECRYPT · DC 10]  d1 d2 = TOTAL   [ ROLL ]
+ *   [DECRYPT · DC 10]  d1 d2 = TOTAL   [ ROLL ] [ ✎ ]
  *
- * Orbitron caps for labels, Share Tech Mono for dice, bordered mini-panel
- * with accent background. Used by RedactedBlock for in-log decryption
- * attempts.
+ * Supports two input modes:
+ *   - Auto roll: tumbling animation resolves to a random 2d6 total.
+ *   - Manual entry: a small number field (2–12) for table-play rolls;
+ *     toggle with the ✎ button.
  *
  * Each roller owns its own exhaustion count so repeated rolls can
  * eventually lock the content out after `maxAttempts`.
@@ -34,6 +35,9 @@ interface DiceRollerProps {
   onExhausted?: () => void;
 }
 
+const labelFont = { fontFamily: 'Orbitron, sans-serif' } as const;
+const monoFont = { fontFamily: 'Share Tech Mono, monospace' } as const;
+
 export default function DiceRoller({
   difficulty,
   skill = 'Electronics (Computers)',
@@ -47,6 +51,40 @@ export default function DiceRoller({
   const [dice, setDice] = useState<[number, number] | null>(null);
   const [attempts, setAttempts] = useState(0);
   const [resolved, setResolved] = useState<'success' | 'fail' | null>(null);
+
+  const [manualMode, setManualMode] = useState(false);
+  const [manualValue, setManualValue] = useState('');
+  const [manualError, setManualError] = useState(false);
+
+  const finalize = (total: number, d1?: number, d2?: number) => {
+    const success = total >= difficulty;
+    const nextAttempts = attempts + 1;
+    setRolling(false);
+    setAttempts(nextAttempts);
+    setResolved(success ? 'success' : 'fail');
+
+    audioManager.playEffect(success ? 'access_granted' : 'access_denied');
+
+    onResult?.({
+      dice: total,
+      skillDM: 0,
+      charDM: 0,
+      total,
+      difficulty,
+      success,
+      attempts: nextAttempts,
+    });
+
+    if (!success && nextAttempts >= maxAttempts) {
+      onExhausted?.();
+    }
+
+    if (d1 !== undefined && d2 !== undefined) {
+      setDice([d1, d2]);
+    } else {
+      setDice(null);
+    }
+  };
 
   const rollNow = () => {
     if (rolling || resolved === 'success' || attempts >= maxAttempts) return;
@@ -64,31 +102,23 @@ export default function DiceRoller({
         window.clearInterval(iv);
         const d1 = Math.floor(Math.random() * 6) + 1;
         const d2 = Math.floor(Math.random() * 6) + 1;
-        const total = d1 + d2;
-        const success = total >= difficulty;
-        const nextAttempts = attempts + 1;
-        setDice([d1, d2]);
-        setRolling(false);
-        setAttempts(nextAttempts);
-        setResolved(success ? 'success' : 'fail');
-
-        audioManager.playEffect(success ? 'access_granted' : 'access_denied');
-
-        onResult?.({
-          dice: total,
-          skillDM: 0,
-          charDM: 0,
-          total,
-          difficulty,
-          success,
-          attempts: nextAttempts,
-        });
-
-        if (!success && nextAttempts >= maxAttempts) {
-          onExhausted?.();
-        }
+        finalize(d1 + d2, d1, d2);
       }
     }, 55);
+  };
+
+  const submitManual = () => {
+    if (rolling || resolved === 'success' || attempts >= maxAttempts) return;
+    const total = parseInt(manualValue, 10);
+    if (isNaN(total) || total < 2 || total > 12) {
+      setManualError(true);
+      return;
+    }
+    setManualError(false);
+    setResolved(null);
+    finalize(total);
+    setManualValue('');
+    setManualMode(false);
   };
 
   const locked = resolved === 'fail' && attempts >= maxAttempts;
@@ -97,10 +127,15 @@ export default function DiceRoller({
     ? TERMINAL_SUCCESS
     : locked
       ? TERMINAL_ERROR
-      : accentColor;
+      : manualError
+        ? TERMINAL_WARN
+        : accentColor;
 
-  const labelFont = { fontFamily: 'Orbitron, sans-serif' } as const;
-  const monoFont = { fontFamily: 'Share Tech Mono, monospace' } as const;
+  const totalShown = dice
+    ? dice[0] + dice[1]
+    : resolved !== null && !dice
+      ? null
+      : null;
 
   return (
     <span
@@ -138,95 +173,142 @@ export default function DiceRoller({
         <span style={{ color: withAlpha(stateColor, 0.85) }}>DC {difficulty}</span>
       </span>
 
-      {/* Dice readout */}
+      {/* Dice readout / manual input */}
       <span
         style={{
           ...monoFont,
           display: 'inline-flex',
           alignItems: 'center',
-          padding: '0.2rem 0.6rem',
-          minWidth: 74,
+          padding: '0.2rem 0.55rem',
+          minWidth: 82,
           justifyContent: 'center',
-          color: dice ? stateColor : withAlpha(dimColor, 0.9),
+          color: dice || totalShown !== null ? stateColor : withAlpha(dimColor, 0.9),
           textShadow: dice ? `0 0 6px ${withAlpha(stateColor, 0.45)}` : 'none',
           letterSpacing: '0.05em',
           borderRight: `1px solid ${withAlpha(stateColor, 0.15)}`,
         }}
       >
-        {dice ? (
+        {manualMode && !resolved ? (
+          <input
+            type="number"
+            min={2}
+            max={12}
+            value={manualValue}
+            onChange={(e) => {
+              setManualValue(e.target.value);
+              if (manualError) setManualError(false);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') submitManual();
+              if (e.key === 'Escape') {
+                setManualMode(false);
+                setManualError(false);
+                setManualValue('');
+              }
+            }}
+            placeholder="2–12"
+            autoFocus
+            style={{
+              ...monoFont,
+              width: 58,
+              background: 'rgba(0,0,0,0.5)',
+              border: `1px solid ${withAlpha(stateColor, 0.45)}`,
+              color: stateColor,
+              fontSize: '0.72rem',
+              padding: '0.1rem 0.3rem',
+              textAlign: 'center',
+              borderRadius: 2,
+              outline: 'none',
+            }}
+          />
+        ) : dice ? (
           <>
-            {dice[0]}<span style={{ opacity: 0.5, margin: '0 0.25rem' }}>·</span>{dice[1]}
+            {dice[0]}
+            <span style={{ opacity: 0.5, margin: '0 0.25rem' }}>·</span>
+            {dice[1]}
             <span style={{ opacity: 0.5, margin: '0 0.3rem' }}>=</span>
             <strong style={{ fontWeight: 700 }}>{dice[0] + dice[1]}</strong>
+          </>
+        ) : totalShown !== null ? (
+          <>
+            <span style={{ opacity: 0.55, fontSize: '0.6rem', marginRight: '0.3rem' }}>
+              MANUAL
+            </span>
+            <strong style={{ fontWeight: 700 }}>{totalShown}</strong>
           </>
         ) : (
           <span style={{ letterSpacing: '0.25em' }}>— · —</span>
         )}
       </span>
 
-      {/* Action / status */}
+      {/* Primary action */}
       {!resolved && (
+        manualMode ? (
+          <button
+            type="button"
+            onClick={submitManual}
+            disabled={rolling}
+            style={actionButtonStyle(stateColor, false)}
+            title="Submit manual 2d6 total"
+          >
+            ↵ SUBMIT
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={rollNow}
+            disabled={rolling}
+            style={actionButtonStyle(stateColor, rolling)}
+            title={`Attempt decryption — ${skill}`}
+          >
+            {rolling ? '· ROLLING ·' : '▶ ROLL'}
+          </button>
+        )
+      )}
+
+      {/* Manual-entry toggle */}
+      {!resolved && !rolling && (
         <button
           type="button"
-          onClick={rollNow}
-          disabled={rolling}
+          onClick={() => {
+            setManualMode((v) => !v);
+            setManualError(false);
+            setManualValue('');
+          }}
           style={{
             ...labelFont,
-            fontSize: '0.6rem',
-            letterSpacing: '0.22em',
-            textTransform: 'uppercase',
-            padding: '0 0.85rem',
-            background: 'transparent',
+            fontSize: '0.65rem',
+            letterSpacing: '0.18em',
+            padding: '0 0.6rem',
+            background: manualMode ? withAlpha(stateColor, 0.18) : 'transparent',
             border: 'none',
-            cursor: rolling ? 'wait' : 'pointer',
-            color: stateColor,
-            textShadow: `0 0 6px ${withAlpha(stateColor, 0.45)}`,
-            opacity: rolling ? 0.6 : 1,
+            borderLeft: `1px solid ${withAlpha(stateColor, 0.25)}`,
+            color: manualMode ? stateColor : withAlpha(stateColor, 0.75),
+            cursor: 'pointer',
+            textShadow: manualMode ? `0 0 6px ${withAlpha(stateColor, 0.4)}` : 'none',
           }}
-          title={`Attempt decryption — ${skill}`}
+          title={manualMode ? 'Cancel manual entry' : 'Enter a table-rolled 2d6 total'}
         >
-          {rolling ? '· ROLLING ·' : '▶ ROLL'}
+          {manualMode ? '✕' : '✎'}
         </button>
       )}
 
       {won && (
-        <span
-          style={{
-            ...labelFont,
-            display: 'inline-flex',
-            alignItems: 'center',
-            padding: '0 0.85rem',
-            fontSize: '0.6rem',
-            letterSpacing: '0.22em',
-            color: TERMINAL_SUCCESS,
-            textShadow: `0 0 8px ${withAlpha(TERMINAL_SUCCESS, 0.5)}`,
-          }}
-        >
-          ✓ DECRYPTED
-        </span>
+        <span style={statusBadgeStyle(TERMINAL_SUCCESS)}>✓ DECRYPTED</span>
       )}
 
       {locked && (
-        <span
-          style={{
-            ...labelFont,
-            display: 'inline-flex',
-            alignItems: 'center',
-            padding: '0 0.85rem',
-            fontSize: '0.6rem',
-            letterSpacing: '0.22em',
-            color: TERMINAL_ERROR,
-            textShadow: `0 0 8px ${withAlpha(TERMINAL_ERROR, 0.5)}`,
-          }}
-        >
-          ✕ LOCKED
-        </span>
+        <span style={statusBadgeStyle(TERMINAL_ERROR)}>✕ LOCKED</span>
       )}
 
       {resolved === 'fail' && !locked && (
         <button
           type="button"
-          onClick={rollNow}
+          onClick={() => {
+            setResolved(null);
+            setDice(null);
+            setManualError(false);
+          }}
           disabled={rolling}
           style={{
             ...labelFont,
@@ -248,4 +330,33 @@ export default function DiceRoller({
       )}
     </span>
   );
+}
+
+function actionButtonStyle(color: string, rolling: boolean): React.CSSProperties {
+  return {
+    ...labelFont,
+    fontSize: '0.6rem',
+    letterSpacing: '0.22em',
+    textTransform: 'uppercase',
+    padding: '0 0.85rem',
+    background: 'transparent',
+    border: 'none',
+    cursor: rolling ? 'wait' : 'pointer',
+    color,
+    textShadow: `0 0 6px ${withAlpha(color, 0.45)}`,
+    opacity: rolling ? 0.6 : 1,
+  };
+}
+
+function statusBadgeStyle(color: string): React.CSSProperties {
+  return {
+    ...labelFont,
+    display: 'inline-flex',
+    alignItems: 'center',
+    padding: '0 0.85rem',
+    fontSize: '0.6rem',
+    letterSpacing: '0.22em',
+    color,
+    textShadow: `0 0 8px ${withAlpha(color, 0.5)}`,
+  };
 }
