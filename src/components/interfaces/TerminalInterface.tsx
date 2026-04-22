@@ -20,6 +20,7 @@ import audioManager from '@/lib/audioManager';
 import { typeTextWithSound } from '@/lib/typing';
 import { TERMINALS, getTerminalDefinition } from '@/lib/terminals';
 import { dbHelpers } from '@/lib/supabase';
+import { useCampaign } from '@/contexts/CampaignContext';
 
 // New components
 import LoadingScreen from '../terminal/views/LoadingScreen';
@@ -74,6 +75,10 @@ function TerminalInterface() {
 
   // Terminal history tracking
   const terminalHistory = useTerminalHistory();
+
+  // GM identity — used to skip persisting unlocks when the GM is testing,
+  // and to gate the secret GM reveal command on the init prompt.
+  const { isGM } = useCampaign();
 
   // Local state for typing animations (useState required for typeTextWithSound)
   const [localInitText, setLocalInitText] = useState('');
@@ -314,12 +319,15 @@ function TerminalInterface() {
       return;
     }
 
-    // Add to unlocked terminals
-    try {
-      await dbHelpers.addUnlockedTerminal(code);
-      session.addUnlockedTerminal(code);
-    } catch (error) {
-      console.error('Failed to save unlocked terminal:', error);
+    // Add to unlocked terminals — skip for GM so testing doesn't pollute
+    // the shared players-only unlocked list.
+    if (!isGM) {
+      try {
+        await dbHelpers.addUnlockedTerminal(code);
+        session.addUnlockedTerminal(code);
+      } catch (error) {
+        console.error('Failed to save unlocked terminal:', error);
+      }
     }
 
     loadTerminalLogs();
@@ -433,12 +441,22 @@ function TerminalInterface() {
   };
 
   // Handle roll check result
-  const handleRollCheck = (result: DiceRoll) => {
+  const handleRollCheck = async (result: DiceRoll) => {
     session.setRollCheck(null);
     // Terminal connect flow
     if (session.pendingTerminalForRoll) {
       if (result.success) {
         audioManager.playEffect('access_granted');
+        // Persist unlock for players only; GM passes through without
+        // polluting the unlocked list.
+        if (!isGM) {
+          try {
+            await dbHelpers.addUnlockedTerminal(session.pendingTerminalForRoll.code);
+            session.addUnlockedTerminal(session.pendingTerminalForRoll.code);
+          } catch (error) {
+            console.error('Failed to save unlocked terminal:', error);
+          }
+        }
         session.setPendingTerminalForRoll(null);
         loadTerminalLogs();
       } else {
@@ -551,6 +569,7 @@ function TerminalInterface() {
           unlockedTerminals={unlockedTerminalsList}
           loading={session.terminalsLoading}
           errorMessage={session.terminalsError}
+          isGM={isGM}
           onConnect={(code) => {
             session.setInputCode(code);
             handleAccessCode(code);
