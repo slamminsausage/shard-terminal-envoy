@@ -27,11 +27,11 @@
     "requires_roll": false
   },
   {
-    "title": "Old Trade Records — Sindalian Empire Era (Fragment)",
-    "location": "General Access Terminal — Cliff District, Upper City",
-    "date": "ORIGINAL: PRE-COLLAPSE — RECOVERED AND FILED APPROX. 30 YEARS PRIOR",
-    "author": "Sindalian Imperial Trade Office — Trojan Reach Division (Archived Fragment)",
-    "content": "TRADE MANIFEST — PARTIAL RECOVERY\n\nNote from archivist: This fragment was recovered from a cache in the Cliff District. Origin unknown. The original document dates to the Sindalian period. We are filing it as a curiosity. Some of it is intact.\n\n—\n\n[LEGIBLE SECTION:]\n\nLot 7: Three units of mineral origin, unclassified. Recovered from a site in the outer Reach. Described by recovery team as 'dark, semi-reflective, of uniform internal composition.' Biological activity: none detected. Weight: inconsistent with apparent volume. The scales read a different number each time.\n\nDelivered to: [NAME REDACTED — original document damage]\n\nNote from recovery team: The units were found alongside what appeared to be structural remnants of a much larger object. The site itself showed no geological explanation for the composition of the surrounding material. The recovery team's engineer described the site as 'a scar, like something hit this place from a very great height, a very long time ago.' We are filing this for the record.\n\n[ILLEGIBLE SECTION — document damage]\n\n[FINAL LEGIBLE LINE:]\n\n'The devices in the hold kept losing calibration. We reset them four times in one day. The engineer says this is not possible. The engineer is usually right about things.'\n\n—\n\n[Filed note, modern hand:]\n\nWhoever these materials ended up with, it wasn't the Empire for long. The collapse took everything. But things like this have a way of turning up again eventually.",
+    "title": "Old Trade Records \u2014 Sindalian Empire Era (Fragment)",
+    "location": "General Access Terminal \u2014 Cliff District, Upper City",
+    "date": "ORIGINAL: PRE-COLLAPSE \u2014 RECOVERED AND FILED APPROX. 30 YEARS PRIOR",
+    "author": "Sindalian Imperial Trade Office \u2014 Trojan Reach Division (Archived Fragment)",
+    "content": "TRADE MANIFEST \u2014 PARTIAL RECOVERY\n\nNote from archivist: This fragment was recovered from a cache in the Cliff District. Origin unknown. The original document dates to the Sindalian period. We are filing it as a curiosity. Some of it is intact.\n\n\u2014\n\n[LEGIBLE SECTION:]\n\nLot 7: Three units of mineral origin, unclassified. Recovered from a site in the outer Reach. Described by recovery team as 'dark, semi-reflective, of uniform internal composition.' Biological activity: none detected. Weight: inconsistent with apparent volume. The scales read a different number each time.\n\nDelivered to: [NAME REDACTED \u2014 original document damage]\n\nNote from recovery team: The units were found alongside what appeared to be structural remnants of a much larger object. The site itself showed no geological explanation for the composition of the surrounding material. The recovery team's engineer described the site as 'a scar, like something hit this place from a very great height, a very long time ago.' We are filing this for the record.\n\n[ILLEGIBLE SECTION \u2014 document damage]\n\n[FINAL LEGIBLE LINE:]\n\n'The devices in the hold kept losing calibration. We reset them four times in one day. The engineer says this is not possible. The engineer is usually right about things.'\n\n\u2014\n\n[Filed note, modern hand:]\n\nWhoever these materials ended up with, it wasn't the Empire for long. The collapse took everything. But things like this have a way of turning up again eventually.",
     "security_level": "restricted",
     "requires_roll": true,
     "roll_check": {
@@ -42,11 +42,11 @@
     }
   },
   {
-    "title": "Widow Network Internal — Anomalous Signal Report",
-    "location": "General Access Terminal — Blacksand Downport (Deep Partition)",
+    "title": "Widow Network Internal \u2014 Anomalous Signal Report",
+    "location": "General Access Terminal \u2014 Blacksand Downport (Deep Partition)",
     "date": "APPROX. 3 MONTHS PRIOR",
-    "author": "Widow Administrative Office — Signals Division",
-    "content": "ANOMALOUS SIGNAL REPORT — INTERNAL USE ONLY\n\nThis file should not be accessible from any external terminal. If you are reading it, we have a problem.\n\n—\n\nA repeating signal was detected approximately three months ago originating from inside Blacksand City.\n\nThe signal does not match any known communication protocol.\n\nIt is not in any language we have on file.\n\nIt repeats at irregular intervals — between nine and forty-three minutes. The intervals do not follow a mathematical pattern we can identify.\n\nThe signal source has been triangulated to the lower city, broadly. We have not been able to narrow it further. It appears to move.\n\n—\n\nOf note: Two of our officers who were assigned to trace the signal reported disturbing dreams on the same night. Both described the same imagery independently: a city made of black glass under a sky with the wrong number of stars. Towers. Something moving in the towers.\n\nBoth officers were reassigned. Neither has spoken about it since.\n\n—\n\nOf additional note: The signal briefly intensified four days ago. The intensification coincided with the arrival of a vessel using Krrsh clearance codes.\n\nWe are noting this correlation without drawing a conclusion.\n\nWe are watching.",
+    "author": "Widow Administrative Office \u2014 Signals Division",
+    "content": "ANOMALOUS SIGNAL REPORT \u2014 INTERNAL USE ONLY\n\nThis file should not be accessible from any external terminal. If you are reading it, we have a problem.\n\n\u2014\n\nA repeating signal was detected approximately three months ago originating from inside Blacksand City.\n\nThe signal does not match any known communication protocol.\n\nIt is not in any language we have on file.\n\nIt repeats at irregular intervals \u2014 between nine and forty-three minutes. The intervals do not follow a mathematical pattern we can identify.\n\nThe signal source has been triangulated to the lower city, broadly. We have not been able to narrow it further. It appears to move.\n\n\u2014\n\nOf note: Two of our officers who were assigned to trace the signal reported disturbing dreams on the same night. Both described the same imagery independently: a city made of black glass under a sky with the wrong number of stars. Towers. Something moving in the towers.\n\nBoth officers were reassigned. Neither has spoken about it since.\n\n\u2014\n\nOf additional note: The signal briefly intensified four days ago. The intensification coincided with the arrival of a vessel using Krrsh clearance codes.\n\nWe are noting this correlation without drawing a conclusion.\n\nWe are watching.",
     "security_level": "restricted",
     "requires_roll": true,
     "roll_check": {
@@ -62,7 +62,7 @@
     "date": "DAY 212 · 1105",
     "author": "Widow Administrative Office — Signals Division (Restricted)",
     "security_level": "restricted",
-    "content": "The Widow Signals Division has been tracking an unidentified repeating signal for approximately three months. The signal does not match any known protocol. It repeats at irregular intervals between nine and forty-three minutes.\n\nThe division has triangulation data from three prior attempts, each inconclusive. A fourth attempt using a selected sensor array may produce a more precise fix.\n\n[INTERACTIVE TERMINAL — AWAITING INPUT]",
+    "content": "The Widow Signals Division has been tracking an unidentified repeating signal for approximately three months. The signal does not match any known protocol. It repeats at irregular intervals between nine and forty-three minutes.\n\nThe division has triangulation data from three prior attempts, each inconclusive. A fourth attempt using a selected sensor array may produce a more precise fix.\n\n[INTERACTIVE TERMINAL \u2014 AWAITING INPUT]",
     "type": "action_sequence",
     "action_sequence": {
       "id": "widow-signal-triangulation",
@@ -71,16 +71,16 @@
         {
           "type": "auto",
           "lines": [
-            ">> WIDOW SIGNALS DIVISION — TRIANGULATION INTERFACE v4.1",
-            ">> SIGNAL PROFILE: UNKNOWN — NOT IN ANY DATABASE",
-            ">> REPEAT INTERVAL: 9–43 MINUTES (IRREGULAR)",
-            ">> PATTERN: NOT MATHEMATICAL — NOT RANDOM",
+            ">> WIDOW SIGNALS DIVISION \u2014 TRIANGULATION INTERFACE v4.1",
+            ">> SIGNAL PROFILE: UNKNOWN \u2014 NOT IN ANY DATABASE",
+            ">> REPEAT INTERVAL: 9\u201343 MINUTES (IRREGULAR)",
+            ">> PATTERN: NOT MATHEMATICAL \u2014 NOT RANDOM",
             ">> PRIOR TRIANGULATION ATTEMPTS: 3 (ALL INCONCLUSIVE)",
             "",
             ">> AVAILABLE SENSOR ARRAYS:",
             ">> [1] NORTH SPIRE RELAY",
             ">> [2] SOUTH CANYON GRID",
-            ">> [3] LOWER CITY MESH (DEGRADED — 60% COVERAGE)",
+            ">> [3] LOWER CITY MESH (DEGRADED \u2014 60% COVERAGE)",
             ">> [4] SKULL ORBITAL UPLINK (HIGHEST RESOLUTION)",
             "",
             ">> SELECT ARRAY TO ACTIVATE:"
@@ -92,10 +92,10 @@
           "type": "choice",
           "prompt_text": "ACTIVATE SENSOR ARRAY:",
           "options": [
-            "NORTH SPIRE RELAY — City upper tier coverage",
-            "SOUTH CANYON GRID — Lower city canyon coverage",
-            "LOWER CITY MESH — Degraded, 60% coverage",
-            "SKULL ORBITAL UPLINK — Highest resolution, longest delay"
+            "NORTH SPIRE RELAY \u2014 City upper tier coverage",
+            "SOUTH CANYON GRID \u2014 Lower city canyon coverage",
+            "LOWER CITY MESH \u2014 Degraded, 60% coverage",
+            "SKULL ORBITAL UPLINK \u2014 Highest resolution, longest delay"
           ],
           "sound_on_accept": "access_granted"
         },
@@ -111,24 +111,24 @@
         },
         {
           "type": "progress",
-          "label": "RUNNING TRIANGULATION — PLEASE WAIT FOR SIGNAL PULSE...",
+          "label": "RUNNING TRIANGULATION \u2014 PLEASE WAIT FOR SIGNAL PULSE...",
           "duration": 4000,
           "segments": 22,
           "sound_on_complete": "data_download",
-          "complete_message": "TRIANGULATION COMPLETE — PARTIAL FIX ACHIEVED"
+          "complete_message": "TRIANGULATION COMPLETE \u2014 PARTIAL FIX ACHIEVED"
         },
         {
           "type": "auto",
           "lines": [
             ">> TRIANGULATION RESULT:",
-            ">> ACCURACY: 34% — SIGNAL IS MOBILE",
-            ">> SOURCE REGION: APPROX. 200M RADIUS — EASTERN SCRAPHEAP",
-            ">> CURRENT BEARING: MOVING — TOWARD LOWER CANYON",
+            ">> ACCURACY: 34% \u2014 SIGNAL IS MOBILE",
+            ">> SOURCE REGION: APPROX. 200M RADIUS \u2014 EASTERN SCRAPHEAP",
+            ">> CURRENT BEARING: MOVING \u2014 TOWARD LOWER CANYON",
             "",
             ">> NOTE: SIGNAL BRIEFLY INTENSIFIED DURING TRIANGULATION.",
             ">> NOTE: INTENSITY SPIKE CORRELATED WITH YOUR ACCESS OF THIS TERMINAL.",
             "",
-            ">> INTERNAL COMMS — SIGNALS DIVISION:",
+            ">> INTERNAL COMMS \u2014 SIGNALS DIVISION:",
             ">> 'ONE OF OUR OFFICERS JUST REPORTED SEEING SOMETHING.'",
             ">> 'HE HAS BEEN INSTRUCTED TO STAY WHERE HE IS.'",
             ">> 'HE IS NOT STAYING WHERE HE IS.'",
@@ -142,14 +142,29 @@
         }
       ],
       "on_complete": {
-        "message": "The triangulation result sits on the screen: eastern Scrapheap, 200-metre radius, moving. The signal intensified the moment you accessed this terminal — it noticed the query. The Widow officer who went to investigate has stopped responding. The Scrapheap. The pre-Collapse hull. The warm surface. The coordinates from the hull's own terminal. And now a signal that moves, that responds to attention, that has been active in this city for three months — since before you arrived, but not by much.",
+        "message": "The triangulation result sits on the screen: eastern Scrapheap, 200-metre radius, moving. The signal intensified the moment you accessed this terminal \u2014 it noticed the query. The Widow officer who went to investigate has stopped responding. The Scrapheap. The pre-Collapse hull. The warm surface. The coordinates from the hull's own terminal. And now a signal that moves, that responds to attention, that has been active in this city for three months \u2014 since before you arrived, but not by much.",
         "sound": "warning",
         "persist_key": "widow-signal-triangulation"
       },
       "on_failure": {
-        "message": "TRIANGULATION ABORTED. Signal went silent during the attempt — for the first time since it was first detected three months ago. The silence lasted exactly 4.3 seconds. Then it resumed. As if it had been listening.",
+        "message": "TRIANGULATION ABORTED. Signal went silent during the attempt \u2014 for the first time since it was first detected three months ago. The silence lasted exactly 4.3 seconds. Then it resumed. As if it had been listening.",
         "sound": "access_denied"
       }
+    }
+  },
+  {
+    "title": "Asharden Canteen Ledger \u2014 Locker Traffic Irregularities",
+    "location": "Asharden Camp, Canteen Side Terminal",
+    "date": "CURRENT CYCLE",
+    "author": "Quartermaster Sel",
+    "content": "Locker rentals up 43% this week. Most are legitimate long-haul crews staging dry goods, but a cluster of short-term rentals (under two hours) now tracks with known courier windows from the Scrapheap and lower canyon gaming floor.\n\nTwo different crews used the same locker row on staggered timing and left without opening each other's compartments. Professional, careful, and very aware of camera angles.\n\n[[redacted diff=9 skill=\"Recon\" attempts=2]]\nLocker 14 has a false rear panel leading to maintenance duct C-11. Route exits within walking distance of Kallos perimeter fence. Path is tight; armored travelers will jam it.[[/redacted]]\n\nIf this keeps up, camp will start charging \"discretion fees.\"",
+    "security_level": "restricted",
+    "requires_roll": true,
+    "roll_check": {
+      "difficulty": 9,
+      "skill": "Recon",
+      "on_success": "Quartermaster's hidden annotation displayed.",
+      "on_failure": "You only see public inventory totals."
     }
   }
 ]

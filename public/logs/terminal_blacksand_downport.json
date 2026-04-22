@@ -1,10 +1,10 @@
 [
   {
-    "title": "Visitor Orientation — Blacksand City Network",
-    "location": "General Access Terminal — Blacksand Downport",
+    "title": "Visitor Orientation \u2014 Blacksand City Network",
+    "location": "General Access Terminal \u2014 Blacksand Downport",
     "date": "CURRENT CYCLE (STANDING NOTICE)",
-    "author": "Widow Administrative Office — Blacksand City",
-    "content": "WELCOME TO THEEV.\n\nYou have been cleared through the Skull. This means someone vouched for you, or you bought your way in, or both. Either way, you are here now.\n\nThe Law of the Lords applies in this starport, in the Upper City, and in any building or zone marked with red flags. Under the Law of the Lords: no murder, no weapons fire, no conduct that disturbs the calm and tranquility of the city.\n\nEverywhere else — the canyons, the lower streets, any unflagged zone — the Law of the Street applies. The only restriction in street zones is a prohibition on any weapon capable of breaching environmental containment.\n\nThe punishment for violating either law is the same.\n\nDeath.\n\nThe red flag zones move. A building that is protected today may not be protected tomorrow. Plan accordingly.\n\nThe Widows are always watching. You will not see them until it is relevant.\n\nWelcome to Blacksand City.",
+    "author": "Widow Administrative Office \u2014 Blacksand City",
+    "content": "WELCOME TO THEEV.\n\nYou have been cleared through the Skull. This means someone vouched for you, or you bought your way in, or both. Either way, you are here now.\n\nThe Law of the Lords applies in this starport, in the Upper City, and in any building or zone marked with red flags. Under the Law of the Lords: no murder, no weapons fire, no conduct that disturbs the calm and tranquility of the city.\n\nEverywhere else \u2014 the canyons, the lower streets, any unflagged zone \u2014 the Law of the Street applies. The only restriction in street zones is a prohibition on any weapon capable of breaching environmental containment.\n\nThe punishment for violating either law is the same.\n\nDeath.\n\nThe red flag zones move. A building that is protected today may not be protected tomorrow. Plan accordingly.\n\nThe Widows are always watching. You will not see them until it is relevant.\n\nWelcome to Blacksand City.",
     "security_level": "unlocked",
     "requires_roll": false
   },
@@ -47,7 +47,7 @@
     "date": "DAY 212 · 1105",
     "author": "Skull Orbital Docking Control — Restricted Partition",
     "security_level": "restricted",
-    "content": "Bay 17 is listed in the public registry as: Transponder REDACTED — KRRSH CLEARANCE. Flag: Independent.\n\nThe Krrsh clearance codes suppress the standard registry entry. A deeper pull against the Skull Orbital control partition should recover the underlying record.\n\n[INTERACTIVE TERMINAL — AWAITING INPUT]",
+    "content": "Bay 17 is listed in the public registry as: Transponder REDACTED \u2014 KRRSH CLEARANCE. Flag: Independent.\n\nThe Krrsh clearance codes suppress the standard registry entry. A deeper pull against the Skull Orbital control partition should recover the underlying record.\n\n[INTERACTIVE TERMINAL \u2014 AWAITING INPUT]",
     "type": "action_sequence",
     "action_sequence": {
       "id": "blacksand-bay17-registry",
@@ -56,8 +56,8 @@
         {
           "type": "auto",
           "lines": [
-            ">> SKULL ORBITAL — DOCKING REGISTRY INTERFACE v1.9",
-            ">> PARTITION: RESTRICTED — KRRSH SUPPRESSION LAYER DETECTED",
+            ">> SKULL ORBITAL \u2014 DOCKING REGISTRY INTERFACE v1.9",
+            ">> PARTITION: RESTRICTED \u2014 KRRSH SUPPRESSION LAYER DETECTED",
             ">> SUPPRESSION CODES ACTIVE ON: BAY 17",
             "",
             ">> INITIATING BYPASS AGAINST SUPPRESSION LAYER..."
@@ -68,7 +68,13 @@
         {
           "type": "prompt",
           "prompt_text": "SPECIFY REGISTRY TARGET:",
-          "accept": ["BAY 17", "17", "REGISTRY", "PULL", "QUERY BAY 17"],
+          "accept": [
+            "BAY 17",
+            "17",
+            "REGISTRY",
+            "PULL",
+            "QUERY BAY 17"
+          ],
           "reject_message": "TARGET NOT FOUND. SPECIFY A VALID BAY NUMBER.",
           "max_attempts": 3,
           "sound_on_accept": "access_granted",
@@ -95,11 +101,11 @@
         {
           "type": "auto",
           "lines": [
-            ">> BAY 17 — UNREDACTED RECORD:",
+            ">> BAY 17 \u2014 UNREDACTED RECORD:",
             ">> VESSEL: UNNAMED (HULL UNREGISTERED)",
-            ">> TRANSPONDER: SUPPRESSED — KRRSH PROXY CODES",
-            ">> FLAG: INDEPENDENT (DRINAX EMBASSY CONTACT — UNVERIFIED)",
-            ">> CREW: MULTIPLE — COUNT INDETERMINATE",
+            ">> TRANSPONDER: SUPPRESSED \u2014 KRRSH PROXY CODES",
+            ">> FLAG: INDEPENDENT (DRINAX EMBASSY CONTACT \u2014 UNVERIFIED)",
+            ">> CREW: MULTIPLE \u2014 COUNT INDETERMINATE",
             ">> WIDOW FLAG: LEVEL 2 OBSERVATION",
             ">> FLAG NOTE: 'DO NOT APPROACH WITHOUT WIDOW CLEARANCE.'",
             ">> FLAG NOTE: 'CORRELATED WITH ANOMALOUS SIGNAL INTENSIFICATION.'",
@@ -113,7 +119,7 @@
         }
       ],
       "on_complete": {
-        "message": "The unredacted record sits on the screen. The Widows filed a Level 2 observation flag the moment your ship docked — before you'd spoken to anyone. They know the Krrsh codes are proxied. They know the Drinax connection. The public registry shows nothing. Their internal record shows everything. You have been watched from the moment you arrived.",
+        "message": "The unredacted record sits on the screen. The Widows filed a Level 2 observation flag the moment your ship docked \u2014 before you'd spoken to anyone. They know the Krrsh codes are proxied. They know the Drinax connection. The public registry shows nothing. Their internal record shows everything. You have been watched from the moment you arrived.",
         "sound": "access_granted",
         "persist_key": "blacksand-bay17-registry"
       },
@@ -122,5 +128,14 @@
         "sound": "access_denied"
       }
     }
+  },
+  {
+    "title": "Transit Exception Queue \u2014 Manual Clearance Notes",
+    "location": "Blacksand Downport Public Grid, Customs Spillover",
+    "date": "CURRENT CYCLE",
+    "author": "Acting Clerk // Rotation B",
+    "content": "Manual exceptions filed after midnight are usually paperwork problems, unpaid fuel notes, or people lying about crew count.\n\nPattern worth noting: two separate crews in the last six cycles requested departure windows within twelve minutes of each other, both listing \"medical perishables\" and both declining bonded escort. That's normally a smuggler tell, except one of the crews paid full legal tariff.\n\n[[redacted diff=8 skill=\"Admin\" attempts=3]]\nException stamp accepted if form cites ROUTE CODE: CINDER-GLASS and includes crate tag \"AGRICULTURAL YEASTERS\". Dock bots won't open those without a live magistrate key, which nobody has at 03:00.[[/redacted]]\n\nIf your people are trying to leave quiet without looking like they're leaving quiet, this queue is where they fail first.",
+    "security_level": "low",
+    "requires_roll": false
   }
 ]

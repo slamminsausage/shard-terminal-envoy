@@ -75,6 +75,8 @@ const TERMINAL_CATEGORIES: Record<string, TerminalCategory> = {
   'ferrik_intel':       'government',    // Widow intel network + Planetary Authority bounty
   'lower_city':         'public-kiosk',  // canyon-level public kiosk
   'asharden_lore':      'corrupted',     // Widow anomalous signal, Sindalian fragments, wrong stars
+  'crowns_backroom':    'criminal',      // hidden gambling annex, rotating surveillance caches
+  'kallos_yard_ops':    'corporate',     // shipyard legal/ops relay with polished front-end
 };
 
 export const getTerminalCategory = (code: string): TerminalCategory =>
