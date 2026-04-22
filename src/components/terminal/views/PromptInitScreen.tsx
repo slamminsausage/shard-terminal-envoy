@@ -28,6 +28,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import DataStreamBg from '@/components/effects/DataStreamBg';
 import { QUICK_CONNECT_CODES } from '@/lib/terminalThemes';
+import { TERMINALS } from '@/lib/terminals';
 import {
   TERMINAL_ACCENT,
   TERMINAL_ACCENT_BRIGHT,
@@ -53,6 +54,8 @@ interface PromptInitScreenProps {
   onConnect: (code: string) => void;
   loading?: boolean;
   errorMessage?: string | null;
+  /** When true, unlocks the secret "SUDO CODES" GM reveal command. */
+  isGM?: boolean;
 }
 
 const BANNER_LINES: Array<{ text: string; size: string; color: string }> = [
@@ -83,6 +86,7 @@ export default function PromptInitScreen({
   onConnect,
   loading = false,
   errorMessage,
+  isGM = false,
 }: PromptInitScreenProps) {
   const [input, setInput] = useState('');
   const [history, setHistory] = useState<HistoryEntry[]>(INTRO_LINES);
@@ -151,6 +155,35 @@ export default function PromptInitScreen({
       }
       appendHistory([{ type: 'info', text: `>> Dialing ${arg}…` }]);
       onConnect(arg);
+      return;
+    }
+
+    // Secret GM reveal — intentionally undocumented. Non-GMs get a
+    // bash-style "not found" so the command stays hidden in play.
+    if (cmd === 'SUDO') {
+      const sub = rest[0];
+      if (sub !== 'CODES' && sub !== 'LS' && sub !== 'CAT') {
+        appendHistory([
+          { type: 'error', text: `sudo: ${(sub || '').toLowerCase() || 'usage'}: command not found` },
+        ]);
+        return;
+      }
+      if (!isGM) {
+        appendHistory([
+          { type: 'error', text: 'sudo: authentication failure · elevated access denied' },
+        ]);
+        return;
+      }
+      const lines = TERMINALS.map((t) => {
+        const dc = t.requiresRoll ? `  [DC ${t.requiresRoll}]` : '';
+        return `  ${t.code.padEnd(22)}  ${t.name}${dc}`;
+      }).join('\n');
+      appendHistory([
+        {
+          type: 'output',
+          text: `[GM OVERRIDE] ALL TERMINAL CODES (${TERMINALS.length}):\n${lines}`,
+        },
+      ]);
       return;
     }
 
