@@ -9,11 +9,11 @@
     "requires_roll": false
   },
   {
-    "title": "House Without Questions \u2014 Intake Log (Partial)",
-    "location": "General Access Terminal \u2014 The House Without Questions, Lower City",
-    "date": "CURRENT AND HISTORICAL \u2014 PARTIAL ONLY",
-    "author": "House Without Questions \u2014 Internal Archive (Partial Leak)",
-    "content": "INTAKE RECORD \u2014 PARTIAL EXCERPT\n\nNote: This file should not be accessible from a public terminal. We are investigating how it was exposed.\n\n\u2014\n\nGuest, unnamed. Duration: 4 days. No questions asked. Departed safely.\nGuest, unnamed. Duration: 1 day. Medical attention provided. Departed safely.\nGuest, unnamed. Duration: 22 days. Extended stay, distressed condition on arrival. No questions asked. Departed. Status thereafter: unknown.\nGuest, unnamed. Repeat guest, third visit. Still no questions asked. We note this without comment.\n\n\u2014\n\nTask log excerpt:\n\nTask requested: Location of a specific individual known to frequent the Scrapheap. Task completed. Client satisfied.\nTask requested: Retrieval of a locked data container from a vessel in Skull docking. Task completed. Client satisfied.\nTask requested: Information regarding a vessel called Misery's Company and its last known associates. Task accepted. Task ongoing.\n\n\u2014\n\nNote appended by House administration: The last task was requested three days ago. The client asked specifically about a Captain Ferrik Redthane. We are fulfilling our obligation. We are also noting that two other parties have asked similar questions this cycle. The House does not share client information. The House also does not pretend not to notice patterns.",
+    "title": "House Without Questions — Intake Log (Partial)",
+    "location": "General Access Terminal — The House Without Questions, Lower City",
+    "date": "CURRENT AND HISTORICAL — PARTIAL ONLY",
+    "author": "House Without Questions — Internal Archive (Partial Leak)",
+    "content": "INTAKE RECORD — PARTIAL EXCERPT\n\nNote: This file should not be accessible from a public terminal. We are investigating how it was exposed.\n\n—\n\nGuest, unnamed. Duration: 4 days. No questions asked. Departed safely.\nGuest, unnamed. Duration: 1 day. Medical attention provided. Departed safely.\nGuest, unnamed. Duration: 22 days. Extended stay, distressed condition on arrival. No questions asked. Departed. Status thereafter: unknown.\nGuest, unnamed. Repeat guest, third visit. Still no questions asked. We note this without comment.\n\n—\n\nTask log excerpt:\n\nTask requested: Location of a specific individual known to frequent the Scrapheap. Task completed. Client satisfied.\nTask requested: Retrieval of a locked data container from a vessel in Skull docking. Task completed. Client satisfied.\nTask requested: Information regarding a vessel last reported in the Borite belt under independent registry. Task accepted. Task ongoing.\nTask requested: Safe passage offworld for a named refugee currently residing at Asharden Camp. Task accepted. Task pending — we are searching for a ship whose master is willing to take the fare in kind rather than coin.\nTask requested: Quiet transfer of title on a 200-ton Far Trader hull currently held at Kallos, clear of any recovery interest. Task declined. We do not accept tasks that would place us in opposition to Vethis Carriage at this time.\n\n—\n\nNote appended by House administration: The above is partial. Two other parties have asked similar questions this cycle to several of the open tasks. The House does not share client information. The House also does not pretend not to notice patterns.",
     "security_level": "restricted",
     "requires_roll": true,
     "roll_check": {
@@ -24,9 +24,9 @@
     }
   },
   {
-    "title": "Blood Pit \u2014 Tonight's Card",
-    "location": "General Access Terminal \u2014 Blood Pit Arena, Lower City",
-    "date": "CURRENT CYCLE",
+    "title": "Blood Pit — Tonight's Card",
+    "location": "General Access Terminal — Blood Pit Arena, Lower City",
+    "date": "DAY 212 · 1105",
     "author": "Blood Pit Management",
     "content": "BLOOD PIT \u2014 TONIGHT'S CARD\n\nDoors open at half-cycle. Bets accepted until the second bell.\n\nEvent 1: Melee bracket, four contestants. Three volunteers, one not. Standard rules (none).\n\nEvent 2: Alien predator exhibition. Species: Undisclosed. Origin: Foreven Sector, recovered from a derelict. Handler advises spectators in the first three rows to sign the disclaimer.\n\nEvent 3: Steel cage. Two contestants. Both volunteers. Personal grievance match \u2014 details posted at the betting desk.\n\nEvent 4: The main event. Gladiator versus robot. The robot has been modified. Our technician says it is now operating outside its original design parameters and he is not entirely comfortable with what it has started to do between events. We consider this excellent atmosphere.\n\n\u2014\n\nSpecial notice: A private booth has been reserved for this evening by a party who paid double for guaranteed privacy. We note this only because it is unusual enough to mention to the management log. All other guests: standard seating.\n\n\u2014\n\nNote from the management: If you see something in the lower pens that you cannot identify, do not attempt to interact with it. We are still determining where it came from and whether it is ours.",
     "security_level": "unlocked",
@@ -48,10 +48,10 @@
     }
   },
   {
-    "title": "Blood Pit \u2014 Private Booth Access Override",
-    "location": "General Access Terminal \u2014 Blood Pit Arena, Lower City",
-    "date": "CURRENT CYCLE",
-    "author": "Blood Pit Arena \u2014 Booking Management System",
+    "title": "Blood Pit — Private Booth Access Override",
+    "location": "General Access Terminal — Blood Pit Arena, Lower City",
+    "date": "DAY 212 · 1105",
+    "author": "Blood Pit Arena — Booking Management System",
     "security_level": "high",
     "content": "The Blood Pit management terminal includes a booth booking and access control system. Tonight's private booth reservation was paid at double rate and flagged for guaranteed privacy.\n\nThe booth door is locked from the arena side. A booking override can release it without triggering the management alert.\n\n[INTERACTIVE TERMINAL \u2014 AWAITING INPUT]",
     "type": "action_sequence",

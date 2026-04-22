@@ -9,11 +9,11 @@
     "requires_roll": false
   },
   {
-    "title": "Mercifuge \u2014 Vessel Registry (Skull Orbital)",
-    "location": "General Access Terminal \u2014 The Scrapheap, Lower City Outskirts",
-    "date": "CURRENT CYCLE",
-    "author": "Skull Orbital \u2014 Docking Registry",
-    "content": "VESSEL: MERCIFUGE\nHull Class: 400-ton armed salvager\nTransponder: Active, unmasked\nOwner of Record: SEALED \u2014 INDEPENDENT OPERATOR\nCurrent Berth: Skull Orbital, Bay 7-C\nArrival: Three days prior to current cycle\n\nNote: Vessel arrived without filing a cargo manifest. Standard for this port.\nNote: One crew member disembarked at the Skull and did not re-board. Crew remaining on vessel: three.\nNote: Vessel has a hardpoint configuration inconsistent with its listed salvager classification. The additional armament is not concealed. We note this and do not act on it.\n\nNote: The disembarked crew member was female, cybernetic right arm, moved like she knew where she was going. She did not ask for directions. She went straight to a groundcar and headed for the lower city.\n\nNote: She has not returned to the vessel as of current cycle. The remaining crew are maintaining a quiet watch.\n\n\u2014 Flag for observation. Do not approach.",
+    "title": "Mercifuge — Vessel Registry (Skull Orbital)",
+    "location": "General Access Terminal — The Scrapheap, Lower City Outskirts",
+    "date": "DAY 212 · 1105",
+    "author": "Skull Orbital — Docking Registry",
+    "content": "VESSEL: MERCIFUGE\nHull Class: 400-ton armed salvager\nTransponder: Active, unmasked\nOwner of Record: SEALED — INDEPENDENT OPERATOR\nCurrent Berth: Skull Orbital, Bay 7-C\nArrival: Three days prior to current cycle\n\nNote: Vessel arrived without filing a cargo manifest. Standard for this port.\nNote: One crew member disembarked at the Skull and did not re-board. Crew remaining on vessel: three.\nNote: Vessel has a hardpoint configuration inconsistent with its listed salvager classification. The additional armament is not concealed. We note this and do not act on it.\n\nNote: The disembarked crew member was female, cybernetic right arm, moved like she knew where she was going. She did not ask for directions. She went straight to a groundcar and headed for the lower city.\n\nNote: She has not returned to the vessel as of current cycle. The remaining crew are maintaining a quiet watch.\n\n— Flag for observation. Do not approach.",
     "security_level": "restricted",
     "requires_roll": true,
     "roll_check": {
@@ -24,11 +24,11 @@
     }
   },
   {
-    "title": "Old Fat Trader \u2014 Partial Systems Log",
-    "location": "General Access Terminal \u2014 The Scrapheap, Lower City Outskirts",
-    "date": "MULTIPLE DATES \u2014 OLDEST APPROX. 15 YEARS",
-    "author": "Unknown \u2014 Multiple authors, Scrapheap residents",
-    "content": "This terminal has been running off a salvaged power cell for as long as anyone can remember. We use it when we have something to say.\n\n\u2014\n\n'The upper deck is habitable. The lower deck is not. Don't open the cargo iris. We sealed it for a reason.'\n\n\u2014\n\n'Someone has moved into the bridge. Don't know who. She has a metal arm and a very large weapon resting on the captain's chair. She has not bothered anyone. She pays the boys to run messages. I suggest we extend her the same courtesy she has extended us.'\n\n\u2014\n\n'The woman in the bridge is negotiating with the gangs. I have heard the name Vallis and the name Irontooth. She is making a case for someone who is not here. I don't know what she is offering but the boys say she pays well and doesn't ask them to go anywhere dangerous.'\n\n\u2014\n\n[Most recent entry \u2014 date not recorded]\n\n'New people in the Scrapheap tonight. Not residents. Moving carefully, which means they know something. The woman in the bridge knows they are coming. I saw her adjust the machinegun when the sensors pinged.\n\nI am going to be somewhere else for a while.'",
+    "title": "Old Fat Trader — Partial Systems Log",
+    "location": "General Access Terminal — The Scrapheap, Lower City Outskirts",
+    "date": "MULTIPLE DATES — OLDEST APPROX. 15 YEARS",
+    "author": "Unknown — Multiple authors, Scrapheap residents",
+    "content": "This terminal has been running off a salvaged power cell for as long as anyone can remember. We use it when we have something to say.\n\n—\n\n'The upper deck is habitable. The lower deck is not. Don't open the cargo iris. We sealed it for a reason.'\n\n—\n\n'Someone has moved into the bridge. Don't know who. She has a metal arm and a very large weapon resting on the captain's chair. She has not bothered anyone. She pays the boys to run messages. I suggest we extend her the same courtesy she has extended us.'\n\n—\n\n'The woman in the bridge is negotiating with the gangs. I have heard the name Vallis and the name Irontooth. She is making a case for someone who is not here. I don't know what she is offering but the boys say she pays well and doesn't ask them to go anywhere dangerous.'\n\n—\n\n[Most recent entry — Day 212]\n\n'New people in the Scrapheap tonight. Not residents. Moving carefully, which means they know something. The woman in the bridge knows they are coming. I saw her adjust the machinegun when the sensors pinged.\n\nTwo separate crews came through the access tunnel tonight. Not together. Not even aware of each other. One pair came down from the upper lift and went straight toward the Fat Trader. The other pair came in from the canyon side and split, one toward the south end and the pre-Collapse hull, the other back out to the lower city.\n\nI am going to be somewhere else for a while.'",
     "security_level": "unlocked",
     "requires_roll": false
   },
@@ -48,10 +48,10 @@
     }
   },
   {
-    "title": "Unknown Hull \u2014 Interface Attempt",
-    "location": "Exterior Terminal \u2014 Unknown Hull, Deep Scrapheap, South End",
-    "date": "CURRENT CYCLE",
-    "author": "Unknown \u2014 Automated Response",
+    "title": "Unknown Hull — Interface Attempt",
+    "location": "Exterior Terminal — Unknown Hull, Deep Scrapheap, South End",
+    "date": "DAY 212 · 1105",
+    "author": "Unknown — Automated Response",
     "security_level": "restricted",
     "content": "There is a terminal mounted on the outer surface of the unknown hull. It was not there six years ago, according to the salvager's survey. It is there now.\n\nThe screen is already active. Nothing visible is running it. The hull surface beneath it is warm to the touch.\n\n[INTERACTIVE TERMINAL \u2014 AWAITING INPUT]",
     "type": "action_sequence",
