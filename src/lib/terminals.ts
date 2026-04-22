@@ -46,6 +46,7 @@ export const TERMINALS: TerminalDefinition[] = [
   { code: 'ferrik_intel',       name: 'Ferrik Redthane — Active Bounty',        logPath: '/logs/terminal_ferrik_intel.json' },
   { code: 'lower_city',         name: 'Lower City — Public Kiosk',              logPath: '/logs/terminal_lower_city.json' },
   { code: 'asharden_lore',      name: 'Asharden Camp — Archive Terminal',       logPath: '/logs/terminal_asharden_and_lore.json' },
+  { code: 'backroom_crowns',    name: 'Back Room Parlour — Crowns Table',       logPath: '/logs/terminal_backroom_crowns.json' },
 ];
 
 export const TERMINAL_MAP = new Map(TERMINALS.map(terminal => [terminal.code.toLowerCase(), terminal]));

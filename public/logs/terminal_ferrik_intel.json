@@ -2,7 +2,7 @@
   {
     "title": "Bounty Notice — Ferrik Redthane",
     "location": "General Access Terminal — Blacksand Downport / Lower City Public Kiosk",
-    "date": "CURRENT CYCLE — FILED BY PLANETARY AUTHORITY, TORPOL",
+    "date": "DAY 212 · 1105 — FILED BY PLANETARY AUTHORITY, TORPOL",
     "author": "Planetary Authority, Torpol — Filed via independent relay",
     "content": "NOTICE OF BOUNTY — ACTIVE\n\nSubject: FERRIK REDTHANE\nAlias(es): Unknown\nLast Known Association: Darokyn's Retinue (FORMER — EXPELLED OR FLED)\nLast Known Vessel: Misery's Company (current status: damaged, location: Borite system, unconfirmed)\n\nCharges Filed By: Planetary Authority, Torpol and Clarke\nCharges: Coordinated assault on civilian shipping lanes, attack on surface installations, suspected piracy conspiracy.\n\nBounty Amount: On file with issuing authority. Contact required for exact sum.\nBounty Condition: Alive preferred. Dead accepted if evidence of involvement in attacks is presented.\n\n—\n\nNote: Additional interest in this individual has been registered by at least one private party. We do not know who. We are not required to share. The private interest predates the official bounty by several weeks.\n\nNote: Redthane has not been sighted on Theev in several months. He is believed to be hiding off-world. His associate, Miria Silverhand, has been active in Blacksand City as of this cycle, apparently negotiating on his behalf.\n\nNote: Admiral Darokyn has made it known — quietly — that he does not consider Redthane under his protection. This is significant.\n\nCapture or confirmed termination should be reported to the filing authority through an appropriate intermediary. We do not recommend walking into an Imperial office to collect.",
     "security_level": "unlocked",
@@ -26,7 +26,7 @@
   {
     "title": "Miria Silverhand — Known Associates File",
     "location": "General Access Terminal — Blacksand Downport",
-    "date": "CURRENT CYCLE",
+    "date": "DAY 212 · 1105",
     "author": "Widow Administrative Office — Intelligence Division",
     "content": "KNOWN ASSOCIATES FILE — MIRIA SILVERHAND\n\nSubject: MIRIA SILVERHAND\nAlso Known As: N/A\nCybernetic: Right arm, full replacement. Strength-rated. Integrated weapon linkage suspected.\nCurrent Location: Blacksand City, lower city. The Scrapheap, upper deck of a downed Fat Trader. Bridge compartment.\n\nBackground summary: Former Imperial merchant crew. Captured by pirates. Rose through piracy by demonstrated ruthlessness. Now a senior lieutenant and operative for Ferrik Redthane.\n\nCurrent activity: Negotiating independently on Redthane's behalf. Has approached both Vallis and Irontooth gangs. Seeking protection and alliance. Using the Scrapheap as a base. Running messages via local boys — does not expose herself unnecessarily.\n\nThreat assessment: HIGH. Armed with a gauss pistol and a rapid-fire machinegun. The machinegun is resting on the captain's chair in her current position, aimed down the main corridor. The corridor doors are rusted open. She has a clear field of fire the length of the deck.\n\nNote: She has a self-destruct device integrated into her cybernetic arm. This is confirmed intelligence. It is a frag-equivalent device. It has a one-round countdown. If she activates it, you have approximately two seconds to do something about the situation.\n\n— Approach with extreme caution. Do not underestimate the arm.",
     "security_level": "restricted",
@@ -129,7 +129,7 @@
   {
     "title": "Krrsh — Statement (Informal, Post-Rescue)",
     "location": "General Access Terminal — Blacksand Downport (Filed by arriving crew)",
-    "date": "CURRENT CYCLE",
+    "date": "DAY 212 · 1105",
     "author": "Krrsh, Captain — Misery's Company (former)",
     "content": "I'm filing this because whoever saved me from that station deserves to know what they're walking into.\n\nFerrik Redthane planned the Torpol and Clarke attacks. He coordinated at least three ships, maybe more. Misery's Company was involved — I won't pretend otherwise — but Ferrik was running the operation. It was his plan. His targets. His call.\n\nI mutinied because the attack on Clarke went further than what was agreed. He hit civilians. That wasn't the job. That was something else.\n\nAfter the mutiny my crew put me on the station with whatever was living there and jumped for Borite. Ferrik doesn't know I'm alive. As far as he knows I'm dead in a derelict somewhere.\n\nHe's hiding. He needs Miria to broker a deal with one of the big gangs so he can come back to Theev without getting killed by Darokyn. That's the only reason Miria is here.\n\nFind Miria, you find Ferrik.\n\nThe codes I gave you will get you through the Skull. After that, Blacksand is its own problem. Don't walk alone in the lower city. Don't trust anyone who smiles first. And if a woman with a metal arm offers you a deal, she has a machinegun under the table.\n\nI mean that literally.\n\nGood luck. You earned the codes. Make them worth something.",
     "security_level": "unlocked",
