@@ -96,7 +96,7 @@ export function ControlPanel() {
                   onClick={() => setJumpRating(rating)}
                   className={`w-8 h-8 border text-sm font-bold transition-all ${
                     jumpRating === rating
-                      ? "border-primary bg-primary/20 text-primary shadow-[0_0_10px_rgba(0,255,0,0.4)]"
+                      ? "border-primary bg-primary/20 text-primary shadow-[0_0_10px_rgba(58, 226, 179,0.4)]"
                       : "border-terminal-bg-border text-terminal-text-dimmer hover:border-primary/50"
                   }`}
                 >
@@ -304,7 +304,7 @@ export function ControlPanel() {
               {jumpCountdown === null && !jumpComplete && (
                 <button
                   onClick={startJumpCountdown}
-                  className="mt-3 w-full terminal-btn flex items-center justify-center gap-2 bg-primary/10 border-primary/60 hover:bg-primary/20 hover:shadow-[0_0_12px_rgba(0,255,0,0.3)] transition-all"
+                  className="mt-3 w-full terminal-btn flex items-center justify-center gap-2 bg-primary/10 border-primary/60 hover:bg-primary/20 hover:shadow-[0_0_12px_rgba(58, 226, 179,0.3)] transition-all"
                 >
                   <Zap className="w-4 h-4" />
                   INITIATE JUMP

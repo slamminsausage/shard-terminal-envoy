@@ -16,7 +16,7 @@ export function ScanModal({ onRun, onClose }: ScanModalProps) {
 
   return (
     <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-      <div className="bg-terminal-bg-panel-alt border border-terminal-primary-mid rounded-lg w-full max-w-md shadow-[0_0_40px_rgba(0,255,136,0.2)]">
+      <div className="bg-terminal-bg-panel-alt border border-terminal-primary-mid rounded-lg w-full max-w-md shadow-[0_0_40px_rgba(58, 226, 179,0.2)]">
         <div className="flex justify-between items-center px-4 py-3 bg-terminal-primary-light/10 border-b border-terminal-bg-border">
           <span className="font-['Orbitron'] text-sm tracking-[2px]">ACTIVE SCAN</span>
           <button
@@ -69,7 +69,7 @@ export function ScanModal({ onRun, onClose }: ScanModalProps) {
           </button>
           <button
             onClick={handleRun}
-            className="flex-1 py-2.5 rounded text-xs font-mono transition-all border border-terminal-primary-mid text-terminal-primary-light bg-terminal-primary-light/20 hover:bg-terminal-primary-light/30 hover:shadow-[0_0_15px_rgba(0,255,136,0.3)]"
+            className="flex-1 py-2.5 rounded text-xs font-mono transition-all border border-terminal-primary-mid text-terminal-primary-light bg-terminal-primary-light/20 hover:bg-terminal-primary-light/30 hover:shadow-[0_0_15px_rgba(58, 226, 179,0.3)]"
           >
             RUN SCAN
           </button>

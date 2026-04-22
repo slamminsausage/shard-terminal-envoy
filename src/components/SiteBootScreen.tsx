@@ -114,8 +114,8 @@ export default function SiteBootScreen({ onComplete }: SiteBootScreenProps) {
           to   { opacity: 1; transform: translateX(0); }
         }
         @keyframes site-boot-title-glow {
-          0%, 100% { text-shadow: 0 0 8px #00ff0066, 0 0 24px #00ff0033; }
-          50%       { text-shadow: 0 0 16px #00ff0099, 0 0 40px #00ff0055; }
+          0%, 100% { text-shadow: 0 0 8px #3ae2b366, 0 0 24px #3ae2b333; }
+          50%       { text-shadow: 0 0 16px #3ae2b399, 0 0 40px #3ae2b355; }
         }
       `}</style>
 
@@ -123,10 +123,10 @@ export default function SiteBootScreen({ onComplete }: SiteBootScreenProps) {
         {/* ── Outer panel ── */}
         <div
           style={{
-            border: '1px solid #00ff0033',
+            border: '1px solid #3ae2b333',
             borderRadius: 6,
             background: 'rgba(0,0,0,0.88)',
-            boxShadow: '0 0 40px rgba(0,255,0,0.08), inset 0 0 60px rgba(0,255,0,0.03)',
+            boxShadow: '0 0 40px rgba(58, 226, 179,0.08), inset 0 0 60px rgba(58, 226, 179,0.03)',
             padding: '2rem',
           }}
         >
@@ -135,7 +135,7 @@ export default function SiteBootScreen({ onComplete }: SiteBootScreenProps) {
             <div
               className="font-mono text-2xl sm:text-3xl tracking-[0.15em] mb-1"
               style={{
-                color: '#00ff00',
+                color: '#3ae2b3',
                 fontFamily: 'Orbitron, monospace',
                 animation: 'site-boot-title-glow 3s ease-in-out infinite',
               }}
@@ -144,7 +144,7 @@ export default function SiteBootScreen({ onComplete }: SiteBootScreenProps) {
             </div>
             <div
               className="font-mono text-xs tracking-[0.4em]"
-              style={{ color: '#00aa00' }}
+              style={{ color: '#1b6c57' }}
             >
               SHARD TERMINAL ENVOY // MAINFRAME SYSTEM
             </div>
@@ -155,7 +155,7 @@ export default function SiteBootScreen({ onComplete }: SiteBootScreenProps) {
             className="mb-5"
             style={{
               height: 1,
-              background: 'linear-gradient(90deg, transparent, #00ff0044, #00ff0088, #00ff0044, transparent)',
+              background: 'linear-gradient(90deg, transparent, #3ae2b344, #3ae2b388, #3ae2b344, transparent)',
             }}
           />
 
@@ -163,7 +163,7 @@ export default function SiteBootScreen({ onComplete }: SiteBootScreenProps) {
           <div className="flex items-center justify-between mb-3">
             <div
               className="text-xs font-mono tracking-widest"
-              style={{ color: '#00aa00' }}
+              style={{ color: '#1b6c57' }}
             >
               SYSTEM BOOT SEQUENCE
             </div>
@@ -180,16 +180,16 @@ export default function SiteBootScreen({ onComplete }: SiteBootScreenProps) {
             className="mb-6 overflow-hidden rounded-sm"
             style={{
               height: 5,
-              background: '#00ff0011',
-              border: '1px solid #00ff0022',
+              background: '#3ae2b311',
+              border: '1px solid #3ae2b322',
             }}
           >
             <div
               style={{
                 height: '100%',
                 width: `${progress}%`,
-                background: 'linear-gradient(90deg, #00aa0099, #00ff00)',
-                boxShadow: '0 0 12px #00ff0055',
+                background: 'linear-gradient(90deg, #1b6c5799, #3ae2b3)',
+                boxShadow: '0 0 12px #3ae2b355',
                 transition: 'width 0.08s linear',
               }}
             />
@@ -205,9 +205,9 @@ export default function SiteBootScreen({ onComplete }: SiteBootScreenProps) {
               const isStatus = line.text.includes('[LOADED]') || line.text.includes('[ONLINE]') || line.text.includes('[ACTIVE]');
               const isWelcome = line.text.startsWith('>> WELCOME') || line.text.startsWith('>> ALL SYSTEMS');
 
-              let color = '#00ff00';
-              if (line.dim && !isWelcome) color = '#00aa00';
-              if (isWelcome) color = '#00ff88';
+              let color = '#3ae2b3';
+              if (line.dim && !isWelcome) color = '#1b6c57';
+              if (isWelcome) color = '#3ae2b3';
 
               // Highlight the status tags in cyan
               const rendered = isStatus ? (
@@ -220,7 +220,7 @@ export default function SiteBootScreen({ onComplete }: SiteBootScreenProps) {
                   </span>
                 </span>
               ) : (
-                <span style={{ color, textShadow: isWelcome ? '0 0 10px #00ff8866' : undefined }}>
+                <span style={{ color, textShadow: isWelcome ? '0 0 10px #3ae2b366' : undefined }}>
                   {line.text}
                 </span>
               );
@@ -237,7 +237,7 @@ export default function SiteBootScreen({ onComplete }: SiteBootScreenProps) {
                   {isLast && visibleLines < BOOT_LINES.length && (
                     <span
                       style={{
-                        color: '#00ff00',
+                        color: '#3ae2b3',
                         marginLeft: 2,
                         animation: 'site-boot-cursor 0.8s step-end infinite',
                       }}
@@ -254,7 +254,7 @@ export default function SiteBootScreen({ onComplete }: SiteBootScreenProps) {
           <div
             className="mt-5 flex items-center justify-between"
             style={{
-              borderTop: '1px solid #00ff0015',
+              borderTop: '1px solid #3ae2b315',
               paddingTop: '0.75rem',
             }}
           >

@@ -50,7 +50,7 @@ interface LogDetailViewProps {
 
 const SECURITY_COLORS: Record<string, string> = {
   unlocked:   '#88ffaa',
-  low:        '#00ff00',
+  low:        '#3ae2b3',
   medium:     '#00ccff',
   high:       '#ffaa00',
   restricted: '#ff6600',

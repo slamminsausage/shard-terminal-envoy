@@ -1437,7 +1437,7 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     if (!activeMap) {
-      ctx.fillStyle = "#00ff0066";
+      ctx.fillStyle = "#3ae2b366";
       ctx.font = `${16 * dpr}px "Share Tech Mono", monospace`;
       ctx.textAlign = "center";
       ctx.fillText(
@@ -1523,10 +1523,10 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
         const aoe = (activeMap.aoeTemplates || []).find((a) => a.id === aoeId);
         if (!aoe) continue;
         ctx.save();
-        ctx.strokeStyle = "#00ff00";
+        ctx.strokeStyle = "#3ae2b3";
         ctx.lineWidth = 2;
         ctx.setLineDash([6, 4]);
-        ctx.shadowColor = "#00ff00";
+        ctx.shadowColor = "#3ae2b3";
         ctx.shadowBlur = 8;
         if (aoe.shape === "circle") {
           ctx.beginPath();
@@ -1566,10 +1566,10 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
         const light = activeMap.lights.find((l) => l.id === lightId);
         if (!light) continue;
         ctx.save();
-        ctx.strokeStyle = "#00ff00";
+        ctx.strokeStyle = "#3ae2b3";
         ctx.lineWidth = 2;
         ctx.setLineDash([6, 4]);
-        ctx.shadowColor = "#00ff00";
+        ctx.shadowColor = "#3ae2b3";
         ctx.shadowBlur = 8;
         ctx.beginPath();
         ctx.arc(light.x, light.y, 18, 0, Math.PI * 2);
@@ -1623,7 +1623,7 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
       const r = state.fogBrushSize;
       ctx.save();
       ctx.globalAlpha = 0.35;
-      ctx.fillStyle = state.fogBrushMode === "reveal" ? "#00ff00" : "#ff3344";
+      ctx.fillStyle = state.fogBrushMode === "reveal" ? "#3ae2b3" : "#ff3344";
       if (state.activeTool === "fog-rect") {
         ctx.fillRect(cx - r, cy - r, r * 2, r * 2);
       } else {
@@ -1633,7 +1633,7 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
       }
       // Outline
       ctx.globalAlpha = 0.7;
-      ctx.strokeStyle = state.fogBrushMode === "reveal" ? "#00ff00" : "#ff3344";
+      ctx.strokeStyle = state.fogBrushMode === "reveal" ? "#3ae2b3" : "#ff3344";
       ctx.lineWidth = 2 / activeMap.zoom;
       if (state.activeTool === "fog-rect") {
         ctx.strokeRect(cx - r, cy - r, r * 2, r * 2);
@@ -1686,9 +1686,9 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
       if (ht && ht.visible) {
         const halfSize = (ht.size * (activeMap.grid.size || 50)) / 2;
         ctx.save();
-        ctx.strokeStyle = "#00ff8866";
+        ctx.strokeStyle = "#3ae2b366";
         ctx.lineWidth = 2;
-        ctx.shadowColor = "#00ff88";
+        ctx.shadowColor = "#3ae2b3";
         ctx.shadowBlur = 8;
         ctx.beginPath();
         ctx.arc(ht.x, ht.y, halfSize + 2, 0, Math.PI * 2);
@@ -1745,9 +1745,9 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
       const hn = activeMap.notes.find((n) => n.id === hovNoteId);
       if (hn) {
         ctx.save();
-        ctx.strokeStyle = "#00ff8866";
+        ctx.strokeStyle = "#3ae2b366";
         ctx.lineWidth = 2;
-        ctx.shadowColor = "#00ff88";
+        ctx.shadowColor = "#3ae2b3";
         ctx.shadowBlur = 6;
         ctx.beginPath();
         ctx.arc(hn.x, hn.y, 14, 0, Math.PI * 2);
@@ -1765,9 +1765,9 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
         if (!token || !token.visible) continue;
         const halfSize = (token.size * gridSize) / 2;
         ctx.save();
-        ctx.strokeStyle = "#00ff00";
+        ctx.strokeStyle = "#3ae2b3";
         ctx.lineWidth = 3;
-        ctx.shadowColor = "#00ff00";
+        ctx.shadowColor = "#3ae2b3";
         ctx.shadowBlur = 12;
         ctx.setLineDash([6, 4]);
         ctx.beginPath();
@@ -1994,15 +1994,15 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
         const cellX = Math.floor(draggingToken.x / gs) * gs;
         const cellY = Math.floor(draggingToken.y / gs) * gs;
         ctx.save();
-        ctx.fillStyle = "#00ff0012";
-        ctx.strokeStyle = "#00ff0044";
+        ctx.fillStyle = "#3ae2b312";
+        ctx.strokeStyle = "#3ae2b344";
         ctx.lineWidth = 1.5;
         ctx.fillRect(cellX, cellY, gs, gs);
         ctx.strokeRect(cellX, cellY, gs, gs);
         // Crosshair at snap center
         const cx = cellX + gs / 2;
         const cy = cellY + gs / 2;
-        ctx.strokeStyle = "#00ff0033";
+        ctx.strokeStyle = "#3ae2b333";
         ctx.lineWidth = 1;
         ctx.setLineDash([4, 4]);
         ctx.beginPath();
@@ -2033,7 +2033,7 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
         if (gridDist > 0.3) {
           const moveSpeed = draggingToken.moveSpeed ?? 6;
           // Color-coded: green=normal, yellow=dash, red=over
-          let pathColor = "#00ff00";
+          let pathColor = "#3ae2b3";
           if (gridDist > moveSpeed * 2) pathColor = "#ff3344";
           else if (gridDist > moveSpeed) pathColor = "#ffcc00";
 
@@ -2082,7 +2082,7 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
     // Selection box (drag rectangle)
     if (selectionBox) {
       ctx.save();
-      ctx.strokeStyle = "#00ff00";
+      ctx.strokeStyle = "#3ae2b3";
       ctx.lineWidth = 1.5;
       ctx.setLineDash([6, 4]);
       ctx.globalAlpha = 0.8;
@@ -2091,7 +2091,7 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
       const bw = Math.abs(selectionBox.end.x - selectionBox.start.x);
       const bh = Math.abs(selectionBox.end.y - selectionBox.start.y);
       ctx.strokeRect(bx, by, bw, bh);
-      ctx.fillStyle = "#00ff0011";
+      ctx.fillStyle = "#3ae2b311";
       ctx.setLineDash([]);
       ctx.globalAlpha = 1;
       ctx.fillRect(bx, by, bw, bh);
@@ -2107,12 +2107,12 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
       const hh = gs;
       ctx.save();
       ctx.globalAlpha = 0.45;
-      ctx.strokeStyle = "#00ff00";
+      ctx.strokeStyle = "#3ae2b3";
       ctx.lineWidth = 2;
       ctx.setLineDash([5, 4]);
       ctx.strokeRect(cx - hw, cy - hh, hw * 2, hh * 2);
       ctx.setLineDash([]);
-      ctx.fillStyle = "#00ff0022";
+      ctx.fillStyle = "#3ae2b322";
       ctx.fillRect(cx - hw, cy - hh, hw * 2, hh * 2);
       ctx.restore();
     }
@@ -2562,7 +2562,7 @@ function drawTokens(
 
     // Aura
     if (t.auraRadius > 0) {
-      ctx.fillStyle = t.auraColor || "rgba(0, 255, 0, 0.1)";
+      ctx.fillStyle = t.auraColor || "rgba(58, 226, 179, 0.1)";
       ctx.beginPath();
       ctx.arc(t.x, t.y, t.auraRadius * gridSize, 0, Math.PI * 2);
       ctx.fill();
@@ -2595,7 +2595,7 @@ function drawTokens(
       ctx.fillStyle = "#1a1a2e";
       ctx.fill();
       // First letter fallback
-      ctx.fillStyle = "#00ff00";
+      ctx.fillStyle = "#3ae2b3";
       ctx.font = `${Math.max(12, halfSize)}px "Share Tech Mono", monospace`;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
@@ -2603,7 +2603,7 @@ function drawTokens(
     }
 
     // Border ring
-    ctx.strokeStyle = t.locked ? "#ffcc00" : "#00ff00";
+    ctx.strokeStyle = t.locked ? "#ffcc00" : "#3ae2b3";
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.arc(0, 0, halfSize, 0, Math.PI * 2);
@@ -2622,13 +2622,13 @@ function drawTokens(
       ctx.fillStyle = "#333";
       ctx.fillRect(barX, barY, barWidth, barHeight);
       ctx.fillStyle =
-        hpRatio > 0.5 ? "#00ff00" : hpRatio > 0.25 ? "#ff6600" : "#ff3344";
+        hpRatio > 0.5 ? "#3ae2b3" : hpRatio > 0.25 ? "#ff6600" : "#ff3344";
       ctx.fillRect(barX, barY, barWidth * hpRatio, barHeight);
     }
 
     // Name label
     if (showNames && t.showName) {
-      ctx.fillStyle = "#00ff00cc";
+      ctx.fillStyle = "#3ae2b3cc";
       ctx.font = `11px "Share Tech Mono", monospace`;
       ctx.textAlign = "center";
       ctx.fillText(t.name, t.x, t.y - halfSize - 6);
@@ -2957,10 +2957,10 @@ function drawProps(ctx: CanvasRenderingContext2D, props: SceneProp[]) {
       // Placeholder while loading
       ctx.fillStyle = "#1a1a2e";
       ctx.fillRect(-p.width / 2, -p.height / 2, p.width, p.height);
-      ctx.strokeStyle = "#00ff0044";
+      ctx.strokeStyle = "#3ae2b344";
       ctx.lineWidth = 1;
       ctx.strokeRect(-p.width / 2, -p.height / 2, p.width, p.height);
-      ctx.fillStyle = "#00ff0066";
+      ctx.fillStyle = "#3ae2b366";
       ctx.font = `10px "Share Tech Mono", monospace`;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";

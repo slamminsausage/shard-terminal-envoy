@@ -170,7 +170,7 @@ export default function TerminalView({
           <div className="flex items-center gap-2 font-mono text-xs">
             <span
               className="inline-block w-1.5 h-1.5 rounded-full"
-              style={{ backgroundColor: '#00ff00', boxShadow: '0 0 4px #00ff0066' }}
+              style={{ backgroundColor: '#3ae2b3', boxShadow: '0 0 4px #3ae2b366' }}
             />
             <span style={{ color: dimColor, letterSpacing: '0.05em' }}>ACTIVE</span>
           </div>

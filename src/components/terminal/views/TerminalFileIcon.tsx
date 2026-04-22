@@ -40,14 +40,14 @@ interface TerminalFileIconProps {
 
 const SECURITY_CONFIG: Record<string, { color: string; icon: string; glow?: boolean; pulse?: boolean }> = {
   unlocked:   { color: '#88ffaa', icon: '○' },
-  low:        { color: '#00ff00', icon: '□' },
+  low:        { color: '#3ae2b3', icon: '□' },
   medium:     { color: '#00ccff', icon: '◇' },
   high:       { color: '#ffaa00', icon: '◆', glow: true },
   restricted: { color: '#ff6600', icon: '◆', glow: true },
   critical:   { color: '#ff3344', icon: '⬡', pulse: true },
 };
 
-const DEFAULT_SECURITY = { color: '#00ff00', icon: '□' };
+const DEFAULT_SECURITY = { color: '#3ae2b3', icon: '□' };
 
 const ACTION_CATEGORY_BADGES: Record<string, { label: string; icon: string }> = {
   door_unlock: { label: 'CTL', icon: '⚿' },

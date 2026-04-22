@@ -44,7 +44,7 @@ export function KeyboardShortcutOverlay({ onClose }: KeyboardShortcutOverlayProp
                 <div
                   key={key}
                   className="flex items-center justify-between py-1.5 px-2 rounded"
-                  style={{ background: 'rgba(0, 255, 0, 0.03)' }}
+                  style={{ background: 'rgba(58, 226, 179, 0.03)' }}
                 >
                   <span
                     className="text-sm"
@@ -57,8 +57,8 @@ export function KeyboardShortcutOverlay({ onClose }: KeyboardShortcutOverlayProp
                     style={{
                       fontFamily: 'var(--font-mono)',
                       color: 'var(--primary)',
-                      background: 'rgba(0, 255, 0, 0.1)',
-                      border: '1px solid rgba(0, 255, 0, 0.3)',
+                      background: 'rgba(58, 226, 179, 0.1)',
+                      border: '1px solid rgba(58, 226, 179, 0.3)',
                       minWidth: '24px',
                     }}
                   >

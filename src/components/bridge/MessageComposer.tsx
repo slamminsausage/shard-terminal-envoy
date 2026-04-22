@@ -18,7 +18,7 @@ export function MessageComposer({ onSend, onClose }: MessageComposerProps) {
 
   return (
     <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-      <div className="bg-terminal-bg-panel-alt border border-terminal-primary-mid rounded-lg w-full max-w-lg shadow-[0_0_40px_rgba(0,255,136,0.2)]">
+      <div className="bg-terminal-bg-panel-alt border border-terminal-primary-mid rounded-lg w-full max-w-lg shadow-[0_0_40px_rgba(58, 226, 179,0.2)]">
         <div className="flex justify-between items-center px-4 py-3 bg-terminal-primary-light/10 border-b border-terminal-bg-border">
           <span className="font-['Orbitron'] text-sm tracking-[2px]">NEW TRANSMISSION</span>
           <button
@@ -71,7 +71,7 @@ export function MessageComposer({ onSend, onClose }: MessageComposerProps) {
               onChange={e => setContent(e.target.value)}
               placeholder="Enter message content..."
               rows={6}
-              className="w-full bg-terminal-bg-darker border border-terminal-bg-border rounded px-3 py-2 text-terminal-text-muted font-mono text-sm focus:outline-none focus:border-terminal-primary-mid focus:shadow-[0_0_8px_rgba(0,255,136,0.2)] resize-none"
+              className="w-full bg-terminal-bg-darker border border-terminal-bg-border rounded px-3 py-2 text-terminal-text-muted font-mono text-sm focus:outline-none focus:border-terminal-primary-mid focus:shadow-[0_0_8px_rgba(58, 226, 179,0.2)] resize-none"
             />
           </div>
         </div>
@@ -86,7 +86,7 @@ export function MessageComposer({ onSend, onClose }: MessageComposerProps) {
           <button
             onClick={handleSend}
             disabled={!sender.trim() || !content.trim()}
-            className="flex-1 py-2.5 rounded text-xs font-mono transition-all border border-terminal-primary-mid text-terminal-primary-light bg-terminal-primary-light/20 hover:bg-terminal-primary-light/30 hover:shadow-[0_0_15px_rgba(0,255,136,0.3)] disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 py-2.5 rounded text-xs font-mono transition-all border border-terminal-primary-mid text-terminal-primary-light bg-terminal-primary-light/20 hover:bg-terminal-primary-light/30 hover:shadow-[0_0_15px_rgba(58, 226, 179,0.3)] disabled:opacity-50 disabled:cursor-not-allowed"
           >
             SEND TRANSMISSION
           </button>

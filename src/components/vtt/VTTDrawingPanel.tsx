@@ -4,7 +4,7 @@ import type { LayerIndex } from "@/types/vtt";
 import { Trash2, Undo2, Redo2 } from "lucide-react";
 
 const PRESET_COLORS = [
-  "#00ff00", "#00ccff", "#ff6600", "#ff3344", "#ffcc00",
+  "#3ae2b3", "#00ccff", "#ff6600", "#ff3344", "#ffcc00",
   "#aa44ff", "#ffffff", "#888888", "#44ff44", "#ff44aa",
 ];
 

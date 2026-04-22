@@ -98,10 +98,10 @@ export default function SessionLogPopout() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-[#00ff00] p-4 font-mono">
+    <div className="min-h-screen bg-black text-[#3ae2b3] p-4 font-mono">
       <div className="max-w-2xl mx-auto space-y-4">
-        <div className="border border-[#00ff0030] rounded px-4 py-3 bg-[#0a0f0a]">
-          <h1 className="text-sm uppercase tracking-wider text-[#00ff00aa] mb-3">
+        <div className="border border-[#3ae2b330] rounded px-4 py-3 bg-[#0a0f0a]">
+          <h1 className="text-sm uppercase tracking-wider text-[#3ae2b3aa] mb-3">
             {isEditing ? "Edit Log Entry" : "New Session Log Entry"}
           </h1>
 
@@ -111,12 +111,12 @@ export default function SessionLogPopout() {
               placeholder="Title (optional)"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="bg-black border border-[#00ff0050] text-[#00ff00] rounded px-3 py-2 text-sm focus:border-[#00ff00] focus:outline-none placeholder-[#00ff0030]"
+              className="bg-black border border-[#3ae2b350] text-[#3ae2b3] rounded px-3 py-2 text-sm focus:border-[#3ae2b3] focus:outline-none placeholder-[#3ae2b330]"
             />
             <select
               value={logType}
               onChange={(e) => setLogType(e.target.value as LogEntryType)}
-              className="bg-black border border-[#00ff0050] text-[#00ff00] rounded px-3 py-2 text-sm focus:border-[#00ff00] focus:outline-none"
+              className="bg-black border border-[#3ae2b350] text-[#3ae2b3] rounded px-3 py-2 text-sm focus:border-[#3ae2b3] focus:outline-none"
             >
               {Object.entries(LOG_TYPE_LABELS).map(([value, label]) => (
                 <option key={value} value={value}>{label}</option>
@@ -128,7 +128,7 @@ export default function SessionLogPopout() {
             placeholder="What happened..."
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            className="w-full bg-black border border-[#00ff0050] text-[#00ff00] rounded px-3 py-2 text-sm focus:border-[#00ff00] focus:outline-none placeholder-[#00ff0030] resize-y min-h-[200px]"
+            className="w-full bg-black border border-[#3ae2b350] text-[#3ae2b3] rounded px-3 py-2 text-sm focus:border-[#3ae2b3] focus:outline-none placeholder-[#3ae2b330] resize-y min-h-[200px]"
             autoFocus
           />
 
@@ -136,11 +136,11 @@ export default function SessionLogPopout() {
             <button
               onClick={handleSave}
               disabled={!content.trim()}
-              className="px-4 py-2 rounded border border-[#00ff0050] bg-[#00ff0015] text-[#00ff00] text-sm hover:bg-[#00ff0025] hover:border-[#00ff00] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              className="px-4 py-2 rounded border border-[#3ae2b350] bg-[#3ae2b315] text-[#3ae2b3] text-sm hover:bg-[#3ae2b325] hover:border-[#3ae2b3] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
             >
               {isEditing ? "Save Changes" : "Add Entry"}
             </button>
-            <span className="text-[10px] text-[#00ff0040]">
+            <span className="text-[10px] text-[#3ae2b340]">
               Ctrl+Enter to save
             </span>
             {saved && (
@@ -151,7 +151,7 @@ export default function SessionLogPopout() {
           </div>
         </div>
 
-        <p className="text-[9px] text-[#00ff0030] text-center">
+        <p className="text-[9px] text-[#3ae2b330] text-center">
           This window stays open while you browse other tabs. Close when done.
         </p>
       </div>

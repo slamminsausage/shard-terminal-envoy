@@ -9,7 +9,7 @@ const BASE_READOUT_DURATION = 7000; // ms before auto-dismiss
 const STAGGER_DELAY = 2000; // extra ms per queued position so they cascade out
 
 const ACCENT_COLORS: Record<CombatReadoutEvent['accent'], { border: string; glow: string; text: string; bg: string }> = {
-  green:  { border: '#00ff88', glow: 'rgba(0,255,136,0.4)',  text: '#00ff88', bg: 'rgba(0,255,136,0.06)' },
+  green:  { border: '#3ae2b3', glow: 'rgba(58, 226, 179,0.4)',  text: '#3ae2b3', bg: 'rgba(58, 226, 179,0.06)' },
   red:    { border: '#ff4455', glow: 'rgba(255,68,85,0.4)',   text: '#ff4455', bg: 'rgba(255,68,85,0.06)' },
   cyan:   { border: '#00ccff', glow: 'rgba(0,204,255,0.4)',   text: '#00ccff', bg: 'rgba(0,204,255,0.06)' },
   orange: { border: '#ffaa00', glow: 'rgba(255,170,0,0.4)',   text: '#ffaa00', bg: 'rgba(255,170,0,0.06)' },

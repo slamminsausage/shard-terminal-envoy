@@ -649,7 +649,7 @@ function CombatInterface() {
                   onDragEnd={handleDragEnd}
                   className={cn(
                     "terminal-card transition-all cursor-move",
-                    isCurrentTurn && "ring-2 ring-terminal-primary shadow-[0_0_20px_rgba(0,255,0,0.3)]",
+                    isCurrentTurn && "ring-2 ring-terminal-primary shadow-[0_0_20px_rgba(58, 226, 179,0.3)]",
                     combatant.isDowned && "opacity-60",
                     isDragging && "opacity-50",
                     isDragOver && "ring-2 ring-terminal-secondary scale-[1.02]"
@@ -1164,7 +1164,7 @@ function CombatInterface() {
                   </div>
                   <div className="border-t border-terminal-primary/20 pt-2 flex items-center justify-between">
                     <span className="text-sm font-semibold text-terminal-primary-light">Total Initiative:</span>
-                    <span className="text-3xl font-bold font-['Orbitron'] text-terminal-primary drop-shadow-[0_0_10px_rgba(0,255,0,0.5)]">
+                    <span className="text-3xl font-bold font-['Orbitron'] text-terminal-primary drop-shadow-[0_0_10px_rgba(58, 226, 179,0.5)]">
                       {pendingCharacter && (
                         initiativeRoll +
                         getCharacteristicDM(

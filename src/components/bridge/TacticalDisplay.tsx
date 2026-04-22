@@ -55,7 +55,7 @@ export function TacticalDisplay({
     const removed = prev.filter(p => !contacts.find(c => c.id === p.id));
     if (removed.length > 0) {
       const newEffects: DestroyEffect[] = removed.map(c => {
-        const colorVar = c.status === 'enemy' ? '#ff4444' : c.status === 'friendly' ? '#00ff88' : '#aaaaaa';
+        const colorVar = c.status === 'enemy' ? '#ff4444' : c.status === 'friendly' ? '#3ae2b3' : '#aaaaaa';
         return { id: `${c.id}-${Date.now()}`, hexQ: c.hexQ, hexR: c.hexR, color: colorVar };
       });
       setDestroyEffects(prev2 => [...prev2, ...newEffects]);
@@ -419,7 +419,7 @@ export function TacticalDisplay({
       <div
         ref={svgContainerRef}
         className="flex-1 flex items-center justify-center overflow-hidden touch-none h-full cursor-grab active:cursor-grabbing"
-        style={{ background: "radial-gradient(ellipse at center, rgba(0, 255, 136, 0.02) 0%, transparent 70%)" }}
+        style={{ background: "radial-gradient(ellipse at center, rgba(58, 226, 179, 0.02) 0%, transparent 70%)" }}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
@@ -492,9 +492,9 @@ export function TacticalDisplay({
 
               let fill = "transparent";
               if (isHovered && (isValidMove || !combatActive || combatPhase === 'setup')) {
-                fill = "rgba(0, 255, 136, 0.15)";
+                fill = "rgba(58, 226, 179, 0.15)";
               } else if (isValidMove) {
-                fill = "rgba(0, 255, 136, 0.08)";
+                fill = "rgba(58, 226, 179, 0.08)";
               } else if (isOutOfMoveRange) {
                 fill = "rgba(255, 0, 0, 0.03)"; // subtle red tint on unreachable hexes
               } else if (rangeFill) {

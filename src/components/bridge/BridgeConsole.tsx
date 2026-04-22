@@ -147,7 +147,7 @@ function BridgeConsoleInner() {
   // Weapon colour by weapon id prefix
   const weaponColor = useCallback((weaponId: string): string => {
     if (weaponId?.includes('beam_laser')) return '#00ffff';
-    if (weaponId?.includes('pulse_laser')) return '#00ff88';
+    if (weaponId?.includes('pulse_laser')) return '#3ae2b3';
     if (weaponId?.includes('missile')) return '#ff8800';
     if (weaponId?.includes('particle')) return '#aa44ff';
     return '#ffffff';

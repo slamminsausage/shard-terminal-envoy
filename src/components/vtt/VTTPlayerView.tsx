@@ -300,7 +300,7 @@ export default function VTTPlayerView() {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     if (!map) {
-      ctx.fillStyle = "#00ff0044";
+      ctx.fillStyle = "#3ae2b344";
       ctx.font = `${16 * dpr}px "Share Tech Mono", monospace`;
       ctx.textAlign = "center";
       ctx.fillText(
@@ -421,7 +421,7 @@ export default function VTTPlayerView() {
       const halfSize = pixelSize / 2;
 
       if (t.auraRadius > 0) {
-        ctx.fillStyle = t.auraColor || "rgba(0,255,0,0.1)";
+        ctx.fillStyle = t.auraColor || "rgba(58, 226, 179,0.1)";
         ctx.beginPath();
         ctx.arc(t.x, t.y, t.auraRadius * gridSize, 0, Math.PI * 2);
         ctx.fill();
@@ -448,14 +448,14 @@ export default function VTTPlayerView() {
       } else {
         ctx.fillStyle = "#1a1a2e";
         ctx.fill();
-        ctx.fillStyle = "#00ff00";
+        ctx.fillStyle = "#3ae2b3";
         ctx.font = `${Math.max(12, halfSize)}px "Share Tech Mono", monospace`;
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
         ctx.fillText(t.name.charAt(0).toUpperCase(), 0, 0);
       }
 
-      ctx.strokeStyle = "#00ff00";
+      ctx.strokeStyle = "#3ae2b3";
       ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.arc(0, 0, halfSize, 0, Math.PI * 2);
@@ -469,7 +469,7 @@ export default function VTTPlayerView() {
         ctx.fillRect(t.x - halfSize, t.y + halfSize + 4, barWidth, 4);
         ctx.fillStyle =
           hpRatio > 0.5
-            ? "#00ff00"
+            ? "#3ae2b3"
             : hpRatio > 0.25
             ? "#ff6600"
             : "#ff3344";
@@ -482,7 +482,7 @@ export default function VTTPlayerView() {
       }
 
       if (t.showName) {
-        ctx.fillStyle = "#00ff00cc";
+        ctx.fillStyle = "#3ae2b3cc";
         ctx.font = `11px "Share Tech Mono", monospace`;
         ctx.textAlign = "center";
         ctx.fillText(t.name, t.x, t.y - halfSize - 6);
@@ -701,7 +701,7 @@ export default function VTTPlayerView() {
       {/* Zoom indicator + reset button */}
       {map && localZoom != null && (
         <div className="absolute top-2 right-2 z-10 flex items-center gap-2">
-          <span className="text-[rgba(0,255,0,0.3)] text-xs font-mono">
+          <span className="text-[rgba(58, 226, 179,0.3)] text-xs font-mono">
             {Math.round(localZoom * 100)}%
           </span>
           <button
@@ -730,9 +730,9 @@ export default function VTTPlayerView() {
             {initiative.map((entry, index) => (
               <div
                 key={entry.id}
-                className={`flex items-center gap-2 px-2 py-1 border-b border-[rgba(0,255,0,0.06)] ${
+                className={`flex items-center gap-2 px-2 py-1 border-b border-[rgba(58, 226, 179,0.06)] ${
                   index === 0
-                    ? "bg-[rgba(0,255,0,0.08)]"
+                    ? "bg-[rgba(58, 226, 179,0.08)]"
                     : ""
                 }`}
               >
@@ -743,7 +743,7 @@ export default function VTTPlayerView() {
                   className={`text-[10px] font-mono flex-1 truncate ${
                     index === 0
                       ? "text-[var(--primary)]"
-                      : "text-[rgba(0,255,0,0.6)]"
+                      : "text-[rgba(58, 226, 179,0.6)]"
                   }`}
                 >
                   {entry.name}
@@ -760,7 +760,7 @@ export default function VTTPlayerView() {
           {clocks.map((clock) => (
             <div
               key={clock.id}
-              className="vtt-hud px-2 py-1 text-[rgba(0,255,0,0.6)] text-[10px] font-mono"
+              className="vtt-hud px-2 py-1 text-[rgba(58, 226, 179,0.6)] text-[10px] font-mono"
             >
               {clock.name}: {clock.filled}/{clock.segments}
             </div>
@@ -776,7 +776,7 @@ export default function VTTPlayerView() {
             alt={handout.name}
             className="max-w-[90%] max-h-[90%] object-contain"
           />
-          <div className="absolute bottom-4 text-center text-[rgba(0,255,0,0.6)] text-xs font-mono">
+          <div className="absolute bottom-4 text-center text-[rgba(58, 226, 179,0.6)] text-xs font-mono">
             {handout.name}
           </div>
         </div>
@@ -793,13 +793,13 @@ export default function VTTPlayerView() {
               {diceRoll.dice.map((d, i) => (
                 <span
                   key={i}
-                  className="w-8 h-8 flex items-center justify-center bg-[rgba(0,255,0,0.08)] border border-[rgba(0,255,0,0.25)] rounded text-[var(--primary)] text-sm font-mono font-bold"
+                  className="w-8 h-8 flex items-center justify-center bg-[rgba(58, 226, 179,0.08)] border border-[rgba(58, 226, 179,0.25)] rounded text-[var(--primary)] text-sm font-mono font-bold"
                 >
                   {d}
                 </span>
               ))}
               {diceRoll.modifier !== 0 && (
-                <span className="text-[rgba(0,255,0,0.5)] text-xs font-mono">
+                <span className="text-[rgba(58, 226, 179,0.5)] text-xs font-mono">
                   {diceRoll.modifier > 0 ? "+" : ""}
                   {diceRoll.modifier}
                 </span>
@@ -823,7 +823,7 @@ export default function VTTPlayerView() {
       {/* Connection status */}
       {!connected && (
         <div className="absolute inset-0 flex items-center justify-center">
-          <div className="text-[rgba(0,255,0,0.4)] text-sm font-mono animate-pulse">
+          <div className="text-[rgba(58, 226, 179,0.4)] text-sm font-mono animate-pulse">
             Connecting to GM session...
           </div>
         </div>

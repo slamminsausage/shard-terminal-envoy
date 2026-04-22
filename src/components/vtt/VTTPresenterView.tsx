@@ -422,7 +422,7 @@ export default function VTTPresenterView() {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     if (!map) {
-      ctx.fillStyle = "#00ff0044";
+      ctx.fillStyle = "#3ae2b344";
       ctx.font = `${20 * dpr}px "Share Tech Mono", monospace`;
       ctx.textAlign = "center";
       ctx.fillText("Waiting for controller...", canvas.width / 2, canvas.height / 2);
@@ -523,7 +523,7 @@ export default function VTTPresenterView() {
       const halfSize = pixelSize / 2;
 
       if (t.auraRadius > 0) {
-        ctx.fillStyle = t.auraColor || "rgba(0,255,0,0.1)";
+        ctx.fillStyle = t.auraColor || "rgba(58, 226, 179,0.1)";
         ctx.beginPath();
         ctx.arc(t.x, t.y, t.auraRadius * gridSize, 0, Math.PI * 2);
         ctx.fill();
@@ -553,7 +553,7 @@ export default function VTTPresenterView() {
       } else {
         ctx.fillStyle = "#1a1a2e";
         ctx.fill();
-        ctx.fillStyle = "#00ff00";
+        ctx.fillStyle = "#3ae2b3";
         ctx.font = `${Math.max(12, halfSize)}px "Share Tech Mono", monospace`;
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
@@ -561,7 +561,7 @@ export default function VTTPresenterView() {
       }
 
       // Border ring
-      ctx.strokeStyle = "#00ff00";
+      ctx.strokeStyle = "#3ae2b3";
       ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.arc(0, 0, halfSize, 0, Math.PI * 2);
@@ -573,12 +573,12 @@ export default function VTTPresenterView() {
         const hpRatio = Math.max(0, t.hp / t.maxHp);
         ctx.fillStyle = "#333";
         ctx.fillRect(t.x - halfSize, t.y + halfSize + 4, barWidth, 4);
-        ctx.fillStyle = hpRatio > 0.5 ? "#00ff00" : hpRatio > 0.25 ? "#ff6600" : "#ff3344";
+        ctx.fillStyle = hpRatio > 0.5 ? "#3ae2b3" : hpRatio > 0.25 ? "#ff6600" : "#ff3344";
         ctx.fillRect(t.x - halfSize, t.y + halfSize + 4, barWidth * hpRatio, 4);
       }
 
       if (t.showName) {
-        ctx.fillStyle = "#00ff00cc";
+        ctx.fillStyle = "#3ae2b3cc";
         ctx.font = `11px "Share Tech Mono", monospace`;
         ctx.textAlign = "center";
         ctx.fillText(t.name, t.x, t.y - halfSize - 6);
@@ -832,7 +832,7 @@ export default function VTTPresenterView() {
 
       {/* Zoom indicator */}
       {map && (localZoom != null) && (
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10 text-[rgba(0,255,0,0.3)] text-xs font-mono">
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10 text-[rgba(58, 226, 179,0.3)] text-xs font-mono">
           {Math.round((localZoom ?? map.zoom) * 100)}%
         </div>
       )}
@@ -852,7 +852,7 @@ export default function VTTPresenterView() {
               setHandout(null);
               sendToController({ type: "hide-handout" });
             }}
-            className="absolute top-4 right-4 z-30 w-10 h-10 flex items-center justify-center rounded-full bg-black/60 border border-[rgba(0,255,0,0.3)] text-[rgba(0,255,0,0.7)] hover:text-[rgba(0,255,0,1)] hover:border-[rgba(0,255,0,0.6)] transition-colors text-xl font-mono"
+            className="absolute top-4 right-4 z-30 w-10 h-10 flex items-center justify-center rounded-full bg-black/60 border border-[rgba(58, 226, 179,0.3)] text-[rgba(58, 226, 179,0.7)] hover:text-[rgba(58, 226, 179,1)] hover:border-[rgba(58, 226, 179,0.6)] transition-colors text-xl font-mono"
             title="Close handout"
           >
             &times;
@@ -863,7 +863,7 @@ export default function VTTPresenterView() {
             className="max-w-[90vw] max-h-[90vh] object-contain"
             onClick={(e) => e.stopPropagation()}
           />
-          <div className="absolute bottom-6 text-center text-[rgba(0,255,0,0.6)] text-sm font-mono">
+          <div className="absolute bottom-6 text-center text-[rgba(58, 226, 179,0.6)] text-sm font-mono">
             {handout.name}
           </div>
         </div>
@@ -880,13 +880,13 @@ export default function VTTPresenterView() {
               {diceRoll.dice.map((d, i) => (
                 <span
                   key={i}
-                  className="w-10 h-10 flex items-center justify-center bg-[rgba(0,255,0,0.08)] border border-[rgba(0,255,0,0.25)] rounded text-[var(--primary)] text-lg font-mono font-bold"
+                  className="w-10 h-10 flex items-center justify-center bg-[rgba(58, 226, 179,0.08)] border border-[rgba(58, 226, 179,0.25)] rounded text-[var(--primary)] text-lg font-mono font-bold"
                 >
                   {d}
                 </span>
               ))}
               {diceRoll.modifier !== 0 && (
-                <span className="text-[rgba(0,255,0,0.5)] text-sm font-mono">
+                <span className="text-[rgba(58, 226, 179,0.5)] text-sm font-mono">
                   {diceRoll.modifier > 0 ? "+" : ""}
                   {diceRoll.modifier}
                 </span>
@@ -941,7 +941,7 @@ export default function VTTPresenterView() {
 
       {/* Connection status */}
       {!connected && (
-        <div className="absolute top-4 right-4 text-[rgba(0,255,0,0.4)] text-xs font-mono animate-pulse">
+        <div className="absolute top-4 right-4 text-[rgba(58, 226, 179,0.4)] text-xs font-mono animate-pulse">
           Connecting...
         </div>
       )}

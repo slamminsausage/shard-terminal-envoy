@@ -99,14 +99,14 @@ function PopoutItem({
       onClick={onClick}
       className={`w-full flex items-center gap-2 px-3 py-1.5 text-left font-mono text-[11px] transition-colors ${
         active
-          ? "text-[var(--primary)] bg-[rgba(0,255,0,0.08)]"
-          : "text-[rgba(0,255,0,0.6)] hover:text-[var(--primary)] hover:bg-[rgba(0,255,0,0.04)]"
+          ? "text-[var(--primary)] bg-[rgba(58, 226, 179,0.08)]"
+          : "text-[rgba(58, 226, 179,0.6)] hover:text-[var(--primary)] hover:bg-[rgba(58, 226, 179,0.04)]"
       } ${className || ""}`}
     >
       {icon && <span className="w-4 flex-shrink-0">{icon}</span>}
       <span className="flex-1">{label}</span>
       {shortcut && (
-        <span className="text-[9px] text-[rgba(0,255,0,0.3)] ml-2">{shortcut}</span>
+        <span className="text-[9px] text-[rgba(58, 226, 179,0.3)] ml-2">{shortcut}</span>
       )}
     </button>
   );
@@ -118,7 +118,7 @@ function PopoutDivider() {
 
 function PopoutLabel({ children }: { children: React.ReactNode }) {
   return (
-    <div className="px-3 py-1 text-[8px] text-[rgba(0,255,0,0.3)] font-mono uppercase tracking-wider">
+    <div className="px-3 py-1 text-[8px] text-[rgba(58, 226, 179,0.3)] font-mono uppercase tracking-wider">
       {children}
     </div>
   );
@@ -127,7 +127,7 @@ function PopoutLabel({ children }: { children: React.ReactNode }) {
 // ─── Preset Colors ─────────────────────────────────────────────────────────
 
 const PRESET_COLORS = [
-  "#00ff00", "#00ccff", "#ff6600", "#ff3344", "#ffcc00",
+  "#3ae2b3", "#00ccff", "#ff6600", "#ff3344", "#ffcc00",
   "#aa44ff", "#ffffff", "#888888", "#44ff44", "#ff44aa",
 ];
 
@@ -298,8 +298,8 @@ export default function VTTToolbar() {
               onClick={() => dispatch({ type: "SET_DRAW_WIDTH", payload: w })}
               className={`flex items-center justify-center w-6 h-6 rounded border transition-all ${
                 state.drawWidth === w
-                  ? "border-[var(--primary)] bg-[rgba(0,255,0,0.1)]"
-                  : "border-transparent hover:border-[rgba(0,255,0,0.2)]"
+                  ? "border-[var(--primary)] bg-[rgba(58, 226, 179,0.1)]"
+                  : "border-transparent hover:border-[rgba(58, 226, 179,0.2)]"
               }`}
             >
               <div className="rounded-full bg-terminal-primary" style={{ width: Math.min(w * 2, 16), height: Math.min(w * 2, 16) }} />
@@ -320,8 +320,8 @@ export default function VTTToolbar() {
               onClick={() => dispatch({ type: "SET_LAYER", payload: layer })}
               className={`flex-1 text-[9px] font-mono py-1 rounded border transition-all ${
                 state.activeLayer === layer
-                  ? "border-[var(--primary)] bg-[rgba(0,255,0,0.1)] text-[var(--primary)]"
-                  : "border-transparent text-[rgba(0,255,0,0.4)] hover:text-[var(--primary)]"
+                  ? "border-[var(--primary)] bg-[rgba(58, 226, 179,0.1)] text-[var(--primary)]"
+                  : "border-transparent text-[rgba(58, 226, 179,0.4)] hover:text-[var(--primary)]"
               }`}
             >
               {label}
@@ -459,8 +459,8 @@ export default function VTTToolbar() {
             onClick={() => dispatch({ type: "SET_FOG_BRUSH_MODE", payload: "reveal" })}
             className={`flex-1 text-[9px] font-mono py-1 rounded border transition-all ${
               state.fogBrushMode === "reveal"
-                ? "border-[var(--primary)] bg-[rgba(0,255,0,0.1)] text-[var(--primary)]"
-                : "border-transparent text-[rgba(0,255,0,0.4)]"
+                ? "border-[var(--primary)] bg-[rgba(58, 226, 179,0.1)] text-[var(--primary)]"
+                : "border-transparent text-[rgba(58, 226, 179,0.4)]"
             }`}
           >
             Reveal
@@ -469,8 +469,8 @@ export default function VTTToolbar() {
             onClick={() => dispatch({ type: "SET_FOG_BRUSH_MODE", payload: "conceal" })}
             className={`flex-1 text-[9px] font-mono py-1 rounded border transition-all ${
               state.fogBrushMode === "conceal"
-                ? "border-[var(--primary)] bg-[rgba(0,255,0,0.1)] text-[var(--primary)]"
-                : "border-transparent text-[rgba(0,255,0,0.4)]"
+                ? "border-[var(--primary)] bg-[rgba(58, 226, 179,0.1)] text-[var(--primary)]"
+                : "border-transparent text-[rgba(58, 226, 179,0.4)]"
             }`}
           >
             Conceal

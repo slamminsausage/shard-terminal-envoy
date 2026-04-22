@@ -29,7 +29,7 @@ export function MarkerEditorModal({
     marker_type: "CUSTOM",
     marker_label: "",
     marker_icon: "",
-    marker_color: "#00ff00",
+    marker_color: "#3ae2b3",
     description: "",
     gm_notes: "",
     is_active: true,
@@ -50,7 +50,7 @@ export function MarkerEditorModal({
         marker_type: marker.marker_type,
         marker_label: marker.marker_label,
         marker_icon: marker.marker_icon || "",
-        marker_color: marker.marker_color || "#00ff00",
+        marker_color: marker.marker_color || "#3ae2b3",
         description: marker.description || "",
         gm_notes: marker.gm_notes || "",
         is_active: marker.is_active !== false,
@@ -63,7 +63,7 @@ export function MarkerEditorModal({
         marker_type: "CUSTOM",
         marker_label: "",
         marker_icon: "",
-        marker_color: "#00ff00",
+        marker_color: "#3ae2b3",
         description: "",
         gm_notes: "",
         is_active: true,
@@ -82,7 +82,7 @@ export function MarkerEditorModal({
         marker_type: type,
         // Only update icon/color if they haven't been customized
         marker_icon: prev.marker_icon || typeConfig.icon,
-        marker_color: prev.marker_color === "#00ff00" ? typeConfig.defaultColor : prev.marker_color,
+        marker_color: prev.marker_color === "#3ae2b3" ? typeConfig.defaultColor : prev.marker_color,
       }));
     }
   };
@@ -219,16 +219,16 @@ export function MarkerEditorModal({
                   <input
                     type="color"
                     className="w-16 h-10 bg-black border border-primary rounded cursor-pointer"
-                    value={formData.marker_color || "#00ff00"}
+                    value={formData.marker_color || "#3ae2b3"}
                     onChange={(e) => setFormData({ ...formData, marker_color: e.target.value })}
                   />
                   <input
                     type="text"
                     className="terminal-input flex-1"
-                    value={formData.marker_color || "#00ff00"}
+                    value={formData.marker_color || "#3ae2b3"}
                     onChange={(e) => setFormData({ ...formData, marker_color: e.target.value })}
                     pattern="^#[0-9A-Fa-f]{6}$"
-                    placeholder="#00ff00"
+                    placeholder="#3ae2b3"
                   />
                 </div>
               </div>

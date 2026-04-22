@@ -104,7 +104,7 @@ export default function VTTShortcutOverlay({ onClose }: VTTShortcutOverlayProps)
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
           {shortcuts.map(({ category, items }) => (
             <div key={category}>
-              <h3 className="vtt-section-label mb-2 pb-1 border-b border-[rgba(0,255,0,0.12)]">
+              <h3 className="vtt-section-label mb-2 pb-1 border-b border-[rgba(58, 226, 179,0.12)]">
                 {category}
               </h3>
               <div className="space-y-1">
@@ -113,7 +113,7 @@ export default function VTTShortcutOverlay({ onClose }: VTTShortcutOverlayProps)
                     <kbd className="vtt-kbd">
                       {key}
                     </kbd>
-                    <span className="text-[rgba(0,255,0,0.5)] font-mono text-xs">{desc}</span>
+                    <span className="text-[rgba(58, 226, 179,0.5)] font-mono text-xs">{desc}</span>
                   </div>
                 ))}
               </div>
@@ -121,7 +121,7 @@ export default function VTTShortcutOverlay({ onClose }: VTTShortcutOverlayProps)
           ))}
         </div>
 
-        <div className="mt-4 text-center text-[10px] text-[rgba(0,255,0,0.25)] font-mono">
+        <div className="mt-4 text-center text-[10px] text-[rgba(58, 226, 179,0.25)] font-mono">
           Press ? or Esc to close
         </div>
       </div>
