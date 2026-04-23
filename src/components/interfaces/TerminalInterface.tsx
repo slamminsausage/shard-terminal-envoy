@@ -238,11 +238,14 @@ function TerminalInterface() {
     }
   };
 
-  // Load terminal logs — shows a themed per-terminal boot screen while loading
-  const loadTerminalLogs = async () => {
-    if (!session.activeTerminal) return;
+  // Load terminal logs — shows a themed per-terminal boot screen while loading.
+  // Accepts the terminal explicitly so callers that have just set active terminal
+  // don't have to wait for React state to commit before reading it back.
+  const loadTerminalLogs = async (terminalOverride?: { code: string; name: string; logPath: string } | null) => {
+    const terminal = terminalOverride ?? session.activeTerminal;
+    if (!terminal) return;
 
-    const profile = getTerminalBootProfile(session.activeTerminal.code);
+    const profile = getTerminalBootProfile(terminal.code);
 
     session.setLogsError(null);
     session.setLogsLoading(true);
@@ -254,7 +257,7 @@ function TerminalInterface() {
       const minDelay = new Promise<void>((resolve) =>
         setTimeout(resolve, profile.minDisplayMs)
       );
-      const fetchData = fetch(session.activeTerminal.logPath)
+      const fetchData = fetch(terminal.logPath)
         .then((res) => {
           if (!res.ok) throw new Error(`Failed to load logs: ${res.status}`);
           return res.json();
@@ -330,7 +333,7 @@ function TerminalInterface() {
       }
     }
 
-    loadTerminalLogs();
+    loadTerminalLogs(terminal);
   };
 
   // Helper function to show log content or nested audio logs
@@ -446,19 +449,20 @@ function TerminalInterface() {
     // Terminal connect flow
     if (session.pendingTerminalForRoll) {
       if (result.success) {
+        const unlocked = session.pendingTerminalForRoll;
         audioManager.playEffect('access_granted');
         // Persist unlock for players only; GM passes through without
         // polluting the unlocked list.
         if (!isGM) {
           try {
-            await dbHelpers.addUnlockedTerminal(session.pendingTerminalForRoll.code);
-            session.addUnlockedTerminal(session.pendingTerminalForRoll.code);
+            await dbHelpers.addUnlockedTerminal(unlocked.code);
+            session.addUnlockedTerminal(unlocked.code);
           } catch (error) {
             console.error('Failed to save unlocked terminal:', error);
           }
         }
         session.setPendingTerminalForRoll(null);
-        loadTerminalLogs();
+        loadTerminalLogs(unlocked);
       } else {
         audioManager.playEffect('access_denied');
         session.setPendingTerminalForRoll(null);
