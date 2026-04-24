@@ -270,11 +270,7 @@ export interface VTTMap {
 export interface AmbientTrack {
   id: string;
   name: string;
-  /**
-   * Persistent public URL (typically a Supabase Storage URL for the `vtt-assets` bucket).
-   * Device-local URLs (blob: or data:) must NOT be stored here — they won't sync
-   * to other devices and may exceed localStorage limits.
-   */
+  /** Data URL, object URL, or path to built-in file (e.g. "/audio/file.mp3") */
   url: string;
   volume: number;
   pan: number;

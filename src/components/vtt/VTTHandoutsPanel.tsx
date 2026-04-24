@@ -16,7 +16,6 @@ import {
 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { toast } from "sonner";
-import { dbHelpers, supabaseDisabled } from "@/lib/supabase";
 
 const CHANNEL_NAME = "shard-vtt-presenter";
 
@@ -51,60 +50,24 @@ export default function VTTHandoutsPanel() {
     input.multiple = true;
     input.onchange = async (e) => {
       const files = (e.target as HTMLInputElement).files;
-      if (!files || files.length === 0) return;
-
-      let uploaded = 0;
-      let fallbacks = 0;
-
-      await Promise.all(
-        Array.from(files).map(async (file) => {
-          const id = crypto.randomUUID();
-
-          // Upload to Supabase Storage so the handout syncs across devices.
-          let persistentUrl: string | null = null;
-          if (!supabaseDisabled) {
-            try {
-              persistentUrl = await dbHelpers.uploadVTTAsset(file, "handouts", id);
-            } catch (err) {
-              console.error("Handout upload failed:", err);
-            }
-          }
-
-          if (!persistentUrl) {
-            // Fallback: read as data URL so at least localStorage persistence works
-            // on this device. Warn the user this won't sync across devices.
-            fallbacks++;
-            persistentUrl = await new Promise<string>((resolve, reject) => {
-              const reader = new FileReader();
-              reader.onload = (ev) => resolve(ev.target?.result as string);
-              reader.onerror = () => reject(new Error("Failed to read file"));
-              reader.readAsDataURL(file);
-            });
-          } else {
-            uploaded++;
-          }
-
-          const handout: Handout = {
-            id,
-            name: file.name.replace(/\.[^.]+$/, ""),
-            imageDataUrl: persistentUrl,
-            visible: false,
-          };
-          dispatch({ type: "ADD_HANDOUT", payload: handout });
-        })
-      );
-
-      if (uploaded > 0 && fallbacks === 0) {
-        toast.success(`${uploaded} handout(s) uploaded`);
-      } else if (uploaded > 0 && fallbacks > 0) {
-        toast.warning(
-          `${uploaded} uploaded, ${fallbacks} saved locally (won't sync across devices)`
-        );
-      } else if (fallbacks > 0) {
-        toast.warning(
-          `${fallbacks} handout(s) saved locally — won't sync across devices`
-        );
+      if (!files) return;
+      for (const file of Array.from(files)) {
+        const reader = new FileReader();
+        reader.onload = async (ev) => {
+          const dataUrl = ev.target?.result as string;
+          const isVideo = file.type.startsWith("video/");
+          await addHandout({
+            title: file.name.replace(/\.[^.]+$/, ""),
+            description: "",
+            type: isVideo ? "video" : "image",
+            mediaUrl: dataUrl,
+            isVisible: false,
+            tags: [],
+          });
+        };
+        reader.readAsDataURL(file);
       }
+      toast.success(`${files.length} handout(s) added`);
     };
     input.click();
   };
