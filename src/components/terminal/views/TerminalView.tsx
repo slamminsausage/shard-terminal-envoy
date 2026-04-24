@@ -28,6 +28,8 @@ interface LogEntry {
   audio_file?: string;
   logs?: any[];
   content?: string;
+  type?: string;
+  action_sequence?: { id: string; category: string; on_complete?: { persist_key?: string } };
 }
 
 interface Terminal {
@@ -41,6 +43,7 @@ interface TerminalViewProps {
   logs: LogEntry[];
   onLogSelect: (log: LogEntry) => void;
   onBack: () => void;
+  completedActions?: string[];
 }
 
 /** Generate a pseudo-random uptime string from terminal code */
@@ -57,6 +60,7 @@ export default function TerminalView({
   logs,
   onLogSelect,
   onBack,
+  completedActions = [],
 }: TerminalViewProps) {
   const profile = getTerminalBootProfile(terminal.code);
   const category = getTerminalCategory(terminal.code);
@@ -166,7 +170,7 @@ export default function TerminalView({
           <div className="flex items-center gap-2 font-mono text-xs">
             <span
               className="inline-block w-1.5 h-1.5 rounded-full"
-              style={{ backgroundColor: '#00ff00', boxShadow: '0 0 4px #00ff0066' }}
+              style={{ backgroundColor: '#3ae2b3', boxShadow: '0 0 4px #3ae2b366' }}
             />
             <span style={{ color: dimColor, letterSpacing: '0.05em' }}>ACTIVE</span>
           </div>
@@ -187,6 +191,7 @@ export default function TerminalView({
                 accentColor={accentColor}
                 dimColor={dimColor}
                 terminalCode={terminal.code}
+                completedActions={completedActions}
                 onClick={() => onLogSelect(log)}
               />
             ))}

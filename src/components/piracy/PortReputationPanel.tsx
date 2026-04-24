@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { usePiracy } from '@/contexts/PiracyContext';
 import { PortAttitude } from '@/types/piracy';
-import { PORT_ATTITUDE_CONFIG, PORT_ATTITUDE_ORDER } from '@/lib/piracy/tables';
+import { PORT_ATTITUDE_CONFIG, PORT_ATTITUDE_ORDER, getDefaultAttitudeFromLawLevel } from '@/lib/piracy/tables';
 import { Anchor, Plus, Trash2, Edit2, Check, X, ChevronDown } from 'lucide-react';
 
 const ATTITUDE_COLORS: Record<PortAttitude, string> = {
@@ -27,7 +27,7 @@ export const PortReputationPanel: React.FC = () => {
       name: newPort.name.trim(),
       attitude: newPort.attitude,
       notes: newPort.notes || undefined,
-      law_level: newPort.law_level ? parseInt(newPort.law_level) : undefined,
+      law_level: newPort.law_level ? parseInt(newPort.law_level, 10) : undefined,
       starport_class: newPort.starport_class || undefined,
       world_uwp: newPort.world_uwp || undefined,
     });
@@ -120,7 +120,15 @@ export const PortReputationPanel: React.FC = () => {
               type="number"
               placeholder="Law Level"
               value={newPort.law_level}
-              onChange={e => setNewPort(p => ({ ...p, law_level: e.target.value }))}
+              onChange={e => {
+                const val = e.target.value;
+                const parsed = parseInt(val, 10);
+                setNewPort(p => ({
+                  ...p,
+                  law_level: val,
+                  attitude: !isNaN(parsed) ? getDefaultAttitudeFromLawLevel(parsed) : p.attitude,
+                }));
+              }}
               className="terminal-input text-sm"
               min={0}
               max={15}

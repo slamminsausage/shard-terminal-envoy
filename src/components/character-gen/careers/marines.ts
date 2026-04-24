@@ -30,113 +30,35 @@ const MARINES_EVENTS: GameEvent[] = [
     description: 'Disaster! Roll on the Mishap table but you are not ejected from this career.',
     resolution: {
       type: 'table_redirect',
-      table: 'injury',
-      displayText: 'Roll on the Injury table to determine the severity of the disaster.',
+      table: 'mishap',
+      displayText: 'Roll on the Mishap table to determine what happens.',
     },
   },
 
-  // Roll 3 - Space station security
+  // Roll 3 - Trapped behind enemy lines
   {
     id: 'marines-event-3',
-    description: 'You are assigned to the security staff of a space station.',
+    description: 'Trapped behind enemy lines, you have to survive on your own.',
     resolution: {
       type: 'choice',
-      displayText: 'Increase one of these skills:',
+      displayText: 'Gain one of the following skills at level 1:',
       options: [
         {
-          id: 'vacc-suit',
-          label: 'Vacc Suit 1',
-          description: 'Environmental suit operations',
+          id: 'survival',
+          label: 'Survival 1',
+          description: 'Wilderness survival techniques',
           effects: {
-            skills: { choices: ['Vacc Suit'], level: 1 },
-            message: 'Station duty improved your vacuum suit skills.',
+            skills: { choices: ['Survival'], level: 1 },
+            message: 'Surviving behind enemy lines taught you wilderness survival.',
           },
         },
         {
-          id: 'athletics',
-          label: 'Athletics 1',
-          description: 'Physical fitness',
+          id: 'stealth',
+          label: 'Stealth 1',
+          description: 'Moving unseen',
           effects: {
-            skills: { choices: ['Athletics'], level: 1 },
-            message: 'Security patrols kept you in peak physical condition.',
-          },
-        },
-      ],
-    },
-  },
-
-  // Roll 4 - Assault landing
-  {
-    id: 'marines-event-4',
-    description: 'You take part in a notable assault landing.',
-    resolution: {
-      type: 'choice',
-      displayText: 'Choose a skill to gain at level 1:',
-      options: [
-        {
-          id: 'tactics',
-          label: 'Tactics 1',
-          description: 'Combat tactics',
-          effects: {
-            skills: { choices: ['Tactics'], level: 1 },
-            message: 'The assault landing taught you valuable tactical lessons.',
-          },
-        },
-        {
-          id: 'recon',
-          label: 'Recon 1',
-          description: 'Reconnaissance',
-          effects: {
-            skills: { choices: ['Recon'], level: 1 },
-            message: 'You learned to scout landing zones effectively.',
-          },
-        },
-        {
-          id: 'vacc-suit',
-          label: 'Vacc Suit 1',
-          description: 'Environmental suit operations',
-          effects: {
-            skills: { choices: ['Vacc Suit'], level: 1 },
-            message: 'The orbital drop improved your vacuum suit skills.',
-          },
-        },
-        {
-          id: 'heavy-weapons',
-          label: 'Heavy Weapons 1',
-          description: 'Heavy weapons operation',
-          effects: {
-            skills: { choices: ['Heavy Weapons'], level: 1 },
-            message: 'You gained experience with assault weaponry.',
-          },
-        },
-      ],
-    },
-  },
-
-  // Roll 5 - Peacekeeping
-  {
-    id: 'marines-event-5',
-    description: 'You are assigned to a peacekeeping role.',
-    resolution: {
-      type: 'choice',
-      displayText: 'Choose a skill to gain at level 1:',
-      options: [
-        {
-          id: 'admin',
-          label: 'Admin 1',
-          description: 'Administrative duties',
-          effects: {
-            skills: { choices: ['Admin'], level: 1 },
-            message: 'Peacekeeping operations taught you administrative skills.',
-          },
-        },
-        {
-          id: 'investigate',
-          label: 'Investigate 1',
-          description: 'Investigation skills',
-          effects: {
-            skills: { choices: ['Investigate'], level: 1 },
-            message: 'You learned investigation techniques during peacekeeping.',
+            skills: { choices: ['Stealth'], level: 1 },
+            message: 'You learned to move undetected behind enemy lines.',
           },
         },
         {
@@ -145,31 +67,120 @@ const MARINES_EVENTS: GameEvent[] = [
           description: 'Deception and misdirection',
           effects: {
             skills: { choices: ['Deception'], level: 1 },
-            message: 'Peacekeeping taught you the value of careful deception.',
+            message: 'You learned to deceive the enemy to survive.',
           },
         },
         {
-          id: 'recon',
-          label: 'Recon 1',
-          description: 'Reconnaissance',
+          id: 'streetwise',
+          label: 'Streetwise 1',
+          description: 'Urban survival and contacts',
           effects: {
-            skills: { choices: ['Recon'], level: 1 },
-            message: 'Patrol duties honed your reconnaissance abilities.',
+            skills: { choices: ['Streetwise'], level: 1 },
+            message: 'You learned streetwise skills to survive behind enemy lines.',
           },
         },
       ],
     },
   },
 
-  // Roll 6 - Lead to safety
+  // Roll 4 - Security staff of a space station
+  {
+    id: 'marines-event-4',
+    description: 'You are assigned to the security staff of a space station.',
+    resolution: {
+      type: 'choice',
+      displayText: 'Increase one of these skills by one level:',
+      options: [
+        {
+          id: 'vacc-suit',
+          label: 'Vacc Suit',
+          description: 'Environmental suit operations',
+          effects: {
+            skills: { choices: ['Vacc Suit'], level: 1 },
+            message: 'Station duty improved your vacuum suit skills.',
+          },
+        },
+        {
+          id: 'athletics',
+          label: 'Athletics (dexterity)',
+          description: 'Physical fitness',
+          effects: {
+            skills: { choices: ['Athletics (dexterity)'], level: 1 },
+            message: 'Security patrols kept you in peak physical condition.',
+          },
+        },
+      ],
+    },
+  },
+
+  // Roll 5 - Advanced training
+  {
+    id: 'marines-event-5',
+    description: 'You are given advanced training in a specialist field.',
+    resolution: {
+      type: 'characteristic_roll',
+      stat: 'education',
+      target: 8,
+      displayText: 'Roll EDU 8+ to gain any one skill of your choice at level 1.',
+      outcomes: [
+        {
+          condition: { type: 'success' },
+          effects: {
+            skills: { anySkill: true, level: 1 },
+            message: 'Training complete! Gain any one skill of your choice at level 1.',
+          },
+        },
+        {
+          condition: { type: 'failure' },
+          effects: {
+            message: 'The training proves too difficult for you to master.',
+          },
+        },
+      ],
+    },
+  },
+
+  // Roll 6 - Assault on an enemy fortress
   {
     id: 'marines-event-6',
-    description: 'You are thrown into a dangerous situation and lead your fellow Marines to safety.',
+    description: 'You are assigned to an assault on an enemy fortress.',
     resolution: {
-      type: 'automatic',
-      effects: {
-        message: 'Your leadership in crisis earns you recognition. Gain DM+2 to your next advancement roll.',
-      },
+      type: 'choice',
+      displayText: 'Choose a combat skill to roll 8+ with:',
+      options: [
+        {
+          id: 'melee-roll',
+          label: 'Roll Melee 8+',
+          description: 'Use your melee combat skills',
+          effects: {
+            skills: { choices: ['Tactics (military)', 'Leadership'], level: 1 },
+            message: 'You succeed in the assault! Gain Tactics (military) or Leadership.',
+          },
+          subRoll: {
+            dice: 2,
+            outcomes: [
+              { min: 8, max: 12, label: 'Success!', effects: { skills: { choices: ['Tactics (military)', 'Leadership'], level: 1 }, message: 'The assault succeeds! Choose Tactics (military) or Leadership.' } },
+              { min: 2, max: 7, label: 'Failure - Injured', effects: { characteristics: [{ stat: 'endurance', modifier: -1 }], message: 'The assault fails. You are injured and lose 1 point from a physical characteristic.' } },
+            ],
+          },
+        },
+        {
+          id: 'gun-combat-roll',
+          label: 'Roll Gun Combat 8+',
+          description: 'Use your ranged combat skills',
+          effects: {
+            skills: { choices: ['Tactics (military)', 'Leadership'], level: 1 },
+            message: 'You succeed in the assault! Gain Tactics (military) or Leadership.',
+          },
+          subRoll: {
+            dice: 2,
+            outcomes: [
+              { min: 8, max: 12, label: 'Success!', effects: { skills: { choices: ['Tactics (military)', 'Leadership'], level: 1 }, message: 'The assault succeeds! Choose Tactics (military) or Leadership.' } },
+              { min: 2, max: 7, label: 'Failure - Injured', effects: { characteristics: [{ stat: 'endurance', modifier: -1 }], message: 'The assault fails. You are injured and lose 1 point from a physical characteristic.' } },
+            ],
+          },
+        },
+      ],
     },
   },
 
@@ -184,161 +195,145 @@ const MARINES_EVENTS: GameEvent[] = [
     },
   },
 
-  // Roll 8 - Advanced training
+  // Roll 8 - Front lines of a planetary assault
   {
     id: 'marines-event-8',
-    description: 'You are given advanced training in a specialist field.',
+    description: 'You are on the front lines of a planetary assault and occupation.',
     resolution: {
-      type: 'characteristic_roll',
-      stat: 'education',
-      target: 8,
-      displayText: 'Roll EDU 8+ to successfully complete the training.',
-      outcomes: [
+      type: 'choice',
+      displayText: 'Gain one of the following skills at level 1:',
+      options: [
         {
-          condition: { type: 'success' },
+          id: 'recon',
+          label: 'Recon 1',
+          description: 'Reconnaissance',
           effects: {
-            skills: { anySkill: true, level: 1, requireExisting: true },
-            message: 'Training complete! Increase any skill you already have by one level.',
+            skills: { choices: ['Recon'], level: 1 },
+            message: 'Front-line experience honed your reconnaissance skills.',
           },
         },
         {
-          condition: { type: 'failure' },
+          id: 'gun-combat',
+          label: 'Gun Combat 1',
+          description: 'Ranged combat',
           effects: {
-            message: 'The training proves too difficult for you to master.',
+            skills: { choices: ['Gun Combat'], level: 1 },
+            message: 'Intense combat improved your gun combat skills.',
+          },
+        },
+        {
+          id: 'leadership',
+          label: 'Leadership 1',
+          description: 'Command and leadership',
+          effects: {
+            skills: { choices: ['Leadership'], level: 1 },
+            message: 'Leading troops in battle taught you leadership.',
+          },
+        },
+        {
+          id: 'electronics-comms',
+          label: 'Electronics (comms) 1',
+          description: 'Communications systems',
+          effects: {
+            skills: { choices: ['Electronics (comms)'], level: 1 },
+            message: 'You gained experience with battlefield communications.',
           },
         },
       ],
     },
   },
 
-  // Roll 9 - Cross-training
+  // Roll 9 - Mission goes wrong due to commander's error
   {
     id: 'marines-event-9',
-    description: 'You receive cross-training in another area.',
+    description: 'A mission goes disastrously wrong due to your commander\'s error or incompetence but you survive.',
     resolution: {
       type: 'choice',
-      displayText: 'Gain one level in a skill from another Marine assignment:',
+      displayText: 'If you report your commanding officer for their failure then you gain DM+2 to your next advancement roll and gain the officer as an Enemy. If you say nothing and protect them, gain them as an Ally.',
       options: [
         {
-          id: 'mechanic',
-          label: 'Mechanic 1',
-          description: 'Equipment maintenance (Support)',
+          id: 'report',
+          label: 'Report the Commander',
+          description: 'Gain DM+2 to next advancement roll but gain an Enemy',
           effects: {
-            skills: { choices: ['Mechanic'], level: 1 },
-            message: 'Cross-training in support taught you equipment maintenance.',
+            advancementDM: 2,
+            enemies: 1,
+            message: 'You report your commander. Gain DM+2 to next advancement roll and gain the officer as an Enemy.',
           },
         },
         {
-          id: 'vacc-suit',
-          label: 'Vacc Suit 1',
-          description: 'Zero-G operations (Star Marine)',
+          id: 'protect',
+          label: 'Protect the Commander',
+          description: 'Gain the commander as an Ally',
           effects: {
-            skills: { choices: ['Vacc Suit'], level: 1 },
-            message: 'Cross-training with Star Marines improved your vacuum suit skills.',
-          },
-        },
-        {
-          id: 'heavy-weapons',
-          label: 'Heavy Weapons 1',
-          description: 'Heavy weapons (Ground Assault)',
-          effects: {
-            skills: { choices: ['Heavy Weapons'], level: 1 },
-            message: 'Cross-training with Ground Assault taught you heavy weapons.',
-          },
-        },
-        {
-          id: 'medic',
-          label: 'Medic 1',
-          description: 'Field medicine (Support)',
-          effects: {
-            skills: { choices: ['Medic'], level: 1 },
-            message: 'Cross-training taught you field medicine.',
+            allies: 1,
+            message: 'You protect your commander and gain them as an Ally.',
           },
         },
       ],
     },
   },
 
-  // Roll 10 - Starship assignment
+  // Roll 10 - Black ops mission
   {
     id: 'marines-event-10',
-    description: 'You are assigned to a starship for an extended mission.',
+    description: 'You are assigned to a black ops mission.',
     resolution: {
-      type: 'choice',
-      displayText: 'Choose a skill to gain at level 1:',
-      options: [
-        {
-          id: 'pilot',
-          label: 'Pilot 1',
-          description: 'Piloting skills',
-          effects: {
-            skills: { choices: ['Pilot'], level: 1 },
-            message: 'Shipboard duty taught you piloting basics.',
-          },
-        },
-        {
-          id: 'gunner',
-          label: 'Gunner 1',
-          description: 'Ship weapons',
-          effects: {
-            skills: { choices: ['Gunner'], level: 1 },
-            message: 'You gained experience with ship weapons systems.',
-          },
-        },
-        {
-          id: 'sensors',
-          label: 'Electronics (Sensors) 1',
-          description: 'Sensor operations',
-          effects: {
-            skills: { choices: ['Electronics (Sensors)'], level: 1 },
-            message: 'You learned to operate ship sensor systems.',
-          },
-        },
-        {
-          id: 'mechanic',
-          label: 'Mechanic 1',
-          description: 'Ship maintenance',
-          effects: {
-            skills: { choices: ['Mechanic'], level: 1 },
-            message: 'Shipboard duty taught you maintenance skills.',
-          },
-        },
-      ],
+      type: 'automatic',
+      effects: {
+        advancementDM: 2,
+        message: 'Your black ops mission is a success. Gain DM+2 to your next advancement roll.',
+      },
     },
   },
 
-  // Roll 11 - Leadership in combat
+  // Roll 11 - Commanding officer takes interest
   {
     id: 'marines-event-11',
-    description: 'You show leadership and courage in combat.',
+    description: 'Your commanding officer takes an interest in your career.',
     resolution: {
       type: 'choice',
-      displayText: 'Your courage is recognized:',
+      displayText: 'Choose your benefit:',
       options: [
         {
-          id: 'promotion',
-          label: 'Automatic Promotion',
-          description: 'You are automatically promoted',
+          id: 'tactics',
+          label: 'Gain Tactics 1',
+          description: 'Learn military tactics from your CO',
           effects: {
-            message: 'Your leadership earns you an automatic promotion!',
+            skills: { choices: ['Tactics'], level: 1 },
+            message: 'Your CO mentors you in military tactics.',
           },
         },
         {
           id: 'advancement',
           label: 'DM+4 to Advancement',
-          description: 'Gain a significant advantage on advancement',
+          description: 'Your CO puts in a good word for you',
           effects: {
-            message: 'Your courage is noted in your service record. Gain DM+4 to your next advancement roll.',
+            advancementDM: 4,
+            message: 'Your CO\'s aid gives you DM+4 to your next advancement roll.',
           },
         },
       ],
+    },
+  },
+
+  // Roll 12 - Heroism in battle
+  {
+    id: 'marines-event-12',
+    description: 'You display heroism in battle. You may gain a promotion or a commission automatically.',
+    resolution: {
+      type: 'automatic',
+      effects: {
+        autoPromotion: true,
+        message: 'Your heroism in battle earns you an automatic promotion or commission!',
+      },
     },
   },
 ];
 
 export const CAREER_MARINES: CareerDefinition = {
   name: 'Marines',
-  description: 'Elite forces trained for boarding actions, ship security, and planetary assault.',
+  description: 'Members of the armed fighting forces carried aboard starships, marines deal with piracy and boarding actions in space, defend the starports and bases belonging to the navy and supplement ground forces such as the army.',
   qualification: 'END 6+',
   qualificationTarget: 6,
   qualificationStat: 'endurance',
@@ -346,7 +341,7 @@ export const CAREER_MARINES: CareerDefinition = {
   assignments: [
     {
       name: 'Support',
-      description: 'You are a quartermaster, engineer, or battlefield medic.',
+      description: 'You are a quartermaster, engineer or battlefield medic in the marines.',
       survivalStat: 'endurance',
       survivalTarget: 5,
       advancementStat: 'education',
@@ -354,7 +349,7 @@ export const CAREER_MARINES: CareerDefinition = {
     },
     {
       name: 'Star Marine',
-      description: 'You are trained for ship boarding and zero-G combat.',
+      description: 'You are trained to fight boarding actions and capture enemy vessels.',
       survivalStat: 'endurance',
       survivalTarget: 6,
       advancementStat: 'education',
@@ -362,7 +357,7 @@ export const CAREER_MARINES: CareerDefinition = {
     },
     {
       name: 'Ground Assault',
-      description: 'You are part of the planetary assault forces.',
+      description: 'You are kicked out of a spacecraft in high orbit and told to \'capture that planet\'.',
       survivalStat: 'endurance',
       survivalTarget: 7,
       advancementStat: 'education',
@@ -370,24 +365,24 @@ export const CAREER_MARINES: CareerDefinition = {
     },
   ],
   skillTables: {
-    personalDevelopment: ['Strength +1', 'Dexterity +1', 'Endurance +1', 'Gambler', 'Melee', 'Blade Combat'],
+    personalDevelopment: ['Strength +1', 'Dexterity +1', 'Endurance +1', 'Gambler', 'Melee (unarmed)', 'Melee (blade)'],
     serviceSkills: ['Athletics', 'Vacc Suit', 'Tactics', 'Heavy Weapons', 'Gun Combat', 'Stealth'],
     advancedEducation: ['Medic', 'Survival', 'Explosives', 'Engineer', 'Pilot', 'Navigation'],
-    officer: ['Tactics', 'Leadership', 'Advocate', 'Vacc Suit', 'Electronics', 'Admin'],
+    officer: ['Electronics', 'Tactics', 'Admin', 'Advocate', 'Diplomat', 'Leadership'],
     specialist: {
-      'Support': ['Mechanic', 'Drive', 'Profession', 'Explosives', 'Medic', 'Electronics'],
-      'Star Marine': ['Vacc Suit', 'Athletics', 'Gunner', 'Melee', 'Gun Combat', 'Electronics'],
-      'Ground Assault': ['Vacc Suit', 'Heavy Weapons', 'Recon', 'Melee', 'Tactics', 'Gun Combat'],
+      'Support': ['Electronics', 'Mechanic', 'Drive or Flyer', 'Medic', 'Heavy Weapons', 'Gun Combat'],
+      'Star Marine': ['Vacc Suit', 'Athletics', 'Gunner', 'Melee (blade)', 'Electronics', 'Gun Combat'],
+      'Ground Assault': ['Vacc Suit', 'Heavy Weapons', 'Recon', 'Melee (blade)', 'Tactics (military)', 'Gun Combat'],
     },
   },
   ranks: {
     enlisted: [
       { title: 'Marine', skillBonus: 'Gun Combat' },
-      { title: 'Lance Corporal', skillBonus: 'Blade Combat' },
+      { title: 'Lance Corporal', skillBonus: 'Melee' },
       { title: 'Corporal' },
       { title: 'Lance Sergeant', skillBonus: 'Leadership' },
       { title: 'Sergeant' },
-      { title: 'Gunnery Sergeant', skillBonus: 'Tactics' },
+      { title: 'Gunnery Sergeant', bonusStat: 'endurance' },
       { title: 'Sergeant Major' },
     ],
     officer: [
@@ -395,7 +390,7 @@ export const CAREER_MARINES: CareerDefinition = {
       { title: 'Captain' },
       { title: 'Force Commander', skillBonus: 'Tactics' },
       { title: 'Lieutenant Colonel' },
-      { title: 'Colonel' },
+      { title: 'Colonel', bonusStat: 'social' },
       { title: 'Brigadier', bonusStat: 'social' },
     ],
   },
@@ -403,7 +398,7 @@ export const CAREER_MARINES: CareerDefinition = {
     // Mishap 1: Severely injured
     {
       id: 'marines-mishap-1',
-      description: 'Severely injured in action. Roll on the Injury table.',
+      description: 'Severely injured in action (this is the same as a result of 2 on the Injury table). Alternatively, roll twice on the Injury table and take the lower result.',
       resolution: {
         type: 'automatic' as const,
         effects: {
@@ -412,68 +407,70 @@ export const CAREER_MARINES: CareerDefinition = {
         },
       },
     },
-    // Mishap 2: Commander's error
+    // Mishap 2: Captured and mistreated
     {
       id: 'marines-mishap-2',
-      description: 'A mission goes disastrously wrong due to your commander\'s error or incompetence, but you survive. Gain them as an Enemy and leave the service.',
+      description: 'A mission goes wrong; you and several others are captured and mistreated by the enemy. Due to your injuries, you are discharged early. Gain your jailer as an Enemy and reduce your STR and DEX by one because of your injuries.',
       resolution: {
         type: 'automatic' as const,
         effects: {
           enemies: 1,
-          message: 'A mission goes disastrously wrong due to your commander\'s error. You gain them as an Enemy.',
+          characteristics: [
+            { stat: 'strength' as const, modifier: -1 },
+            { stat: 'dexterity' as const, modifier: -1 },
+          ],
+          message: 'You are captured and mistreated. Gain your jailer as an Enemy. Your STR and DEX are each reduced by 1.',
         },
       },
     },
-    // Mishap 3: Taken prisoner
+    // Mishap 3: Stranded behind enemy lines
     {
       id: 'marines-mishap-3',
-      description: 'You are taken prisoner during an operation. Gain Survival 1 or Deception 1, but also gain your captors as an Enemy.',
+      description: 'A mission goes wrong and you are stranded behind enemy lines. Increase Stealth or Survival by one level but, due to the mission\'s failure, you are ejected from the service.',
       resolution: {
         type: 'choice' as const,
         choices: [
+          {
+            id: 'stealth',
+            label: 'Gain Stealth',
+            description: 'Increase Stealth by one level.',
+            effects: {
+              skills: { choices: ['Stealth'], level: 1 },
+              message: 'You gain Stealth from surviving behind enemy lines, but are ejected from the service.',
+            },
+          },
           {
             id: 'survival',
             label: 'Gain Survival',
             description: 'Increase Survival by one level.',
             effects: {
               skills: { choices: ['Survival'], level: 1 },
-              enemies: 1,
-              message: 'You survive captivity and gain Survival, but gain your captors as an Enemy.',
-            },
-          },
-          {
-            id: 'deception',
-            label: 'Gain Deception',
-            description: 'Increase Deception by one level.',
-            effects: {
-              skills: { choices: ['Deception'], level: 1 },
-              enemies: 1,
-              message: 'You escape captivity through guile and gain Deception, but gain your captors as an Enemy.',
+              message: 'You gain Survival from surviving behind enemy lines, but are ejected from the service.',
             },
           },
         ],
       },
     },
-    // Mishap 4: Black ops mission
+    // Mishap 4: Black ops mission against conscience
     {
       id: 'marines-mishap-4',
-      description: 'You are assigned to a black ops mission that goes against your conscience. Either carry it out or refuse.',
+      description: 'You are ordered to take part in a black ops mission that goes against your conscience. If you refuse you are ejected from the service. If you accept you may stay with the marines but gain the lone survivor as an Enemy.',
       resolution: {
         type: 'choice' as const,
         choices: [
           {
-            id: 'carry_out',
-            label: 'Carry It Out',
-            description: 'Keep the Benefit roll from this term but gain an Enemy.',
+            id: 'accept',
+            label: 'Accept the Mission',
+            description: 'Stay in the marines but gain an Enemy.',
             effects: {
               enemies: 1,
-              extraBenefit: true,
-              message: 'You carry out the mission. You keep your Benefit roll but gain an Enemy.',
+              continueInCareer: true,
+              message: 'You carry out the black ops mission. You may stay with the marines but gain the lone survivor as an Enemy.',
             },
           },
           {
             id: 'refuse',
-            label: 'Refuse',
+            label: 'Refuse the Mission',
             description: 'Ejected from the service.',
             effects: {
               message: 'You refuse the mission and are ejected from the service.',
@@ -482,15 +479,15 @@ export const CAREER_MARINES: CareerDefinition = {
         ],
       },
     },
-    // Mishap 5: Blamed for accident
+    // Mishap 5: Tormented by or quarrel with officer
     {
       id: 'marines-mishap-5',
-      description: 'You are blamed for an accident that kills several comrades. Gain an Enemy and leave the service.',
+      description: 'You are tormented by or quarrel with an officer or fellow marine. Gain that character as a Rival as they drive you out of the service.',
       resolution: {
         type: 'automatic' as const,
         effects: {
-          enemies: 1,
-          message: 'You are blamed for an accident that kills several comrades. You gain an Enemy.',
+          rivals: 1,
+          message: 'You quarrel with an officer or fellow marine. You gain them as a Rival as they drive you out of the service.',
         },
       },
     },

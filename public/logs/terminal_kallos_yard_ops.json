@@ -1,0 +1,95 @@
+[
+  {
+    "title": "Kallos Shipyards \u2014 Overnight Bay Assignment Snapshot",
+    "location": "Kallos Shipyards, Ops Corridor K-2",
+    "date": "CYCLE 319-1105 // 00:06 LOCAL",
+    "author": "Yard Dispatch",
+    "content": "BERTH SNAPSHOT // AUTO-GENERATED\n\nBAY 7-A \u2014 Fuel Tender (delayed)\nBAY 7-B \u2014 Hull Patch Crew (active)\nBAY 7-C \u2014 Far Trader, registry packet under review\nBAY 7-D \u2014 Empty\n\nDockmaster warning: avoid flagging 7-C in public queue until owner dispute is settled. Last crew asking questions about this hull came with lawyers, not loaders.\n\nService note: temporary transponder hush approved for 7-C during maintenance window. Duration 02:00-05:00.\n\n[[redacted diff=8 skill=\"Admin\" attempts=2]]\nUnofficial note from night shift: if someone pays to move a ship quiet, it usually departs through spillway traffic with ore barges. Ask for convoy packet \"BRINE-LANTERN\" and keep your lights to code-blue only.[[/redacted]]",
+    "security_level": "low",
+    "requires_roll": false
+  },
+  {
+    "title": "Dispute Case Stub \u2014 Vessel Custody Hold",
+    "location": "Kallos Shipyards, Legal Relay Node",
+    "date": "CYCLE 319-1105 // 00:12 LOCAL",
+    "author": "Auto-clerk // Civil-Marine Queue",
+    "content": "Custody inquiry logged against vessel in Bay 7-C. Multiple claimants pending verification. One claimant packet withdrawn before hearing assignment.\n\nSystem indicates attached evidence bundle exists, but index references a quarantined vault segment.",
+    "type": "action_sequence",
+    "action_sequence": {
+      "id": "kallos-custody-vault",
+      "category": "system_override",
+      "steps": [
+        {
+          "type": "auto",
+          "lines": [
+            ">> KALLOS LEGAL RELAY // CIVIL-MARINE QUEUE",
+            ">> VAULT SEGMENT: QUARANTINED",
+            ">> JUSTIFICATION REQUIRED FOR EMERGENCY DISCLOSURE"
+          ],
+          "delay": 30,
+          "pause_after": 500
+        },
+        {
+          "type": "prompt",
+          "prompt_text": "ENTER DISCLOSURE BASIS:",
+          "accept": [
+            "FRAUD",
+            "THEFT",
+            "CHAIN OF TITLE",
+            "CLAIM COLLISION"
+          ],
+          "reject_message": "BASIS INVALID. LOGGING ATTEMPT.",
+          "max_attempts": 3,
+          "sound_on_accept": "access_granted",
+          "sound_on_reject": "error_buzz"
+        },
+        {
+          "type": "progress",
+          "label": "MOUNTING QUARANTINED VAULT...",
+          "duration": 2600,
+          "segments": 24,
+          "sound_on_complete": "data_download",
+          "complete_message": "VAULT MOUNTED"
+        },
+        {
+          "type": "auto",
+          "lines": [
+            ">> FILE FRAGMENT: SHIP SEIZED IN OUTER BELT TRANSFER",
+            ">> FILE FRAGMENT: TRANSFER AGENT USED FALSE FREIGHT BOND",
+            ">> FILE FRAGMENT: CLAIMANT 'VETHIS CARRIAGE' PROVIDED ENGINE STAMP MATCH (99.4%)",
+            ">> FILE FRAGMENT: SECOND CLAIMANT WITHDREW AFTER PRIVATE SETTLEMENT",
+            ">> ATTACHMENT MISSING: SETTLEMENT PARTY IDENTITIES [PURGED]"
+          ],
+          "delay": 34,
+          "sound": "warning",
+          "sound_at_line": 4
+        }
+      ],
+      "on_complete": {
+        "message": "The custody file doesn't settle ownership, but it proves two things: Vethis has legitimate technical evidence, and someone else paid to erase the final settlement identities. That erased party is likely still active on Theev and wealthy enough to buy institutional silence.",
+        "persist_key": "kallos-custody-vault"
+      },
+      "on_failure": {
+        "message": "Override denied. Relay locked your session and mirrored the attempt to yard compliance.",
+        "sound": "access_denied"
+      }
+    },
+    "security_level": "high",
+    "requires_roll": true,
+    "roll_check": {
+      "difficulty": 11,
+      "skill": "Electronics (computers)",
+      "on_success": "Quarantined legal vault responsive.",
+      "on_failure": "Vault remains sealed."
+    }
+  },
+  {
+    "title": "Night Tug Scheduler \u2014 Unclaimed Work Orders",
+    "location": "Kallos Shipyards, Tug Dispatcher Mirror",
+    "date": "CURRENT CYCLE",
+    "author": "Dock Automation Stack",
+    "content": "Three tug escort requests were created then canceled inside twenty minutes. All requested same corridor and same blackout tolerance.\n\nOne cancellation includes note: \"secondary crew arrived first, principal delayed by alley incident.\"\n\n[[redacted diff=9 skill=\"Mechanic\" attempts=2]]\nUnused tug keypair still valid for 41 minutes after cancellation if captain handshake is spoofed with engine-noise sample from bay 7-C.[[/redacted]]",
+    "security_level": "medium",
+    "requires_roll": false
+  }
+]

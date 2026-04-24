@@ -1,14 +1,17 @@
 import React, { useRef, useEffect, useCallback, useState } from "react";
 import { useVTT } from "@/contexts/VTTContext";
-import { screenToWorld } from "@/lib/vtt/geometry";
-import { clamp } from "@/lib/vtt/geometry";
+import { screenToWorld, clamp, findStrokeAt, findTextAt, smoothPoints } from "@/lib/vtt/geometry";
 import { renderDynamicLighting } from "@/lib/vtt/raycasting";
 import { useVTTFogBrush } from "@/hooks/useVTTFogBrush";
-import type { Point, Stroke, Token, MapNote, VTTMap, AoETemplate, TextOverlay, Wall } from "@/types/vtt";
+import { getTokenBoundingBox, getStrokeBoundingBox, getTextBoundingBox, getNoteBoundingBox, getPropBoundingBox, getUnionBoundingBox } from "@/lib/vtt/boundingBox";
+import { renderBoundingBoxHandles, hitTestHandles, computeRotationFromHandle } from "@/lib/vtt/selectionHandles";
+import type { HandleType } from "@/lib/vtt/selectionHandles";
+import type { Point, Stroke, Token, MapNote, VTTMap, AoETemplate, TextOverlay, Wall, BoundingBox, LightSource, SceneProp } from "@/types/vtt";
 import VTTContextMenu from "./VTTContextMenu";
 import VTTTokenEditModal from "./VTTTokenEditModal";
 import VTTNoteModal from "./VTTNoteModal";
 import VTTZoomControl from "./VTTZoomControl";
+import VTTTokenHUD from "./VTTTokenHUD";
 
 const MIN_ZOOM = 0.1;
 const MAX_ZOOM = 5;
@@ -23,6 +26,63 @@ function getTokenImage(dataUrl: string): HTMLImageElement | null {
     const img = new Image();
     img.src = dataUrl;
     tokenImageCache.set(dataUrl, img);
+  }
+  return null;
+}
+
+// ─── Scene prop image cache ───────────────────────────────────────────────
+const propImageCache = new Map<string, HTMLImageElement>();
+function getPropImage(url: string): HTMLImageElement | null {
+  const cached = propImageCache.get(url);
+  if (cached && cached.complete) return cached;
+  if (!cached) {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.src = url;
+    propImageCache.set(url, img);
+  }
+  return null;
+}
+
+// ─── AOE / Light hit testing ──────────────────────────────────────────────
+function findAoEAt(templates: AoETemplate[], pos: Point): AoETemplate | null {
+  for (let i = templates.length - 1; i >= 0; i--) {
+    const aoe = templates[i];
+    const dx = pos.x - aoe.x;
+    const dy = pos.y - aoe.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    if (aoe.shape === "circle" && dist <= aoe.radius) return aoe;
+    if (aoe.shape === "cone" && dist <= aoe.radius) {
+      const angle = Math.atan2(dy, dx);
+      const spread = (aoe.coneAngle ?? Math.PI / 3) / 2;
+      let diff = angle - (aoe.angle ?? 0);
+      while (diff > Math.PI) diff -= 2 * Math.PI;
+      while (diff < -Math.PI) diff += 2 * Math.PI;
+      if (Math.abs(diff) <= spread) return aoe;
+    }
+    if (aoe.shape === "line") {
+      const lineAngle = aoe.angle ?? 0;
+      const lineWidth = 20;
+      const ldx = Math.cos(lineAngle) * aoe.radius;
+      const ldy = Math.sin(lineAngle) * aoe.radius;
+      const lineLen = Math.sqrt(ldx * ldx + ldy * ldy);
+      if (lineLen > 0) {
+        const t = (dx * ldx + dy * ldy) / (lineLen * lineLen);
+        const perpDist = Math.abs((-ldy * dx + ldx * dy) / lineLen);
+        if (t >= 0 && t <= 1 && perpDist <= lineWidth) return aoe;
+      }
+    }
+  }
+  return null;
+}
+
+function findLightAt(lights: LightSource[], pos: Point, zoom: number): LightSource | null {
+  const hitRadius = 15 / Math.max(0.1, zoom);
+  for (let i = lights.length - 1; i >= 0; i--) {
+    const light = lights[i];
+    const dx = pos.x - light.x;
+    const dy = pos.y - light.y;
+    if (Math.sqrt(dx * dx + dy * dy) <= hitRadius) return light;
   }
   return null;
 }
@@ -49,10 +109,16 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
   const scrollStartRef = useRef<Point>({ x: 0, y: 0 });
   const currentStrokeRef = useRef<Point[]>([]);
   const [dragToken, setDragToken] = useState<string | null>(null);
+  const [dragPropId, setDragPropId] = useState<string | null>(null);
   const dragOffsetRef = useRef<Point>({ x: 0, y: 0 });
   // Group drag: tracks whether we're dragging a multi-selection
   const [isGroupDrag, setIsGroupDrag] = useState(false);
   const groupDragLastWorldRef = useRef<Point>({ x: 0, y: 0 });
+
+  // Image drag state (Map layer)
+  const [isDraggingImage, setIsDraggingImage] = useState(false);
+  const imageDragStartRef = useRef<Point>({ x: 0, y: 0 });
+  const imageOffsetStartRef = useRef<Point>({ x: 0, y: 0 });
 
   // Fog brush painting state
   const [isFogPainting, setIsFogPainting] = useState(false);
@@ -71,10 +137,16 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
   } | null>(null);
   const textInputRef = useRef<HTMLInputElement>(null);
 
-  // Measurement state
+  // Measurement state (multi-point waypoints)
   const [measuring, setMeasuring] = useState(false);
   const measureStartRef = useRef<Point>({ x: 0, y: 0 });
   const measureEndRef = useRef<Point>({ x: 0, y: 0 });
+  const measurePointsRef = useRef<Point[]>([]);
+
+  // Static layer cache for performance optimization
+  const staticCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const staticDirtyRef = useRef(true);
+  const dirtyRef = useRef(true);
 
   // Wall drawing state
   const [drawingWall, setDrawingWall] = useState(false);
@@ -95,10 +167,32 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
   const selectionBoxStartRef = useRef<Point>({ x: 0, y: 0 });
 
   // Ping state (visual on GM canvas)
-  const [pings, setPings] = useState<{ x: number; y: number; timestamp: number }[]>([]);
+  const [pings, setPings] = useState<{ x: number; y: number; timestamp: number; label?: string; color?: string }[]>([]);
 
   // Drag start position for undo history
   const dragStartPosRef = useRef<Point>({ x: 0, y: 0 });
+
+  // Inline HP edit state
+  const [hpEdit, setHpEdit] = useState<{
+    tokenId: string;
+    screenX: number;
+    screenY: number;
+    value: string;
+  } | null>(null);
+  const hpEditRef = useRef<HTMLInputElement>(null);
+
+  // Hover state (refs to avoid callback re-creation)
+  const hoveredTokenIdRef = useRef<string | null>(null);
+  const hoveredStrokeIdRef = useRef<string | null>(null);
+  const hoveredTextIdRef = useRef<string | null>(null);
+  const hoveredNoteIdRef = useRef<string | null>(null);
+
+  // Selection handle interaction
+  const [activeHandle, setActiveHandle] = useState<HandleType>(null);
+  const handleStartRef = useRef<{ size: number; rotation: number; bbox: BoundingBox | null; objectType: string; objectId: string }>({ size: 1, rotation: 0, bbox: null, objectType: "", objectId: "" });
+
+  // Mouse world position for cursor previews (fog brush, etc.)
+  const cursorWorldRef = useRef<Point>({ x: 0, y: 0 });
 
   // Modals
   const [editingToken, setEditingToken] = useState<Token | null>(null);
@@ -154,6 +248,14 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
     return () => observer.disconnect();
   }, []);
 
+  // Reset measurement state when switching away from measure tool
+  useEffect(() => {
+    if (state.activeTool !== "measure" && measuring) {
+      setMeasuring(false);
+      measurePointsRef.current = [];
+    }
+  }, [state.activeTool, measuring]);
+
   // ─── Coordinate helpers ─────────────────────────────────────────────
 
   const getWorldPos = useCallback(
@@ -208,6 +310,28 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
     [activeMap]
   );
 
+  const findPropAt = useCallback(
+    (pos: Point): SceneProp | null => {
+      if (!activeMap) return null;
+      const props = activeMap.props || [];
+      for (let i = props.length - 1; i >= 0; i--) {
+        const p = props[i];
+        if (!p.visible || p.locked) continue;
+        // Transform pos into prop local space (accounting for rotation)
+        const dx = pos.x - p.x;
+        const dy = pos.y - p.y;
+        const rad = -(p.rotation * Math.PI) / 180;
+        const lx = dx * Math.cos(rad) - dy * Math.sin(rad);
+        const ly = dx * Math.sin(rad) + dy * Math.cos(rad);
+        const hw = p.width / 2;
+        const hh = p.height / 2;
+        if (lx >= -hw && lx <= hw && ly >= -hh && ly <= hh) return p;
+      }
+      return null;
+    },
+    [activeMap]
+  );
+
   // ─── Mouse handlers ─────────────────────────────────────────────────
 
   const handleMouseDown = useCallback(
@@ -234,15 +358,67 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
         if (state.activeTool === "cursor") {
           // Ctrl+Click → GM ping
           if (e.ctrlKey || e.metaKey) {
-            const ping = { x: worldPos.x, y: worldPos.y, timestamp: Date.now() };
+            const ping = { x: worldPos.x, y: worldPos.y, timestamp: Date.now(), label: "GM", color: "#ffcc00" };
             setPings((prev) => [...prev, ping]);
             setTimeout(() => setPings((prev) => prev.filter((p) => p !== ping)), 2000);
-            broadcastPing?.(worldPos.x, worldPos.y);
+            broadcastPing?.(worldPos.x, worldPos.y, "GM", "#ffcc00");
             return;
           }
 
-          // Double-click to edit
+          // Place pending scene prop
+          if (state.pendingPropImageUrl && activeMap) {
+            const gs = activeMap.grid.size || 50;
+            const prop: SceneProp = {
+              id: crypto.randomUUID(),
+              name: state.pendingPropName || "Asset",
+              imageUrl: state.pendingPropImageUrl,
+              x: worldPos.x,
+              y: worldPos.y,
+              width: gs * 2,
+              height: gs * 2,
+              rotation: 0,
+              opacity: 1,
+              layer: state.activeLayer,
+              locked: false,
+              visible: true,
+            };
+            dispatch({ type: "ADD_PROP", payload: { mapId: activeMap.id, prop } });
+            dispatch({ type: "SET_PENDING_PROP", payload: null });
+            dispatch({ type: "SET_PROP_SELECTION", payload: [prop.id] });
+            return;
+          }
+
+          // Double-click to edit (check HP bar hit first)
           if (e.detail === 2) {
+            // Check if click is on a token's HP bar
+            if (activeMap) {
+              const gs = activeMap.grid.size || 50;
+              for (const t of activeMap.tokens) {
+                if (!t.visible || !t.showHpBar || t.maxHp <= 0) continue;
+                const ps = t.size * gs;
+                const hs = ps / 2;
+                const barX = t.x - hs;
+                const barY = t.y + hs + 2;
+                const barW = ps;
+                const barH = 8; // expanded hit zone
+                if (worldPos.x >= barX && worldPos.x <= barX + barW &&
+                    worldPos.y >= barY && worldPos.y <= barY + barH) {
+                  const rect = canvasRef.current?.getBoundingClientRect();
+                  if (rect) {
+                    const sx = (t.x - activeMap.scrollX) * activeMap.zoom + rect.left;
+                    const sy = (t.y + hs + 4 - activeMap.scrollY) * activeMap.zoom + rect.top;
+                    setHpEdit({
+                      tokenId: t.id,
+                      screenX: sx - rect.left,
+                      screenY: sy - rect.top,
+                      value: String(t.hp),
+                    });
+                    setTimeout(() => hpEditRef.current?.focus(), 0);
+                  }
+                  return;
+                }
+              }
+            }
             const token = findTokenAt(worldPos);
             if (token) {
               setEditingToken(token);
@@ -255,35 +431,86 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
             }
           }
 
+          // Check selection handles (resize/rotate) for any single selected object
+          const tokenIds = state.selectedTokenIds || [];
+          const strokeIds = state.selectedStrokeIds || [];
+          const textIds = state.selectedTextIds || [];
+          const noteIds = state.selectedNoteIds || [];
+          const propIds = state.selectedPropIds || [];
+          const totalSelected = tokenIds.length + strokeIds.length + textIds.length + noteIds.length + propIds.length;
+
+          if (totalSelected === 1 && activeMap) {
+            const gridSize = activeMap.grid.size || 50;
+            let bbox: BoundingBox | null = null;
+            let objType = "";
+            let objId = "";
+            let objSize = 1;
+            let objRotation = 0;
+
+            if (tokenIds.length === 1) {
+              const selToken = activeMap.tokens.find((t) => t.id === tokenIds[0]);
+              if (selToken && !selToken.locked) {
+                bbox = getTokenBoundingBox(selToken, gridSize);
+                objType = "token"; objId = selToken.id; objSize = selToken.size; objRotation = selToken.rotation;
+              }
+            } else if (strokeIds.length === 1) {
+              const selStroke = activeMap.strokes.find((s) => s.id === strokeIds[0]);
+              if (selStroke) {
+                bbox = getStrokeBoundingBox(selStroke);
+                objType = "stroke"; objId = selStroke.id; objRotation = selStroke.rotation ?? 0;
+              }
+            } else if (textIds.length === 1) {
+              const selText = activeMap.texts.find((t) => t.id === textIds[0]);
+              if (selText) {
+                bbox = getTextBoundingBox(selText);
+                objType = "text"; objId = selText.id; objRotation = selText.rotation ?? 0;
+              }
+            } else if (noteIds.length === 1) {
+              const selNote = activeMap.notes.find((n) => n.id === noteIds[0]);
+              if (selNote) {
+                bbox = getNoteBoundingBox(selNote);
+                objType = "note"; objId = selNote.id; objRotation = selNote.rotation ?? 0;
+              }
+            } else if (propIds.length === 1) {
+              const selProp = (activeMap.props || []).find((p) => p.id === propIds[0]);
+              if (selProp && !selProp.locked) {
+                bbox = getPropBoundingBox(selProp);
+                objType = "prop"; objId = selProp.id; objRotation = selProp.rotation;
+              }
+            }
+
+            if (bbox) {
+              const handle = hitTestHandles(worldPos, bbox, activeMap.zoom);
+              if (handle) {
+                setActiveHandle(handle);
+                handleStartRef.current = { size: objSize, rotation: objRotation, bbox, objectType: objType, objectId: objId };
+                return;
+              }
+            }
+          }
+
           const token = findTokenAt(worldPos);
-          if (token && !token.locked) {
+          if (token && !token.locked && !(state.layerStates?.[token.layer]?.locked)) {
             // Shift+Click toggles token in/out of selection
             if (e.shiftKey) {
-              const ids = state.selectedTokenIds || [];
-              const isSelected = ids.includes(token.id);
+              const isSelected = tokenIds.includes(token.id);
               dispatch({
                 type: "SET_SELECTION",
                 payload: isSelected
-                  ? ids.filter((id) => id !== token.id)
-                  : [...ids, token.id],
+                  ? tokenIds.filter((id) => id !== token.id)
+                  : [...tokenIds, token.id],
               });
               return;
             }
-            const ids = state.selectedTokenIds || [];
-            const hasMultiSelection =
-              ids.length > 1 ||
-              (state.selectedStrokeIds || []).length > 0 ||
-              (state.selectedTextIds || []).length > 0 ||
-              (state.selectedNoteIds || []).length > 0;
 
-            if (ids.includes(token.id) && hasMultiSelection) {
+            if (tokenIds.includes(token.id) && totalSelected > 1) {
               // Start group drag for all selected items
               setIsGroupDrag(true);
               groupDragLastWorldRef.current = worldPos;
               dragStartPosRef.current = { x: token.x, y: token.y };
             } else {
               // Single token selection + drag
-              if (!ids.includes(token.id)) {
+              if (!tokenIds.includes(token.id)) {
                 dispatch({ type: "SET_SELECTION", payload: [token.id] });
               }
               setDragToken(token.id);
@@ -293,15 +520,162 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
                 y: worldPos.y - token.y,
               };
             }
-          } else if (!token) {
-            // Click empty space: start selection box or deselect
-            if (!e.shiftKey) {
-              dispatch({ type: "CLEAR_SELECTION" });
-            }
-            // Start selection box drag
-            selectionBoxStartRef.current = worldPos;
-            setSelectionBox({ start: worldPos, end: worldPos });
+            return;
           }
+
+          // Click-to-select strokes (skip map layer items, skip locked layers)
+          const hitStroke = findStrokeAt(worldPos, activeMap.strokes.filter((s) => s.layer !== 0 && !(state.layerStates?.[s.layer]?.locked)));
+          if (hitStroke) {
+            if (e.shiftKey) {
+              const isSelected = strokeIds.includes(hitStroke.id);
+              dispatch({
+                type: "SET_FULL_SELECTION",
+                payload: {
+                  tokenIds,
+                  strokeIds: isSelected ? strokeIds.filter((id) => id !== hitStroke.id) : [...strokeIds, hitStroke.id],
+                  textIds,
+                  noteIds,
+                },
+              });
+            } else if (strokeIds.includes(hitStroke.id) && totalSelected > 1) {
+              setIsGroupDrag(true);
+              groupDragLastWorldRef.current = worldPos;
+            } else {
+              dispatch({
+                type: "SET_FULL_SELECTION",
+                payload: { tokenIds: [], strokeIds: [hitStroke.id], textIds: [], noteIds: [] },
+              });
+              setIsGroupDrag(true);
+              groupDragLastWorldRef.current = worldPos;
+            }
+            return;
+          }
+
+          // Click-to-select texts (skip map layer items, skip locked layers)
+          const hitText = findTextAt(worldPos, activeMap.texts.filter((t) => t.layer !== 0 && !(state.layerStates?.[t.layer]?.locked)));
+          if (hitText) {
+            if (e.shiftKey) {
+              const isSelected = textIds.includes(hitText.id);
+              dispatch({
+                type: "SET_FULL_SELECTION",
+                payload: {
+                  tokenIds,
+                  strokeIds,
+                  textIds: isSelected ? textIds.filter((id) => id !== hitText.id) : [...textIds, hitText.id],
+                  noteIds,
+                },
+              });
+            } else if (textIds.includes(hitText.id) && totalSelected > 1) {
+              setIsGroupDrag(true);
+              groupDragLastWorldRef.current = worldPos;
+            } else {
+              dispatch({
+                type: "SET_FULL_SELECTION",
+                payload: { tokenIds: [], strokeIds: [], textIds: [hitText.id], noteIds: [] },
+              });
+              setIsGroupDrag(true);
+              groupDragLastWorldRef.current = worldPos;
+            }
+            return;
+          }
+
+          // Click-to-select notes
+          const hitNote = findNoteAt(worldPos);
+          if (hitNote) {
+            if (e.shiftKey) {
+              const isSelected = noteIds.includes(hitNote.id);
+              dispatch({
+                type: "SET_FULL_SELECTION",
+                payload: {
+                  tokenIds,
+                  strokeIds,
+                  textIds,
+                  noteIds: isSelected ? noteIds.filter((id) => id !== hitNote.id) : [...noteIds, hitNote.id],
+                },
+              });
+            } else if (noteIds.includes(hitNote.id) && totalSelected > 1) {
+              setIsGroupDrag(true);
+              groupDragLastWorldRef.current = worldPos;
+            } else {
+              dispatch({
+                type: "SET_FULL_SELECTION",
+                payload: { tokenIds: [], strokeIds: [], textIds: [], noteIds: [hitNote.id] },
+              });
+              setIsGroupDrag(true);
+              groupDragLastWorldRef.current = worldPos;
+            }
+            return;
+          }
+
+          // Click-to-select AoE templates
+          const hitAoE = findAoEAt(activeMap.aoeTemplates || [], worldPos);
+          if (hitAoE) {
+            const aoeIds = state.selectedAoEIds || [];
+            if (e.shiftKey) {
+              const isSelected = aoeIds.includes(hitAoE.id);
+              dispatch({
+                type: "SET_AOE_SELECTION",
+                payload: isSelected ? aoeIds.filter((id) => id !== hitAoE.id) : [...aoeIds, hitAoE.id],
+              });
+            } else {
+              dispatch({ type: "CLEAR_SELECTION" });
+              dispatch({ type: "SET_AOE_SELECTION", payload: [hitAoE.id] });
+            }
+            return;
+          }
+
+          // Click-to-select lights
+          const hitLight = findLightAt(activeMap.lights, worldPos, activeMap.zoom);
+          if (hitLight) {
+            const lightIds = state.selectedLightIds || [];
+            if (e.shiftKey) {
+              const isSelected = lightIds.includes(hitLight.id);
+              dispatch({
+                type: "SET_LIGHT_SELECTION",
+                payload: isSelected ? lightIds.filter((id) => id !== hitLight.id) : [...lightIds, hitLight.id],
+              });
+            } else {
+              dispatch({ type: "CLEAR_SELECTION" });
+              dispatch({ type: "SET_LIGHT_SELECTION", payload: [hitLight.id] });
+            }
+            return;
+          }
+
+          // Click-to-select scene props
+          const hitProp = findPropAt(worldPos);
+          if (hitProp) {
+            if (e.shiftKey) {
+              const isSelected = propIds.includes(hitProp.id);
+              dispatch({
+                type: "SET_PROP_SELECTION",
+                payload: isSelected ? propIds.filter((id) => id !== hitProp.id) : [...propIds, hitProp.id],
+              });
+            } else {
+              dispatch({ type: "CLEAR_SELECTION" });
+              dispatch({ type: "SET_PROP_SELECTION", payload: [hitProp.id] });
+              setDragPropId(hitProp.id);
+              dragOffsetRef.current = { x: worldPos.x - hitProp.x, y: worldPos.y - hitProp.y };
+            }
+            return;
+          }
+
+          // Nothing hit — check for image drag on map layer
+          if (state.activeLayer === 0 && activeMap.imageDataUrl) {
+            setIsDraggingImage(true);
+            imageDragStartRef.current = worldPos;
+            imageOffsetStartRef.current = {
+              x: activeMap.imageOffsetX || 0,
+              y: activeMap.imageOffsetY || 0,
+            };
+            return;
+          }
+
+          // Click empty space: start selection box or deselect
+          if (!e.shiftKey) {
+            dispatch({ type: "CLEAR_SELECTION" });
+          }
+          selectionBoxStartRef.current = worldPos;
+          setSelectionBox({ start: worldPos, end: worldPos });
           return;
         }
 
@@ -327,11 +701,23 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
           return;
         }
 
-        // Measurement tool
+        // Measurement tool (multi-point waypoints)
         if (state.activeTool === "measure") {
-          setMeasuring(true);
-          measureStartRef.current = worldPos;
-          measureEndRef.current = worldPos;
+          if (e.detail === 2) {
+            // Double-click finishes measurement
+            setMeasuring(false);
+            measurePointsRef.current = [];
+            return;
+          }
+          if (!measuring) {
+            setMeasuring(true);
+            measurePointsRef.current = [worldPos];
+            measureStartRef.current = worldPos;
+            measureEndRef.current = worldPos;
+          } else {
+            // Add waypoint
+            measurePointsRef.current.push(worldPos);
+          }
           return;
         }
 
@@ -348,18 +734,26 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
 
         // Light placement
         if (state.activeTool === "light") {
+          const newLight = {
+            id: crypto.randomUUID(),
+            x: worldPos.x,
+            y: worldPos.y,
+            radius: 200,
+            color: "#ffcc44",
+            intensity: 0.8,
+          };
           dispatch({
             type: "ADD_LIGHT",
+            payload: { mapId: activeMap.id, light: newLight },
+          });
+          dispatch({
+            type: "PUSH_HISTORY",
             payload: {
+              type: "light-add",
               mapId: activeMap.id,
-              light: {
-                id: crypto.randomUUID(),
-                x: worldPos.x,
-                y: worldPos.y,
-                radius: 200,
-                color: "#ffcc44",
-                intensity: 0.8,
-              },
+              before: null,
+              after: newLight,
+              timestamp: Date.now(),
             },
           });
           return;
@@ -389,12 +783,90 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
 
       }
     },
-    [activeMap, state.activeTool, state.fogBrushSize, state.fogBrushMode, getWorldPos, findTokenAt, findNoteAt, contextMenu, dispatch, paintFog]
+    [activeMap, state.activeTool, state.activeLayer, state.fogBrushSize, state.fogBrushMode, state.selectedTokenIds, state.selectedStrokeIds, state.selectedTextIds, state.selectedNoteIds, state.selectedPropIds, state.pendingPropImageUrl, state.pendingPropName, getWorldPos, findTokenAt, findNoteAt, findPropAt, contextMenu, dispatch, paintFog]
   );
 
   const handleMouseMove = useCallback(
     (e: React.MouseEvent) => {
       if (!activeMap) return;
+
+      // Always track world position for cursor previews
+      cursorWorldRef.current = getWorldPos(e);
+
+      // Image drag (Map layer)
+      if (isDraggingImage && activeMap) {
+        const worldPos = getWorldPos(e);
+        const dx = worldPos.x - imageDragStartRef.current.x;
+        const dy = worldPos.y - imageDragStartRef.current.y;
+        dispatch({
+          type: "UPDATE_MAP",
+          payload: {
+            id: activeMap.id,
+            updates: {
+              imageOffsetX: imageOffsetStartRef.current.x + dx,
+              imageOffsetY: imageOffsetStartRef.current.y + dy,
+            },
+          },
+        });
+        return;
+      }
+
+      // Handle resize/rotate drag (universal for all object types)
+      if (activeHandle && activeMap) {
+        const worldPos = getWorldPos(e);
+        const { objectType, objectId, bbox } = handleStartRef.current;
+
+        if (activeHandle.startsWith("rotate-")) {
+          // Rotation for any object type
+          const center = bbox ? { x: bbox.cx, y: bbox.cy } : worldPos;
+          const degrees = computeRotationFromHandle(center, worldPos);
+
+          if (objectType === "token") {
+            dispatch({ type: "UPDATE_TOKEN", payload: { mapId: activeMap.id, tokenId: objectId, updates: { rotation: Math.round(degrees) } } });
+          } else if (objectType === "stroke") {
+            dispatch({ type: "UPDATE_STROKE", payload: { mapId: activeMap.id, strokeId: objectId, updates: { rotation: Math.round(degrees) } } });
+          } else if (objectType === "text") {
+            dispatch({ type: "UPDATE_TEXT", payload: { mapId: activeMap.id, textId: objectId, updates: { rotation: Math.round(degrees) } } });
+          } else if (objectType === "note") {
+            dispatch({ type: "UPDATE_NOTE", payload: { mapId: activeMap.id, noteId: objectId, updates: { rotation: Math.round(degrees) } } });
+          } else if (objectType === "prop") {
+            dispatch({ type: "UPDATE_PROP", payload: { mapId: activeMap.id, propId: objectId, updates: { rotation: Math.round(degrees) } } });
+          }
+        } else if (activeHandle.startsWith("resize-")) {
+          // Resize based on object type
+          if (objectType === "token") {
+            const gridSize = activeMap.grid.size || 50;
+            const selToken = activeMap.tokens.find((t) => t.id === objectId);
+            if (selToken) {
+              const dist = Math.max(Math.abs(worldPos.x - selToken.x), Math.abs(worldPos.y - selToken.y));
+              const newSize = Math.max(0.5, Math.round((dist * 2) / gridSize * 4) / 4);
+              dispatch({ type: "UPDATE_TOKEN", payload: { mapId: activeMap.id, tokenId: objectId, updates: { size: newSize } } });
+            }
+          } else if (objectType === "stroke" && bbox) {
+            const dist = Math.max(Math.abs(worldPos.x - bbox.cx), Math.abs(worldPos.y - bbox.cy));
+            const origHalf = Math.max(bbox.width, bbox.height) / 2;
+            const scale = origHalf > 0 ? Math.max(0.1, dist / origHalf) : 1;
+            dispatch({ type: "UPDATE_STROKE", payload: { mapId: activeMap.id, strokeId: objectId, updates: { scaleX: scale, scaleY: scale } } });
+          } else if (objectType === "text" && bbox) {
+            const dist = Math.max(Math.abs(worldPos.x - bbox.cx), Math.abs(worldPos.y - bbox.cy));
+            const origHalf = Math.max(bbox.width, bbox.height) / 2;
+            const scale = origHalf > 0 ? Math.max(0.1, dist / origHalf) : 1;
+            dispatch({ type: "UPDATE_TEXT", payload: { mapId: activeMap.id, textId: objectId, updates: { scaleX: scale, scaleY: scale } } });
+          } else if (objectType === "note") {
+            const selNote = activeMap.notes.find((n) => n.id === objectId);
+            if (selNote) {
+              const dist = Math.sqrt((worldPos.x - selNote.x) ** 2 + (worldPos.y - selNote.y) ** 2);
+              dispatch({ type: "UPDATE_NOTE", payload: { mapId: activeMap.id, noteId: objectId, updates: { scale: Math.max(0.2, dist / 16) } } });
+            }
+          } else if (objectType === "prop" && bbox) {
+            const dist = Math.max(Math.abs(worldPos.x - bbox.cx), Math.abs(worldPos.y - bbox.cy));
+            const origHalf = Math.max(bbox.width, bbox.height) / 2;
+            const scale = origHalf > 0 ? Math.max(0.1, dist / origHalf) : 1;
+            dispatch({ type: "UPDATE_PROP", payload: { mapId: activeMap.id, propId: objectId, updates: { width: bbox.width * scale, height: bbox.height * scale } } });
+          }
+        }
+        return;
+      }
 
       if (isPanning) {
         const dx = (e.clientX - panStartRef.current.x) / activeMap.zoom;
@@ -432,6 +904,17 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
         return;
       }
 
+      if (dragPropId && activeMap) {
+        const worldPos = getWorldPos(e);
+        const targetX = worldPos.x - dragOffsetRef.current.x;
+        const targetY = worldPos.y - dragOffsetRef.current.y;
+        dispatch({
+          type: "UPDATE_PROP",
+          payload: { mapId: activeMap.id, propId: dragPropId, updates: { x: targetX, y: targetY } },
+        });
+        return;
+      }
+
       // Group drag: move all selected items by delta
       if (isGroupDrag && activeMap) {
         const worldPos = getWorldPos(e);
@@ -458,19 +941,14 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
         for (const strokeId of (state.selectedStrokeIds || [])) {
           const stroke = activeMap.strokes.find((s) => s.id === strokeId);
           if (stroke) {
-            const movedPoints = stroke.points.map((p) => ({
-              x: p.x + dx,
-              y: p.y + dy,
-            }));
             dispatch({
-              type: "REMOVE_STROKE",
-              payload: { mapId: activeMap.id, strokeId },
-            });
-            dispatch({
-              type: "ADD_STROKE",
+              type: "UPDATE_STROKE",
               payload: {
                 mapId: activeMap.id,
-                stroke: { ...stroke, points: movedPoints },
+                strokeId,
+                updates: {
+                  points: stroke.points.map((p) => ({ x: p.x + dx, y: p.y + dy })),
+                },
               },
             });
           }
@@ -481,14 +959,11 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
           const text = activeMap.texts.find((t) => t.id === textId);
           if (text) {
             dispatch({
-              type: "REMOVE_TEXT",
-              payload: { mapId: activeMap.id, textId },
-            });
-            dispatch({
-              type: "ADD_TEXT",
+              type: "UPDATE_TEXT",
               payload: {
                 mapId: activeMap.id,
-                text: { ...text, x: text.x + dx, y: text.y + dy },
+                textId,
+                updates: { x: text.x + dx, y: text.y + dy },
               },
             });
           }
@@ -547,12 +1022,56 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
         setSelectionBox({ start: selectionBoxStartRef.current, end: getWorldPos(e) });
         return;
       }
+
+      // Hover detection (only when idle with cursor tool, respect layer locks)
+      if (state.activeTool === "cursor" && activeMap) {
+        const wp = cursorWorldRef.current;
+        const ls = state.layerStates;
+        const hitToken = findTokenAt(wp);
+        hoveredTokenIdRef.current = (hitToken && !(ls?.[hitToken.layer]?.locked)) ? hitToken.id : null;
+        if (!hoveredTokenIdRef.current) {
+          const hitStroke = findStrokeAt(wp, activeMap.strokes.filter((s) => s.layer !== 0 && !(ls?.[s.layer]?.locked)));
+          hoveredStrokeIdRef.current = hitStroke?.id ?? null;
+          if (!hitStroke) {
+            const hitText = findTextAt(wp, activeMap.texts.filter((t) => t.layer !== 0 && !(ls?.[t.layer]?.locked)));
+            hoveredTextIdRef.current = hitText?.id ?? null;
+            if (!hitText) {
+              const hitNote = findNoteAt(wp);
+              hoveredNoteIdRef.current = (hitNote && !(ls?.[2]?.locked)) ? hitNote.id : null;
+            } else {
+              hoveredNoteIdRef.current = null;
+            }
+          } else {
+            hoveredTextIdRef.current = null;
+            hoveredNoteIdRef.current = null;
+          }
+        } else {
+          hoveredStrokeIdRef.current = null;
+          hoveredTextIdRef.current = null;
+          hoveredNoteIdRef.current = null;
+        }
+      } else {
+        hoveredTokenIdRef.current = null;
+        hoveredStrokeIdRef.current = null;
+        hoveredTextIdRef.current = null;
+        hoveredNoteIdRef.current = null;
+      }
     },
-    [activeMap, isPanning, dragToken, isGroupDrag, isDrawing, measuring, drawingWall, isFogPainting, placingAoE, selectionBox, state, dispatch, getWorldPos, paintFog]
+    [activeMap, isPanning, isDraggingImage, activeHandle, dragToken, dragPropId, isGroupDrag, isDrawing, measuring, drawingWall, isFogPainting, placingAoE, selectionBox, state, dispatch, getWorldPos, paintFog, findTokenAt, findNoteAt]
   );
 
   const handleMouseUp = useCallback(
     (e: React.MouseEvent) => {
+      if (activeHandle) {
+        setActiveHandle(null);
+        return;
+      }
+
+      if (isDraggingImage) {
+        setIsDraggingImage(false);
+        return;
+      }
+
       if (isPanning) {
         setIsPanning(false);
         return;
@@ -582,6 +1101,11 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
         return;
       }
 
+      if (dragPropId) {
+        setDragPropId(null);
+        return;
+      }
+
       if (isDrawing && activeMap) {
         setIsDrawing(false);
         const points = currentStrokeRef.current;
@@ -597,7 +1121,7 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
           tool,
           points:
             tool === "freehand"
-              ? points
+              ? smoothPoints(points)
               : [points[0], points[points.length - 1]],
           color: state.drawColor,
           width: state.drawWidth,
@@ -624,7 +1148,7 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
       }
 
       if (measuring) {
-        setMeasuring(false);
+        // Measurement continues until double-click or escape
         return;
       }
 
@@ -692,18 +1216,26 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
         if (state.activeTool === "aoe-cone") shape = "cone";
         else if (state.activeTool === "aoe-line") shape = "line";
 
+        const newAoE = {
+          id: crypto.randomUUID(),
+          shape,
+          x: s.x,
+          y: s.y,
+          radius,
+          angle,
+          coneAngle: Math.PI / 3,
+          color: shape === "cone" ? "#ff440088" : shape === "line" ? "#4488ff88" : "#ffcc0088",
+          opacity: 0.35,
+        };
+        dispatch({ type: "ADD_AOE", payload: newAoE });
         dispatch({
-          type: "ADD_AOE",
+          type: "PUSH_HISTORY",
           payload: {
-            id: crypto.randomUUID(),
-            shape,
-            x: s.x,
-            y: s.y,
-            radius,
-            angle,
-            coneAngle: Math.PI / 3,
-            color: shape === "cone" ? "#ff440088" : shape === "line" ? "#4488ff88" : "#ffcc0088",
-            opacity: 0.35,
+            type: "aoe-add",
+            mapId: activeMap.id,
+            before: null,
+            after: newAoE,
+            timestamp: Date.now(),
           },
         });
         return;
@@ -721,7 +1253,7 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
         if (maxX - minX > 5 || maxY - minY > 5) {
           const gridSize = activeMap.grid.size || 50;
 
-          // Select tokens (not on map layer, not locked)
+          // Select tokens (not on map layer, not locked, not on locked layer)
           const tokenIds = activeMap.tokens
             .filter((t) => {
               const halfSize = (t.size * gridSize) / 2;
@@ -730,32 +1262,36 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
                 t.x - halfSize <= maxX &&
                 t.y + halfSize >= minY &&
                 t.y - halfSize <= maxY &&
-                !t.locked
+                !t.locked &&
+                !(state.layerStates?.[t.layer]?.locked)
               );
             })
             .map((t) => t.id);
 
-          // Select strokes (non-map layer) by checking if any point is within box
+          // Select strokes (non-map layer, not on locked layer)
           const strokeIds = activeMap.strokes
             .filter((s) => {
-              if (s.layer === 0) return false; // skip map layer
+              if (s.layer === 0) return false;
+              if (state.layerStates?.[s.layer]?.locked) return false;
               return s.points.some(
                 (p) => p.x >= minX && p.x <= maxX && p.y >= minY && p.y <= maxY
               );
             })
             .map((s) => s.id);
 
-          // Select text overlays (non-map layer)
+          // Select text overlays (non-map layer, not on locked layer)
           const textIds = activeMap.texts
             .filter((t) => {
               if (t.layer === 0) return false;
+              if (state.layerStates?.[t.layer]?.locked) return false;
               return t.x >= minX && t.x <= maxX && t.y >= minY && t.y <= maxY;
             })
             .map((t) => t.id);
 
-          // Select notes
+          // Select notes (not on locked GM layer)
           const noteIds = activeMap.notes
             .filter((n) => {
+              if (state.layerStates?.[2]?.locked) return false;
               return n.x >= minX && n.x <= maxX && n.y >= minY && n.y <= maxY;
             })
             .map((n) => n.id);
@@ -768,7 +1304,7 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
         return;
       }
     },
-    [isPanning, isGroupDrag, dragToken, isDrawing, measuring, drawingWall, isFogPainting, placingAoE, selectionBox, activeMap, state, dispatch, exportFogData]
+    [activeHandle, isDraggingImage, isPanning, isGroupDrag, dragToken, dragPropId, isDrawing, measuring, drawingWall, isFogPainting, placingAoE, selectionBox, activeMap, state, dispatch, exportFogData]
   );
 
   // Right-click context menu
@@ -790,7 +1326,9 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
     [activeMap, getWorldPos, findTokenAt, findNoteAt]
   );
 
-  // Prevent scroll wheel from scrolling the page on the canvas (no zoom)
+  // Scroll-wheel zoom toward cursor
+  const activeMapRef = useRef(activeMap);
+  activeMapRef.current = activeMap;
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -798,11 +1336,90 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
     const handleWheel = (e: WheelEvent) => {
       e.preventDefault();
       e.stopPropagation();
+      const map = activeMapRef.current;
+      if (!map) return;
+
+      const rect = canvas.getBoundingClientRect();
+      const cursorScreenX = e.clientX - rect.left;
+      const cursorScreenY = e.clientY - rect.top;
+
+      // Shift+Scroll = adjust HP on hovered/selected token
+      if (e.shiftKey) {
+        const worldX = map.scrollX + cursorScreenX / map.zoom;
+        const worldY = map.scrollY + cursorScreenY / map.zoom;
+        const tokenUnderCursor = findTokenAt({ x: worldX, y: worldY });
+        if (tokenUnderCursor) {
+          const hpDelta = e.deltaY < 0 ? 1 : -1;
+          const newHp = Math.max(0, Math.min(tokenUnderCursor.maxHp, tokenUnderCursor.hp + hpDelta));
+          dispatch({
+            type: "UPDATE_TOKEN",
+            payload: {
+              mapId: map.id,
+              tokenId: tokenUnderCursor.id,
+              updates: { hp: newHp },
+            },
+          });
+          return;
+        }
+      }
+
+      if (e.ctrlKey || e.metaKey) {
+        // Ctrl/Cmd + wheel = zoom (trackpad pinch also sends ctrlKey)
+        const worldX = map.scrollX + cursorScreenX / map.zoom;
+        const worldY = map.scrollY + cursorScreenY / map.zoom;
+
+        const zoomFactor = 1 - e.deltaY * 0.005;
+        const newZoom = clamp(map.zoom * zoomFactor, MIN_ZOOM, MAX_ZOOM);
+
+        const newScrollX = worldX - cursorScreenX / newZoom;
+        const newScrollY = worldY - cursorScreenY / newZoom;
+
+        dispatch({
+          type: "SET_VIEWPORT",
+          payload: {
+            mapId: map.id,
+            scrollX: newScrollX,
+            scrollY: newScrollY,
+            zoom: newZoom,
+          },
+        });
+      } else {
+        // Bare wheel = pan (two-finger scroll on trackpad)
+        const panSpeed = 1 / map.zoom;
+        dispatch({
+          type: "SET_VIEWPORT",
+          payload: {
+            mapId: map.id,
+            scrollX: map.scrollX + e.deltaX * panSpeed,
+            scrollY: map.scrollY + e.deltaY * panSpeed,
+            zoom: map.zoom,
+          },
+        });
+      }
     };
 
     canvas.addEventListener("wheel", handleWheel, { passive: false });
     return () => canvas.removeEventListener("wheel", handleWheel);
-  }, []);
+  }, [dispatch]);
+
+  // ─── Keyboard: Delete selected props ────────────────────────────────
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== "Delete" && e.key !== "Backspace") return;
+      if (!activeMap) return;
+      // Only handle if a text input is not focused
+      if (document.activeElement && (document.activeElement.tagName === "INPUT" || document.activeElement.tagName === "TEXTAREA")) return;
+      const selPropIds = state.selectedPropIds || [];
+      if (selPropIds.length > 0) {
+        for (const propId of selPropIds) {
+          dispatch({ type: "REMOVE_PROP", payload: { mapId: activeMap.id, propId } });
+        }
+        dispatch({ type: "SET_PROP_SELECTION", payload: [] });
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [activeMap, state.selectedPropIds, dispatch]);
 
   // ─── Render loop ────────────────────────────────────────────────────
 
@@ -820,7 +1437,7 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     if (!activeMap) {
-      ctx.fillStyle = "#00ff0066";
+      ctx.fillStyle = "#3ae2b366";
       ctx.font = `${16 * dpr}px "Share Tech Mono", monospace`;
       ctx.textAlign = "center";
       ctx.fillText(
@@ -870,12 +1487,14 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
       drawGrid(ctx, activeMap);
     }
 
-    // Strokes
-    drawStrokes(ctx, activeMap.strokes);
+    // Strokes (filtered by layer visibility)
+    const visibleStrokes = activeMap.strokes.filter((s) => state.layerStates?.[s.layer]?.visible !== false);
+    drawStrokes(ctx, visibleStrokes);
 
-    // Text overlays
-    if (activeMap.texts.length > 0) {
-      drawTextOverlays(ctx, activeMap.texts);
+    // Text overlays (filtered by layer visibility)
+    const visibleTexts = activeMap.texts.filter((t) => state.layerStates?.[t.layer]?.visible !== false);
+    if (visibleTexts.length > 0) {
+      drawTextOverlays(ctx, visibleTexts);
     }
 
     // In-progress stroke preview
@@ -883,12 +1502,80 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
       drawStrokePreview(ctx, currentStrokeRef.current, state.drawColor, state.drawWidth, state.activeTool);
     }
 
-    // Tokens (with image support)
-    drawTokens(ctx, activeMap, state.showTokenNames);
+    // Scene props (placed assets) — drawn between terrain strokes and tokens
+    const visibleProps = (activeMap.props || []).filter((p) => p.visible && state.layerStates?.[p.layer]?.visible !== false);
+    if (visibleProps.length > 0) {
+      drawProps(ctx, visibleProps);
+    }
+
+    // Tokens (with image support, filtered by layer visibility)
+    drawTokens(ctx, activeMap, state.showTokenNames, state.layerStates);
 
     // AoE templates (per-map)
     if ((activeMap.aoeTemplates || []).length > 0) {
       drawAoETemplates(ctx, activeMap.aoeTemplates || []);
+    }
+
+    // Highlight selected AoEs
+    const selectedAoEIds = state.selectedAoEIds || [];
+    if (selectedAoEIds.length > 0) {
+      for (const aoeId of selectedAoEIds) {
+        const aoe = (activeMap.aoeTemplates || []).find((a) => a.id === aoeId);
+        if (!aoe) continue;
+        ctx.save();
+        ctx.strokeStyle = "#3ae2b3";
+        ctx.lineWidth = 2;
+        ctx.setLineDash([6, 4]);
+        ctx.shadowColor = "#3ae2b3";
+        ctx.shadowBlur = 8;
+        if (aoe.shape === "circle") {
+          ctx.beginPath();
+          ctx.arc(aoe.x, aoe.y, aoe.radius + 3, 0, Math.PI * 2);
+          ctx.stroke();
+        } else if (aoe.shape === "cone") {
+          const angle = aoe.angle ?? 0;
+          const spread = (aoe.coneAngle ?? Math.PI / 3) / 2;
+          ctx.beginPath();
+          ctx.moveTo(aoe.x, aoe.y);
+          ctx.arc(aoe.x, aoe.y, aoe.radius + 3, angle - spread, angle + spread);
+          ctx.closePath();
+          ctx.stroke();
+        } else if (aoe.shape === "line") {
+          const angle = aoe.angle ?? 0;
+          const lw = 23;
+          const endX = aoe.x + Math.cos(angle) * aoe.radius;
+          const endY = aoe.y + Math.sin(angle) * aoe.radius;
+          const perpX = Math.cos(angle + Math.PI / 2) * lw;
+          const perpY = Math.sin(angle + Math.PI / 2) * lw;
+          ctx.beginPath();
+          ctx.moveTo(aoe.x + perpX, aoe.y + perpY);
+          ctx.lineTo(endX + perpX, endY + perpY);
+          ctx.lineTo(endX - perpX, endY - perpY);
+          ctx.lineTo(aoe.x - perpX, aoe.y - perpY);
+          ctx.closePath();
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+    }
+
+    // Highlight selected lights
+    const selectedLightIds = state.selectedLightIds || [];
+    if (selectedLightIds.length > 0) {
+      for (const lightId of selectedLightIds) {
+        const light = activeMap.lights.find((l) => l.id === lightId);
+        if (!light) continue;
+        ctx.save();
+        ctx.strokeStyle = "#3ae2b3";
+        ctx.lineWidth = 2;
+        ctx.setLineDash([6, 4]);
+        ctx.shadowColor = "#3ae2b3";
+        ctx.shadowBlur = 8;
+        ctx.beginPath();
+        ctx.arc(light.x, light.y, 18, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      }
     }
 
     // AoE placement preview
@@ -896,9 +1583,23 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
       drawAoEPreview(ctx, aoeStartRef.current, aoeEndRef.current, state.activeTool);
     }
 
-    // Dynamic lighting
-    if (state.showLights && activeMap.lights.length > 0 && activeMap.walls.length > 0) {
-      renderDynamicLighting(ctx, activeMap.lights, activeMap.walls, activeMap.width, activeMap.height);
+    // Dynamic lighting (combine map lights + token-emitted lights)
+    if (state.showLights && activeMap.walls.length > 0) {
+      const tokenLights = activeMap.tokens
+        .filter((t) => t.visible && (t.lightBrightRadius ?? 0) > 0)
+        .map((t) => ({
+          id: t.id + "-light",
+          x: t.x,
+          y: t.y,
+          radius: (t.lightBrightRadius ?? 0) * (activeMap.grid.size || 50),
+          color: t.lightColor || "#ffaa44",
+          intensity: 1.0,
+          flickering: false,
+        }));
+      const allLights = [...activeMap.lights, ...tokenLights];
+      if (allLights.length > 0) {
+        renderDynamicLighting(ctx, allLights, activeMap.walls, activeMap.width, activeMap.height);
+      }
     }
 
     // Fog of War overlay (use brush canvas if available, otherwise basic fill)
@@ -917,7 +1618,31 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
 
     // Fog brush cursor preview
     if (state.activeTool.startsWith("fog-") && !isFogPainting) {
-      // Drawn after fog so the cursor is visible on top
+      const cx = cursorWorldRef.current.x;
+      const cy = cursorWorldRef.current.y;
+      const r = state.fogBrushSize;
+      ctx.save();
+      ctx.globalAlpha = 0.35;
+      ctx.fillStyle = state.fogBrushMode === "reveal" ? "#3ae2b3" : "#ff3344";
+      if (state.activeTool === "fog-rect") {
+        ctx.fillRect(cx - r, cy - r, r * 2, r * 2);
+      } else {
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      // Outline
+      ctx.globalAlpha = 0.7;
+      ctx.strokeStyle = state.fogBrushMode === "reveal" ? "#3ae2b3" : "#ff3344";
+      ctx.lineWidth = 2 / activeMap.zoom;
+      if (state.activeTool === "fog-rect") {
+        ctx.strokeRect(cx - r, cy - r, r * 2, r * 2);
+      } else {
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      ctx.restore();
     }
 
     // Walls (GM overlay)
@@ -945,9 +1670,90 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
     // Notes
     drawNotes(ctx, activeMap.notes);
 
-    // Measurement overlay
+    // Measurement overlay (multi-point waypoints)
     if (measuring) {
-      drawMeasurement(ctx, measureStartRef.current, measureEndRef.current, activeMap.grid.size);
+      drawMultiPointMeasurement(ctx, measurePointsRef.current, measureEndRef.current, activeMap.grid.size);
+    }
+
+    // Hover highlights (subtle glow before clicking)
+    const hovTokenId = hoveredTokenIdRef.current;
+    const hovStrokeId = hoveredStrokeIdRef.current;
+    const hovTextId = hoveredTextIdRef.current;
+    const hovNoteId = hoveredNoteIdRef.current;
+
+    if (hovTokenId && !(state.selectedTokenIds || []).includes(hovTokenId)) {
+      const ht = activeMap.tokens.find((t) => t.id === hovTokenId);
+      if (ht && ht.visible) {
+        const halfSize = (ht.size * (activeMap.grid.size || 50)) / 2;
+        ctx.save();
+        ctx.strokeStyle = "#3ae2b366";
+        ctx.lineWidth = 2;
+        ctx.shadowColor = "#3ae2b3";
+        ctx.shadowBlur = 8;
+        ctx.beginPath();
+        ctx.arc(ht.x, ht.y, halfSize + 2, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+
+    if (hovStrokeId && !(state.selectedStrokeIds || []).includes(hovStrokeId)) {
+      const hs = activeMap.strokes.find((s) => s.id === hovStrokeId);
+      if (hs && hs.points.length > 0) {
+        ctx.save();
+        ctx.strokeStyle = "#00ccff44";
+        ctx.lineWidth = hs.width + 6;
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+        if (hs.tool === "freehand" && hs.points.length > 1) {
+          ctx.beginPath();
+          ctx.moveTo(hs.points[0].x, hs.points[0].y);
+          for (let i = 1; i < hs.points.length; i++) ctx.lineTo(hs.points[i].x, hs.points[i].y);
+          ctx.stroke();
+        } else if (hs.tool === "line" && hs.points.length >= 2) {
+          ctx.beginPath();
+          ctx.moveTo(hs.points[0].x, hs.points[0].y);
+          ctx.lineTo(hs.points[1].x, hs.points[1].y);
+          ctx.stroke();
+        } else if (hs.tool === "rect" && hs.points.length >= 2) {
+          ctx.strokeRect(hs.points[0].x, hs.points[0].y, hs.points[1].x - hs.points[0].x, hs.points[1].y - hs.points[0].y);
+        } else if (hs.tool === "circle" && hs.points.length >= 2) {
+          const dx = hs.points[1].x - hs.points[0].x;
+          const dy = hs.points[1].y - hs.points[0].y;
+          ctx.beginPath();
+          ctx.arc(hs.points[0].x, hs.points[0].y, Math.sqrt(dx * dx + dy * dy), 0, Math.PI * 2);
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+    }
+
+    if (hovTextId && !(state.selectedTextIds || []).includes(hovTextId)) {
+      const htxt = activeMap.texts.find((t) => t.id === hovTextId);
+      if (htxt) {
+        ctx.save();
+        ctx.strokeStyle = "#00ccff44";
+        ctx.lineWidth = 1;
+        ctx.font = `${htxt.fontSize}px "${htxt.fontFamily || "Share Tech Mono"}", monospace`;
+        const m = ctx.measureText(htxt.text);
+        ctx.strokeRect(htxt.x - 2, htxt.y - 2, m.width + 4, htxt.fontSize + 4);
+        ctx.restore();
+      }
+    }
+
+    if (hovNoteId && !(state.selectedNoteIds || []).includes(hovNoteId)) {
+      const hn = activeMap.notes.find((n) => n.id === hovNoteId);
+      if (hn) {
+        ctx.save();
+        ctx.strokeStyle = "#3ae2b366";
+        ctx.lineWidth = 2;
+        ctx.shadowColor = "#3ae2b3";
+        ctx.shadowBlur = 6;
+        ctx.beginPath();
+        ctx.arc(hn.x, hn.y, 14, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      }
     }
 
     // Selected token highlights
@@ -959,9 +1765,9 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
         if (!token || !token.visible) continue;
         const halfSize = (token.size * gridSize) / 2;
         ctx.save();
-        ctx.strokeStyle = "#00ff00";
+        ctx.strokeStyle = "#3ae2b3";
         ctx.lineWidth = 3;
-        ctx.shadowColor = "#00ff00";
+        ctx.shadowColor = "#3ae2b3";
         ctx.shadowBlur = 12;
         ctx.setLineDash([6, 4]);
         ctx.beginPath();
@@ -969,6 +1775,42 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
         ctx.stroke();
         ctx.setLineDash([]);
         ctx.restore();
+      }
+    }
+
+    // Universal selection handles (resize + rotate) for any single-selected object
+    {
+      const selTokenIds = state.selectedTokenIds || [];
+      const selStrokeIds = state.selectedStrokeIds || [];
+      const selTextIds = state.selectedTextIds || [];
+      const selNoteIds = state.selectedNoteIds || [];
+      const selPropIds = state.selectedPropIds || [];
+      const total = selTokenIds.length + selStrokeIds.length + selTextIds.length + selNoteIds.length + selPropIds.length;
+
+      if (total === 1) {
+        const gridSize = activeMap.grid.size || 50;
+        let bbox: BoundingBox | null = null;
+
+        if (selTokenIds.length === 1) {
+          const t = activeMap.tokens.find((tk) => tk.id === selTokenIds[0]);
+          if (t && t.visible && !t.locked) bbox = getTokenBoundingBox(t, gridSize);
+        } else if (selStrokeIds.length === 1) {
+          const s = activeMap.strokes.find((sk) => sk.id === selStrokeIds[0]);
+          if (s) bbox = getStrokeBoundingBox(s);
+        } else if (selTextIds.length === 1) {
+          const t = activeMap.texts.find((tx) => tx.id === selTextIds[0]);
+          if (t) bbox = getTextBoundingBox(t);
+        } else if (selNoteIds.length === 1) {
+          const n = activeMap.notes.find((nt) => nt.id === selNoteIds[0]);
+          if (n) bbox = getNoteBoundingBox(n);
+        } else if (selPropIds.length === 1) {
+          const p = (activeMap.props || []).find((pr) => pr.id === selPropIds[0]);
+          if (p && p.visible && !p.locked) bbox = getPropBoundingBox(p);
+        }
+
+        if (bbox) {
+          renderBoundingBoxHandles(ctx, bbox, activeMap.zoom);
+        }
       }
     }
 
@@ -1052,7 +1894,28 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
       }
     }
 
-    // Active turn indicator (pulsing yellow glow)
+    // Selected prop highlights
+    const selectedPropIds = state.selectedPropIds || [];
+    if (selectedPropIds.length > 0) {
+      for (const propId of selectedPropIds) {
+        const prop = (activeMap.props || []).find((p) => p.id === propId);
+        if (!prop || !prop.visible) continue;
+        ctx.save();
+        ctx.translate(prop.x, prop.y);
+        ctx.rotate((prop.rotation * Math.PI) / 180);
+        ctx.strokeStyle = "#00ccff";
+        ctx.lineWidth = 2;
+        ctx.setLineDash([5, 4]);
+        ctx.globalAlpha = 0.8;
+        ctx.shadowColor = "#00ccff";
+        ctx.shadowBlur = 8;
+        ctx.strokeRect(-prop.width / 2, -prop.height / 2, prop.width, prop.height);
+        ctx.setLineDash([]);
+        ctx.restore();
+      }
+    }
+
+    // Active turn indicator (enhanced pulsing yellow glow + label)
     if (state.initiative?.length > 0) {
       const activeTokenId = state.initiative[0]?.tokenId;
       if (activeTokenId) {
@@ -1060,16 +1923,157 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
         if (token && token.visible) {
           const gridSize = activeMap.grid.size || 50;
           const halfSize = (token.size * gridSize) / 2;
-          const pulse = 0.4 + 0.6 * Math.abs(Math.sin(Date.now() / 400));
+          const now = Date.now();
+          const pulse = 0.4 + 0.6 * Math.abs(Math.sin(now / 400));
           ctx.save();
+          // Outer pulsing ring
           ctx.strokeStyle = "#ffcc00";
           ctx.lineWidth = 3;
           ctx.globalAlpha = pulse;
           ctx.shadowColor = "#ffcc00";
           ctx.shadowBlur = 15;
           ctx.beginPath();
-          ctx.arc(token.x, token.y, halfSize + 4, 0, Math.PI * 2);
+          ctx.arc(token.x, token.y, halfSize + 6, 0, Math.PI * 2);
           ctx.stroke();
+          // Inner subtle glow ring
+          ctx.lineWidth = 1.5;
+          ctx.globalAlpha = pulse * 0.4;
+          ctx.beginPath();
+          ctx.arc(token.x, token.y, halfSize + 10, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.shadowBlur = 0;
+
+          // Chevron arrows pointing at token (4 directions)
+          const arrowDist = halfSize + 16;
+          const arrowSize = 5;
+          ctx.fillStyle = "#ffcc00";
+          ctx.globalAlpha = pulse * 0.8;
+          for (let a = 0; a < 4; a++) {
+            const angle = (a * Math.PI) / 2;
+            const ax = token.x + Math.cos(angle) * arrowDist;
+            const ay = token.y + Math.sin(angle) * arrowDist;
+            const perpX = Math.cos(angle + Math.PI / 2) * arrowSize;
+            const perpY = Math.sin(angle + Math.PI / 2) * arrowSize;
+            const tipX = token.x + Math.cos(angle) * (arrowDist - arrowSize * 1.5);
+            const tipY = token.y + Math.sin(angle) * (arrowDist - arrowSize * 1.5);
+            ctx.beginPath();
+            ctx.moveTo(ax + perpX, ay + perpY);
+            ctx.lineTo(tipX, tipY);
+            ctx.lineTo(ax - perpX, ay - perpY);
+            ctx.closePath();
+            ctx.fill();
+          }
+
+          // "ACTIVE" label above token
+          const labelY = token.y - halfSize - 20;
+          ctx.globalAlpha = pulse;
+          ctx.font = `bold 10px "Share Tech Mono", monospace`;
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          const label = ">> ACTIVE <<";
+          const lm = ctx.measureText(label);
+          ctx.fillStyle = "#000000";
+          ctx.globalAlpha = 0.7;
+          ctx.beginPath();
+          ctx.roundRect(token.x - lm.width / 2 - 4, labelY - 7, lm.width + 8, 14, 3);
+          ctx.fill();
+          ctx.fillStyle = "#ffcc00";
+          ctx.globalAlpha = pulse;
+          ctx.fillText(label, token.x, labelY);
+          ctx.restore();
+        }
+      }
+    }
+
+    // Snap-to-grid visual feedback while dragging a token
+    if (dragToken && activeMap.grid.snap && activeMap.grid.enabled) {
+      const draggingToken = activeMap.tokens.find((t) => t.id === dragToken);
+      if (draggingToken) {
+        const gs = activeMap.grid.size;
+        // Highlight the target grid cell
+        const cellX = Math.floor(draggingToken.x / gs) * gs;
+        const cellY = Math.floor(draggingToken.y / gs) * gs;
+        ctx.save();
+        ctx.fillStyle = "#3ae2b312";
+        ctx.strokeStyle = "#3ae2b344";
+        ctx.lineWidth = 1.5;
+        ctx.fillRect(cellX, cellY, gs, gs);
+        ctx.strokeRect(cellX, cellY, gs, gs);
+        // Crosshair at snap center
+        const cx = cellX + gs / 2;
+        const cy = cellY + gs / 2;
+        ctx.strokeStyle = "#3ae2b333";
+        ctx.lineWidth = 1;
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        ctx.moveTo(cx - gs / 2, cy);
+        ctx.lineTo(cx + gs / 2, cy);
+        ctx.moveTo(cx, cy - gs / 2);
+        ctx.lineTo(cx, cy + gs / 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.restore();
+      }
+    }
+
+    // Drag ruler: movement path with distance during token drag
+    if (dragToken) {
+      const draggingToken = activeMap.tokens.find((t) => t.id === dragToken);
+      if (draggingToken) {
+        const gs = activeMap.grid.size || 50;
+        const startX = dragStartPosRef.current.x;
+        const startY = dragStartPosRef.current.y;
+        const endX = draggingToken.x;
+        const endY = draggingToken.y;
+        const dx = endX - startX;
+        const dy = endY - startY;
+        const pixelDist = Math.sqrt(dx * dx + dy * dy);
+        const gridDist = pixelDist / gs;
+
+        if (gridDist > 0.3) {
+          const moveSpeed = draggingToken.moveSpeed ?? 6;
+          // Color-coded: green=normal, yellow=dash, red=over
+          let pathColor = "#3ae2b3";
+          if (gridDist > moveSpeed * 2) pathColor = "#ff3344";
+          else if (gridDist > moveSpeed) pathColor = "#ffcc00";
+
+          ctx.save();
+          // Path line
+          ctx.strokeStyle = pathColor;
+          ctx.lineWidth = 3;
+          ctx.globalAlpha = 0.7;
+          ctx.setLineDash([8, 4]);
+          ctx.beginPath();
+          ctx.moveTo(startX, startY);
+          ctx.lineTo(endX, endY);
+          ctx.stroke();
+          ctx.setLineDash([]);
+
+          // Start marker
+          ctx.fillStyle = pathColor;
+          ctx.globalAlpha = 0.5;
+          ctx.beginPath();
+          ctx.arc(startX, startY, 4, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Distance label at midpoint
+          const midX = (startX + endX) / 2;
+          const midY = (startY + endY) / 2;
+          const label = `${gridDist.toFixed(1)} sq`;
+          ctx.font = `bold 12px "Share Tech Mono", monospace`;
+          const metrics = ctx.measureText(label);
+          const labelW = metrics.width + 8;
+          const labelH = 16;
+          ctx.globalAlpha = 0.85;
+          ctx.fillStyle = "#000000";
+          ctx.beginPath();
+          ctx.roundRect(midX - labelW / 2, midY - labelH / 2, labelW, labelH, 4);
+          ctx.fill();
+          ctx.fillStyle = pathColor;
+          ctx.globalAlpha = 1;
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText(label, midX, midY);
           ctx.restore();
         }
       }
@@ -1078,7 +2082,7 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
     // Selection box (drag rectangle)
     if (selectionBox) {
       ctx.save();
-      ctx.strokeStyle = "#00ff00";
+      ctx.strokeStyle = "#3ae2b3";
       ctx.lineWidth = 1.5;
       ctx.setLineDash([6, 4]);
       ctx.globalAlpha = 0.8;
@@ -1087,39 +2091,95 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
       const bw = Math.abs(selectionBox.end.x - selectionBox.start.x);
       const bh = Math.abs(selectionBox.end.y - selectionBox.start.y);
       ctx.strokeRect(bx, by, bw, bh);
-      ctx.fillStyle = "#00ff0011";
+      ctx.fillStyle = "#3ae2b311";
       ctx.setLineDash([]);
       ctx.globalAlpha = 1;
       ctx.fillRect(bx, by, bw, bh);
       ctx.restore();
     }
 
-    // GM Pings (animated expanding rings)
+    // Pending prop placement preview (ghost at cursor)
+    if (state.pendingPropImageUrl) {
+      const cx = cursorWorldRef.current.x;
+      const cy = cursorWorldRef.current.y;
+      const gs = activeMap.grid.size || 50;
+      const hw = gs;
+      const hh = gs;
+      ctx.save();
+      ctx.globalAlpha = 0.45;
+      ctx.strokeStyle = "#3ae2b3";
+      ctx.lineWidth = 2;
+      ctx.setLineDash([5, 4]);
+      ctx.strokeRect(cx - hw, cy - hh, hw * 2, hh * 2);
+      ctx.setLineDash([]);
+      ctx.fillStyle = "#3ae2b322";
+      ctx.fillRect(cx - hw, cy - hh, hw * 2, hh * 2);
+      ctx.restore();
+    }
+
+    // GM Pings (enhanced animated expanding rings with crosshair and label)
     if (pings.length > 0) {
       const now = Date.now();
       for (const ping of pings) {
         const age = now - ping.timestamp;
         const progress = age / 2000;
         const alpha = 1 - progress;
-        const radius = 10 + progress * 60;
+        const pingColor = ping.color || "#ffcc00";
         ctx.save();
+
+        // Three concentric expanding rings
+        for (let r = 0; r < 3; r++) {
+          const ringProgress = Math.max(0, progress - r * 0.12);
+          const ringAlpha = Math.max(0, (1 - ringProgress) * (1 - r * 0.3));
+          const radius = 10 + ringProgress * 60;
+          ctx.globalAlpha = ringAlpha;
+          ctx.strokeStyle = pingColor;
+          ctx.lineWidth = 3 - r;
+          ctx.beginPath();
+          ctx.arc(ping.x, ping.y, radius, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+
+        // Crosshair at center
         ctx.globalAlpha = Math.max(0, alpha);
-        ctx.strokeStyle = "#ffcc00";
-        ctx.lineWidth = 3;
+        ctx.strokeStyle = pingColor;
+        ctx.lineWidth = 2;
+        const armLen = 8;
         ctx.beginPath();
-        ctx.arc(ping.x, ping.y, radius, 0, Math.PI * 2);
+        ctx.moveTo(ping.x - armLen, ping.y);
+        ctx.lineTo(ping.x + armLen, ping.y);
+        ctx.moveTo(ping.x, ping.y - armLen);
+        ctx.lineTo(ping.x, ping.y + armLen);
         ctx.stroke();
-        ctx.fillStyle = "#ffcc00";
-        ctx.globalAlpha = Math.max(0, alpha * 0.8);
+
+        // Center dot
+        ctx.fillStyle = pingColor;
+        ctx.globalAlpha = Math.max(0, alpha * 0.9);
         ctx.beginPath();
-        ctx.arc(ping.x, ping.y, 5, 0, Math.PI * 2);
+        ctx.arc(ping.x, ping.y, 3, 0, Math.PI * 2);
         ctx.fill();
+
+        // Label below
+        if (ping.label) {
+          ctx.font = `bold 10px "Share Tech Mono", monospace`;
+          ctx.textAlign = "center";
+          ctx.textBaseline = "top";
+          const lm = ctx.measureText(ping.label);
+          ctx.fillStyle = "#000000";
+          ctx.globalAlpha = Math.max(0, alpha * 0.6);
+          ctx.beginPath();
+          ctx.roundRect(ping.x - lm.width / 2 - 3, ping.y + 14, lm.width + 6, 13, 3);
+          ctx.fill();
+          ctx.fillStyle = pingColor;
+          ctx.globalAlpha = Math.max(0, alpha);
+          ctx.fillText(ping.label, ping.x, ping.y + 15);
+        }
         ctx.restore();
       }
     }
 
     animFrameRef.current = requestAnimationFrame(render);
-  }, [activeMap, state, isDrawing, measuring, drawingWall, placingAoE, isFogPainting, selectionBox, pings, getFogCanvas]);
+  }, [activeMap, state, isDrawing, measuring, drawingWall, placingAoE, isFogPainting, selectionBox, pings, dragPropId, getFogCanvas]);
 
   useEffect(() => {
     animFrameRef.current = requestAnimationFrame(render);
@@ -1130,14 +2190,20 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
     <div
       ref={containerRef}
       className={`relative w-full h-full overflow-hidden bg-terminal-bg-dark ${className || ""}`}
-      style={{ cursor: getCursor(state.activeTool, isPanning, !!dragToken || isGroupDrag) }}
+      style={{ cursor: getCursor(state.activeTool, isPanning, !!dragToken || !!dragPropId || isGroupDrag, isDraggingImage, state.activeLayer, activeHandle, !!state.pendingPropImageUrl) }}
     >
       <canvas
         ref={canvasRef}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
+        onMouseLeave={(e) => {
+          hoveredTokenIdRef.current = null;
+          hoveredStrokeIdRef.current = null;
+          hoveredTextIdRef.current = null;
+          hoveredNoteIdRef.current = null;
+          handleMouseUp(e);
+        }}
         onContextMenu={handleContextMenu}
         className="block w-full h-full vtt-main-canvas"
       />
@@ -1152,6 +2218,11 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
           {state.activeTool !== "cursor" && state.activeTool !== "pan" && (
             <span className="ml-2 text-terminal-primary/40">
               [{state.activeTool}]
+            </span>
+          )}
+          {state.activeLayer === 0 && (
+            <span className="ml-2 text-yellow-400/60">
+              MAP LAYER — drag to reposition image
             </span>
           )}
         </div>
@@ -1197,6 +2268,69 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
             }
           }}
           onBlur={() => setTextInput(null)}
+        />
+      )}
+
+      {/* Token Quick-Action HUD */}
+      {activeMap && !dragToken && !contextMenu && !editingToken && state.selectedTokenIds.length === 1 && (() => {
+        const selToken = activeMap.tokens.find((t) => t.id === state.selectedTokenIds[0]);
+        if (!selToken) return null;
+        const gs = activeMap.grid.size || 50;
+        const halfSize = (selToken.size * gs) / 2;
+        const sx = (selToken.x - activeMap.scrollX) * activeMap.zoom;
+        const sy = (selToken.y - halfSize - 8 - activeMap.scrollY) * activeMap.zoom;
+        return (
+          <VTTTokenHUD
+            token={selToken}
+            mapId={activeMap.id}
+            screenX={sx}
+            screenY={sy}
+          />
+        );
+      })()}
+
+      {/* Inline HP edit overlay */}
+      {hpEdit && activeMap && (
+        <input
+          ref={hpEditRef}
+          type="number"
+          value={hpEdit.value}
+          onChange={(e) => setHpEdit({ ...hpEdit, value: e.target.value })}
+          className="absolute bg-black/90 border border-terminal-primary/50 text-terminal-primary font-mono text-xs px-2 py-0.5 rounded outline-none w-16 text-center"
+          style={{
+            left: hpEdit.screenX - 32,
+            top: hpEdit.screenY,
+            zIndex: 20,
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              const newHp = parseInt(hpEdit.value, 10) || 0;
+              dispatch({
+                type: "UPDATE_TOKEN",
+                payload: {
+                  mapId: activeMap.id,
+                  tokenId: hpEdit.tokenId,
+                  updates: { hp: Math.max(0, newHp) },
+                },
+              });
+              setHpEdit(null);
+            }
+            if (e.key === "Escape") setHpEdit(null);
+          }}
+          onBlur={() => {
+            if (hpEdit) {
+              const newHp = parseInt(hpEdit.value, 10) || 0;
+              dispatch({
+                type: "UPDATE_TOKEN",
+                payload: {
+                  mapId: activeMap.id,
+                  tokenId: hpEdit.tokenId,
+                  updates: { hp: Math.max(0, newHp) },
+                },
+              });
+              setHpEdit(null);
+            }
+          }}
         />
       )}
 
@@ -1246,10 +2380,18 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
 
 // ─── Drawing helpers ──────────────────────────────────────────────────────
 
-function getCursor(tool: string, isPanning: boolean, isDragging: boolean): string {
+function getCursor(tool: string, isPanning: boolean, isDragging: boolean, isDraggingImage: boolean, activeLayer: number, activeHandle?: string | null, pendingProp?: boolean): string {
+  if (pendingProp) return "crosshair";
+  if (activeHandle === "rotate") return "crosshair";
+  if (activeHandle?.startsWith("resize-")) {
+    if (activeHandle === "resize-tl" || activeHandle === "resize-br") return "nwse-resize";
+    return "nesw-resize";
+  }
   if (isPanning) return "grabbing";
+  if (isDraggingImage) return "move";
   if (isDragging) return "move";
   if (tool === "pan") return "grab";
+  if (tool === "cursor" && activeLayer === 0) return "move";
   if (tool === "cursor") return "default";
   if (tool.startsWith("draw-")) return "crosshair";
   if (tool.startsWith("fog-")) return "crosshair";
@@ -1407,18 +2549,20 @@ function drawStrokePreview(
 function drawTokens(
   ctx: CanvasRenderingContext2D,
   map: VTTMap,
-  showNames: boolean
+  showNames: boolean,
+  layerStates?: Record<number, { visible: boolean; locked: boolean }>
 ) {
   const gridSize = map.grid.size || 50;
 
   for (const t of map.tokens) {
     if (!t.visible) continue;
+    if (layerStates?.[t.layer]?.visible === false) continue;
     const pixelSize = t.size * gridSize;
     const halfSize = pixelSize / 2;
 
     // Aura
     if (t.auraRadius > 0) {
-      ctx.fillStyle = t.auraColor || "rgba(0, 255, 0, 0.1)";
+      ctx.fillStyle = t.auraColor || "rgba(58, 226, 179, 0.1)";
       ctx.beginPath();
       ctx.arc(t.x, t.y, t.auraRadius * gridSize, 0, Math.PI * 2);
       ctx.fill();
@@ -1451,7 +2595,7 @@ function drawTokens(
       ctx.fillStyle = "#1a1a2e";
       ctx.fill();
       // First letter fallback
-      ctx.fillStyle = "#00ff00";
+      ctx.fillStyle = "#3ae2b3";
       ctx.font = `${Math.max(12, halfSize)}px "Share Tech Mono", monospace`;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
@@ -1459,7 +2603,7 @@ function drawTokens(
     }
 
     // Border ring
-    ctx.strokeStyle = t.locked ? "#ffcc00" : "#00ff00";
+    ctx.strokeStyle = t.locked ? "#ffcc00" : "#3ae2b3";
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.arc(0, 0, halfSize, 0, Math.PI * 2);
@@ -1478,13 +2622,13 @@ function drawTokens(
       ctx.fillStyle = "#333";
       ctx.fillRect(barX, barY, barWidth, barHeight);
       ctx.fillStyle =
-        hpRatio > 0.5 ? "#00ff00" : hpRatio > 0.25 ? "#ff6600" : "#ff3344";
+        hpRatio > 0.5 ? "#3ae2b3" : hpRatio > 0.25 ? "#ff6600" : "#ff3344";
       ctx.fillRect(barX, barY, barWidth * hpRatio, barHeight);
     }
 
     // Name label
     if (showNames && t.showName) {
-      ctx.fillStyle = "#00ff00cc";
+      ctx.fillStyle = "#3ae2b3cc";
       ctx.font = `11px "Share Tech Mono", monospace`;
       ctx.textAlign = "center";
       ctx.fillText(t.name, t.x, t.y - halfSize - 6);
@@ -1505,6 +2649,75 @@ function drawTokens(
         );
         ctx.fill();
       });
+    }
+
+    // Elevation badge
+    if (t.elevation && t.elevation !== 0) {
+      const elevLabel = (t.elevation > 0 ? "+" : "") + t.elevation;
+      const badgeColor = t.elevation > 0 ? "#00ccff" : "#ff8800";
+      const badgeX = t.x + halfSize - 2;
+      const badgeY = t.y - halfSize - 2;
+      ctx.save();
+      ctx.font = `bold 9px "Share Tech Mono", monospace`;
+      const bm = ctx.measureText(elevLabel);
+      const bw = bm.width + 6;
+      const bh = 12;
+      ctx.fillStyle = "#000000";
+      ctx.globalAlpha = 0.8;
+      ctx.beginPath();
+      ctx.roundRect(badgeX - bw / 2, badgeY - bh / 2, bw, bh, 3);
+      ctx.fill();
+      ctx.strokeStyle = badgeColor;
+      ctx.lineWidth = 1;
+      ctx.globalAlpha = 0.9;
+      ctx.beginPath();
+      ctx.roundRect(badgeX - bw / 2, badgeY - bh / 2, bw, bh, 3);
+      ctx.stroke();
+      ctx.fillStyle = badgeColor;
+      ctx.globalAlpha = 1;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(elevLabel, badgeX, badgeY);
+      ctx.restore();
+    }
+
+    // Token light emission indicator (bright radius ring)
+    if ((t.lightBrightRadius ?? 0) > 0) {
+      const brightR = (t.lightBrightRadius ?? 0) * gridSize;
+      const dimR = (t.lightDimRadius ?? 0) * gridSize;
+      const lColor = t.lightColor || "#ffaa44";
+      ctx.save();
+      // Dim radius (outer, very faint)
+      if (dimR > brightR) {
+        ctx.globalAlpha = 0.08;
+        ctx.fillStyle = lColor;
+        ctx.beginPath();
+        ctx.arc(t.x, t.y, dimR, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 0.2;
+        ctx.strokeStyle = lColor;
+        ctx.lineWidth = 1;
+        ctx.setLineDash([3, 3]);
+        ctx.beginPath();
+        ctx.arc(t.x, t.y, dimR, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+      // Bright radius (inner, slightly visible)
+      ctx.globalAlpha = 0.12;
+      ctx.fillStyle = lColor;
+      ctx.beginPath();
+      ctx.arc(t.x, t.y, brightR, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 0.3;
+      ctx.strokeStyle = lColor;
+      ctx.lineWidth = 1;
+      ctx.setLineDash([4, 2]);
+      ctx.beginPath();
+      ctx.arc(t.x, t.y, brightR, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.restore();
     }
   }
 }
@@ -1612,7 +2825,6 @@ function drawMeasurement(
   const pixelDist = Math.sqrt(dx * dx + dy * dy);
   const gridDist = pixelDist / gridSize;
 
-  // Line
   ctx.strokeStyle = "#ffcc00";
   ctx.lineWidth = 2;
   ctx.setLineDash([6, 4]);
@@ -1622,7 +2834,6 @@ function drawMeasurement(
   ctx.stroke();
   ctx.setLineDash([]);
 
-  // Endpoints
   ctx.fillStyle = "#ffcc00";
   ctx.beginPath();
   ctx.arc(start.x, start.y, 4, 0, Math.PI * 2);
@@ -1631,27 +2842,92 @@ function drawMeasurement(
   ctx.arc(end.x, end.y, 4, 0, Math.PI * 2);
   ctx.fill();
 
-  // Distance label
   const midX = (start.x + end.x) / 2;
   const midY = (start.y + end.y) / 2;
-  const label = `${gridDist.toFixed(1)}m`;
+  const label = `${gridDist.toFixed(1)} sq`;
 
   ctx.font = `bold 13px "Share Tech Mono", monospace`;
   ctx.textAlign = "center";
   ctx.textBaseline = "bottom";
 
-  // Background
   const metrics = ctx.measureText(label);
   ctx.fillStyle = "#000000cc";
-  ctx.fillRect(
-    midX - metrics.width / 2 - 4,
-    midY - 18,
-    metrics.width + 8,
-    18
-  );
-
+  ctx.fillRect(midX - metrics.width / 2 - 4, midY - 18, metrics.width + 8, 18);
   ctx.fillStyle = "#ffcc00";
   ctx.fillText(label, midX, midY - 2);
+}
+
+/** Multi-point waypoint measurement */
+function drawMultiPointMeasurement(
+  ctx: CanvasRenderingContext2D,
+  waypoints: Point[],
+  currentEnd: Point,
+  gridSize: number
+) {
+  if (waypoints.length === 0) return;
+
+  const allPoints = [...waypoints, currentEnd];
+  let totalDist = 0;
+  const colors = ["#ffcc00", "#ff8800"];
+
+  for (let i = 0; i < allPoints.length - 1; i++) {
+    const a = allPoints[i];
+    const b = allPoints[i + 1];
+    const dx = b.x - a.x;
+    const dy = b.y - a.y;
+    const segDist = Math.sqrt(dx * dx + dy * dy);
+    const gridDist = segDist / gridSize;
+    totalDist += gridDist;
+
+    const color = colors[i % 2];
+
+    // Segment line
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.setLineDash([6, 4]);
+    ctx.beginPath();
+    ctx.moveTo(a.x, a.y);
+    ctx.lineTo(b.x, b.y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Segment distance label
+    const midX = (a.x + b.x) / 2;
+    const midY = (a.y + b.y) / 2;
+    const segLabel = `${gridDist.toFixed(1)} sq`;
+
+    ctx.font = `11px "Share Tech Mono", monospace`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "bottom";
+    const m = ctx.measureText(segLabel);
+    ctx.fillStyle = "#000000aa";
+    ctx.fillRect(midX - m.width / 2 - 3, midY - 16, m.width + 6, 16);
+    ctx.fillStyle = color;
+    ctx.fillText(segLabel, midX, midY - 2);
+  }
+
+  // Waypoint dots
+  for (let i = 0; i < allPoints.length; i++) {
+    const p = allPoints[i];
+    ctx.fillStyle = i === 0 ? "#ffcc00" : i === allPoints.length - 1 ? "#ff4444" : "#ff8800";
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Total distance at the end point
+  if (allPoints.length > 2 || totalDist > 0) {
+    const endP = allPoints[allPoints.length - 1];
+    const totalLabel = `Total: ${totalDist.toFixed(1)} sq`;
+    ctx.font = `bold 13px "Share Tech Mono", monospace`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "top";
+    const tm = ctx.measureText(totalLabel);
+    ctx.fillStyle = "#000000cc";
+    ctx.fillRect(endP.x - tm.width / 2 - 4, endP.y + 8, tm.width + 8, 20);
+    ctx.fillStyle = "#ffcc00";
+    ctx.fillText(totalLabel, endP.x, endP.y + 10);
+  }
 }
 
 function drawTextOverlays(ctx: CanvasRenderingContext2D, texts: TextOverlay[]) {
@@ -1664,6 +2940,34 @@ function drawTextOverlays(ctx: CanvasRenderingContext2D, texts: TextOverlay[]) {
     ctx.textBaseline = "top";
     ctx.fillText(t.text, t.x, t.y);
     ctx.globalAlpha = 1;
+  }
+}
+
+function drawProps(ctx: CanvasRenderingContext2D, props: SceneProp[]) {
+  for (const p of props) {
+    ctx.save();
+    ctx.globalAlpha = p.opacity ?? 1;
+    ctx.translate(p.x, p.y);
+    ctx.rotate((p.rotation * Math.PI) / 180);
+
+    const img = getPropImage(p.imageUrl);
+    if (img) {
+      ctx.drawImage(img, -p.width / 2, -p.height / 2, p.width, p.height);
+    } else {
+      // Placeholder while loading
+      ctx.fillStyle = "#1a1a2e";
+      ctx.fillRect(-p.width / 2, -p.height / 2, p.width, p.height);
+      ctx.strokeStyle = "#3ae2b344";
+      ctx.lineWidth = 1;
+      ctx.strokeRect(-p.width / 2, -p.height / 2, p.width, p.height);
+      ctx.fillStyle = "#3ae2b366";
+      ctx.font = `10px "Share Tech Mono", monospace`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("loading...", 0, 0);
+    }
+
+    ctx.restore();
   }
 }
 

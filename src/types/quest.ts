@@ -13,6 +13,16 @@ export interface Quest {
   status: 'active' | 'completed' | 'failed' | 'on_hold';
   priority: 'low' | 'medium' | 'high' | 'urgent';
 
+  // Visibility — when true, the quest is hidden from non-GM players.
+  // GMs use this to draft quests ahead of time and reveal them when the
+  // players actually encounter them in-game.
+  is_hidden?: boolean;
+
+  // Per-crew scoping for West Marches style play. NULL/empty = visible to
+  // all crews (backward-compatible default). Non-empty array = visible only
+  // to viewers whose active character's crew_id is in the list. GMs bypass.
+  visible_crew_ids?: string[] | null;
+
   // Organization
   category: 'main' | 'side' | 'personal' | 'faction';
   parent_quest_id?: string;

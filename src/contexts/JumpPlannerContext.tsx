@@ -1,15 +1,19 @@
-import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from "react";
+import React, { createContext, useContext, useState, useCallback, useEffect, useMemo, useRef } from "react";
 import {
   getJumpWorlds,
   calculateRoute,
   getCoordinates,
   getWorldData,
+  getSectorCoordinates,
+  parseHexCoords,
   padHex,
   getSectorAbbreviation,
   getSectorFullName,
 } from "@/lib/travellerMapApi";
 import { dbHelpers } from "@/lib/supabase";
 import { toast } from "sonner";
+import { useCampaign } from "@/contexts/CampaignContext";
+import { isItemVisibleToViewer } from "@/lib/crewVisibility";
 import type {
   JumpWorld,
   RouteLeg,
@@ -167,6 +171,7 @@ export function JumpPlannerProvider({ children }: { children: React.ReactNode })
   const stateRef = useRef(state);
   useEffect(() => { stateRef.current = state; }, [state]);
   const initialLoadComplete = useRef(false);
+  const { isGM, activeCrewId } = useCampaign();
 
   // Load player location from Supabase (with localStorage fallback) on mount
   useEffect(() => {
@@ -185,6 +190,45 @@ export function JumpPlannerProvider({ children }: { children: React.ReactNode })
 
     loadPlayerLocation();
   }, []);
+
+  // When playerLocation changes, pre-fetch the numeric sector coords (sx, sy) needed
+  // for the yah_sx/yah_sy/yah_hx/yah_hy marker params.  These bypass TravellerMap's
+  // broken named-lookup entirely. hx/hy are parsed directly from the hex string.
+  // Also back-fill worldName if it was missing (e.g. loaded from storage).
+  useEffect(() => {
+    if (!state.playerLocation) return;
+    const { sector, hex, sx, sy, worldName } = state.playerLocation;
+
+    // Only fetch if something is still missing
+    if (sx !== undefined && sy !== undefined && worldName !== undefined) return;
+
+    const updates: Partial<typeof state.playerLocation> = {};
+
+    // hx/hy are derived directly from the hex string — no API call needed
+    const { hx, hy } = parseHexCoords(hex);
+    updates.hx = hx;
+    updates.hy = hy;
+
+    const coordsPromise = sx === undefined || sy === undefined
+      ? getSectorCoordinates(sector).then((coords) => {
+          if (coords) { updates.sx = coords.sx; updates.sy = coords.sy; }
+        }).catch(() => {})
+      : Promise.resolve();
+
+    const namePromise = worldName === undefined
+      ? getWorldData(sector, hex).then((worldData) => {
+          if (worldData) updates.worldName = worldData.name;
+        }).catch(() => {})
+      : Promise.resolve();
+
+    Promise.all([coordsPromise, namePromise]).then(() => {
+      if (Object.keys(updates).length === 0) return;
+      setState((prev) => {
+        if (prev.playerLocation?.sector !== sector || prev.playerLocation?.hex !== hex) return prev;
+        return { ...prev, playerLocation: { ...prev.playerLocation, ...updates } };
+      });
+    });
+  }, [state.playerLocation?.sector, state.playerLocation?.hex]);
 
   // Save player location to Supabase (with localStorage backup) when it changes
   useEffect(() => {
@@ -206,6 +250,13 @@ export function JumpPlannerProvider({ children }: { children: React.ReactNode })
     savePlayerLocation();
   }, [state.playerLocation]);
 
+  // Refs to avoid stale closures in the postMessage listener
+  // Initialise with null – the actual callbacks are assigned on every render below.
+  // (Using the callback name directly in useRef() would hit the TDZ because the
+  // const declarations live further down in this component body.)
+  const handleMapClickRef = useRef<((x: number, y: number) => Promise<void>) | null>(null);
+  const setCurrentLocationRef = useRef<((sector: string, hex: string) => Promise<void>) | null>(null);
+
   // Listen for TravellerMap iframe messages
   useEffect(() => {
     function handleMessage(event: MessageEvent) {
@@ -216,10 +267,10 @@ export function JumpPlannerProvider({ children }: { children: React.ReactNode })
         const { sector, hex, x, y } = data.location || {};
         if (sector && hex) {
           // Prefer direct sector/hex from TravellerMap event to avoid coordinate jitter
-          void setCurrentLocation(sector, hex);
+          void setCurrentLocationRef.current?.(sector, hex);
         } else if (typeof x === "number" && typeof y === "number") {
           // Fallback: resolve via coordinates API
-          void handleMapClick(x, y);
+          void handleMapClickRef.current?.(x, y);
         }
       }
     }
@@ -294,7 +345,7 @@ export function JumpPlannerProvider({ children }: { children: React.ReactNode })
           return;
         }
 
-        console.log("Processing coordinates:", coords);
+        if (import.meta.env.DEV) console.log("Processing coordinates:", coords);
 
         // Sector name is now resolved by getCoordinates via Metadata API lookup
         if (!coords.Sector) {
@@ -314,7 +365,7 @@ export function JumpPlannerProvider({ children }: { children: React.ReactNode })
         }
 
         const sectorFull = getSectorFullName(coords.Sector);
-        console.log("Setting location to:", sectorFull, hex);
+        if (import.meta.env.DEV) console.log("Setting location to:", sectorFull, hex);
 
         await setCurrentLocation(sectorFull, hex);
       } catch (error) {
@@ -327,6 +378,10 @@ export function JumpPlannerProvider({ children }: { children: React.ReactNode })
     },
     [setCurrentLocation]
   );
+
+  // Keep refs in sync with the latest callbacks (declared just above)
+  handleMapClickRef.current = handleMapClick;
+  setCurrentLocationRef.current = setCurrentLocation;
 
   // ===== Jump World Actions =====
 
@@ -681,10 +736,41 @@ export function JumpPlannerProvider({ children }: { children: React.ReactNode })
     setState((prev) => ({ ...prev, error: null }));
   }, []);
 
+  // ===== Per-crew visibility filtering =====
+  // Raw state keeps every row; consumers see only what the active viewer may see.
+  // GMs bypass the filter entirely.
+
+  const visibleAllNotes = useMemo(() => {
+    if (isGM) return state.allNotes;
+    return state.allNotes.filter((n) => isItemVisibleToViewer(n, activeCrewId, isGM));
+  }, [state.allNotes, isGM, activeCrewId]);
+
+  const visibleCurrentNote = useMemo(() => {
+    if (!state.currentNote) return state.currentNote;
+    if (isGM) return state.currentNote;
+    return isItemVisibleToViewer(state.currentNote, activeCrewId, isGM)
+      ? state.currentNote
+      : null;
+  }, [state.currentNote, isGM, activeCrewId]);
+
+  const visibleHexMarkers = useMemo(() => {
+    if (isGM) return state.hexMarkers;
+    return state.hexMarkers.filter((m) => isItemVisibleToViewer(m, activeCrewId, isGM));
+  }, [state.hexMarkers, isGM, activeCrewId]);
+
+  const visibleCurrentHexMarkers = useMemo(() => {
+    if (isGM) return state.currentHexMarkers;
+    return state.currentHexMarkers.filter((m) => isItemVisibleToViewer(m, activeCrewId, isGM));
+  }, [state.currentHexMarkers, isGM, activeCrewId]);
+
   // ===== Context Value =====
 
   const value: JumpPlannerContextValue = {
     ...state,
+    allNotes: visibleAllNotes,
+    currentNote: visibleCurrentNote,
+    hexMarkers: visibleHexMarkers,
+    currentHexMarkers: visibleCurrentHexMarkers,
     setCurrentLocation,
     setPlayerLocation,
     handleMapClick,

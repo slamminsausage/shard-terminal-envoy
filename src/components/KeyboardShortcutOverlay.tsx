@@ -1,19 +1,10 @@
 import React from 'react';
-import { LucideIcon } from 'lucide-react';
-
-interface Tab {
-  id: string;
-  label: string;
-  icon?: LucideIcon;
-  emoji?: string;
-}
 
 interface KeyboardShortcutOverlayProps {
-  tabs: Tab[];
   onClose: () => void;
 }
 
-export function KeyboardShortcutOverlay({ tabs, onClose }: KeyboardShortcutOverlayProps) {
+export function KeyboardShortcutOverlay({ onClose }: KeyboardShortcutOverlayProps) {
   return (
     <div
       className="modal-overlay"
@@ -35,49 +26,6 @@ export function KeyboardShortcutOverlay({ tabs, onClose }: KeyboardShortcutOverl
           </button>
         </div>
         <div className="modal-body" style={{ padding: '16px 20px' }}>
-          {/* Tab shortcuts */}
-          <div className="mb-5">
-            <h3
-              className="text-xs font-bold tracking-wider mb-3 uppercase"
-              style={{ fontFamily: 'var(--font-display)', color: 'var(--primary)', letterSpacing: '0.15em' }}
-            >
-              Tab Navigation
-            </h3>
-            <div className="space-y-1.5">
-              {tabs.map((tab, index) => (
-                <div
-                  key={tab.id}
-                  className="flex items-center justify-between py-1.5 px-2 rounded"
-                  style={{ background: 'rgba(0, 255, 0, 0.03)' }}
-                >
-                  <span
-                    className="text-sm flex items-center gap-2"
-                    style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-dim)' }}
-                  >
-                    {tab.emoji ? (
-                      <span style={{ fontSize: '12px' }}>{tab.emoji}</span>
-                    ) : tab.icon ? (
-                      <tab.icon size={12} className="opacity-60" />
-                    ) : null}
-                    {tab.label}
-                  </span>
-                  <kbd
-                    className="inline-flex items-center justify-center rounded px-2 py-0.5 text-xs font-bold"
-                    style={{
-                      fontFamily: 'var(--font-mono)',
-                      color: 'var(--primary)',
-                      background: 'rgba(0, 255, 0, 0.1)',
-                      border: '1px solid rgba(0, 255, 0, 0.3)',
-                      minWidth: '24px',
-                    }}
-                  >
-                    {index + 1}
-                  </kbd>
-                </div>
-              ))}
-            </div>
-          </div>
-
           {/* General shortcuts */}
           <div className="mb-4">
             <h3
@@ -96,7 +44,7 @@ export function KeyboardShortcutOverlay({ tabs, onClose }: KeyboardShortcutOverl
                 <div
                   key={key}
                   className="flex items-center justify-between py-1.5 px-2 rounded"
-                  style={{ background: 'rgba(0, 255, 0, 0.03)' }}
+                  style={{ background: 'rgba(58, 226, 179, 0.03)' }}
                 >
                   <span
                     className="text-sm"
@@ -109,8 +57,8 @@ export function KeyboardShortcutOverlay({ tabs, onClose }: KeyboardShortcutOverl
                     style={{
                       fontFamily: 'var(--font-mono)',
                       color: 'var(--primary)',
-                      background: 'rgba(0, 255, 0, 0.1)',
-                      border: '1px solid rgba(0, 255, 0, 0.3)',
+                      background: 'rgba(58, 226, 179, 0.1)',
+                      border: '1px solid rgba(58, 226, 179, 0.3)',
                       minWidth: '24px',
                     }}
                   >

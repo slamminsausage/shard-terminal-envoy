@@ -11,19 +11,19 @@ const Toaster = ({ ...props }: ToasterProps) => {
       toastOptions={{
         classNames: {
           toast:
-            "group toast group-[.toaster]:bg-black group-[.toaster]:text-terminal-primary group-[.toaster]:border-2 group-[.toaster]:border-terminal-primary/40 group-[.toaster]:shadow-[0_0_20px_rgba(0,255,0,0.15)] group-[.toaster]:font-mono",
+            "group toast group-[.toaster]:bg-black group-[.toaster]:text-terminal-primary group-[.toaster]:border-2 group-[.toaster]:border-terminal-primary/40 group-[.toaster]:shadow-[0_0_20px_color-mix(in_srgb,var(--primary)_15%,transparent)] group-[.toaster]:font-mono",
           description: "group-[.toast]:text-terminal-primary/60",
           actionButton:
             "group-[.toast]:bg-terminal-primary/20 group-[.toast]:text-terminal-primary group-[.toast]:border group-[.toast]:border-terminal-primary/30 group-[.toast]:font-mono",
           cancelButton:
             "group-[.toast]:bg-transparent group-[.toast]:text-terminal-primary/50 group-[.toast]:border group-[.toast]:border-terminal-primary/20 group-[.toast]:font-mono",
           success:
-            "group-[.toaster]:border-terminal-primary group-[.toaster]:shadow-[0_0_25px_rgba(0,255,0,0.25)]",
+            "group-[.toaster]:border-terminal-primary group-[.toaster]:shadow-[0_0_25px_color-mix(in_srgb,var(--primary)_25%,transparent)]",
           error:
-            "group-[.toaster]:border-red-500 group-[.toaster]:text-red-400 group-[.toaster]:shadow-[0_0_25px_rgba(255,51,68,0.25)]",
+            "group-[.toaster]:border-red-500 group-[.toaster]:text-red-400 group-[.toaster]:shadow-[0_0_25px_color-mix(in_srgb,var(--danger)_25%,transparent)]",
           warning:
-            "group-[.toaster]:border-orange-500 group-[.toaster]:text-orange-400 group-[.toaster]:shadow-[0_0_25px_rgba(255,102,0,0.25)]",
-          info: "group-[.toaster]:border-cyan-400 group-[.toaster]:text-cyan-300 group-[.toaster]:shadow-[0_0_25px_rgba(0,204,255,0.25)]",
+            "group-[.toaster]:border-orange-500 group-[.toaster]:text-orange-400 group-[.toaster]:shadow-[0_0_25px_color-mix(in_srgb,var(--warning)_25%,transparent)]",
+          info: "group-[.toaster]:border-cyan-400 group-[.toaster]:text-cyan-300 group-[.toaster]:shadow-[0_0_25px_color-mix(in_srgb,var(--secondary)_25%,transparent)]",
         },
       }}
       {...props}

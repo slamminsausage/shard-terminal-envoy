@@ -5,7 +5,7 @@ import type { VTTTool } from "@/types/vtt";
 /**
  * VTT keyboard shortcuts. Only active when the VTT tab is focused.
  */
-export function useVTTKeyboard() {
+export function useVTTKeyboard(onToggleShortcuts?: () => void) {
   const { state, dispatch, activeMap, saveSession } = useVTT();
 
   useEffect(() => {
@@ -30,6 +30,10 @@ export function useVTTKeyboard() {
         d: "door",
         f: "fog-circle",
         n: "note",
+        c: "aoe-circle",
+        j: "aoe-cone",
+        k: "aoe-line",
+        p: "light",
       };
 
       if (!e.ctrlKey && !e.metaKey && !e.altKey && toolMap[key]) {
@@ -60,6 +64,33 @@ export function useVTTKeyboard() {
           dispatch({ type: "TOGGLE_GRID" });
           return;
         }
+        if (key === "c") {
+          e.preventDefault();
+          dispatch({ type: "COPY_SELECTION" });
+          return;
+        }
+        if (key === "v") {
+          e.preventDefault();
+          if (activeMap) {
+            dispatch({ type: "PASTE_CLIPBOARD", payload: { mapId: activeMap.id } });
+          }
+          return;
+        }
+        if (key === "d") {
+          e.preventDefault();
+          if (activeMap) {
+            dispatch({ type: "COPY_SELECTION" });
+            dispatch({ type: "PASTE_CLIPBOARD", payload: { mapId: activeMap.id } });
+          }
+          return;
+        }
+        return;
+      }
+
+      // Shortcut overlay toggle
+      if (e.key === "?" && !e.ctrlKey && !e.metaKey) {
+        e.preventDefault();
+        onToggleShortcuts?.();
         return;
       }
 
@@ -89,11 +120,16 @@ export function useVTTKeyboard() {
         return;
       }
 
-      // Delete key - remove selected tokens
+      // Delete key - remove all selected items
       if (key === "delete" || key === "backspace") {
-        const ids = state.selectedTokenIds || [];
-        if (ids.length > 0 && activeMap) {
-          for (const tokenId of ids) {
+        const tokenIds = state.selectedTokenIds || [];
+        const strokeIds = state.selectedStrokeIds || [];
+        const textIds = state.selectedTextIds || [];
+        const noteIds = state.selectedNoteIds || [];
+        const aoeIds = state.selectedAoEIds || [];
+        const lightIds = state.selectedLightIds || [];
+        if ((tokenIds.length + strokeIds.length + textIds.length + noteIds.length + aoeIds.length + lightIds.length) > 0 && activeMap) {
+          for (const tokenId of tokenIds) {
             const token = activeMap.tokens.find((t) => t.id === tokenId);
             if (token) {
               dispatch({
@@ -112,7 +148,88 @@ export function useVTTKeyboard() {
               payload: { mapId: activeMap.id, tokenId },
             });
           }
+          for (const strokeId of strokeIds) {
+            dispatch({
+              type: "REMOVE_STROKE",
+              payload: { mapId: activeMap.id, strokeId },
+            });
+          }
+          for (const textId of textIds) {
+            dispatch({
+              type: "REMOVE_TEXT",
+              payload: { mapId: activeMap.id, textId },
+            });
+          }
+          for (const noteId of noteIds) {
+            dispatch({
+              type: "REMOVE_NOTE",
+              payload: { mapId: activeMap.id, noteId },
+            });
+          }
+          for (const aoeId of aoeIds) {
+            const aoe = (activeMap.aoeTemplates || []).find((a) => a.id === aoeId);
+            if (aoe) {
+              dispatch({
+                type: "PUSH_HISTORY",
+                payload: {
+                  type: "aoe-remove",
+                  mapId: activeMap.id,
+                  before: aoe,
+                  after: null,
+                  timestamp: Date.now(),
+                },
+              });
+            }
+            dispatch({ type: "REMOVE_AOE", payload: aoeId });
+          }
+          for (const lightId of lightIds) {
+            const light = activeMap.lights.find((l) => l.id === lightId);
+            if (light) {
+              dispatch({
+                type: "PUSH_HISTORY",
+                payload: {
+                  type: "light-remove",
+                  mapId: activeMap.id,
+                  before: light,
+                  after: null,
+                  timestamp: Date.now(),
+                },
+              });
+            }
+            dispatch({
+              type: "REMOVE_LIGHT",
+              payload: { mapId: activeMap.id, lightId },
+            });
+          }
           dispatch({ type: "CLEAR_SELECTION" });
+        }
+        return;
+      }
+
+      // Arrow key movement — nudge selected tokens one grid cell
+      if (
+        (key === "arrowup" || key === "arrowdown" || key === "arrowleft" || key === "arrowright") &&
+        !e.ctrlKey && !e.metaKey
+      ) {
+        const tokenIds = state.selectedTokenIds || [];
+        if (tokenIds.length > 0 && activeMap) {
+          e.preventDefault();
+          const step = activeMap.grid.size || 50;
+          const dx = key === "arrowleft" ? -step : key === "arrowright" ? step : 0;
+          const dy = key === "arrowup" ? -step : key === "arrowdown" ? step : 0;
+          for (const tokenId of tokenIds) {
+            const token = activeMap.tokens.find((t) => t.id === tokenId);
+            if (token) {
+              dispatch({
+                type: "UPDATE_TOKEN",
+                payload: {
+                  mapId: activeMap.id,
+                  tokenId,
+                  updates: { x: token.x + dx, y: token.y + dy },
+                },
+              });
+            }
+          }
         }
         return;
       }
@@ -166,5 +283,5 @@ export function useVTTKeyboard() {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [state, dispatch, activeMap, saveSession]);
+  }, [state, dispatch, activeMap, saveSession, onToggleShortcuts]);
 }

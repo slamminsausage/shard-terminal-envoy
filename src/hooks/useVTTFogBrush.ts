@@ -25,10 +25,13 @@ export function useVTTFogBrush(map: VTTMap | null) {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
+    let mounted = true;
+
     // Load existing fog data or fill with fog
     if (map.fog.dataUrl) {
       const img = new Image();
       img.onload = () => {
+        if (!mounted) return;
         ctx.drawImage(img, 0, 0);
       };
       img.src = map.fog.dataUrl;
@@ -40,7 +43,9 @@ export function useVTTFogBrush(map: VTTMap | null) {
 
     fogCanvasRef.current = canvas;
     fogCtxRef.current = ctx;
-  }, [map?.id, map?.width, map?.height]);
+
+    return () => { mounted = false; };
+  }, [map?.id, map?.width, map?.height, map?.fog?.dataUrl, map?.fog?.enabled]);
 
   /**
    * Paint fog at a position (reveal or conceal).

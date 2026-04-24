@@ -58,7 +58,7 @@ export const MARKER_TYPE_CONFIGS: Record<MarkerType, MarkerTypeConfig> = {
     type: "TRADE_ROUTE",
     label: "Trade Route",
     icon: "💰",
-    defaultColor: "#00ff00",
+    defaultColor: "#3ae2b3",
     description: "Established trade route waypoint",
   },
   ANOMALY: {
@@ -93,7 +93,7 @@ export const MARKER_TYPE_CONFIGS: Record<MarkerType, MarkerTypeConfig> = {
     type: "SETTLEMENT",
     label: "Settlement",
     icon: "🏘️",
-    defaultColor: "#00aa00",
+    defaultColor: "#1b6c57",
     description: "Small settlement or outpost",
   },
   RUINS: {
@@ -107,7 +107,7 @@ export const MARKER_TYPE_CONFIGS: Record<MarkerType, MarkerTypeConfig> = {
     type: "CUSTOM",
     label: "Custom",
     icon: "⭐",
-    defaultColor: "#00ff00",
+    defaultColor: "#3ae2b3",
     description: "Custom marker type",
   },
 };

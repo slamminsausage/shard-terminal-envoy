@@ -1,0 +1,160 @@
+[
+  {
+    "title": "Bounty Notice — Ferrik Redthane",
+    "location": "General Access Terminal — Blacksand Downport / Lower City Public Kiosk",
+    "date": "DAY 212 · 1105 — FILED BY PLANETARY AUTHORITY, TORPOL",
+    "author": "Planetary Authority, Torpol — Filed via independent relay",
+    "content": "NOTICE OF BOUNTY — ACTIVE\n\nSubject: FERRIK REDTHANE\nAlias(es): Unknown\nLast Known Association: Darokyn's Retinue (FORMER — EXPELLED OR FLED)\nLast Known Vessel: Misery's Company (current status: damaged, location: Borite system, unconfirmed)\n\nCharges Filed By: Planetary Authority, Torpol and Clarke\nCharges: Coordinated assault on civilian shipping lanes, attack on surface installations, suspected piracy conspiracy.\n\nBounty Amount: On file with issuing authority. Contact required for exact sum.\nBounty Condition: Alive preferred. Dead accepted if evidence of involvement in attacks is presented.\n\n—\n\nNote: Additional interest in this individual has been registered by at least one private party. We do not know who. We are not required to share. The private interest predates the official bounty by several weeks.\n\nNote: Redthane has not been sighted on Theev in several months. He is believed to be hiding off-world. His associate, Miria Silverhand, has been active in Blacksand City as of this cycle, apparently negotiating on his behalf.\n\nNote: Admiral Darokyn has made it known — quietly — that he does not consider Redthane under his protection. This is significant.\n\nCapture or confirmed termination should be reported to the filing authority through an appropriate intermediary. We do not recommend walking into an Imperial office to collect.",
+    "security_level": "unlocked",
+    "requires_roll": false
+  },
+  {
+    "title": "Darokyn Personnel File \u2014 Redthane, F.",
+    "location": "General Access Terminal \u2014 Grand Hotel, Upper City (Administrative Partition)",
+    "date": "APPROX. 8 MONTHS PRIOR",
+    "author": "Darokyn Retinue \u2014 Internal Personnel Office",
+    "content": "PERSONNEL FILE \u2014 FERRIK REDTHANE\nStatus: EXPELLED. Record retained for operational reference.\n\nYears of service: 4\nRole: Raiding coordinator, light fleet operations\nPerformance: Above average. Tactical initiative strong. Discipline: inconsistent.\n\nCause of expulsion: CLASSIFIED \u2014 ACCESS RESTRICTED TO FLAG STAFF\n\n\u2014 Summary note (unclassified portion):\nRedthane departed the retinue following an incident that the Admiral has chosen not to detail in the formal record. The departure was not mutual. Redthane was informed that his continued presence on Theev would be unwelcome.\n\nHe was not told this gently.\n\n\u2014 Operational note:\nRedthane retained contacts from his time with the retinue. He has used these to operate independently. The attacks on Torpol and Clarke were planned and coordinated in a manner consistent with his training. This is noted without any implication that the retinue sanctioned or supported those operations.\n\nThe retinue did not sanction or support those operations.\n\n\u2014 Final note:\nIf anyone asks Admiral Darokyn directly why Redthane was expelled, the Admiral will not answer the question. He will change the subject with remarkable skill. We recommend not pressing the point in the Admiral's presence.\n\nWe recommend pressing it elsewhere.",
+    "security_level": "restricted",
+    "requires_roll": true,
+    "roll_check": {
+      "difficulty": 10,
+      "skill": "Electronics (computers)",
+      "on_success": "Darokyn internal file accessed. Redthane's expulsion reason is sealed. The Admiral is hiding something.",
+      "on_failure": "Partition locked. Retinue administrative files require elevated clearance."
+    }
+  },
+  {
+    "title": "Miria Silverhand — Known Associates File",
+    "location": "General Access Terminal — Blacksand Downport",
+    "date": "DAY 212 · 1105",
+    "author": "Widow Administrative Office — Intelligence Division",
+    "content": "KNOWN ASSOCIATES FILE — MIRIA SILVERHAND\n\nSubject: MIRIA SILVERHAND\nAlso Known As: N/A\nCybernetic: Right arm, full replacement. Strength-rated. Integrated weapon linkage suspected.\nCurrent Location: Blacksand City, lower city. The Scrapheap, upper deck of a downed Fat Trader. Bridge compartment.\n\nBackground summary: Former Imperial merchant crew. Captured by pirates. Rose through piracy by demonstrated ruthlessness. Now a senior lieutenant and operative for Ferrik Redthane.\n\nCurrent activity: Negotiating independently on Redthane's behalf. Has approached both Vallis and Irontooth gangs. Seeking protection and alliance. Using the Scrapheap as a base. Running messages via local boys — does not expose herself unnecessarily.\n\nThreat assessment: HIGH. Armed with a gauss pistol and a rapid-fire machinegun. The machinegun is resting on the captain's chair in her current position, aimed down the main corridor. The corridor doors are rusted open. She has a clear field of fire the length of the deck.\n\nNote: She has a self-destruct device integrated into her cybernetic arm. This is confirmed intelligence. It is a frag-equivalent device. It has a one-round countdown. If she activates it, you have approximately two seconds to do something about the situation.\n\n— Approach with extreme caution. Do not underestimate the arm.",
+    "security_level": "restricted",
+    "requires_roll": true,
+    "roll_check": {
+      "difficulty": 11,
+      "skill": "Electronics (computers)",
+      "on_success": "Widow intelligence file accessed. Miria's exact position, armament, and self-destruct confirmed.",
+      "on_failure": "Intelligence partition locked. File not accessible at this clearance level."
+    }
+  },
+  {
+    "title": "Darokyn Files \u2014 Classified Partition Extraction",
+    "location": "General Access Terminal \u2014 Grand Hotel, Upper City (Administrative Partition)",
+    "date": "APPROX. 8 MONTHS PRIOR",
+    "author": "Darokyn Retinue \u2014 Internal Personnel Office (Sealed Partition)",
+    "security_level": "restricted",
+    "content": "The Darokyn personnel file for Ferrik Redthane contains a sealed partition marked CLASSIFIED \u2014 ACCESS RESTRICTED TO FLAG STAFF.\n\nThe unclassified portion states only that Redthane 'departed following an incident that the Admiral has chosen not to detail.' The classified portion contains the actual incident record.\n\nBreaking the partition requires stripping a non-standard encryption layer the retinue uses for sensitive personnel actions.\n\n[INTERACTIVE TERMINAL \u2014 AWAITING INPUT]",
+    "type": "action_sequence",
+    "action_sequence": {
+      "id": "ferrik-expulsion-classified",
+      "category": "data_extraction",
+      "steps": [
+        {
+          "type": "auto",
+          "lines": [
+            ">> DAROKYN RETINUE \u2014 PERSONNEL ARCHIVE v2.0",
+            ">> FILE: REDTHANE, FERRIK \u2014 STATUS: EXPELLED",
+            ">> PARTITION DETECTED: CLASSIFIED \u2014 FLAG STAFF ONLY",
+            ">> ENCRYPTION: AES-CLASS \u2014 NON-STANDARD RETINUE VARIANT",
+            "",
+            ">> CLASSIFIED PARTITION SIZE: 4.2 KB",
+            ">> ESTIMATED CONTENT: INCIDENT RECORD \u2014 FULL ACCOUNT",
+            "",
+            ">> INITIATING PARTITION STRIP..."
+          ],
+          "delay": 35,
+          "pause_after": 700
+        },
+        {
+          "type": "prompt",
+          "prompt_text": "ENTER BYPASS COMMAND:",
+          "accept": [
+            "BYPASS",
+            "OVERRIDE",
+            "ADMIN",
+            "DECRYPT",
+            "STRIP",
+            "UNLOCK"
+          ],
+          "reject_message": "COMMAND NOT RECOGNISED. PARTITION REMAINS LOCKED.",
+          "max_attempts": 3,
+          "sound_on_accept": "access_granted",
+          "sound_on_reject": "access_denied"
+        },
+        {
+          "type": "auto",
+          "lines": [
+            ">> PARTITION STRIP INITIATED.",
+            ">> REMOVING ENCRYPTION HEADERS...",
+            ">> BYPASSING FLAG-STAFF CREDENTIAL CHECK..."
+          ],
+          "delay": 40,
+          "pause_after": 300
+        },
+        {
+          "type": "progress",
+          "label": "EXTRACTING CLASSIFIED INCIDENT RECORD...",
+          "duration": 4000,
+          "segments": 24,
+          "sound_on_complete": "data_download",
+          "complete_message": "PARTITION STRIPPED \u2014 RECORD RECOVERED"
+        },
+        {
+          "type": "auto",
+          "lines": [
+            ">> CLASSIFIED RECORD \u2014 INCIDENT SUMMARY:",
+            ">> DATE: APPROX. 8 MONTHS PRIOR",
+            ">> LOCATION: BORITE SYSTEM \u2014 OUTER BELT \u2014 DERELICT VESSEL",
+            ">> REDTHANE WAS FIRST ABOARD. HE FOUND SOMETHING.",
+            ">> THREE CREW DIED IN THE SUBSEQUENT INCIDENT.",
+            ">> TWO OF DAROKYN'S OFFICERS WITNESSED THE FIND.",
+            ">> BOTH HAVE REFUSED TO DESCRIBE WHAT THEY SAW.",
+            ">> DAROKYN CHOSE EXPULSION OVER COURT-MARTIAL.",
+            ">> A COURT-MARTIAL REQUIRES DISCLOSURE.",
+            ">> THE FIND ITSELF IS NOT DESCRIBED IN ANY FILE.",
+            ">> THE FIND IS WHY REDTHANE CHANGED HIS PRIORITIES.",
+            ">> END OF RECOVERED RECORD."
+          ],
+          "delay": 40,
+          "sound": "warning",
+          "sound_at_line": 3,
+          "pause_after": 800
+        }
+      ],
+      "on_complete": {
+        "message": "The classified record is sparse \u2014 whoever wrote it was careful. But the shape is clear: Redthane boarded a derelict in Borite's outer belt and found something that changed what he was willing to do. Three people died. Two witnesses won't speak. Darokyn buried it rather than put it on record in a court-martial. Whatever Redthane found on that derelict is the reason for everything that followed \u2014 the Torpol and Clarke attacks, the falling out, the bounty. The question is what it was.",
+        "sound": "access_granted",
+        "persist_key": "ferrik-expulsion-classified"
+      },
+      "on_failure": {
+        "message": "PARTITION STRIP FAILED. Retinue encryption layer held. Access attempt has been logged against this terminal's session ID. If the Admiral reviews the log, he will know someone tried.",
+        "sound": "access_denied"
+      }
+    }
+  },
+  {
+    "title": "Krrsh — Statement (Informal, Post-Rescue)",
+    "location": "General Access Terminal — Blacksand Downport (Filed by arriving crew)",
+    "date": "DAY 212 · 1105",
+    "author": "Krrsh, Captain — Misery's Company (former)",
+    "content": "I'm filing this because whoever saved me from that station deserves to know what they're walking into.\n\nFerrik Redthane planned the Torpol and Clarke attacks. He coordinated at least three ships, maybe more. Misery's Company was involved — I won't pretend otherwise — but Ferrik was running the operation. It was his plan. His targets. His call.\n\nI mutinied because the attack on Clarke went further than what was agreed. He hit civilians. That wasn't the job. That was something else.\n\nAfter the mutiny my crew put me on the station with whatever was living there and jumped for Borite. Ferrik doesn't know I'm alive. As far as he knows I'm dead in a derelict somewhere.\n\nHe's hiding. He needs Miria to broker a deal with one of the big gangs so he can come back to Theev without getting killed by Darokyn. That's the only reason Miria is here.\n\nFind Miria, you find Ferrik.\n\nThe codes I gave you will get you through the Skull. After that, Blacksand is its own problem. Don't walk alone in the lower city. Don't trust anyone who smiles first. And if a woman with a metal arm offers you a deal, she has a machinegun under the table.\n\nI mean that literally.\n\nGood luck. You earned the codes. Make them worth something.",
+    "security_level": "unlocked",
+    "requires_roll": false
+  },
+  {
+    "title": "Contractor Debrief Addendum \u2014 Parallel Crew Observation",
+    "location": "Widow/Authority Shared Intelligence Buffer",
+    "date": "CURRENT CYCLE",
+    "author": "Analyst 7C",
+    "content": "Subject focus remains Ferrik Redthane network remnants, but a secondary note is filed for two independent pirate-adjacent crews operating in overlapping blocks tonight.\n\nCrew A shows disciplined comms silence and top-city social access. Crew B shows lower-city procurement behavior, high cash burn, and consistent use of third-party couriers. Neither group appears aware the other is being tracked under the same case umbrella.\n\n[[redacted diff=11 skill=\"Investigate\" attempts=2]]\nTemporary recommendation: allow both crews to pursue Bay 7-C lead until one surfaces the quartermaster. Intercept only after identity confirmation to avoid burning surveillance assets.[[/redacted]]",
+    "security_level": "high",
+    "requires_roll": true,
+    "roll_check": {
+      "difficulty": 11,
+      "skill": "Electronics (computers)",
+      "on_success": "Cross-case analyst note recovered.",
+      "on_failure": "Partition checksum mismatch. Access denied."
+    }
+  }
+]

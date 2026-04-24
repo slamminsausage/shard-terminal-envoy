@@ -24,7 +24,7 @@ type GroupMode = 'flat' | 'grouped';
 function getCharacterBadge(character: Character): { label: string; color: string; borderColor: string; bgColor: string } {
   const charType = character.character_type || 'pc';
   if (charType === 'pc') {
-    return { label: 'PC', color: '#00ff00', borderColor: 'rgba(0,255,0,0.5)', bgColor: 'rgba(0,255,0,0.1)' };
+    return { label: 'PC', color: '#3ae2b3', borderColor: 'rgba(58, 226, 179,0.5)', bgColor: 'rgba(58, 226, 179,0.1)' };
   }
   // NPC roles
   const role = character.npc_role || 'crew';
@@ -128,7 +128,7 @@ function CrewAssignmentInline({
   );
 }
 
-export default function CrewInterface() {
+function CrewInterface() {
   const [displayText, setDisplayText] = useState("");
   const [activeCrewMember, setActiveCrewMember] = useState<string | null>(null);
   const [showCharacterSheet, setShowCharacterSheet] = useState(false);
@@ -228,7 +228,7 @@ export default function CrewInterface() {
     const canDelete = isGM || isOwner;
     const badge = getCharacterBadge(character);
     const crewGroup = crewGroups.find(g => g.id === character.crew_id);
-    const rowBorder = crewGroup ? crewGroup.color : (character.character_type === 'npc' ? 'rgba(0,204,255,0.4)' : 'rgba(0,255,0,0.4)');
+    const rowBorder = crewGroup ? crewGroup.color : (character.character_type === 'npc' ? 'rgba(0,204,255,0.4)' : 'rgba(58, 226, 179,0.4)');
 
     return (
       <div
@@ -393,7 +393,7 @@ export default function CrewInterface() {
                     <button onClick={() => setRosterFilter('all')}
                       className={`px-3 py-1 text-xs font-mono rounded border transition-all ${
                         rosterFilter === 'all'
-                          ? 'border-[var(--primary)] text-[var(--primary)] bg-[rgba(0,255,0,0.15)]'
+                          ? 'border-[var(--primary)] text-[var(--primary)] bg-[rgba(58, 226, 179,0.15)]'
                           : 'border-[var(--bg-border)] text-[var(--text-dimmer)] hover:border-[var(--primary-dim)] hover:text-[var(--primary)]'
                       }`}>
                       ALL ({characters.length})
@@ -401,7 +401,7 @@ export default function CrewInterface() {
                     <button onClick={() => setRosterFilter('pc')}
                       className={`px-3 py-1 text-xs font-mono rounded border transition-all ${
                         rosterFilter === 'pc'
-                          ? 'border-[var(--primary)] text-[var(--primary)] bg-[rgba(0,255,0,0.15)]'
+                          ? 'border-[var(--primary)] text-[var(--primary)] bg-[rgba(58, 226, 179,0.15)]'
                           : 'border-[var(--bg-border)] text-[var(--text-dimmer)] hover:border-[var(--primary-dim)] hover:text-[var(--primary)]'
                       }`}>
                       PCs ({pcCount})
@@ -443,7 +443,7 @@ export default function CrewInterface() {
                         onClick={() => setGroupMode(prev => prev === 'flat' ? 'grouped' : 'flat')}
                         className={`px-3 py-1 text-xs font-mono rounded border transition-all ${
                           groupMode === 'grouped'
-                            ? 'border-[var(--primary)] text-[var(--primary)] bg-[rgba(0,255,0,0.15)]'
+                            ? 'border-[var(--primary)] text-[var(--primary)] bg-[rgba(58, 226, 179,0.15)]'
                             : 'border-[var(--bg-border)] text-[var(--text-dimmer)] hover:border-[var(--primary-dim)] hover:text-[var(--primary)]'
                         }`}
                       >
@@ -565,3 +565,5 @@ export default function CrewInterface() {
     </div>
   );
 }
+
+export default React.memo(CrewInterface);

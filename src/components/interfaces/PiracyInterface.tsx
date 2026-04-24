@@ -10,7 +10,7 @@ import { PreyEncounterPanel } from '../piracy/PreyEncounterPanel';
 import { PrizeShipPanel } from '../piracy/PrizeShipPanel';
 import { useCampaign } from '@/contexts/CampaignContext';
 
-export const PiracyInterface: React.FC = () => {
+export const PiracyInterface: React.FC = React.memo(() => {
   const { isGM } = useCampaign();
   const [activeSubTab, setActiveSubTab] = useState(() => {
     if (typeof window === "undefined") return "ports";
@@ -108,4 +108,5 @@ export const PiracyInterface: React.FC = () => {
       </div>
     </div>
   );
-};
+});
+PiracyInterface.displayName = 'PiracyInterface';

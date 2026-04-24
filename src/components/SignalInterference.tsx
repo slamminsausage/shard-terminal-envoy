@@ -118,7 +118,7 @@ const SignalInterference = ({
           className="pointer-events-none fixed inset-0 z-40"
           style={{
             background:
-              'repeating-linear-gradient(0deg, rgba(0,255,0,0.03) 0px, transparent 1px, transparent 2px, rgba(0,255,0,0.03) 3px)',
+              'repeating-linear-gradient(0deg, rgba(58, 226, 179,0.03) 0px, transparent 1px, transparent 2px, rgba(58, 226, 179,0.03) 3px)',
             animation: 'scanlines 8s linear infinite'
           }}
         />

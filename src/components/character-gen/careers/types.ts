@@ -32,6 +32,9 @@ export interface Rank {
   title: string;
   skillBonus?: string;
   bonusStat?: CharacteristicName;
+  /** If set, `bonusStat` becomes `max(bonusStatFloor, current + 1)` — used for
+   *  Traveller 2e ranks like "SOC 10 or SOC +1, whichever is higher". */
+  bonusStatFloor?: number;
 }
 
 // ============================================================================
@@ -96,8 +99,13 @@ export interface EventEffects {
   benefitDM?: number;          // DM to benefit rolls
   extraBenefit?: boolean;      // Gain an extra benefit roll
 
+  // Advancement/promotion modifications
+  advancementDM?: number;      // DM to next advancement roll
+  autoPromotion?: boolean;     // Automatic promotion this term
+  qualificationDM?: number;    // DM to next qualification roll
+
   // Redirect to another table
-  rollOnTable?: 'life_events' | 'injury' | 'aging' | 'unusual_events';
+  rollOnTable?: 'life_events' | 'injury' | 'aging' | 'unusual_events' | 'mishap' | 'prison_event';
 
   // Display message
   message?: string;
@@ -198,7 +206,7 @@ export interface GameEvent {
       }
     | {
         type: 'table_redirect';
-        table: 'life_events' | 'injury' | 'aging' | 'draft' | 'unusual_events';
+        table: 'life_events' | 'injury' | 'aging' | 'draft' | 'unusual_events' | 'mishap' | 'prison_event';
         displayText: string;
       }
     | {

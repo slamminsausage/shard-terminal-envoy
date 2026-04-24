@@ -9,16 +9,16 @@ export default function TerminalLoadingSkeleton() {
             className="h-2 rounded mx-auto mb-3"
             style={{
               width: '60%',
-              background: 'rgba(0, 255, 0, 0.15)',
-              boxShadow: '0 0 8px rgba(0, 255, 0, 0.1)',
+              background: 'rgba(58, 226, 179, 0.15)',
+              boxShadow: '0 0 8px rgba(58, 226, 179, 0.1)',
             }}
           />
           <div
             className="h-2 rounded mx-auto mb-3"
             style={{
               width: '80%',
-              background: 'rgba(0, 255, 0, 0.1)',
-              boxShadow: '0 0 6px rgba(0, 255, 0, 0.08)',
+              background: 'rgba(58, 226, 179, 0.1)',
+              boxShadow: '0 0 6px rgba(58, 226, 179, 0.08)',
               animationDelay: '0.15s',
             }}
           />
@@ -26,8 +26,8 @@ export default function TerminalLoadingSkeleton() {
             className="h-2 rounded mx-auto"
             style={{
               width: '40%',
-              background: 'rgba(0, 255, 0, 0.08)',
-              boxShadow: '0 0 4px rgba(0, 255, 0, 0.06)',
+              background: 'rgba(58, 226, 179, 0.08)',
+              boxShadow: '0 0 4px rgba(58, 226, 179, 0.06)',
               animationDelay: '0.3s',
             }}
           />

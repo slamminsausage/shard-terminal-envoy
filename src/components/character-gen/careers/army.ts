@@ -30,8 +30,8 @@ const ARMY_EVENTS: GameEvent[] = [
     description: 'Disaster! Roll on the Mishap table but you are not ejected from this career.',
     resolution: {
       type: 'table_redirect',
-      table: 'injury',
-      displayText: 'Roll on the Injury table to determine the severity of the disaster.',
+      table: 'mishap',
+      displayText: 'Roll on the Mishap table to determine what happens.',
     },
   },
 
@@ -217,6 +217,7 @@ const ARMY_EVENTS: GameEvent[] = [
     resolution: {
       type: 'automatic',
       effects: {
+        advancementDM: 2,
         message: 'Your heroic stand earns you recognition. Gain DM+2 to your next advancement roll.',
       },
     },
@@ -292,10 +293,24 @@ const ARMY_EVENTS: GameEvent[] = [
           label: 'Gain DM+4 to advancement',
           description: 'Your CO puts in a good word for you',
           effects: {
+            advancementDM: 4,
             message: 'Your CO\'s recommendation gives you DM+4 to your next advancement roll.',
           },
         },
       ],
+    },
+  },
+
+  // Roll 12 - Heroism in battle
+  {
+    id: 'army-event-12',
+    description: 'You display heroism in battle. You may gain a promotion or a commission automatically.',
+    resolution: {
+      type: 'automatic',
+      effects: {
+        autoPromotion: true,
+        message: 'Your heroism in battle earns you an automatic promotion or commission!',
+      },
     },
   },
 ];
@@ -359,7 +374,7 @@ export const CAREER_ARMY: CareerDefinition = {
       { title: 'Captain' },
       { title: 'Major', skillBonus: 'Tactics' },
       { title: 'Lieutenant Colonel' },
-      { title: 'Colonel' },
+      { title: 'Colonel', bonusStat: 'social' },
       { title: 'General', bonusStat: 'social' },
     ],
   },

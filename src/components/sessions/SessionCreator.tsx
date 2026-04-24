@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { X, Save } from 'lucide-react';
 import { useCampaign } from '@/contexts/CampaignContext';
+import { CrewVisibilitySelector } from '@/components/crew/CrewVisibilitySelector';
 
 interface SessionCreatorProps {
   onClose: () => void;
@@ -24,6 +25,7 @@ export const SessionCreator: React.FC<SessionCreatorProps> = ({ onClose }) => {
   const [summary, setSummary] = useState('');
   const [notes, setNotes] = useState('');
   const [inGameDate, setInGameDate] = useState(currentDate?.formatted || '');
+  const [visibleCrewIds, setVisibleCrewIds] = useState<string[] | null>(null);
 
   const handleCreate = async () => {
     if (!title.trim()) {
@@ -37,6 +39,7 @@ export const SessionCreator: React.FC<SessionCreatorProps> = ({ onClose }) => {
       summary: summary || undefined,
       notes: isGM ? notes || undefined : undefined,
       in_game_date: inGameDate || undefined,
+      ...(isGM ? { visible_crew_ids: visibleCrewIds } : {}),
     });
 
     onClose();
@@ -136,6 +139,18 @@ export const SessionCreator: React.FC<SessionCreatorProps> = ({ onClose }) => {
               onChange={(e) => setNotes(e.target.value)}
               rows={3}
               className="bg-black border-terminal-primary/50 text-terminal-primary resize-none"
+            />
+          </div>
+        )}
+
+        {isGM && (
+          <div>
+            <label className="text-xs text-terminal-primary/70 uppercase mb-1 block">
+              Crew Scope
+            </label>
+            <CrewVisibilitySelector
+              value={visibleCrewIds}
+              onChange={setVisibleCrewIds}
             />
           </div>
         )}

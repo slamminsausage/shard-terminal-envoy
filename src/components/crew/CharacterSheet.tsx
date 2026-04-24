@@ -7,7 +7,8 @@ import { performSkillCheck, rollDamageExpression, getCharacteristicDM, getSkillD
 import { dbHelpers } from "@/lib/supabase";
 import { Upload, X, Crop, Users, Ship } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CREW_POSITION_PRESETS } from "@/types/database";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { CREW_POSITION_PRESETS, type TermRecord } from "@/types/database";
 import { ThumbnailCropper } from "@/components/ui/ThumbnailCropper";
 import { WeaponTable, type WeaponRow } from "@/components/inventory/WeaponTable";
 import { ArmorTable, type ArmourRow } from "@/components/inventory/ArmorTable";
@@ -266,6 +267,7 @@ const CharacterSheet = ({ characterId, readOnly }: CharacterSheetProps = {}) => 
   const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
   const [crewId, setCrewId] = useState<string>('');
   const [crewPosition, setCrewPosition] = useState<string>('');
+  const [lifepathLog, setLifepathLog] = useState<TermRecord[]>([]);
 
   // Load character data if editing an existing character
   useEffect(() => {
@@ -400,6 +402,9 @@ const CharacterSheet = ({ characterId, readOnly }: CharacterSheetProps = {}) => 
         // Load crew assignment
         setCrewId(character.crew_id || '');
         setCrewPosition(character.crew_position || '');
+
+        // Load lifepath history (term-by-term record from the generator)
+        setLifepathLog(Array.isArray(character.lifepath_log) ? character.lifepath_log : []);
       }
     }
   }, [currentCharacterId, characters]);
@@ -515,23 +520,23 @@ const CharacterSheet = ({ characterId, readOnly }: CharacterSheetProps = {}) => 
         name: header.name,
         species: header.species,
         gender: "", // Add if needed
-        age: parseInt(header.age) || 0,
+        age: parseInt(header.age, 10) || 0,
         homeworld: header.homeworld,
         rads: header.rads,
         species_traits: header.speciesTraits,
         notes: notes,
         career: "", // Add if needed
         rank: "", // Add if needed
-        strength: parseInt(characteristics.strength.total) || 7,
-        dexterity: parseInt(characteristics.dexterity.total) || 7,
-        endurance: parseInt(characteristics.endurance.total) || 7,
-        current_strength: parseInt(characteristics.strength.current) || undefined,
-        current_dexterity: parseInt(characteristics.dexterity.current) || undefined,
-        current_endurance: parseInt(characteristics.endurance.current) || undefined,
-        intellect: parseInt(characteristics.intellect.total) || 7,
-        education: parseInt(characteristics.education.total) || 7,
-        social_standing: parseInt(characteristics.social.total) || 7,
-        psionics: parseInt(characteristics.psionics.total) || 0,
+        strength: parseInt(characteristics.strength.total, 10) || 7,
+        dexterity: parseInt(characteristics.dexterity.total, 10) || 7,
+        endurance: parseInt(characteristics.endurance.total, 10) || 7,
+        current_strength: parseInt(characteristics.strength.current, 10) || undefined,
+        current_dexterity: parseInt(characteristics.dexterity.current, 10) || undefined,
+        current_endurance: parseInt(characteristics.endurance.current, 10) || undefined,
+        intellect: parseInt(characteristics.intellect.total, 10) || 7,
+        education: parseInt(characteristics.education.total, 10) || 7,
+        social_standing: parseInt(characteristics.social.total, 10) || 7,
+        psionics: parseInt(characteristics.psionics.total, 10) || 0,
         melee_dmg: 0,
         ranged_dmg: 0,
         lifeblood: 0,
@@ -539,12 +544,12 @@ const CharacterSheet = ({ characterId, readOnly }: CharacterSheetProps = {}) => 
         terms_served: 0,
         skills: skills,
         equipment: equipment,
-        credits: parseInt(finances.cashOnHand) || 0,
-        debt: parseInt(finances.debt) || 0,
-        pension: parseInt(finances.pension) || 0,
-        ship_payments: parseInt(finances.shipPayments) || 0,
-        living_cost: parseInt(finances.livingCost) || 0,
-        cash_on_hand: parseInt(finances.cashOnHand) || 0,
+        credits: parseInt(finances.cashOnHand, 10) || 0,
+        debt: parseInt(finances.debt, 10) || 0,
+        pension: parseInt(finances.pension, 10) || 0,
+        ship_payments: parseInt(finances.shipPayments, 10) || 0,
+        living_cost: parseInt(finances.livingCost, 10) || 0,
+        cash_on_hand: parseInt(finances.cashOnHand, 10) || 0,
         study_skill: studyPeriod.skill,
         study_weeks: studyPeriod.weeks,
         study_complete: studyPeriod.complete,
@@ -558,6 +563,7 @@ const CharacterSheet = ({ characterId, readOnly }: CharacterSheetProps = {}) => 
         thumbnail_url: finalThumbnailUrl || null,
         crew_id: crewId || undefined,
         crew_position: crewPosition || undefined,
+        lifepath_log: lifepathLog,
       };
 
       await saveCharacter(characterData);
@@ -887,6 +893,12 @@ const customGroups = skillDefinitions.filter(def => def.isCustomGroup);
       {/* ==============================
           SCREEN-ONLY: Original Profile & Characteristics sections
           ============================== */}
+      <Tabs defaultValue="sheet" className="print:hidden">
+        <TabsList className="grid w-full grid-cols-2 max-w-md">
+          <TabsTrigger value="sheet">SHEET</TabsTrigger>
+          <TabsTrigger value="lifepath">LIFEPATH</TabsTrigger>
+        </TabsList>
+        <TabsContent value="sheet" className="space-y-6 mt-4">
       <section className="panel print:hidden">
         <div className="panel-header">
           <span className="panel-title">CHARACTER PROFILE</span>
@@ -1208,7 +1220,7 @@ const customGroups = skillDefinitions.filter(def => def.isCustomGroup);
           weapons={weapons}
           armour={armourRows}
           equipment={equipment}
-          strengthScore={parseInt(characteristics.strength?.current || "7")}
+          strengthScore={parseInt(characteristics.strength?.current || "7", 10)}
         />
       </section>
 
@@ -1287,6 +1299,12 @@ const customGroups = skillDefinitions.filter(def => def.isCustomGroup);
           </div>
         </div>
       </section>
+        </TabsContent>
+
+        <TabsContent value="lifepath" className="space-y-4 mt-4">
+          <LifepathPanel log={lifepathLog} onChange={setLifepathLog} readOnly={false} />
+        </TabsContent>
+      </Tabs>
 
       {!readOnly && (
         <div className="flex justify-end gap-3">
@@ -1373,12 +1391,219 @@ const SkillDMDisplay = ({ proficient, rawValue, jackState, isPsionic }: SkillDMD
 
   let penalty = -3;
   if (jackState?.proficient) {
-    const level = Number(jackState.value ?? 0);
-    const reduction = Math.min(Math.max(level, 0) + 1, 2);
-    penalty = Math.min(penalty + reduction, -1);
+    // Being proficient in Jack-of-All-Trades counts as at least level 1; cap at level 3.
+    // Level 1: -2, Level 2: -1, Level 3: 0 (never higher).
+    const rawLevel = Number(jackState.value ?? 0);
+    const effectiveLevel = Math.min(Math.max(rawLevel, 1), 3);
+    penalty = Math.min(-3 + effectiveLevel, 0);
   }
 
   return <span className="text-xs font-mono w-10 text-center text-muted-foreground">{penalty}</span>;
+};
+
+interface LifepathPanelProps {
+  log: TermRecord[];
+  onChange: (next: TermRecord[]) => void;
+  readOnly?: boolean;
+}
+
+const createBlankTerm = (nextTermNumber: number): TermRecord => ({
+  termNumber: nextTermNumber,
+  career: "",
+  assignment: "",
+  age: 0,
+  survivalRoll: "",
+  survived: true,
+  advancementRoll: "",
+  advanced: false,
+  rank: 0,
+  rankTitle: "",
+  event: "",
+  skillsGained: [],
+  mishap: "",
+  isCommissioned: false,
+});
+
+const LifepathPanel = ({ log, onChange, readOnly }: LifepathPanelProps) => {
+  const updateTerm = (index: number, patch: Partial<TermRecord>) => {
+    const next = log.map((t, i) => (i === index ? { ...t, ...patch } : t));
+    onChange(next);
+  };
+
+  const removeTerm = (index: number) => {
+    onChange(log.filter((_, i) => i !== index));
+  };
+
+  const addTerm = () => {
+    const nextNum = log.reduce((max, t) => Math.max(max, t.termNumber), 0) + 1;
+    onChange([...log, createBlankTerm(nextNum)]);
+  };
+
+  return (
+    <section className="panel">
+      <div className="panel-header flex items-center justify-between">
+        <span className="panel-title">LIFEPATH</span>
+        {!readOnly && (
+          <Button size="sm" variant="outline" className="terminal-btn" onClick={addTerm}>
+            + Add Term
+          </Button>
+        )}
+      </div>
+      <div className="panel-content space-y-4">
+        {log.length === 0 ? (
+          <p className="text-xs text-primary/60">
+            No lifepath entries yet. Finish a character in the generator or add a term manually.
+          </p>
+        ) : (
+          log.map((term, idx) => (
+            <div
+              key={idx}
+              className="border border-primary/30 rounded p-3 space-y-2 bg-primary/5"
+            >
+              <div className="flex items-center justify-between gap-2">
+                <div className="text-xs font-bold text-primary uppercase tracking-wide">
+                  Term {term.termNumber || idx + 1}
+                </div>
+                {!readOnly && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="terminal-btn h-7 px-2 text-[10px]"
+                    onClick={() => removeTerm(idx)}
+                  >
+                    Remove
+                  </Button>
+                )}
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <TextField
+                  label="Term #"
+                  value={String(term.termNumber ?? "")}
+                  onChange={v => updateTerm(idx, { termNumber: parseInt(v) || 0 })}
+                  compact
+                  disabled={readOnly}
+                />
+                <TextField
+                  label="Age"
+                  value={String(term.age ?? "")}
+                  onChange={v => updateTerm(idx, { age: parseInt(v) || 0 })}
+                  compact
+                  disabled={readOnly}
+                />
+                <TextField
+                  label="Career"
+                  value={term.career}
+                  onChange={v => updateTerm(idx, { career: v })}
+                  compact
+                  disabled={readOnly}
+                />
+                <TextField
+                  label="Assignment"
+                  value={term.assignment}
+                  onChange={v => updateTerm(idx, { assignment: v })}
+                  compact
+                  disabled={readOnly}
+                />
+                <TextField
+                  label="Rank"
+                  value={String(term.rank ?? "")}
+                  onChange={v => updateTerm(idx, { rank: parseInt(v) || 0 })}
+                  compact
+                  disabled={readOnly}
+                />
+                <TextField
+                  label="Rank Title"
+                  value={term.rankTitle}
+                  onChange={v => updateTerm(idx, { rankTitle: v })}
+                  compact
+                  disabled={readOnly}
+                />
+                <TextField
+                  label="Survival Roll"
+                  value={term.survivalRoll}
+                  onChange={v => updateTerm(idx, { survivalRoll: v })}
+                  compact
+                  disabled={readOnly}
+                />
+                <TextField
+                  label="Advancement Roll"
+                  value={term.advancementRoll ?? ""}
+                  onChange={v => updateTerm(idx, { advancementRoll: v })}
+                  compact
+                  disabled={readOnly}
+                />
+              </div>
+              <div className="flex flex-wrap gap-4 text-[10px] uppercase tracking-wide text-primary/70">
+                <label className="flex items-center gap-1">
+                  <input
+                    type="checkbox"
+                    checked={term.survived}
+                    onChange={e => updateTerm(idx, { survived: e.target.checked })}
+                    disabled={readOnly}
+                  />
+                  Survived
+                </label>
+                <label className="flex items-center gap-1">
+                  <input
+                    type="checkbox"
+                    checked={term.advanced}
+                    onChange={e => updateTerm(idx, { advanced: e.target.checked })}
+                    disabled={readOnly}
+                  />
+                  Advanced
+                </label>
+                <label className="flex items-center gap-1">
+                  <input
+                    type="checkbox"
+                    checked={term.isCommissioned ?? false}
+                    onChange={e => updateTerm(idx, { isCommissioned: e.target.checked })}
+                    disabled={readOnly}
+                  />
+                  Commissioned
+                </label>
+              </div>
+              <div>
+                <label className="text-[10px] text-primary/60 uppercase tracking-wide">Event</label>
+                <textarea
+                  className="terminal-input w-full h-16 text-xs mt-1"
+                  value={term.event}
+                  onChange={e => updateTerm(idx, { event: e.target.value })}
+                  disabled={readOnly}
+                />
+              </div>
+              <div>
+                <label className="text-[10px] text-primary/60 uppercase tracking-wide">
+                  Skills Gained (comma-separated)
+                </label>
+                <Input
+                  className="terminal-input h-8 text-xs mt-1"
+                  value={(term.skillsGained ?? []).join(", ")}
+                  onChange={e =>
+                    updateTerm(idx, {
+                      skillsGained: e.target.value
+                        .split(",")
+                        .map(s => s.trim())
+                        .filter(Boolean),
+                    })
+                  }
+                  disabled={readOnly}
+                />
+              </div>
+              <div>
+                <label className="text-[10px] text-primary/60 uppercase tracking-wide">Mishap</label>
+                <Input
+                  className="terminal-input h-8 text-xs mt-1"
+                  value={term.mishap ?? ""}
+                  onChange={e => updateTerm(idx, { mishap: e.target.value })}
+                  disabled={readOnly}
+                />
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </section>
+  );
 };
 
 export default CharacterSheet;

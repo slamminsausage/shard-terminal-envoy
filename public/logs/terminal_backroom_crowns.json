@@ -1,0 +1,125 @@
+[
+  {
+    "title": "Table Booking — House Rules",
+    "location": "Courier Terminal — Back Room Parlour, Three Levels Down",
+    "date": "DAY 212 · 1105 — STANDING NOTICE",
+    "author": "House — Parlour Management",
+    "content": "THE RULES OF THE ROOM.\n\nRead them. If you are reading them, you have been invited, and the invitation is not a mistake.\n\n1. The seat is the stake. The buy-in reserves the seat. The buy-in does not reserve the outcome.\n2. All buy-ins paid in cash, chips, or equivalent before the first hand is dealt. We do not extend credit. We do not accept promises. We do not accept vouches.\n3. Dealers rotate. The first dealer announces the Anchor. We do not negotiate that tradition. Fangs up or claws up, whichever the card shows.\n4. Any object placed on the table is on the table. If you put a ship deed down, the ship is in play. If you put a pistol down, the pistol is not in play — it is a reason for us to ask you to leave.\n5. The Two Crowns rule applies as written. No alterations. If the table produces a Two Crowns showdown, the players settle it themselves by the code. We do not interfere. We do not call the Widows. We do not clean up.\n6. The freight elevator is the only way out. The knock is the only way in. If you are in the room and you do not know the knock, you will leave by the elevator with us.\n\nThe room is soundproofed. The room is not private. Assume we are listening. We always are.",
+    "security_level": "unlocked",
+    "requires_roll": false
+  },
+  {
+    "title": "Tonight's Seating — Table Ledger",
+    "location": "Courier Terminal — Back Room Parlour, Three Levels Down",
+    "date": "DAY 212 · 1105 — OPEN BOOKING",
+    "author": "House — Parlour Booking",
+    "content": "CROWNS — DAY 212 — MAIN TABLE\nHouse minimum: six seats. Cap: six seats. Buy-in: Cr 10,000 per seat.\n\nSeat 1 — CONFIRMED. Paid. 'P. Solvar.' Frequent guest. House rating: strong.\nSeat 2 — CONFIRMED. Paid. 'M. Voss.' Standing reservation. Murghen contracted personnel. House rating: conservative, accurate.\nSeat 3 — CONFIRMED. Paid. 'Desh.' Paid in mixed chips. House rating: erratic. He knows he is rated erratic.\nSeat 4 — CONFIRMED. Paid. 'Guest of the House.' Breather mask at the table is permitted under the standing exception for respiratory conditions. No further information held on file. We do not require any.\nSeat 5 — HELD. Unpaid. Reserved under referral from Captain S. Dalm — party not yet presented. Seat released at first bell if buy-in is not on the table.\nSeat 6 — UNCONFIRMED. Walk-in slot. Last-minute buy-ins accepted at double the posted rate.\n\nPot notice: Seat 1 has indicated intent to place a vessel into play during the evening's run. The vessel is not described in this ledger. Paperwork will be sighted by the House before the stake is accepted.\n\nSide bets may be placed at the bar. Side bets are House-operated. Do not attempt to run a book from the table. We have lost rooms to that before.",
+    "security_level": "unlocked",
+    "requires_roll": false
+  },
+  {
+    "title": "Parlour Courier Bulletin — Odds & Commentary",
+    "location": "Courier Terminal — Back Room Parlour, Three Levels Down",
+    "date": "DAY 212 · 1105",
+    "author": "House — Side Book",
+    "content": "THE FLOOR IS TAKING BETS. SO ARE WE.\n\nPOSTED ODDS — TABLE OUTCOME:\n— Solvar holds the seat: 5:7. He usually does. Bet accordingly.\n— Voss finishes in the money: 1:1. She has finished in the money at this table nineteen times out of the last twenty-four.\n— Desh busts in the first hand: 2:1. The House has never lost money on this bet.\n— 'Guest of the House' plays more than two hands: 4:1. They have a pattern. Three-hand nights are not in that pattern.\n— Referral seat (Seat 5) pays the buy-in before first bell: 3:1. Tonight we are listing this. Tonight only.\n— A ship changes hands during play: 3:2.\n— Widows enter the room: 40:1. The House will settle in person if this ever pays out.\n\nCommentary (non-binding):\n\nSolvar is cashing out something. He has been cashing out for weeks. He is not subtle about it. Something he owns is about to stop being worth what he thinks it is, and he intends to be holding liquid credits when that happens.\n\nThe Guest in the mask is not here to play. The Guest is here to watch. The House knows this because the Guest has booked four nights in the last two months, paid each buy-in, folded in the second hand each time, and left on the elevator with nothing to show for the evening. The Guest is paying Cr 10,000 per night to sit at this table for a reason. The House has an opinion about what that reason is. The House is not sharing the opinion. The House will take side-bet action on the theory.\n\nIf you are reading this and your name is not on the ledger, you are either early, late, or not invited. Please establish which.",
+    "security_level": "unlocked",
+    "requires_roll": false
+  },
+  {
+    "title": "P. Solvar — Season Play Record (Partial)",
+    "location": "Courier Terminal — Back Room Parlour, Three Levels Down",
+    "date": "ROLLING — LAST 240 DAYS",
+    "author": "House — Internal Ledger (Partial Leak)",
+    "content": "PEK SOLVAR — SEASON RECORD\n\nAppearances at this table: fourteen over the last eight months. No-shows: zero.\n\nWin/loss:\n— Hands won: forty-one percent. Above room average.\n— Sessions ended in the money: sixty-four percent. Well above room average.\n— Sessions ended busted: eleven percent. Below room average.\n— Sessions ended early by his own call: twenty-one percent. He leaves the table when the table starts to read him.\n\nBehaviour notes:\n— Plays close. Reads faces. Has folded the winning hand in at least two recorded cases rather than expose the read.\n— Does not drink at the table. Drinks at the bar afterwards. Drinks well.\n— Has never brought a partner to the table. Has taken three phone calls in the last eight months — all short, all outside the room, all in the forty minutes before the final hand of the night.\n— Has never entered or left the lower city by any route but the freight elevator and the upper canyon lift. Does not use the gantries.\n\nAsset history:\n— Cash. Chips. Rarely physical goods.\n— One hull-class item recorded during this season. Placed in play once on Day 83. Withdrawn before the hand was dealt. Not placed in play again until tonight.\n\nThe hull he holds has not filed a Kallos docking invoice in eight months. That is unusual. Most held vessels in that yard file monthly. The bay does not appear in the yard's billing rotation. Either the yard is not billing Solvar, or Solvar is paying in something that doesn't generate a line item.\n\nThe House is not drawing a conclusion. The House is noting the column.",
+    "security_level": "restricted",
+    "requires_roll": true,
+    "roll_check": {
+      "difficulty": 9,
+      "skill": "Electronics (computers)",
+      "on_success": "Internal parlour ledger partitioned. Solvar's hull asset is unusual — not billed, not moved, held quietly for eight months.",
+      "on_failure": "Ledger partition closed. The parlour's internal records are not for outside eyes."
+    }
+  },
+  {
+    "title": "Masked Guest — Booking Trail",
+    "location": "Courier Terminal — Back Room Parlour, Three Levels Down",
+    "date": "ROLLING — LAST 90 DAYS",
+    "author": "House — Internal Booking Registry",
+    "security_level": "restricted",
+    "content": "The Masked Guest has booked the house four times in the last sixty days. Each booking has been paid by a different intermediary. Each intermediary has a different listed name and, when cross-checked against downport arrival records, a different face.\n\nThe House does not ordinarily run cross-checks against downport arrivals. The House ran one this time because the fourth booking was placed nine days after the third by a third intermediary, and the House observed the Guest arrive on foot from the upper canyon each of the first three visits — but the third intermediary paid out of a numbered courier account registered to an off-world freight operator.\n\nThe courier account's registered underwriter can be pulled if the partition is stripped.\n\n[INTERACTIVE TERMINAL — AWAITING INPUT]",
+    "type": "action_sequence",
+    "action_sequence": {
+      "id": "backroom-crowns-masked-guest",
+      "category": "data_extraction",
+      "steps": [
+        {
+          "type": "auto",
+          "lines": [
+            ">> PARLOUR BOOKING REGISTRY — COURIER INDEX v2.3",
+            ">> GUEST ID: HOUSE-EXCEPTION-07 (RESPIRATORY STANDING)",
+            ">> LAST FOUR BOOKINGS: PAID BY 4 DISTINCT COURIER ACCOUNTS",
+            ">> UNDERWRITER SUPPRESSION LAYER DETECTED ON ACCOUNT #4",
+            "",
+            ">> INITIATING STRIP..."
+          ],
+          "delay": 35,
+          "pause_after": 600
+        },
+        {
+          "type": "prompt",
+          "prompt_text": "SPECIFY TARGET:",
+          "accept": ["ACCOUNT 4", "ACCOUNT FOUR", "COURIER", "UNDERWRITER", "MASKED GUEST", "GUEST"],
+          "reject_message": "TARGET NOT FOUND. SPECIFY A REGISTERED COURIER ACCOUNT.",
+          "max_attempts": 3,
+          "sound_on_accept": "access_granted",
+          "sound_on_reject": "access_denied"
+        },
+        {
+          "type": "progress",
+          "label": "STRIPPING COURIER SUPPRESSION LAYER...",
+          "duration": 3000,
+          "segments": 20,
+          "sound_on_complete": "data_download",
+          "complete_message": "UNDERWRITER RECOVERED"
+        },
+        {
+          "type": "auto",
+          "lines": [
+            ">> COURIER ACCOUNT #4 — UNDERWRITER RECORD:",
+            ">> VETHIS CARRIAGE LIMITED — independent freight operator",
+            ">> HQ REGISTRY: TOBIA SUBSECTOR",
+            ">> NOTE: CARRIER LOST A FAR TRADER TO PIRACY 8 MONTHS AGO",
+            ">> NOTE: ACTIVE RECOVERY BOUNTY FILED — HULL ID MATCHES",
+            ">>       BAY 7-C / KALLOS / SOLVAR'S HELD ASSET",
+            "",
+            ">> THE MASKED GUEST IS NOT A PLAYER.",
+            ">> THE MASKED GUEST IS A WITNESS."
+          ],
+          "delay": 45,
+          "sound": "warning",
+          "sound_at_line": 6,
+          "pause_after": 900
+        }
+      ],
+      "on_complete": {
+        "message": "The courier trail resolves cleanly: the Masked Guest's buy-ins have been fronted by Vethis Carriage, a freight operator out of Tobia subsector that lost a 200-ton Far Trader to piracy eight months ago. The bounty on that hull is still active. The hull identifier on the bounty matches the vessel Pek Solvar has been quietly sitting on in Bay 7-C of the Kallos yard. The Masked Guest folds early every night and watches. They are not here to play Crowns. They are waiting for Solvar to put the ship into the pot so they can identify whoever walks out with the data chip — and they have been paid, patiently, for two months to do exactly that.",
+        "sound": "access_granted",
+        "persist_key": "backroom-crowns-masked-guest"
+      },
+      "on_failure": {
+        "message": "The courier account suppression layer holds. Whoever built the layer built it well — it is not House-standard, it is not Imperial-standard, it is freight-grade corporate. Whoever paid the Masked Guest's buy-ins did not want their name on this terminal. They succeeded.",
+        "sound": "access_denied"
+      }
+    }
+  },
+  {
+    "title": "Elevator Manifest — Tonight's Ins & Outs",
+    "location": "Courier Terminal — Back Room Parlour, Three Levels Down",
+    "date": "DAY 212 · 1105 — LIVE",
+    "author": "House — Freight Elevator Log",
+    "content": "ELEVATOR LOG — DAY 212\n\nSingle access. Up / down only. Weight sensor logs every ride.\n\n— First bell minus ninety: P. Solvar, alone. No cargo. Standard kit.\n— First bell minus sixty: M. Voss, alone. No cargo. One sealed sidearm case. House confiscated per rule four. Returned at end of session.\n— First bell minus forty-four: Desh and two associates. Associates did not ride the elevator into the parlour. Associates remained at the freight bay. They are still there.\n— First bell minus thirty-one: Guest of the House, alone. Breather mask on arrival. Standing exception noted.\n— First bell minus nineteen: referral party for Seat 5 — EXPECTED, NOT YET ARRIVED. House reminder: buy-in must be on the table before the first bell or the seat releases.\n\n—\n\nNOTE: The two associates Desh brought are lower-city freelancers. The House knows both. Neither has a current grudge the House is aware of. Neither has a current payroll the House is aware of. This does not mean they are not on one.\n\nNOTE: A Vethis Carriage field pair was observed on the upper canyon lift forty minutes ago. They did not come down. They have positioned themselves near the elevator access at street level. This is a passive posting. They are not here to storm the room. They are here for when someone walks out with a data chip.",
+    "security_level": "unlocked",
+    "requires_roll": false
+  }
+]

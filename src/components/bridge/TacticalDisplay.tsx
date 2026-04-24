@@ -55,7 +55,7 @@ export function TacticalDisplay({
     const removed = prev.filter(p => !contacts.find(c => c.id === p.id));
     if (removed.length > 0) {
       const newEffects: DestroyEffect[] = removed.map(c => {
-        const colorVar = c.status === 'enemy' ? '#ff4444' : c.status === 'friendly' ? '#00ff88' : '#aaaaaa';
+        const colorVar = c.status === 'enemy' ? '#ff4444' : c.status === 'friendly' ? '#3ae2b3' : '#aaaaaa';
         return { id: `${c.id}-${Date.now()}`, hexQ: c.hexQ, hexR: c.hexR, color: colorVar };
       });
       setDestroyEffects(prev2 => [...prev2, ...newEffects]);
@@ -150,8 +150,8 @@ export function TacticalDisplay({
     if (!el) return;
     const handleWheel = (e: WheelEvent) => {
       e.preventDefault();
-      const delta = e.deltaY > 0 ? 1.12 : 0.88;
-      setZoom(prev => Math.max(0.15, Math.min(3, prev * delta)));
+      const factor = 1 - e.deltaY * 0.002;
+      setZoom(prev => Math.max(0.15, Math.min(3, prev * factor)));
     };
     el.addEventListener('wheel', handleWheel, { passive: false });
     return () => el.removeEventListener('wheel', handleWheel);
@@ -184,7 +184,7 @@ export function TacticalDisplay({
       if (e.touches.length === 2 && touchStartDistance.current) {
         e.preventDefault();
         const dist = getTouchDist(e.touches);
-        const ratio = touchStartDistance.current / dist;
+        const ratio = dist / touchStartDistance.current;
         setZoom(Math.max(0.15, Math.min(3, touchStartZoom.current * ratio)));
       } else if (e.touches.length === 1 && isDragging.current && dragStart.current) {
         e.preventDefault();
@@ -419,7 +419,7 @@ export function TacticalDisplay({
       <div
         ref={svgContainerRef}
         className="flex-1 flex items-center justify-center overflow-hidden touch-none h-full cursor-grab active:cursor-grabbing"
-        style={{ background: "radial-gradient(ellipse at center, rgba(0, 255, 136, 0.02) 0%, transparent 70%)" }}
+        style={{ background: "radial-gradient(ellipse at center, rgba(58, 226, 179, 0.02) 0%, transparent 70%)" }}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
@@ -492,9 +492,9 @@ export function TacticalDisplay({
 
               let fill = "transparent";
               if (isHovered && (isValidMove || !combatActive || combatPhase === 'setup')) {
-                fill = "rgba(0, 255, 136, 0.15)";
+                fill = "rgba(58, 226, 179, 0.15)";
               } else if (isValidMove) {
-                fill = "rgba(0, 255, 136, 0.08)";
+                fill = "rgba(58, 226, 179, 0.08)";
               } else if (isOutOfMoveRange) {
                 fill = "rgba(255, 0, 0, 0.03)"; // subtle red tint on unreachable hexes
               } else if (rangeFill) {

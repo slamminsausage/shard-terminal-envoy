@@ -37,7 +37,8 @@ const fallbackUnlocked = [
   'es1-omegalab',
   'es1-gamma',
   'blacktalon',
-  'vennik-personal'
+  'vennik-personal',
+  'seqtest'
 ];
 
 const getLocalUnlockedTerminals = () => {
@@ -56,6 +57,28 @@ const addLocalUnlockedTerminal = (terminalCode: string) => {
   if (existing.includes(terminalCode)) return existing;
   const updated = [...existing, terminalCode];
   localStorage.setItem(LOCAL_UNLOCKED_KEY, JSON.stringify(updated));
+  return updated;
+};
+
+// Completed actions localStorage helpers
+const LOCAL_COMPLETED_ACTIONS_KEY = 'dev_completed_actions';
+
+const getLocalCompletedActions = (): string[] => {
+  try {
+    const raw = localStorage.getItem(LOCAL_COMPLETED_ACTIONS_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+};
+
+const addLocalCompletedAction = (actionId: string) => {
+  const existing = getLocalCompletedActions();
+  if (existing.includes(actionId)) return existing;
+  const updated = [...existing, actionId];
+  localStorage.setItem(LOCAL_COMPLETED_ACTIONS_KEY, JSON.stringify(updated));
   return updated;
 };
 
@@ -246,6 +269,9 @@ export const dbHelpers = {
     if (characterData.social_standing !== undefined) dbPayload.social_standing = characterData.social_standing;
     if (characterData.psionics !== undefined) dbPayload.psionics = characterData.psionics;
     if (characterData.initiative !== undefined) dbPayload.initiative = characterData.initiative;
+    if (characterData.current_strength !== undefined) dbPayload.current_strength = characterData.current_strength;
+    if (characterData.current_dexterity !== undefined) dbPayload.current_dexterity = characterData.current_dexterity;
+    if (characterData.current_endurance !== undefined) dbPayload.current_endurance = characterData.current_endurance;
 
     // Derived characteristics
     if (characterData.melee_dmg !== undefined) dbPayload.melee_dmg = characterData.melee_dmg;
@@ -290,6 +316,9 @@ export const dbHelpers = {
     // Crew assignment
     if (characterData.crew_id !== undefined) dbPayload.crew_id = characterData.crew_id;
     if (characterData.crew_position !== undefined) dbPayload.crew_position = characterData.crew_position;
+
+    // Lifepath history (JSONB)
+    if (characterData.lifepath_log !== undefined) dbPayload.lifepath_log = characterData.lifepath_log;
 
     try {
       if (characterData.id) {
@@ -499,7 +528,9 @@ export const dbHelpers = {
           groups.push(group);
         }
         localStorage.setItem('traveller_crew_groups', JSON.stringify(groups));
-      } catch { /* ignore */ }
+      } catch (e) {
+        if (isDev) console.warn('Failed to parse localStorage crew_groups data:', e);
+      }
       return group;
     }
 
@@ -549,7 +580,9 @@ export const dbHelpers = {
         const groups = raw ? JSON.parse(raw) : [];
         const filtered = groups.filter((g: any) => g.id !== groupId);
         localStorage.setItem('traveller_crew_groups', JSON.stringify(filtered));
-      } catch { /* ignore */ }
+      } catch (e) {
+        if (isDev) console.warn('Failed to parse localStorage crew_groups data:', e);
+      }
       return true;
     }
 
@@ -614,6 +647,16 @@ export const dbHelpers = {
       console.error('Failed to add unlocked terminal:', error)
       throw error
     }
+  },
+
+  // Completed Actions (localStorage-only for now, Supabase table can be added later)
+  async getCompletedActions(): Promise<string[]> {
+    return getLocalCompletedActions();
+  },
+
+  async addCompletedAction(actionId: string): Promise<boolean> {
+    addLocalCompletedAction(actionId);
+    return true;
   },
 
   // World Notes
@@ -1363,6 +1406,7 @@ export const dbHelpers = {
         folder: note.folder || 'general',
         tags: note.tags || [],
         thumbnail_url: note.thumbnailUrl || null,
+        visible_crew_ids: note.visibleCrewIds ?? null,
       };
 
       // Check if note exists
@@ -1602,7 +1646,7 @@ export const dbHelpers = {
         .from('character_thumbnails')
         .getPublicUrl(fileName);
 
-      console.log('Upload successful, public URL:', publicUrl);
+      if (isDev) console.log('Upload successful, public URL:', publicUrl);
       return publicUrl;
     } catch (error) {
       console.error('Failed to upload character thumbnail from data URL:', error);
@@ -1623,12 +1667,12 @@ export const dbHelpers = {
 
         // If no error, file was deleted
         if (!error) {
-          console.log(`Deleted character thumbnail: ${filePath}`);
+          if (isDev) console.log(`Deleted character thumbnail: ${filePath}`);
           return true;
         }
       }
 
-      console.log('No character thumbnail found to delete for:', characterId);
+      if (isDev) console.log('No character thumbnail found to delete for:', characterId);
       return true;
     } catch (error) {
       console.error('Failed to delete character thumbnail:', error);
@@ -1765,6 +1809,44 @@ export const dbHelpers = {
       return data;
     } catch (error) {
       console.error('Failed to save session log entry:', error);
+      throw error;
+    }
+  },
+
+  async updateSessionLogEntry(entryId: string, updates: Record<string, any>) {
+    try {
+      const { data, error } = await supabase
+        .from('session_log_entries')
+        .update(updates)
+        .eq('id', entryId)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Database error:', error);
+        throw error;
+      }
+      return data;
+    } catch (error) {
+      console.error('Failed to update session log entry:', error);
+      throw error;
+    }
+  },
+
+  async deleteSessionLogEntry(entryId: string) {
+    try {
+      const { error } = await supabase
+        .from('session_log_entries')
+        .delete()
+        .eq('id', entryId);
+
+      if (error) {
+        console.error('Database error:', error);
+        throw error;
+      }
+      return true;
+    } catch (error) {
+      console.error('Failed to delete session log entry:', error);
       throw error;
     }
   },
@@ -2807,7 +2889,10 @@ export const dbHelpers = {
     }
   },
 
-  async updatePlayer(id: string, updates: Partial<Pick<Player, 'name' | 'role' | 'is_active' | 'access_code'>>): Promise<boolean> {
+  async updatePlayer(
+    id: string,
+    updates: Partial<Pick<Player, 'name' | 'role' | 'is_active' | 'access_code' | 'active_character_id'>>,
+  ): Promise<boolean> {
     if (supabaseDisabled) {
       const players = getLocalGameSetting<Player[]>('players') || [];
       const idx = players.findIndex(p => p.id === id);
@@ -2961,5 +3046,360 @@ export const dbHelpers = {
       console.error('Failed to fetch characters by player:', error);
       return [];
     }
-  }
+  },
+
+  // ─── Handout DB Functions ────────────────────────────────────────────────────
+
+  async getAllHandouts(): Promise<any[]> {
+    if (supabaseDisabled) {
+      try {
+        const raw = localStorage.getItem('traveller_handouts');
+        return raw ? JSON.parse(raw) : [];
+      } catch {
+        return [];
+      }
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('handouts')
+        .select('*')
+        .order('created_at', { ascending: true });
+
+      if (error) {
+        console.error('Database error fetching handouts:', error);
+        return [];
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error('Failed to fetch handouts:', error);
+      return [];
+    }
+  },
+
+  async saveHandout(handout: any): Promise<any> {
+    if (supabaseDisabled) {
+      try {
+        const raw = localStorage.getItem('traveller_handouts');
+        const handouts: any[] = raw ? JSON.parse(raw) : [];
+        const existingIndex = handouts.findIndex((h) => h.id === handout.id);
+        if (existingIndex >= 0) {
+          handouts[existingIndex] = handout;
+        } else {
+          handouts.push(handout);
+        }
+        localStorage.setItem('traveller_handouts', JSON.stringify(handouts));
+        return handout;
+      } catch (error) {
+        console.error('Failed to save handout to localStorage:', error);
+        throw error;
+      }
+    }
+
+    try {
+      const now = new Date().toISOString();
+      const row = {
+        id: handout.id,
+        title: handout.title,
+        description: handout.description || '',
+        type: handout.type || 'text',
+        content: handout.content || null,
+        media_url: handout.mediaUrl || null,
+        thumbnail_url: handout.thumbnailUrl || null,
+        is_visible: handout.isVisible ?? false,
+        tags: handout.tags || [],
+        created_at: handout.createdAt || now,
+        updated_at: now,
+        visible_crew_ids: handout.visible_crew_ids ?? null,
+      };
+
+      const { data, error } = await supabase
+        .from('handouts')
+        .upsert([row], { onConflict: 'id' })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Database error saving handout:', error);
+        throw error;
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Failed to save handout:', error);
+      throw error;
+    }
+  },
+
+  async deleteHandout(handoutId: string): Promise<boolean> {
+    if (supabaseDisabled) {
+      try {
+        const raw = localStorage.getItem('traveller_handouts');
+        const handouts: any[] = raw ? JSON.parse(raw) : [];
+        const filtered = handouts.filter((h) => h.id !== handoutId);
+        localStorage.setItem('traveller_handouts', JSON.stringify(filtered));
+        return true;
+      } catch (error) {
+        console.error('Failed to delete handout from localStorage:', error);
+        return false;
+      }
+    }
+
+    try {
+      const { error } = await supabase
+        .from('handouts')
+        .delete()
+        .eq('id', handoutId);
+
+      if (error) {
+        console.error('Database error deleting handout:', error);
+        throw error;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Failed to delete handout:', error);
+      return false;
+    }
+  },
+
+  // ─── VTT Storage Functions ───────────────────────────────────────────────────
+
+  async uploadVTTMapImage(file: File | Blob, mapId: string): Promise<string | null> {
+    try {
+      const fileExt = file instanceof File ? (file.name.split('.').pop() || 'jpg') : 'jpg';
+      const fileName = `${mapId}.${fileExt}`;
+
+      if (isDev) console.log(`Uploading VTT map image: ${fileName} (${(file.size / 1024).toFixed(2)} KB)`);
+
+      const { error } = await supabase.storage
+        .from('vtt_maps')
+        .upload(fileName, file, { cacheControl: '3600', upsert: true });
+
+      if (error) {
+        console.error('VTT map upload error:', error);
+        throw error;
+      }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('vtt_maps')
+        .getPublicUrl(fileName);
+
+      if (isDev) console.log('VTT map upload successful, URL:', publicUrl);
+      return publicUrl;
+    } catch (error) {
+      console.error('Failed to upload VTT map image:', error);
+      return null;
+    }
+  },
+
+  async uploadVTTMapImageFromDataURL(dataUrl: string, mapId: string, mimeType: string): Promise<string | null> {
+    try {
+      const response = await fetch(dataUrl);
+      const blob = await response.blob();
+      const fileExt = mimeType.split('/')[1] || 'jpg';
+      const fileName = `${mapId}.${fileExt}`;
+
+      if (isDev) console.log(`Uploading VTT map from data URL: ${fileName} (${(blob.size / 1024).toFixed(2)} KB)`);
+
+      const { error } = await supabase.storage
+        .from('vtt_maps')
+        .upload(fileName, blob, { cacheControl: '3600', upsert: true, contentType: mimeType });
+
+      if (error) {
+        console.error('VTT map upload error:', error);
+        throw error;
+      }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('vtt_maps')
+        .getPublicUrl(fileName);
+
+      if (isDev) console.log('VTT map upload successful, URL:', publicUrl);
+      return publicUrl;
+    } catch (error) {
+      console.error('Failed to upload VTT map from data URL:', error);
+      return null;
+    }
+  },
+
+  async deleteVTTMapImage(mapId: string): Promise<boolean> {
+    try {
+      const extensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'mp4', 'webm'];
+      for (const ext of extensions) {
+        const { error } = await supabase.storage
+          .from('vtt_maps')
+          .remove([`${mapId}.${ext}`]);
+        if (!error) return true;
+      }
+      return true;
+    } catch (error) {
+      console.error('Failed to delete VTT map image:', error);
+      return false;
+    }
+  },
+
+  async uploadVTTTokenImage(file: File | Blob, tokenId: string): Promise<string | null> {
+    try {
+      const fileExt = file instanceof File ? (file.name.split('.').pop() || 'jpg') : 'jpg';
+      const fileName = `${tokenId}.${fileExt}`;
+
+      if (isDev) console.log(`Uploading VTT token image: ${fileName} (${(file.size / 1024).toFixed(2)} KB)`);
+
+      const { error } = await supabase.storage
+        .from('vtt_token_images')
+        .upload(fileName, file, { cacheControl: '3600', upsert: true });
+
+      if (error) {
+        console.error('VTT token image upload error:', error);
+        throw error;
+      }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('vtt_token_images')
+        .getPublicUrl(fileName);
+
+      if (isDev) console.log('VTT token image upload successful, URL:', publicUrl);
+      return publicUrl;
+    } catch (error) {
+      console.error('Failed to upload VTT token image:', error);
+      return null;
+    }
+  },
+
+  async uploadVTTTokenImageFromDataURL(dataUrl: string, tokenId: string, mimeType: string): Promise<string | null> {
+    try {
+      const response = await fetch(dataUrl);
+      const blob = await response.blob();
+      const fileExt = mimeType.split('/')[1] || 'jpg';
+      const fileName = `${tokenId}.${fileExt}`;
+
+      if (isDev) console.log(`Uploading VTT token image from data URL: ${fileName} (${(blob.size / 1024).toFixed(2)} KB)`);
+
+      const { error } = await supabase.storage
+        .from('vtt_token_images')
+        .upload(fileName, blob, { cacheControl: '3600', upsert: true, contentType: mimeType });
+
+      if (error) {
+        console.error('VTT token image upload error:', error);
+        throw error;
+      }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('vtt_token_images')
+        .getPublicUrl(fileName);
+
+      if (isDev) console.log('VTT token image upload successful, URL:', publicUrl);
+      return publicUrl;
+    } catch (error) {
+      console.error('Failed to upload VTT token image from data URL:', error);
+      return null;
+    }
+  },
+
+  async deleteVTTTokenImage(tokenId: string): Promise<boolean> {
+    try {
+      const extensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+      for (const ext of extensions) {
+        const { error } = await supabase.storage
+          .from('vtt_token_images')
+          .remove([`${tokenId}.${ext}`]);
+        if (!error) return true;
+      }
+      return true;
+    } catch (error) {
+      console.error('Failed to delete VTT token image:', error);
+      return false;
+    }
+  },
+
+  async uploadVTTAudioFile(file: File, trackId: string): Promise<string | null> {
+    try {
+      const fileExt = file.name.split('.').pop() || 'mp3';
+      const fileName = `${trackId}.${fileExt}`;
+
+      if (isDev) console.log(`Uploading VTT audio: ${fileName} (${(file.size / 1024).toFixed(2)} KB)`);
+
+      const { error } = await supabase.storage
+        .from('vtt_audio')
+        .upload(fileName, file, { cacheControl: '3600', upsert: true });
+
+      if (error) {
+        console.error('VTT audio upload error:', error);
+        throw error;
+      }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('vtt_audio')
+        .getPublicUrl(fileName);
+
+      if (isDev) console.log('VTT audio upload successful, URL:', publicUrl);
+      return publicUrl;
+    } catch (error) {
+      console.error('Failed to upload VTT audio:', error);
+      return null;
+    }
+  },
+
+  async deleteVTTAudioFile(trackId: string): Promise<boolean> {
+    try {
+      const extensions = ['mp3', 'wav', 'ogg', 'webm', 'm4a', 'flac', 'aac'];
+      for (const ext of extensions) {
+        await supabase.storage
+          .from('vtt_audio')
+          .remove([`${trackId}.${ext}`]);
+      }
+      return true;
+    } catch (error) {
+      console.error('Failed to delete VTT audio:', error);
+      return false;
+    }
+  },
+
+  // ─── VTT Session Functions ───────────────────────────────────────────────────
+
+  async saveVTTSession(stateJson: any): Promise<boolean> {
+    if (supabaseDisabled) return false;
+
+    try {
+      const { error } = await supabase
+        .from('vtt_sessions')
+        .upsert([{ id: 'default', state_json: stateJson, updated_at: new Date().toISOString() }], { onConflict: 'id' });
+
+      if (error) {
+        console.error('Failed to save VTT session to Supabase:', error);
+        return false;
+      }
+
+      if (isDev) console.log('VTT session saved to Supabase');
+      return true;
+    } catch (error) {
+      console.error('Failed to save VTT session:', error);
+      return false;
+    }
+  },
+
+  async loadVTTSession(): Promise<{ stateJson: any; updatedAt: string } | null> {
+    if (supabaseDisabled) return null;
+
+    try {
+      const { data, error } = await supabase
+        .from('vtt_sessions')
+        .select('state_json, updated_at')
+        .eq('id', 'default')
+        .maybeSingle();
+
+      if (error) {
+        console.error('Failed to load VTT session from Supabase:', error);
+        return null;
+      }
+
+      if (!data?.state_json) return null;
+      return { stateJson: data.state_json, updatedAt: data.updated_at };
+    } catch (error) {
+      console.error('Failed to load VTT session:', error);
+      return null;
+    }
+  },
 }

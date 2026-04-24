@@ -1,9 +1,12 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { usePresenterReceiver } from "@/hooks/useVTTPresenter";
+import type { PresenterAudioState, PresenterCampaignData, PresenterMessage } from "@/hooks/useVTTPresenter";
 import { useVTTParticles } from "@/hooks/useVTTParticles";
 import { renderDynamicLighting } from "@/lib/vtt/raycasting";
-import type { VTTMap, ParticleConfig, Point, Stroke, Token, Clock, InitiativeEntry, AoETemplate, TextOverlay } from "@/types/vtt";
+import type { VTTMap, ParticleConfig, Point, Clock, InitiativeEntry, AoETemplate } from "@/types/vtt";
 import { createDefaultParticles } from "@/types/vtt";
+import VTTPlayerToolbar from "./VTTPlayerToolbar";
+import { BookOpen, ScrollText, Compass, ChevronRight, ChevronLeft, Image as ImageIcon, CheckCircle2, Circle } from "lucide-react";
 
 // ─── Token image cache (mirrors VTTCanvas pattern) ──────────────────────────
 const presenterTokenImageCache = new Map<string, HTMLImageElement>();
@@ -46,7 +49,11 @@ export default function VTTPresenterView() {
   const [clocks, setClocks] = useState<Clock[]>([]);
   const [initiative, setInitiative] = useState<InitiativeEntry[]>([]);
   const [showInitiative, setShowInitiative] = useState(false);
-  const [pings, setPings] = useState<{ x: number; y: number; timestamp: number }[]>([]);
+  const [pings, setPings] = useState<{ x: number; y: number; timestamp: number; label?: string; color?: string }[]>([]);
+  const [audioState, setAudioState] = useState<PresenterAudioState | null>(null);
+  const [campaignData, setCampaignData] = useState<PresenterCampaignData | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarTab, setSidebarTab] = useState<"notes" | "sessions" | "handouts" | "quests">("notes");
 
   // Local presenter viewport (fully independent from GM)
   const [localScroll, setLocalScroll] = useState<Point | null>(null);
@@ -61,10 +68,39 @@ export default function VTTPresenterView() {
   const animRef = useRef<number>(0);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Pan state
+  // Tool and pan state
+  const [activeTool, setActiveTool] = useState<string>("pan");
   const [isPanning, setIsPanning] = useState(false);
+  const [spaceHeld, setSpaceHeld] = useState(false);
   const panStartRef = useRef<Point>({ x: 0, y: 0 });
   const scrollStartRef = useRef<Point>({ x: 0, y: 0 });
+  const spaceHeldRef = useRef(false);
+
+  // Spacebar hold for temporary pan mode
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.code === "Space" && !e.repeat && !spaceHeldRef.current) {
+        e.preventDefault();
+        spaceHeldRef.current = true;
+        setSpaceHeld(true);
+      }
+    };
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.code === "Space") {
+        spaceHeldRef.current = false;
+        setSpaceHeld(false);
+        setIsPanning(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keyup", handleKeyUp);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keyup", handleKeyUp);
+    };
+  }, []);
+
+  const canPan = activeTool === "pan" || spaceHeld;
 
   const { setCanvas: setParticleCanvas } = useVTTParticles(particles);
 
@@ -108,15 +144,23 @@ export default function VTTPresenterView() {
     setShowInitiative(show);
   }, []);
 
-  const onGmPing = useCallback((x: number, y: number) => {
-    const ping = { x, y, timestamp: Date.now() };
+  const onGmPing = useCallback((x: number, y: number, label?: string, color?: string) => {
+    const ping = { x, y, timestamp: Date.now(), label, color };
     setPings((prev) => [...prev, ping]);
     setTimeout(() => {
       setPings((prev) => prev.filter((p) => p !== ping));
     }, 2000);
   }, []);
 
-  usePresenterReceiver(
+  const onAudioSync = useCallback((audio: PresenterAudioState) => {
+    setAudioState(audio);
+  }, []);
+
+  const onCampaignSync = useCallback((campaign: PresenterCampaignData) => {
+    setCampaignData(campaign);
+  }, []);
+
+  const { sendToController } = usePresenterReceiver(
     onMapSync,
     onParticlesSync,
     onShowHandout,
@@ -124,8 +168,22 @@ export default function VTTPresenterView() {
     onDiceRoll,
     onClocksSync,
     onInitiativeSync,
-    onGmPing
+    onGmPing,
+    onAudioSync,
+    onCampaignSync
   );
+
+  // Escape key to close handout overlay
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && handout) {
+        setHandout(null);
+        sendToController({ type: "hide-handout" });
+      }
+    };
+    document.addEventListener("keydown", handleKey);
+    return () => document.removeEventListener("keydown", handleKey);
+  }, [handout, sendToController]);
 
   // Connect particle canvas - always mounted now
   useEffect(() => {
@@ -220,33 +278,108 @@ export default function VTTPresenterView() {
 
       const currentZoom = localZoomRef.current ?? m.zoom;
       const currentScroll = localScrollRef.current ?? { x: m.scrollX, y: m.scrollY };
-      const delta = e.deltaY > 0 ? 0.9 : 1.1;
-      const newZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, currentZoom * delta));
 
-      // Zoom from viewport center
-      const rect = canvas.getBoundingClientRect();
-      const viewCenterX = rect.width / 2;
-      const viewCenterY = rect.height / 2;
-      const worldCenterX = viewCenterX / currentZoom + currentScroll.x;
-      const worldCenterY = viewCenterY / currentZoom + currentScroll.y;
-      const newScrollX = worldCenterX - viewCenterX / newZoom;
-      const newScrollY = worldCenterY - viewCenterY / newZoom;
+      if (e.ctrlKey || e.metaKey) {
+        // Ctrl/Cmd + wheel = zoom (pinch gesture on trackpad also sends ctrlKey)
+        const zoomFactor = 1 - e.deltaY * 0.005;
+        const newZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, currentZoom * zoomFactor));
 
-      setLocalZoom(newZoom);
-      setLocalScroll({ x: newScrollX, y: newScrollY });
+        const rect = canvas.getBoundingClientRect();
+        const cursorX = e.clientX - rect.left;
+        const cursorY = e.clientY - rect.top;
+        const worldX = cursorX / currentZoom + currentScroll.x;
+        const worldY = cursorY / currentZoom + currentScroll.y;
+        const newScrollX = worldX - cursorX / newZoom;
+        const newScrollY = worldY - cursorY / newZoom;
+
+        setLocalZoom(newZoom);
+        setLocalScroll({ x: newScrollX, y: newScrollY });
+      } else {
+        // Bare wheel = pan (two-finger scroll on trackpad)
+        const panSpeed = 1 / currentZoom;
+        setLocalScroll({
+          x: currentScroll.x + e.deltaX * panSpeed,
+          y: currentScroll.y + e.deltaY * panSpeed,
+        });
+      }
     };
 
     canvas.addEventListener("wheel", handleWheel, { passive: false });
     return () => canvas.removeEventListener("wheel", handleWheel);
   }, []);
 
-  // Pan handlers
+  // Touch gestures (pinch-zoom + one-finger pan)
+  const touchStartDistRef = useRef<number | null>(null);
+  const touchStartZoomRef = useRef<number>(1);
+  const touchPanStartRef = useRef<Point | null>(null);
+  const touchScrollStartRef = useRef<Point>({ x: 0, y: 0 });
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const getTouchDist = (t: TouchList) => {
+      if (t.length < 2) return 0;
+      const dx = t[1].clientX - t[0].clientX;
+      const dy = t[1].clientY - t[0].clientY;
+      return Math.sqrt(dx * dx + dy * dy);
+    };
+
+    const onTouchStart = (e: TouchEvent) => {
+      if (e.touches.length === 2) {
+        e.preventDefault();
+        touchStartDistRef.current = getTouchDist(e.touches);
+        touchStartZoomRef.current = localZoomRef.current ?? mapRef.current?.zoom ?? 1;
+      } else if (e.touches.length === 1) {
+        touchPanStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+        const m = mapRef.current;
+        touchScrollStartRef.current = localScrollRef.current ?? { x: m?.scrollX ?? 0, y: m?.scrollY ?? 0 };
+      }
+    };
+
+    const onTouchMove = (e: TouchEvent) => {
+      if (e.touches.length === 2 && touchStartDistRef.current) {
+        e.preventDefault();
+        const dist = getTouchDist(e.touches);
+        const ratio = dist / touchStartDistRef.current;
+        const newZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, touchStartZoomRef.current * ratio));
+        setLocalZoom(newZoom);
+      } else if (e.touches.length === 1 && touchPanStartRef.current) {
+        e.preventDefault();
+        const currentZoom = localZoomRef.current ?? mapRef.current?.zoom ?? 1;
+        const dx = (e.touches[0].clientX - touchPanStartRef.current.x) / currentZoom;
+        const dy = (e.touches[0].clientY - touchPanStartRef.current.y) / currentZoom;
+        setLocalScroll({
+          x: touchScrollStartRef.current.x - dx,
+          y: touchScrollStartRef.current.y - dy,
+        });
+      }
+    };
+
+    const onTouchEnd = (e: TouchEvent) => {
+      if (e.touches.length < 2) touchStartDistRef.current = null;
+      if (e.touches.length === 0) touchPanStartRef.current = null;
+    };
+
+    canvas.addEventListener("touchstart", onTouchStart, { passive: false });
+    canvas.addEventListener("touchmove", onTouchMove, { passive: false });
+    canvas.addEventListener("touchend", onTouchEnd);
+    return () => {
+      canvas.removeEventListener("touchstart", onTouchStart);
+      canvas.removeEventListener("touchmove", onTouchMove);
+      canvas.removeEventListener("touchend", onTouchEnd);
+    };
+  }, []);
+
+  // Pan handlers — only pan when canPan is true
+  const canPanRef = useRef(canPan);
+  canPanRef.current = canPan;
+
   const handleMouseDown = useCallback(
     (e: React.MouseEvent) => {
-      if (!map) return;
+      if (!map || !canPanRef.current) return;
       setIsPanning(true);
       panStartRef.current = { x: e.clientX, y: e.clientY };
-      const currentZoom = localZoom ?? map.zoom;
       scrollStartRef.current = localScroll ?? { x: map.scrollX, y: map.scrollY };
     },
     [map, localScroll, localZoom]
@@ -289,7 +422,7 @@ export default function VTTPresenterView() {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     if (!map) {
-      ctx.fillStyle = "#00ff0044";
+      ctx.fillStyle = "#3ae2b344";
       ctx.font = `${20 * dpr}px "Share Tech Mono", monospace`;
       ctx.textAlign = "center";
       ctx.fillText("Waiting for controller...", canvas.width / 2, canvas.height / 2);
@@ -390,7 +523,7 @@ export default function VTTPresenterView() {
       const halfSize = pixelSize / 2;
 
       if (t.auraRadius > 0) {
-        ctx.fillStyle = t.auraColor || "rgba(0,255,0,0.1)";
+        ctx.fillStyle = t.auraColor || "rgba(58, 226, 179,0.1)";
         ctx.beginPath();
         ctx.arc(t.x, t.y, t.auraRadius * gridSize, 0, Math.PI * 2);
         ctx.fill();
@@ -420,7 +553,7 @@ export default function VTTPresenterView() {
       } else {
         ctx.fillStyle = "#1a1a2e";
         ctx.fill();
-        ctx.fillStyle = "#00ff00";
+        ctx.fillStyle = "#3ae2b3";
         ctx.font = `${Math.max(12, halfSize)}px "Share Tech Mono", monospace`;
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
@@ -428,7 +561,7 @@ export default function VTTPresenterView() {
       }
 
       // Border ring
-      ctx.strokeStyle = "#00ff00";
+      ctx.strokeStyle = "#3ae2b3";
       ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.arc(0, 0, halfSize, 0, Math.PI * 2);
@@ -440,12 +573,12 @@ export default function VTTPresenterView() {
         const hpRatio = Math.max(0, t.hp / t.maxHp);
         ctx.fillStyle = "#333";
         ctx.fillRect(t.x - halfSize, t.y + halfSize + 4, barWidth, 4);
-        ctx.fillStyle = hpRatio > 0.5 ? "#00ff00" : hpRatio > 0.25 ? "#ff6600" : "#ff3344";
+        ctx.fillStyle = hpRatio > 0.5 ? "#3ae2b3" : hpRatio > 0.25 ? "#ff6600" : "#ff3344";
         ctx.fillRect(t.x - halfSize, t.y + halfSize + 4, barWidth * hpRatio, 4);
       }
 
       if (t.showName) {
-        ctx.fillStyle = "#00ff00cc";
+        ctx.fillStyle = "#3ae2b3cc";
         ctx.font = `11px "Share Tech Mono", monospace`;
         ctx.textAlign = "center";
         ctx.fillText(t.name, t.x, t.y - halfSize - 6);
@@ -466,6 +599,36 @@ export default function VTTPresenterView() {
           );
           ctx.fill();
         });
+      }
+
+      // Elevation badge
+      if (t.elevation && t.elevation !== 0) {
+        const elevLabel = (t.elevation > 0 ? "+" : "") + t.elevation;
+        const badgeColor = t.elevation > 0 ? "#00ccff" : "#ff8800";
+        const badgeX = t.x + halfSize - 2;
+        const badgeY = t.y - halfSize - 2;
+        ctx.save();
+        ctx.font = `bold 9px "Share Tech Mono", monospace`;
+        const bm = ctx.measureText(elevLabel);
+        const bw = bm.width + 6;
+        const bh = 12;
+        ctx.fillStyle = "#000000";
+        ctx.globalAlpha = 0.8;
+        ctx.beginPath();
+        ctx.roundRect(badgeX - bw / 2, badgeY - bh / 2, bw, bh, 3);
+        ctx.fill();
+        ctx.strokeStyle = badgeColor;
+        ctx.lineWidth = 1;
+        ctx.globalAlpha = 0.9;
+        ctx.beginPath();
+        ctx.roundRect(badgeX - bw / 2, badgeY - bh / 2, bw, bh, 3);
+        ctx.stroke();
+        ctx.fillStyle = badgeColor;
+        ctx.globalAlpha = 1;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(elevLabel, badgeX, badgeY);
+        ctx.restore();
       }
 
       // Active turn indicator (pulsing glow)
@@ -538,41 +701,86 @@ export default function VTTPresenterView() {
       }
     }
 
-    // Dynamic lighting
-    if (map.lights.length > 0 && map.walls.length > 0) {
-      renderDynamicLighting(ctx, map.lights, map.walls, map.width, map.height);
+    // Dynamic lighting (combine map lights + token-emitted lights)
+    if (map.walls.length > 0) {
+      const tokenLights = map.tokens
+        .filter((t) => t.visible && (t.lightBrightRadius ?? 0) > 0)
+        .map((t) => ({
+          id: t.id + "-light",
+          x: t.x,
+          y: t.y,
+          radius: (t.lightBrightRadius ?? 0) * (map.grid.size || 50),
+          color: t.lightColor || "#ffaa44",
+          intensity: 1.0,
+          flickering: false,
+        }));
+      const allLights = [...map.lights, ...tokenLights];
+      if (allLights.length > 0) {
+        renderDynamicLighting(ctx, allLights, map.walls, map.width, map.height);
+      }
     }
 
-    // GM pings (animated expanding rings)
+    // GM pings (enhanced animated expanding rings with crosshair and label)
     for (const ping of pings) {
       const age = Date.now() - ping.timestamp;
       const progress = Math.min(1, age / 2000);
-      const radius = 10 + progress * 60;
       const alpha = 1 - progress;
+      const pingColor = ping.color || "#ffcc00";
       ctx.save();
-      ctx.strokeStyle = "#ffcc00";
-      ctx.lineWidth = 3;
-      ctx.globalAlpha = alpha;
-      ctx.shadowColor = "#ffcc00";
-      ctx.shadowBlur = 10;
-      ctx.beginPath();
-      ctx.arc(ping.x, ping.y, radius, 0, Math.PI * 2);
-      ctx.stroke();
-      // Inner dot
-      if (progress < 0.5) {
-        ctx.fillStyle = "#ffcc00";
-        ctx.globalAlpha = alpha * 0.6;
+      // Three concentric expanding rings
+      for (let r = 0; r < 3; r++) {
+        const ringProgress = Math.max(0, progress - r * 0.12);
+        const ringAlpha = Math.max(0, (1 - ringProgress) * (1 - r * 0.3));
+        const radius = 10 + ringProgress * 60;
+        ctx.globalAlpha = ringAlpha;
+        ctx.strokeStyle = pingColor;
+        ctx.lineWidth = 3 - r;
+        ctx.shadowColor = pingColor;
+        ctx.shadowBlur = 10;
         ctx.beginPath();
-        ctx.arc(ping.x, ping.y, 5, 0, Math.PI * 2);
+        ctx.arc(ping.x, ping.y, radius, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      ctx.shadowBlur = 0;
+      // Crosshair at center
+      ctx.globalAlpha = Math.max(0, alpha);
+      ctx.strokeStyle = pingColor;
+      ctx.lineWidth = 2;
+      const armLen = 8;
+      ctx.beginPath();
+      ctx.moveTo(ping.x - armLen, ping.y);
+      ctx.lineTo(ping.x + armLen, ping.y);
+      ctx.moveTo(ping.x, ping.y - armLen);
+      ctx.lineTo(ping.x, ping.y + armLen);
+      ctx.stroke();
+      // Center dot
+      ctx.fillStyle = pingColor;
+      ctx.globalAlpha = Math.max(0, alpha * 0.9);
+      ctx.beginPath();
+      ctx.arc(ping.x, ping.y, 3, 0, Math.PI * 2);
+      ctx.fill();
+      // Label below
+      if (ping.label) {
+        ctx.font = `bold 10px "Share Tech Mono", monospace`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "top";
+        const lm = ctx.measureText(ping.label);
+        ctx.fillStyle = "#000000";
+        ctx.globalAlpha = Math.max(0, alpha * 0.6);
+        ctx.beginPath();
+        ctx.roundRect(ping.x - lm.width / 2 - 3, ping.y + 14, lm.width + 6, 13, 3);
         ctx.fill();
+        ctx.fillStyle = pingColor;
+        ctx.globalAlpha = Math.max(0, alpha);
+        ctx.fillText(ping.label, ping.x, ping.y + 15);
       }
       ctx.restore();
     }
 
-    // Fog of war (use brush data if available, otherwise solid fill)
+    // Fog of war — fully opaque on presenter (players should not see through fog)
     if (map.fog.enabled) {
       ctx.save();
-      ctx.globalAlpha = map.fog.opacity;
+      ctx.globalAlpha = 1;
       if (fogImageRef.current) {
         ctx.drawImage(fogImageRef.current, 0, 0);
       } else {
@@ -594,7 +802,7 @@ export default function VTTPresenterView() {
     <div
       ref={containerRef}
       className="fixed inset-0 bg-black"
-      style={{ cursor: isPanning ? "grabbing" : "grab" }}
+      style={{ cursor: isPanning ? "grabbing" : canPan ? "grab" : "crosshair" }}
     >
       <canvas
         ref={canvasRef}
@@ -616,7 +824,7 @@ export default function VTTPresenterView() {
       {(localScroll || localZoom) && (
         <button
           onClick={resetView}
-          className="absolute top-4 left-4 z-10 bg-black/80 border border-terminal-primary/30 text-terminal-primary/60 text-xs font-mono px-3 py-1.5 rounded hover:text-terminal-primary hover:border-terminal-primary/50 transition-colors"
+          className="absolute top-4 left-14 z-10 vtt-btn"
         >
           Reset View
         </button>
@@ -624,79 +832,38 @@ export default function VTTPresenterView() {
 
       {/* Zoom indicator */}
       {map && (localZoom != null) && (
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10 text-terminal-primary/30 text-xs font-mono">
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10 text-[rgba(58, 226, 179,0.3)] text-xs font-mono">
           {Math.round((localZoom ?? map.zoom) * 100)}%
         </div>
       )}
 
-      {/* Clocks overlay */}
-      {clocks.length > 0 && (
-        <div className="absolute top-4 right-4 z-10 flex flex-col gap-2">
-          {clocks.map((clock) => (
-            <div
-              key={clock.id}
-              className="bg-black/80 border border-terminal-primary/20 rounded-lg px-3 py-2 flex items-center gap-3"
-            >
-              <PresenterClockSVG clock={clock} />
-              <div>
-                <div className="text-terminal-primary/80 text-xs font-mono">
-                  {clock.name}
-                </div>
-                <div className="text-terminal-primary/40 text-[10px] font-mono">
-                  {clock.filled}/{clock.segments}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Initiative tracker overlay */}
-      {showInitiative && initiative.length > 0 && (
-        <div className="absolute top-4 left-4 z-10 bg-black/85 border border-terminal-primary/30 rounded-lg overflow-hidden min-w-[180px]">
-          <div className="px-3 py-1.5 border-b border-terminal-primary/20">
-            <span className="text-[10px] text-terminal-primary/50 uppercase tracking-wider font-mono">
-              Initiative
-            </span>
-          </div>
-          <div className="max-h-[60vh] overflow-y-auto">
-            {initiative.map((entry, index) => (
-              <div
-                key={entry.id}
-                className={`flex items-center gap-2 px-3 py-1.5 border-b border-terminal-border/10 ${
-                  index === 0
-                    ? "bg-terminal-primary/10 shadow-[inset_0_0_20px_rgba(0,255,0,0.05)]"
-                    : ""
-                }`}
-              >
-                <span className="w-6 text-center text-terminal-primary font-mono text-sm font-bold flex-shrink-0">
-                  {entry.initiative}
-                </span>
-                <span
-                  className={`text-xs font-mono flex-1 truncate ${
-                    index === 0 ? "text-terminal-primary" : "text-terminal-primary/60"
-                  }`}
-                >
-                  {entry.name}
-                </span>
-                {entry.isNPC && (
-                  <span className="text-[8px] text-red-400/50 font-mono">NPC</span>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Handout overlay */}
+      {/* Handout overlay — click anywhere or press Escape to close */}
       {handout && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/90 z-20">
+        <div
+          className="absolute inset-0 flex items-center justify-center bg-black/90 z-20 cursor-pointer"
+          onClick={() => {
+            setHandout(null);
+            sendToController({ type: "hide-handout" });
+          }}
+        >
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setHandout(null);
+              sendToController({ type: "hide-handout" });
+            }}
+            className="absolute top-4 right-4 z-30 w-10 h-10 flex items-center justify-center rounded-full bg-black/60 border border-[rgba(58, 226, 179,0.3)] text-[rgba(58, 226, 179,0.7)] hover:text-[rgba(58, 226, 179,1)] hover:border-[rgba(58, 226, 179,0.6)] transition-colors text-xl font-mono"
+            title="Close handout"
+          >
+            &times;
+          </button>
           <img
             src={handout.imageDataUrl}
             alt={handout.name}
             className="max-w-[90vw] max-h-[90vh] object-contain"
+            onClick={(e) => e.stopPropagation()}
           />
-          <div className="absolute bottom-6 text-center text-terminal-primary/60 text-sm font-mono">
+          <div className="absolute bottom-6 text-center text-[rgba(58, 226, 179,0.6)] text-sm font-mono">
             {handout.name}
           </div>
         </div>
@@ -705,21 +872,21 @@ export default function VTTPresenterView() {
       {/* Dice roll overlay */}
       {diceRoll && (
         <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-30 animate-in fade-in slide-in-from-bottom-4 duration-300">
-          <div className="bg-black/90 border border-terminal-primary/50 rounded-lg px-8 py-4 text-center shadow-[0_0_30px_rgba(0,255,0,0.2)]">
-            <div className="text-terminal-primary/60 text-xs font-mono uppercase tracking-wider mb-1">
+          <div className="vtt-hud px-8 py-4 text-center">
+            <div className="vtt-section-label text-center mb-1">
               {diceRoll.label}
             </div>
             <div className="flex items-center justify-center gap-2 mb-1">
               {diceRoll.dice.map((d, i) => (
                 <span
                   key={i}
-                  className="w-10 h-10 flex items-center justify-center bg-terminal-primary/10 border border-terminal-primary/30 rounded text-terminal-primary text-lg font-mono font-bold"
+                  className="w-10 h-10 flex items-center justify-center bg-[rgba(58, 226, 179,0.08)] border border-[rgba(58, 226, 179,0.25)] rounded text-[var(--primary)] text-lg font-mono font-bold"
                 >
                   {d}
                 </span>
               ))}
               {diceRoll.modifier !== 0 && (
-                <span className="text-terminal-primary/50 text-sm font-mono">
+                <span className="text-[rgba(58, 226, 179,0.5)] text-sm font-mono">
                   {diceRoll.modifier > 0 ? "+" : ""}
                   {diceRoll.modifier}
                 </span>
@@ -740,9 +907,41 @@ export default function VTTPresenterView() {
         </div>
       )}
 
+      {/* Campaign sidebar toggle */}
+      {campaignData && (
+        <button
+          onClick={() => setSidebarOpen((v) => !v)}
+          className="absolute top-1/2 -translate-y-1/2 z-20 vtt-btn px-1 py-3 transition-all"
+          style={{ right: sidebarOpen ? 321 : 0 }}
+          title="Campaign Info"
+        >
+          {sidebarOpen ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
+        </button>
+      )}
+
+      {/* Campaign sidebar */}
+      {campaignData && sidebarOpen && (
+        <PresenterCampaignSidebar
+          data={campaignData}
+          activeTab={sidebarTab}
+          onTabChange={setSidebarTab}
+          onOpenHandout={(imageUrl, title) => setHandout({ imageDataUrl: imageUrl, name: title })}
+        />
+      )}
+
+      {/* Player toolbar (left side pullout) */}
+      <VTTPlayerToolbar
+        initiative={initiative}
+        showInitiative={showInitiative}
+        clocks={clocks}
+        audioState={audioState}
+        sendToController={sendToController}
+        onPlayerToolChange={setActiveTool}
+      />
+
       {/* Connection status */}
       {!connected && (
-        <div className="absolute top-4 right-4 text-terminal-primary/40 text-xs font-mono animate-pulse">
+        <div className="absolute top-4 right-4 text-[rgba(58, 226, 179,0.4)] text-xs font-mono animate-pulse">
           Connecting...
         </div>
       )}
@@ -750,42 +949,270 @@ export default function VTTPresenterView() {
   );
 }
 
-// ─── Clock SVG for presenter (compact) ──────────────────────────────────────
+// ─── Campaign Sidebar for presenter ──────────────────────────────────────────
 
-function PresenterClockSVG({ clock }: { clock: Clock }) {
-  const size = 40;
-  const cx = size / 2;
-  const cy = size / 2;
-  const r = size / 2 - 2;
+type SidebarTab = "notes" | "sessions" | "handouts" | "quests";
 
-  const segments = [];
-  for (let i = 0; i < clock.segments; i++) {
-    const startAngle = (i / clock.segments) * Math.PI * 2 - Math.PI / 2;
-    const endAngle = ((i + 1) / clock.segments) * Math.PI * 2 - Math.PI / 2;
-    const x1 = cx + r * Math.cos(startAngle);
-    const y1 = cy + r * Math.sin(startAngle);
-    const x2 = cx + r * Math.cos(endAngle);
-    const y2 = cy + r * Math.sin(endAngle);
-    const largeArc = endAngle - startAngle > Math.PI ? 1 : 0;
-    const d = `M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${largeArc} 1 ${x2} ${y2} Z`;
-    const filled = i < clock.filled;
+const SIDEBAR_TABS: { id: SidebarTab; label: string; icon: React.ReactNode }[] = [
+  { id: "notes", label: "Notes", icon: <BookOpen size={12} /> },
+  { id: "sessions", label: "Sessions", icon: <ScrollText size={12} /> },
+  { id: "handouts", label: "Handouts", icon: <ImageIcon size={12} /> },
+  { id: "quests", label: "Quests", icon: <Compass size={12} /> },
+];
 
-    segments.push(
-      <path
-        key={i}
-        d={d}
-        fill={filled ? clock.color : "transparent"}
-        stroke={clock.color}
-        strokeWidth={1}
-        opacity={filled ? 0.8 : 0.2}
-      />
-    );
-  }
+function PresenterCampaignSidebar({
+  data,
+  activeTab,
+  onTabChange,
+  onOpenHandout,
+}: {
+  data: PresenterCampaignData;
+  activeTab: SidebarTab;
+  onTabChange: (tab: SidebarTab) => void;
+  onOpenHandout?: (imageUrl: string, title: string) => void;
+}) {
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-      <circle cx={cx} cy={cy} r={r} fill="transparent" stroke={clock.color} strokeWidth={1.5} opacity={0.3} />
-      {segments}
-    </svg>
+    <div className="absolute top-0 right-0 bottom-0 z-10 w-[320px] bg-[#0a0f0a]/95 border-l border-terminal-border/30 backdrop-blur-sm flex flex-col">
+      {/* Tab bar */}
+      <div className="flex border-b border-terminal-border/20 flex-shrink-0">
+        {SIDEBAR_TABS.map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => onTabChange(tab.id)}
+            className={`flex-1 flex items-center justify-center gap-1 px-2 py-2 text-[9px] font-mono uppercase tracking-wider transition-colors ${
+              activeTab === tab.id
+                ? "text-terminal-primary bg-terminal-primary/10 border-b-2 border-terminal-primary"
+                : "text-terminal-primary/40 hover:text-terminal-primary/60"
+            }`}
+          >
+            {tab.icon}
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto p-3 space-y-2">
+        {activeTab === "notes" && (
+          <>
+            {data.notes.length === 0 ? (
+              <EmptyState label="No notes available" />
+            ) : (
+              data.notes.map((note) => {
+                const FOLDER_MAP: Record<string, { label: string; emoji: string }> = {
+                  general: { label: "General", emoji: "📝" },
+                  planets: { label: "Planets", emoji: "🌍" },
+                  locations: { label: "Locations", emoji: "📍" },
+                  npcs: { label: "NPCs", emoji: "👤" },
+                  quests: { label: "Quests", emoji: "⚔️" },
+                  items: { label: "Items", emoji: "🎒" },
+                  other: { label: "Other", emoji: "📦" },
+                };
+                const folderInfo = FOLDER_MAP[note.folder || "general"] || FOLDER_MAP.general;
+                const isExpanded = expandedId === note.id;
+                return (
+                  <div
+                    key={note.id}
+                    className="rounded border border-terminal-border/20 bg-terminal-primary/[0.02] hover:border-terminal-border/40 transition-colors overflow-hidden"
+                  >
+                    {/* Header */}
+                    <button
+                      onClick={() => setExpandedId(isExpanded ? null : note.id)}
+                      className="w-full text-left px-3 py-2"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="text-base flex-shrink-0">{folderInfo.emoji}</span>
+                        <span className="text-[12px] font-mono text-terminal-primary/80 flex-1 truncate font-medium">{note.title}</span>
+                        <ChevronRight size={10} className={`text-terminal-primary/30 flex-shrink-0 transition-transform ${isExpanded ? "rotate-90" : ""}`} />
+                      </div>
+                      <div className="flex items-center gap-2 mt-0.5 pl-6">
+                        <span className="text-[9px] font-mono text-terminal-primary/30 bg-terminal-primary/5 px-1.5 py-0.5 rounded">{folderInfo.label}</span>
+                        {note.createdAt && (
+                          <span className="text-[9px] font-mono text-terminal-primary/20">
+                            {new Date(note.createdAt).toLocaleDateString()}
+                          </span>
+                        )}
+                      </div>
+                    </button>
+
+                    {/* Expanded body */}
+                    {isExpanded && (
+                      <div className="border-t border-terminal-border/10 px-3 py-3 space-y-2">
+                        {note.thumbnailUrl && (
+                          <img
+                            src={note.thumbnailUrl}
+                            alt={note.title}
+                            className="w-24 h-24 object-cover rounded border border-terminal-primary/30"
+                          />
+                        )}
+                        {note.content && (
+                          <p className="text-[11px] font-mono text-terminal-primary/60 whitespace-pre-wrap leading-relaxed">
+                            {note.content}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })
+            )}
+          </>
+        )}
+
+        {activeTab === "sessions" && (
+          <>
+            {data.sessions.length === 0 ? (
+              <EmptyState label="No sessions available" />
+            ) : (
+              data.sessions.map((session) => (
+                <button
+                  key={session.id}
+                  onClick={() => setExpandedId(expandedId === session.id ? null : session.id)}
+                  className="w-full text-left rounded border border-terminal-border/15 bg-terminal-primary/[0.02] hover:bg-terminal-primary/[0.05] transition-colors"
+                >
+                  <div className="flex items-center gap-2 px-3 py-2">
+                    <ScrollText size={10} className="text-terminal-primary/40 flex-shrink-0" />
+                    <span className="text-[11px] font-mono text-terminal-primary/70 truncate flex-1">
+                      {session.number != null && <span className="text-terminal-primary/30 mr-1">#{session.number}</span>}
+                      {session.title}
+                    </span>
+                    {session.date && (
+                      <span className="text-[8px] font-mono text-terminal-primary/30">{session.date}</span>
+                    )}
+                  </div>
+                  {expandedId === session.id && session.summary && (
+                    <div className="px-3 pb-2 text-[10px] font-mono text-terminal-primary/50 whitespace-pre-wrap border-t border-terminal-border/10 pt-2">
+                      {session.summary}
+                    </div>
+                  )}
+                </button>
+              ))
+            )}
+          </>
+        )}
+
+        {activeTab === "handouts" && (
+          <>
+            {data.handouts.filter((h) => h.visible !== false).length === 0 ? (
+              <EmptyState label="No handouts available" />
+            ) : (
+              data.handouts.filter((h) => h.visible !== false).map((handout) => {
+                const isExpanded = expandedId === handout.id;
+                return (
+                  <div
+                    key={handout.id}
+                    className="rounded border border-terminal-border/15 bg-terminal-primary/[0.02] overflow-hidden hover:border-terminal-border/40 transition-colors"
+                  >
+                    {handout.imageUrl && (
+                      <button
+                        onClick={() => onOpenHandout?.(handout.imageUrl!, handout.title)}
+                        className="w-full block cursor-pointer"
+                        title="Click to view fullscreen"
+                      >
+                        <img
+                          src={handout.imageUrl}
+                          alt={handout.title}
+                          className="w-full h-32 object-cover border-b border-terminal-border/10 hover:opacity-80 transition-opacity"
+                        />
+                      </button>
+                    )}
+                    <button
+                      onClick={() => setExpandedId(isExpanded ? null : handout.id)}
+                      className="w-full text-left px-3 py-2"
+                    >
+                      <div className="flex items-center gap-2">
+                        <ImageIcon size={10} className="text-terminal-primary/40 flex-shrink-0" />
+                        <span className="text-[11px] font-mono text-terminal-primary/70 flex-1 truncate">{handout.title}</span>
+                        {handout.imageUrl && (
+                          <span className="text-[8px] font-mono text-terminal-primary/30">click image to view</span>
+                        )}
+                        <ChevronRight size={10} className={`text-terminal-primary/30 flex-shrink-0 transition-transform ${isExpanded ? "rotate-90" : ""}`} />
+                      </div>
+                    </button>
+                    {isExpanded && handout.content && (
+                      <div className="border-t border-terminal-border/10 px-3 py-3">
+                        <p className="text-[11px] font-mono text-terminal-primary/60 whitespace-pre-wrap leading-relaxed">
+                          {handout.content}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                );
+              })
+            )}
+          </>
+        )}
+
+        {activeTab === "quests" && (
+          <>
+            {data.quests.length === 0 ? (
+              <EmptyState label="No quests available" />
+            ) : (
+              data.quests.map((quest) => (
+                <button
+                  key={quest.id}
+                  onClick={() => setExpandedId(expandedId === quest.id ? null : quest.id)}
+                  className="w-full text-left rounded border border-terminal-border/15 bg-terminal-primary/[0.02] hover:bg-terminal-primary/[0.05] transition-colors"
+                >
+                  <div className="flex items-center gap-2 px-3 py-2">
+                    <QuestStatusIcon status={quest.status} />
+                    <span className="text-[11px] font-mono text-terminal-primary/70 truncate flex-1">{quest.title}</span>
+                    {quest.status && (
+                      <span className={`text-[8px] font-mono px-1.5 py-0.5 rounded ${
+                        quest.status === "active" ? "text-green-400/70 bg-green-400/10" :
+                        quest.status === "completed" ? "text-cyan-400/70 bg-cyan-400/10" :
+                        "text-terminal-primary/30 bg-terminal-primary/5"
+                      }`}>
+                        {quest.status}
+                      </span>
+                    )}
+                  </div>
+                  {expandedId === quest.id && (
+                    <div className="px-3 pb-2 border-t border-terminal-border/10 pt-2 space-y-1">
+                      {quest.description && (
+                        <div className="text-[10px] font-mono text-terminal-primary/50">{quest.description}</div>
+                      )}
+                      {quest.objectives && quest.objectives.length > 0 && (
+                        <div className="space-y-0.5 mt-1">
+                          {quest.objectives.map((obj: any, i: number) => (
+                            <div key={obj.id || i} className="flex items-start gap-1.5 text-[9px] font-mono">
+                              {obj.status === 'completed' ? (
+                                <CheckCircle2 size={10} className="text-green-400/60 flex-shrink-0 mt-0.5" />
+                              ) : (
+                                <Circle size={10} className="text-terminal-primary/30 flex-shrink-0 mt-0.5" />
+                              )}
+                              <span className={obj.status === 'completed' ? "text-terminal-primary/30 line-through" : "text-terminal-primary/50"}>
+                                {obj.title || obj.description}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </button>
+              ))
+            )}
+          </>
+        )}
+      </div>
+    </div>
   );
 }
+
+function EmptyState({ label }: { label: string }) {
+  return (
+    <div className="text-center text-[10px] font-mono text-terminal-primary/20 py-8">
+      {label}
+    </div>
+  );
+}
+
+function QuestStatusIcon({ status }: { status?: string }) {
+  if (status === "completed") return <CheckCircle2 size={10} className="text-cyan-400/60 flex-shrink-0" />;
+  if (status === "active") return <Compass size={10} className="text-green-400/60 flex-shrink-0" />;
+  return <Circle size={10} className="text-terminal-primary/30 flex-shrink-0" />;
+}
+

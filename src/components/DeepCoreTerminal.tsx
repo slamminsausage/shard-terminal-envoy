@@ -445,8 +445,8 @@ export default function RiftjawTerminal({ onBack }: RiftjawTerminalProps) {
                 maxHeight: "70vh",
                 overflow: "auto",
                 fontSize: "12px",
-                color: systemInit ? "#00ffff" : "#33ff33",
-                textShadow: systemInit ? "0 0 10px #00ffff" : "0 0 5px #33ff33"
+                color: systemInit ? "#00ffff" : "#5af0c4",
+                textShadow: systemInit ? "0 0 10px #00ffff" : "0 0 5px #5af0c4"
               }}
             >
               <pre style={{ whiteSpace: "pre-wrap", fontFamily: "monospace" }}>

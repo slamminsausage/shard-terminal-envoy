@@ -20,17 +20,20 @@ import audioManager from '@/lib/audioManager';
 import { typeTextWithSound } from '@/lib/typing';
 import { TERMINALS, getTerminalDefinition } from '@/lib/terminals';
 import { dbHelpers } from '@/lib/supabase';
+import { useCampaign } from '@/contexts/CampaignContext';
 
 // New components
 import LoadingScreen from '../terminal/views/LoadingScreen';
-import InitScreen from '../terminal/views/InitScreen';
+import PromptInitScreen from '../terminal/views/PromptInitScreen';
 import TerminalView from '../terminal/views/TerminalView';
 import LogDetailView from '../terminal/views/LogDetailView';
 import AudioLogsPage from '../terminal/views/AudioLogsPage';
-import TerminalBootScreen from '../terminal/views/TerminalBootScreen';
+import ConnectingScreen from '@/components/effects/ConnectingScreen';
 import PasswordPrompt from '../terminal/SecurityChallenge/PasswordPrompt';
 import RollCheckPrompt from '../terminal/SecurityChallenge/RollCheckPrompt';
+import ActionSequencePlayer from '../terminal/ActionSequence/ActionSequencePlayer';
 import { getTerminalBootProfile } from '@/lib/terminalBootProfiles';
+import { getTerminalTheme } from '@/lib/terminalThemes';
 
 // New hooks
 import { useTerminalSession } from '@/hooks/useTerminalSession';
@@ -61,7 +64,7 @@ const getTerminalEffectClasses = (terminalId: string) => {
   return "terminal terminal-flicker";
 };
 
-export default function TerminalInterface() {
+function TerminalInterface() {
   const navigate = useNavigate();
   const hasInitialized = useRef(false);
   const typingCancelRef = useRef<(() => void) | null>(null);
@@ -72,6 +75,10 @@ export default function TerminalInterface() {
 
   // Terminal history tracking
   const terminalHistory = useTerminalHistory();
+
+  // GM identity — used to skip persisting unlocks when the GM is testing,
+  // and to gate the secret GM reveal command on the init prompt.
+  const { isGM } = useCampaign();
 
   // Local state for typing animations (useState required for typeTextWithSound)
   const [localInitText, setLocalInitText] = useState('');
@@ -87,24 +94,8 @@ export default function TerminalInterface() {
       session.resetPasswordAttempts();
       audioManager.playEffect('access_granted');
 
-      // Check if log has nested audio logs
-      if (session.selectedLog?.logs && Array.isArray(session.selectedLog.logs) && session.selectedLog.logs.length > 0) {
-        session.setShowAudioLogs(true);
-        session.setAudioLogsData(session.selectedLog.logs);
-        return;
-      }
-
-      // Otherwise type the content
-      if (session.selectedLog?.content) {
-        setLocalDisplayedText('');
-        setLocalTypingComplete(false);
-        const cancel = typeTextWithSound(
-          session.selectedLog.content,
-          setLocalDisplayedText,
-          () => setLocalTypingComplete(true),
-          { delay: 20 }
-        );
-        typingCancelRef.current = cancel;
+      if (session.selectedLog) {
+        showLogContent(session.selectedLog);
       }
     },
     onFailure: () => {
@@ -180,8 +171,9 @@ export default function TerminalInterface() {
 
     typingCancelRef.current = cancel;
 
-    // Load unlocked terminals
+    // Load unlocked terminals and completed actions
     loadUnlockedTerminals();
+    loadCompletedActions();
 
     return () => {
       if (typingCancelRef.current) {
@@ -236,11 +228,24 @@ export default function TerminalInterface() {
     }
   };
 
-  // Load terminal logs — shows a themed per-terminal boot screen while loading
-  const loadTerminalLogs = async () => {
-    if (!session.activeTerminal) return;
+  // Load completed actions from database
+  const loadCompletedActions = async () => {
+    try {
+      const actions = await dbHelpers.getCompletedActions();
+      session.setCompletedActions(actions);
+    } catch (error) {
+      console.error('Failed to load completed actions:', error);
+    }
+  };
 
-    const profile = getTerminalBootProfile(session.activeTerminal.code);
+  // Load terminal logs — shows a themed per-terminal boot screen while loading.
+  // Accepts the terminal explicitly so callers that have just set active terminal
+  // don't have to wait for React state to commit before reading it back.
+  const loadTerminalLogs = async (terminalOverride?: { code: string; name: string; logPath: string } | null) => {
+    const terminal = terminalOverride ?? session.activeTerminal;
+    if (!terminal) return;
+
+    const profile = getTerminalBootProfile(terminal.code);
 
     session.setLogsError(null);
     session.setLogsLoading(true);
@@ -252,7 +257,7 @@ export default function TerminalInterface() {
       const minDelay = new Promise<void>((resolve) =>
         setTimeout(resolve, profile.minDisplayMs)
       );
-      const fetchData = fetch(session.activeTerminal.logPath)
+      const fetchData = fetch(terminal.logPath)
         .then((res) => {
           if (!res.ok) throw new Error(`Failed to load logs: ${res.status}`);
           return res.json();
@@ -317,15 +322,18 @@ export default function TerminalInterface() {
       return;
     }
 
-    // Add to unlocked terminals
-    try {
-      await dbHelpers.addUnlockedTerminal(code);
-      session.addUnlockedTerminal(code);
-    } catch (error) {
-      console.error('Failed to save unlocked terminal:', error);
+    // Add to unlocked terminals — skip for GM so testing doesn't pollute
+    // the shared players-only unlocked list.
+    if (!isGM) {
+      try {
+        await dbHelpers.addUnlockedTerminal(code);
+        session.addUnlockedTerminal(code);
+      } catch (error) {
+        console.error('Failed to save unlocked terminal:', error);
+      }
     }
 
-    loadTerminalLogs();
+    loadTerminalLogs(terminal);
   };
 
   // Helper function to show log content or nested audio logs
@@ -335,6 +343,47 @@ export default function TerminalInterface() {
       // Show nested audio logs page
       session.setShowAudioLogs(true);
       session.setAudioLogsData(log.logs);
+      return;
+    }
+
+    // For action sequences: if already completed, show content with completion note
+    // If not completed, type content normally — LogDetailView shows INITIATE SEQUENCE button
+    if (log.type === 'action_sequence' && log.action_sequence) {
+      const persistKey = log.action_sequence.on_complete?.persist_key || log.action_sequence.id;
+      const isCompleted = session.completedActions.includes(persistKey);
+
+      if (isCompleted) {
+        const completionText = log.content
+          ? log.content + '\n\n>> [SEQUENCE PREVIOUSLY COMPLETED]\n>> ' + log.action_sequence.on_complete.message
+          : '>> [SEQUENCE PREVIOUSLY COMPLETED]\n>> ' + log.action_sequence.on_complete.message;
+
+        setLocalDisplayedText('');
+        setLocalTypingComplete(false);
+        const cancel = typeTextWithSound(
+          completionText,
+          setLocalDisplayedText,
+          () => setLocalTypingComplete(true),
+          { delay: 20 }
+        );
+        typingCancelRef.current = cancel;
+        return;
+      }
+
+      // Not yet completed: type content, player clicks INITIATE SEQUENCE when ready
+      if (log.content) {
+        setLocalDisplayedText('');
+        setLocalTypingComplete(false);
+        const cancel = typeTextWithSound(
+          log.content,
+          setLocalDisplayedText,
+          () => setLocalTypingComplete(true),
+          { delay: 20 }
+        );
+        typingCancelRef.current = cancel;
+      } else {
+        // No content preamble — go straight to sequence
+        session.setActiveSequence(log.action_sequence);
+      }
       return;
     }
 
@@ -395,14 +444,25 @@ export default function TerminalInterface() {
   };
 
   // Handle roll check result
-  const handleRollCheck = (result: DiceRoll) => {
+  const handleRollCheck = async (result: DiceRoll) => {
     session.setRollCheck(null);
     // Terminal connect flow
     if (session.pendingTerminalForRoll) {
       if (result.success) {
+        const unlocked = session.pendingTerminalForRoll;
         audioManager.playEffect('access_granted');
+        // Persist unlock for players only; GM passes through without
+        // polluting the unlocked list.
+        if (!isGM) {
+          try {
+            await dbHelpers.addUnlockedTerminal(unlocked.code);
+            session.addUnlockedTerminal(unlocked.code);
+          } catch (error) {
+            console.error('Failed to save unlocked terminal:', error);
+          }
+        }
         session.setPendingTerminalForRoll(null);
-        loadTerminalLogs();
+        loadTerminalLogs(unlocked);
       } else {
         audioManager.playEffect('access_denied');
         session.setPendingTerminalForRoll(null);
@@ -414,24 +474,8 @@ export default function TerminalInterface() {
     if (result.success) {
       audioManager.playEffect('access_granted');
 
-      // Check if log has nested audio logs
-      if (session.selectedLog?.logs && Array.isArray(session.selectedLog.logs) && session.selectedLog.logs.length > 0) {
-        session.setShowAudioLogs(true);
-        session.setAudioLogsData(session.selectedLog.logs);
-        return;
-      }
-
-      // Otherwise type the content
-      if (session.selectedLog?.content) {
-        setLocalDisplayedText('');
-        setLocalTypingComplete(false);
-        const cancel = typeTextWithSound(
-          session.selectedLog.content,
-          setLocalDisplayedText,
-          () => setLocalTypingComplete(true),
-          { delay: 20 }
-        );
-        typingCancelRef.current = cancel;
+      if (session.selectedLog) {
+        showLogContent(session.selectedLog);
       }
     } else {
       audioManager.playEffect('access_denied');
@@ -447,24 +491,8 @@ export default function TerminalInterface() {
     if (result.success) {
       audioManager.playEffect('access_granted');
 
-      // Check if log has nested audio logs
-      if (session.selectedLog?.logs && Array.isArray(session.selectedLog.logs) && session.selectedLog.logs.length > 0) {
-        session.setShowAudioLogs(true);
-        session.setAudioLogsData(session.selectedLog.logs);
-        return;
-      }
-
-      // Otherwise type the content
-      if (session.selectedLog?.content) {
-        setLocalDisplayedText('');
-        setLocalTypingComplete(false);
-        const cancel = typeTextWithSound(
-          session.selectedLog.content,
-          setLocalDisplayedText,
-          () => setLocalTypingComplete(true),
-          { delay: 20 }
-        );
-        typingCancelRef.current = cancel;
+      if (session.selectedLog) {
+        showLogContent(session.selectedLog);
       }
     } else {
       audioManager.playEffect('access_denied');
@@ -475,28 +503,6 @@ export default function TerminalInterface() {
       } else {
         session.goToTerminal();
       }
-    }
-  };
-
-  // Command history navigation for access code input
-  const handleInitInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      const recalled = session.recallHistory('back');
-      session.setInputCode(recalled);
-      return;
-    }
-
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      const recalled = session.recallHistory('forward');
-      session.setInputCode(recalled);
-      return;
-    }
-
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      handleAccessCode(null);
     }
   };
 
@@ -543,27 +549,36 @@ export default function TerminalInterface() {
         />
       )}
 
-      {/* Connecting View — per-terminal themed boot screen */}
-      {session.currentView === 'connecting' && session.activeTerminal && (
-        <TerminalBootScreen terminal={session.activeTerminal} />
-      )}
+      {/* Connecting View — per-terminal themed packet viz boot screen */}
+      {session.currentView === 'connecting' && session.activeTerminal && (() => {
+        const theme = getTerminalTheme(session.activeTerminal.code);
+        return (
+          <div className="w-full h-full">
+            <ConnectingScreen
+              style={theme.vizStyle}
+              accentColor={theme.accentColor}
+              dimColor={theme.dimColor}
+              bgColor={theme.bgColor}
+              headerLabel={theme.headerLabel}
+              label={session.activeTerminal.name}
+              onSkip={() => session.setView('terminal')}
+            />
+          </div>
+        );
+      })()}
 
-      {/* Init View */}
+      {/* Init View — command-line prompt with matrix backdrop */}
       {session.currentView === 'init' && (
-      <InitScreen
-        inputCode={session.inputCode}
-        onCodeChange={session.setInputCode}
-        onSubmit={() => handleAccessCode(null)}
-        unlockedTerminals={unlockedTerminalsList}
-        loading={session.terminalsLoading}
-        statusMessage="Use ARROW UP/DOWN to recall previous access codes."
-        errorMessage={session.terminalsError}
-        onKeyDown={handleInitInputKeyDown}
-        onTerminalSelect={(code) => {
-          session.setInputCode(code);
-          handleAccessCode(code);
-        }}
-      />
+        <PromptInitScreen
+          unlockedTerminals={unlockedTerminalsList}
+          loading={session.terminalsLoading}
+          errorMessage={session.terminalsError}
+          isGM={isGM}
+          onConnect={(code) => {
+            session.setInputCode(code);
+            handleAccessCode(code);
+          }}
+        />
       )}
 
       {/* Terminal/Log View */}
@@ -657,8 +672,42 @@ export default function TerminalInterface() {
               />
             )}
 
+            {/* Action Sequence Player */}
+            {session.activeSequence &&
+             session.selectedLog &&
+             !session.requiresPassword &&
+             !session.rollCheck &&
+             !session.specialRollCheck &&
+             !session.terminalPasswordRequired && (
+              <ActionSequencePlayer
+                sequence={session.activeSequence}
+                preambleText={session.selectedLog?.content}
+                onComplete={async () => {
+                  const actionId = session.activeSequence?.on_complete?.persist_key || session.activeSequence?.id;
+                  if (actionId) {
+                    session.addCompletedAction(actionId);
+                    try {
+                      await dbHelpers.addCompletedAction(actionId);
+                    } catch (error) {
+                      console.error('Failed to persist completed action:', error);
+                    }
+                  }
+                }}
+                onFail={() => {}}
+                onBack={() => {
+                  session.setActiveSequence(null);
+                  session.goToTerminal();
+                }}
+                onBackToTerminal={() => {
+                  session.setActiveSequence(null);
+                  session.goToTerminal();
+                }}
+              />
+            )}
+
             {/* Log Detail View */}
             {session.selectedLog &&
+             !session.activeSequence &&
              !session.requiresPassword &&
              !session.rollCheck &&
              !session.specialRollCheck &&
@@ -668,6 +717,11 @@ export default function TerminalInterface() {
                 displayedText={localDisplayedText}
                 typingComplete={localTypingComplete}
                 onBack={session.goToTerminal}
+                onInitiateSequence={
+                  session.selectedLog?.type === 'action_sequence' && session.selectedLog?.action_sequence
+                    ? () => session.setActiveSequence(session.selectedLog!.action_sequence!)
+                    : undefined
+                }
                 terminalCode={session.activeTerminal?.code || ''}
               />
             )}
@@ -681,6 +735,7 @@ export default function TerminalInterface() {
                 logs={session.logData}
                 onLogSelect={handleLogClick}
                 onBack={session.goToInit}
+                completedActions={session.completedActions}
               />
             )}
 
@@ -698,3 +753,5 @@ export default function TerminalInterface() {
     </div>
   );
 }
+
+export default React.memo(TerminalInterface);

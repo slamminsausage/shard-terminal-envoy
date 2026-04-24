@@ -4,6 +4,7 @@ import { useVTT } from "@/contexts/VTTContext";
 import { LAYER_TOKEN } from "@/types/vtt";
 import type { Token } from "@/types/vtt";
 import { toast } from "sonner";
+import { dbHelpers } from "@/lib/supabase";
 
 export default function VTTTokenPanel() {
   const { state, dispatch, activeMap } = useVTT();
@@ -30,7 +31,7 @@ export default function VTTTokenPanel() {
       maxHp: 0,
       conditions: [],
       auraRadius: 0,
-      auraColor: "rgba(0, 255, 0, 0.1)",
+      auraColor: "rgba(58, 226, 179, 0.1)",
       showName: true,
       showHpBar: false,
       locked: false,
@@ -47,9 +48,21 @@ export default function VTTTokenPanel() {
     const input = document.createElement("input");
     input.type = "file";
     input.accept = "image/*";
-    input.onchange = (e) => {
+    input.onchange = async (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (!file) return;
+
+      // Try uploading to Supabase Storage first
+      const publicUrl = await dbHelpers.uploadVTTTokenImage(file, tokenId);
+      if (publicUrl) {
+        dispatch({
+          type: "UPDATE_TOKEN",
+          payload: { mapId: activeMap.id, tokenId, updates: { imageDataUrl: publicUrl } },
+        });
+        return;
+      }
+
+      // Fallback: store as data URL
       const reader = new FileReader();
       reader.onload = (ev) => {
         dispatch({
@@ -68,7 +81,7 @@ export default function VTTTokenPanel() {
 
   if (!activeMap) {
     return (
-      <div className="flex items-center justify-center h-full text-terminal-primary/30 font-mono text-xs p-4 text-center">
+      <div className="vtt-empty h-full flex items-center justify-center p-4">
         Select a map first
       </div>
     );
@@ -76,7 +89,7 @@ export default function VTTTokenPanel() {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="p-3 border-b border-terminal-border/30">
+      <div className="vtt-panel-section">
         <div className="flex gap-1">
           <input
             type="text"
@@ -84,11 +97,11 @@ export default function VTTTokenPanel() {
             onChange={(e) => setNewTokenName(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleAddToken()}
             placeholder="Token name..."
-            className="flex-1 bg-terminal-bg-dark border border-terminal-border/30 text-terminal-primary text-xs px-2 py-1 rounded font-mono placeholder:text-terminal-primary/30 focus:border-terminal-primary/50 focus:outline-none"
+            className="vtt-input flex-1"
           />
           <button
             onClick={handleAddToken}
-            className="flex items-center justify-center w-7 h-7 bg-terminal-primary/10 text-terminal-primary border border-terminal-primary/30 rounded hover:bg-terminal-primary/20 transition-colors"
+            className="vtt-btn justify-center w-7 h-7 !px-0"
             title="Add Token"
           >
             <Plus size={14} />
@@ -98,18 +111,18 @@ export default function VTTTokenPanel() {
 
       <div className="flex-1 overflow-y-auto p-2 space-y-1">
         {activeMap.tokens.length === 0 ? (
-          <div className="text-terminal-primary/30 text-xs font-mono text-center py-8">
+          <div className="vtt-empty">
             No tokens on this map.
           </div>
         ) : (
           activeMap.tokens.map((token) => (
             <div
               key={token.id}
-              className="group flex items-center gap-2 p-2 rounded bg-terminal-bg-dark/50 border border-terminal-border/20 hover:border-terminal-border/40 transition-colors"
+              className="vtt-list-item group"
             >
               {/* Token avatar */}
               <div
-                className="w-8 h-8 rounded-full bg-terminal-bg-dark border border-terminal-primary/30 flex items-center justify-center text-terminal-primary text-xs font-mono cursor-pointer overflow-hidden flex-shrink-0"
+                className="vtt-avatar flex-shrink-0"
                 onClick={() => handleLoadTokenImage(token.id)}
                 title="Click to set image"
               >

@@ -66,6 +66,17 @@ const TERMINAL_CATEGORIES: Record<string, TerminalCategory> = {
   // Government / official
   'drinax_gat':      'government',
   'tppadmin':        'government',
+
+  // Blacksand City / Theev arc
+  'blacksand_downport': 'public-kiosk',  // port kiosk, free access
+  'grand_hotel':        'corporate',     // hotel with a slick corporate veneer
+  'scrapheap':          'corrupted',     // pre-Collapse hull, unknown signal, something living inside
+  'house_blood_pit':    'criminal',      // criminal organisations, lower city
+  'ferrik_intel':       'government',    // Widow intel network + Planetary Authority bounty
+  'lower_city':         'public-kiosk',  // canyon-level public kiosk
+  'asharden_lore':      'corrupted',     // Widow anomalous signal, Sindalian fragments, wrong stars
+  'crowns_backroom':    'criminal',      // hidden gambling annex, rotating surveillance caches
+  'kallos_yard_ops':    'corporate',     // shipyard legal/ops relay with polished front-end
 };
 
 export const getTerminalCategory = (code: string): TerminalCategory =>
@@ -139,7 +150,7 @@ const BOOT_PROFILES: Record<TerminalCategory, TerminalBootProfile> = {
   personal: {
     category: 'personal',
     headerLabel: 'PRIVATE NODE // PERSONAL SYSTEM',
-    accentColor: '#00ff88',
+    accentColor: '#3ae2b3',
     dimColor:    '#006633',
     bootMessages: [
       '>> PERSONAL NODE // PRIVATE SYSTEM',
@@ -193,7 +204,7 @@ const BOOT_PROFILES: Record<TerminalCategory, TerminalBootProfile> = {
   research: {
     category: 'research',
     headerLabel: 'RESEARCH NETWORK — SECURE ACCESS',
-    accentColor: '#00ff00',
+    accentColor: '#3ae2b3',
     dimColor:    '#006600',
     bootMessages: [
       '>> LYSANI RESEARCH NETWORK // SECURE PARTITION',
@@ -267,7 +278,7 @@ const BOOT_PROFILES: Record<TerminalCategory, TerminalBootProfile> = {
   default: {
     category: 'default',
     headerLabel: 'TRAVELLER TERMINAL // SYSTEM BOOT',
-    accentColor: '#00ff00',
+    accentColor: '#3ae2b3',
     dimColor:    '#006600',
     bootMessages: [
       '>> INITIALIZING TERMINAL SUBSYSTEMS...',

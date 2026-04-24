@@ -77,8 +77,8 @@ export const MarketGenerator: React.FC<MarketGeneratorProps> = ({ onPurchase }) 
   const generateMarket = async () => {
     setIsGenerating(true);
     const generatedGoods: MarketGood[] = [];
-    const broker = parseInt(brokerSkill) || 0;
-    const pop = parseInt(populationCode) || 5;
+    const broker = parseInt(brokerSkill, 10) || 0;
+    const pop = parseInt(populationCode, 10) || 5;
 
     for (const good of TRADE_GOODS) {
       // Roll for availability
@@ -174,7 +174,7 @@ export const MarketGenerator: React.FC<MarketGeneratorProps> = ({ onPurchase }) 
       purchase_date: new Date().toISOString(),
       vehicle_id: purchaseVehicle === 'none' ? undefined : purchaseVehicle,
       is_speculation: true,
-      broker_skill_used: parseInt(brokerSkill) || 0,
+      broker_skill_used: parseInt(brokerSkill, 10) || 0,
     });
 
     // Update available tons

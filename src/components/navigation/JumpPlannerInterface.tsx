@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { StarMapPanel } from "./StarMapPanel";
 import { ControlPanel } from "./ControlPanel";
 import { WorldInfoPanel } from "./WorldInfoPanel";
@@ -16,7 +16,7 @@ const NAV_TABS: { id: NavPanelTab; label: string; shortLabel: string; icon: type
   { id: "notes", label: "NOTES", shortLabel: "NOTE", icon: FileText },
 ];
 
-export function JumpPlannerInterface() {
+function JumpPlannerInterfaceInner() {
   const isMobile = useIsMobile();
   const [activePanel, setActivePanel] = useState<NavPanelTab>("jump");
 
@@ -55,7 +55,7 @@ export function JumpPlannerInterface() {
                     onClick={() => setActivePanel(tab.id)}
                     className={`flex flex-col items-center gap-0.5 py-2 px-1 text-[0.6rem] font-mono uppercase tracking-wider transition-all ${
                       isActive
-                        ? "bg-primary/15 text-primary border-b-2 border-primary shadow-[0_0_8px_rgba(0,255,0,0.2)]"
+                        ? "bg-primary/15 text-primary border-b-2 border-primary shadow-[0_0_8px_rgba(58, 226, 179,0.2)]"
                         : "bg-terminal-bg-panel text-terminal-text-dimmer hover:text-primary/70 hover:bg-primary/5"
                     }`}
                   >
@@ -88,4 +88,5 @@ export function JumpPlannerInterface() {
   );
 }
 
+export const JumpPlannerInterface = React.memo(JumpPlannerInterfaceInner);
 export default JumpPlannerInterface;

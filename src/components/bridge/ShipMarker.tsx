@@ -8,7 +8,7 @@ interface ShipMarkerProps {
 }
 
 const statusColor: Record<Contact["status"], string> = {
-  friendly: "#00ff88",
+  friendly: "#3ae2b3",
   unknown: "#00ccff",
   enemy: "#ff4455",
   derelict: "#9ca3af" // gray

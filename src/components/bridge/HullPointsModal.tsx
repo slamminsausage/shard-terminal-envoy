@@ -53,7 +53,7 @@ export function HullPointsModal({ vehicle, onClose }: HullPointsModalProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80">
-      <div className="bg-terminal-bg-panel-alt border border-terminal-bg-border rounded-lg shadow-[0_0_32px_rgba(0,255,0,0.2)] w-full max-w-sm mx-4">
+      <div className="bg-terminal-bg-panel-alt border border-terminal-bg-border rounded-lg shadow-[0_0_32px_rgba(58, 226, 179,0.2)] w-full max-w-sm mx-4">
         {/* Header */}
         <div className="flex justify-between items-center px-4 py-3 border-b border-terminal-bg-border bg-terminal-primary-light/5">
           <span className="font-['Orbitron'] text-sm tracking-[2px] text-terminal-primary-light">HULL STATUS</span>
@@ -139,7 +139,7 @@ export function HullPointsModal({ vehicle, onClose }: HullPointsModalProps) {
               type="number"
               value={currentHull}
               onChange={(e) => {
-                const val = parseInt(e.target.value) || 0;
+                const val = parseInt(e.target.value, 10) || 0;
                 setCurrentHull(Math.max(0, Math.min(maxHull, val)));
               }}
               min={0}

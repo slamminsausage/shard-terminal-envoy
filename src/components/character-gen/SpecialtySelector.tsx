@@ -56,7 +56,7 @@ export const SpecialtySelector: React.FC<SpecialtySelectorProps> = ({
     const fullSkillName = `${baseSkill} (${specialty})`;
     const normalizedKey = normalizeSkillName(fullSkillName);
     const currentSkill = currentSkills[normalizedKey];
-    const currentLevel = currentSkill ? parseInt(currentSkill.value) || 0 : 0;
+    const currentLevel = currentSkill ? parseInt(currentSkill.value, 10) || 0 : 0;
     const canIncrease = currentLevel < maxLevel;
 
     return {
@@ -227,7 +227,7 @@ export function getExistingSpecializations(
     if (skill && skill.proficient) {
       existing.push({
         specialty,
-        level: parseInt(skill.value) || 0,
+        level: parseInt(skill.value, 10) || 0,
         key,
       });
     }

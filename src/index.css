@@ -7,20 +7,29 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer utilities {
+  .scrollbar-none {
+    scrollbar-width: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 /* Traveller Terminal v5 Design System - Retro CRT Terminal Aesthetic */
 
 @layer base {
   :root {
-    /* Terminal Colors - Matrix Green with Orange Accents - UPDATED */
+    /* Terminal Colors — mint/teal CRT with amber warnings (mirrors design-system.css) */
     --terminal-black: 0 0% 0%;
-    --terminal-dark: 0 0% 4%; /* Very dark panel - updated from greenish */
-    --terminal-green: 120 100% 50%; /* #00ff00 - bright green */
-    --terminal-green-bright: 120 100% 60%;
-    --terminal-green-dim: 120 100% 33%; /* #00aa00 - updated for consistency */
-    --terminal-green-glow: 120 100% 50%;
-    --terminal-orange: 24 100% 50%; /* #ff6600 - orange warnings */
-    --terminal-cyan: 189 100% 50%; /* #00ccff - cyan accents */
-    --terminal-red: 354 100% 60%; /* #ff3344 - red alerts */
+    --terminal-dark: 160 40% 4%;            /* Very dark panel with mint tint */
+    --terminal-green: 157 74% 56%;          /* #3ae2b3 — main mint accent */
+    --terminal-green-bright: 157 82% 65%;   /* #5af0c4 — hover/highlight */
+    --terminal-green-dim: 162 60% 27%;      /* #1b6c57 — dim text/borders */
+    --terminal-green-glow: 157 74% 56%;
+    --terminal-orange: 40 100% 50%;         /* #ffaa00 — amber warning */
+    --terminal-cyan: 189 100% 50%;          /* #00ccff — cyan accents */
+    --terminal-red: 353 100% 64%;           /* #ff4a5c — red alert */
     
     /* CRT Effects */
     --crt-flicker: 0.02;
@@ -109,7 +118,7 @@
 /* CRT-style scrollbars */
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgba(0, 255, 136, 0.4) rgba(0, 255, 136, 0.08);
+  scrollbar-color: color-mix(in srgb, var(--primary) 40%, transparent) color-mix(in srgb, var(--primary) 8%, transparent);
 }
 
 *::-webkit-scrollbar {
@@ -118,17 +127,17 @@
 }
 
 *::-webkit-scrollbar-track {
-  background: rgba(0, 255, 136, 0.08);
+  background: color-mix(in srgb, var(--primary) 8%, transparent);
 }
 
 *::-webkit-scrollbar-thumb {
-  background: rgba(0, 255, 136, 0.35);
-  border: 2px solid rgba(0, 255, 136, 0.12);
-  box-shadow: 0 0 8px rgba(0, 255, 136, 0.35);
+  background: color-mix(in srgb, var(--primary) 35%, transparent);
+  border: 2px solid color-mix(in srgb, var(--primary) 12%, transparent);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--primary) 35%, transparent);
 }
 
 *::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 255, 136, 0.55);
+  background: color-mix(in srgb, var(--primary) 55%, transparent);
 }
 
 @layer base {
@@ -315,9 +324,9 @@
 
 /* Bridge Console visuals */
 .bridge-console {
-  --friendly: #00ff88;
+  --friendly: #3ae2b3;
   --unknown: #00ccff;
-  --enemy: #ff4455;
+  --enemy: #ff4a5c;
 }
 
 .ship-marker.friendly { color: var(--friendly); filter: drop-shadow(0 0 6px var(--friendly)); }
@@ -337,13 +346,13 @@
 }
 
 .crosshair-line {
-  stroke: rgba(0, 255, 136, 0.45);
+  stroke: color-mix(in srgb, var(--primary) 45%, transparent);
   stroke-width: 1;
   stroke-dasharray: 2 6;
 }
 
 .tactical-bg {
-  background: radial-gradient(ellipse at center, rgba(0, 255, 0, 0.06) 0%, rgba(0, 0, 0, 0.9) 60%, rgba(0, 0, 0, 1) 100%);
+  background: radial-gradient(ellipse at center, color-mix(in srgb, var(--primary) 6%, transparent) 0%, rgba(0, 0, 0, 0.9) 60%, rgba(0, 0, 0, 1) 100%);
   background-color: #020a03;
 }
 
@@ -351,14 +360,14 @@
   background: #0b100e;
   border: 1px solid var(--border);
   border-radius: 4px;
-  box-shadow: 0 0 24px rgba(0, 255, 0, 0.18);
+  box-shadow: 0 0 24px color-mix(in srgb, var(--primary) 18%, transparent);
   padding: 12px;
   width: 100%;
 }
 
 .tactical-canvas {
   position: relative;
-  background: radial-gradient(ellipse at center, rgba(0, 255, 136, 0.02) 0%, rgba(0, 0, 0, 0.85) 70%);
+  background: radial-gradient(ellipse at center, color-mix(in srgb, var(--primary) 2%, transparent) 0%, rgba(0, 0, 0, 0.85) 70%);
   border: 1px solid var(--border);
   border-radius: 4px;
   overflow: hidden;
@@ -432,8 +441,8 @@
   }
 
   *::-webkit-scrollbar-thumb {
-    background: rgba(0, 255, 136, 0.4);
-    border: 3px solid rgba(0, 255, 136, 0.15);
+    background: color-mix(in srgb, var(--primary) 40%, transparent);
+    border: 3px solid color-mix(in srgb, var(--primary) 15%, transparent);
   }
 
   .tactical-canvas {
@@ -469,9 +478,9 @@
 
 .vtt-zoom-slider::-webkit-slider-track {
   width: 4px;
-  background: rgba(0, 255, 0, 0.15);
+  background: color-mix(in srgb, var(--primary) 15%, transparent);
   border-radius: 2px;
-  border: 1px solid rgba(0, 255, 0, 0.2);
+  border: 1px solid color-mix(in srgb, var(--primary) 20%, transparent);
 }
 
 .vtt-zoom-slider::-webkit-slider-thumb {
@@ -479,27 +488,27 @@
   appearance: none;
   width: 14px;
   height: 14px;
-  background: rgba(0, 255, 0, 0.8);
+  background: color-mix(in srgb, var(--primary) 80%, transparent);
   border-radius: 50%;
-  border: 1px solid rgba(0, 255, 0, 0.5);
-  box-shadow: 0 0 6px rgba(0, 255, 0, 0.4);
+  border: 1px solid color-mix(in srgb, var(--primary) 50%, transparent);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--primary) 40%, transparent);
   cursor: pointer;
 }
 
 .vtt-zoom-slider::-moz-range-track {
   width: 4px;
-  background: rgba(0, 255, 0, 0.15);
+  background: color-mix(in srgb, var(--primary) 15%, transparent);
   border-radius: 2px;
-  border: 1px solid rgba(0, 255, 0, 0.2);
+  border: 1px solid color-mix(in srgb, var(--primary) 20%, transparent);
 }
 
 .vtt-zoom-slider::-moz-range-thumb {
   width: 14px;
   height: 14px;
-  background: rgba(0, 255, 0, 0.8);
+  background: color-mix(in srgb, var(--primary) 80%, transparent);
   border-radius: 50%;
-  border: 1px solid rgba(0, 255, 0, 0.5);
-  box-shadow: 0 0 6px rgba(0, 255, 0, 0.4);
+  border: 1px solid color-mix(in srgb, var(--primary) 50%, transparent);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--primary) 40%, transparent);
   cursor: pointer;
 }
 
@@ -1271,9 +1280,9 @@
   background: linear-gradient(
     90deg,
     transparent 0%,
-    rgba(0, 255, 136, 0.06) 45%,
-    rgba(0, 255, 136, 0.12) 50%,
-    rgba(0, 255, 136, 0.06) 55%,
+    color-mix(in srgb, var(--primary) 6%, transparent) 45%,
+    color-mix(in srgb, var(--primary) 12%, transparent) 50%,
+    color-mix(in srgb, var(--primary) 6%, transparent) 55%,
     transparent 100%
   );
   background-size: 200% 100%;

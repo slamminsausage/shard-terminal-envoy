@@ -30,7 +30,7 @@ import { CAREER_ROGUE } from './rogue';
 import { CAREER_SCHOLAR } from './scholar';
 import { CAREER_SCOUT } from './scout';
 import { CAREER_PRISONER, PRISON_EVENTS_SUBTABLE, getPrisonSubEvent, rollInitialParoleThreshold } from './prisoner';
-import { CAREER_PSION, PSIONIC_TALENTS, performPsiTesting, rollPsiCharacteristic, getPsiAgePenalty, type PsionicTalent, type PsiTestResult } from './psion';
+import { CAREER_PSION, PSIONIC_TALENTS, performPsiTesting, rollPsiCharacteristic, getTalentLearningDM, type PsionicTalent, type PsiTestResult } from './psion';
 
 // Export individual careers
 export { CAREER_UNIVERSITY } from './pre-careers/university';
@@ -50,10 +50,9 @@ export { CAREER_SCOUT } from './scout';
 // Prisoner is a special career - cannot be selected voluntarily
 export { CAREER_PRISONER, PRISON_EVENTS_SUBTABLE, getPrisonSubEvent, rollInitialParoleThreshold } from './prisoner';
 // Psion career - requires PSI testing before qualification
-export { CAREER_PSION, PSIONIC_TALENTS, performPsiTesting, rollPsiCharacteristic, getPsiAgePenalty, type PsionicTalent, type PsiTestResult } from './psion';
+export { CAREER_PSION, PSIONIC_TALENTS, performPsiTesting, rollPsiCharacteristic, getTalentLearningDM, type PsionicTalent, type PsiTestResult } from './psion';
 
-// Export all careers array (does NOT include Prisoner - it can only be entered via force)
-// Psion IS included but requires PSI testing before qualification
+// Export all careers array (includes Prisoner and Psion - locked in UI until prerequisites met)
 export const ALL_CAREERS = [
   CAREER_UNIVERSITY,
   CAREER_MILITARY_ACADEMY,
@@ -70,4 +69,5 @@ export const ALL_CAREERS = [
   CAREER_SCHOLAR,
   CAREER_SCOUT,
   CAREER_PSION,
+  CAREER_PRISONER,
 ];

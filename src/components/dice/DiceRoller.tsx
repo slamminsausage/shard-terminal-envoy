@@ -276,7 +276,7 @@ export function DiceRoller({ isOpen, onClose }: DiceRollerProps) {
                   <Input
                     type="number"
                     value={modifier}
-                    onChange={(e) => setModifier(parseInt(e.target.value) || 0)}
+                    onChange={(e) => setModifier(parseInt(e.target.value, 10) || 0)}
                     className="text-center"
                   />
                   <Button
@@ -341,7 +341,7 @@ export function DiceRoller({ isOpen, onClose }: DiceRollerProps) {
                   <Input
                     type="number"
                     value={modifier}
-                    onChange={(e) => setModifier(parseInt(e.target.value) || 0)}
+                    onChange={(e) => setModifier(parseInt(e.target.value, 10) || 0)}
                     className="text-center"
                   />
                   <Button

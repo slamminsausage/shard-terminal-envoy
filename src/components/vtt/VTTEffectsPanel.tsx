@@ -37,7 +37,7 @@ export default function VTTEffectsPanel() {
     <div className="flex flex-col h-full overflow-y-auto p-3 space-y-4">
       {/* Presets */}
       <div>
-        <label className="text-[10px] text-terminal-primary/50 uppercase tracking-wider font-mono block mb-1.5">
+        <label className="vtt-section-label block mb-1.5">
           Weather Preset
         </label>
         <div className="grid grid-cols-2 gap-1">
@@ -45,10 +45,10 @@ export default function VTTEffectsPanel() {
             <button
               key={id}
               onClick={() => applyPreset(id)}
-              className={`text-xs font-mono py-1.5 rounded border transition-colors ${
+              className={`vtt-option ${
                 p.preset === id
-                  ? "bg-terminal-primary/20 border-terminal-primary/50 text-terminal-primary"
-                  : "border-terminal-border/30 text-terminal-primary/40 hover:text-terminal-primary/60"
+                  ? "vtt-option--active"
+                  : ""
               }`}
             >
               {label}
@@ -58,7 +58,7 @@ export default function VTTEffectsPanel() {
       </div>
 
       {/* Enabled toggle */}
-      <label className="flex items-center gap-2 text-xs text-terminal-primary/60 font-mono cursor-pointer">
+      <label className="vtt-checkbox">
         <input
           type="checkbox"
           checked={p.enabled}
@@ -68,7 +68,6 @@ export default function VTTEffectsPanel() {
               payload: { enabled: e.target.checked },
             })
           }
-          className="accent-green-500"
         />
         Particles Active
       </label>
@@ -137,7 +136,7 @@ export default function VTTEffectsPanel() {
 
       {/* Color */}
       <div>
-        <label className="text-[10px] text-terminal-primary/50 uppercase tracking-wider font-mono block mb-1">
+        <label className="vtt-section-label block mb-1">
           Color
         </label>
         <div className="flex items-center gap-2">
@@ -179,7 +178,7 @@ function SliderControl({
   return (
     <div>
       <div className="flex items-center justify-between mb-0.5">
-        <label className="text-[10px] text-terminal-primary/50 uppercase tracking-wider font-mono">
+        <label className="vtt-section-label">
           {label}
         </label>
         <span className="text-[10px] text-terminal-primary/40 font-mono">
@@ -193,7 +192,7 @@ function SliderControl({
         step={step}
         value={value}
         onChange={(e) => onChange(parseFloat(e.target.value))}
-        className="w-full accent-green-500 h-1"
+        className="vtt-slider"
       />
     </div>
   );

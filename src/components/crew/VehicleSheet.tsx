@@ -317,8 +317,8 @@ const VehicleSheet = ({ vehicleId }: VehicleSheetProps) => {
 
   const handleSaveVehicle = async () => {
     try {
-      const hullMax = parseInt(shipInfo.hullPoints) || 1;
-      const hullCurrent = parseInt(shipInfo.currentHullPoints) || hullMax;
+      const hullMax = parseInt(shipInfo.hullPoints, 10) || 1;
+      const hullCurrent = parseInt(shipInfo.currentHullPoints, 10) || hullMax;
       const vehicleData = {
         ...(currentVehicleId && { id: currentVehicleId }),
         name: shipInfo.name,
@@ -326,28 +326,28 @@ const VehicleSheet = ({ vehicleId }: VehicleSheetProps) => {
         class_type: shipInfo.className,
         tech_level: 10,
         tonnage: 100,
-        cost: parseInt(shipInfo.fuelCost) || 0,
+        cost: parseInt(shipInfo.fuelCost, 10) || 0,
         hull: hullMax,
         hull_current: hullCurrent,
         structure: 1,
-        armor: parseInt(shipInfo.armour) || 0,
-        maneuver_drive: parseInt(drives.manoeuvreThrust) || 1,
-        jump_drive: parseInt(drives.jumpDriveJump) || 1,
-        power_plant: parseInt(shipInfo.powerPoints) || 1,
-        acceleration: parseInt(drives.reactionThrust) || 1,
+        armor: parseInt(shipInfo.armour, 10) || 0,
+        maneuver_drive: parseInt(drives.manoeuvreThrust, 10) || 1,
+        jump_drive: parseInt(drives.jumpDriveJump, 10) || 1,
+        power_plant: parseInt(shipInfo.powerPoints, 10) || 1,
+        acceleration: parseInt(drives.reactionThrust, 10) || 1,
         top_speed: 0,
-        jump_rating: parseInt(drives.jumpDriveJump) || 1,
+        jump_rating: parseInt(drives.jumpDriveJump, 10) || 1,
         fuel_capacity: 10,
         cargo_capacity: 10,
         passenger_capacity: 0,
         weapons: weapons,
         screens: {},
-        computer_rating: parseInt(shipInfo.softwareBandwidth) || 5,
+        computer_rating: parseInt(shipInfo.softwareBandwidth, 10) || 5,
         sensors: 1,
         communications: 1,
-        maintenance_cost: parseInt(shipInfo.maintenanceCost) || 0,
-        life_support: parseInt(shipInfo.lifeSupport) || 0,
-        salaries: parseInt(shipInfo.salaries) || 0,
+        maintenance_cost: parseInt(shipInfo.maintenanceCost, 10) || 0,
+        life_support: parseInt(shipInfo.lifeSupport, 10) || 0,
+        salaries: parseInt(shipInfo.salaries, 10) || 0,
         crew_requirements: {},
         specifications: {
           software: softwarePackages,
@@ -903,7 +903,7 @@ const VehicleSheet = ({ vehicleId }: VehicleSheetProps) => {
                     {members.length > 0 ? (
                       <div className="space-y-1">
                         {members.map(m => {
-                          const typeColor = (m.character_type || 'pc') === 'pc' ? '#00ff00' : '#00ccff';
+                          const typeColor = (m.character_type || 'pc') === 'pc' ? '#3ae2b3' : '#00ccff';
                           return (
                             <div key={m.id} className="flex items-center gap-2 px-3 py-1 text-xs font-mono border border-primary/10 rounded bg-background/30">
                               <span className="text-[0.55rem] font-bold px-1 py-0.5 rounded border uppercase"

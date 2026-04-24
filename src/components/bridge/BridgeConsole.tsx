@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useScreenShake } from "@/hooks/useScreenShake";
 import type { FireTrail } from "./TacticalDisplay";
 import { useBridge } from "@/contexts/BridgeContext";
@@ -19,7 +19,7 @@ import { CombatReadout } from "./combat/CombatReadout";
 import type { BridgeMessage, Contact, NewContact } from "@/lib/bridge/bridgeTypes";
 import { toast } from "sonner";
 
-export function BridgeConsole() {
+function BridgeConsoleInner() {
   const {
     bridgeState,
     contacts,
@@ -147,7 +147,7 @@ export function BridgeConsole() {
   // Weapon colour by weapon id prefix
   const weaponColor = useCallback((weaponId: string): string => {
     if (weaponId?.includes('beam_laser')) return '#00ffff';
-    if (weaponId?.includes('pulse_laser')) return '#00ff88';
+    if (weaponId?.includes('pulse_laser')) return '#3ae2b3';
     if (weaponId?.includes('missile')) return '#ff8800';
     if (weaponId?.includes('particle')) return '#aa44ff';
     return '#ffffff';
@@ -459,3 +459,5 @@ export function BridgeConsole() {
     </div>
   );
 }
+
+export const BridgeConsole = React.memo(BridgeConsoleInner);

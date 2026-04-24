@@ -4,7 +4,7 @@ import type { LayerIndex } from "@/types/vtt";
 import { Trash2, Undo2, Redo2 } from "lucide-react";
 
 const PRESET_COLORS = [
-  "#00ff00", "#00ccff", "#ff6600", "#ff3344", "#ffcc00",
+  "#3ae2b3", "#00ccff", "#ff6600", "#ff3344", "#ffcc00",
   "#aa44ff", "#ffffff", "#888888", "#44ff44", "#ff44aa",
 ];
 
@@ -23,7 +23,7 @@ export default function VTTDrawingPanel() {
     <div className="flex flex-col h-full p-3 space-y-4">
       {/* Layer Selection */}
       <div>
-        <label className="text-[10px] text-terminal-primary/50 uppercase tracking-wider font-mono block mb-1">
+        <label className="vtt-section-label block mb-1">
           Active Layer
         </label>
         <div className="flex gap-1">
@@ -31,10 +31,10 @@ export default function VTTDrawingPanel() {
             <button
               key={layer}
               onClick={() => dispatch({ type: "SET_LAYER", payload: layer })}
-              className={`flex-1 text-xs font-mono py-1 rounded border transition-colors ${
+              className={`vtt-option flex-1 ${
                 state.activeLayer === layer
-                  ? "bg-terminal-primary/20 border-terminal-primary/50 text-terminal-primary"
-                  : "border-terminal-border/30 text-terminal-primary/40 hover:text-terminal-primary/60"
+                  ? "vtt-option--active"
+                  : ""
               }`}
             >
               {label}
@@ -45,7 +45,7 @@ export default function VTTDrawingPanel() {
 
       {/* Color Picker */}
       <div>
-        <label className="text-[10px] text-terminal-primary/50 uppercase tracking-wider font-mono block mb-1">
+        <label className="vtt-section-label block mb-1">
           Color
         </label>
         <div className="flex flex-wrap gap-1.5">
@@ -80,7 +80,7 @@ export default function VTTDrawingPanel() {
 
       {/* Stroke Width */}
       <div>
-        <label className="text-[10px] text-terminal-primary/50 uppercase tracking-wider font-mono block mb-1">
+        <label className="vtt-section-label block mb-1">
           Width: {state.drawWidth}px
         </label>
         <div className="flex gap-1.5">
@@ -88,10 +88,10 @@ export default function VTTDrawingPanel() {
             <button
               key={w}
               onClick={() => dispatch({ type: "SET_DRAW_WIDTH", payload: w })}
-              className={`flex items-center justify-center w-8 h-8 rounded border transition-colors ${
+              className={`vtt-option flex items-center justify-center w-8 h-8 ${
                 state.drawWidth === w
-                  ? "bg-terminal-primary/20 border-terminal-primary/50"
-                  : "border-terminal-border/30 hover:border-terminal-border/50"
+                  ? "vtt-option--active"
+                  : ""
               }`}
               title={`${w}px`}
             >
@@ -106,21 +106,21 @@ export default function VTTDrawingPanel() {
 
       {/* Actions */}
       <div>
-        <label className="text-[10px] text-terminal-primary/50 uppercase tracking-wider font-mono block mb-1">
+        <label className="vtt-section-label block mb-1">
           Actions
         </label>
         <div className="flex gap-1">
           <button
             onClick={() => dispatch({ type: "UNDO" })}
             disabled={state.historyIndex < 0}
-            className="flex items-center gap-1 px-2 py-1 text-xs font-mono rounded border border-terminal-border/30 text-terminal-primary/50 hover:text-terminal-primary hover:bg-terminal-primary/10 disabled:opacity-30 transition-colors"
+            className="vtt-btn"
           >
             <Undo2 size={12} /> Undo
           </button>
           <button
             onClick={() => dispatch({ type: "REDO" })}
             disabled={state.historyIndex >= state.history.length - 1}
-            className="flex items-center gap-1 px-2 py-1 text-xs font-mono rounded border border-terminal-border/30 text-terminal-primary/50 hover:text-terminal-primary hover:bg-terminal-primary/10 disabled:opacity-30 transition-colors"
+            className="vtt-btn"
           >
             <Redo2 size={12} /> Redo
           </button>
@@ -133,7 +133,7 @@ export default function VTTDrawingPanel() {
                 payload: { mapId: activeMap.id, layer: state.activeLayer },
               })
             }
-            className="flex items-center gap-1 mt-2 px-2 py-1 text-xs font-mono rounded border border-red-500/30 text-red-400/60 hover:text-red-400 hover:bg-red-500/10 transition-colors w-full justify-center"
+            className="vtt-btn danger mt-2 w-full justify-center"
           >
             <Trash2 size={12} /> Clear Layer
           </button>

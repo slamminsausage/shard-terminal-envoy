@@ -74,8 +74,13 @@ export interface EventState {
   // Sub-roll state
   subRollResult?: {
     roll: number;
+    dm?: number;
+    total?: number;
     outcome: { min: number; max: number; label: string; effects: EventEffects };
   };
+
+  // Multi-pick skill selection (for chooseCount > 1)
+  selectedSkills?: string[];
 
   // Final outcome
   appliedEffects?: EventEffects;
@@ -366,11 +371,19 @@ export class EventProcessor {
       };
     }
 
+    // Check if choice effects require skill selection
+    let nextPhase: EventPhase = 'apply_effects';
+    if (choice.effects?.skills?.anySkill) {
+      nextPhase = 'select_any_skill';
+    } else if (choice.effects?.skills?.choices && choice.effects.skills.choices.length > 1) {
+      nextPhase = 'select_skill_gain';
+    }
+
     return {
       ...state,
       selectedChoice: choice,
       appliedEffects: choice.effects,
-      phase: 'apply_effects',
+      phase: nextPhase,
     };
   }
 
@@ -463,6 +476,15 @@ export class EventProcessor {
    * Acknowledge sub-roll result
    */
   acknowledgeSubRollResult(state: EventState): EventState {
+    // Check if we need skill selection from sub-roll outcome
+    if (state.appliedEffects?.skills) {
+      if (state.appliedEffects.skills.anySkill) {
+        return { ...state, phase: 'select_any_skill' };
+      }
+      if (state.appliedEffects.skills.choices && state.appliedEffects.skills.choices.length > 1) {
+        return { ...state, phase: 'select_skill_gain' };
+      }
+    }
     return { ...state, phase: 'apply_effects' };
   }
 
@@ -474,17 +496,30 @@ export class EventProcessor {
       return state;
     }
 
-    // Update effects to only include the selected skill
+    const chooseCount = state.appliedEffects.skills.chooseCount || 1;
+    const currentChoices = state.selectedSkills || [];
+    const newChoices = [...currentChoices, skillName];
+
+    if (newChoices.length >= chooseCount) {
+      // All picks made — set choices to selected and move to apply
+      return {
+        ...state,
+        selectedSkills: undefined,
+        appliedEffects: {
+          ...state.appliedEffects,
+          skills: {
+            ...state.appliedEffects.skills,
+            choices: newChoices,
+          },
+        },
+        phase: 'apply_effects',
+      };
+    }
+
+    // More picks needed — stay in selection phase
     return {
       ...state,
-      appliedEffects: {
-        ...state.appliedEffects,
-        skills: {
-          ...state.appliedEffects.skills,
-          choices: [skillName],
-        },
-      },
-      phase: 'apply_effects',
+      selectedSkills: newChoices,
     };
   }
 
@@ -531,7 +566,7 @@ export class EventProcessor {
     } else {
       // No specific skills required - use character's existing skills
       for (const [skillKey, skillData] of Object.entries(this.skills)) {
-        const level = parseInt(skillData.value) || 0;
+        const level = parseInt(skillData.value, 10) || 0;
 
         if (req?.minLevel && level < req.minLevel) {
           continue;
@@ -564,7 +599,7 @@ export class EventProcessor {
     const normalizedKey = normalizeSkillName(skillName);
     const directMatch = this.skills[normalizedKey];
     if (directMatch) {
-      return parseInt(directMatch.value) || 0;
+      return parseInt(directMatch.value, 10) || 0;
     }
 
     // If this is a base skill name (no specialty), check for any specialty matches
@@ -574,7 +609,7 @@ export class EventProcessor {
       let bestLevel = -3;
       for (const [key, data] of Object.entries(this.skills)) {
         if (key.startsWith(baseKey + '-') || key === baseKey) {
-          const level = parseInt(data.value) || 0;
+          const level = parseInt(data.value, 10) || 0;
           if (level > bestLevel) {
             bestLevel = level;
           }

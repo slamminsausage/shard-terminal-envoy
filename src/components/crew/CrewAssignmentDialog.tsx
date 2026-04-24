@@ -155,7 +155,7 @@ export default function CrewAssignmentDialog({
             {characters.length > 0 ? characters.map(character => {
               const state = memberStates[character.id] || { selected: false, position: '', customPosition: '' };
               const charType = character.character_type || 'pc';
-              const typeColor = charType === 'pc' ? '#00ff00' : '#00ccff';
+              const typeColor = charType === 'pc' ? '#3ae2b3' : '#00ccff';
 
               return (
                 <Card key={character.id} className={`bg-card/30 transition-all ${state.selected ? 'border-[var(--primary)]/50' : ''}`}>

@@ -18,7 +18,7 @@ export function WorldInfoPanel() {
           <>
             {/* World Name & Basic Info */}
             <div className="text-center border-b border-terminal-bg-border pb-3">
-              <h3 className="text-xl font-['Orbitron'] font-bold text-primary drop-shadow-[0_0_10px_rgba(0,255,0,0.4)]">
+              <h3 className="text-xl font-['Orbitron'] font-bold text-primary drop-shadow-[0_0_10px_rgba(58, 226, 179,0.4)]">
                 {selectedWorld.name}
               </h3>
               <div className="text-terminal-secondary font-mono text-sm mt-1">
@@ -91,7 +91,7 @@ export function WorldInfoPanel() {
           <>
             {/* Placeholder when no world selected */}
             <div className="text-center border-b border-terminal-bg-border pb-3">
-              <h3 className="text-xl font-['Orbitron'] font-bold text-terminal-text-dimmer drop-shadow-[0_0_10px_rgba(0,255,0,0.2)]">
+              <h3 className="text-xl font-['Orbitron'] font-bold text-terminal-text-dimmer drop-shadow-[0_0_10px_rgba(58, 226, 179,0.2)]">
                 ????????
               </h3>
               <div className="text-terminal-text-dimmer font-mono text-sm mt-1">

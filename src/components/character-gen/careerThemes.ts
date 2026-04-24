@@ -220,12 +220,12 @@ export const CAREER_THEMES: Record<string, CareerTheme> = {
 
 // Default theme for careers not in the list (fallback to terminal green)
 export const DEFAULT_CAREER_THEME: CareerTheme = {
-  primaryColor: '#00ff00',
-  bgColor: 'rgba(0, 255, 0, 0.1)',
-  hoverBgColor: 'rgba(0, 255, 0, 0.2)',
-  borderColor: 'rgba(0, 255, 0, 0.5)',
-  textColor: '#00ff00',
-  glowColor: 'rgba(0, 255, 0, 0.4)',
+  primaryColor: '#3ae2b3',
+  bgColor: 'rgba(58, 226, 179, 0.1)',
+  hoverBgColor: 'rgba(58, 226, 179, 0.2)',
+  borderColor: 'rgba(58, 226, 179, 0.5)',
+  textColor: '#3ae2b3',
+  glowColor: 'rgba(58, 226, 179, 0.4)',
   icon: Users,
   tagline: 'Begin your journey',
 };

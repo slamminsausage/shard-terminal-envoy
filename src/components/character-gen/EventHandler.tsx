@@ -26,7 +26,7 @@ interface EventHandlerProps {
   characteristics: Characteristics;
   skills: Record<string, { proficient: boolean; value: string }>;
   onComplete: (effects: EventEffects | undefined, messages: string[]) => void;
-  onTableRedirect?: (table: 'life_events' | 'injury' | 'aging' | 'draft' | 'unusual_events') => void;
+  onTableRedirect?: (table: 'life_events' | 'injury' | 'aging' | 'draft' | 'unusual_events' | 'mishap' | 'prison_event') => void;
   useManualDice?: boolean; // When true, show manual dice entry instead of auto-roll buttons
 }
 
@@ -77,7 +77,7 @@ export function EventHandler({
     const normalizedKey = normalizeSkillName(skillName);
     const directMatch = skills[normalizedKey];
     if (directMatch) {
-      return parseInt(directMatch.value) || 0;
+      return parseInt(directMatch.value, 10) || 0;
     }
 
     // If this is a base skill name (no specialty), check for any specialty matches
@@ -87,7 +87,7 @@ export function EventHandler({
       let bestLevel = -3;
       for (const [key, data] of Object.entries(skills)) {
         if (key.startsWith(baseKey + '-') || key === baseKey) {
-          const level = parseInt(data.value) || 0;
+          const level = parseInt(data.value, 10) || 0;
           if (level > bestLevel) {
             bestLevel = level;
           }
@@ -319,12 +319,12 @@ export function EventHandler({
         />
         <Button
           onClick={() => {
-            const val = parseInt(manualDiceValue);
+            const val = parseInt(manualDiceValue, 10);
             if (!isNaN(val) && val >= diceCount && val <= diceCount * diceSides) {
               onSubmit(val);
             }
           }}
-          disabled={!manualDiceValue || isNaN(parseInt(manualDiceValue)) || parseInt(manualDiceValue) < diceCount || parseInt(manualDiceValue) > diceCount * diceSides}
+          disabled={!manualDiceValue || isNaN(parseInt(manualDiceValue, 10)) || parseInt(manualDiceValue, 10) < diceCount || parseInt(manualDiceValue, 10) > diceCount * diceSides}
           className="bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
         >
           <Edit3 className="h-4 w-4 mr-2" />
@@ -550,12 +550,12 @@ export function EventHandler({
               />
               <Button
                 onClick={() => {
-                  const val = parseInt(manualDiceValue);
+                  const val = parseInt(manualDiceValue, 10);
                   if (!isNaN(val) && val >= diceCount && val <= diceCount * diceSides) {
                     handleSubRoll(val);
                   }
                 }}
-                disabled={!manualDiceValue || isNaN(parseInt(manualDiceValue)) || parseInt(manualDiceValue) < diceCount || parseInt(manualDiceValue) > diceCount * diceSides}
+                disabled={!manualDiceValue || isNaN(parseInt(manualDiceValue, 10)) || parseInt(manualDiceValue, 10) < diceCount || parseInt(manualDiceValue, 10) > diceCount * diceSides}
                 className="bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
               >
                 <Edit3 className="h-4 w-4 mr-2" />
@@ -767,11 +767,25 @@ export function EventHandler({
     }
 
     if (choices && choices.length > 1) {
+      const chooseCount = state.appliedEffects?.skills?.chooseCount || 1;
+      const alreadySelected = state.selectedSkills || [];
+      const remainingPicks = chooseCount - alreadySelected.length;
+      const availableChoices = choices.filter(skill => !alreadySelected.includes(skill));
+
       return (
         <div className="space-y-2">
-          <p className="text-sm text-terminal-primary/80">Choose a skill to gain at level {level ?? 1}:</p>
+          <p className="text-sm text-terminal-primary/80">
+            {chooseCount > 1
+              ? `Choose ${remainingPicks} skill${remainingPicks > 1 ? 's' : ''} to gain at level ${level ?? 1} (${alreadySelected.length}/${chooseCount} selected):`
+              : `Choose a skill to gain at level ${level ?? 1}:`}
+          </p>
+          {alreadySelected.length > 0 && (
+            <div className="text-xs text-green-400">
+              Selected: {alreadySelected.join(', ')}
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-2">
-            {choices.map(skill => (
+            {availableChoices.map(skill => (
               <Button
                 key={skill}
                 onClick={() => handleSelectSkillGain(skill)}

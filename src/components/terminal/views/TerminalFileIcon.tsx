@@ -25,6 +25,8 @@ interface LogEntry {
   video_file?: string;
   logs?: any[];
   content?: string;
+  type?: string;
+  action_sequence?: { id: string; category: string; on_complete?: { persist_key?: string } };
 }
 
 interface TerminalFileIconProps {
@@ -32,22 +34,32 @@ interface TerminalFileIconProps {
   accentColor: string;
   dimColor: string;
   terminalCode: string;
+  completedActions?: string[];
   onClick: () => void;
 }
 
 const SECURITY_CONFIG: Record<string, { color: string; icon: string; glow?: boolean; pulse?: boolean }> = {
   unlocked:   { color: '#88ffaa', icon: '○' },
-  low:        { color: '#00ff00', icon: '□' },
+  low:        { color: '#3ae2b3', icon: '□' },
   medium:     { color: '#00ccff', icon: '◇' },
   high:       { color: '#ffaa00', icon: '◆', glow: true },
   restricted: { color: '#ff6600', icon: '◆', glow: true },
   critical:   { color: '#ff3344', icon: '⬡', pulse: true },
 };
 
-const DEFAULT_SECURITY = { color: '#00ff00', icon: '□' };
+const DEFAULT_SECURITY = { color: '#3ae2b3', icon: '□' };
+
+const ACTION_CATEGORY_BADGES: Record<string, { label: string; icon: string }> = {
+  door_unlock: { label: 'CTL', icon: '⚿' },
+  system_override: { label: 'OVR', icon: '⚡' },
+  data_extraction: { label: 'DLD', icon: '⇣' },
+};
 
 /** Determine file type from log content */
 function getFileType(log: LogEntry): { label: string; icon: string } {
+  if (log.type === 'action_sequence' && log.action_sequence) {
+    return ACTION_CATEGORY_BADGES[log.action_sequence.category] || { label: 'ACT', icon: '⚙' };
+  }
   if (log.video_file) {
     return { label: 'VID', icon: '▶' };
   }
@@ -71,6 +83,7 @@ export default function TerminalFileIcon({
   accentColor,
   dimColor,
   terminalCode,
+  completedActions = [],
   onClick,
 }: TerminalFileIconProps) {
   const [hovered, setHovered] = useState(false);
@@ -243,6 +256,27 @@ export default function TerminalFileIcon({
           .{fileType.label}
         </span>
       </div>
+
+      {/* Completed action indicator */}
+      {log.type === 'action_sequence' && log.action_sequence && (() => {
+        const persistKey = log.action_sequence.on_complete?.persist_key || log.action_sequence.id;
+        const isCompleted = completedActions.includes(persistKey);
+        return isCompleted ? (
+          <div
+            className="font-mono mt-0.5"
+            style={{ color: '#88ffaa', fontSize: '8px', textShadow: '0 0 4px #88ffaa44' }}
+          >
+            EXECUTED
+          </div>
+        ) : (
+          <div
+            className="font-mono mt-0.5 animate-pulse"
+            style={{ color: '#ffaa00', fontSize: '8px' }}
+          >
+            INTERACTIVE
+          </div>
+        );
+      })()}
 
       {/* Fake file size */}
       <div className="mt-0.5">

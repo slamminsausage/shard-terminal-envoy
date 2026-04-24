@@ -193,15 +193,25 @@ describe('Skill DM Calculation', () => {
       expect(getSkillDM(false, 0, 0)).toBe(-3);
     });
 
-    it('should reduce penalty with Jack-of-All-Trades level 1', () => {
-      // Jack-1 reduces penalty by 2 (min -1)
-      expect(getSkillDM(false, 0, 1)).toBe(-1);
+    it('should reduce penalty to -2 with Jack-of-All-Trades level 1', () => {
+      // Jack-1: -3 + 1 = -2
+      expect(getSkillDM(false, 0, 1)).toBe(-2);
     });
 
-    it('should reduce penalty with Jack-of-All-Trades level 2+', () => {
-      // Jack-2+ reduces penalty by 2 (min -1)
+    it('should reduce penalty to -1 with Jack-of-All-Trades level 2', () => {
+      // Jack-2: -3 + 2 = -1
       expect(getSkillDM(false, 0, 2)).toBe(-1);
-      expect(getSkillDM(false, 0, 3)).toBe(-1);
+    });
+
+    it('should reduce penalty to 0 with Jack-of-All-Trades level 3', () => {
+      // Jack-3: -3 + 3 = 0 (cap)
+      expect(getSkillDM(false, 0, 3)).toBe(0);
+    });
+
+    it('should cap Jack-of-All-Trades benefit at 0 (never positive)', () => {
+      // Higher JoT levels should not exceed 0
+      expect(getSkillDM(false, 0, 4)).toBe(0);
+      expect(getSkillDM(false, 0, 6)).toBe(0);
     });
   });
 });

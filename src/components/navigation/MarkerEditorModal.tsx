@@ -4,6 +4,7 @@ import { useJumpPlanner } from "@/contexts/JumpPlannerContext";
 import { useCampaign } from "@/contexts/CampaignContext";
 import { getAllMarkerTypes, MARKER_ICONS } from "@/config/markerTypes";
 import type { HexMarker, MarkerType } from "@/types/navigation";
+import { CrewVisibilitySelector } from "@/components/crew/CrewVisibilitySelector";
 
 interface MarkerEditorModalProps {
   isOpen: boolean;
@@ -28,12 +29,13 @@ export function MarkerEditorModal({
     marker_type: "CUSTOM",
     marker_label: "",
     marker_icon: "",
-    marker_color: "#00ff00",
+    marker_color: "#3ae2b3",
     description: "",
     gm_notes: "",
     is_active: true,
     is_visible_to_players: true,
     display_order: 0,
+    visible_crew_ids: null,
   });
 
   const [showIconPicker, setShowIconPicker] = useState(false);
@@ -48,24 +50,26 @@ export function MarkerEditorModal({
         marker_type: marker.marker_type,
         marker_label: marker.marker_label,
         marker_icon: marker.marker_icon || "",
-        marker_color: marker.marker_color || "#00ff00",
+        marker_color: marker.marker_color || "#3ae2b3",
         description: marker.description || "",
         gm_notes: marker.gm_notes || "",
         is_active: marker.is_active !== false,
         is_visible_to_players: marker.is_visible_to_players !== false,
         display_order: marker.display_order || 0,
+        visible_crew_ids: marker.visible_crew_ids ?? null,
       });
     } else {
       setFormData({
         marker_type: "CUSTOM",
         marker_label: "",
         marker_icon: "",
-        marker_color: "#00ff00",
+        marker_color: "#3ae2b3",
         description: "",
         gm_notes: "",
         is_active: true,
         is_visible_to_players: true,
         display_order: 0,
+        visible_crew_ids: null,
       });
     }
   }, [marker, isOpen]);
@@ -78,7 +82,7 @@ export function MarkerEditorModal({
         marker_type: type,
         // Only update icon/color if they haven't been customized
         marker_icon: prev.marker_icon || typeConfig.icon,
-        marker_color: prev.marker_color === "#00ff00" ? typeConfig.defaultColor : prev.marker_color,
+        marker_color: prev.marker_color === "#3ae2b3" ? typeConfig.defaultColor : prev.marker_color,
       }));
     }
   };
@@ -215,16 +219,16 @@ export function MarkerEditorModal({
                   <input
                     type="color"
                     className="w-16 h-10 bg-black border border-primary rounded cursor-pointer"
-                    value={formData.marker_color || "#00ff00"}
+                    value={formData.marker_color || "#3ae2b3"}
                     onChange={(e) => setFormData({ ...formData, marker_color: e.target.value })}
                   />
                   <input
                     type="text"
                     className="terminal-input flex-1"
-                    value={formData.marker_color || "#00ff00"}
+                    value={formData.marker_color || "#3ae2b3"}
                     onChange={(e) => setFormData({ ...formData, marker_color: e.target.value })}
                     pattern="^#[0-9A-Fa-f]{6}$"
-                    placeholder="#00ff00"
+                    placeholder="#3ae2b3"
                   />
                 </div>
               </div>
@@ -292,6 +296,19 @@ export function MarkerEditorModal({
                 </span>
               </label>
             </div>
+
+            {/* Per-crew visibility (GM only) */}
+            {isGM && (
+              <div className="border-t border-terminal-bg-border pt-4">
+                <label className="block text-sm text-terminal-text-dimmer mb-2">
+                  CREW SCOPE
+                </label>
+                <CrewVisibilitySelector
+                  value={formData.visible_crew_ids ?? null}
+                  onChange={(ids) => setFormData({ ...formData, visible_crew_ids: ids })}
+                />
+              </div>
+            )}
           </div>
 
           {/* Actions */}
