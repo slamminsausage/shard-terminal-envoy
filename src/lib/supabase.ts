@@ -1228,6 +1228,79 @@ export const dbHelpers = {
     }
   },
 
+  // VTT Asset Storage Functions (maps, audio, handouts, tokens)
+  // All assets go in the public `vtt-assets` bucket so presenter windows
+  // and secondary devices can fetch them directly via public URL.
+  async uploadVTTAsset(
+    source: File | Blob,
+    kind: 'audio' | 'maps' | 'handouts' | 'tokens',
+    assetId: string,
+    options?: { mimeType?: string; fileName?: string }
+  ): Promise<string | null> {
+    if (supabaseDisabled) return null;
+    try {
+      const mimeType = options?.mimeType
+        ?? (source instanceof File ? source.type : undefined)
+        ?? 'application/octet-stream';
+
+      let ext: string | undefined;
+      const nameForExt = options?.fileName ?? (source instanceof File ? source.name : undefined);
+      if (nameForExt && nameForExt.includes('.')) {
+        ext = nameForExt.split('.').pop();
+      }
+      if (!ext && mimeType.includes('/')) {
+        ext = mimeType.split('/')[1].split(';')[0];
+      }
+      if (!ext) ext = 'bin';
+
+      const filePath = `${kind}/${assetId}.${ext}`;
+
+      if (isDev) {
+        const sizeKB = (source.size / 1024).toFixed(2);
+        console.log(`[VTT] Uploading ${kind} asset: ${filePath} (${sizeKB} KB)`);
+      }
+
+      const { error } = await supabase.storage
+        .from('vtt-assets')
+        .upload(filePath, source, {
+          cacheControl: '3600',
+          upsert: true,
+          contentType: mimeType,
+        });
+
+      if (error) {
+        console.error('[VTT] Upload error:', error);
+        throw error;
+      }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('vtt-assets')
+        .getPublicUrl(filePath);
+
+      if (isDev) console.log('[VTT] Upload OK:', publicUrl);
+      return publicUrl;
+    } catch (error) {
+      console.error('[VTT] Failed to upload asset:', error);
+      return null;
+    }
+  },
+
+  async uploadVTTAssetFromDataURL(
+    dataUrl: string,
+    kind: 'audio' | 'maps' | 'handouts' | 'tokens',
+    assetId: string
+  ): Promise<string | null> {
+    if (supabaseDisabled) return null;
+    try {
+      const response = await fetch(dataUrl);
+      const blob = await response.blob();
+      return await dbHelpers.uploadVTTAsset(blob, kind, assetId, { mimeType: blob.type });
+    } catch (error) {
+      console.error('[VTT] Failed to upload asset from data URL:', error);
+      return null;
+    }
+  },
+
   // Player Notes Functions
   async getAllPlayerNotes() {
     if (supabaseDisabled) {

@@ -33,6 +33,8 @@ import {
   createDefaultVTTState,
   createDefaultMap,
 } from "@/types/vtt";
+import { dbHelpers, supabaseDisabled } from "@/lib/supabase";
+import { toast } from "sonner";
 
 // ─── Storage Keys ───────────────────────────────────────────────────────────
 
@@ -795,93 +797,77 @@ export function VTTProvider({ children }: { children: React.ReactNode }) {
     async (mapId: string, file: File) => {
       const isVideo = file.type.startsWith("video/");
 
-      if (isVideo) {
-        // Use objectURL for video (dataURL would be too large)
-        const url = URL.createObjectURL(file);
-        const video = document.createElement("video");
-        video.muted = true;
-        video.preload = "metadata";
+      // Read metadata off a local object URL (fast, no upload wait).
+      const localUrl = URL.createObjectURL(file);
 
-        return new Promise<void>((resolve, reject) => {
+      const metadata = await new Promise<{ w: number; h: number }>((resolve, reject) => {
+        if (isVideo) {
+          const video = document.createElement("video");
+          video.muted = true;
+          video.preload = "metadata";
           video.onloadedmetadata = () => {
-            const currentMap = stateRef.current.maps.find((m) => m.id === mapId);
-            const canvasW = currentMap?.width || 1920;
-            const canvasH = currentMap?.height || 1080;
-            const scaleX = canvasW / video.videoWidth;
-            const scaleY = canvasH / video.videoHeight;
-            const fitScale = Math.min(scaleX, scaleY);
-
-            dispatch({
-              type: "SET_MAP_IMAGE",
-              payload: { mapId, dataUrl: url, width: canvasW, height: canvasH },
-            });
-            dispatch({
-              type: "UPDATE_MAP",
-              payload: {
-                id: mapId,
-                updates: {
-                  isVideo: true,
-                  imageScale: fitScale,
-                  imageOffsetX: 0,
-                  imageOffsetY: 0,
-                  imageNaturalWidth: video.videoWidth,
-                  imageNaturalHeight: video.videoHeight,
-                },
-              },
-            });
-            resolve();
+            resolve({ w: video.videoWidth, h: video.videoHeight });
           };
           video.onerror = () => reject(new Error("Failed to load video"));
-          video.src = url;
-        });
+          video.src = localUrl;
+        } else {
+          const img = new Image();
+          img.onload = () => resolve({ w: img.naturalWidth, h: img.naturalHeight });
+          img.onerror = () => reject(new Error("Failed to load image"));
+          img.src = localUrl;
+        }
+      });
+
+      const currentMap = stateRef.current.maps.find((m) => m.id === mapId);
+      const canvasW = currentMap?.width || 1920;
+      const canvasH = currentMap?.height || 1080;
+      const fitScale = Math.min(canvasW / metadata.w, canvasH / metadata.h);
+
+      // Upload to Supabase Storage so the URL survives reloads and syncs across devices.
+      // Videos in particular MUST be uploaded — blob: URLs don't survive reloads and
+      // the autosave logic actively strips them.
+      let persistentUrl: string | null = null;
+      if (!supabaseDisabled) {
+        try {
+          persistentUrl = await dbHelpers.uploadVTTAsset(file, "maps", mapId);
+        } catch (err) {
+          console.error("Map upload failed:", err);
+        }
       }
 
-      return new Promise<void>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          const dataUrl = e.target?.result as string;
-          const img = new Image();
-          img.onload = () => {
-            // Find current map to get its canvas dimensions
-            const currentMap = stateRef.current.maps.find((m) => m.id === mapId);
-            const canvasW = currentMap?.width || 1920;
-            const canvasH = currentMap?.height || 1080;
+      if (!persistentUrl) {
+        // Fallback: blob URL only works for this session.
+        persistentUrl = localUrl;
+        if (!supabaseDisabled) {
+          toast.error(
+            `Map "${file.name}" uploaded locally — will not sync to other devices (Supabase upload failed).`
+          );
+        } else if (isVideo) {
+          // Supabase off + video = won't survive a reload either.
+          toast.warning(
+            `Video map "${file.name}" loaded for this session only (Supabase disabled).`
+          );
+        }
+      }
+      // Note: don't revoke localUrl — the <img>/<video> renderer may still be reading from it.
 
-            // Calculate scale to fit image within canvas
-            const scaleX = canvasW / img.naturalWidth;
-            const scaleY = canvasH / img.naturalHeight;
-            const fitScale = Math.min(scaleX, scaleY);
-
-            dispatch({
-              type: "SET_MAP_IMAGE",
-              payload: {
-                mapId,
-                dataUrl,
-                width: canvasW,
-                height: canvasH,
-              },
-            });
-            dispatch({
-              type: "UPDATE_MAP",
-              payload: {
-                id: mapId,
-                updates: {
-                  isVideo: false,
-                  imageScale: fitScale,
-                  imageOffsetX: 0,
-                  imageOffsetY: 0,
-                  imageNaturalWidth: img.naturalWidth,
-                  imageNaturalHeight: img.naturalHeight,
-                },
-              },
-            });
-            resolve();
-          };
-          img.onerror = () => reject(new Error("Failed to load image"));
-          img.src = dataUrl;
-        };
-        reader.onerror = () => reject(new Error("Failed to read file"));
-        reader.readAsDataURL(file);
+      dispatch({
+        type: "SET_MAP_IMAGE",
+        payload: { mapId, dataUrl: persistentUrl, width: canvasW, height: canvasH },
+      });
+      dispatch({
+        type: "UPDATE_MAP",
+        payload: {
+          id: mapId,
+          updates: {
+            isVideo,
+            imageScale: fitScale,
+            imageOffsetX: 0,
+            imageOffsetY: 0,
+            imageNaturalWidth: metadata.w,
+            imageNaturalHeight: metadata.h,
+          },
+        },
       });
     },
     []

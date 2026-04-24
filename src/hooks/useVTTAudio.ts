@@ -1,9 +1,18 @@
 import { useRef, useEffect, useCallback } from "react";
 import { useVTT } from "@/contexts/VTTContext";
+import { dbHelpers, supabaseDisabled } from "@/lib/supabase";
+import { toast } from "sonner";
 
 /**
  * Web Audio API hook for VTT ambient crossfade and SFX playback.
- * All audio files are loaded from local storage (data URLs / object URLs).
+ *
+ * Uploaded audio is pushed to Supabase Storage (bucket `vtt-assets`) and
+ * the returned public URL is stored in the VTT state. This is what makes
+ * audio persist device-to-device — storing blob: URLs or base64 data URLs
+ * in localStorage is device-local and does not sync.
+ *
+ * When Supabase is disabled (offline dev mode) the hook falls back to
+ * blob URLs for the current session only (audio will not survive a reload).
  */
 export function useVTTAudio() {
   const { state, dispatch } = useVTT();
@@ -103,22 +112,58 @@ export function useVTTAudio() {
     }
   }, [state.audio.ambientB?.pan]);
 
-  // ─── Load ambient track ───────────────────────────────────────────
-
-  const loadAmbient = useCallback(
-    (slot: "A" | "B", file: File) => {
+  // Attach a new HTMLAudioElement for an ambient slot from a persisted URL.
+  // Called lazily on user gesture (play) so the AudioContext is resumable
+  // on Safari/iOS. Without this, a VTT session loaded from another device
+  // would have state.audio.ambientA set but no audio element to play.
+  const attachAmbientElement = useCallback(
+    (slot: "A" | "B", url: string) => {
       const ctx = ensureContext();
-      const url = URL.createObjectURL(file);
-
       const el = new Audio();
       el.crossOrigin = "anonymous";
       el.loop = true;
       el.src = url;
 
+      try {
+        const source = ctx.createMediaElementSource(el);
+        if (slot === "A") {
+          ambientAElRef.current?.pause();
+          ambientASourceRef.current?.disconnect();
+          source.connect(ambientAGainRef.current!);
+          ambientASourceRef.current = source;
+          ambientAElRef.current = el;
+        } else {
+          ambientBElRef.current?.pause();
+          ambientBSourceRef.current?.disconnect();
+          source.connect(ambientBGainRef.current!);
+          ambientBSourceRef.current = source;
+          ambientBElRef.current = el;
+        }
+      } catch (err) {
+        console.warn(`Failed to attach ambient ${slot}:`, err);
+      }
+      return el;
+    },
+    [ensureContext]
+  );
+
+  // ─── Load ambient track ───────────────────────────────────────────
+
+  const loadAmbient = useCallback(
+    async (slot: "A" | "B", file: File) => {
+      const ctx = ensureContext();
+      const trackId = crypto.randomUUID();
+
+      // Start playback immediately from a local blob URL while we upload.
+      const localUrl = URL.createObjectURL(file);
+      const el = new Audio();
+      el.crossOrigin = "anonymous";
+      el.loop = true;
+      el.src = localUrl;
+
       const source = ctx.createMediaElementSource(el);
 
       if (slot === "A") {
-        // Clean up old
         ambientAElRef.current?.pause();
         ambientASourceRef.current?.disconnect();
 
@@ -134,27 +179,45 @@ export function useVTTAudio() {
         ambientBElRef.current = el;
       }
 
-      // Read file as data URL for persistence
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        dispatch({
-          type: "SET_AMBIENT_TRACK",
-          payload: {
-            slot,
-            track: {
-              id: crypto.randomUUID(),
-              name: file.name,
-              url: e.target?.result as string,
-              volume: 0.7,
-              pan: 0,
-              loop: true,
-            },
-          },
-        });
-      };
-      reader.readAsDataURL(file);
-
       el.play().catch(() => {});
+
+      // Upload to Supabase Storage so the URL persists across devices.
+      let persistentUrl: string | null = null;
+      if (!supabaseDisabled) {
+        try {
+          persistentUrl = await dbHelpers.uploadVTTAsset(file, "audio", trackId);
+        } catch (err) {
+          console.error("Ambient upload failed:", err);
+        }
+      }
+
+      if (!persistentUrl) {
+        // Fallback: session-only blob URL. Warn the user their track won't sync.
+        persistentUrl = localUrl;
+        if (!supabaseDisabled) {
+          toast.error(
+            `Uploaded "${file.name}" will not sync across devices (upload failed).`
+          );
+        }
+      }
+      // Note: we intentionally do not revoke localUrl — the HTMLAudioElement is
+      // still playing from it this session. State stores the persistent URL so
+      // other devices / reloads use the Supabase URL instead.
+
+      dispatch({
+        type: "SET_AMBIENT_TRACK",
+        payload: {
+          slot,
+          track: {
+            id: trackId,
+            name: file.name,
+            url: persistentUrl,
+            volume: 0.7,
+            pan: 0,
+            loop: true,
+          },
+        },
+      });
     },
     [ensureContext, dispatch]
   );
@@ -171,12 +234,16 @@ export function useVTTAudio() {
   }, [dispatch]);
 
   const playAmbient = useCallback((slot: "A" | "B") => {
-    const el = slot === "A" ? ambientAElRef.current : ambientBElRef.current;
-    if (el) {
-      ensureContext();
-      el.play().catch(() => {});
+    let el = slot === "A" ? ambientAElRef.current : ambientBElRef.current;
+    if (!el) {
+      // Lazy-attach from persisted state (e.g. session loaded from another device).
+      const track = slot === "A" ? state.audio.ambientA : state.audio.ambientB;
+      if (!track?.url) return;
+      el = attachAmbientElement(slot, track.url);
     }
-  }, [ensureContext]);
+    ensureContext();
+    el.play().catch(() => {});
+  }, [ensureContext, state.audio.ambientA, state.audio.ambientB, attachAmbientElement]);
 
   const pauseAmbient = useCallback((slot: "A" | "B") => {
     const el = slot === "A" ? ambientAElRef.current : ambientBElRef.current;
@@ -186,29 +253,44 @@ export function useVTTAudio() {
   // ─── SFX ──────────────────────────────────────────────────────────
 
   const loadSFX = useCallback(
-    (slotIndex: number, file: File) => {
-      const url = URL.createObjectURL(file);
-      const el = new Audio(url);
+    async (slotIndex: number, file: File) => {
+      const slotAssetId = `sfx-${slotIndex}`;
+      const localUrl = URL.createObjectURL(file);
+      const el = new Audio(localUrl);
 
-      // Clean up old element
       sfxElementsRef.current[slotIndex]?.pause();
       sfxElementsRef.current[slotIndex] = el;
 
-      // Persist as data URL
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        dispatch({
-          type: "SET_SFX_SLOT",
-          payload: {
-            index: slotIndex,
-            slot: {
-              name: file.name,
-              url: e.target?.result as string,
-            },
+      let persistentUrl: string | null = null;
+      if (!supabaseDisabled) {
+        try {
+          persistentUrl = await dbHelpers.uploadVTTAsset(file, "audio", slotAssetId);
+        } catch (err) {
+          console.error("SFX upload failed:", err);
+        }
+      }
+
+      if (!persistentUrl) {
+        persistentUrl = localUrl;
+        if (!supabaseDisabled) {
+          toast.error(
+            `Uploaded "${file.name}" will not sync across devices (upload failed).`
+          );
+        }
+      }
+      // See note in loadAmbient — don't revoke localUrl; the Audio element
+      // is still playing from it. State stores the persistent URL.
+
+      dispatch({
+        type: "SET_SFX_SLOT",
+        payload: {
+          index: slotIndex,
+          slot: {
+            name: file.name,
+            url: persistentUrl,
           },
-        });
-      };
-      reader.readAsDataURL(file);
+        },
+      });
     },
     [dispatch]
   );
