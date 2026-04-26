@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef, ReactNode } from 'react';
 import { Session, SessionLogEntry, SessionReward } from '@/types/session';
 import { dbHelpers } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
@@ -51,6 +51,11 @@ export const SessionProvider: React.FC<SessionProviderProps> = ({ children }) =>
   const { toast } = useToast();
   const { isGM, activeCrewId } = useCampaign();
 
+  // Mirror allSessions in a ref so createSession can compute session_number
+  // from the latest length even when two creates fire faster than React renders.
+  const allSessionsRef = useRef<Session[]>([]);
+  useEffect(() => { allSessionsRef.current = allSessions; }, [allSessions]);
+
   const sessions = useMemo(() => {
     if (isGM) return allSessions;
     return allSessions.filter((s) => isItemVisibleToViewer(s, activeCrewId, isGM));
@@ -96,11 +101,21 @@ export const SessionProvider: React.FC<SessionProviderProps> = ({ children }) =>
 
   const createSession = useCallback(async (sessionData: Partial<Session>): Promise<Session | null> => {
     try {
+      // Compute session_number from the highest existing number, not array
+      // length, to avoid duplicate numbers if two creates fire faster than
+      // React renders (length captured stale) or if a session was deleted.
+      const existing = allSessionsRef.current;
+      const maxNumber = existing.reduce(
+        (m, s) => (typeof s.session_number === 'number' && s.session_number > m ? s.session_number : m),
+        0
+      );
+      const nextNumber = maxNumber + 1;
+
       const newSession = {
         player_id: 'campaign',
-        session_number: allSessions.length + 1,
+        session_number: nextNumber,
         session_date: new Date().toISOString(),
-        title: sessionData.title || `Session ${allSessions.length + 1}`,
+        title: sessionData.title || `Session ${nextNumber}`,
         status: sessionData.status || 'planned',
         ...sessionData,
       };
@@ -108,7 +123,11 @@ export const SessionProvider: React.FC<SessionProviderProps> = ({ children }) =>
       const saved = await dbHelpers.saveSession(newSession);
       const savedSession = saved as Session;
 
-      setAllSessions(prev => [savedSession, ...prev]);
+      setAllSessions(prev => {
+        const next = [savedSession, ...prev];
+        allSessionsRef.current = next; // keep ref in sync immediately for back-to-back creates
+        return next;
+      });
 
       toast({
         title: "Session Created",
@@ -125,7 +144,7 @@ export const SessionProvider: React.FC<SessionProviderProps> = ({ children }) =>
       });
       return null;
     }
-  }, [allSessions.length, toast]);
+  }, [toast]);
 
   const updateSession = useCallback(async (sessionId: string, updates: Partial<Session>): Promise<Session | null> => {
     try {
