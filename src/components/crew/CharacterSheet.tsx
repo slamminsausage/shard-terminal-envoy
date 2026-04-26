@@ -267,6 +267,8 @@ const CharacterSheet = ({ characterId, readOnly }: CharacterSheetProps = {}) => 
   const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
   const [crewId, setCrewId] = useState<string>('');
   const [crewPosition, setCrewPosition] = useState<string>('');
+  const [characterType, setCharacterType] = useState<'pc' | 'npc'>('pc');
+  const [npcRole, setNpcRole] = useState<'crew' | 'enemy' | 'contact' | 'patron'>('crew');
   const [lifepathLog, setLifepathLog] = useState<TermRecord[]>([]);
 
   // Load character data if editing an existing character
@@ -402,6 +404,8 @@ const CharacterSheet = ({ characterId, readOnly }: CharacterSheetProps = {}) => 
         // Load crew assignment
         setCrewId(character.crew_id || '');
         setCrewPosition(character.crew_position || '');
+        setCharacterType(character.character_type || 'pc');
+        setNpcRole(character.npc_role || 'crew');
 
         // Load lifepath history (term-by-term record from the generator)
         setLifepathLog(Array.isArray(character.lifepath_log) ? character.lifepath_log : []);
@@ -561,6 +565,8 @@ const CharacterSheet = ({ characterId, readOnly }: CharacterSheetProps = {}) => 
         armor: armourRows,
         augments: augments,
         thumbnail_url: finalThumbnailUrl || null,
+        character_type: characterType,
+        npc_role: characterType === 'npc' ? npcRole : undefined,
         crew_id: crewId || undefined,
         crew_position: crewPosition || undefined,
         lifepath_log: lifepathLog,
@@ -991,6 +997,33 @@ const customGroups = skillDefinitions.filter(def => def.isCustomGroup);
           className="md:col-span-3"
           disabled={readOnly}
         />
+        <div className="space-y-2 md:col-span-3">
+          <label className="text-[10px] text-primary/60 uppercase tracking-wider font-bold">Character Type</label>
+          <div className="flex flex-wrap gap-3">
+            <Select value={characterType} onValueChange={(value: 'pc' | 'npc') => setCharacterType(value)} disabled={readOnly}>
+              <SelectTrigger className="h-9 text-xs font-mono w-40 border-primary/40">
+                <SelectValue placeholder="Character type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="pc">PC</SelectItem>
+                <SelectItem value="npc">NPC</SelectItem>
+              </SelectContent>
+            </Select>
+            {characterType === 'npc' && (
+              <Select value={npcRole} onValueChange={(value: 'crew' | 'enemy' | 'contact' | 'patron') => setNpcRole(value)} disabled={readOnly}>
+                <SelectTrigger className="h-9 text-xs font-mono w-40 border-primary/40">
+                  <SelectValue placeholder="NPC role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="crew">Crew</SelectItem>
+                  <SelectItem value="enemy">Enemy</SelectItem>
+                  <SelectItem value="contact">Contact</SelectItem>
+                  <SelectItem value="patron">Patron</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
+          </div>
+        </div>
           </div>
 
           {/* Crew Assignment Section */}
