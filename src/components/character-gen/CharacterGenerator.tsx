@@ -4130,14 +4130,14 @@ export const CharacterGenerator: React.FC = () => {
       )}
 
       {/* Enhanced Header */}
-      <div className="border-b border-terminal-primary/30 p-4 bg-gradient-to-r from-terminal-primary/5 via-transparent to-terminal-primary/5">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
+      <div className="border-b border-terminal-primary/30 p-3 sm:p-4 bg-gradient-to-r from-terminal-primary/5 via-transparent to-terminal-primary/5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             <div className="p-2 rounded-lg bg-terminal-primary/10 border border-terminal-primary/30">
               <User className="h-6 w-6 text-terminal-primary" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-terminal-primary font-['Orbitron'] tracking-wider">
+              <h1 className="text-[clamp(1rem,2.5vw,1.35rem)] font-bold text-terminal-primary font-['Orbitron'] tracking-wider">
                 CHARACTER GENERATOR
               </h1>
               <p className="text-terminal-primary/50 text-xs font-mono">
@@ -4145,7 +4145,7 @@ export const CharacterGenerator: React.FC = () => {
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4 ml-auto">
             <button
               onClick={() => {
                 setUseManualDice(!useManualDice);
@@ -4159,7 +4159,7 @@ export const CharacterGenerator: React.FC = () => {
             >
               {useManualDice ? 'MANUAL DICE: ON' : 'MANUAL DICE: OFF'}
             </button>
-            <div className="text-right">
+            <div className="text-right min-w-0">
               <div className="text-terminal-primary font-bold">
                 {characterData.name || 'Unnamed Character'}
               </div>
@@ -4174,7 +4174,7 @@ export const CharacterGenerator: React.FC = () => {
       <ScrollArea className="flex-1 p-4">
         <Tabs value={`step${step}`} className="w-full">
           {/* Enhanced Step Navigation */}
-          <TabsList className="grid w-full grid-cols-6 bg-black/50 border border-terminal-primary/30 mb-4 p-1 gap-1">
+          <TabsList className="flex w-full overflow-x-auto bg-black/50 border border-terminal-primary/30 mb-4 p-1 gap-1">
             {['Basics', 'Characteristics', 'Background', 'Career', 'Terms', 'Review'].map((label, idx) => {
               const targetStep = idx + 1;
               const isActive = step === targetStep;
@@ -4190,7 +4190,7 @@ export const CharacterGenerator: React.FC = () => {
                     setStep(targetStep);
                   }}
                   className={`
-                    text-xs font-bold transition-all duration-200 rounded
+                    text-xs font-bold transition-all duration-200 rounded whitespace-nowrap px-2.5
                     ${isLocked
                       ? 'text-terminal-primary/20 cursor-not-allowed opacity-40'
                       : isActive

@@ -288,11 +288,11 @@
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
-  padding: 0.25rem 0.6rem;
+  padding: clamp(0.2rem, 0.35vw, 0.35rem) clamp(0.45rem, 0.9vw, 0.8rem);
   border: 1px solid transparent;
   border-radius: 0.2rem;
   font-family: var(--font-display);
-  font-size: 0.65rem;
+  font-size: clamp(0.6rem, 0.7vw, 0.82rem);
   letter-spacing: 0.12em;
   color: var(--text-dim);
   background: transparent;
@@ -1118,6 +1118,9 @@ textarea.terminal-input {
   min-height: 100%;
   display: flex;
   flex-direction: column;
+  width: 100%;
+  max-width: 2400px;
+  margin-inline: auto;
   background: var(--bg-darker);
   color: var(--primary-light);
   font-family: var(--font-mono);
@@ -1132,7 +1135,7 @@ textarea.terminal-input {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
-  padding: 1rem 1.5rem;
+  padding: clamp(0.75rem, 1.4vw, 1.25rem) clamp(0.8rem, 2.2vw, 1.75rem);
   border-bottom: 1px solid var(--bg-border);
   background: linear-gradient(180deg, color-mix(in srgb, var(--primary) 5%, transparent) 0%, transparent 100%);
 }
@@ -1149,23 +1152,16 @@ textarea.terminal-input {
 .interface-title {
   font-family: 'Orbitron', sans-serif;
   font-weight: 900;
-  font-size: 1.25rem;
+  font-size: clamp(1rem, 1.6vw, 1.75rem);
   letter-spacing: 0.2em;
   color: var(--primary);
   text-shadow: 0 0 20px color-mix(in srgb, var(--primary) 40%, transparent);
   text-transform: uppercase;
 }
 
-@media (min-width: 640px) {
-  .interface-title {
-    font-size: 1.5rem;
-    letter-spacing: 0.25em;
-  }
-}
-
 /* Interface subtitle */
 .interface-subtitle {
-  font-size: 0.75rem;
+  font-size: clamp(0.65rem, 0.9vw, 0.9rem);
   color: var(--text-dimmer);
   letter-spacing: 0.1em;
 }
@@ -1173,7 +1169,7 @@ textarea.terminal-input {
 /* Interface content area */
 .interface-content {
   flex: 1;
-  padding: 1rem;
+  padding: clamp(0.65rem, 1.5vw, 1.5rem);
   overflow-y: auto;
 }
 
