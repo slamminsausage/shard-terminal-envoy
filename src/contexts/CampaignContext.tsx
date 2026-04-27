@@ -484,12 +484,25 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
       console.error('Failed to save character:', error);
 
       const player = currentPlayerRef.current;
+
+      // For partial updates (e.g., assignCharacterToCrew sends only id+crew_id),
+      // merge over the existing character instead of replacing it. The previous
+      // behavior overwrote the character with just the sent fields, wiping
+      // name/stats/character_type/npc_role and crashing downstream renderers
+      // that rely on those fields. Merge preserves the rest.
+      const existing = characterData.id
+        ? charactersRef.current.find(c => c.id === characterData.id)
+        : undefined;
+
       const characterWithId = {
+        ...(existing || {}),
         ...characterData,
         id: characterData.id || `char_${Date.now()}`,
-        created_at: new Date().toISOString(),
+        created_at: existing?.created_at || new Date().toISOString(),
         updated_at: new Date().toISOString(),
-        player_id: characterData.player_id || (player && player.id !== 'legacy-gm' ? player.id : 'campaign')
+        player_id: characterData.player_id
+          ?? existing?.player_id
+          ?? (player && player.id !== 'legacy-gm' ? player.id : 'campaign'),
       };
 
       let updatedCharacters;
@@ -541,12 +554,18 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
     } catch (error) {
       console.error('Failed to save vehicle:', error);
 
+      // Merge over existing vehicle so a partial update doesn't wipe other fields.
+      const existing = vehicleData.id
+        ? vehiclesRef.current.find(v => v.id === vehicleData.id)
+        : undefined;
+
       const vehicleWithId = {
+        ...(existing || {}),
         ...vehicleData,
         id: vehicleData.id || `vehicle_${Date.now()}`,
-        created_at: new Date().toISOString(),
+        created_at: existing?.created_at || new Date().toISOString(),
         updated_at: new Date().toISOString(),
-        player_id: 'campaign'
+        player_id: vehicleData.player_id ?? existing?.player_id ?? 'campaign',
       };
 
       let updatedVehicles;

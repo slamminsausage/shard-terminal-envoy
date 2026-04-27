@@ -8,7 +8,7 @@ import { dbHelpers } from "@/lib/supabase";
 import { Upload, X, Crop, Users, Ship } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CREW_POSITION_PRESETS, type TermRecord } from "@/types/database";
+import { CREW_POSITION_PRESETS, type TermRecord, type Character } from "@/types/database";
 import { ThumbnailCropper } from "@/components/ui/ThumbnailCropper";
 import { WeaponTable, type WeaponRow } from "@/components/inventory/WeaponTable";
 import { ArmorTable, type ArmourRow } from "@/components/inventory/ArmorTable";
@@ -571,6 +571,24 @@ const CharacterSheet = ({ characterId, readOnly }: CharacterSheetProps = {}) => 
         crew_position: crewPosition || undefined,
         lifepath_log: lifepathLog,
       };
+
+      // Preserve NPC classification fields. CharacterSheet has no UI to edit
+      // character_type or npc_role, but the save payload otherwise omits them
+      // entirely — and the localStorage fallback path in CampaignContext.saveCharacter
+      // spreads characterData over the existing character, which would clear
+      // those fields and crash UIs that key off them (badge rendering, role-based
+      // grouping, etc.). Carry them through from the loaded character.
+      if (currentCharacterId) {
+        const existing = characters.find(c => c.id === currentCharacterId);
+        if (existing) {
+          if (existing.character_type !== undefined) {
+            (characterData as Partial<Character>).character_type = existing.character_type;
+          }
+          if (existing.npc_role !== undefined) {
+            (characterData as Partial<Character>).npc_role = existing.npc_role;
+          }
+        }
+      }
 
       await saveCharacter(characterData);
     } catch (error) {
