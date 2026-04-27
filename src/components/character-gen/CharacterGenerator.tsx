@@ -68,6 +68,7 @@ interface CharacteristicValue {
 interface CharacterData {
   // Header info
   name: string;
+  character_type: 'pc' | 'npc';
   species: string;       // Race name (Human, Aslan, Vargr, Bwap)
   raceId: string;        // Race ID for lookups
   raceTraits: RaceTrait[]; // Stored race traits
@@ -309,6 +310,7 @@ export const CharacterGenerator: React.FC = () => {
   const [selectedPosition, setSelectedPosition] = useState<string>('');
   const [characterData, setCharacterData] = useState<CharacterData>({
     name: '',
+    character_type: 'pc',
     species: 'Human',
     raceId: 'human',
     raceTraits: [],
@@ -596,6 +598,10 @@ export const CharacterGenerator: React.FC = () => {
 
   const handleNameChange = (name: string) => {
     setCharacterData(prev => ({ ...prev, name }));
+  };
+
+  const handleCharacterTypeChange = (characterType: 'pc' | 'npc') => {
+    setCharacterData(prev => ({ ...prev, character_type: characterType }));
   };
 
   const handleSpeciesChange = (species: string) => {
@@ -3787,6 +3793,8 @@ export const CharacterGenerator: React.FC = () => {
         armor: characterData.armor,
         augments: characterData.augments,
         thumbnail_url: null,
+        character_type: characterData.character_type,
+        npc_role: characterData.character_type === 'npc' ? 'crew' : undefined,
         // Crew assignment
         crew_id: selectedCrewId || undefined,
         crew_position: selectedPosition || undefined,
@@ -4122,14 +4130,14 @@ export const CharacterGenerator: React.FC = () => {
       )}
 
       {/* Enhanced Header */}
-      <div className="border-b border-terminal-primary/30 p-4 bg-gradient-to-r from-terminal-primary/5 via-transparent to-terminal-primary/5">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
+      <div className="border-b border-terminal-primary/30 p-3 sm:p-4 bg-gradient-to-r from-terminal-primary/5 via-transparent to-terminal-primary/5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             <div className="p-2 rounded-lg bg-terminal-primary/10 border border-terminal-primary/30">
               <User className="h-6 w-6 text-terminal-primary" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-terminal-primary font-['Orbitron'] tracking-wider">
+              <h1 className="text-[clamp(1rem,2.5vw,1.35rem)] font-bold text-terminal-primary font-['Orbitron'] tracking-wider">
                 CHARACTER GENERATOR
               </h1>
               <p className="text-terminal-primary/50 text-xs font-mono">
@@ -4137,7 +4145,7 @@ export const CharacterGenerator: React.FC = () => {
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4 ml-auto">
             <button
               onClick={() => {
                 setUseManualDice(!useManualDice);
@@ -4151,7 +4159,7 @@ export const CharacterGenerator: React.FC = () => {
             >
               {useManualDice ? 'MANUAL DICE: ON' : 'MANUAL DICE: OFF'}
             </button>
-            <div className="text-right">
+            <div className="text-right min-w-0">
               <div className="text-terminal-primary font-bold">
                 {characterData.name || 'Unnamed Character'}
               </div>
@@ -4166,7 +4174,7 @@ export const CharacterGenerator: React.FC = () => {
       <ScrollArea className="flex-1 p-4">
         <Tabs value={`step${step}`} className="w-full">
           {/* Enhanced Step Navigation */}
-          <TabsList className="grid w-full grid-cols-6 bg-black/50 border border-terminal-primary/30 mb-4 p-1 gap-1">
+          <TabsList className="flex w-full overflow-x-auto bg-black/50 border border-terminal-primary/30 mb-4 p-1 gap-1">
             {['Basics', 'Characteristics', 'Background', 'Career', 'Terms', 'Review'].map((label, idx) => {
               const targetStep = idx + 1;
               const isActive = step === targetStep;
@@ -4182,7 +4190,7 @@ export const CharacterGenerator: React.FC = () => {
                     setStep(targetStep);
                   }}
                   className={`
-                    text-xs font-bold transition-all duration-200 rounded
+                    text-xs font-bold transition-all duration-200 rounded whitespace-nowrap px-2.5
                     ${isLocked
                       ? 'text-terminal-primary/20 cursor-not-allowed opacity-40'
                       : isActive
@@ -4259,6 +4267,31 @@ export const CharacterGenerator: React.FC = () => {
                       onChange={(e) => handleHomeworldChange(e.target.value)}
                       className="bg-black/50 border-terminal-primary/50 text-terminal-primary focus:border-terminal-primary focus:ring-1 focus:ring-terminal-primary/50"
                     />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] text-terminal-primary/60 uppercase tracking-wider font-bold flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-terminal-primary" />
+                    Character Type
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      type="button"
+                      variant={characterData.character_type === 'pc' ? 'default' : 'outline'}
+                      className={characterData.character_type === 'pc' ? "bg-terminal-primary/20 text-terminal-primary border-terminal-primary/50" : "border-terminal-primary/40 text-terminal-primary/70"}
+                      onClick={() => handleCharacterTypeChange('pc')}
+                    >
+                      PC
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={characterData.character_type === 'npc' ? 'default' : 'outline'}
+                      className={characterData.character_type === 'npc' ? "bg-cyan-500/20 text-cyan-300 border-cyan-500/50" : "border-terminal-primary/40 text-terminal-primary/70"}
+                      onClick={() => handleCharacterTypeChange('npc')}
+                    >
+                      NPC
+                    </Button>
                   </div>
                 </div>
 
