@@ -1098,6 +1098,13 @@ function prepareForSave(state: VTTState): VTTState {
   toSave.selectedStrokeIds = [];
   toSave.selectedTextIds = [];
   toSave.selectedNoteIds = [];
+  if (Array.isArray((toSave as any).selectedAoEIds)) (toSave as any).selectedAoEIds = [];
+  if (Array.isArray((toSave as any).selectedLightIds)) (toSave as any).selectedLightIds = [];
+  if (Array.isArray((toSave as any).selectedPropIds)) (toSave as any).selectedPropIds = [];
+  // Also drop pending-prop placement state — it can hold a blob: URL that
+  // dies on reload, leaving a broken pending placement.
+  if ((toSave as any).pendingPropImageUrl !== undefined) (toSave as any).pendingPropImageUrl = null;
+  if ((toSave as any).pendingPropName !== undefined) (toSave as any).pendingPropName = null;
   return toSave;
 }
 
@@ -1186,6 +1193,12 @@ export function VTTProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     stateRef.current = state;
   }, [state]);
+
+  // Per-mapId upload epoch. Each loadMapImage call bumps the entry; older
+  // in-flight uploads check the epoch before dispatching so a fast user
+  // replacement doesn't get clobbered by a slower earlier upload completing
+  // out of order.
+  const mapUploadEpochRef = useRef<Map<string, number>>(new Map());
 
   // True once the Supabase reconciliation in loadAndMigrate has completed.
   // The debounced save must not fire until this is set, otherwise it would
@@ -1365,6 +1378,11 @@ export function VTTProvider({ children }: { children: React.ReactNode }) {
     async (mapId: string, file: File) => {
       const isVideo = file.type.startsWith("video/");
 
+      // Bump the per-map epoch so any in-flight earlier upload knows it's stale.
+      const epoch = (mapUploadEpochRef.current.get(mapId) ?? 0) + 1;
+      mapUploadEpochRef.current.set(mapId, epoch);
+      const isCurrent = () => mapUploadEpochRef.current.get(mapId) === epoch;
+
       if (isVideo) {
         // Revoke old objectURL if replacing a video map that still has one
         const oldMap = stateRef.current.maps.find((m) => m.id === mapId);
@@ -1380,6 +1398,7 @@ export function VTTProvider({ children }: { children: React.ReactNode }) {
         } catch (e) {
           console.warn("Failed to upload video map to Supabase, using local blob URL:", e);
         }
+        if (!isCurrent()) return; // a newer upload superseded us
         if (!videoUrl) videoUrl = URL.createObjectURL(file);
 
         const video = document.createElement("video");
@@ -1389,6 +1408,7 @@ export function VTTProvider({ children }: { children: React.ReactNode }) {
 
         return new Promise<void>((resolve, reject) => {
           video.onloadedmetadata = () => {
+            if (!isCurrent()) { resolve(); return; }
             const currentMap = stateRef.current.maps.find((m) => m.id === mapId);
             const canvasW = currentMap?.width || 1920;
             const canvasH = currentMap?.height || 1080;
@@ -1428,11 +1448,13 @@ export function VTTProvider({ children }: { children: React.ReactNode }) {
       } catch (e) {
         console.warn("Failed to upload map image to Supabase, falling back to data URL:", e);
       }
+      if (!isCurrent()) return;
 
       if (imageUrl) {
         return new Promise<void>((resolve, reject) => {
           const img = new Image();
           img.onload = () => {
+            if (!isCurrent()) { resolve(); return; }
             const currentMap = stateRef.current.maps.find((m) => m.id === mapId);
             const canvasW = currentMap?.width || 1920;
             const canvasH = currentMap?.height || 1080;
@@ -1455,9 +1477,11 @@ export function VTTProvider({ children }: { children: React.ReactNode }) {
       return new Promise<void>((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = (e) => {
+          if (!isCurrent()) { resolve(); return; }
           const dataUrl = e.target?.result as string;
           const img = new Image();
           img.onload = () => {
+            if (!isCurrent()) { resolve(); return; }
             // Find current map to get its canvas dimensions
             const currentMap = stateRef.current.maps.find((m) => m.id === mapId);
             const canvasW = currentMap?.width || 1920;

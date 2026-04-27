@@ -395,10 +395,12 @@ export function useVTTAudio() {
 
   const loadSFX = useCallback(
     async (slotIndex: number, file: File) => {
-      // Upload to Supabase Storage so the SFX survives reloads and is
-      // available on other devices. Key each slot by a stable id so repeated
-      // replacements don't leak orphaned files.
-      const trackId = `sfx-slot-${slotIndex}`;
+      // Each upload gets a unique trackId so two campaigns/devices using the
+      // same slot index don't overwrite each other in Supabase Storage. (Old
+      // sfx-slot-N keying meant Campaign B replacing slot 3 silently clobbered
+      // Campaign A's audio at the same URL.) Old per-slot files are now
+      // orphaned in Storage; rely on a periodic janitor or Supabase TTL.
+      const trackId = `sfx-${crypto.randomUUID()}`;
       let url: string | null = null;
       try {
         url = await dbHelpers.uploadVTTAudioFile(file, trackId);
