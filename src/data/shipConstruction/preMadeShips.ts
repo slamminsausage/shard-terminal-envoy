@@ -2830,6 +2830,107 @@ export const SAKHAI_ASSAULT_CARRIER: PreMadeShip = {
 };
 
 // ═══════════════════════════════════════════════════════════════════════
+//  CAMPAIGN SHIPS — Custom designs from this campaign's lore
+// ═══════════════════════════════════════════════════════════════════════
+
+export const HARRIER_COMMERCE_RAIDER: PreMadeShip = {
+  id: 'harrier_commerce_raider',
+  source: 'campaign',
+  name: 'Harrier-class Commerce Raider',
+  category: 'military',
+  tl: 15,
+  tonnage: 200,
+  description:
+    'A 200-ton streamlined commerce raider built around superior stealth, holographic disguise, and bonded superdense armour. The reinforced hull, size-reduced military drives, and stealth-jump-capable J-Drive let it close on prizes unseen, hit hard with a particle barbette and missile rack, and disappear before defenders can respond. Eight staterooms accommodate the operating crew with eight low berths reserved for prize crews or boarding actions.',
+
+  hullPoints: 88,
+  purchaseCostMCr: 318.949,
+  maintenanceCostCrPerMonth: 26579,
+
+  crew: ['Captain', 'Pilot', 'Astrogator', 'Engineer', 'Maintenance', 'Gunners x2', 'Medic', 'Marines x3'],
+
+  powerRequirements: [
+    { system: 'Basic Ship Systems', power: 40 },
+    { system: 'Manoeuvre Drive', power: 120 },
+    { system: 'Jump Drive', power: 40 },
+    { system: 'Sensors', power: 8 },
+    { system: 'Weapons', power: 52 },
+  ],
+
+  components: [
+    { category: 'Hull', name: '200 tons, Streamlined, Reinforced + Superior Stealth + Holographic Hull', tons: null, costMCr: null },
+    { category: 'Armour', name: 'Bonded Superdense, Armour: 4', tons: null, costMCr: null },
+    { category: 'M-Drive', name: 'Thrust 6 (size-reduced)', tons: null, costMCr: null },
+    { category: 'J-Drive', name: 'Jump-2 (early jump, stealth jump, size-reduced)', tons: null, costMCr: null },
+    { category: 'Power Plant', name: 'Fusion, Power 260', tons: null, costMCr: null },
+    { category: 'Fuel Tanks', name: '42 tons', tons: 42, costMCr: null },
+    { category: 'Bridge', name: 'Bridge with Holographic Controls', tons: null, costMCr: null },
+    { category: 'Computer', name: 'Computer/20', tons: null, costMCr: null },
+    { category: 'Sensors', name: 'Advanced', tons: null, costMCr: null },
+    { category: 'Weapons', name: 'Particle Barbette', tons: 5, costMCr: null },
+    { category: 'Weapons', name: 'Single Turret (Missile Rack, 12 smart missiles)', tons: 1, costMCr: null },
+    { category: 'Systems', name: 'Military Countermeasures Suite', tons: 15, costMCr: null },
+    { category: 'Systems', name: 'Armoury (1 ton)', tons: 1, costMCr: null },
+    { category: 'Systems', name: 'Cargo Scoop (2 tons)', tons: 2, costMCr: null },
+    { category: 'Systems', name: 'Fuel Processor (40 tons/day)', tons: 2, costMCr: null },
+    { category: 'Software', name: 'Evade/1', tons: null, costMCr: null },
+    { category: 'Software', name: 'Fire Control/2', tons: null, costMCr: null },
+    { category: 'Software', name: 'Jump Control/2', tons: null, costMCr: null },
+    { category: 'Software', name: 'Library', tons: null, costMCr: null },
+    { category: 'Software', name: 'Manoeuvre/0', tons: null, costMCr: null },
+    { category: 'Staterooms', name: 'Standard x8', tons: 32, costMCr: null },
+    { category: 'Staterooms', name: 'Low Berths x8', tons: 4, costMCr: null },
+    { category: 'Common Areas', name: 'Common Areas', tons: 8, costMCr: null },
+    { category: 'Cargo', name: 'General Cargo', tons: 29.7, costMCr: null },
+    { category: 'Cargo', name: 'Missile Storage (12 missiles)', tons: 1, costMCr: null },
+  ],
+
+  softwareIds: ['library', 'manoeuvre_0', 'jump_control_2', 'evade_1', 'fire_control_2'],
+
+  design: {
+    name: 'Harrier-class Commerce Raider',
+    techLevel: 15,
+    tonnage: 200,
+    hullConfiguration: 'streamlined',
+    specialisedHull: 'reinforced',
+    armorMaterial: 'bonded_superdense',
+    armorProtection: 4,
+    manoeuvreRating: 6,
+    jumpRating: 2,
+    isReactionDrive: false,
+    powerPlantTier: 'fusion_tl15',
+    powerPlantTons: 13,
+    additionalFuelWeeks: 0,
+    useCockpit: false,
+    holographicControls: true,
+    computerId: 'computer_20',
+    computerBis: false,
+    sensorSuiteId: 'advanced',
+    additionalSensorStations: 0,
+    weapons: [
+      { mountType: 'single_turret', weapons: ['missile_rack'] },
+    ],
+    barbettes: [
+      { weaponId: 'particle_barbette_bay', quantity: 1 },
+    ],
+    equipment: [
+      { equipmentId: 'holographic_hull', tons: 0, quantity: 1 },
+      { equipmentId: 'countermeasures', tons: 15, quantity: 1 },
+      { equipmentId: 'armoury', tons: 1, quantity: 1 },
+      { equipmentId: 'cargo_scoop', tons: 2, quantity: 1 },
+      { equipmentId: 'fuel_processor', tons: 2, quantity: 1 },
+    ],
+    standardStaterooms: 8,
+    doubleOccupancyStaterooms: 0,
+    highStaterooms: 0,
+    luxuryStaterooms: 0,
+    lowBerths: 8,
+    commonAreaTons: 8,
+    cargoTons: 29.7,
+  },
+};
+
+// ═══════════════════════════════════════════════════════════════════════
 //  ALL PRE-MADE SHIPS
 // ═══════════════════════════════════════════════════════════════════════
 
@@ -2895,6 +2996,8 @@ export const PRE_MADE_SHIPS: PreMadeShip[] = [
   MODULAR_CUTTER,
   SHUTTLE,
   PASSENGER_SHUTTLE,
+  // Campaign Ships
+  HARRIER_COMMERCE_RAIDER,
 ];
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -2910,6 +3013,7 @@ export const SHIP_SOURCE_LABELS: Record<NonNullable<PreMadeShip['source']>, stri
   core: 'Core Rulebook',
   ships_of_the_reach: 'Ships of the Reach',
   aslan: 'Aslan Ships',
+  campaign: 'Campaign Ships',
 };
 
 export function getShipSource(ship: PreMadeShip): NonNullable<PreMadeShip['source']> {
