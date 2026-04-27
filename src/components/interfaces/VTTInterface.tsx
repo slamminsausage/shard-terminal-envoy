@@ -131,7 +131,7 @@ function VTTInterface() {
   // Players see the presenter view (read-only map display)
   if (!isGM) {
     return (
-      <div className="flex h-full w-full overflow-hidden bg-black">
+      <div className="flex h-full min-h-0 w-full overflow-hidden bg-black">
         <VTTPlayerView />
       </div>
     );
@@ -139,7 +139,7 @@ function VTTInterface() {
 
   return (
     <VTTAudioProvider value={audioApi}>
-      <div className="flex h-full w-full overflow-hidden" style={{ background: 'linear-gradient(180deg, rgba(58, 226, 179,0.02) 0%, var(--bg-panel) 40%, var(--bg-dark) 100%)' }}>
+      <div className="flex h-full min-h-0 w-full overflow-hidden" style={{ background: 'linear-gradient(180deg, rgba(58, 226, 179,0.02) 0%, var(--bg-panel) 40%, var(--bg-dark) 100%)' }}>
         {/* Left toolbar — tools only */}
         <VTTToolbar />
 
