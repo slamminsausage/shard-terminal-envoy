@@ -79,11 +79,11 @@ export default function AppHeader({
 
   return (
     <header className="app-shell-header">
-      <div className="flex items-center gap-3 px-4 h-10 min-w-0">
+      <div className="flex items-center gap-2 sm:gap-3 px-2 sm:px-3 lg:px-4 min-h-10 py-1.5 min-w-0">
 
         {/* Brand */}
         <div className="flex items-center gap-2 flex-shrink-0">
-          <span className="app-shell-title text-sm tracking-widest whitespace-nowrap">
+          <span className="app-shell-title text-[clamp(0.65rem,1vw,0.9rem)] tracking-[0.18em] whitespace-nowrap">
             {title.toUpperCase()}
           </span>
           {currentDate && (
