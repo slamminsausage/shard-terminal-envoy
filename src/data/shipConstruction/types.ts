@@ -687,7 +687,7 @@ export interface PowerRequirementLine {
 /** A complete pre-made ship from the rulebook */
 export interface PreMadeShip {
   id: string;
-  source?: 'core' | 'ships_of_the_reach' | 'aslan';
+  source?: 'core' | 'ships_of_the_reach' | 'aslan' | 'campaign';
   name: string;
   designation?: string; // e.g. "Type S", "Type A", "Type K"
   category: ShipCategory;
