@@ -16,11 +16,20 @@ import { FinanceProvider } from "@/contexts/FinanceContext";
 import { TradeProvider } from "@/contexts/TradeContext";
 import { PiracyProvider } from "@/contexts/PiracyContext";
 import { VTTProvider } from "@/contexts/VTTContext";
+import { VTTAudioProvider } from "@/contexts/VTTAudioContext";
+import { useVTTAudio } from "@/hooks/useVTTAudio";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import CRTOverlay from "@/components/ui/CRTOverlay";
 import NotFound from "./pages/NotFound";
 import { useParams } from "react-router-dom";
 import { lazyWithRetry } from "@/lib/lazyWithRetry";
+
+// Keeps the Web Audio engine alive regardless of which tab is active,
+// so ambient music continues playing when the user navigates away from VTT.
+function VTTAudioEngine({ children }: { children: React.ReactNode }) {
+  const audioApi = useVTTAudio();
+  return <VTTAudioProvider value={audioApi}>{children}</VTTAudioProvider>;
+}
 
 const VTTPresenterView = lazyWithRetry(() => import("./components/vtt/VTTPresenterView"));
 const SessionLogPopout = lazyWithRetry(() => import("./pages/SessionLogPopout"));
@@ -58,6 +67,7 @@ const App = () => (
                         <NotesProvider>
                           <PiracyProvider>
                             <VTTProvider>
+                              <VTTAudioEngine>
                               <BridgeProvider>
                                 <CRTOverlay idleScreensaver={false} />
                                 <Toaster />
@@ -79,6 +89,7 @@ const App = () => (
                                   </Suspense>
                                 </BrowserRouter>
                               </BridgeProvider>
+                              </VTTAudioEngine>
                             </VTTProvider>
                           </PiracyProvider>
                         </NotesProvider>

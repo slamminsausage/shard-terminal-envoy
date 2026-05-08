@@ -11,8 +11,7 @@ import { useVTTParticles } from "@/hooks/useVTTParticles";
 import { useVTTKeyboard } from "@/hooks/useVTTKeyboard";
 import { usePresenterController } from "@/hooks/useVTTPresenter";
 import type { PresenterCampaignData } from "@/hooks/useVTTPresenter";
-import { useVTTAudio } from "@/hooks/useVTTAudio";
-import { VTTAudioProvider } from "@/contexts/VTTAudioContext";
+import { useVTTAudioApi } from "@/contexts/VTTAudioContext";
 import { useCampaign } from "@/contexts/CampaignContext";
 import { useNotes } from "@/contexts/NotesContext";
 import { useSession } from "@/contexts/SessionContext";
@@ -32,8 +31,8 @@ function VTTInterface() {
   // Keyboard shortcuts (GM only)
   useVTTKeyboard(toggleShortcuts);
 
-  // Audio - hoisted here so it persists across sidebar panel changes
-  const audioApi = useVTTAudio();
+  // Audio engine lives in App.tsx (VTTAudioEngine) so it persists across tab switches
+  const audioApi = useVTTAudioApi();
 
   // Gather campaign data for presenter sync
   const notesCtx = useNotes();
@@ -138,7 +137,6 @@ function VTTInterface() {
   }
 
   return (
-    <VTTAudioProvider value={audioApi}>
       <div className="flex h-full min-h-0 w-full overflow-hidden" style={{ background: 'linear-gradient(180deg, rgba(58, 226, 179,0.02) 0%, var(--bg-panel) 40%, var(--bg-dark) 100%)' }}>
         {/* Left toolbar — tools only */}
         <VTTToolbar />
@@ -168,7 +166,6 @@ function VTTInterface() {
         {/* Shortcut overlay */}
         {showShortcuts && <VTTShortcutOverlay onClose={toggleShortcuts} />}
       </div>
-    </VTTAudioProvider>
   );
 }
 
