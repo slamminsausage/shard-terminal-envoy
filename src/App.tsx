@@ -59,7 +59,7 @@ const App = () => (
                           <PiracyProvider>
                             <VTTProvider>
                               <BridgeProvider>
-                                <CRTOverlay />
+                                <CRTOverlay idleScreensaver={false} />
                                 <Toaster />
                                 <Sonner />
                                 <BrowserRouter>
