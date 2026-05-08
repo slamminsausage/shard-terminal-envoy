@@ -524,7 +524,7 @@ export function useVTTAudio() {
     for (const slot of SLOTS) {
       if (ambientElRefs.current[slot]) continue; // already has an element
       const track = state.audio[`ambient${slot}` as keyof typeof state.audio] as (typeof state.audio.ambientA);
-      if (track?.isLibrary && track.url) {
+      if (track?.url && !track.url.startsWith('blob:')) {
         // Silently recreate the Audio element + Web Audio nodes.
         // Don't auto-play — the user will click play when ready.
         const ctx = ensureContext();

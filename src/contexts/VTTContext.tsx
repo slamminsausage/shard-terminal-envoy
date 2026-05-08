@@ -1108,6 +1108,27 @@ function prepareForSave(state: VTTState): VTTState {
   return toSave;
 }
 
+/**
+ * Additional stripping for cloud (Supabase) saves: removes data: URL images
+ * from maps and tokens so the state_json stays well under PostgREST's body
+ * limit. Data URLs are fine to keep in localStorage (device-local anyway).
+ * Supabase Storage URLs (https://) and built-in paths are kept as-is.
+ */
+function prepareForCloudSave(alreadyPrepared: VTTState): VTTState {
+  const toSave = JSON.parse(JSON.stringify(alreadyPrepared)) as VTTState;
+  for (const m of toSave.maps) {
+    if (m.imageDataUrl?.startsWith("data:")) {
+      m.imageDataUrl = null;
+    }
+    for (const t of m.tokens || []) {
+      if (t.imageDataUrl?.startsWith("data:")) {
+        t.imageDataUrl = null;
+      }
+    }
+  }
+  return toSave;
+}
+
 // ─── Provider ───────────────────────────────────────────────────────────────
 
 export function VTTProvider({ children }: { children: React.ReactNode }) {
@@ -1259,7 +1280,7 @@ export function VTTProvider({ children }: { children: React.ReactNode }) {
             // The useReducer initializer already loaded from localStorage,
             // so just push it to Supabase to sync up
             const toSync = prepareForSave(stateRef.current);
-            dbHelpers.saveVTTSession(toSync).catch(e =>
+            dbHelpers.saveVTTSession(prepareForCloudSave(toSync)).catch(e =>
               console.warn("VTT: failed to sync localStorage state to Supabase:", e)
             );
             return;
@@ -1307,7 +1328,7 @@ export function VTTProvider({ children }: { children: React.ReactNode }) {
     const interval = setInterval(() => {
       try {
         const toSave = prepareForSave(stateRef.current);
-        dbHelpers.saveVTTSession(toSave).catch(e => console.warn("VTT Supabase autosave failed:", e));
+        dbHelpers.saveVTTSession(prepareForCloudSave(toSave)).catch(e => console.warn("VTT Supabase autosave failed:", e));
         saveToLocalStorage(toSave);
       } catch (e) {
         console.warn("VTT autosave failed:", e);
@@ -1326,7 +1347,7 @@ export function VTTProvider({ children }: { children: React.ReactNode }) {
     const timer = setTimeout(() => {
       try {
         const toSave = prepareForSave(stateRef.current);
-        dbHelpers.saveVTTSession(toSave).catch(e => console.warn("VTT debounced save failed:", e));
+        dbHelpers.saveVTTSession(prepareForCloudSave(toSave)).catch(e => console.warn("VTT debounced save failed:", e));
         saveToLocalStorage(toSave);
       } catch (e) {
         console.warn("VTT debounced save failed:", e);
@@ -1363,7 +1384,7 @@ export function VTTProvider({ children }: { children: React.ReactNode }) {
       setTimeout(() => {
         try {
           const toSave = prepareForSave(stateRef.current);
-          dbHelpers.saveVTTSession(toSave).catch(e => console.warn("VTT save failed:", e));
+          dbHelpers.saveVTTSession(prepareForCloudSave(toSave)).catch(e => console.warn("VTT save failed:", e));
           saveToLocalStorage(toSave);
         } catch (e) {
           console.warn("VTT immediate save after addMap failed:", e);
@@ -1530,7 +1551,7 @@ export function VTTProvider({ children }: { children: React.ReactNode }) {
   const saveSession = useCallback(() => {
     try {
       const toSave = prepareForSave(stateRef.current);
-      dbHelpers.saveVTTSession(toSave).catch(e => console.warn("VTT Supabase save failed:", e));
+      dbHelpers.saveVTTSession(prepareForCloudSave(toSave)).catch(e => console.warn("VTT Supabase save failed:", e));
       saveToLocalStorage(toSave);
     } catch (e) {
       console.warn("VTT save failed:", e);
