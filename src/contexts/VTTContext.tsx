@@ -37,6 +37,7 @@ import type {
 import {
   createDefaultVTTState,
   createDefaultMap,
+  VTT_SCHEMA_VERSION,
 } from "@/types/vtt";
 
 // ─── Storage Keys ───────────────────────────────────────────────────────────
@@ -1234,6 +1235,8 @@ export function VTTProvider({ children }: { children: React.ReactNode }) {
   // so it may be newer than Supabase if the async save didn't complete.
   useEffect(() => {
     const applyMigrations = (s: any) => {
+      // Stamp the current schema version so future migrations can be conditional
+      s.schemaVersion = VTT_SCHEMA_VERSION;
       if (!s.selectedTokenIds) s.selectedTokenIds = [];
       if (!s.selectedStrokeIds) s.selectedStrokeIds = [];
       if (!s.selectedTextIds) s.selectedTextIds = [];
@@ -1299,6 +1302,16 @@ export function VTTProvider({ children }: { children: React.ReactNode }) {
                 dispatch({ type: "SET_MAP_IMAGE", payload: { mapId: m.id, dataUrl: url, width: m.imageNaturalWidth || m.width, height: m.imageNaturalHeight || m.height } });
               }
             }
+            // Migrate token portrait data URLs to Supabase Storage
+            for (const t of m.tokens || []) {
+              if (t.imageDataUrl && t.imageDataUrl.startsWith("data:image/")) {
+                const mimeType = t.imageDataUrl.split(";")[0].split(":")[1];
+                const url = await dbHelpers.uploadVTTTokenImageFromDataURL(t.imageDataUrl, t.id, mimeType);
+                if (url) {
+                  dispatch({ type: "UPDATE_TOKEN", payload: { mapId: m.id, tokenId: t.id, updates: { imageDataUrl: url } } });
+                }
+              }
+            }
           }
         } else {
           // No Supabase state yet — migrate any base64 images from the localStorage state
@@ -1309,6 +1322,16 @@ export function VTTProvider({ children }: { children: React.ReactNode }) {
               const url = await dbHelpers.uploadVTTMapImageFromDataURL(m.imageDataUrl, m.id, mimeType);
               if (url) {
                 dispatch({ type: "SET_MAP_IMAGE", payload: { mapId: m.id, dataUrl: url, width: m.width, height: m.height } });
+              }
+            }
+            // Migrate token portrait data URLs
+            for (const t of m.tokens || []) {
+              if (t.imageDataUrl && t.imageDataUrl.startsWith("data:image/")) {
+                const mimeType = t.imageDataUrl.split(";")[0].split(":")[1];
+                const url = await dbHelpers.uploadVTTTokenImageFromDataURL(t.imageDataUrl, t.id, mimeType);
+                if (url) {
+                  dispatch({ type: "UPDATE_TOKEN", payload: { mapId: m.id, tokenId: t.id, updates: { imageDataUrl: url } } });
+                }
               }
             }
           }

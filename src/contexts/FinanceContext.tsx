@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, useRef, ReactNode, useEffect } from 'react';
+import React, { createContext, useContext, useState, useCallback, useRef, ReactNode, useEffect, useMemo } from 'react';
 import { Transaction, PartyFunds, RecurringExpense } from '@/types/finance';
 import { dbHelpers } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
@@ -323,7 +323,7 @@ export const FinanceProvider: React.FC<FinanceProviderProps> = ({ children }) =>
     };
   }, [transactions]);
 
-  const value: FinanceContextType = {
+  const value = useMemo<FinanceContextType>(() => ({
     transactions,
     isLoading,
     getAllTransactions,
@@ -340,7 +340,7 @@ export const FinanceProvider: React.FC<FinanceProviderProps> = ({ children }) =>
     deleteRecurringExpense,
     getTransactionsByCategory,
     calculateNetIncome,
-  };
+  }), [transactions, isLoading, getAllTransactions, addTransaction, deleteTransaction, partyFunds, getPartyFunds, updatePartyFundsBalance, adjustPartyFunds, recurringExpenses, getAllRecurringExpenses, addRecurringExpense, updateRecurringExpense, deleteRecurringExpense, getTransactionsByCategory, calculateNetIncome]);
 
   return (
     <FinanceContext.Provider value={value}>

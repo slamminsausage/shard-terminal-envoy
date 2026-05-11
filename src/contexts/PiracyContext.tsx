@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, ReactNode, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useState, useCallback, ReactNode, useEffect, useRef, useMemo } from 'react';
 import {
   PiratePort,
   PirateCrew,
@@ -503,7 +503,7 @@ export const PiracyProvider: React.FC<PiracyProviderProps> = ({ children }) => {
     return stateRef.current.crew.filter(c => c.is_active).reduce((sum, c) => sum + c.base_salary, 0);
   }, []);
 
-  const value: PiracyContextType = {
+  const value = useMemo<PiracyContextType>(() => ({
     ports: state.ports,
     crew: state.crew,
     morale: state.morale,
@@ -534,7 +534,7 @@ export const PiracyProvider: React.FC<PiracyProviderProps> = ({ children }) => {
     getActiveCrew,
     getTotalShares,
     getTotalMonthlySalary,
-  };
+  }), [state, addPort, updatePort, deletePort, setPortAttitude, addCrew, updateCrew, deleteCrew, setMorale, adjustMorale, resetMorale, adjustStanding, resetStanding, addSpoilsDivision, addPreyEncounter, addPrizeShip, updatePrizeShip, deletePrizeShip, disposePrizeShip, getActiveCrew, getTotalShares, getTotalMonthlySalary]);
 
   return (
     <PiracyContext.Provider value={value}>

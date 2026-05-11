@@ -1,4 +1,4 @@
-import { createContext, useContext, ReactNode } from "react";
+import { createContext, useContext, ReactNode, useMemo } from "react";
 import { useBridgeState } from "@/hooks/useBridgeState";
 import { useShipCombat } from "@/hooks/useShipCombat";
 import type { BridgeState, Contact, BridgeMessage, BridgeScan } from "@/lib/bridge/bridgeTypes";
@@ -38,8 +38,9 @@ export function BridgeProvider({ children }: { children: ReactNode }) {
     updateContactFields: bridge.updateContactFields,
     moveShip: bridge.moveShip,
   });
+  const value = useMemo(() => ({ ...bridge, combat }), [bridge, combat]);
   return (
-    <BridgeContext.Provider value={{ ...bridge, combat }}>
+    <BridgeContext.Provider value={value}>
       {children}
     </BridgeContext.Provider>
   );

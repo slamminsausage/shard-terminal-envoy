@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useCallback, ReactNode, useMemo } from 'react';
 import { InventoryItem, ItemTemplate } from '@/types/inventory';
 import { dbHelpers } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
@@ -285,7 +285,7 @@ export const InventoryProvider: React.FC<InventoryProviderProps> = ({ children }
     };
   }, [items]);
 
-  const value: InventoryContextType = {
+  const value = useMemo<InventoryContextType>(() => ({
     items,
     isLoading,
     getAllItems,
@@ -299,7 +299,7 @@ export const InventoryProvider: React.FC<InventoryProviderProps> = ({ children }
     createTemplate,
     deleteTemplate,
     calculateEncumbrance,
-  };
+  }), [items, isLoading, getAllItems, getItem, createItem, updateItem, deleteItem, transferItem, templates, getAllTemplates, createTemplate, deleteTemplate, calculateEncumbrance]);
 
   return (
     <InventoryContext.Provider value={value}>

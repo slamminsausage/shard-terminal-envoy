@@ -135,7 +135,9 @@ export function useBridgeState() {
     import.meta.env?.VITE_DISABLE_SUPABASE === "true" ||
     ((import.meta.env?.DEV ?? false) && import.meta.env?.VITE_ENABLE_SUPABASE !== "true")
   );
-  const realtimeEnabled = import.meta.env?.VITE_ENABLE_SUPABASE_REALTIME === "true";
+  // Default: realtime on whenever Supabase itself is enabled.
+  // Can be explicitly disabled with VITE_DISABLE_SUPABASE_REALTIME=true.
+  const realtimeEnabled = supabaseEnabled && import.meta.env?.VITE_DISABLE_SUPABASE_REALTIME !== "true";
   const [bridgeState, setBridgeState] = useState<BridgeState>({
     id: "local-dev",
     mode: "tactical",

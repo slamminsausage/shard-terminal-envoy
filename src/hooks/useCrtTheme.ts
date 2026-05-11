@@ -106,7 +106,10 @@ export function useCrtTheme() {
   const [theme, setThemeState] = useState<CrtTheme>(() => {
     if (typeof window === 'undefined') return 'green';
     const stored = localStorage.getItem(THEME_STORAGE_KEY);
-    return (stored === 'amber' || stored === 'blue') ? stored : 'green';
+    const resolved: CrtTheme = (stored === 'amber' || stored === 'blue') ? stored : 'green';
+    // Apply synchronously in the initializer to avoid a flash of the default green theme
+    applyTheme(resolved);
+    return resolved;
   });
 
   useEffect(() => {

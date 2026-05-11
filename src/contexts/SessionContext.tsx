@@ -323,7 +323,7 @@ export const SessionProvider: React.FC<SessionProviderProps> = ({ children }) =>
     }
   }, [toast]);
 
-  const value: SessionContextType = {
+  const value = useMemo<SessionContextType>(() => ({
     sessions,
     currentSession,
     isLoading,
@@ -339,7 +339,7 @@ export const SessionProvider: React.FC<SessionProviderProps> = ({ children }) =>
     deleteLogEntry,
     getSessionRewards,
     addReward,
-  };
+  }), [sessions, currentSession, isLoading, getAllSessions, getSession, createSession, updateSession, deleteSession, setCurrentSession, getSessionLogs, addLogEntry, updateLogEntry, deleteLogEntry, getSessionRewards, addReward]);
 
   return (
     <SessionContext.Provider value={value}>

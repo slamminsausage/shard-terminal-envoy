@@ -362,7 +362,7 @@ export const QuestProvider: React.FC<QuestProviderProps> = ({ children }) => {
     return quests.filter(q => q.status === 'active');
   }, [quests]);
 
-  const value: QuestContextType = {
+  const value = useMemo<QuestContextType>(() => ({
     quests,
     questObjectives,
     isLoading,
@@ -381,7 +381,7 @@ export const QuestProvider: React.FC<QuestProviderProps> = ({ children }) => {
     reorderObjective,
     getQuestsByStatus,
     getActiveQuests,
-  };
+  }), [quests, questObjectives, isLoading, getAllQuests, getQuest, createQuest, updateQuest, deleteQuest, completeQuest, failQuest, getQuestObjectives, addObjective, updateObjective, deleteObjective, completeObjective, reorderObjective, getQuestsByStatus, getActiveQuests]);
 
   return (
     <QuestContext.Provider value={value}>

@@ -442,6 +442,22 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
     refreshData();
   }, [refreshData]);
 
+  // Periodically check session validity so an expired session is caught without
+  // requiring a page reload — otherwise saves silently fail and users are confused.
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (isAuthenticated && !isValidSession()) {
+        logout();
+        toast({
+          title: "Session Expired",
+          description: "Your session has expired. Please log in again.",
+          variant: "destructive",
+        });
+      }
+    }, 60_000); // check every minute
+    return () => clearInterval(interval);
+  }, [isAuthenticated, logout]);
+
   // Re-fetch data when player changes
   useEffect(() => {
     if (currentPlayer) {
@@ -676,6 +692,8 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
 
     try {
       await dbHelpers.deleteCharacter(characterId);
+      // Clean up thumbnail from storage (best-effort, don't block on failure)
+      dbHelpers.deleteCharacterThumbnail(characterId).catch(() => {});
       const updatedCharacters = charactersRef.current.filter(char => char.id !== characterId);
       setCharacters(updatedCharacters);
       localStorage.setItem('traveller_characters', JSON.stringify(updatedCharacters));
@@ -770,7 +788,9 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
 
     try {
       await dbHelpers.deleteVehicle(vehicleId);
-      setVehicles(prev => prev.filter(vehicle => vehicle.id !== vehicleId));
+      const updatedVehicles = vehiclesRef.current.filter(v => v.id !== vehicleId);
+      setVehicles(updatedVehicles);
+      localStorage.setItem('traveller_vehicles', JSON.stringify(updatedVehicles));
 
       toast({
         title: "Vehicle Deleted",
@@ -951,7 +971,7 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
     }
   }, []);
 
-  const value: CampaignContextType = {
+  const value = useMemo<CampaignContextType>(() => ({
     isAuthenticated,
     isLoading,
     currentPlayer,
@@ -978,7 +998,7 @@ export const CampaignProvider: React.FC<CampaignProviderProps> = ({ children }) 
     saveCrewGroup,
     deleteCrewGroup,
     assignCharacterToCrew,
-  };
+  }), [isAuthenticated, isLoading, currentPlayer, isGM, characters, vehicles, crewGroups, activeCharacter, activeCrewId, setActiveCharacter, checkAuthentication, login, register, loginWithCode, logout, refreshData, saveCharacter, saveVehicle, createNewCharacter, createNewVehicle, claimCharacter, deleteCharacter, deleteVehicle, saveCrewGroup, deleteCrewGroup, assignCharacterToCrew]);
 
   return (
     <CampaignContext.Provider value={value}>

@@ -298,7 +298,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({ children }) 
     return formatImperialDate(date.day, date.year);
   }, []);
 
-  const value: CalendarContextType = {
+  const value = useMemo<CalendarContextType>(() => ({
     currentDate,
     setCurrentDate,
     advanceTime,
@@ -312,7 +312,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({ children }) 
     deleteEvent,
     completeEvent,
     formatDate,
-  };
+  }), [currentDate, setCurrentDate, advanceTime, events, upcomingEvents, isLoading, getAllEvents, getUpcomingEvents, createEvent, updateEvent, deleteEvent, completeEvent, formatDate]);
 
   return (
     <CalendarContext.Provider value={value}>
