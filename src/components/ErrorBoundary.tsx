@@ -5,6 +5,8 @@ import { Button } from './ui/button';
 interface Props {
   children: ReactNode;
   fallbackMessage?: string;
+  /** Render a compact inline error panel instead of a full-screen overlay */
+  inline?: boolean;
 }
 
 interface State {
@@ -73,6 +75,20 @@ class ErrorBoundary extends Component<Props, State> {
 
   render() {
     if (this.state.hasError) {
+      if (this.props.inline) {
+        return (
+          <div className="flex flex-col items-center justify-center h-full min-h-[200px] p-6 gap-4 font-mono text-sm">
+            <p className="text-destructive">⚠ {this.props.fallbackMessage || 'This section encountered an error'}</p>
+            {this.state.error && (
+              <p className="text-muted-foreground text-xs max-w-md text-center">{this.state.error.message}</p>
+            )}
+            <div className="flex gap-2">
+              <Button size="sm" variant="outline" onClick={this.handleReset}>Try Again</Button>
+              <Button size="sm" onClick={this.handleReload}>Reload</Button>
+            </div>
+          </div>
+        );
+      }
       return (
         <div className="min-h-screen flex items-center justify-center p-6 bg-background">
           <Card className="max-w-2xl w-full border-destructive/50 bg-card/60">

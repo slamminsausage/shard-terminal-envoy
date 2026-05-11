@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useCallback, ReactNode, useMemo } from 'react';
 import { TradeGood, TradeMarketRoll } from '@/types/trade';
 import { dbHelpers } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
@@ -250,7 +250,7 @@ export const TradeProvider: React.FC<TradeProviderProps> = ({ children }) => {
     return { profit, profitPercent };
   }, [tradeGoods]);
 
-  const value: TradeContextType = {
+  const value = useMemo<TradeContextType>(() => ({
     tradeGoods,
     isLoading,
     getAllTradeGoods,
@@ -265,7 +265,7 @@ export const TradeProvider: React.FC<TradeProviderProps> = ({ children }) => {
     calculateCargoTonnage,
     calculateTotalInvestment,
     calculatePotentialProfit,
-  };
+  }), [tradeGoods, isLoading, getAllTradeGoods, purchaseTradeGood, sellTradeGood, updateTradeGood, deleteTradeGood, marketRolls, getAllMarketRolls, saveMarketRoll, getCargoByVehicle, calculateCargoTonnage, calculateTotalInvestment, calculatePotentialProfit]);
 
   return (
     <TradeContext.Provider value={value}>

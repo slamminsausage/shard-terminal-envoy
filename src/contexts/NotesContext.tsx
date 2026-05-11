@@ -370,7 +370,7 @@ export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   return (
     <NotesContext.Provider
-      value={{
+      value={useMemo(() => ({
         playerNotes,
         addPlayerNote,
         updatePlayerNote,
@@ -381,7 +381,7 @@ export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         deleteHandout,
         toggleHandoutVisibility,
         isGMMode,
-      }}
+      }), [playerNotes, addPlayerNote, updatePlayerNote, deletePlayerNote, handouts, addHandout, updateHandout, deleteHandout, toggleHandoutVisibility, isGMMode])}
     >
       {children}
     </NotesContext.Provider>

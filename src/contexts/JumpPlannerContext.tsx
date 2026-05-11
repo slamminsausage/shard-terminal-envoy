@@ -765,7 +765,7 @@ export function JumpPlannerProvider({ children }: { children: React.ReactNode })
 
   // ===== Context Value =====
 
-  const value: JumpPlannerContextValue = {
+  const value = useMemo<JumpPlannerContextValue>(() => ({
     ...state,
     allNotes: visibleAllNotes,
     currentNote: visibleCurrentNote,
@@ -794,7 +794,7 @@ export function JumpPlannerProvider({ children }: { children: React.ReactNode })
     setMarkerFilter,
     setMapLocation,
     clearError,
-  };
+  }), [state, visibleAllNotes, visibleCurrentNote, visibleHexMarkers, visibleCurrentHexMarkers, setCurrentLocation, setPlayerLocation, handleMapClick, setJumpRating, loadJumpWorlds, selectJumpWorld, setRouteStart, setRouteEnd, setRouteOptions, setRouteEndFromWorld, planRoute, loadNote, loadAllNotes, updateNote, saveNote, loadAllMarkers, loadMarkersForHex, saveMarker, deleteMarker, toggleMarkerActive, setMarkerFilter, setMapLocation, clearError]);
 
   return (
     <JumpPlannerContext.Provider value={value}>

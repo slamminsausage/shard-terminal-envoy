@@ -444,6 +444,9 @@ export interface VTTHistoryEntry {
 // --- VTT Context State ---
 
 export interface VTTState {
+  /** Incremented when the saved shape changes to drive migration logic */
+  schemaVersion?: number;
+
   // Maps
   maps: VTTMap[];
   activeMapId: string | null;
@@ -627,8 +630,11 @@ export function createDefaultMap(name: string = "New Map"): VTTMap {
   };
 }
 
+export const VTT_SCHEMA_VERSION = 2;
+
 export function createDefaultVTTState(): VTTState {
   return {
+    schemaVersion: VTT_SCHEMA_VERSION,
     maps: [],
     activeMapId: null,
     activeTool: "cursor",

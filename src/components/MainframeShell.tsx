@@ -6,6 +6,7 @@ import AppFooter from "./layout/AppFooter";
 import TerminalLoadingSkeleton from "./TerminalLoadingSkeleton";
 import { KeyboardShortcutOverlay } from "./KeyboardShortcutOverlay";
 import { lazyWithRetry, lazyNamedWithRetry } from "@/lib/lazyWithRetry";
+import ErrorBoundary from "./ErrorBoundary";
 
 // Lazy-loaded tab interfaces with automatic retry on stale chunk errors
 const TerminalInterface = lazyWithRetry(() => import("./interfaces/TerminalInterface"));
@@ -89,15 +90,15 @@ export default function MainframeShell() {
               exit={{ opacity: 0, y: 6 }}
               transition={{ duration: 0.15, ease: "easeOut" }}
             >
-              {activeTab === "terminal" && <TerminalInterface />}
-              {activeTab === "crew" && <CrewInterface />}
-              {activeTab === "vehicles" && <VehicleInterface />}
-              {activeTab === "bridge" && <BridgeConsole />}
-              {activeTab === "navigation" && <JumpPlannerInterface />}
-              {activeTab === "campaign" && <CampaignInterface />}
-              {activeTab === "piracy" && <PiracyInterface />}
-              {activeTab === "combat" && <CombatInterface />}
-              {activeTab === "vtt" && <VTTInterface />}
+              {activeTab === "terminal" && <ErrorBoundary inline fallbackMessage="Terminal system failure"><TerminalInterface /></ErrorBoundary>}
+              {activeTab === "crew" && <ErrorBoundary inline fallbackMessage="Crew interface failure"><CrewInterface /></ErrorBoundary>}
+              {activeTab === "vehicles" && <ErrorBoundary inline fallbackMessage="Hangar interface failure"><VehicleInterface /></ErrorBoundary>}
+              {activeTab === "bridge" && <ErrorBoundary inline fallbackMessage="Bridge console failure"><BridgeConsole /></ErrorBoundary>}
+              {activeTab === "navigation" && <ErrorBoundary inline fallbackMessage="Navigation failure"><JumpPlannerInterface /></ErrorBoundary>}
+              {activeTab === "campaign" && <ErrorBoundary inline fallbackMessage="Campaign interface failure"><CampaignInterface /></ErrorBoundary>}
+              {activeTab === "piracy" && <ErrorBoundary inline fallbackMessage="Piracy interface failure"><PiracyInterface /></ErrorBoundary>}
+              {activeTab === "combat" && <ErrorBoundary inline fallbackMessage="Combat interface failure"><CombatInterface /></ErrorBoundary>}
+              {activeTab === "vtt" && <ErrorBoundary inline fallbackMessage="VTT failure"><VTTInterface /></ErrorBoundary>}
             </motion.div>
           </AnimatePresence>
         </Suspense>

@@ -18,6 +18,7 @@ import { PiracyProvider } from "@/contexts/PiracyContext";
 import { VTTProvider } from "@/contexts/VTTContext";
 import { VTTAudioProvider } from "@/contexts/VTTAudioContext";
 import { useVTTAudio } from "@/hooks/useVTTAudio";
+import { DiceRoller } from "@/components/DiceRoller";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import CRTOverlay from "@/components/ui/CRTOverlay";
 import NotFound from "./pages/NotFound";
@@ -76,6 +77,7 @@ const App = () => (
                                   <Suspense fallback={<div className="bg-black min-h-screen" />}>
                                     <GlobalSearch />
                                     <KeyboardShortcutsHelp />
+                                    <DiceRoller />
                                     <Routes>
                                       <Route path="/" element={<Index />} />
                                       <Route path="/character-view/:id" element={<CharacterViewRoute />} />
