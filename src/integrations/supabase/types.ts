@@ -177,15 +177,18 @@ export type Database = {
           crew_requirements: Json | null
           fuel_capacity: number | null
           hull: number | null
+          hull_current: number | null
           id: string
           jump_drive: number | null
           jump_rating: number | null
+          life_support: number | null
           maintenance_cost: number | null
           maneuver_drive: number | null
           name: string
           passenger_capacity: number | null
           player_id: string
           power_plant: number | null
+          salaries: number | null
           screens: Json | null
           sensors: number | null
           specifications: Json | null
@@ -209,15 +212,18 @@ export type Database = {
           crew_requirements?: Json | null
           fuel_capacity?: number | null
           hull?: number | null
+          hull_current?: number | null
           id?: string
           jump_drive?: number | null
           jump_rating?: number | null
+          life_support?: number | null
           maintenance_cost?: number | null
           maneuver_drive?: number | null
           name?: string
           passenger_capacity?: number | null
           player_id?: string
           power_plant?: number | null
+          salaries?: number | null
           screens?: Json | null
           sensors?: number | null
           specifications?: Json | null
@@ -241,15 +247,18 @@ export type Database = {
           crew_requirements?: Json | null
           fuel_capacity?: number | null
           hull?: number | null
+          hull_current?: number | null
           id?: string
           jump_drive?: number | null
           jump_rating?: number | null
+          life_support?: number | null
           maintenance_cost?: number | null
           maneuver_drive?: number | null
           name?: string
           passenger_capacity?: number | null
           player_id?: string
           power_plant?: number | null
+          salaries?: number | null
           screens?: Json | null
           sensors?: number | null
           specifications?: Json | null
