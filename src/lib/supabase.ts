@@ -429,40 +429,48 @@ export const dbHelpers = {
     if (vehicleData.life_support !== undefined) dbPayload.life_support = vehicleData.life_support;
     if (vehicleData.salaries !== undefined) dbPayload.salaries = vehicleData.salaries;
 
-    try {
+    const OPTIONAL_COLS = ['hull_current', 'life_support', 'salaries'] as const;
+
+    const attemptSave = async (payload: Record<string, unknown>) => {
       if (vehicleData.id) {
-        // Update existing vehicle
         const { data, error } = await supabase
           .from('vehicles')
-          .update(dbPayload)
+          .update(payload)
           .eq('id', vehicleData.id)
           .select()
-          .single()
-
-        if (error) {
-          console.error('Database error:', error)
-          throw error
-        }
-        return data
+          .single();
+        if (error) throw error;
+        return data;
       } else {
-        // Create new vehicle - add player_id for new records
-        dbPayload.player_id = 'campaign';
-
+        payload.player_id = 'campaign';
         const { data, error } = await supabase
           .from('vehicles')
-          .insert([dbPayload])
+          .insert([payload])
           .select()
-          .single()
-
-        if (error) {
-          console.error('Database error:', error)
-          throw error
-        }
-        return data
+          .single();
+        if (error) throw error;
+        return data;
       }
-    } catch (error) {
-      console.error('Failed to save vehicle:', error)
-      throw error
+    };
+
+    try {
+      return await attemptSave(dbPayload);
+    } catch (firstError: any) {
+      // If the error looks like an unknown-column 400, retry without the
+      // optional columns that may not exist on older DB deployments.
+      const is400 = firstError?.code === 'PGRST204' || firstError?.status === 400 || firstError?.code === '42703';
+      if (!is400) {
+        console.error('Failed to save vehicle:', firstError);
+        throw firstError;
+      }
+      const fallback = { ...dbPayload };
+      for (const col of OPTIONAL_COLS) delete fallback[col];
+      try {
+        return await attemptSave(fallback);
+      } catch (secondError) {
+        console.error('Failed to save vehicle:', secondError);
+        throw secondError;
+      }
     }
   },
 
