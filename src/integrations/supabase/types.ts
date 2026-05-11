@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      combat_encounters: {
+        Row: {
+          id: string
+          player_id: string
+          current_round: number
+          current_turn_index: number
+          combatants: Json
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          player_id?: string
+          current_round?: number
+          current_turn_index?: number
+          combatants?: Json
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          player_id?: string
+          current_round?: number
+          current_turn_index?: number
+          combatants?: Json
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       game_settings: {
         Row: {
           id: string

@@ -379,7 +379,11 @@ export const dbHelpers = {
   },
 
   async saveVehicle(vehicleData: Partial<Vehicle>) {
-    // Explicitly map only valid database columns to avoid 400 errors
+    // Coerce numeric fields to integers as required by the DB schema.
+    // Form inputs and pre-made ship data can produce floats (e.g. 29.7 tons).
+    const int = (v: number | undefined) => v !== undefined ? Math.round(v) : undefined;
+    const bigint = (v: number | undefined) => v !== undefined ? Math.round(v) : undefined;
+
     const dbPayload: Record<string, unknown> = {};
 
     // Basic information
@@ -388,30 +392,30 @@ export const dbHelpers = {
     if (vehicleData.class_type !== undefined) dbPayload.class_type = vehicleData.class_type;
 
     // Technical specifications
-    if (vehicleData.tech_level !== undefined) dbPayload.tech_level = vehicleData.tech_level;
-    if (vehicleData.tonnage !== undefined) dbPayload.tonnage = vehicleData.tonnage;
-    if (vehicleData.cost !== undefined) dbPayload.cost = vehicleData.cost;
+    if (vehicleData.tech_level !== undefined) dbPayload.tech_level = int(vehicleData.tech_level);
+    if (vehicleData.tonnage !== undefined) dbPayload.tonnage = int(vehicleData.tonnage);
+    if (vehicleData.cost !== undefined) dbPayload.cost = bigint(vehicleData.cost);
 
     // Hull and structure
-    if (vehicleData.hull !== undefined) dbPayload.hull = vehicleData.hull;
-    if (vehicleData.hull_current !== undefined) dbPayload.hull_current = vehicleData.hull_current;
-    if (vehicleData.structure !== undefined) dbPayload.structure = vehicleData.structure;
-    if (vehicleData.armor !== undefined) dbPayload.armor = vehicleData.armor;
+    if (vehicleData.hull !== undefined) dbPayload.hull = int(vehicleData.hull);
+    if (vehicleData.hull_current !== undefined) dbPayload.hull_current = int(vehicleData.hull_current);
+    if (vehicleData.structure !== undefined) dbPayload.structure = int(vehicleData.structure);
+    if (vehicleData.armor !== undefined) dbPayload.armor = int(vehicleData.armor);
 
     // Core systems
-    if (vehicleData.maneuver_drive !== undefined) dbPayload.maneuver_drive = vehicleData.maneuver_drive;
-    if (vehicleData.jump_drive !== undefined) dbPayload.jump_drive = vehicleData.jump_drive;
-    if (vehicleData.power_plant !== undefined) dbPayload.power_plant = vehicleData.power_plant;
+    if (vehicleData.maneuver_drive !== undefined) dbPayload.maneuver_drive = int(vehicleData.maneuver_drive);
+    if (vehicleData.jump_drive !== undefined) dbPayload.jump_drive = int(vehicleData.jump_drive);
+    if (vehicleData.power_plant !== undefined) dbPayload.power_plant = int(vehicleData.power_plant);
 
     // Performance
-    if (vehicleData.acceleration !== undefined) dbPayload.acceleration = vehicleData.acceleration;
-    if (vehicleData.top_speed !== undefined) dbPayload.top_speed = vehicleData.top_speed;
-    if (vehicleData.jump_rating !== undefined) dbPayload.jump_rating = vehicleData.jump_rating;
+    if (vehicleData.acceleration !== undefined) dbPayload.acceleration = int(vehicleData.acceleration);
+    if (vehicleData.top_speed !== undefined) dbPayload.top_speed = int(vehicleData.top_speed);
+    if (vehicleData.jump_rating !== undefined) dbPayload.jump_rating = int(vehicleData.jump_rating);
 
     // Fuel and cargo
-    if (vehicleData.fuel_capacity !== undefined) dbPayload.fuel_capacity = vehicleData.fuel_capacity;
-    if (vehicleData.cargo_capacity !== undefined) dbPayload.cargo_capacity = vehicleData.cargo_capacity;
-    if (vehicleData.passenger_capacity !== undefined) dbPayload.passenger_capacity = vehicleData.passenger_capacity;
+    if (vehicleData.fuel_capacity !== undefined) dbPayload.fuel_capacity = int(vehicleData.fuel_capacity);
+    if (vehicleData.cargo_capacity !== undefined) dbPayload.cargo_capacity = int(vehicleData.cargo_capacity);
+    if (vehicleData.passenger_capacity !== undefined) dbPayload.passenger_capacity = int(vehicleData.passenger_capacity);
 
     // JSONB fields
     if (vehicleData.weapons !== undefined) dbPayload.weapons = vehicleData.weapons;
@@ -420,14 +424,14 @@ export const dbHelpers = {
     if (vehicleData.specifications !== undefined) dbPayload.specifications = vehicleData.specifications;
 
     // Systems and equipment
-    if (vehicleData.computer_rating !== undefined) dbPayload.computer_rating = vehicleData.computer_rating;
-    if (vehicleData.sensors !== undefined) dbPayload.sensors = vehicleData.sensors;
-    if (vehicleData.communications !== undefined) dbPayload.communications = vehicleData.communications;
+    if (vehicleData.computer_rating !== undefined) dbPayload.computer_rating = int(vehicleData.computer_rating);
+    if (vehicleData.sensors !== undefined) dbPayload.sensors = int(vehicleData.sensors);
+    if (vehicleData.communications !== undefined) dbPayload.communications = int(vehicleData.communications);
 
     // Maintenance and operations
-    if (vehicleData.maintenance_cost !== undefined) dbPayload.maintenance_cost = vehicleData.maintenance_cost;
-    if (vehicleData.life_support !== undefined) dbPayload.life_support = vehicleData.life_support;
-    if (vehicleData.salaries !== undefined) dbPayload.salaries = vehicleData.salaries;
+    if (vehicleData.maintenance_cost !== undefined) dbPayload.maintenance_cost = bigint(vehicleData.maintenance_cost);
+    if (vehicleData.life_support !== undefined) dbPayload.life_support = bigint(vehicleData.life_support);
+    if (vehicleData.salaries !== undefined) dbPayload.salaries = bigint(vehicleData.salaries);
 
     const OPTIONAL_COLS = ['hull_current', 'life_support', 'salaries'] as const;
 
