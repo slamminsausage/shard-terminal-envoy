@@ -73,17 +73,21 @@ ALTER TABLE public.custom_terminals ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.custom_terminal_logs ENABLE ROW LEVEL SECURITY;
 
 -- All authenticated users can read
-CREATE POLICY IF NOT EXISTS "custom_terminals_read"
+DROP POLICY IF EXISTS "custom_terminals_read" ON public.custom_terminals;
+CREATE POLICY "custom_terminals_read"
   ON public.custom_terminals FOR SELECT USING (auth.role() = 'authenticated');
 
-CREATE POLICY IF NOT EXISTS "custom_terminal_logs_read"
+DROP POLICY IF EXISTS "custom_terminal_logs_read" ON public.custom_terminal_logs;
+CREATE POLICY "custom_terminal_logs_read"
   ON public.custom_terminal_logs FOR SELECT USING (auth.role() = 'authenticated');
 
 -- Unrestricted write for authenticated users (GM gate enforced in app layer)
-CREATE POLICY IF NOT EXISTS "custom_terminals_write"
+DROP POLICY IF EXISTS "custom_terminals_write" ON public.custom_terminals;
+CREATE POLICY "custom_terminals_write"
   ON public.custom_terminals FOR ALL USING (auth.role() = 'authenticated');
 
-CREATE POLICY IF NOT EXISTS "custom_terminal_logs_write"
+DROP POLICY IF EXISTS "custom_terminal_logs_write" ON public.custom_terminal_logs;
+CREATE POLICY "custom_terminal_logs_write"
   ON public.custom_terminal_logs FOR ALL USING (auth.role() = 'authenticated');
 
 -- Enable Realtime for live updates
