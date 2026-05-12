@@ -47,6 +47,8 @@ import { useTerminalHistory } from '@/hooks/useTerminalHistory';
 import { useTypewriterSpeed } from '@/hooks/useTypewriterSpeed';
 import { useLockedTerminals } from '@/hooks/useLockedTerminals';
 import { useCustomTerminals } from '@/hooks/useCustomTerminals';
+import { isTerminalLockedOut, recordFailure, unlockTerminal as securityUnlockTerminal } from '@/lib/terminalSecurity';
+import TerminalLockoutScreen from '../terminal/TerminalLockoutScreen';
 import type { DiceRoll } from '@/lib/dice';
 
 // Terminal visual effects helper
@@ -92,6 +94,9 @@ function TerminalInterface() {
   const [showGMPanel, setShowGMPanel] = useState(false);
   // GM terminal builder visibility
   const [showGMBuilder, setShowGMBuilder] = useState(false);
+
+  // Security lockout — true when terminal has exceeded failure threshold
+  const [securityLockout, setSecurityLockout] = useState(false);
 
   // Custom terminals (GM-created)
   const { asTerminalDefinitions: getCustomTerminalDefs } = useCustomTerminals();
@@ -140,6 +145,12 @@ function TerminalInterface() {
     onFailure: () => {
       audioManager.playEffect('access_denied');
 
+      // Record security failure toward terminal lockout threshold
+      if (!isGM && session.activeTerminal) {
+        const nowLocked = recordFailure(session.activeTerminal.code, 5);
+        if (nowLocked) setSecurityLockout(true);
+      }
+
       // On password failure: check if roll check is available as fallback
       if (session.selectedLog?.roll_check || session.selectedLog?.requires_roll) {
         const rollCheck = session.selectedLog.roll_check || {
@@ -178,6 +189,15 @@ function TerminalInterface() {
   // Reset terminal password auth state when active terminal changes
   useEffect(() => {
     terminalPasswordAuth.reset();
+  }, [session.activeTerminal?.code]);
+
+  // Check security lockout whenever active terminal changes
+  useEffect(() => {
+    if (session.activeTerminal) {
+      setSecurityLockout(isTerminalLockedOut(session.activeTerminal.code));
+    } else {
+      setSecurityLockout(false);
+    }
   }, [session.activeTerminal?.code]);
 
   // Initialize on mount
@@ -537,6 +557,11 @@ function TerminalInterface() {
       }
     } else {
       audioManager.playEffect('access_denied');
+      // Record security failure toward terminal lockout
+      if (!isGM && session.activeTerminal) {
+        const nowLocked = recordFailure(session.activeTerminal.code, 5);
+        if (nowLocked) setSecurityLockout(true);
+      }
       // Roll check is the final fallback after password failure, so go back to terminal
       session.goToTerminal();
     }
@@ -693,7 +718,14 @@ function TerminalInterface() {
           recentHistory={terminalHistory.getRecentAccesses(15)}
           lockedTerminals={lockedTerminals}
           onLockTerminal={lockTerminal}
-          onUnlockTerminal={unlockTerminal}
+          onUnlockTerminal={(code) => {
+            unlockTerminal(code);
+            securityUnlockTerminal(code);
+            // Clear lockout state if the unlocked terminal is currently active
+            if (session.activeTerminal?.code === code) {
+              setSecurityLockout(false);
+            }
+          }}
           typewriterSpeed={typewriterSpeed}
           onSetSpeed={setTypewriterSpeed}
           onConnect={(code) => {
@@ -714,13 +746,22 @@ function TerminalInterface() {
             } h-full overflow-auto relative bg-background/20 border border-primary/30 p-3 sm:p-6 3xl:p-8`}
             ref={terminalRef}
           >
-            {session.logsLoading && !session.terminalPasswordRequired && (
+            {/* Security lockout — takes priority over all other content */}
+            {securityLockout && session.activeTerminal && (
+              <TerminalLockoutScreen
+                terminalCode={session.activeTerminal.code}
+                terminalName={session.activeTerminal.name}
+                accentColor="#ff3344"
+              />
+            )}
+
+            {!securityLockout && session.logsLoading && !session.terminalPasswordRequired && (
               <div className="mb-4 p-3 text-sm font-mono border border-primary/30 rounded bg-background/60">
                 Synchronizing terminal logs...
               </div>
             )}
 
-            {session.logsError && !session.logsLoading && !session.terminalPasswordRequired && (
+            {!securityLockout && session.logsError && !session.logsLoading && !session.terminalPasswordRequired && (
               <div className="mb-4 p-3 text-sm font-mono border border-red-500/40 rounded bg-red-900/40 text-red-100">
                 {session.logsError}
                 <div className="mt-3 flex gap-2">
@@ -735,7 +776,7 @@ function TerminalInterface() {
             )}
 
             {/* Terminal Password Prompt */}
-            {session.terminalPasswordRequired && !session.showDeepCore && (
+            {!securityLockout && session.terminalPasswordRequired && !session.showDeepCore && (
               <PasswordPrompt
                 label={`Terminal ${session.activeTerminal?.name || ''} requires password`}
                 maxAttempts={3}
@@ -752,7 +793,7 @@ function TerminalInterface() {
             )}
 
             {/* Special Roll Check */}
-            {session.specialRollCheck && !session.terminalPasswordRequired && !session.showDeepCore && (
+            {!securityLockout && session.specialRollCheck && !session.terminalPasswordRequired && !session.showDeepCore && (
                 <RollCheckPrompt
                   difficulty={session.specialRollCheck.difficulty}
                   skill={session.specialRollCheck.skill}
@@ -763,7 +804,7 @@ function TerminalInterface() {
             )}
 
             {/* Standard Roll Check */}
-            {session.rollCheck && !session.terminalPasswordRequired && !session.specialRollCheck && !session.showDeepCore && (
+            {!securityLockout && session.rollCheck && !session.terminalPasswordRequired && !session.specialRollCheck && !session.showDeepCore && (
                 <RollCheckPrompt
                   difficulty={session.rollCheck.difficulty}
                   skill="Electronics (Computers)"
@@ -774,7 +815,7 @@ function TerminalInterface() {
             )}
 
             {/* Log Password Prompt */}
-            {session.requiresPassword &&
+            {!securityLockout && session.requiresPassword &&
              !session.terminalPasswordRequired &&
              !session.rollCheck &&
              !session.specialRollCheck &&
@@ -795,7 +836,7 @@ function TerminalInterface() {
             )}
 
             {/* Action Sequence Player */}
-            {session.activeSequence &&
+            {!securityLockout && session.activeSequence &&
              session.selectedLog &&
              !session.requiresPassword &&
              !session.rollCheck &&
@@ -815,7 +856,12 @@ function TerminalInterface() {
                     }
                   }
                 }}
-                onFail={() => {}}
+                onFail={() => {
+                  if (!isGM && session.activeTerminal) {
+                    const nowLocked = recordFailure(session.activeTerminal.code, 5);
+                    if (nowLocked) setSecurityLockout(true);
+                  }
+                }}
                 onBack={() => {
                   session.setActiveSequence(null);
                   session.goToTerminal();
@@ -828,7 +874,7 @@ function TerminalInterface() {
             )}
 
             {/* Log Detail View */}
-            {session.selectedLog &&
+            {!securityLockout && session.selectedLog &&
              !session.activeSequence &&
              !session.requiresPassword &&
              !session.rollCheck &&
@@ -858,7 +904,7 @@ function TerminalInterface() {
             )}
 
             {/* Terminal Log List */}
-            {mergedLogs &&
+            {!securityLockout && mergedLogs &&
              !session.selectedLog &&
              !session.terminalPasswordRequired && (
               <TerminalView
@@ -872,7 +918,8 @@ function TerminalInterface() {
             )}
 
             {/* Empty state */}
-            {!session.logData &&
+            {!securityLockout &&
+             !session.logData &&
              !session.selectedLog &&
              !session.terminalPasswordRequired &&
              !session.logsLoading &&

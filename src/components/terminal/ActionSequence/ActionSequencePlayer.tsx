@@ -5,6 +5,12 @@ import AutoStep from './AutoStep';
 import PromptStep from './PromptStep';
 import ProgressStep from './ProgressStep';
 import ChoiceStep from './ChoiceStep';
+import KeypadStep from './KeypadStep';
+import CountdownStep from './CountdownStep';
+import StatusPanelStep from './StatusPanelStep';
+import AlarmStep from './AlarmStep';
+import DoorLockPanel from '../panels/DoorLockPanel';
+import AirlockPanel from '../panels/AirlockPanel';
 
 interface ActionSequencePlayerProps {
   sequence: ActionSequence;
@@ -18,15 +24,17 @@ interface ActionSequencePlayerProps {
 type SequenceStatus = 'running' | 'completed' | 'failed';
 
 const CATEGORY_LABELS: Record<string, string> = {
-  door_unlock: 'DOOR UNLOCK SEQUENCE',
+  door_unlock:     'DOOR UNLOCK SEQUENCE',
   system_override: 'SYSTEM OVERRIDE',
   data_extraction: 'DATA EXTRACTION',
+  airlock:         'AIRLOCK CONTROL',
 };
 
 const CATEGORY_COLORS: Record<string, string> = {
-  door_unlock: '#ff8800',
+  door_unlock:     '#ff8800',
   system_override: '#ff3344',
   data_extraction: '#00ccff',
+  airlock:         '#3ae2b3',
 };
 
 export default function ActionSequencePlayer({
@@ -50,7 +58,6 @@ export default function ActionSequencePlayer({
 
   const accentColor = CATEGORY_COLORS[sequence.category] || '#88ffaa';
 
-  // Auto-scroll to bottom when step changes
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -60,13 +67,9 @@ export default function ActionSequencePlayer({
   const advanceStep = useCallback(() => {
     setCompletedSteps(prev => [...prev, currentStepIndex]);
     const nextIndex = currentStepIndex + 1;
-
     if (nextIndex >= totalSteps) {
       setStatus('completed');
-      if (sequence.on_complete.sound) {
-        audioManager.playEffect(sequence.on_complete.sound);
-      }
-      // Persist the completion but stay on this screen
+      if (sequence.on_complete.sound) audioManager.playEffect(sequence.on_complete.sound);
       onComplete();
     } else {
       setCurrentStepIndex(nextIndex);
@@ -75,46 +78,129 @@ export default function ActionSequencePlayer({
 
   const handleFail = useCallback(() => {
     setStatus('failed');
-    if (sequence.on_failure?.sound) {
-      audioManager.playEffect(sequence.on_failure.sound);
-    }
-  }, [sequence]);
+    if (sequence.on_failure?.sound) audioManager.playEffect(sequence.on_failure.sound);
+    onFail();
+  }, [sequence, onFail]);
 
   const renderStep = (step: SequenceStep) => {
     switch (step.type) {
-      case 'auto':
-        return <AutoStep step={step} onComplete={advanceStep} />;
-      case 'prompt':
-        return <PromptStep step={step} onComplete={advanceStep} onFail={handleFail} />;
-      case 'progress':
-        return <ProgressStep step={step} onComplete={advanceStep} />;
-      case 'choice':
-        return <ChoiceStep step={step} onComplete={advanceStep} onFail={handleFail} />;
-      default:
-        return null;
+      case 'auto':         return <AutoStep step={step} onComplete={advanceStep} />;
+      case 'prompt':       return <PromptStep step={step} onComplete={advanceStep} onFail={handleFail} />;
+      case 'progress':     return <ProgressStep step={step} onComplete={advanceStep} />;
+      case 'choice':       return <ChoiceStep step={step} onComplete={advanceStep} onFail={handleFail} />;
+      case 'keypad':       return <KeypadStep step={step} onComplete={advanceStep} onFail={handleFail} />;
+      case 'countdown':    return <CountdownStep step={step} onComplete={advanceStep} />;
+      case 'status_panel': return <StatusPanelStep step={step} onComplete={advanceStep} />;
+      case 'alarm':        return <AlarmStep step={step} onComplete={advanceStep} />;
+      default:             return null;
     }
   };
 
+  const renderCompletedStep = (step: SequenceStep, stepIdx: number) => {
+    if (step.type === 'auto') {
+      return (
+        <div key={stepIdx} className="font-mono text-sm leading-7 space-y-0.5 opacity-50">
+          {step.lines.map((line, i) => (
+            <div key={i} className="text-terminal-primary/60 whitespace-pre-wrap">{line}</div>
+          ))}
+        </div>
+      );
+    }
+    if (step.type === 'prompt') {
+      return (
+        <div key={stepIdx} className="font-mono text-sm opacity-50">
+          <div className="text-terminal-primary/60">{step.prompt_text}</div>
+          <div className="text-green-400/60">{'>> INPUT ACCEPTED'}</div>
+        </div>
+      );
+    }
+    if (step.type === 'keypad') {
+      return (
+        <div key={stepIdx} className="font-mono text-sm opacity-50">
+          <div className="text-terminal-primary/60">{step.label ?? 'KEYPAD INPUT'}</div>
+          <div className="text-green-400/60">{'>> CODE ACCEPTED'}</div>
+        </div>
+      );
+    }
+    if (step.type === 'progress') {
+      return (
+        <div key={stepIdx} className="font-mono text-sm opacity-50">
+          <div className="text-terminal-primary/60">{step.label}</div>
+          {step.complete_message && (
+            <div className="text-green-400/60">{'>> '}{step.complete_message}</div>
+          )}
+        </div>
+      );
+    }
+    if (step.type === 'choice') {
+      return (
+        <div key={stepIdx} className="font-mono text-sm opacity-50">
+          <div className="text-terminal-primary/60">{step.prompt_text}</div>
+          <div className="text-green-400/60">{'>> SELECTION CONFIRMED'}</div>
+        </div>
+      );
+    }
+    if (step.type === 'countdown') {
+      return (
+        <div key={stepIdx} className="font-mono text-sm opacity-40">
+          <div className="text-terminal-primary/60">{step.label ?? 'COUNTDOWN'} — ELAPSED</div>
+        </div>
+      );
+    }
+    if (step.type === 'status_panel') {
+      return (
+        <div key={stepIdx} className="font-mono text-sm opacity-40">
+          <div className="text-terminal-primary/60">{step.label ?? 'STATUS PANEL'} — UPDATED</div>
+        </div>
+      );
+    }
+    if (step.type === 'alarm') {
+      return (
+        <div key={stepIdx} className="font-mono text-xs opacity-40" style={{ color: '#ff334488' }}>
+          {'⚠ '}{step.message ?? 'ALERT'}
+        </div>
+      );
+    }
+    return null;
+  };
+
+  // Derive panel state for specialized categories
+  const panelState = status === 'completed' ? 'open' : status === 'failed' ? 'failed' :
+    completedSteps.length > 0 ? 'unlocking' : 'locked';
+
+  const airlockState = status === 'completed' ? 'open' : status === 'failed' ? 'failed' :
+    completedSteps.length > 0 ? 'equalizing' : 'sealed';
+
   return (
     <div className="h-full flex flex-col">
-      {/* Header */}
+      {/* ── Specialized panel overlay ── */}
+      {sequence.category === 'door_unlock' && (
+        <DoorLockPanel
+          state={panelState}
+          accentColor={accentColor}
+          stepCount={totalSteps}
+          completedStepCount={completedSteps.length}
+        />
+      )}
+      {sequence.category === 'airlock' && (
+        <AirlockPanel
+          state={airlockState}
+          accentColor={accentColor}
+          stepCount={totalSteps}
+          completedStepCount={completedSteps.length}
+        />
+      )}
+
+      {/* ── Header ── */}
       <div
-        className="flex items-center justify-between px-4 py-3 border-b"
-        style={{
-          borderColor: `${accentColor}44`,
-          background: `${accentColor}08`,
-        }}
+        className="flex items-center justify-between px-4 py-3 border-b shrink-0"
+        style={{ borderColor: `${accentColor}44`, background: `${accentColor}08` }}
       >
-        <div className="flex items-center gap-3">
-          <span
-            className="text-xs font-mono tracking-widest font-bold"
-            style={{ color: accentColor }}
-          >
-            {CATEGORY_LABELS[sequence.category] || 'ACTION SEQUENCE'}
-          </span>
-        </div>
+        <span className="text-xs font-mono tracking-widest font-bold" style={{ color: accentColor }}>
+          {CATEGORY_LABELS[sequence.category] || 'ACTION SEQUENCE'}
+        </span>
         <div className="flex items-center gap-4">
-          {/* Step progress */}
+          {/* Step dots */}
           <div className="flex items-center gap-1.5">
             {sequence.steps.map((_, i) => (
               <div
@@ -127,82 +213,34 @@ export default function ActionSequencePlayer({
                     ? `${accentColor}88`
                     : `${accentColor}22`,
                   boxShadow: i === currentStepIndex && status === 'running'
-                    ? `0 0 6px ${accentColor}66`
-                    : 'none',
+                    ? `0 0 6px ${accentColor}66` : 'none',
                 }}
               />
             ))}
           </div>
-          <span
-            className="text-xs font-mono"
-            style={{ color: `${accentColor}88` }}
-          >
+          <span className="text-xs font-mono" style={{ color: `${accentColor}88` }}>
             STEP {Math.min(currentStepIndex + 1, totalSteps)}/{totalSteps}
           </span>
         </div>
       </div>
 
-      {/* Sequence content area */}
-      <div
-        ref={scrollRef}
-        className="flex-1 overflow-y-auto p-4 space-y-4"
-      >
-        {/* Preamble text from log content */}
+      {/* ── Content ── */}
+      <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4">
         {preambleText && (
           <div className="font-mono text-sm text-terminal-primary/50 whitespace-pre-wrap pb-2 mb-2 border-b border-terminal-primary/10">
             {preambleText}
           </div>
         )}
 
-        {/* Completed steps shown as faded output */}
-        {completedSteps.map((stepIdx) => {
-          const completedStep = sequence.steps[stepIdx];
-          if (completedStep.type === 'auto') {
-            return (
-              <div key={stepIdx} className="font-mono text-sm leading-7 space-y-0.5 opacity-50">
-                {completedStep.lines.map((line, i) => (
-                  <div key={i} className="text-terminal-primary/60 whitespace-pre-wrap">{line}</div>
-                ))}
-              </div>
-            );
-          }
-          if (completedStep.type === 'prompt') {
-            return (
-              <div key={stepIdx} className="font-mono text-sm opacity-50">
-                <div className="text-terminal-primary/60">{completedStep.prompt_text}</div>
-                <div className="text-green-400/60">{'>> INPUT ACCEPTED'}</div>
-              </div>
-            );
-          }
-          if (completedStep.type === 'progress') {
-            return (
-              <div key={stepIdx} className="font-mono text-sm opacity-50">
-                <div className="text-terminal-primary/60">{completedStep.label}</div>
-                {completedStep.complete_message && (
-                  <div className="text-green-400/60">{'>> '}{completedStep.complete_message}</div>
-                )}
-              </div>
-            );
-          }
-          if (completedStep.type === 'choice') {
-            return (
-              <div key={stepIdx} className="font-mono text-sm opacity-50">
-                <div className="text-terminal-primary/60">{completedStep.prompt_text}</div>
-                <div className="text-green-400/60">{'>> SELECTION CONFIRMED'}</div>
-              </div>
-            );
-          }
-          return null;
-        })}
+        {completedSteps.map(stepIdx => renderCompletedStep(sequence.steps[stepIdx], stepIdx))}
 
-        {/* Active step */}
         {currentStep && status === 'running' && (
           <div key={`step-${currentStepIndex}`}>
             {renderStep(currentStep)}
           </div>
         )}
 
-        {/* Completion message */}
+        {/* Completion */}
         {status === 'completed' && (
           <div
             className="font-mono text-sm p-4 rounded border mt-4"
@@ -217,30 +255,20 @@ export default function ActionSequencePlayer({
             <button
               onClick={onBackToTerminal}
               className="mt-4 px-4 py-2 font-mono text-xs tracking-wider border rounded transition-colors"
-              style={{
-                borderColor: `${accentColor}44`,
-                color: accentColor,
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = `${accentColor}18`;
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'transparent';
-              }}
+              style={{ borderColor: `${accentColor}44`, color: accentColor }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = `${accentColor}18`; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent'; }}
             >
               ← BACK TO TERMINAL
             </button>
           </div>
         )}
 
-        {/* Failure message */}
+        {/* Failure */}
         {status === 'failed' && (
           <div
             className="font-mono text-sm p-4 rounded border border-red-500/40 mt-4"
-            style={{
-              background: 'rgba(255, 0, 0, 0.08)',
-              boxShadow: '0 0 20px rgba(255, 0, 0, 0.15)',
-            }}
+            style={{ background: 'rgba(255,0,0,0.08)', boxShadow: '0 0 20px rgba(255,0,0,0.15)' }}
           >
             <div className="text-red-400 font-bold mb-2">{'>> SEQUENCE FAILED'}</div>
             <div className="text-red-300">
@@ -256,9 +284,9 @@ export default function ActionSequencePlayer({
         )}
       </div>
 
-      {/* Footer */}
+      {/* ── Footer ── */}
       <div
-        className="flex items-center justify-between px-4 py-2 border-t"
+        className="flex items-center justify-between px-4 py-2 border-t shrink-0"
         style={{ borderColor: `${accentColor}22` }}
       >
         {status === 'running' ? (
@@ -268,13 +296,8 @@ export default function ActionSequencePlayer({
           >
             [ESC] ABORT
           </button>
-        ) : (
-          <div />
-        )}
-        <div
-          className="text-xs font-mono"
-          style={{ color: `${accentColor}44` }}
-        >
+        ) : <div />}
+        <div className="text-xs font-mono" style={{ color: `${accentColor}44` }}>
           {sequence.id.toUpperCase()}
         </div>
       </div>

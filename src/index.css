@@ -1137,6 +1137,16 @@
   animation: slide-in-right 0.22s ease-out forwards;
 }
 
+/* Countdown warning pulse */
+@keyframes countdown-pulse {
+  0%   { opacity: 1; transform: scale(1); }
+  50%  { opacity: 0.6; transform: scale(0.96); }
+  100% { opacity: 1; transform: scale(1); }
+}
+.countdown-pulse {
+  animation: countdown-pulse 0.5s ease-in-out infinite;
+}
+
 /* ── Weapon fire trail (SVG line draw + fade) ─────────────────────── */
 @keyframes fire-trail-draw {
   0%   { stroke-dashoffset: 1; opacity: 0.95; }
