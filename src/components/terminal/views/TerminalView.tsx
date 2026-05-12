@@ -10,7 +10,7 @@
  * - Full accent-color theming from boot profiles
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { AnimatedList } from '@/components/ui/AnimatedList';
 import { getTerminalBootProfile, getTerminalCategory } from '@/lib/terminalBootProfiles';
 import TerminalFileIcon from './TerminalFileIcon';
@@ -59,6 +59,23 @@ function fakeUptime(code: string): string {
   return `${days}d ${hours}h`;
 }
 
+/**
+ * Convert real-world Date to Traveller Imperial date.
+ * Real year 2026 → Imperial year 1105 (offset −921).
+ * Format: DDD-YYYY HH:MM:SS
+ */
+function toImperialDate(d: Date): string {
+  const IMPERIAL_OFFSET = -921;
+  const start = new Date(d.getFullYear(), 0, 0);
+  const diff = d.getTime() - start.getTime();
+  const dayOfYear = Math.floor(diff / 86_400_000);
+  const imperialYear = d.getFullYear() + IMPERIAL_OFFSET;
+  const hh = String(d.getHours()).padStart(2, '0');
+  const mm = String(d.getMinutes()).padStart(2, '0');
+  const ss = String(d.getSeconds()).padStart(2, '0');
+  return `${String(dayOfYear).padStart(3, '0')}-${imperialYear} // ${hh}:${mm}:${ss}`;
+}
+
 export default function TerminalView({
   terminal,
   logs,
@@ -71,17 +88,35 @@ export default function TerminalView({
   const category = getTerminalCategory(terminal.code);
   const { accentColor, dimColor, headerLabel } = profile;
 
-  // Live clock for the taskbar
-  const [clock, setClock] = useState(() => {
-    const d = new Date();
-    return d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-  });
+  // Track newly-arrived live transmission IDs for slide-in animation
+  const seenTransmissionIds = useRef<Set<string>>(new Set());
+  const [freshIds, setFreshIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    const id = setInterval(() => {
-      const d = new Date();
-      setClock(d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
-    }, 1000);
+    const newOnes = new Set<string>();
+    logs.forEach(l => {
+      if (l._isLiveTransmission && l._transmissionId && !seenTransmissionIds.current.has(l._transmissionId)) {
+        newOnes.add(l._transmissionId);
+        seenTransmissionIds.current.add(l._transmissionId);
+      }
+    });
+    if (newOnes.size > 0) {
+      setFreshIds(prev => new Set([...prev, ...newOnes]));
+      // Remove fresh flag after animation completes
+      setTimeout(() => {
+        setFreshIds(prev => {
+          const next = new Set(prev);
+          newOnes.forEach(id => next.delete(id));
+          return next;
+        });
+      }, 600);
+    }
+  }, [logs]);
+
+  // Live Imperial date clock for the taskbar
+  const [clock, setClock] = useState(() => toImperialDate(new Date()));
+  useEffect(() => {
+    const id = setInterval(() => setClock(toImperialDate(new Date())), 1000);
     return () => clearInterval(id);
   }, []);
 
@@ -206,6 +241,7 @@ export default function TerminalView({
             {logs.map((log, index) => (
               <div
                 key={log._transmissionId ?? index}
+                className={log._isLiveTransmission && log._transmissionId && freshIds.has(log._transmissionId) ? 'transmission-arrive' : ''}
                 style={log._isLiveTransmission ? {
                   outline: `1px solid ${accentColor}88`,
                   boxShadow: `0 0 10px ${accentColor}33`,
@@ -283,7 +319,7 @@ export default function TerminalView({
             UPTIME {fakeUptime(terminal.code)}
           </span>
           <span
-            className="tabular-nums"
+            className="imperial-clock"
             style={{ color: accentColor, fontSize: '9px', textShadow: `0 0 6px ${accentColor}33` }}
           >
             {clock}

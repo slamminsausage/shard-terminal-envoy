@@ -13,12 +13,12 @@
  * - Back button (shown when typing complete)
  */
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import AudioPlayer from '../AudioPlayer';
 import VideoPlayer from '../VideoPlayer';
 import { useGlitchText } from '@/hooks/useGlitchText';
-import { getTerminalBootProfile } from '@/lib/terminalBootProfiles';
+import { getTerminalBootProfile, getTerminalCategory } from '@/lib/terminalBootProfiles';
 import { LogDetailGauges } from '../TerminalGauges';
 import { parseLogContent, hasRedactedMarkers } from '@/lib/parseLogContent';
 
@@ -77,6 +77,17 @@ function fakeFileSize(log: LogEntry): string {
   return kb >= 1000 ? `${(kb / 1024).toFixed(1)} MB` : `${kb} KB`;
 }
 
+// Cursor character per terminal category
+const CATEGORY_CURSORS: Record<string, string> = {
+  'corrupted':     '▓',
+  'corporate':     '|',
+  'high-security': '_',
+  'ship-systems':  '▌',
+  'criminal':      '▒',
+  'maintenance':   '░',
+  'default':       '█',
+};
+
 export default function LogDetailView({
   log,
   displayedText,
@@ -88,8 +99,19 @@ export default function LogDetailView({
   onConnectTerminal,
 }: LogDetailViewProps) {
   const profile = useMemo(() => getTerminalBootProfile(terminalCode), [terminalCode]);
+  const category = useMemo(() => getTerminalCategory(terminalCode), [terminalCode]);
   const { accentColor, dimColor } = profile;
   const secColor = SECURITY_COLORS[log.security_level || ''] || accentColor;
+
+  // Scan-sweep: fires once when log opens, then disappears
+  const [showSweep, setShowSweep] = useState(true);
+  useEffect(() => {
+    setShowSweep(true);
+    const t = setTimeout(() => setShowSweep(false), 600);
+    return () => clearTimeout(t);
+  }, [log.title]);
+
+  const cursorChar = CATEGORY_CURSORS[category] ?? '█';
 
   // Content with redacted markers or inline links can't be usefully streamed
   // by the char-by-char typewriter — bypass it and render parsed nodes instead.
@@ -131,11 +153,22 @@ export default function LogDetailView({
   const fileSize = useMemo(() => fakeFileSize(log), [log]);
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full relative overflow-hidden">
+      {/* ═══ Scan sweep — one-shot raster line on open ═══ */}
+      {showSweep && (
+        <div
+          className="log-scan-sweep"
+          style={{ background: `linear-gradient(180deg, ${accentColor}cc 0%, ${accentColor}44 60%, transparent 100%)` }}
+        />
+      )}
+
       {/* ═══ File header panel ═══ */}
       <div
         className="shrink-0 px-4 pt-4 pb-3"
-        style={{ borderBottom: `1px solid ${accentColor}33` }}
+        style={{
+          borderBottom: `1px solid ${accentColor}33`,
+          boxShadow: secColor !== accentColor ? `0 4px 20px ${secColor}22` : undefined,
+        }}
       >
         {/* Title row */}
         <div className="flex items-start justify-between gap-3">
@@ -233,7 +266,7 @@ export default function LogDetailView({
               <>
                 {visibleText}
                 {!typingComplete && (
-                  <span className="animate-pulse" style={{ color: accentColor }}>█</span>
+                  <span className="animate-pulse" style={{ color: accentColor }}>{cursorChar}</span>
                 )}
               </>
             )}

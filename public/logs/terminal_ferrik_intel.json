@@ -28,7 +28,7 @@
     "location": "General Access Terminal — Blacksand Downport",
     "date": "DAY 212 · 1105",
     "author": "Widow Administrative Office — Intelligence Division",
-    "content": "KNOWN ASSOCIATES FILE — MIRIA SILVERHAND\n\nSubject: MIRIA SILVERHAND\nAlso Known As: N/A\nCybernetic: Right arm, full replacement. Strength-rated. Integrated weapon linkage suspected.\nCurrent Location: Blacksand City, lower city. The Scrapheap, upper deck of a downed Fat Trader. Bridge compartment.\n\nBackground summary: Former Imperial merchant crew. Captured by pirates. Rose through piracy by demonstrated ruthlessness. Now a senior lieutenant and operative for Ferrik Redthane.\n\nCurrent activity: Negotiating independently on Redthane's behalf. Has approached both Vallis and Irontooth gangs. Seeking protection and alliance. Using the Scrapheap as a base. Running messages via local boys — does not expose herself unnecessarily.\n\nThreat assessment: HIGH. Armed with a gauss pistol and a rapid-fire machinegun. The machinegun is resting on the captain's chair in her current position, aimed down the main corridor. The corridor doors are rusted open. She has a clear field of fire the length of the deck.\n\nNote: She has a self-destruct device integrated into her cybernetic arm. This is confirmed intelligence. It is a frag-equivalent device. It has a one-round countdown. If she activates it, you have approximately two seconds to do something about the situation.\n\n— Approach with extreme caution. Do not underestimate the arm.",
+    "content": "KNOWN ASSOCIATES FILE — MIRIA SILVERHAND\n\nSubject: MIRIA SILVERHAND\nAlso Known As: N/A\nCybernetic: Right arm, full replacement. Strength-rated. Integrated weapon linkage suspected.\nCurrent Location: Blacksand City, lower city. The Scrapheap, upper deck of a downed Fat Trader. Bridge compartment. [[connect: scrapheap]]\n\nBackground summary: Former Imperial merchant crew. Captured by pirates. Rose through piracy by demonstrated ruthlessness. Now a senior lieutenant and operative for Ferrik Redthane.\n\nCurrent activity: Negotiating independently on Redthane's behalf. Has approached both Vallis and Irontooth gangs. Seeking protection and alliance. Using the Scrapheap as a base. Running messages via local boys — does not expose herself unnecessarily.\n\nThreat assessment: HIGH. Armed with a gauss pistol and a rapid-fire machinegun. The machinegun is resting on the captain's chair in her current position, aimed down the main corridor. The corridor doors are rusted open. She has a clear field of fire the length of the deck.\n\nNote: She has a self-destruct device integrated into her cybernetic arm. This is confirmed intelligence. It is a frag-equivalent device. It has a one-round countdown. If she activates it, you have approximately two seconds to do something about the situation.\n\n— Approach with extreme caution. Do not underestimate the arm.",
     "security_level": "restricted",
     "requires_roll": true,
     "roll_check": {
@@ -138,7 +138,7 @@
     "location": "General Access Terminal — Blacksand Downport (Filed by arriving crew)",
     "date": "DAY 212 · 1105",
     "author": "Krrsh, Captain — Misery's Company (former)",
-    "content": "I'm filing this because whoever saved me from that station deserves to know what they're walking into.\n\nFerrik Redthane planned the Torpol and Clarke attacks. He coordinated at least three ships, maybe more. Misery's Company was involved — I won't pretend otherwise — but Ferrik was running the operation. It was his plan. His targets. His call.\n\nI mutinied because the attack on Clarke went further than what was agreed. He hit civilians. That wasn't the job. That was something else.\n\nAfter the mutiny my crew put me on the station with whatever was living there and jumped for Borite. Ferrik doesn't know I'm alive. As far as he knows I'm dead in a derelict somewhere.\n\nHe's hiding. He needs Miria to broker a deal with one of the big gangs so he can come back to Theev without getting killed by Darokyn. That's the only reason Miria is here.\n\nFind Miria, you find Ferrik.\n\nThe codes I gave you will get you through the Skull. After that, Blacksand is its own problem. Don't walk alone in the lower city. Don't trust anyone who smiles first. And if a woman with a metal arm offers you a deal, she has a machinegun under the table.\n\nI mean that literally.\n\nGood luck. You earned the codes. Make them worth something.",
+    "content": "I'm filing this because whoever saved me from that station deserves to know what they're walking into.\n\nFerrik Redthane planned the Torpol and Clarke attacks. He coordinated at least three ships, maybe more. Misery's Company was involved — I won't pretend otherwise — but Ferrik was running the operation. It was his plan. His targets. His call.\n\nI mutinied because the attack on Clarke went further than what was agreed. He hit civilians. That wasn't the job. That was something else.\n\nAfter the mutiny my crew put me on the station with whatever was living there and jumped for Borite. Ferrik doesn't know I'm alive. As far as he knows I'm dead in a derelict somewhere.\n\nHe's hiding. He needs Miria to broker a deal with one of the big gangs so he can come back to Theev without getting killed by Darokyn. That's the only reason Miria is here.\n\nFind Miria, you find Ferrik.\n\nThe codes I gave you will get you through the Skull. After that, Blacksand is its own problem. Don't walk alone in the lower city. Don't trust anyone who smiles first. And if a woman with a metal arm offers you a deal, she has a machinegun under the table.\n\nI mean that literally.\n\nGood luck. You earned the codes. Make them worth something.\n\nDownport arrival registry: [[connect: blacksand_downport]] · Miria's position: [[connect: scrapheap]]",
     "security_level": "unlocked",
     "requires_roll": false
   },
@@ -156,5 +156,108 @@
       "on_success": "Cross-case analyst note recovered.",
       "on_failure": "Partition checksum mismatch. Access denied."
     }
+  },
+  {
+    "title": "Miria Silverhand — Intercepted Negotiation Excerpt",
+    "location": "General Access Terminal — Blacksand Downport (Widow Intelligence Buffer)",
+    "date": "DAY 211 · 1105",
+    "author": "Widow Administrative Office — Passive Intercept, Lower City",
+    "security_level": "restricted",
+    "requires_roll": true,
+    "roll_check": {
+      "difficulty": 10,
+      "skill": "Electronics (computers)",
+      "on_success": "Passive intercept recovered. Miria is offering something Vallis doesn't have a price for.",
+      "on_failure": "Intercept partition locked. Widow intelligence files require elevated clearance."
+    },
+    "content": "PASSIVE INTERCEPT — LOWER CITY, FAT TRADER UPPER DECK — DAY 211\n\nThis is an audio fragment from a passive monitoring node in the Scrapheap access corridor. Quality is moderate. The conversation is between Miria Silverhand and a Vallis representative who has not been identified by name.\n\n—\n\n[PARTIAL TRANSCRIPT — BEGIN]\n\nMIRIA: '...Ferrik doesn't need Vallis to like him. He needs a flag. A berth. Six months of protected operations while he arranges what comes next.'\n\nVALLIS REP: 'That's a lot of goodwill for a man who hit civilian targets.'\n\nMIRIA: 'He hit them because he needed the credits and the attention. He doesn't need to do that again. What he's offering is worth more than the goodwill it costs you.'\n\nVALLIS REP: 'You keep saying that. What is he offering?'\n\nMIRIA: 'A location. Something he found in the Borite belt. A derelict — the kind of derelict that's been sitting there since before the Empire. Before any empire. The kind of find that doesn't stay secret once the right people start looking. He's offering first access. He's offering the map.'\n\n[PAUSE — 12 SECONDS]\n\nVALLIS REP: 'We'd need to verify.'\n\nMIRIA: 'He expected that. He sent proof.'\n\n[TRANSCRIPT ENDS — NODE COVERAGE LOST]\n\n—\n\nNote: Miria has now approached Vallis, Irontooth, and one other party we have not identified. All three have heard the same offer. We do not know what 'proof' Ferrik sent."
+  },
+  {
+    "title": "Ferrik Redthane — Last Known Transmission (Encoded)",
+    "location": "General Access Terminal — Blacksand Downport (Deep Partition)",
+    "date": "DAY 208 · 1105 — FOUR DAYS PRIOR",
+    "author": "Source: Relay bounce — origin untraced",
+    "security_level": "high",
+    "content": "A compressed encoded transmission was received at a Blacksand Downport relay node four days ago. The encoding is non-standard — a personal cipher variant consistent with patterns used by former Darokyn retinue operators. Miria Silverhand is confirmed to use the same cipher family.\n\nThe message has been sitting in the relay buffer uncollected. The intended recipient has not checked the relay.\n\n[INTERACTIVE TERMINAL — AWAITING INPUT]",
+    "type": "action_sequence",
+    "action_sequence": {
+      "id": "ferrik-last-transmission",
+      "category": "data_extraction",
+      "steps": [
+        {
+          "type": "auto",
+          "lines": [
+            ">> BLACKSAND DOWNPORT — RELAY NODE BUFFER v1.8",
+            ">> UNCOLLECTED MESSAGES: 1",
+            ">> MESSAGE AGE: 4 DAYS",
+            ">> ORIGIN: RELAY BOUNCE — 3 HOPS — UNTRACEABLE",
+            ">> ENCODING: PERSONAL CIPHER — DAROKYN RETINUE VARIANT",
+            "",
+            ">> CIPHER IS KNOWN — MIRIA SILVERHAND'S COLLECTION KEY ON FILE",
+            ">> INITIATING DECRYPT USING KNOWN CIPHER..."
+          ],
+          "delay": 35,
+          "pause_after": 700
+        },
+        {
+          "type": "prompt",
+          "prompt_text": "CONFIRM DECRYPT — ENTER AUTHORISATION:",
+          "accept": ["DECRYPT", "OPEN", "FERRIK", "MIRIA", "CIPHER", "DECODE"],
+          "reject_message": "AUTHORISATION NOT RECOGNISED.",
+          "max_attempts": 3,
+          "sound_on_accept": "access_granted",
+          "sound_on_reject": "access_denied"
+        },
+        {
+          "type": "progress",
+          "label": "DECRYPTING PERSONAL CIPHER — APPLYING KNOWN KEY...",
+          "duration": 3000,
+          "segments": 18,
+          "sound_on_complete": "data_download",
+          "complete_message": "TRANSMISSION DECRYPTED"
+        },
+        {
+          "type": "auto",
+          "lines": [
+            ">> DECRYPTED TRANSMISSION — SENDER: FERRIK REDTHANE",
+            ">> TO: MIRIA SILVERHAND (UNCOLLECTED)",
+            "",
+            ">> 'M — STOP SELLING THE MAP. THAT'S NOT THE OFFER.'",
+            ">> 'THE MAP IS FOR LEVERAGE ONLY. THE OFFER IS WHAT I FOUND.'",
+            ">> 'I DON'T WANT PROTECTION. I WANT A SHIP THAT CAN GET THERE.'",
+            ">> 'WHOEVER HELPS ME GET THERE GETS A SHARE OF WHAT IT IS.'",
+            ">> 'I HAVE THE COORDINATES. I HAVE THE KEY. I KNOW HOW TO GET IN.'",
+            ">> 'DAROKYN KNOWS I FOUND IT. HE WILL COME FOR YOU WHEN HE'",
+            ">> 'DECIDES HE'S DONE BEING POLITE. DON'T WAIT FOR IRONTOOTH.'",
+            ">> 'FIND SOMEONE WITH A SHIP. FIND SOMEONE WHO ASKS FEWER QUESTIONS.'",
+            "",
+            ">> 'THE THING ON THE DERELICT SAID THERE WERE MORE OF THEM.'",
+            ">> 'I BELIEVE IT. I NEED TO KNOW IF IT'S TRUE.'"
+          ],
+          "delay": 45,
+          "sound": "warning",
+          "sound_at_line": 8,
+          "pause_after": 1200
+        }
+      ],
+      "on_complete": {
+        "message": "The message has been sitting in this relay for four days, uncollected. Ferrik isn't selling the location — he wants someone to take him there. He has coordinates and something he calls 'the key.' He believes whatever he found on the Borite derelict told him there are more like it. Darokyn already knows about the find and is moving against Miria. Ferrik needs a ship. He doesn't know his message has been sitting open in a relay node for four days.",
+        "sound": "warning",
+        "persist_key": "ferrik-last-transmission"
+      },
+      "on_failure": {
+        "message": "DECRYPT FAILED. The cipher key in the archive doesn't match. Either Miria uses a different key for personal correspondence, or Ferrik changed the cipher after the retinue expulsion. The message content remains locked.",
+        "sound": "access_denied"
+      }
+    }
+  },
+  {
+    "title": "Torpol Planetary Authority — Evidence Filing",
+    "location": "General Access Terminal — Blacksand Downport / Lower City Public Kiosk",
+    "date": "FILED 44 DAYS PRIOR — DAY 168 · 1105",
+    "author": "Planetary Authority, Torpol — Investigative Division",
+    "security_level": "unlocked",
+    "requires_roll": false,
+    "content": "EVIDENCE FILING — INCIDENT: TORPOL / CLARKE COORDINATED ATTACK\nREFERENCE: REDTHANE BOUNTY NOTICE\n\nThis filing supplements the active bounty. It is made public to assist identification of vessels and personnel involved.\n\nFleet composition (confirmed): Three vessels. One 400-ton armed salvager (transponder active during initial approach, masked on departure). Two smaller vessels, 100–200 tons, configuration inconsistent with standard piracy profiles.\n\nTactical pattern: The Clarke attack deviated from the Torpol pattern. At Torpol, the fleet targeted commercial infrastructure. At Clarke, the primary strike was against the civic center during a scheduled public assembly. This is not a piracy tactic. This is a statement.\n\nForensic note of interest: Residue analysis of the Clarke site identified trace compounds associated with psionic-event suppression technology. This equipment is not standard for any known independent pirate fleet. It is associated with research or military applications. We do not know why it was used at Clarke or what it was intended to suppress.\n\nSecondary note: One of the smaller vessels departed the Clarke engagement at a heading inconsistent with the others. It did not regroup. Our analysts believe this vessel's crew broke from the fleet during or immediately after the Clarke attack. We have not traced it.\n\nIf the vessel that broke from the Clarke engagement is the source of the Krrsh clearance codes, its captain's account of events at Clarke may be the most accurate available. We would appreciate contact through an appropriate intermediary.\n\nWe are not naive about where this filing will be read."
   }
 ]

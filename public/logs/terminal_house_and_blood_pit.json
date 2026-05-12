@@ -13,7 +13,7 @@
     "location": "General Access Terminal — The House Without Questions, Lower City",
     "date": "CURRENT AND HISTORICAL — PARTIAL ONLY",
     "author": "House Without Questions — Internal Archive (Partial Leak)",
-    "content": "INTAKE RECORD — PARTIAL EXCERPT\n\nNote: This file should not be accessible from a public terminal. We are investigating how it was exposed.\n\n—\n\nGuest, unnamed. Duration: 4 days. No questions asked. Departed safely.\nGuest, unnamed. Duration: 1 day. Medical attention provided. Departed safely.\nGuest, unnamed. Duration: 22 days. Extended stay, distressed condition on arrival. No questions asked. Departed. Status thereafter: unknown.\nGuest, unnamed. Repeat guest, third visit. Still no questions asked. We note this without comment.\n\n—\n\nTask log excerpt:\n\nTask requested: Location of a specific individual known to frequent the Scrapheap. Task completed. Client satisfied.\nTask requested: Retrieval of a locked data container from a vessel in Skull docking. Task completed. Client satisfied.\nTask requested: Information regarding a vessel last reported in the Borite belt under independent registry. Task accepted. Task ongoing.\nTask requested: Safe passage offworld for a named refugee currently residing at Asharden Camp. Task accepted. Task pending — we are searching for a ship whose master is willing to take the fare in kind rather than coin.\nTask requested: Quiet transfer of title on a 200-ton Far Trader hull currently held at Kallos, clear of any recovery interest. Task declined. We do not accept tasks that would place us in opposition to Vethis Carriage at this time.\n\n—\n\nNote appended by House administration: The above is partial. Two other parties have asked similar questions this cycle to several of the open tasks. The House does not share client information. The House also does not pretend not to notice patterns.",
+    "content": "INTAKE RECORD — PARTIAL EXCERPT\n\nNote: This file should not be accessible from a public terminal. We are investigating how it was exposed.\n\n—\n\nGuest, unnamed. Duration: 4 days. No questions asked. Departed safely.\nGuest, unnamed. Duration: 1 day. Medical attention provided. Departed safely.\nGuest, unnamed. Duration: 22 days. Extended stay, distressed condition on arrival. No questions asked. Departed. Status thereafter: unknown.\nGuest, unnamed. Repeat guest, third visit. Still no questions asked. We note this without comment.\n\n—\n\nTask log excerpt:\n\nTask requested: Location of a specific individual known to frequent the Scrapheap. Task completed. Client satisfied. [[connect: scrapheap]]\nTask requested: Retrieval of a locked data container from a vessel in Skull docking. Task completed. Client satisfied.\nTask requested: Information regarding a vessel last reported in the Borite belt under independent registry. Task accepted. Task ongoing.\nTask requested: Safe passage offworld for a named refugee currently residing at Asharden Camp. Task accepted. Task pending — we are searching for a ship whose master is willing to take the fare in kind rather than coin. [[connect: asharden_lore]]\nTask requested: Quiet transfer of title on a 200-ton Far Trader hull currently held at Kallos, clear of any recovery interest. Task declined. We do not accept tasks that would place us in opposition to Vethis Carriage at this time. — Kallos registry detail at [[connect: blacksand_downport]]\n\n—\n\nNote appended by House administration: The above is partial. Two other parties have asked similar questions this cycle to several of the open tasks. The House does not share client information. The House also does not pretend not to notice patterns.",
     "security_level": "restricted",
     "requires_roll": true,
     "roll_check": {
@@ -28,7 +28,7 @@
     "location": "General Access Terminal — Blood Pit Arena, Lower City",
     "date": "DAY 212 · 1105",
     "author": "Blood Pit Management",
-    "content": "BLOOD PIT \u2014 TONIGHT'S CARD\n\nDoors open at half-cycle. Bets accepted until the second bell.\n\nEvent 1: Melee bracket, four contestants. Three volunteers, one not. Standard rules (none).\n\nEvent 2: Alien predator exhibition. Species: Undisclosed. Origin: Foreven Sector, recovered from a derelict. Handler advises spectators in the first three rows to sign the disclaimer.\n\nEvent 3: Steel cage. Two contestants. Both volunteers. Personal grievance match \u2014 details posted at the betting desk.\n\nEvent 4: The main event. Gladiator versus robot. The robot has been modified. Our technician says it is now operating outside its original design parameters and he is not entirely comfortable with what it has started to do between events. We consider this excellent atmosphere.\n\n\u2014\n\nSpecial notice: A private booth has been reserved for this evening by a party who paid double for guaranteed privacy. We note this only because it is unusual enough to mention to the management log. All other guests: standard seating.\n\n\u2014\n\nNote from the management: If you see something in the lower pens that you cannot identify, do not attempt to interact with it. We are still determining where it came from and whether it is ours.",
+    "content": "BLOOD PIT \u2014 TONIGHT'S CARD\n\nDoors open at half-cycle. Bets accepted until the second bell.\n\nEvent 1: Melee bracket, four contestants. Three volunteers, one not. Standard rules (none).\n\nEvent 2: Alien predator exhibition. Species: Undisclosed. Origin: Foreven Sector, recovered from a derelict. Handler advises spectators in the first three rows to sign the disclaimer. — Related recovery detail: [[connect: scrapheap]]\n\nEvent 3: Steel cage. Two contestants. Both volunteers. Personal grievance match \u2014 details posted at the betting desk.\n\nEvent 4: The main event. Gladiator versus robot. The robot has been modified. Our technician says it is now operating outside its original design parameters and he is not entirely comfortable with what it has started to do between events. We consider this excellent atmosphere.\n\n\u2014\n\nSpecial notice: A private booth has been reserved for this evening by a party who paid double for guaranteed privacy. We note this only because it is unusual enough to mention to the management log. All other guests: standard seating.\n\n\u2014\n\nNote from the management: If you see something in the lower pens that you cannot identify, do not attempt to interact with it. We are still determining where it came from and whether it is ours.",
     "security_level": "unlocked",
     "requires_roll": false
   },
@@ -142,5 +142,117 @@
     "content": "Standard cards tables cap at six seats. Team entries are still legal if buy-in is met per seat and each declared proxy remains visible to cameras.\n\nOperational warning: second off-world crew asked whether a debt marker can be settled with future cargo claim instead of credits. House answer remains no. Blood Pit answer remains yes, depending on witness quality.\n\n[[redacted diff=9 skill=\"Gambler\" attempts=3]]\nIf a crew cannot raise full stake, offer ORCHID-LATCH package: one sponsored seat + one collateral rider. Collateral defaults transfer temporary claim on tender craft, not main hull.[[/redacted]]",
     "security_level": "medium",
     "requires_roll": false
+  },
+  {
+    "title": "The House — Tasking Brief (Intercepted)",
+    "location": "General Access Terminal — The House Without Questions, Lower City",
+    "date": "DAY 212 · 1105",
+    "author": "House Without Questions — Internal Tasking Division (Partial Intercept)",
+    "security_level": "critical",
+    "content": "This file fragment was recovered from a transmission routed through the House's internal relay. It should not be recoverable from this terminal. Whoever reads it should understand that the House will eventually notice it is missing.\n\n[INTERACTIVE TERMINAL — AWAITING INPUT]",
+    "type": "action_sequence",
+    "action_sequence": {
+      "id": "house-tasking-intercept",
+      "category": "data_extraction",
+      "steps": [
+        {
+          "type": "auto",
+          "lines": [
+            ">> HOUSE WITHOUT QUESTIONS — INTERNAL RELAY NODE",
+            ">> TRANSMISSION FRAGMENT DETECTED IN BUFFER",
+            ">> ORIGIN: INTERNAL TASKING DIVISION",
+            ">> STATUS: UNDELIVERED — RECIPIENT RELAY OFFLINE",
+            "",
+            ">> FRAGMENT SIZE: 3.1 KB",
+            ">> ENCRYPTION: HOUSE PROPRIETARY — LOW-GRADE ON TRANSIT COPY",
+            "",
+            ">> INITIATING EXTRACTION..."
+          ],
+          "delay": 40,
+          "pause_after": 700
+        },
+        {
+          "type": "prompt",
+          "prompt_text": "CONFIRM EXTRACTION — ENTER BYPASS:",
+          "accept": ["EXTRACT", "DECRYPT", "RETRIEVE", "BYPASS", "OPEN", "READ"],
+          "reject_message": "CONFIRM THE EXTRACTION TO PROCEED.",
+          "max_attempts": 3,
+          "sound_on_accept": "access_granted",
+          "sound_on_reject": "access_denied"
+        },
+        {
+          "type": "progress",
+          "label": "EXTRACTING HOUSE TASKING BRIEF FROM RELAY BUFFER...",
+          "duration": 3500,
+          "segments": 20,
+          "sound_on_complete": "data_download",
+          "complete_message": "FRAGMENT EXTRACTED"
+        },
+        {
+          "type": "auto",
+          "lines": [
+            ">> RECOVERED FRAGMENT — HOUSE TASKING BRIEF — PARTIAL",
+            "",
+            ">> TASK 7 — SAFE PASSAGE, ASHARDEN REFUGEE (VII LON):",
+            ">> CLIENT: ANONYMOUS — CLIFF DISTRICT DROP BOX.",
+            ">> PAYMENT: PREPAID. AMOUNT: 8,000 CR.",
+            ">> NOTE: CLIENT IS NOT ACTING FOR VII LON. CLIENT WANTS HER OFF",
+            ">> THEEV BEFORE SHE SPEAKS TO ANYONE ABOUT THE HOTEL INCIDENT.",
+            ">> UPDATED: A SECOND ANONYMOUS PARTY HAS NOW PAID TO KEEP HER HERE.",
+            ">> TASK STATUS: SUSPENDED — COMPETING INSTRUCTIONS RECEIVED.",
+            "",
+            ">> TASK 9 — INFORMATION: BORITE BELT DERELICT VESSEL:",
+            ">> CLIENT: [REDACTED — ABOVE STANDARD ANONYMISATION].",
+            ">> QUERY: IDENTITY OF VESSEL AND CONTENTS OF FIND.",
+            ">> CURRENT LEAD: WITNESS AT ASHARDEN CAMP. IDENTITY WITHHELD.",
+            ">> NOTE: A THIRD PARTY IS ASKING THE SAME QUESTION.",
+            ">> NOTE: THE THIRD PARTY IS DAROKYN'S OFFICE."
+          ],
+          "delay": 45,
+          "sound": "warning",
+          "sound_at_line": 7,
+          "pause_after": 1000
+        }
+      ],
+      "on_complete": {
+        "message": "Two tasks. Vii Lon has two clients — one trying to get her out of the city, one trying to keep her here. Someone already paid 8,000 credits to move her; someone else paid more to stop that. She witnessed something in that hotel room and at least two parties know she can identify who came through the door. The Borite derelict query is more troubling: the House is actively investigating what Ferrik found, and Darokyn's office is asking the same question through different channels. Whatever was on that derelict, at least three factions are trying to identify it right now.",
+        "sound": "warning",
+        "persist_key": "house-tasking-intercept"
+      },
+      "on_failure": {
+        "message": "EXTRACTION FAILED. The relay buffer cleared before the fragment could be pulled. The House's internal relay purges undelivered fragments on a rotating schedule — this one has just been overwritten. Someone at the House will notice the failed extraction attempt in their access log.",
+        "sound": "access_denied"
+      }
+    }
+  },
+  {
+    "title": "Blood Pit — Intake Record: Event 2 Specimen",
+    "location": "General Access Terminal — Blood Pit Arena, Lower City",
+    "date": "DAY 210 · 1105",
+    "author": "Blood Pit Arena — Biological Intake Division",
+    "security_level": "restricted",
+    "requires_roll": true,
+    "roll_check": {
+      "difficulty": 10,
+      "skill": "Electronics (computers)",
+      "on_success": "Intake record accessed. The classification has been changed three times.",
+      "on_failure": "Intake records partition locked. Arena management credentials required."
+    },
+    "content": "BIOLOGICAL INTAKE RECORD — EVENT 2 SPECIMEN\n\nSpecimen designation: LOT-2-0212\nOrigin: Foreven Sector. Recovered from a derelict by a GeDeCo-affiliated salvage contractor.\nAcquired via: Third-party broker, Cliff District. Brokered six days ago. Delivery: three days ago.\n\nBiological classification (filed):\n— Initial assessment: INERT. Petrified. No vital signs. Recommended as display specimen only.\n— Revised (Day 210, 0200): BIOLOGICAL — DORMANT. Signs of metabolic activity at very low level. Recommend do not handle without containment.\n— Revised (Day 210, 1100): BIOLOGICAL — ACTIVE. Specimen responded to lighting change. Containment is holding. Handler advises: 'It is waiting for something.'\n— Current classification: RECLASSIFY PENDING.\n\nPhysical description: Folded. Limb count indeterminate. Approximately 1.4 meters across. The surface texture has changed since intake — it was uniform on arrival and is now showing differentiated regions that were not present. The handler believes this is 'waking up.'\n\nHandler advisory note: 'I have handled alien specimens for twelve years. I have never had one that made the other specimens in the adjacent cages go quiet. They have been quiet since this one arrived. I do not consider this a good sign.'\n\nManagement response to handler advisory: 'The crowd will love it.'\n\nFor historical intake comparison: [[log: Blood Pit — Historical Bout Record]]"
+  },
+  {
+    "title": "House Without Questions — Founding Charter Fragment",
+    "location": "General Access Terminal — The House Without Questions, Lower City",
+    "date": "ORIGINAL DATE UNKNOWN — RECOVERED AND FILED APPROX. 14 YEARS PRIOR",
+    "author": "Unknown — Filed by current House administration as historical record",
+    "security_level": "high",
+    "requires_roll": true,
+    "roll_check": {
+      "difficulty": 12,
+      "skill": "Electronics (computers)",
+      "on_success": "Founding charter fragment recovered. The House is older than it should be.",
+      "on_failure": "Archive partition locked. Historical records require elevated clearance."
+    },
+    "content": "NOTE FROM HOUSE ADMINISTRATION:\n\nThis fragment was found behind a sealed wall panel during renovation fourteen years ago. We have not been able to date it using any technique available to us. The language is a variant of early Vilani Trade Pidgin, but with grammatical structures we cannot place in any known period.\n\nWe are filing it because we believe in documentation.\n\n—\n\n[LEGIBLE SECTION — TRANSLATION APPROXIMATE:]\n\n'A place is needed where those who have nothing may rest, and where questions are not a tool of the powerful.'\n\n'This place is not new. It has been in many locations. The location changes. The purpose does not.'\n\n'Those who keep this place are not its owners. They are its current carriers. The place will outlast them as it has outlasted those before.'\n\n'There is a mark. Those who know it will find us. Those who do not know it will find us anyway, because the ones who need a house without questions always find their way to one.'\n\n—\n\n[ILLEGIBLE SECTION]\n\n—\n\n[FINAL LEGIBLE LINE:]\n\n'The first time this house was kept, the stars were not yet in this arrangement. We note this for context, not as evidence of anything supernatural. We are practical people. We simply keep records.'\n\n—\n\nNote from current administration: We have been here for eleven years. We do not know how long the house before us was here. We know that the wall panel was sealed at least one hundred and forty years ago based on the construction method. We know the text is older than that.\n\nWe keep records."
   }
 ]
