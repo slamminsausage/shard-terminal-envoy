@@ -11,7 +11,7 @@
  *   [[/redacted]]
  */
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import DiceRoller from './DiceRoller';
 import CorruptedText from './CorruptedText';
 import {
@@ -52,13 +52,19 @@ export default function RedactedBlock({
   dimColor = TERMINAL_DIM,
 }: RedactedBlockProps) {
   const [unlocked, setUnlocked] = useState(false);
+  const [decrypting, setDecrypting] = useState(false);
   const [locked, setLocked] = useState(false);
+  const decryptTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => () => { if (decryptTimerRef.current) clearTimeout(decryptTimerRef.current); }, []);
 
   const stateColor = unlocked
     ? TERMINAL_SUCCESS
     : locked
       ? TERMINAL_ERROR
-      : accentColor;
+      : decrypting
+        ? TERMINAL_SUCCESS
+        : accentColor;
 
   return (
     <span
@@ -74,11 +80,29 @@ export default function RedactedBlock({
       }}
     >
       {unlocked ? (
-        <CorruptedText
-          text={content}
-          intensity={0.03}
-          color={withAlpha(TERMINAL_SUCCESS, 0.85)}
-        />
+        <span className="decrypt-reveal">
+          <CorruptedText
+            text={content}
+            intensity={0.03}
+            color={withAlpha(TERMINAL_SUCCESS, 0.85)}
+          />
+        </span>
+      ) : decrypting ? (
+        /* Brief "DECRYPTING…" phase before content appears */
+        <span style={{ color: TERMINAL_SUCCESS, letterSpacing: '0.1em', fontStyle: 'italic' }}>
+          {'DECRYPTING'.split('').map((ch, i) => (
+            <span
+              key={i}
+              style={{
+                display: 'inline-block',
+                animation: `decrypt-scramble ${0.3 + i * 0.04}s ease-out ${i * 0.03}s both`,
+              }}
+            >
+              {ch}
+            </span>
+          ))}
+          {'…'}
+        </span>
       ) : locked ? (
         <span style={{ color: TERMINAL_ERROR, letterSpacing: '0.05em' }}>
           {fillBlocks(content)}
@@ -114,7 +138,13 @@ export default function RedactedBlock({
               accentColor={accentColor}
               dimColor={dimColor}
               onResult={(r) => {
-                if (r.success) setUnlocked(true);
+                if (r.success) {
+                  setDecrypting(true);
+                  decryptTimerRef.current = setTimeout(() => {
+                    setDecrypting(false);
+                    setUnlocked(true);
+                  }, 900);
+                }
               }}
               onExhausted={() => setLocked(true)}
             />

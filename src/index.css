@@ -1298,3 +1298,103 @@
 .signal-pulse-active {
   animation: signal-pulse 2s ease-in-out infinite;
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   VISUAL IMPROVEMENTS — terminal effects batch
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ── Scan-sweep: bright horizontal line that slides down on log open ── */
+@keyframes scan-sweep {
+  0%   { top: 0%;   opacity: 0.9; }
+  90%  { top: 100%; opacity: 0.4; }
+  100% { top: 100%; opacity: 0;   }
+}
+
+.log-scan-sweep {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 2px;
+  pointer-events: none;
+  z-index: 10;
+  animation: scan-sweep 0.55s cubic-bezier(0.4, 0, 0.6, 1) forwards;
+}
+
+/* ── Live-transmission slide-in flash ── */
+@keyframes transmission-arrive {
+  0%   { opacity: 0; transform: translateY(-10px) scaleY(0.85); filter: brightness(2.5); }
+  30%  { opacity: 1; transform: translateY(0)     scaleY(1);    filter: brightness(1.8); }
+  100% { opacity: 1; transform: translateY(0)     scaleY(1);    filter: brightness(1);   }
+}
+
+.transmission-arrive {
+  animation: transmission-arrive 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* ── Decrypt cycle: random char scramble before reveal ── */
+@keyframes decrypt-scramble {
+  0%   { opacity: 1; letter-spacing: 0.08em; }
+  40%  { opacity: 0.6; letter-spacing: 0.12em; }
+  70%  { opacity: 0.9; letter-spacing: 0.04em; }
+  100% { opacity: 1; letter-spacing: normal; }
+}
+
+.decrypt-reveal {
+  animation: decrypt-scramble 0.7s ease-out forwards;
+}
+
+/* ── Security level border pulses on file cards ── */
+@keyframes border-pulse-critical {
+  0%, 100% { box-shadow: 0 0 6px #ff334466, inset 0 0 6px #ff334411; border-color: #ff334488; }
+  50%       { box-shadow: 0 0 18px #ff3344cc, inset 0 0 12px #ff334433; border-color: #ff3344dd; }
+}
+
+@keyframes border-pulse-high {
+  0%, 100% { box-shadow: 0 0 4px #ffaa0044, inset 0 0 4px #ffaa0011; border-color: #ffaa0066; }
+  50%       { box-shadow: 0 0 12px #ffaa0099, inset 0 0 8px #ffaa0022;  border-color: #ffaa00bb; }
+}
+
+@keyframes border-pulse-restricted {
+  0%, 100% { box-shadow: 0 0 5px #ff660055, inset 0 0 5px #ff660011; border-color: #ff660077; }
+  50%       { box-shadow: 0 0 14px #ff6600aa, inset 0 0 10px #ff660028; border-color: #ff6600cc; }
+}
+
+.file-card-critical   { border: 1px solid #ff334488 !important; animation: border-pulse-critical   2s ease-in-out infinite; }
+.file-card-high       { border: 1px solid #ffaa0066 !important; animation: border-pulse-high       3s ease-in-out infinite; }
+.file-card-restricted { border: 1px solid #ff660077 !important; animation: border-pulse-restricted 2.5s ease-in-out infinite; }
+
+/* ── Waveform bars for audio player ── */
+@keyframes waveform-bar {
+  0%, 100% { transform: scaleY(0.2); }
+  50%       { transform: scaleY(1);   }
+}
+
+.waveform-bar {
+  display: inline-block;
+  width: 3px;
+  border-radius: 1px;
+  transform-origin: bottom center;
+  animation: waveform-bar var(--bar-duration, 0.8s) ease-in-out infinite;
+  animation-delay: var(--bar-delay, 0s);
+}
+
+/* ── Imperial clock subtle glow ── */
+.imperial-clock {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.05em;
+}
+
+/* ── Corrupted terminal: random card glitch burst ── */
+@keyframes card-glitch {
+  0%   { transform: translate(0, 0)    skewX(0deg);    filter: none; }
+  20%  { transform: translate(-2px, 0) skewX(-1.5deg); filter: hue-rotate(30deg) brightness(1.3); }
+  40%  { transform: translate(2px, 0)  skewX(1deg);    filter: hue-rotate(-20deg); }
+  60%  { transform: translate(-1px, 0) skewX(0.5deg);  filter: brightness(1.1); }
+  80%  { transform: translate(1px, 0)  skewX(-0.5deg); filter: none; }
+  100% { transform: translate(0, 0)    skewX(0deg);    filter: none; }
+}
+
+.card-glitch-burst {
+  animation: card-glitch 0.18s steps(1) forwards;
+}

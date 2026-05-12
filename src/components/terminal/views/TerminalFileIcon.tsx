@@ -7,7 +7,7 @@
  * Used in the Terminal OS Desktop grid layout.
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useGlitchText } from '@/hooks/useGlitchText';
 import { getGlitchIntensity } from '@/lib/glitchText';
 import { FileIconGauge } from '../TerminalGauges';
@@ -38,13 +38,13 @@ interface TerminalFileIconProps {
   onClick: () => void;
 }
 
-const SECURITY_CONFIG: Record<string, { color: string; icon: string; glow?: boolean; pulse?: boolean }> = {
+const SECURITY_CONFIG: Record<string, { color: string; icon: string; glow?: boolean; pulse?: boolean; cardClass?: string }> = {
   unlocked:   { color: '#88ffaa', icon: '○' },
   low:        { color: '#3ae2b3', icon: '□' },
   medium:     { color: '#00ccff', icon: '◇' },
-  high:       { color: '#ffaa00', icon: '◆', glow: true },
-  restricted: { color: '#ff6600', icon: '◆', glow: true },
-  critical:   { color: '#ff3344', icon: '⬡', pulse: true },
+  high:       { color: '#ffaa00', icon: '◆', glow: true,  cardClass: 'file-card-high' },
+  restricted: { color: '#ff6600', icon: '◆', glow: true,  cardClass: 'file-card-restricted' },
+  critical:   { color: '#ff3344', icon: '⬡', pulse: true, cardClass: 'file-card-critical' },
 };
 
 const DEFAULT_SECURITY = { color: '#3ae2b3', icon: '□' };
@@ -87,13 +87,31 @@ export default function TerminalFileIcon({
   onClick,
 }: TerminalFileIconProps) {
   const [hovered, setHovered] = useState(false);
+  const [glitchBurst, setGlitchBurst] = useState(false);
+  const glitchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const sec = SECURITY_CONFIG[log.security_level || ''] || DEFAULT_SECURITY;
 
-  const shouldFlicker = useMemo(
-    () => terminalCode ? getGlitchIntensity(terminalCode) >= 0.01 : false,
+  const glitchIntensity = useMemo(
+    () => terminalCode ? getGlitchIntensity(terminalCode) : 0,
     [terminalCode]
   );
+  const shouldFlicker = glitchIntensity >= 0.01;
+
+  // For corrupted terminals: fire a random card-glitch burst every 4-12s
+  useEffect(() => {
+    if (glitchIntensity < 0.05) return;
+    const scheduleNext = () => {
+      const delay = 4000 + Math.random() * 8000 + (log.title.charCodeAt(0) % 3000);
+      glitchTimerRef.current = setTimeout(() => {
+        setGlitchBurst(true);
+        setTimeout(() => setGlitchBurst(false), 200);
+        scheduleNext();
+      }, delay);
+    };
+    scheduleNext();
+    return () => { if (glitchTimerRef.current) clearTimeout(glitchTimerRef.current); };
+  }, [glitchIntensity, log.title]);
 
   const flickeredTitle = useGlitchText({
     text: log.title,
@@ -115,18 +133,21 @@ export default function TerminalFileIcon({
 
   const fileType = useMemo(() => getFileType(log), [log]);
 
+  // Security card class (pulse/glow borders) only when not hovered — hover takes priority
+  const secCardClass = !hovered ? (sec.cardClass || '') : '';
+
   return (
     <div
       onClick={onClick}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      className="flex flex-col items-center text-center cursor-pointer transition-all duration-150 p-3 rounded-sm group"
+      className={`flex flex-col items-center text-center cursor-pointer transition-all duration-150 p-3 rounded-sm group ${secCardClass} ${glitchBurst ? 'card-glitch-burst' : ''}`}
       style={{
         width: '130px',
         minHeight: '140px',
-        border: `1px solid ${hovered ? accentColor : 'transparent'}`,
+        border: hovered ? `1px solid ${accentColor}` : undefined,
         backgroundColor: hovered ? `${accentColor}12` : 'transparent',
-        boxShadow: hovered ? `0 0 16px ${accentColor}25, inset 0 0 12px ${accentColor}08` : 'none',
+        boxShadow: hovered ? `0 0 16px ${accentColor}25, inset 0 0 12px ${accentColor}08` : undefined,
         transform: hovered ? 'scale(1.04)' : 'scale(1)',
       }}
     >
