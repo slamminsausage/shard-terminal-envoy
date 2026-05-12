@@ -166,5 +166,110 @@
       "on_success": "Quartermaster's hidden annotation displayed.",
       "on_failure": "You only see public inventory totals."
     }
+  },
+  {
+    "title": "Vii Lon — Departure Note",
+    "location": "General Access Terminal — Asharden Camp, Upper City Edge",
+    "date": "DAY 212 · 1105 — FILED BEFORE SECOND BELL",
+    "author": "Vii Lon",
+    "security_level": "unlocked",
+    "requires_roll": false,
+    "content": "I am leaving the camp. I am filing this so that if the camp admin looks for me, they know I left voluntarily.\n\nI received an offer of passage offworld from a party who has not given me their name. They left a note under my bunk. The note said to come to Tuk's bar at second bell and ask for the booth at the back. They said I should tell no one where I was going.\n\nI am telling this terminal because I do not trust offers from nameless parties, and I believe that creating a record is the safest thing I can do.\n\nWhat happened in that hotel room on Theev, before I came to the camp:\n\nI was a commercial attaché for the Tobia Commerce Guild. We were in Room 15 of the Grand Hotel. There were four of us. I was in the bathroom when whoever it was came through the door. By the time I came out, the other three were dead. I did not see who did it.\n\nI know what they were carrying. A sealed data chip. Contract documentation for a recovery job in deep Reach space — materials of unknown origin, acquired from a derelict. The chip detailed the recovery site coordinates.\n\nI don't have the chip. It was in Revan's bag. Revan is dead. The chip may have gone with whoever came through the door.\n\nI don't know who wanted it. I don't know if the passage offer tonight is from someone who wants to help me or from someone who wants to make sure I can't tell anyone else what I just wrote.\n\nIf you're reading this and I don't come back:\nTuk's bar. Second bell. Booth at the back.\n\nFor the blood gang incident: [[connect: lower_city]]"
+  },
+  {
+    "title": "Offworld Contract — Applicant Screening Notes",
+    "location": "General Access Terminal — Asharden Camp, Upper City Edge",
+    "date": "DAY 212 · 1105",
+    "author": "Camp Administrator — Personal Notes (Private Partition)",
+    "security_level": "restricted",
+    "requires_roll": true,
+    "roll_check": {
+      "difficulty": 9,
+      "skill": "Electronics (computers)",
+      "on_success": "Administrator's private screening notes accessed. The contract poster isn't who you'd expect.",
+      "on_failure": "Private partition locked. Administrator's personal notes require elevated clearance."
+    },
+    "content": "PRIVATE NOTES — OFFWORLD CONTRACT APPLICANT SCREENING — MY RECORD, NOT FOR CAMP USE\n\nThe contract was posted eight days ago. Cr 40,000 plus fuel, one-week job, ship required, no passengers. The poster was a woman, late forties, short hair, very expensive civilian clothes over what I spent enough years in the Imperial Scouts to recognize as a military posture. She did not give a name.\n\nShe paid the posting fee in old Imperial currency — physical coins, pre-Collapse minting. I did not ask about this.\n\nApplicants so far:\n— Three independent operators, all declined after screening. Reasons given: job scope unclear, destination unknown, one crew asked about the destination and was told only 'outer Reach, uncharted approach.' They declined.\n— One crew that arrived via Krrsh clearance codes. They did not apply formally. They came to the admin booth and asked questions. They were professional and careful. The woman who posted the contract watched them from across the hall and did not approach them. She came back afterward and asked me what they had wanted. I told her. She nodded and said 'that's the one.'\n\nI do not know what this means. I filed it because I believe in records.\n\nThe posting woman is staying somewhere in the upper city. She dresses well enough for the Grand Hotel. She has not left a contact address. She checks the posting board every morning at 0730.\n\nFor the contract board posting: [[log: Asharden Camp — Intake Notice]]"
+  },
+  {
+    "title": "Anonymous Research Post — Black Glass Properties",
+    "location": "General Access Terminal — Asharden Camp, Upper City Edge",
+    "date": "MULTIPLE DATES — EARLIEST: 3 MONTHS PRIOR",
+    "author": "Anonymous — Proxy Account",
+    "security_level": "high",
+    "content": "A series of queries has been posted to the camp's public board over the last three months under a proxy account. The questions are technical and specific. The account has never responded to replies. The proxy routing origin is masked.\n\nThe queries concern the same subject: recovered mineral samples with anomalous thermal and mass properties.\n\n[INTERACTIVE TERMINAL — AWAITING INPUT]",
+    "type": "action_sequence",
+    "action_sequence": {
+      "id": "asharden-black-glass-research",
+      "category": "data_extraction",
+      "steps": [
+        {
+          "type": "auto",
+          "lines": [
+            ">> ASHARDEN CAMP — COMMUNITY BOARD ARCHIVE v1.2",
+            ">> ANONYMOUS POSTING ACCOUNT: 11 QUERIES — 3 MONTHS",
+            ">> PROXY ROUTING: 4 HOPS — ORIGIN MASKED",
+            ">> ACADEMIC VOCABULARY: CONSISTENT WITH XENOGRAPHIC MATERIALS SCIENCE",
+            "",
+            ">> TRACING PROXY ORIGIN..."
+          ],
+          "delay": 30,
+          "pause_after": 600
+        },
+        {
+          "type": "prompt",
+          "prompt_text": "SPECIFY SEARCH FOCUS:",
+          "accept": ["ORIGIN", "TRACE", "SOURCE", "PROXY", "QUERIES", "INSTITUTION"],
+          "reject_message": "SPECIFY A VALID SEARCH FOCUS.",
+          "max_attempts": 3,
+          "sound_on_accept": "access_granted",
+          "sound_on_reject": "access_denied"
+        },
+        {
+          "type": "progress",
+          "label": "TRACING PROXY CHAIN — STRIPPING HOP HEADERS...",
+          "duration": 3500,
+          "segments": 20,
+          "sound_on_complete": "data_download",
+          "complete_message": "PROXY ORIGIN PARTIALLY TRACED"
+        },
+        {
+          "type": "auto",
+          "lines": [
+            ">> PROXY TRACE RESULT — PARTIAL ONLY:",
+            ">> HOP 1: BLACKSAND CITY — CLIFF DISTRICT RELAY",
+            ">> HOP 2: SKULL ORBITAL — PUBLIC NODE",
+            ">> HOP 3: [STRIPPED]",
+            ">> HOP 4: ORIGIN — [STRIPPED]",
+            "",
+            ">> VOCABULARY ANALYSIS OF QUERIES:",
+            ">> TERMS USED: 'ANOMALOUS THERMAL SIGNATURE', 'INVERSE MASS GRADIENT',",
+            ">> 'RESONANT INTERFERENCE WITH ADJACENT ELECTRONICS',",
+            ">> 'PRE-IMPERIAL MATERIAL COMPOSITION'",
+            "",
+            ">> CROSS-REFERENCE: GeDeCo XENOGRAPHIC RESEARCH DIVISION",
+            ">> VOCABULARY MATCH: 94%",
+            ">> PUBLISHED PAPERS USING SAME TERMS: 3 — ALL CLASSIFIED AFTER PUBLICATION",
+            "",
+            ">> NOTE: BAY 6 VESSEL DOCKED 3 DAYS AGO.",
+            ">> NOTE: FIRST QUERY POST: 3 MONTHS AGO.",
+            ">> NOTE: MOST RECENT QUERY: 2 DAYS BEFORE BAY 6 VESSEL ARRIVED."
+          ],
+          "delay": 40,
+          "sound": "warning",
+          "sound_at_line": 12,
+          "pause_after": 1000
+        }
+      ],
+      "on_complete": {
+        "message": "The vocabulary is GeDeCo. The lab vessel in Bay 6 arrived three days ago. The queries started three months ago — someone at GeDeCo has been quietly asking around this camp's community board about black glass artifacts for months before they sent a ship. They know something is here, or was here, or passed through here. The proxy routing through the Cliff District relay means someone on-planet placed the queries — someone who was already here long before the ship arrived.",
+        "sound": "warning",
+        "persist_key": "asharden-black-glass-research"
+      },
+      "on_failure": {
+        "message": "PROXY TRACE FAILED. All four hop headers have been stripped — someone used a purpose-built anonymisation chain, not an off-the-shelf relay. The origin is unrecoverable. The queries remain, and the vocabulary remains, but there is no way to confirm who sent them.",
+        "sound": "access_denied"
+      }
+    }
   }
 ]

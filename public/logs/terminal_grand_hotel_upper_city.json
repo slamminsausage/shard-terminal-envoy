@@ -131,5 +131,115 @@
     "content": "Upper city guests keep asking for \"private dining\" when what they actually want is meetings without names attached. We route those parties through the Rose Pavilion service corridor and bill everything to floral maintenance.\n\nTwo off-world crews booked mirrored slots this week and never crossed paths. One arrived polished and diplomatic; the other wore dock grime and spoke like belt salvage crews. Both asked about available pilots and temporary registry counsel.\n\n[[redacted diff=9 skill=\"Broker\" attempts=2]]\nIf either crew asks for the \"Moonglass Room,\" deny politely once, then offer \"Cliff Tea Service\" instead. That's the phrase chain that moves them to unlogged booths with jammer glass.[[/redacted]]\n\nPlease stop letting armed guests use the west lift. Last incident cost us three chandeliers.",
     "security_level": "medium",
     "requires_roll": false
+  },
+  {
+    "title": "Room 7 — Visitor Log (Screened)",
+    "location": "General Access Terminal — The Grand Hotel, Upper City",
+    "date": "DAY 211–212 · 1105",
+    "author": "Grand Hotel Guest Registry — Administrative Partition (Screened Visitors)",
+    "security_level": "restricted",
+    "requires_roll": true,
+    "roll_check": {
+      "difficulty": 11,
+      "skill": "Electronics (computers)",
+      "on_success": "Screened visitor log accessed. Darokyn has been busy.",
+      "on_failure": "Administrative partition locked. Screened visitor records require elevated clearance."
+    },
+    "content": "ROOM 7 — ADMIRAL DAROKYN — SCREENED VISITORS — DAY 211–212\n\nVisitor 1 (Day 211, evening): Male, mid-fifties. Gave no name. Wore civilian clothes over what our door staff identified as a naval dress posture. Stayed forty minutes. Departed without dining. The Admiral did not come down to see him out, which is unusual.\n\nVisitor 2 (Day 212, 0900): Representative from Murghen Consortium — same individual currently in Room 9. Meeting lasted two hours and twenty minutes. Both parties used the secure comms suite during the meeting. We billed it to the Admiral's account at his instruction.\n\nVisitor 3 (Day 212, afternoon, expected): Name on list — not recorded. Instruction to staff: show in, one drink from the upper shelf, leave immediately. The Admiral has not provided a description. This is the meeting he has not told us about.\n\n— Note from registry staff: Room 15's standing reservation for REDTHANE continues to be maintained. The remote payment cleared again this morning. We have been instructed not to ask, and we are complying. But whoever is paying for that room knows the Admiral is here."
+  },
+  {
+    "title": "Grand Hotel — Darokyn Suite Comms Intercept",
+    "location": "General Access Terminal — The Grand Hotel, Upper City",
+    "date": "DAY 212 · 1105",
+    "author": "Grand Hotel Security Systems — Comms Node (Administrative Override)",
+    "security_level": "high",
+    "content": "The Grand Hotel's 'unmonitored' secure communications suite maintains a shadow log for administrative liability purposes. The log is encrypted under a rotating key and is not accessible through normal administrative channels.\n\nA call was placed from the Darokyn suite this morning at 0940. Duration: eleven minutes. The key for this morning's session has not yet rotated.\n\n[INTERACTIVE TERMINAL — AWAITING INPUT]",
+    "type": "action_sequence",
+    "action_sequence": {
+      "id": "grand-hotel-comms-intercept",
+      "category": "data_extraction",
+      "steps": [
+        {
+          "type": "auto",
+          "lines": [
+            ">> GRAND HOTEL — SECURE COMMS SHADOW LOG v1.4",
+            ">> ARCHIVE STATUS: 14 SESSIONS ON FILE",
+            ">> MOST RECENT SESSION: 0940 TODAY — ROOM 7",
+            ">> KEY STATUS: CURRENT SESSION — NOT YET ROTATED",
+            "",
+            ">> WARNING: ACCESSING SHADOW LOG IS A VIOLATION OF",
+            ">> GRAND HOTEL PRIVACY POLICY AND POTENTIALLY OF",
+            ">> BLACKSAND CITY ORDINANCE 44 (INTERCEPTION OF COMMS).",
+            "",
+            ">> INITIATING DECRYPT..."
+          ],
+          "delay": 35,
+          "pause_after": 900
+        },
+        {
+          "type": "prompt",
+          "prompt_text": "CONFIRM ACCESS — ENTER OVERRIDE CODE:",
+          "accept": ["DAROKYN", "ROOM 7", "SHADOW", "INTERCEPT", "DECRYPT", "OVERRIDE"],
+          "reject_message": "OVERRIDE CODE NOT RECOGNISED.",
+          "max_attempts": 3,
+          "sound_on_accept": "access_granted",
+          "sound_on_reject": "access_denied"
+        },
+        {
+          "type": "progress",
+          "label": "DECRYPTING SHADOW SESSION LOG — ROOM 7...",
+          "duration": 3500,
+          "segments": 20,
+          "sound_on_complete": "data_download",
+          "complete_message": "SESSION DECRYPTED — PARTIAL TRANSCRIPT RECOVERED"
+        },
+        {
+          "type": "auto",
+          "lines": [
+            ">> PARTIAL TRANSCRIPT — ROOM 7 — 0940–0951",
+            ">> [AUDIO QUALITY: DEGRADED — ENCRYPTION ARTIFACTS]",
+            "",
+            ">> DAROKYN: '...the codes being used means someone recovered him.'",
+            ">> UNKNOWN: 'Does it matter? The find doesn't leave Theev either way.'",
+            ">> DAROKYN: 'It matters if the people who pulled him know what he found.'",
+            ">> UNKNOWN: 'They don't. They can't. Redthane didn't tell anyone.'",
+            ">> DAROKYN: 'Redthane told Miria.'",
+            ">> [PAUSE — 6 SECONDS]",
+            ">> UNKNOWN: 'Then Miria needs to not be in a position to tell anyone else.'",
+            ">> DAROKYN: '...I'll see what can be arranged.'",
+            "",
+            ">> [TRANSCRIPT ENDS — CALL TERMINATED AT 0951]"
+          ],
+          "delay": 45,
+          "sound": "warning",
+          "sound_at_line": 11,
+          "pause_after": 1200
+        }
+      ],
+      "on_complete": {
+        "message": "The transcript is eleven minutes of careful, oblique conversation between a man who knows exactly what he's saying and someone who is not identified. Darokyn knows about Krrsh's rescue and the Drinax connection. He knows Ferrik found something. He knows Miria knows what it is. He has just agreed to arrange for Miria to stop being a problem. She is at the Scrapheap. She has a machinegun. She does not yet know the Admiral is thinking about her.",
+        "sound": "warning",
+        "persist_key": "grand-hotel-comms-intercept"
+      },
+      "on_failure": {
+        "message": "DECRYPT FAILED. Session key rotated mid-attempt — earlier than scheduled. The shadow log for Room 7's morning call is now permanently inaccessible. Someone may have triggered an early rotation. Someone may be monitoring this terminal.",
+        "sound": "access_denied"
+      }
+    }
+  },
+  {
+    "title": "Cliff District Vault — Safe Deposit Notice",
+    "location": "General Access Terminal — The Grand Hotel, Upper City",
+    "date": "DAY 209 · 1105",
+    "author": "Cliff District Vault Services — Client Notification",
+    "security_level": "restricted",
+    "requires_roll": true,
+    "roll_check": {
+      "difficulty": 9,
+      "skill": "Electronics (computers)",
+      "on_success": "Vault client notification accessed. A Tobia Commerce Guild item is being held — and someone else has already asked about it.",
+      "on_failure": "Vault services partition locked. Client records require elevated clearance."
+    },
+    "content": "CLIFF DISTRICT VAULT SERVICES — CLIENT NOTIFICATION\n\nVault Box: 7-C-14\nClient Reference: TOBIA COMMERCE GUILD — ACTIVE CONTRACT (PROXY BILLING)\nItem Description: One (1) sealed data chip in a biometric case. Deposit date: 14 days prior. Access has not been attempted since deposit.\n\n—\n\nNote to client:\n\nA third party has requested access to your box, citing power of attorney under a Tobia Commerce Guild internal instrument. We did not honor the request. The instrument did not match our records for the account holder.\n\nThe party was polite. They accepted the refusal without incident. They left a contact address in the Grand Hotel's business directory — Room 11.\n\nWe are flagging this because the Tobia Commerce Guild has a pending unresolved incident on Theev involving deceased personnel. If the account holder or their authorized representative wishes to retrieve the contents of Box 7-C-14, we recommend doing so soon.\n\nWe hold items for 90 days. We do not hold items that become subjects of active legal dispute. The third party's follow-up inquiry has the shape of a dispute."
   }
 ]

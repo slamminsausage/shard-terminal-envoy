@@ -146,5 +146,44 @@
       "on_success": "Broker notes decrypted from layered graffiti ledger.",
       "on_failure": "The chalkboard autoscrubs before you finish parsing the symbols."
     }
+  },
+  {
+    "title": "Pre-Collapse Hull — Exterior Inscription Record",
+    "location": "General Access Terminal — The Scrapheap, Lower City Outskirts",
+    "date": "APPROX. 8 YEARS PRIOR",
+    "author": "Unknown — Filed anonymously via proxy terminal",
+    "security_level": "restricted",
+    "requires_roll": true,
+    "roll_check": {
+      "difficulty": 12,
+      "skill": "Electronics (computers)",
+      "on_success": "Anonymous inscription record recovered. The symbol has appeared before.",
+      "on_failure": "File access blocked. Proxy routing stripped — no origin recoverable."
+    },
+    "content": "Filed anonymously. The author did not want their name attached.\n\nI spent four days photographing and transcribing the script on the hull surface. The ship at the south end. The old one.\n\nThe inscription runs the full circumference of what I believe is the vessel's equatorial line — approximately forty meters of unbroken text. It is not carved. It is not stamped. The characters appear to be part of the material itself, as though the hull was cast with them included.\n\nI have cross-referenced the script against every database I have access to. It does not appear in any Imperial xenographic catalogue. It does not match the writing systems associated with any known spacefaring species, precursor or current.\n\nHowever: one symbol appears in a Sindalian trade record fragment that was filed in the Cliff District approximately thirty years ago — describing recovered mineral items from an outer Reach site. The same symbol appears in an unrelated oral history collected at Asharden Camp. The same symbol appears scratched inside the Blood Pit arena, in a section of wall that predates the arena's current use by an estimated three hundred years.\n\nI am not drawing a conclusion. I am noting that three separate sources, spanning at least three hundred years and three different contexts, share one mark with a hull that the salvagers cannot date and cannot open.\n\nI am noting this and I am not going back to the hull.\n\nFor Sindalian archive context: [[connect: asharden_lore]]"
+  },
+  {
+    "title": "Mercifuge Crew — Encrypted Local Broadcast",
+    "location": "General Access Terminal — The Scrapheap, Lower City Outskirts",
+    "date": "DAY 212 · 1105",
+    "author": "Signal Intercept — Source: Skull Orbital passive array",
+    "security_level": "high",
+    "requires_roll": true,
+    "roll_check": {
+      "difficulty": 11,
+      "skill": "Electronics (comms)",
+      "on_success": "Compressed signal decoded. The Mercifuge crew has been checking in. Something has changed.",
+      "on_failure": "Signal too compressed to decode at this access level. Encryption layer intact."
+    },
+    "content": "PASSIVE INTERCEPT — SKULL ORBITAL — SIGNAL LOG\n\nSource: Bay 7-C vessel, Mercifuge. Timing: every four hours since arrival, three days running.\nFormat: Compressed burst, tight-beam, aimed at the lower city.\nRecipient: No registration. The address resolves to a relay node in the canyon level.\n\nDecrypt of most recent burst (partial — encryption partial):\n\n'...still no movement on the hull. She says she's close but the second contact complicates things. Two crews now, not one. She needs another day at minimum. She says the other crew may be useful or may be a problem. She does not know yet.'\n\n'...the item in Bay 7-C storage has been registering temperature fluctuation. Not from ambient. We have sealed the cargo bay as a precaution. Suggest she conclude negotiations and return before we have to make a decision about it ourselves.'\n\n— End of partial decrypt —\n\nNote: The 'item in Bay 7-C storage' is not listed on the Mercifuge manifest. Bay 7-C is Skull Orbital's designation. The item appears to have been loaded before the ship docked.\n\nNote: The cargo bay temperature fluctuation is not a mechanical fault. Three inspections have confirmed the ship's systems are nominal. The fluctuation is internal to the sealed cargo only."
+  },
+  {
+    "title": "Lower Pens Survey — Resident Report",
+    "location": "General Access Terminal — The Scrapheap, Lower City Outskirts",
+    "date": "APPROX. 3 YEARS PRIOR",
+    "author": "Res. — Scrapheap long-term, Section 4",
+    "security_level": "unlocked",
+    "requires_roll": false,
+    "content": "I've lived in this heap for eleven years. I know what's down here.\n\nThe lower pens — the deck level below the flood line, where the chemical runoff settled — used to be full of stripped hulls and nothing else.\n\nAbout three years ago that changed.\n\nI don't know how to describe what moved in. It isn't big. It isn't one thing. It's more like — the way the dark moves in the lower pens is different from the way the dark moves everywhere else. It has a texture.\n\nI went down twice to check on salvage I had stored there. The first time I heard something that wasn't the metal settling. The second time I took a lamp and I saw that my salvage had been moved. Arranged. The pieces were sitting in a rough circle, facing inward, like something had been looking at them.\n\nI moved my salvage.\n\nI have not gone back.\n\nOther residents have reported similar. Three of them have also stopped going below the flood line. One of them says she can hear something at night that sounds like an instrument being played very badly. She says it started after the old hull at the south end got its new terminal.\n\nThe hull has always been warm. The lower pens started changing about a month after the terminal appeared.\n\nI am filing this because I believe in documentation. I am not filing it with my name because I also believe in privacy.\n\nIf you are reading this and considering going into the lower pens: I have been here eleven years. I am telling you not to."
   }
 ]

@@ -139,5 +139,111 @@
     "content": "Open work posts refresh every nine minutes. Payment disputes are common. Fatal disputes are more common after second bell.\n\nCurrent listings worth attention:\n\u2014 Escort package from House district to Kallos perimeter (hazard bonus included).\n\u2014 Acquire four legal worker badges before dawn (no blood).\n\u2014 Move one unregistered hand terminal from Tuk's alley to Cliff District vault desk.\n\n[[redacted diff=8 skill=\"Streetwise\" attempts=3]]\nPrivate listing visible only on cracked clients: looking for \"second crew willing to trail first crew, no contact unless chips change hands.\" Advance payment 2,000 cr each.[[/redacted]]\n\nRemember: jobs that sound easy are priced low for a reason.",
     "security_level": "low",
     "requires_roll": false
+  },
+  {
+    "title": "Vethis Carriage — Recovery Notice (Posted)",
+    "location": "General Access Terminal — Lower City Public Kiosk, Canyon Level",
+    "date": "DAY 211 · 1105",
+    "author": "Vethis Carriage Recovery Division — Field Pair 7",
+    "security_level": "unlocked",
+    "requires_roll": false,
+    "content": "VETHIS CARRIAGE — VOLUNTARY RECOVERY NOTICE\n\nWe are seeking the current custodian of a 200-ton Far Trader hull, Imperial registry. The hull was reported stolen from a bonded yard approximately fourteen months ago. Current location is believed to be Theev, under third-party holding.\n\nVethis Carriage does not pursue criminal charges against parties who facilitate voluntary return. We do pursue charges against parties who actively obstruct recovery after notification.\n\nWe are aware that the hull is currently held at Kallos Shipyards under a private arrangement. We are aware that the arrangement involves parties who prefer not to be identified. We are not interested in those parties. We are interested in the hull.\n\nContact: Inquiries may be directed to the Grand Hotel, Upper City, Rooms 16 and 17. A representative is available between 0800 and 2000. Outside these hours, leave a message with the front desk.\n\n—\n\nNOTE: We are also seeking information regarding a separate matter — a sealed data chip deposited in the Cliff District Vault under the Tobia Commerce Guild reference approximately fourteen days ago. We believe this chip contains information relevant to the hull's current custodian. If the chip's contents have already been accessed, we would appreciate knowing what they contained.\n\nWe pay well for useful information. We are, as noted, practical people.\n\nFor context: [[connect: grand_hotel]]"
+  },
+  {
+    "title": "Brother Aeshan — Public Sermon Transcript",
+    "location": "General Access Terminal — Lower City Public Kiosk, Canyon Level",
+    "date": "DAY 210 · 1105",
+    "author": "Unknown — Transcribed by a curious attendee",
+    "security_level": "unlocked",
+    "requires_roll": false,
+    "content": "I went to the midnight sermon. I don't usually. I was curious after reading the church's public notice.\n\nThis is what I remember. It wasn't recorded officially so I wrote it down after.\n\n—\n\nBrother Aeshan said:\n\n'God is travelling. We have always said this. But tonight I want to talk about what travels with God.'\n\n'There are older things. Things that were here before the first ships, before the first fire, before whatever it was that made us look up and want to go further. Those things are also travelling. They have been travelling longer than we have. They remember the universe before we were in it.'\n\n'I have been shown a place. I do not know why I was shown it and others were not. I did not ask to dream it. The place is not on any chart I have found. It is a scar. Something struck it from a very great height, a very long time ago. The thing that struck it left something behind.'\n\n'Three members of this congregation have gone to find it. I do not know if they arrived. I have not heard from them. I am choosing to believe they arrived.'\n\n'I am going to give the coordinates to anyone who asks for them tonight. After tonight I am going to stop. I have been having the dream more frequently. I think the place has noticed me noticing it.'\n\n—\n\nI asked for the coordinates at the end. So did eight other people. Brother Aeshan looked at each of us for a long time before he wrote anything down.\n\nHe gave me a piece of paper. I have not opened it yet.\n\nI don't know why I haven't opened it yet.\n\nFor private archive context: [[connect: asharden_lore]]"
+  },
+  {
+    "title": "Canyon Level — Ambient Log (Auto-Recorded)",
+    "location": "General Access Terminal — Lower City Public Kiosk, Canyon Level",
+    "date": "DAY 212 · 1105 — CURRENT CYCLE",
+    "author": "Kiosk Passive Audio Array — Automated",
+    "security_level": "restricted",
+    "content": "The lower city kiosk maintains a passive ambient audio log. The log is not monitored in real-time. It runs continuously and archives in four-hour blocks. Pulling and filtering a specific time block requires bypassing the public access partition.\n\n[INTERACTIVE TERMINAL — AWAITING INPUT]",
+    "type": "action_sequence",
+    "action_sequence": {
+      "id": "lower-city-ambient-log",
+      "category": "system_override",
+      "steps": [
+        {
+          "type": "auto",
+          "lines": [
+            ">> LOWER CITY KIOSK — PASSIVE AUDIO LOG v2.0",
+            ">> CURRENT ARCHIVE: 6 BLOCKS (24 HOURS)",
+            ">> EACH BLOCK: 4 HOURS — RANGE: APPROX. 40 METERS",
+            ">> AUDIO QUALITY: AMBIENT — PARTIAL SPEECH RECOVERY ONLY",
+            "",
+            ">> SELECT TIME BLOCK TO RETRIEVE:"
+          ],
+          "delay": 30,
+          "pause_after": 600
+        },
+        {
+          "type": "choice",
+          "prompt_text": "SELECT AUDIO BLOCK:",
+          "options": [
+            "BLOCK 1 — 0000–0400 (NIGHT CYCLE)",
+            "BLOCK 2 — 0400–0800 (EARLY MORNING)",
+            "BLOCK 3 — 0800–1200 (MORNING)",
+            "BLOCK 4 — 1200–1600 (AFTERNOON — MOST RECENT)"
+          ],
+          "sound_on_accept": "access_granted"
+        },
+        {
+          "type": "auto",
+          "lines": [
+            ">> RETRIEVING SELECTED BLOCK...",
+            ">> RUNNING SPEECH ISOLATION FILTER...",
+            ">> FLAGGING PROXIMITY EVENTS..."
+          ],
+          "delay": 30,
+          "pause_after": 400
+        },
+        {
+          "type": "progress",
+          "label": "PROCESSING AMBIENT AUDIO — EXTRACTING SPEECH FRAGMENTS...",
+          "duration": 2500,
+          "segments": 16,
+          "sound_on_complete": "data_download",
+          "complete_message": "AUDIO PROCESSED — FRAGMENTS EXTRACTED"
+        },
+        {
+          "type": "auto",
+          "lines": [
+            ">> SPEECH FRAGMENTS — SELECTED BLOCK:",
+            ">> [MULTIPLE VOICES — CANYON AMBIENT]",
+            "",
+            ">> FRAGMENT 1: '...she left the camp before second bell. Nobody followed her.'",
+            ">> FRAGMENT 2: '...the boys are running messages again. Two different people paying them.'",
+            ">> FRAGMENT 3: [NEAR KIOSK — TWO VOICES]",
+            ">> '...first crew came through the Scrapheap access around midnight.'",
+            ">> '...second crew came in from the freight side. They don't know about each other.'",
+            ">> '...what does the arm woman do when both crews show up?'",
+            ">> '...she lets them. She's been expecting it.'",
+            "",
+            ">> FRAGMENT 4: [DISTANT — POOR QUALITY]",
+            ">> '...the hull at the south end was warm again last night. Warmer than usual.'"
+          ],
+          "delay": 45,
+          "sound": "warning",
+          "sound_at_line": 6,
+          "pause_after": 900
+        }
+      ],
+      "on_complete": {
+        "message": "Four fragments from a single audio block. Vii Lon left the camp alone and wasn't followed — someone noticed that specifically. Two different parties are paying the messenger boys in the Scrapheap. Most significantly: two separate crews have been to the Scrapheap and Miria knows about both of them. She's been expecting visitors. She is not alarmed. Whatever she's planning, multiple arrivals were already part of it.",
+        "sound": "data_download",
+        "persist_key": "lower-city-ambient-log"
+      },
+      "on_failure": {
+        "message": "AUDIO PARTITION LOCKED. Public access tier cannot retrieve archived audio blocks. Widow administrative override required. Your access attempt has been logged.",
+        "sound": "access_denied"
+      }
+    }
   }
 ]
