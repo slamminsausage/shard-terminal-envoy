@@ -32,3 +32,5 @@ ALTER TABLE public.terminal_transmissions ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Allow all operations on terminal_transmissions"
   ON public.terminal_transmissions FOR ALL USING (true) WITH CHECK (true);
+
+ALTER PUBLICATION supabase_realtime ADD TABLE public.terminal_transmissions;
