@@ -529,6 +529,112 @@ export const dbHelpers = {
     if (error) throw error;
   },
 
+  // Custom Terminals (GM-created terminals and logs)
+  async getCustomTerminals() {
+    if (supabaseDisabled) return [];
+    const { data, error } = await supabase
+      .from('custom_terminals')
+      .select('*')
+      .eq('archived', false)
+      .order('created_at', { ascending: true });
+    if (error) throw error;
+    return data || [];
+  },
+
+  async createCustomTerminal(payload: {
+    code: string;
+    name: string;
+    category?: string;
+    requires_roll?: number | null;
+    description?: string;
+  }) {
+    const { data, error } = await supabase
+      .from('custom_terminals')
+      .insert([payload])
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  async updateCustomTerminal(id: string, updates: {
+    name?: string;
+    category?: string;
+    requires_roll?: number | null;
+    description?: string;
+    archived?: boolean;
+  }) {
+    const { data, error } = await supabase
+      .from('custom_terminals')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  async getCustomTerminalLogs(terminalCode: string) {
+    if (supabaseDisabled) return [];
+    const { data, error } = await supabase
+      .from('custom_terminal_logs')
+      .select('*')
+      .eq('terminal_code', terminalCode)
+      .order('sort_order', { ascending: true });
+    if (error) throw error;
+    return data || [];
+  },
+
+  async createCustomTerminalLog(payload: {
+    terminal_code: string;
+    title: string;
+    content?: string;
+    author?: string;
+    date?: string;
+    location?: string;
+    security_level?: string;
+    requires_password?: boolean;
+    password?: string;
+    sort_order?: number;
+  }) {
+    const { data, error } = await supabase
+      .from('custom_terminal_logs')
+      .insert([payload])
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  async updateCustomTerminalLog(id: string, updates: {
+    title?: string;
+    content?: string;
+    author?: string;
+    date?: string;
+    location?: string;
+    security_level?: string;
+    requires_password?: boolean;
+    password?: string;
+    sort_order?: number;
+  }) {
+    const { data, error } = await supabase
+      .from('custom_terminal_logs')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  async deleteCustomTerminalLog(id: string) {
+    const { error } = await supabase
+      .from('custom_terminal_logs')
+      .delete()
+      .eq('id', id);
+    if (error) throw error;
+  },
+
   // Crew Groups
   async getAllCrewGroups() {
     if (supabaseDisabled) {

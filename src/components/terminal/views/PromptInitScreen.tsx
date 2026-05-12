@@ -75,6 +75,8 @@ interface PromptInitScreenProps {
   typewriterSpeed?: string;
   /** Called when player changes speed via SET SPEED command. */
   onSetSpeed?: (speed: 'slow' | 'normal' | 'fast' | 'instant') => void;
+  /** GM-created terminals to include in LS/GREP searches. */
+  extraTerminals?: Terminal[];
 }
 
 const BANNER_LINES: Array<{ text: string; size: string; color: string }> = [
@@ -115,7 +117,10 @@ export default function PromptInitScreen({
   onUnlockTerminal,
   typewriterSpeed = 'normal',
   onSetSpeed,
+  extraTerminals = [],
 }: PromptInitScreenProps) {
+  // All terminals visible in searches: static list + GM-created extras
+  const allTerminals = [...TERMINALS, ...extraTerminals];
   const [input, setInput] = useState('');
   const [history, setHistory] = useState<HistoryEntry[]>(INTRO_LINES);
   const [commandHistory, setCommandHistory] = useState<string[]>([]);
@@ -210,7 +215,7 @@ export default function PromptInitScreen({
         return;
       }
       const kw = arg.toLowerCase();
-      const matches = TERMINALS.filter(
+      const matches = allTerminals.filter(
         t => t.code.toLowerCase().includes(kw) || t.name.toLowerCase().includes(kw)
       );
       if (matches.length === 0) {
@@ -267,14 +272,15 @@ export default function PromptInitScreen({
         return;
       }
       if (sub === 'CODES' || sub === 'LS' || sub === 'CAT') {
-        const lines = TERMINALS.map((t) => {
+        const lines = allTerminals.map((t) => {
           const dc = t.requiresRoll ? `  [DC ${t.requiresRoll}]` : '';
           const locked = lockedTerminals.includes(t.code) ? '  🔒 LOCKED' : '';
-          return `  ${t.code.padEnd(22)}  ${t.name}${dc}${locked}`;
+          const custom = extraTerminals.some(e => e.code === t.code) ? '  ✦ CUSTOM' : '';
+          return `  ${t.code.padEnd(22)}  ${t.name}${dc}${locked}${custom}`;
         }).join('\n');
         appendHistory([{
           type: 'output',
-          text: `[GM OVERRIDE] ALL TERMINAL CODES (${TERMINALS.length}):\n${lines}`,
+          text: `[GM OVERRIDE] ALL TERMINAL CODES (${allTerminals.length}):\n${lines}`,
         }]);
         return;
       }

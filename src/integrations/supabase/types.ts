@@ -14,6 +14,99 @@ export type Database = {
   }
   public: {
     Tables: {
+      custom_terminals: {
+        Row: {
+          id: string
+          code: string
+          name: string
+          category: string
+          requires_roll: number | null
+          description: string | null
+          created_by: string | null
+          created_at: string
+          updated_at: string
+          archived: boolean
+        }
+        Insert: {
+          id?: string
+          code: string
+          name: string
+          category?: string
+          requires_roll?: number | null
+          description?: string | null
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+          archived?: boolean
+        }
+        Update: {
+          id?: string
+          code?: string
+          name?: string
+          category?: string
+          requires_roll?: number | null
+          description?: string | null
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+          archived?: boolean
+        }
+        Relationships: []
+      }
+      custom_terminal_logs: {
+        Row: {
+          id: string
+          terminal_code: string
+          title: string
+          content: string
+          author: string | null
+          date: string | null
+          location: string | null
+          security_level: string
+          requires_password: boolean
+          password: string | null
+          audio_file: string | null
+          video_file: string | null
+          sort_order: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          terminal_code: string
+          title: string
+          content?: string
+          author?: string | null
+          date?: string | null
+          location?: string | null
+          security_level?: string
+          requires_password?: boolean
+          password?: string | null
+          audio_file?: string | null
+          video_file?: string | null
+          sort_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          terminal_code?: string
+          title?: string
+          content?: string
+          author?: string | null
+          date?: string | null
+          location?: string | null
+          security_level?: string
+          requires_password?: boolean
+          password?: string | null
+          audio_file?: string | null
+          video_file?: string | null
+          sort_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       terminal_transmissions: {
         Row: {
           id: string

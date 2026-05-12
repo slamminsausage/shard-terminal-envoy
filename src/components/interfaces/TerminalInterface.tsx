@@ -35,6 +35,7 @@ import PasswordPrompt from '../terminal/SecurityChallenge/PasswordPrompt';
 import RollCheckPrompt from '../terminal/SecurityChallenge/RollCheckPrompt';
 import ActionSequencePlayer from '../terminal/ActionSequence/ActionSequencePlayer';
 import GMTransmitPanel from '../terminal/GMTransmitPanel';
+import GMTerminalBuilder from '../terminal/GMTerminalBuilder';
 import { getTerminalBootProfile } from '@/lib/terminalBootProfiles';
 import { getTerminalTheme } from '@/lib/terminalThemes';
 
@@ -45,6 +46,7 @@ import { useTerminalLiveMessages } from '@/hooks/useTerminalLiveMessages';
 import { useTerminalHistory } from '@/hooks/useTerminalHistory';
 import { useTypewriterSpeed } from '@/hooks/useTypewriterSpeed';
 import { useLockedTerminals } from '@/hooks/useLockedTerminals';
+import { useCustomTerminals } from '@/hooks/useCustomTerminals';
 import type { DiceRoll } from '@/lib/dice';
 
 // Terminal visual effects helper
@@ -88,6 +90,11 @@ function TerminalInterface() {
 
   // GM transmit panel visibility
   const [showGMPanel, setShowGMPanel] = useState(false);
+  // GM terminal builder visibility
+  const [showGMBuilder, setShowGMBuilder] = useState(false);
+
+  // Custom terminals (GM-created)
+  const { asTerminalDefinitions: getCustomTerminalDefs } = useCustomTerminals();
 
   // Typewriter speed preference
   const { speed: typewriterSpeed, delay: typewriterDelay, setSpeed: setTypewriterSpeed } = useTypewriterSpeed();
@@ -291,12 +298,17 @@ function TerminalInterface() {
       const minDelay = new Promise<void>((resolve) =>
         setTimeout(resolve, profile.minDisplayMs)
       );
-      const fetchData = fetch(terminal.logPath)
-        .then((res) => {
-          if (!res.ok) throw new Error(`Failed to load logs: ${res.status}`);
-          return res.json();
-        })
-        .then((data) => (Array.isArray(data) ? data : [data]));
+
+      // Custom terminals store logs in Supabase; static terminals use logPath JSON files
+      const isCustom = terminal.logPath.startsWith('__custom__:');
+      const fetchData: Promise<any[]> = isCustom
+        ? dbHelpers.getCustomTerminalLogs(terminal.logPath.replace('__custom__:', ''))
+        : fetch(terminal.logPath)
+            .then((res) => {
+              if (!res.ok) throw new Error(`Failed to load logs: ${res.status}`);
+              return res.json();
+            })
+            .then((data) => (Array.isArray(data) ? data : [data]));
 
       const [, normalizedData] = await Promise.all([minDelay, fetchData]);
       session.setLogData(normalizedData);
@@ -331,7 +343,8 @@ function TerminalInterface() {
       return;
     }
 
-    const terminal = getTerminalDefinition(code);
+    const terminal = getTerminalDefinition(code)
+      ?? getCustomTerminalDefs().find(t => t.code.toUpperCase() === code);
 
     if (!terminal) {
       audioManager.playEffect('access_denied');
@@ -612,21 +625,35 @@ function TerminalInterface() {
         />
       )}
 
-      {/* GM floating "Transmit" button — only visible to GMs */}
-      {isGM && !showGMPanel && (
-        <button
-          onClick={() => setShowGMPanel(true)}
-          title="Inject live transmission (GM)"
-          className="fixed top-4 right-4 z-[9600] flex items-center gap-1.5 px-3 py-1.5 rounded border border-terminal-primary/40 bg-black/80 text-terminal-primary/70 hover:text-terminal-primary hover:border-terminal-primary/70 text-xs font-mono tracking-wider transition-all"
-        >
-          <Radio className="w-3 h-3" />
-          TRANSMIT
-          {pendingCodes.size > 0 && (
-            <span className="ml-1 px-1.5 py-0.5 rounded-full bg-terminal-primary/20 text-terminal-primary text-[9px] animate-pulse">
-              {pendingCodes.size}
-            </span>
-          )}
-        </button>
+      {/* GM Terminal Builder Panel */}
+      {showGMBuilder && (
+        <GMTerminalBuilder onClose={() => setShowGMBuilder(false)} />
+      )}
+
+      {/* GM floating buttons — only visible to GMs */}
+      {isGM && !showGMPanel && !showGMBuilder && (
+        <div className="fixed top-4 right-4 z-[9600] flex items-center gap-2">
+          <button
+            onClick={() => setShowGMBuilder(true)}
+            title="Terminal Builder (GM)"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded border border-terminal-primary/40 bg-black/80 text-terminal-primary/70 hover:text-terminal-primary hover:border-terminal-primary/70 text-xs font-mono tracking-wider transition-all"
+          >
+            ⊞ BUILD
+          </button>
+          <button
+            onClick={() => setShowGMPanel(true)}
+            title="Inject live transmission (GM)"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded border border-terminal-primary/40 bg-black/80 text-terminal-primary/70 hover:text-terminal-primary hover:border-terminal-primary/70 text-xs font-mono tracking-wider transition-all"
+          >
+            <Radio className="w-3 h-3" />
+            TRANSMIT
+            {pendingCodes.size > 0 && (
+              <span className="ml-1 px-1.5 py-0.5 rounded-full bg-terminal-primary/20 text-terminal-primary text-[9px] animate-pulse">
+                {pendingCodes.size}
+              </span>
+            )}
+          </button>
+        </div>
       )}
 
       {/* Loading View — initial app boot */}
@@ -659,6 +686,7 @@ function TerminalInterface() {
       {session.currentView === 'init' && (
         <PromptInitScreen
           unlockedTerminals={unlockedTerminalsList}
+          extraTerminals={getCustomTerminalDefs()}
           loading={session.terminalsLoading}
           errorMessage={session.terminalsError}
           isGM={isGM}
