@@ -299,7 +299,7 @@ export default function PromptInitScreen({
       if (sub === 'LOCK') {
         const target = rest[1];
         if (!target) { appendHistory([{ type: 'error', text: 'Usage: SUDO LOCK <CODE>' }]); return; }
-        const exists = TERMINALS.find(t => t.code.toUpperCase() === target.toUpperCase());
+        const exists = allTerminals.find(t => t.code.toUpperCase() === target.toUpperCase());
         if (!exists) { appendHistory([{ type: 'error', text: `Unknown terminal: ${target}` }]); return; }
         onLockTerminal?.(exists.code);
         appendHistory([{ type: 'output', text: `[GM] 🔒 ${exists.code} locked. Players will be denied access.` }]);
@@ -308,7 +308,7 @@ export default function PromptInitScreen({
       if (sub === 'UNLOCK') {
         const target = rest[1];
         if (!target) { appendHistory([{ type: 'error', text: 'Usage: SUDO UNLOCK <CODE>' }]); return; }
-        const exists = TERMINALS.find(t => t.code.toUpperCase() === target.toUpperCase());
+        const exists = allTerminals.find(t => t.code.toUpperCase() === target.toUpperCase());
         if (!exists) { appendHistory([{ type: 'error', text: `Unknown terminal: ${target}` }]); return; }
         onUnlockTerminal?.(exists.code);
         appendHistory([{ type: 'output', text: `[GM] ✓ ${exists.code} unlocked.` }]);

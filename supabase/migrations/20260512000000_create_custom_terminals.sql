@@ -72,23 +72,16 @@ END $$;
 ALTER TABLE public.custom_terminals ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.custom_terminal_logs ENABLE ROW LEVEL SECURITY;
 
--- All authenticated users can read
+-- Open access (GM gate enforced in app layer), consistent with all other tables in this codebase
 DROP POLICY IF EXISTS "custom_terminals_read" ON public.custom_terminals;
-CREATE POLICY "custom_terminals_read"
-  ON public.custom_terminals FOR SELECT USING (auth.role() = 'authenticated');
+DROP POLICY IF EXISTS "custom_terminals_write" ON public.custom_terminals;
+CREATE POLICY "Allow all operations on custom_terminals"
+  ON public.custom_terminals FOR ALL USING (true) WITH CHECK (true);
 
 DROP POLICY IF EXISTS "custom_terminal_logs_read" ON public.custom_terminal_logs;
-CREATE POLICY "custom_terminal_logs_read"
-  ON public.custom_terminal_logs FOR SELECT USING (auth.role() = 'authenticated');
-
--- Unrestricted write for authenticated users (GM gate enforced in app layer)
-DROP POLICY IF EXISTS "custom_terminals_write" ON public.custom_terminals;
-CREATE POLICY "custom_terminals_write"
-  ON public.custom_terminals FOR ALL USING (auth.role() = 'authenticated');
-
 DROP POLICY IF EXISTS "custom_terminal_logs_write" ON public.custom_terminal_logs;
-CREATE POLICY "custom_terminal_logs_write"
-  ON public.custom_terminal_logs FOR ALL USING (auth.role() = 'authenticated');
+CREATE POLICY "Allow all operations on custom_terminal_logs"
+  ON public.custom_terminal_logs FOR ALL USING (true) WITH CHECK (true);
 
 -- Enable Realtime for live updates
 ALTER PUBLICATION supabase_realtime ADD TABLE public.custom_terminals;
