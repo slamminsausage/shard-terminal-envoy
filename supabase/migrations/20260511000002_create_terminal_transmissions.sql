@@ -33,4 +33,11 @@ ALTER TABLE public.terminal_transmissions ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Allow all operations on terminal_transmissions"
   ON public.terminal_transmissions FOR ALL USING (true) WITH CHECK (true);
 
-ALTER PUBLICATION supabase_realtime ADD TABLE public.terminal_transmissions;
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables
+    WHERE pubname = 'supabase_realtime' AND tablename = 'terminal_transmissions'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.terminal_transmissions;
+  END IF;
+END $$;
