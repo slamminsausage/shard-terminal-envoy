@@ -98,6 +98,11 @@ function TerminalInterface() {
   // Security lockout — true when terminal has exceeded failure threshold
   const [securityLockout, setSecurityLockout] = useState(false);
 
+  // Pending cross-terminal link navigation — stores the target code when
+  // a [[connect:]] link requires a roll before connecting
+  const [linkNavCode, setLinkNavCode] = useState<string | null>(null);
+  const [linkNavName, setLinkNavName] = useState<string | null>(null);
+
   // Custom terminals (GM-created)
   const { asTerminalDefinitions: getCustomTerminalDefs } = useCustomTerminals();
 
@@ -524,6 +529,25 @@ function TerminalInterface() {
   // Handle roll check result
   const handleRollCheck = async (result: DiceRoll) => {
     session.setRollCheck(null);
+
+    // Cross-terminal link navigation roll
+    if (linkNavCode) {
+      if (result.success) {
+        audioManager.playEffect('access_granted');
+        const code = linkNavCode;
+        setLinkNavCode(null);
+        setLinkNavName(null);
+        session.goToInit();
+        setTimeout(() => handleAccessCode(code), 50);
+      } else {
+        audioManager.playEffect('access_denied');
+        setLinkNavCode(null);
+        setLinkNavName(null);
+        // Stay on current log — failed to route through the network
+      }
+      return;
+    }
+
     // Terminal connect flow
     if (session.pendingTerminalForRoll) {
       if (result.success) {
@@ -808,9 +832,9 @@ function TerminalInterface() {
                 <RollCheckPrompt
                   difficulty={session.rollCheck.difficulty}
                   skill="Electronics (Computers)"
-                  subject={session.selectedLog?.title || 'this file'}
+                  subject={linkNavName ? `[LINK] ${linkNavName}` : (session.selectedLog?.title || 'this file')}
                   onRollResult={handleRollCheck}
-                  onBack={session.goToTerminal}
+                  onBack={linkNavCode ? () => { setLinkNavCode(null); setLinkNavName(null); session.setRollCheck(null); } : session.goToTerminal}
                 />
             )}
 
@@ -896,8 +920,20 @@ function TerminalInterface() {
                   if (target) handleLogClick(target);
                 }}
                 onConnectTerminal={(code) => {
+                  const upperCode = code.trim().toUpperCase();
+                  const target = getTerminalDefinition(upperCode)
+                    ?? getCustomTerminalDefs().find(t => t.code.toUpperCase() === upperCode);
+
+                  // If the target requires a roll and isn't already unlocked, gate it inline
+                  if (!isGM && target?.requiresRoll && !session.unlockedTerminals.includes(upperCode)) {
+                    setLinkNavCode(upperCode);
+                    setLinkNavName(target.name);
+                    session.setRollCheck({ difficulty: target.requiresRoll, skill: 'Electronics (Computers)' });
+                    return;
+                  }
+
+                  // Free access — navigate directly
                   session.goToInit();
-                  // Small delay so the init view is mounted before we attempt connect
                   setTimeout(() => handleAccessCode(code), 50);
                 }}
               />
