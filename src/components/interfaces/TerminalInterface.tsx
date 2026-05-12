@@ -42,8 +42,9 @@ import { getTerminalTheme } from '@/lib/terminalThemes';
 import { useTerminalSession } from '@/hooks/useTerminalSession';
 import { usePasswordAuth } from '@/hooks/usePasswordAuth';
 import { useTerminalLiveMessages } from '@/hooks/useTerminalLiveMessages';
-
 import { useTerminalHistory } from '@/hooks/useTerminalHistory';
+import { useTypewriterSpeed } from '@/hooks/useTypewriterSpeed';
+import { useLockedTerminals } from '@/hooks/useLockedTerminals';
 import type { DiceRoll } from '@/lib/dice';
 
 // Terminal visual effects helper
@@ -87,6 +88,12 @@ function TerminalInterface() {
 
   // GM transmit panel visibility
   const [showGMPanel, setShowGMPanel] = useState(false);
+
+  // Typewriter speed preference
+  const { speed: typewriterSpeed, delay: typewriterDelay, setSpeed: setTypewriterSpeed } = useTypewriterSpeed();
+
+  // Locked terminals (GM lockdown feature)
+  const { lockedCodes: lockedTerminals, lock: lockTerminal, unlock: unlockTerminal, isLocked } = useLockedTerminals();
 
   // Live GM transmissions
   const { messages: liveMessages, pendingCodes } = useTerminalLiveMessages({
@@ -191,7 +198,7 @@ function TerminalInterface() {
         session.setInitComplete(true);
         setTimeout(() => session.setView('init'), 1000);
       },
-      { delay: 15 }
+      { delay: typewriterDelay || 15 }
     );
 
     typingCancelRef.current = cancel;
@@ -329,6 +336,17 @@ function TerminalInterface() {
       return;
     }
 
+    // GM lockdown check — players are blocked; GMs can still access
+    if (!isGM && isLocked(terminal.code)) {
+      audioManager.playEffect('access_denied');
+      toast({
+        title: '⛔ Connection Refused',
+        description: `${terminal.name} — Access revoked by system administrator.`,
+        variant: 'destructive',
+      });
+      return;
+    }
+
     session.setActiveTerminal(terminal);
     audioManager.playEffect('access_granted');
     session.addCommandToHistory(code);
@@ -388,7 +406,7 @@ function TerminalInterface() {
           completionText,
           setLocalDisplayedText,
           () => setLocalTypingComplete(true),
-          { delay: 20 }
+          { delay: typewriterDelay }
         );
         typingCancelRef.current = cancel;
         return;
@@ -402,7 +420,7 @@ function TerminalInterface() {
           log.content,
           setLocalDisplayedText,
           () => setLocalTypingComplete(true),
-          { delay: 20 }
+          { delay: typewriterDelay }
         );
         typingCancelRef.current = cancel;
       } else {
@@ -420,7 +438,7 @@ function TerminalInterface() {
         log.content,
         setLocalDisplayedText,
         () => setLocalTypingComplete(true),
-        { delay: 20 }
+        { delay: typewriterDelay }
       );
       typingCancelRef.current = cancel;
     }
@@ -642,6 +660,12 @@ function TerminalInterface() {
           loading={session.terminalsLoading}
           errorMessage={session.terminalsError}
           isGM={isGM}
+          recentHistory={terminalHistory.getRecentAccesses(15)}
+          lockedTerminals={lockedTerminals}
+          onLockTerminal={lockTerminal}
+          onUnlockTerminal={unlockTerminal}
+          typewriterSpeed={typewriterSpeed}
+          onSetSpeed={setTypewriterSpeed}
           onConnect={(code) => {
             session.setInputCode(code);
             handleAccessCode(code);

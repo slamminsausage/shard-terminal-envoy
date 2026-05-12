@@ -42,6 +42,7 @@ import {
 interface Terminal {
   code: string;
   name: string;
+  requiresRoll?: number;
 }
 
 interface HistoryEntry {
@@ -49,13 +50,31 @@ interface HistoryEntry {
   text: string;
 }
 
+export interface RecentTerminalEntry {
+  terminalCode: string;
+  terminalName: string;
+  lastAccessed: string;
+  accessCount: number;
+}
+
 interface PromptInitScreenProps {
   unlockedTerminals: Terminal[];
   onConnect: (code: string) => void;
   loading?: boolean;
   errorMessage?: string | null;
-  /** When true, unlocks the secret "SUDO CODES" GM reveal command. */
+  /** When true, unlocks GM-only commands (SUDO CODES, LOCK, UNLOCK). */
   isGM?: boolean;
+  /** Recent terminal access history for the HISTORY command. */
+  recentHistory?: RecentTerminalEntry[];
+  /** Terminal codes currently locked by the GM. */
+  lockedTerminals?: string[];
+  /** Called when GM issues LOCK/UNLOCK commands. */
+  onLockTerminal?: (code: string) => void;
+  onUnlockTerminal?: (code: string) => void;
+  /** Current typewriter speed label for SET SPEED command feedback. */
+  typewriterSpeed?: string;
+  /** Called when player changes speed via SET SPEED command. */
+  onSetSpeed?: (speed: 'slow' | 'normal' | 'fast' | 'instant') => void;
 }
 
 const BANNER_LINES: Array<{ text: string; size: string; color: string }> = [
@@ -72,13 +91,16 @@ const INTRO_LINES: HistoryEntry[] = [
 
 const HELP_TEXT = [
   'AVAILABLE COMMANDS:',
-  '  HELP                 Show this message',
-  '  LS | LIST            List unlocked terminals',
-  '  CONNECT <CODE>       Establish link to a terminal',
-  '  CLEAR                Clear prompt history',
-  '  <CODE>               Shorthand for CONNECT <CODE>',
+  '  HELP                   Show this message',
+  '  LS | LIST              List unlocked terminals',
+  '  CONNECT <CODE>         Establish link to a terminal',
+  '  GREP <KEYWORD>         Search terminals by name or code',
+  '  HISTORY                Show recently accessed terminals',
+  '  SET SPEED <LEVEL>      Typewriter speed: slow normal fast instant',
+  '  CLEAR                  Clear prompt history',
+  '  <CODE>                 Shorthand for CONNECT <CODE>',
   '',
-  'Use ↑ / ↓ to recall previous commands.',
+  'Use ↑ / ↓ to recall commands · TAB to autocomplete codes.',
 ].join('\n');
 
 export default function PromptInitScreen({
@@ -87,6 +109,12 @@ export default function PromptInitScreen({
   loading = false,
   errorMessage,
   isGM = false,
+  recentHistory = [],
+  lockedTerminals = [],
+  onLockTerminal,
+  onUnlockTerminal,
+  typewriterSpeed = 'normal',
+  onSetSpeed,
 }: PromptInitScreenProps) {
   const [input, setInput] = useState('');
   const [history, setHistory] = useState<HistoryEntry[]>(INTRO_LINES);
@@ -158,11 +186,75 @@ export default function PromptInitScreen({
       return;
     }
 
-    // Secret GM reveal — intentionally undocumented. Non-GMs get a
-    // bash-style "not found" so the command stays hidden in play.
+    if (cmd === 'HISTORY') {
+      if (recentHistory.length === 0) {
+        appendHistory([{ type: 'output', text: 'No terminal access history recorded yet.' }]);
+      } else {
+        const lines = recentHistory
+          .slice(0, 15)
+          .map((entry, i) => {
+            const d = new Date(entry.lastAccessed);
+            const stamp = d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })
+              + ' ' + d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+            return `  ${String(i + 1).padStart(2, ' ')}.  ${entry.terminalCode.padEnd(24)}  ${stamp}  (×${entry.accessCount})`;
+          })
+          .join('\n');
+        appendHistory([{ type: 'output', text: `RECENT TERMINALS (${recentHistory.length}):\n${lines}` }]);
+      }
+      return;
+    }
+
+    if (cmd === 'GREP') {
+      if (!arg) {
+        appendHistory([{ type: 'error', text: 'Usage: GREP <KEYWORD>' }]);
+        return;
+      }
+      const kw = arg.toLowerCase();
+      const matches = TERMINALS.filter(
+        t => t.code.toLowerCase().includes(kw) || t.name.toLowerCase().includes(kw)
+      );
+      if (matches.length === 0) {
+        appendHistory([{ type: 'output', text: `No terminals matching "${arg}".` }]);
+      } else {
+        const unlocked = new Set(unlockedTerminals.map(t => t.code));
+        const lines = matches
+          .map(t => {
+            const status = unlocked.has(t.code) ? '●' : '○';
+            const dc = t.requiresRoll ? ` [DC ${t.requiresRoll}]` : '';
+            return `  ${status}  ${t.code.padEnd(24)}  ${t.name}${dc}`;
+          })
+          .join('\n');
+        appendHistory([{
+          type: 'output',
+          text: `GREP "${arg}" — ${matches.length} match${matches.length !== 1 ? 'es' : ''} (● unlocked, ○ locked):\n${lines}`,
+        }]);
+      }
+      return;
+    }
+
+    if (cmd === 'SET') {
+      const sub = rest[0];
+      if (sub === 'SPEED') {
+        const level = rest[1]?.toLowerCase();
+        const valid = ['slow', 'normal', 'fast', 'instant'];
+        if (!level || !valid.includes(level)) {
+          appendHistory([{ type: 'error', text: `Usage: SET SPEED <${valid.join('|')}>` }]);
+          return;
+        }
+        onSetSpeed?.(level as any);
+        appendHistory([{ type: 'output', text: `Typewriter speed set to ${level.toUpperCase()}.` }]);
+      } else {
+        appendHistory([{ type: 'error', text: `Unknown setting: ${sub ?? ''}. Try: SET SPEED <level>` }]);
+      }
+      return;
+    }
+
+    // GM privileged commands — SUDO CODES, LOCK, UNLOCK.
+    // Non-GMs get a bash-style "not found" to keep them hidden.
     if (cmd === 'SUDO') {
       const sub = rest[0];
-      if (sub !== 'CODES' && sub !== 'LS' && sub !== 'CAT') {
+      const validSubs = ['CODES', 'LS', 'CAT', 'LOCK', 'UNLOCK', 'STATUS'];
+      if (!validSubs.includes(sub)) {
         appendHistory([
           { type: 'error', text: `sudo: ${(sub || '').toLowerCase() || 'usage'}: command not found` },
         ]);
@@ -174,16 +266,48 @@ export default function PromptInitScreen({
         ]);
         return;
       }
-      const lines = TERMINALS.map((t) => {
-        const dc = t.requiresRoll ? `  [DC ${t.requiresRoll}]` : '';
-        return `  ${t.code.padEnd(22)}  ${t.name}${dc}`;
-      }).join('\n');
-      appendHistory([
-        {
+      if (sub === 'CODES' || sub === 'LS' || sub === 'CAT') {
+        const lines = TERMINALS.map((t) => {
+          const dc = t.requiresRoll ? `  [DC ${t.requiresRoll}]` : '';
+          const locked = lockedTerminals.includes(t.code) ? '  🔒 LOCKED' : '';
+          return `  ${t.code.padEnd(22)}  ${t.name}${dc}${locked}`;
+        }).join('\n');
+        appendHistory([{
           type: 'output',
           text: `[GM OVERRIDE] ALL TERMINAL CODES (${TERMINALS.length}):\n${lines}`,
-        },
-      ]);
+        }]);
+        return;
+      }
+      if (sub === 'STATUS') {
+        if (lockedTerminals.length === 0) {
+          appendHistory([{ type: 'output', text: '[GM] No terminals currently locked.' }]);
+        } else {
+          appendHistory([{
+            type: 'output',
+            text: `[GM] LOCKED TERMINALS (${lockedTerminals.length}):\n` +
+              lockedTerminals.map(c => `  🔒  ${c}`).join('\n'),
+          }]);
+        }
+        return;
+      }
+      if (sub === 'LOCK') {
+        const target = rest[1];
+        if (!target) { appendHistory([{ type: 'error', text: 'Usage: SUDO LOCK <CODE>' }]); return; }
+        const exists = TERMINALS.find(t => t.code.toUpperCase() === target.toUpperCase());
+        if (!exists) { appendHistory([{ type: 'error', text: `Unknown terminal: ${target}` }]); return; }
+        onLockTerminal?.(exists.code);
+        appendHistory([{ type: 'output', text: `[GM] 🔒 ${exists.code} locked. Players will be denied access.` }]);
+        return;
+      }
+      if (sub === 'UNLOCK') {
+        const target = rest[1];
+        if (!target) { appendHistory([{ type: 'error', text: 'Usage: SUDO UNLOCK <CODE>' }]); return; }
+        const exists = TERMINALS.find(t => t.code.toUpperCase() === target.toUpperCase());
+        if (!exists) { appendHistory([{ type: 'error', text: `Unknown terminal: ${target}` }]); return; }
+        onUnlockTerminal?.(exists.code);
+        appendHistory([{ type: 'output', text: `[GM] ✓ ${exists.code} unlocked.` }]);
+        return;
+      }
       return;
     }
 
@@ -428,7 +552,7 @@ export default function PromptInitScreen({
             color: TERMINAL_DIM_SOFT,
           }}
         >
-          ↑ / ↓ RECALL COMMAND  ·  TAB AUTOCOMPLETE  ·  ESC BACK
+          ↑ / ↓ RECALL  ·  TAB AUTOCOMPLETE  ·  ESC BACK  ·  SPEED: {typewriterSpeed.toUpperCase()}
         </div>
       </div>
 
