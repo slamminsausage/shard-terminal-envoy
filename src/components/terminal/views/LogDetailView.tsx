@@ -46,6 +46,10 @@ interface LogDetailViewProps {
   onBack: () => void;
   onInitiateSequence?: () => void;
   terminalCode?: string;
+  /** Clicking a [[log: title]] link navigates to that log in the current terminal */
+  onNavigateLog?: (title: string) => void;
+  /** Clicking a [[connect: code]] link connects to another terminal */
+  onConnectTerminal?: (code: string) => void;
 }
 
 const SECURITY_COLORS: Record<string, string> = {
@@ -80,16 +84,17 @@ export default function LogDetailView({
   onBack,
   onInitiateSequence,
   terminalCode = '',
+  onNavigateLog,
+  onConnectTerminal,
 }: LogDetailViewProps) {
   const profile = useMemo(() => getTerminalBootProfile(terminalCode), [terminalCode]);
   const { accentColor, dimColor } = profile;
   const secColor = SECURITY_COLORS[log.security_level || ''] || accentColor;
 
-  // Content with redacted markers can't be usefully streamed by the
-  // char-by-char typewriter (it would reveal the hidden text) — bypass
-  // the typewriter and render immediately with inline RedactedBlocks.
+  // Content with redacted markers or inline links can't be usefully streamed
+  // by the char-by-char typewriter — bypass it and render parsed nodes instead.
   const hasRedacted = useMemo(
-    () => hasRedactedMarkers(log.content),
+    () => hasRedactedMarkers(log.content) || /\[\[(log|connect):/i.test(log.content || ''),
     [log.content]
   );
 
@@ -103,16 +108,18 @@ export default function LogDetailView({
   // During typing: show the typewriter output; after typing: show flickered version
   const visibleText = typingComplete ? flickeredText : displayedText;
 
-  // Parsed nodes (used when content contains redacted markers)
+  // Parsed nodes (used when content contains redacted markers or inline links)
   const parsedNodes = useMemo(
     () =>
       hasRedacted
         ? parseLogContent(log.content || '', {
             accentColor,
             dimColor,
+            onNavigateLog,
+            onConnectTerminal,
           })
         : null,
-    [hasRedacted, log.content, accentColor, dimColor]
+    [hasRedacted, log.content, accentColor, dimColor, onNavigateLog, onConnectTerminal]
   );
 
   // Typing progress (0-100)

@@ -21,7 +21,24 @@ export interface TerminalBootProfile {
   bootMessages: string[];
   minDisplayMs: number;
   progressStyle: ProgressStyle;
+  /** audioManager effect key played at the start of the boot animation */
+  bootSound: string;
 }
+
+/** Maps each terminal category to the sound effect played when connecting. */
+export const CATEGORY_BOOT_SOUNDS: Record<TerminalCategory, string> = {
+  'corrupted':     'corruption',
+  'corporate':     'access_granted',
+  'high-security': 'warning',
+  'criminal':      'static',
+  'ship-systems':  'terminal',
+  'research':      'access_granted',
+  'government':    'warning',
+  'public-kiosk':  'access_granted',
+  'personal':      'access_granted',
+  'maintenance':   'static',
+  'default':       'access_granted',
+};
 
 // ── Terminal → category mapping ──────────────────────────────────────────────
 
@@ -293,8 +310,11 @@ const BOOT_PROFILES: Record<TerminalCategory, TerminalBootProfile> = {
   },
 };
 
-export const getTerminalBootProfile = (code: string): TerminalBootProfile =>
-  BOOT_PROFILES[getTerminalCategory(code)];
+export const getTerminalBootProfile = (code: string): TerminalBootProfile => {
+  const category = getTerminalCategory(code);
+  const profile = BOOT_PROFILES[category];
+  return { ...profile, bootSound: CATEGORY_BOOT_SOUNDS[category] };
+};
 
 // ── Ghost terminal easter egg ─────────────────────────────────────────────────
 

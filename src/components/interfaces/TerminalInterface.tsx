@@ -11,8 +11,9 @@
  * - Maintains all existing functionality
  */
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import { Radio } from 'lucide-react';
 import SignalInterference from '../SignalInterference';
 import DeepCoreTerminal from '@/components/DeepCoreTerminal';
 import { Button } from "@/components/ui/button";
@@ -21,6 +22,7 @@ import { typeTextWithSound } from '@/lib/typing';
 import { TERMINALS, getTerminalDefinition } from '@/lib/terminals';
 import { dbHelpers } from '@/lib/supabase';
 import { useCampaign } from '@/contexts/CampaignContext';
+import { useToast } from '@/hooks/use-toast';
 
 // New components
 import LoadingScreen from '../terminal/views/LoadingScreen';
@@ -32,14 +34,19 @@ import ConnectingScreen from '@/components/effects/ConnectingScreen';
 import PasswordPrompt from '../terminal/SecurityChallenge/PasswordPrompt';
 import RollCheckPrompt from '../terminal/SecurityChallenge/RollCheckPrompt';
 import ActionSequencePlayer from '../terminal/ActionSequence/ActionSequencePlayer';
+import GMTransmitPanel from '../terminal/GMTransmitPanel';
+import GMTerminalBuilder from '../terminal/GMTerminalBuilder';
 import { getTerminalBootProfile } from '@/lib/terminalBootProfiles';
 import { getTerminalTheme } from '@/lib/terminalThemes';
 
 // New hooks
 import { useTerminalSession } from '@/hooks/useTerminalSession';
 import { usePasswordAuth } from '@/hooks/usePasswordAuth';
-
+import { useTerminalLiveMessages } from '@/hooks/useTerminalLiveMessages';
 import { useTerminalHistory } from '@/hooks/useTerminalHistory';
+import { useTypewriterSpeed } from '@/hooks/useTypewriterSpeed';
+import { useLockedTerminals } from '@/hooks/useLockedTerminals';
+import { useCustomTerminals } from '@/hooks/useCustomTerminals';
 import type { DiceRoll } from '@/lib/dice';
 
 // Terminal visual effects helper
@@ -79,6 +86,38 @@ function TerminalInterface() {
   // GM identity — used to skip persisting unlocks when the GM is testing,
   // and to gate the secret GM reveal command on the init prompt.
   const { isGM } = useCampaign();
+  const { toast } = useToast();
+
+  // GM transmit panel visibility
+  const [showGMPanel, setShowGMPanel] = useState(false);
+  // GM terminal builder visibility
+  const [showGMBuilder, setShowGMBuilder] = useState(false);
+
+  // Custom terminals (GM-created)
+  const { asTerminalDefinitions: getCustomTerminalDefs } = useCustomTerminals();
+
+  // Typewriter speed preference
+  const { speed: typewriterSpeed, delay: typewriterDelay, setSpeed: setTypewriterSpeed } = useTypewriterSpeed();
+
+  // Locked terminals (GM lockdown feature)
+  const { lockedCodes: lockedTerminals, lock: lockTerminal, unlock: unlockTerminal, isLocked } = useLockedTerminals();
+
+  // Live GM transmissions
+  const { messages: liveMessages, pendingCodes } = useTerminalLiveMessages({
+    activeTerminalCode: session.activeTerminal?.code ?? null,
+    onNewMessage: useCallback((msg) => {
+      const currentCode = session.activeTerminal?.code;
+      if (msg.terminal_code !== currentCode) {
+        // Player is not on the target terminal — show a toast
+        const target = TERMINALS.find(t => t.code === msg.terminal_code);
+        toast({
+          title: '⚡ New Transmission',
+          description: `${target?.name ?? msg.terminal_code}: "${msg.title}"`,
+        });
+        audioManager.playEffect('access_granted');
+      }
+    }, [session.activeTerminal?.code, toast]),
+  });
 
   // Local state for typing animations (useState required for typeTextWithSound)
   const [localInitText, setLocalInitText] = useState('');
@@ -166,7 +205,7 @@ function TerminalInterface() {
         session.setInitComplete(true);
         setTimeout(() => session.setView('init'), 1000);
       },
-      { delay: 15 }
+      { delay: typewriterDelay || 15 }
     );
 
     typingCancelRef.current = cancel;
@@ -250,19 +289,26 @@ function TerminalInterface() {
     session.setLogsError(null);
     session.setLogsLoading(true);
     session.setLogData(null);
-    session.setView('connecting'); // Show themed boot screen
+    session.setView('connecting');
+    // Play the per-category boot sound (non-blocking, best-effort)
+    audioManager.playEffect(profile.bootSound);
 
     try {
       // Run minimum display timer and fetch in parallel — user sees full boot animation
       const minDelay = new Promise<void>((resolve) =>
         setTimeout(resolve, profile.minDisplayMs)
       );
-      const fetchData = fetch(terminal.logPath)
-        .then((res) => {
-          if (!res.ok) throw new Error(`Failed to load logs: ${res.status}`);
-          return res.json();
-        })
-        .then((data) => (Array.isArray(data) ? data : [data]));
+
+      // Custom terminals store logs in Supabase; static terminals use logPath JSON files
+      const isCustom = terminal.logPath.startsWith('__custom__:');
+      const fetchData: Promise<any[]> = isCustom
+        ? dbHelpers.getCustomTerminalLogs(terminal.logPath.replace('__custom__:', ''))
+        : fetch(terminal.logPath)
+            .then((res) => {
+              if (!res.ok) throw new Error(`Failed to load logs: ${res.status}`);
+              return res.json();
+            })
+            .then((data) => (Array.isArray(data) ? data : [data]));
 
       const [, normalizedData] = await Promise.all([minDelay, fetchData]);
       session.setLogData(normalizedData);
@@ -297,10 +343,22 @@ function TerminalInterface() {
       return;
     }
 
-    const terminal = getTerminalDefinition(code);
+    const terminal = getTerminalDefinition(code)
+      ?? getCustomTerminalDefs().find(t => t.code.toUpperCase() === code);
 
     if (!terminal) {
       audioManager.playEffect('access_denied');
+      return;
+    }
+
+    // GM lockdown check — players are blocked; GMs can still access
+    if (!isGM && isLocked(terminal.code)) {
+      audioManager.playEffect('access_denied');
+      toast({
+        title: '⛔ Connection Refused',
+        description: `${terminal.name} — Access revoked by system administrator.`,
+        variant: 'destructive',
+      });
       return;
     }
 
@@ -363,7 +421,7 @@ function TerminalInterface() {
           completionText,
           setLocalDisplayedText,
           () => setLocalTypingComplete(true),
-          { delay: 20 }
+          { delay: typewriterDelay }
         );
         typingCancelRef.current = cancel;
         return;
@@ -377,7 +435,7 @@ function TerminalInterface() {
           log.content,
           setLocalDisplayedText,
           () => setLocalTypingComplete(true),
-          { delay: 20 }
+          { delay: typewriterDelay }
         );
         typingCancelRef.current = cancel;
       } else {
@@ -395,7 +453,7 @@ function TerminalInterface() {
         log.content,
         setLocalDisplayedText,
         () => setLocalTypingComplete(true),
-        { delay: 20 }
+        { delay: typewriterDelay }
       );
       typingCancelRef.current = cancel;
     }
@@ -533,6 +591,24 @@ function TerminalInterface() {
     session.unlockedTerminals.includes(t.code)
   );
 
+  // Merge live transmissions into the log list for the current terminal.
+  // They appear at the top with a special flag so TerminalView can style them.
+  const mergedLogs = session.logData
+    ? [
+        ...liveMessages.map(m => ({
+          title: m.title,
+          content: m.content,
+          author: m.author ?? undefined,
+          date: m.date ?? undefined,
+          location: m.location ?? undefined,
+          security_level: m.security_level,
+          _isLiveTransmission: true,
+          _transmissionId: m.id,
+        })),
+        ...session.logData,
+      ]
+    : null;
+
   return (
     <div className="h-screen bg-background crt-container overflow-hidden">
       <SignalInterference
@@ -540,6 +616,45 @@ function TerminalInterface() {
         terminalType={session.activeTerminal ? 'corrupted' : 'normal'}
         soundEnabled={!audioManager.isMuted()}
       />
+
+      {/* GM Transmit Panel */}
+      {showGMPanel && (
+        <GMTransmitPanel
+          defaultTerminalCode={session.activeTerminal?.code}
+          onClose={() => setShowGMPanel(false)}
+        />
+      )}
+
+      {/* GM Terminal Builder Panel */}
+      {showGMBuilder && (
+        <GMTerminalBuilder onClose={() => setShowGMBuilder(false)} />
+      )}
+
+      {/* GM floating buttons — only visible to GMs */}
+      {isGM && !showGMPanel && !showGMBuilder && (
+        <div className="fixed top-4 right-4 z-[9600] flex items-center gap-2">
+          <button
+            onClick={() => setShowGMBuilder(true)}
+            title="Terminal Builder (GM)"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded border border-terminal-primary/40 bg-black/80 text-terminal-primary/70 hover:text-terminal-primary hover:border-terminal-primary/70 text-xs font-mono tracking-wider transition-all"
+          >
+            ⊞ BUILD
+          </button>
+          <button
+            onClick={() => setShowGMPanel(true)}
+            title="Inject live transmission (GM)"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded border border-terminal-primary/40 bg-black/80 text-terminal-primary/70 hover:text-terminal-primary hover:border-terminal-primary/70 text-xs font-mono tracking-wider transition-all"
+          >
+            <Radio className="w-3 h-3" />
+            TRANSMIT
+            {pendingCodes.size > 0 && (
+              <span className="ml-1 px-1.5 py-0.5 rounded-full bg-terminal-primary/20 text-terminal-primary text-[9px] animate-pulse">
+                {pendingCodes.size}
+              </span>
+            )}
+          </button>
+        </div>
+      )}
 
       {/* Loading View — initial app boot */}
       {session.currentView === 'loading' && (
@@ -571,9 +686,16 @@ function TerminalInterface() {
       {session.currentView === 'init' && (
         <PromptInitScreen
           unlockedTerminals={unlockedTerminalsList}
+          extraTerminals={getCustomTerminalDefs()}
           loading={session.terminalsLoading}
           errorMessage={session.terminalsError}
           isGM={isGM}
+          recentHistory={terminalHistory.getRecentAccesses(15)}
+          lockedTerminals={lockedTerminals}
+          onLockTerminal={lockTerminal}
+          onUnlockTerminal={unlockTerminal}
+          typewriterSpeed={typewriterSpeed}
+          onSetSpeed={setTypewriterSpeed}
           onConnect={(code) => {
             session.setInputCode(code);
             handleAccessCode(code);
@@ -723,19 +845,29 @@ function TerminalInterface() {
                     : undefined
                 }
                 terminalCode={session.activeTerminal?.code || ''}
+                onNavigateLog={(title) => {
+                  const target = mergedLogs?.find(l => l.title === title);
+                  if (target) handleLogClick(target);
+                }}
+                onConnectTerminal={(code) => {
+                  session.goToInit();
+                  // Small delay so the init view is mounted before we attempt connect
+                  setTimeout(() => handleAccessCode(code), 50);
+                }}
               />
             )}
 
             {/* Terminal Log List */}
-            {session.logData &&
+            {mergedLogs &&
              !session.selectedLog &&
              !session.terminalPasswordRequired && (
               <TerminalView
                 terminal={session.activeTerminal!}
-                logs={session.logData}
+                logs={mergedLogs}
                 onLogSelect={handleLogClick}
                 onBack={session.goToInit}
                 completedActions={session.completedActions}
+                newTransmissionCount={liveMessages.length}
               />
             )}
 

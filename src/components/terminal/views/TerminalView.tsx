@@ -30,6 +30,9 @@ interface LogEntry {
   content?: string;
   type?: string;
   action_sequence?: { id: string; category: string; on_complete?: { persist_key?: string } };
+  /** Set by TerminalInterface for GM-injected live messages */
+  _isLiveTransmission?: boolean;
+  _transmissionId?: string;
 }
 
 interface Terminal {
@@ -44,6 +47,7 @@ interface TerminalViewProps {
   onLogSelect: (log: LogEntry) => void;
   onBack: () => void;
   completedActions?: string[];
+  newTransmissionCount?: number;
 }
 
 /** Generate a pseudo-random uptime string from terminal code */
@@ -61,6 +65,7 @@ export default function TerminalView({
   onLogSelect,
   onBack,
   completedActions = [],
+  newTransmissionCount = 0,
 }: TerminalViewProps) {
   const profile = getTerminalBootProfile(terminal.code);
   const category = getTerminalCategory(terminal.code);
@@ -179,21 +184,43 @@ export default function TerminalView({
 
       {/* ═══ File Grid Content ═══ */}
       <div className="flex-1 overflow-auto p-4">
+        {/* Live transmissions header strip */}
+        {newTransmissionCount > 0 && (
+          <div
+            className="flex items-center gap-2 mb-3 px-3 py-1.5 rounded text-[10px] font-mono tracking-widest uppercase animate-pulse"
+            style={{
+              border: `1px solid ${accentColor}55`,
+              backgroundColor: `${accentColor}10`,
+              color: accentColor,
+            }}
+          >
+            <span style={{ fontSize: '11px' }}>⚡</span>
+            {newTransmissionCount} live transmission{newTransmissionCount !== 1 ? 's' : ''} received
+          </div>
+        )}
         {logs.length > 0 ? (
           <AnimatedList
             className="flex flex-wrap gap-2 justify-start"
             staggerDelay={0.06}
           >
             {logs.map((log, index) => (
-              <TerminalFileIcon
-                key={index}
-                log={log}
-                accentColor={accentColor}
-                dimColor={dimColor}
-                terminalCode={terminal.code}
-                completedActions={completedActions}
-                onClick={() => onLogSelect(log)}
-              />
+              <div
+                key={log._transmissionId ?? index}
+                style={log._isLiveTransmission ? {
+                  outline: `1px solid ${accentColor}88`,
+                  boxShadow: `0 0 10px ${accentColor}33`,
+                  borderRadius: '4px',
+                } : undefined}
+              >
+                <TerminalFileIcon
+                  log={log}
+                  accentColor={accentColor}
+                  dimColor={dimColor}
+                  terminalCode={terminal.code}
+                  completedActions={completedActions}
+                  onClick={() => onLogSelect(log)}
+                />
+              </div>
             ))}
           </AnimatedList>
         ) : (
@@ -225,6 +252,17 @@ export default function TerminalView({
           <span style={{ color: accentColor }}>{terminal.code}</span>
           <span style={{ color: `${dimColor}88` }}>│</span>
           <span>{logs.length} {logs.length === 1 ? 'FILE' : 'FILES'}</span>
+          {newTransmissionCount > 0 && (
+            <>
+              <span style={{ color: `${dimColor}88` }}>│</span>
+              <span
+                className="animate-pulse"
+                style={{ color: accentColor, fontWeight: 'bold' }}
+              >
+                ⚡ {newTransmissionCount} NEW
+              </span>
+            </>
+          )}
           {securedCount > 0 && (
             <>
               <span style={{ color: `${dimColor}88` }}>│</span>
