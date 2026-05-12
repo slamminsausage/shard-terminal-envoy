@@ -282,7 +282,9 @@ function TerminalInterface() {
     session.setLogsError(null);
     session.setLogsLoading(true);
     session.setLogData(null);
-    session.setView('connecting'); // Show themed boot screen
+    session.setView('connecting');
+    // Play the per-category boot sound (non-blocking, best-effort)
+    audioManager.playEffect(profile.bootSound);
 
     try {
       // Run minimum display timer and fetch in parallel — user sees full boot animation
@@ -815,6 +817,15 @@ function TerminalInterface() {
                     : undefined
                 }
                 terminalCode={session.activeTerminal?.code || ''}
+                onNavigateLog={(title) => {
+                  const target = mergedLogs?.find(l => l.title === title);
+                  if (target) handleLogClick(target);
+                }}
+                onConnectTerminal={(code) => {
+                  session.goToInit();
+                  // Small delay so the init view is mounted before we attempt connect
+                  setTimeout(() => handleAccessCode(code), 50);
+                }}
               />
             )}
 
