@@ -83,6 +83,21 @@ DROP POLICY IF EXISTS "custom_terminal_logs_write" ON public.custom_terminal_log
 CREATE POLICY "Allow all operations on custom_terminal_logs"
   ON public.custom_terminal_logs FOR ALL USING (true) WITH CHECK (true);
 
--- Enable Realtime for live updates
-ALTER PUBLICATION supabase_realtime ADD TABLE public.custom_terminals;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.custom_terminal_logs;
+-- Enable Realtime for live updates (idempotent)
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables
+    WHERE pubname = 'supabase_realtime' AND tablename = 'custom_terminals'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.custom_terminals;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables
+    WHERE pubname = 'supabase_realtime' AND tablename = 'custom_terminal_logs'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.custom_terminal_logs;
+  END IF;
+END $$;
