@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      terminal_transmissions: {
+        Row: {
+          id: string
+          terminal_code: string
+          title: string
+          content: string
+          author: string | null
+          date: string | null
+          location: string | null
+          security_level: string
+          expires_at: string | null
+          deleted_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          terminal_code: string
+          title: string
+          content?: string
+          author?: string | null
+          date?: string | null
+          location?: string | null
+          security_level?: string
+          expires_at?: string | null
+          deleted_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          terminal_code?: string
+          title?: string
+          content?: string
+          author?: string | null
+          date?: string | null
+          location?: string | null
+          security_level?: string
+          expires_at?: string | null
+          deleted_at?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
       combat_encounters: {
         Row: {
           id: string

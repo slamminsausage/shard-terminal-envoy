@@ -488,6 +488,47 @@ export const dbHelpers = {
     return true
   },
 
+  // Terminal Transmissions (GM live messages)
+  async getTerminalTransmissions(terminalCode: string) {
+    const now = new Date().toISOString();
+    const { data, error } = await supabase
+      .from('terminal_transmissions')
+      .select('*')
+      .eq('terminal_code', terminalCode)
+      .is('deleted_at', null)
+      .or(`expires_at.is.null,expires_at.gt.${now}`)
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    return data || [];
+  },
+
+  async injectTerminalTransmission(payload: {
+    terminal_code: string;
+    title: string;
+    content: string;
+    author?: string;
+    date?: string;
+    location?: string;
+    security_level?: string;
+    expires_at?: string;
+  }) {
+    const { data, error } = await supabase
+      .from('terminal_transmissions')
+      .insert([payload])
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  async deleteTerminalTransmission(id: string) {
+    const { error } = await supabase
+      .from('terminal_transmissions')
+      .update({ deleted_at: new Date().toISOString() })
+      .eq('id', id);
+    if (error) throw error;
+  },
+
   // Crew Groups
   async getAllCrewGroups() {
     if (supabaseDisabled) {
