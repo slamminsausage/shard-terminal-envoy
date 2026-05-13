@@ -16,6 +16,7 @@ class AudioManager {
       'static': '/audio/static-hum.mp3',
       'terminal': '/audio/terminal-hum.mp3',
       'door_unlock': '/audio/door-unlock.wav',
+      'alarm': '/audio/warning-beep.mp3',
       'alarm_disable': '/audio/alarm-disable.wav',
       'data_download': '/audio/data-download.wav',
       'power_down': '/audio/power-down.wav',

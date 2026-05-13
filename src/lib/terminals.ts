@@ -40,12 +40,12 @@ export const TERMINALS: TerminalDefinition[] = [
   { code: 'seqtest', name: 'Action Sequence Test Terminal', logPath: '/logs/example-sequences.json' },
   // Blacksand City / Theev arc
   { code: 'blacksand_downport', name: 'Blacksand Downport — Public Terminal',  logPath: '/logs/terminal_blacksand_downport.json' },
-  { code: 'grand_hotel',        name: 'Grand Hotel — Upper City',               logPath: '/logs/terminal_grand_hotel_upper_city.json' },
-  { code: 'scrapheap',          name: 'Scrapheap — Salvager Terminal',          logPath: '/logs/terminal_scrapheap.json' },
-  { code: 'house_blood_pit',    name: 'Lower City — House & Blood Pit',         logPath: '/logs/terminal_house_and_blood_pit.json' },
-  { code: 'ferrik_intel',       name: 'Ferrik Redthane — Active Bounty',        logPath: '/logs/terminal_ferrik_intel.json' },
+  { code: 'grand_hotel',        name: 'Grand Hotel — Upper City',               logPath: '/logs/terminal_grand_hotel_upper_city.json',  requiresRoll: 8 },
+  { code: 'scrapheap',          name: 'Scrapheap — Salvager Terminal',          logPath: '/logs/terminal_scrapheap.json',                requiresRoll: 6 },
+  { code: 'house_blood_pit',    name: 'Lower City — House & Blood Pit',         logPath: '/logs/terminal_house_and_blood_pit.json',      requiresRoll: 10 },
+  { code: 'ferrik_intel',       name: 'Ferrik Redthane — Active Bounty',        logPath: '/logs/terminal_ferrik_intel.json',             requiresRoll: 10 },
   { code: 'lower_city',         name: 'Lower City — Public Kiosk',              logPath: '/logs/terminal_lower_city.json' },
-  { code: 'asharden_lore',      name: 'Asharden Camp — Archive Terminal',       logPath: '/logs/terminal_asharden_and_lore.json' },
+  { code: 'asharden_lore',      name: 'Asharden Camp — Archive Terminal',       logPath: '/logs/terminal_asharden_and_lore.json',        requiresRoll: 10 },
   { code: 'backroom_crowns',    name: 'Back Room Parlour — Crowns Table',       logPath: '/logs/terminal_backroom_crowns.json' },
 ];
 
