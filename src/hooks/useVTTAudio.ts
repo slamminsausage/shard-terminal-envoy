@@ -42,6 +42,10 @@ export function useVTTAudio() {
   const masterVolumeRef = useRef(state.audio.masterVolume);
   masterVolumeRef.current = state.audio.masterVolume;
 
+  // Suppresses the volume-sync effect while a crossfade ramp is running
+  // (assigning gain.value cancels any scheduled Web Audio automations)
+  const crossfadeActiveRef = useRef(false);
+
   // Track whether we've already shown the autoplay toast
   const autoplayWarningShown = useRef(false);
 
@@ -116,6 +120,8 @@ export function useVTTAudio() {
   }, [state.audio]);
 
   useEffect(() => {
+    // Skip during crossfade — assigning gain.value would cancel the ramp automation
+    if (crossfadeActiveRef.current) return;
     for (const slot of SLOTS) {
       const gain = ambientGainRefs.current[slot];
       const track = state.audio[`ambient${slot}` as keyof typeof state.audio] as (typeof state.audio.ambientA);
@@ -472,6 +478,86 @@ export function useVTTAudio() {
     });
   }, []);
 
+  // ─── Channel crossfade ────────────────────────────────────────────
+
+  /**
+   * Smoothly fade channel `fromSlot` out and channel `toSlot` in over
+   * `durationMs` milliseconds using Web Audio gain automation.
+   *
+   * Both channels must have a track loaded. The TO channel is auto-started
+   * (from volume 0) if it is currently paused.
+   */
+  const crossfadeChannels = useCallback(
+    (fromSlot: AmbientSlot, toSlot: AmbientSlot, durationMs: number) => {
+      const ctx = ctxRef.current || ensureContext();
+      const fromGain = ambientGainRefs.current[fromSlot];
+      const toGain = ambientGainRefs.current[toSlot];
+      if (!fromGain || !toGain) return;
+
+      const fromTrack = state.audio[`ambient${fromSlot}` as keyof typeof state.audio] as (typeof state.audio.ambientA);
+      const toTrack = state.audio[`ambient${toSlot}` as keyof typeof state.audio] as (typeof state.audio.ambientA);
+      if (!fromTrack || !toTrack) return;
+
+      const durationSec = durationMs / 1000;
+      const now = ctx.currentTime;
+      const fromCurrentVol = fromGain.gain.value;
+      const toTargetVol = toTrack.volume > 0 ? toTrack.volume : 0.7;
+
+      // Ensure TO channel element exists and is playing
+      const toEl = ambientElRefs.current[toSlot];
+      if (toEl) {
+        if (toEl.paused) {
+          // Start at 0 so the ramp controls the fade-in
+          toGain.gain.setValueAtTime(0, now);
+          tryPlay(toEl);
+        }
+      } else if (toTrack.url && !toTrack.url.startsWith("blob:")) {
+        // Silently reload and start at 0
+        const el = new Audio();
+        el.crossOrigin = "anonymous";
+        el.loop = toTrack.loop;
+        el.src = toTrack.url;
+        const source = ctx.createMediaElementSource(el);
+        source.connect(toGain);
+        ambientSourceRefs.current[toSlot] = source;
+        ambientElRefs.current[toSlot] = el;
+        toGain.gain.setValueAtTime(0, now);
+        tryPlay(el);
+      }
+
+      // Suppress React volume-sync effect for the duration
+      crossfadeActiveRef.current = true;
+
+      // Schedule gain ramps
+      fromGain.gain.cancelScheduledValues(now);
+      fromGain.gain.setValueAtTime(fromCurrentVol, now);
+      fromGain.gain.linearRampToValueAtTime(0, now + durationSec);
+
+      toGain.gain.cancelScheduledValues(now);
+      toGain.gain.setValueAtTime(toGain.gain.value, now);
+      toGain.gain.linearRampToValueAtTime(toTargetVol, now + durationSec);
+
+      // After the ramp completes: sync state volumes and pause the FROM channel
+      setTimeout(() => {
+        crossfadeActiveRef.current = false;
+
+        // Pause the channel that was faded out
+        ambientElRefs.current[fromSlot]?.pause();
+
+        // Sync state so sliders reflect the new volumes
+        dispatch({
+          type: "SET_AMBIENT_TRACK",
+          payload: { slot: fromSlot, track: { ...fromTrack, volume: 0 } },
+        });
+        dispatch({
+          type: "SET_AMBIENT_TRACK",
+          payload: { slot: toSlot, track: { ...toTrack, volume: toTargetVol } },
+        });
+      }, durationMs + 100);
+    },
+    [state.audio, dispatch, ensureContext, tryPlay]
+  );
+
   // ─── Audio ducking (lower music when handouts/videos play) ───────
 
   const duckingRef = useRef(false);
@@ -569,6 +655,7 @@ export function useVTTAudio() {
     removeAmbient,
     playAmbient,
     pauseAmbient,
+    crossfadeChannels,
     activatePlaylist,
     saveAsPlaylist,
     loadSFX,

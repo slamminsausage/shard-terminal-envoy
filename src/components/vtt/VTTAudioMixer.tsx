@@ -17,6 +17,7 @@ import {
   Music,
   Zap,
   Plus,
+  ArrowLeftRight,
 } from "lucide-react";
 import { useRef, useEffect, useCallback, useState, useMemo } from "react";
 import { toast } from "sonner";
@@ -62,7 +63,14 @@ const SLOT_LABEL_COLORS: Record<AmbientSlot, string> = {
   D: "text-purple-400/70",
 };
 
-type MixerSection = "channels" | "library" | "playlists" | "sfx";
+type MixerSection = "channels" | "crossfade" | "library" | "playlists" | "sfx";
+
+const CROSSFADE_PRESETS = [
+  { label: "2s", ms: 2000 },
+  { label: "5s", ms: 5000 },
+  { label: "10s", ms: 10000 },
+  { label: "30s", ms: 30000 },
+];
 
 export default function VTTAudioMixer() {
   const { state, dispatch, saveSession } = useVTT();
@@ -72,10 +80,18 @@ export default function VTTAudioMixer() {
   const [visualizerActive, setVisualizerActive] = useState(false);
   const [expandedSections, setExpandedSections] = useState<Record<MixerSection, boolean>>({
     channels: true,
+    crossfade: true,
     library: false,
     playlists: false,
     sfx: true,
   });
+
+  // Crossfade UI state
+  const [xfFrom, setXfFrom] = useState<AmbientSlot>("A");
+  const [xfTo, setXfTo] = useState<AmbientSlot>("B");
+  const [xfDurationMs, setXfDurationMs] = useState(5000);
+  const [xfProgress, setXfProgress] = useState<number | null>(null); // 0–100 while active
+  const xfIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [libraryFilter, setLibraryFilter] = useState<string>("all");
   const [newPlaylistName, setNewPlaylistName] = useState("");
   const [libraryTargetSlot, setLibraryTargetSlot] = useState<AmbientSlot>("A");
@@ -161,6 +177,41 @@ export default function VTTAudioMixer() {
   const getTrack = (slot: AmbientSlot): AmbientTrack | null => {
     return state.audio[`ambient${slot}` as keyof typeof state.audio] as AmbientTrack | null;
   };
+
+  const handleCrossfade = useCallback(() => {
+    if (xfFrom === xfTo) {
+      toast.error("Source and destination channels must be different");
+      return;
+    }
+    const fromTrack = getTrack(xfFrom);
+    const toTrack = getTrack(xfTo);
+    if (!fromTrack) {
+      toast.error(`Channel ${xfFrom} has no track loaded`);
+      return;
+    }
+    if (!toTrack) {
+      toast.error(`Channel ${xfTo} has no track loaded`);
+      return;
+    }
+
+    audio.crossfadeChannels(xfFrom, xfTo, xfDurationMs);
+    setVisualizerActive(true);
+
+    // Animate progress bar
+    if (xfIntervalRef.current) clearInterval(xfIntervalRef.current);
+    setXfProgress(0);
+    const startTime = Date.now();
+    xfIntervalRef.current = setInterval(() => {
+      const elapsed = Date.now() - startTime;
+      const pct = Math.min(100, (elapsed / xfDurationMs) * 100);
+      setXfProgress(pct);
+      if (pct >= 100) {
+        clearInterval(xfIntervalRef.current!);
+        xfIntervalRef.current = null;
+        setTimeout(() => setXfProgress(null), 400);
+      }
+    }, 50);
+  }, [xfFrom, xfTo, xfDurationMs, audio, getTrack]);
 
   // Merge built-in and custom library tracks
   const allLibraryTracks = useMemo(() => {
@@ -442,6 +493,123 @@ export default function VTTAudioMixer() {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* ═══════════════ CROSSFADE ═══════════════ */}
+      <SectionHeader
+        label="Crossfade"
+        icon={<ArrowLeftRight size={11} />}
+        expanded={expandedSections.crossfade}
+        onToggle={() => toggleSection("crossfade")}
+      />
+      {expandedSections.crossfade && (
+        <div className="p-3 border-b border-terminal-border/30 space-y-3">
+          {/* From / To selectors */}
+          <div className="flex items-center gap-2">
+            <div className="flex-1">
+              <label className="text-[8px] text-terminal-primary/40 font-mono uppercase mb-1 block">
+                From
+              </label>
+              <div className="flex gap-1">
+                {AMBIENT_SLOTS.map((slot) => (
+                  <button
+                    key={slot}
+                    onClick={() => setXfFrom(slot)}
+                    disabled={xfProgress !== null}
+                    className={`flex-1 vtt-option text-[9px] py-1 ${
+                      xfFrom === slot
+                        ? `vtt-option--active ${SLOT_LABEL_COLORS[slot]} border-current bg-current/10`
+                        : ""
+                    } disabled:opacity-40`}
+                  >
+                    {slot}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <ArrowLeftRight size={12} className="text-terminal-primary/20 flex-shrink-0 mt-4" />
+
+            <div className="flex-1">
+              <label className="text-[8px] text-terminal-primary/40 font-mono uppercase mb-1 block">
+                To
+              </label>
+              <div className="flex gap-1">
+                {AMBIENT_SLOTS.map((slot) => (
+                  <button
+                    key={slot}
+                    onClick={() => setXfTo(slot)}
+                    disabled={xfProgress !== null}
+                    className={`flex-1 vtt-option text-[9px] py-1 ${
+                      xfTo === slot
+                        ? `vtt-option--active ${SLOT_LABEL_COLORS[slot]} border-current bg-current/10`
+                        : ""
+                    } disabled:opacity-40`}
+                  >
+                    {slot}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Duration presets */}
+          <div>
+            <label className="text-[8px] text-terminal-primary/40 font-mono uppercase mb-1 block">
+              Duration
+            </label>
+            <div className="flex gap-1">
+              {CROSSFADE_PRESETS.map(({ label, ms }) => (
+                <button
+                  key={ms}
+                  onClick={() => setXfDurationMs(ms)}
+                  disabled={xfProgress !== null}
+                  className={`flex-1 vtt-option text-[9px] py-1 ${
+                    xfDurationMs === ms ? "vtt-option--active" : ""
+                  } disabled:opacity-40`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Track preview */}
+          <div className="flex items-center gap-1 text-[9px] font-mono">
+            <span className={`truncate flex-1 ${SLOT_LABEL_COLORS[xfFrom]}`}>
+              {getTrack(xfFrom)?.name ?? <span className="text-terminal-primary/20">no track</span>}
+            </span>
+            <span className="text-terminal-primary/20">→</span>
+            <span className={`truncate flex-1 text-right ${SLOT_LABEL_COLORS[xfTo]}`}>
+              {getTrack(xfTo)?.name ?? <span className="text-terminal-primary/20">no track</span>}
+            </span>
+          </div>
+
+          {/* Progress bar + trigger */}
+          {xfProgress !== null ? (
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between text-[9px] font-mono text-terminal-primary/40">
+                <span>Crossfading…</span>
+                <span>{Math.round(xfProgress)}%</span>
+              </div>
+              <div className="h-1.5 bg-terminal-primary/10 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-terminal-primary/60 rounded-full transition-none"
+                  style={{ width: `${xfProgress}%` }}
+                />
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={handleCrossfade}
+              disabled={xfFrom === xfTo || !getTrack(xfFrom) || !getTrack(xfTo)}
+              className="vtt-btn w-full justify-center gap-1.5 border-terminal-primary/40 hover:bg-terminal-primary/15 disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              <ArrowLeftRight size={11} />
+              Crossfade {xfFrom} → {xfTo}
+            </button>
+          )}
         </div>
       )}
 
