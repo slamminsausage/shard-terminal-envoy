@@ -141,14 +141,14 @@ export function useBridgeState() {
   const [bridgeState, setBridgeState] = useState<BridgeState>({
     id: "local-dev",
     mode: "tactical",
-    currentSystem: "Drinax Main",
-    destination: "Cordan",
-    eta: "12h 34m",
-    alertLevel: "elevated",
-    playerShip: devContacts[0]
+    currentSystem: supabaseEnabled ? "UNKNOWN" : "Drinax Main",
+    destination: supabaseEnabled ? undefined : "Cordan",
+    eta: supabaseEnabled ? undefined : "12h 34m",
+    alertLevel: supabaseEnabled ? "normal" : "elevated",
+    playerShip: supabaseEnabled ? undefined : devContacts[0]
   });
-  const [contacts, setContacts] = useState<Contact[]>(devContacts);
-  const [messages, setMessages] = useState<BridgeMessage[]>(devMessages);
+  const [contacts, setContacts] = useState<Contact[]>(supabaseEnabled ? [] : devContacts);
+  const [messages, setMessages] = useState<BridgeMessage[]>(supabaseEnabled ? [] : devMessages);
   const [scans, setScans] = useState<BridgeScan[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

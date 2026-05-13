@@ -191,6 +191,12 @@ function BridgeConsoleInner() {
     setSelectedVehicleId(vehicleId);
     if (!vehicleId) return;
 
+    // Remove the old player ship contact if switching to a different ship
+    const oldPlayerShip = contacts.find(c => c.isPlayerShip);
+    if (oldPlayerShip && oldPlayerShip.vehicleId !== vehicleId) {
+      await removeContact(oldPlayerShip.id);
+    }
+
     const existing = contacts.find(c => c.vehicleId === vehicleId);
     let contactId = existing?.id;
 

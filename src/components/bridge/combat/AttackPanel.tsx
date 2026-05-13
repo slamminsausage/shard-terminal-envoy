@@ -182,33 +182,51 @@ export function AttackPanel({
                 </div>
 
                 {/* Info badges */}
-                <div className="flex gap-1 flex-wrap text-[0.55rem]">
-                  {rangeBand && (
-                    <span className="px-1 py-0.5 rounded bg-terminal-primary/10 text-terminal-primary/70">
-                      Range: {RANGE_BAND_LABELS[rangeBand]}
-                    </span>
-                  )}
-                  {weapon && (
-                    <span className="px-1 py-0.5 rounded bg-terminal-primary/10 text-terminal-primary/70">
-                      DM+{weapon.attackModifier}
-                    </span>
-                  )}
-                  {hasLock && (
-                    <span className="px-1 py-0.5 rounded bg-yellow-500/10 text-yellow-300">
-                      Lock +2
-                    </span>
-                  )}
-                  {assist > 0 && (
-                    <span className="px-1 py-0.5 rounded bg-blue-500/10 text-blue-300">
-                      Aid +{assist}
-                    </span>
-                  )}
-                  {dogfightMod !== 0 && (
-                    <span className={`px-1 py-0.5 rounded ${dogfightMod > 0 ? 'bg-green-500/10 text-green-300' : 'bg-red-500/10 text-red-300'}`}>
-                      Dogfight {dogfightMod > 0 ? '+' : ''}{dogfightMod}
-                    </span>
-                  )}
-                </div>
+                {(() => {
+                  const totalDM = (weapon?.attackModifier ?? 0)
+                    + (hasLock ? 2 : 0)
+                    + assist
+                    + dogfightMod
+                    + (plan?.situationalDM ?? 0);
+                  return (
+                    <div className="space-y-1">
+                      <div className="flex gap-1 flex-wrap text-[0.55rem]">
+                        {rangeBand && (
+                          <span className="px-1 py-0.5 rounded bg-terminal-primary/10 text-terminal-primary/70">
+                            Range: {RANGE_BAND_LABELS[rangeBand]}
+                          </span>
+                        )}
+                        {weapon && (
+                          <span className="px-1 py-0.5 rounded bg-terminal-primary/10 text-terminal-primary/70">
+                            DM+{weapon.attackModifier}
+                          </span>
+                        )}
+                        {hasLock && (
+                          <span className="px-1 py-0.5 rounded bg-yellow-500/10 text-yellow-300">
+                            Lock +2
+                          </span>
+                        )}
+                        {assist > 0 && (
+                          <span className="px-1 py-0.5 rounded bg-blue-500/10 text-blue-300">
+                            Aid +{assist}
+                          </span>
+                        )}
+                        {dogfightMod !== 0 && (
+                          <span className={`px-1 py-0.5 rounded ${dogfightMod > 0 ? 'bg-green-500/10 text-green-300' : 'bg-red-500/10 text-red-300'}`}>
+                            Dogfight {dogfightMod > 0 ? '+' : ''}{dogfightMod}
+                          </span>
+                        )}
+                      </div>
+                      <div className={`text-[0.6rem] font-bold px-1.5 py-0.5 rounded border w-fit ${
+                        totalDM > 0 ? 'border-green-500/40 text-green-300 bg-green-500/5' :
+                        totalDM < 0 ? 'border-red-400/40 text-red-300 bg-red-400/5' :
+                        'border-terminal-primary/20 text-terminal-primary/60'
+                      }`}>
+                        Total Attack DM: {totalDM >= 0 ? '+' : ''}{totalDM}
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 {/* Fire button */}
                 <Button
