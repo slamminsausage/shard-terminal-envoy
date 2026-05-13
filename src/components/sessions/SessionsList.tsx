@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Calendar, Clock, Plus, Eye, Trash2 } from 'lucide-react';
+import { Calendar, Clock, Plus, Trash2 } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { format } from 'date-fns';
 import { SessionCreator } from './SessionCreator';
 import { AnimatedList } from '@/components/ui/AnimatedList';
@@ -30,6 +31,7 @@ export const SessionsList: React.FC = () => {
   const { isGM } = useCampaign();
   const [showCreator, setShowCreator] = useState(false);
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<{ id: string; title: string } | null>(null);
 
   const handleViewSession = (session: Session) => {
     setCurrentSession(session);
@@ -43,8 +45,12 @@ export const SessionsList: React.FC = () => {
 
   const handleDeleteSession = async (e: React.MouseEvent, sessionId: string, sessionTitle: string) => {
     e.stopPropagation();
-    if (!confirm(`Delete "${sessionTitle}"? This cannot be undone.`)) return;
-    await deleteSession(sessionId);
+    setPendingDelete({ id: sessionId, title: sessionTitle });
+  };
+
+  const confirmDelete = async () => {
+    if (pendingDelete) await deleteSession(pendingDelete.id);
+    setPendingDelete(null);
   };
 
   if (selectedSessionId) {
@@ -108,13 +114,6 @@ export const SessionsList: React.FC = () => {
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="text-terminal-primary hover:bg-terminal-primary/20"
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
                         className="text-red-400 hover:bg-red-500/20"
                         onClick={(e) => handleDeleteSession(e, session.id, session.title)}
                       >
@@ -153,6 +152,23 @@ export const SessionsList: React.FC = () => {
           </AnimatedList>
         )}
       </ScrollArea>
+
+      <AlertDialog open={!!pendingDelete} onOpenChange={(open) => { if (!open) setPendingDelete(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Session</AlertDialogTitle>
+            <AlertDialogDescription>
+              Permanently delete "{pendingDelete?.title}"? This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-red-600 hover:bg-red-700">
+              Delete Permanently
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

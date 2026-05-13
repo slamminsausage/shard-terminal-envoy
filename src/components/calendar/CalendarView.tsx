@@ -68,10 +68,10 @@ export const CalendarView: React.FC = () => {
       title: eventTitle,
       description: eventDescription || undefined,
       event_type: eventType,
-      event_date: eventDate,
+      imperial_date: eventDate,
       location: eventLocation || undefined,
       is_recurring: eventIsRecurring,
-      recurrence_days: eventIsRecurring ? parseInt(eventRecurrenceDays, 10) || 7 : undefined,
+      recurrence_interval: eventIsRecurring ? parseInt(eventRecurrenceDays, 10) || 7 : undefined,
       is_completed: false,
       ...(isGM ? { visible_crew_ids: eventVisibleCrewIds } : {}),
     });
@@ -402,7 +402,7 @@ export const CalendarView: React.FC = () => {
                   <div className="flex items-center gap-4 text-sm text-terminal-primary/70">
                     <div className="flex items-center gap-1">
                       <Calendar className="h-4 w-4" />
-                      {event.event_date}
+                      {event.imperial_date}
                     </div>
                     {event.location && (
                       <div className="flex items-center gap-1">
@@ -410,10 +410,10 @@ export const CalendarView: React.FC = () => {
                         {event.location}
                       </div>
                     )}
-                    {event.is_recurring && event.recurrence_days && (
+                    {event.is_recurring && event.recurrence_interval && (
                       <div className="flex items-center gap-1">
                         <Clock className="h-4 w-4" />
-                        Every {event.recurrence_days} days
+                        Every {event.recurrence_interval} days
                       </div>
                     )}
                   </div>
