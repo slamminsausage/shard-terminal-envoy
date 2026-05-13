@@ -509,11 +509,55 @@ const CharacterSheet = ({ characterId, readOnly }: CharacterSheetProps = {}) => 
   // handleAddItemToSheet removed - catalog picker handles adding items directly
 
   const handleExportCharacter = () => {
-    const character = currentCharacterId ? characters.find(c => c.id === currentCharacterId) : null;
-    const exportData = character || {
-      name: header.name, species: header.species, age: header.age,
-      career: header.career, rank: header.rank, homeworld: header.homeworld,
-      skills, characteristics,
+    // Build from current form state so unsaved edits are captured.
+    // Merge over the persisted record to include fields the sheet doesn't expose (player_id, created_at, etc.).
+    const persisted = currentCharacterId ? characters.find(c => c.id === currentCharacterId) : null;
+    const exportData = {
+      ...(persisted ?? {}),
+      id: currentCharacterId,
+      name: header.name,
+      species: header.species,
+      age: parseInt(header.age, 10) || 0,
+      career: header.career,
+      rank: header.rank,
+      homeworld: header.homeworld,
+      rads: header.rads,
+      species_traits: header.speciesTraits,
+      strength: parseInt(characteristics.strength.total, 10) || 0,
+      dexterity: parseInt(characteristics.dexterity.total, 10) || 0,
+      endurance: parseInt(characteristics.endurance.total, 10) || 0,
+      current_strength: parseInt(characteristics.strength.current, 10) || undefined,
+      current_dexterity: parseInt(characteristics.dexterity.current, 10) || undefined,
+      current_endurance: parseInt(characteristics.endurance.current, 10) || undefined,
+      intellect: parseInt(characteristics.intellect.total, 10) || 0,
+      education: parseInt(characteristics.education.total, 10) || 0,
+      social_standing: parseInt(characteristics.social.total, 10) || 0,
+      psionics: parseInt(characteristics.psionics.total, 10) || 0,
+      skills,
+      weapons,
+      armor: armourRows,
+      augments,
+      equipment,
+      credits: parseInt(finances.cashOnHand, 10) || 0,
+      cash_on_hand: parseInt(finances.cashOnHand, 10) || 0,
+      debt: parseInt(finances.debt, 10) || 0,
+      pension: parseInt(finances.pension, 10) || 0,
+      ship_payments: parseInt(finances.shipPayments, 10) || 0,
+      living_cost: parseInt(finances.livingCost, 10) || 0,
+      study_skill: studyPeriod.skill,
+      study_weeks: studyPeriod.weeks,
+      study_complete: studyPeriod.complete,
+      allies: relationships.allies,
+      contacts: relationships.contacts,
+      rivals: relationships.rivals,
+      enemies: relationships.enemies,
+      notes,
+      character_type: characterType,
+      npc_role: characterType === 'npc' ? npcRole : undefined,
+      crew_id: crewId || undefined,
+      crew_position: crewPosition || undefined,
+      lifepath_log: lifepathLog,
+      thumbnail_url: thumbnailUrl || undefined,
     };
     const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
