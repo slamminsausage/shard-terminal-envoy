@@ -2,10 +2,11 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useCampaign } from '@/contexts/CampaignContext';
 import { CREW_COLOR_PRESETS, type CrewGroup } from '@/types/database';
-import { Plus, Pencil, Trash2, Ship, Users } from 'lucide-react';
+import { Plus, Pencil, Trash2, Ship, Users, ChevronUp, ChevronDown } from 'lucide-react';
 
 interface CrewGroupManagerProps {
   onClose?: () => void;
@@ -15,6 +16,8 @@ export function CrewGroupManager({ onClose }: CrewGroupManagerProps) {
   const { crewGroups, vehicles, characters, saveCrewGroup, deleteCrewGroup, isGM } = useCampaign();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingGroup, setEditingGroup] = useState<CrewGroup | null>(null);
+  const [deletingGroup, setDeletingGroup] = useState<CrewGroup | null>(null);
+  const [localOrder, setLocalOrder] = useState<string[]>([]);
 
   // Form state
   const [name, setName] = useState('');
@@ -54,8 +57,36 @@ export function CrewGroupManager({ onClose }: CrewGroupManagerProps) {
     setDialogOpen(false);
   };
 
-  const handleDelete = async (groupId: string) => {
-    await deleteCrewGroup(groupId);
+  const handleDelete = async () => {
+    if (!deletingGroup) return;
+    await deleteCrewGroup(deletingGroup.id);
+    setDeletingGroup(null);
+  };
+
+  // Maintain local display order; sync when crewGroups change
+  React.useEffect(() => {
+    setLocalOrder(prev => {
+      const ids = crewGroups.map(g => g.id);
+      const kept = prev.filter(id => ids.includes(id));
+      const added = ids.filter(id => !prev.includes(id));
+      return [...kept, ...added];
+    });
+  }, [crewGroups]);
+
+  const orderedGroups = localOrder
+    .map(id => crewGroups.find(g => g.id === id))
+    .filter(Boolean) as CrewGroup[];
+
+  const moveGroup = (id: string, dir: -1 | 1) => {
+    setLocalOrder(prev => {
+      const idx = prev.indexOf(id);
+      if (idx < 0) return prev;
+      const next = [...prev];
+      const swap = idx + dir;
+      if (swap < 0 || swap >= next.length) return prev;
+      [next[idx], next[swap]] = [next[swap], next[idx]];
+      return next;
+    });
   };
 
   const getMemberCount = (groupId: string) =>
@@ -92,7 +123,7 @@ export function CrewGroupManager({ onClose }: CrewGroupManagerProps) {
         </div>
       ) : (
         <div className="space-y-2">
-          {crewGroups.map(group => {
+          {orderedGroups.map((group, idx) => {
             const memberCount = getMemberCount(group.id);
             const shipName = getShipName(group.ship_id);
             return (
@@ -101,6 +132,26 @@ export function CrewGroupManager({ onClose }: CrewGroupManagerProps) {
                 className="p-3 border border-primary/20 rounded font-mono text-sm bg-background/40 flex items-center gap-3"
                 style={{ borderLeftWidth: '4px', borderLeftColor: group.color }}
               >
+                {/* Reorder arrows */}
+                {isGM && orderedGroups.length > 1 && (
+                  <div className="flex flex-col gap-0.5 flex-shrink-0">
+                    <button
+                      className="h-4 w-4 flex items-center justify-center text-[var(--text-dimmer)] hover:text-[var(--primary)] disabled:opacity-20"
+                      onClick={() => moveGroup(group.id, -1)}
+                      disabled={idx === 0}
+                    >
+                      <ChevronUp className="h-3 w-3" />
+                    </button>
+                    <button
+                      className="h-4 w-4 flex items-center justify-center text-[var(--text-dimmer)] hover:text-[var(--primary)] disabled:opacity-20"
+                      onClick={() => moveGroup(group.id, 1)}
+                      disabled={idx === orderedGroups.length - 1}
+                    >
+                      <ChevronDown className="h-3 w-3" />
+                    </button>
+                  </div>
+                )}
+
                 {/* Color dot */}
                 <div
                   className="w-3 h-3 rounded-full flex-shrink-0"
@@ -146,7 +197,7 @@ export function CrewGroupManager({ onClose }: CrewGroupManagerProps) {
                       variant="ghost"
                       size="sm"
                       className="h-7 w-7 p-0 text-[var(--text-dimmer)] hover:text-red-400"
-                      onClick={() => handleDelete(group.id)}
+                      onClick={() => setDeletingGroup(group)}
                     >
                       <Trash2 className="h-3 w-3" />
                     </Button>
@@ -157,6 +208,24 @@ export function CrewGroupManager({ onClose }: CrewGroupManagerProps) {
           })}
         </div>
       )}
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={!!deletingGroup} onOpenChange={open => { if (!open) setDeletingGroup(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete "{deletingGroup?.name}"?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the crew group and unassign all {deletingGroup ? getMemberCount(deletingGroup.id) : 0} member(s). This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setDeletingGroup(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
+              Delete Crew Group
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Create / Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>

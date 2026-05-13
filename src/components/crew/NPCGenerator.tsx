@@ -4,6 +4,7 @@ import { roll2d6, roll1d6, getCharacteristicDM } from '@/lib/dice';
 import { ALL_CAREERS, type CareerDefinition } from '@/components/character-gen/careers';
 import { normalizeSkillName } from '@/components/character-gen/careers/skills';
 import { useCampaign } from '@/contexts/CampaignContext';
+import { NPC_ROLE_STYLES, type NpcRole } from '@/types/database';
 import { Dices, Save, RefreshCw, User } from 'lucide-react';
 
 // Name generation data
@@ -26,7 +27,12 @@ const SURNAMES = [
   'Crane', 'Blaine', 'Morrow', 'Calloway', 'Tyrell', 'Frost', 'Burke',
 ];
 
-type NpcRole = 'crew' | 'enemy' | 'contact' | 'patron';
+
+interface GeneratedAssets {
+  weapon?: { weapon: string; damage: string; range: string; traits: string };
+  armor?: { type: string; protection: string };
+  credits: number;
+}
 
 interface GeneratedNPC {
   name: string;
@@ -41,8 +47,36 @@ interface GeneratedNPC {
   intellect: number;
   education: number;
   social_standing: number;
-  skills: Record<string, any>;
+  skills: Record<string, { proficient: boolean; value: string }>;
   npc_role: NpcRole;
+  assets: GeneratedAssets;
+}
+
+const CAREER_WEAPONS: Record<string, { weapon: string; damage: string; range: string; traits: string }> = {
+  Navy:      { weapon: 'Laser Pistol', damage: '3D', range: 'Medium', traits: 'Zero-G' },
+  Marine:    { weapon: 'Assault Rifle', damage: '3D', range: 'Long', traits: 'Auto 2' },
+  Army:      { weapon: 'Rifle', damage: '3D-3', range: 'Long', traits: '' },
+  Scout:     { weapon: 'Laser Carbine', damage: '4D', range: 'Long', traits: 'Zero-G' },
+  Agent:     { weapon: 'Snub Pistol', damage: '3D-3', range: 'Short', traits: 'Zero-G' },
+  Rogue:     { weapon: 'Autopistol', damage: '3D-3', range: 'Short', traits: 'Semi-Auto 3' },
+  Merchant:  { weapon: 'Revolver', damage: '3D-3', range: 'Short', traits: '' },
+  Noble:     { weapon: 'Blade', damage: '2D', range: 'Melee', traits: '' },
+};
+const CAREER_ARMOR: Record<string, { type: string; protection: string }> = {
+  Marine: { type: 'Combat Armor', protection: '13' },
+  Army:   { type: 'Flak Jacket', protection: '5' },
+  Scout:  { type: 'Vacc Suit', protection: '8' },
+  Agent:  { type: 'Cloth Armor', protection: '5' },
+  Navy:   { type: 'Vacc Suit', protection: '8' },
+};
+
+function generateAssets(careerName: string, terms: number, role: NpcRole): GeneratedAssets {
+  const baseCredits = roll1d6() * 1000 * terms;
+  const roleBonus = role === 'patron' ? roll1d6() * 5000 : 0;
+  const credits = baseCredits + roleBonus;
+  const weapon = CAREER_WEAPONS[careerName];
+  const armor = CAREER_ARMOR[careerName];
+  return { weapon, armor, credits };
 }
 
 function pickRandom<T>(arr: T[]): T {
@@ -96,13 +130,12 @@ function generateNPC(
   // Age: 18 + 4 years per term
   const age = 18 + (terms * 4);
 
-  // Determine rank (roughly based on terms)
-  const maxRank = Math.min(terms, 5);
-  const rankNum = Math.min(Math.max(0, maxRank - 1), 5);
+  // Determine rank: 1 term = rank 0 (entry level), 6 terms = rank 5 (senior)
+  const rankNum = Math.min(terms - 1, 5);
   const rankTitle = getRankTitle(career, rankNum);
 
   // Generate skills from career skill tables
-  const skills: Record<string, any> = {};
+  const skills: Record<string, { proficient: boolean; value: string }> = {};
 
   const allSkillSources: string[] = [
     ...career.skillTables.serviceSkills,
@@ -130,25 +163,26 @@ function generateNPC(
   // Number of skills: roughly 2 per term + 1 background
   const numSkills = Math.min(terms * 2 + 1, actualSkills.length);
 
-  // Pick skills and assign levels
-  const chosenSkills = new Set<string>();
-  for (let i = 0; i < numSkills && actualSkills.length > 0; i++) {
-    const skill = pickRandom(actualSkills);
-    chosenSkills.add(skill);
+  // Pick skills without replacement, deduplicating by normalized key
+  const usedKeys = new Set<string>();
+  const pool = [...actualSkills];
+  let attempts = 0;
+  while (Object.keys(skills).length < numSkills && pool.length > 0 && attempts < numSkills * 4) {
+    attempts++;
+    const idx = Math.floor(Math.random() * pool.length);
+    const skillName = pool[idx];
+    const key = normalizeSkillName(skillName);
+    if (!usedKeys.has(key)) {
+      usedKeys.add(key);
+      pool.splice(idx, 1);
+      const level = terms >= 3 && Math.random() < 0.3 ? 2 : 1;
+      skills[key] = { proficient: true, value: String(level) };
+    } else {
+      pool.splice(idx, 1);
+    }
   }
 
-  chosenSkills.forEach(skillName => {
-    const key = normalizeSkillName(skillName);
-    // Random level: mostly 1, sometimes 2 for experienced NPCs
-    const level = terms >= 3 && Math.random() < 0.3 ? 2 : 1;
-    if (skills[key]) {
-      // If already set, possibly increase
-      const currentLevel = parseInt(skills[key].value, 10) || 0;
-      skills[key] = { proficient: true, value: String(Math.max(currentLevel + 1, level)) };
-    } else {
-      skills[key] = { proficient: true, value: String(level) };
-    }
-  });
+  const assets = generateAssets(career.name, terms, role);
 
   return {
     name,
@@ -165,28 +199,25 @@ function generateNPC(
     social_standing,
     skills,
     npc_role: role,
+    assets,
   };
 }
 
-const ROLE_COLORS: Record<NpcRole, { label: string; color: string; border: string; bg: string }> = {
-  crew: { label: 'CREW', color: 'text-cyan-400', border: 'border-cyan-400/50', bg: 'bg-cyan-400/10' },
-  enemy: { label: 'ENEMY', color: 'text-red-400', border: 'border-red-400/50', bg: 'bg-red-400/10' },
-  contact: { label: 'CONTACT', color: 'text-amber-400', border: 'border-amber-400/50', bg: 'bg-amber-400/10' },
-  patron: { label: 'PATRON', color: 'text-purple-400', border: 'border-purple-400/50', bg: 'bg-purple-400/10' },
-};
 
 interface NPCGeneratorProps {
   onNPCSaved?: () => void;
+  defaultCrewId?: string;
 }
 
-export function NPCGenerator({ onNPCSaved }: NPCGeneratorProps) {
-  const { saveCharacter } = useCampaign();
+export function NPCGenerator({ onNPCSaved, defaultCrewId }: NPCGeneratorProps) {
+  const { saveCharacter, crewGroups } = useCampaign();
   const [selectedCareer, setSelectedCareer] = useState<string>('random');
   const [selectedTerms, setSelectedTerms] = useState<number>(2);
   const [selectedRole, setSelectedRole] = useState<NpcRole>('crew');
   const [customName, setCustomName] = useState('');
   const [generated, setGenerated] = useState<GeneratedNPC | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [saveCrewId, setSaveCrewId] = useState<string>(defaultCrewId || 'none');
 
   const selectableCareers = getSelectableCareers();
 
@@ -223,17 +254,23 @@ export function NPCGenerator({ onNPCSaved }: NPCGeneratorProps) {
       terms_served: generated.terms,
       skills: generated.skills,
       equipment: {},
-      credits: roll1d6() * 1000 * generated.terms,
+      credits: generated.assets.credits,
+      cash_on_hand: generated.assets.credits,
       debt: 0,
       allies: '',
       contacts: '',
       rivals: '',
       enemies: '',
-      weapons: {},
-      armor: {},
+      weapons: generated.assets.weapon
+        ? [{ weapon: generated.assets.weapon.weapon, accuracy: '', range: generated.assets.weapon.range, damage: generated.assets.weapon.damage, kg: '', magazine: '', traits: generated.assets.weapon.traits }]
+        : [],
+      armor: generated.assets.armor
+        ? [{ type: generated.assets.armor.type, rad: '', protection: generated.assets.armor.protection, kg: '', options: '', total: '' }]
+        : [],
       augments: {},
       character_type: 'npc' as const,
       npc_role: generated.npc_role,
+      crew_id: saveCrewId !== 'none' ? saveCrewId : undefined,
     };
 
     await saveCharacter(characterData);
@@ -241,9 +278,9 @@ export function NPCGenerator({ onNPCSaved }: NPCGeneratorProps) {
     setGenerated(null);
     setCustomName('');
     onNPCSaved?.();
-  }, [generated, saveCharacter, onNPCSaved]);
+  }, [generated, saveCharacter, onNPCSaved, saveCrewId]);
 
-  const roleStyle = generated ? ROLE_COLORS[generated.npc_role] : null;
+  const roleStyle = generated ? NPC_ROLE_STYLES[generated.npc_role] : null;
 
   return (
     <div className="space-y-4">
@@ -339,8 +376,9 @@ export function NPCGenerator({ onNPCSaved }: NPCGeneratorProps) {
               <User className="h-4 w-4" />
               {generated.name}
             </span>
-            <span className={`text-xs font-bold px-2 py-0.5 rounded ${roleStyle.color} ${roleStyle.border} ${roleStyle.bg} border`}>
-              {roleStyle.label}
+            <span className={`text-xs font-bold px-2 py-0.5 rounded border ${roleStyle.color}`}
+              style={{ borderColor: roleStyle.borderColor, backgroundColor: roleStyle.bgColor }}>
+              {roleStyle.label.replace('NPC ', '')}
             </span>
           </div>
           <div className="panel-content space-y-4">
@@ -405,6 +443,45 @@ export function NPCGenerator({ onNPCSaved }: NPCGeneratorProps) {
                 )}
               </div>
             </div>
+
+            {/* Assets */}
+            <div>
+              <div className="text-xs text-[var(--text-dimmer)] uppercase tracking-wider mb-2">Starting Assets</div>
+              <div className="flex flex-wrap gap-2 text-xs font-mono">
+                <span className="px-2 py-1 border rounded border-[var(--primary-dim)] text-[var(--primary)] bg-[rgba(58,226,179,0.05)]">
+                  Cr {generated.assets.credits.toLocaleString()}
+                </span>
+                {generated.assets.weapon && (
+                  <span className="px-2 py-1 border rounded border-[var(--primary-dim)] text-[var(--primary)] bg-[rgba(58,226,179,0.05)]">
+                    {generated.assets.weapon.weapon} ({generated.assets.weapon.damage})
+                  </span>
+                )}
+                {generated.assets.armor && (
+                  <span className="px-2 py-1 border rounded border-[var(--primary-dim)] text-[var(--primary)] bg-[rgba(58,226,179,0.05)]">
+                    {generated.assets.armor.type} [{generated.assets.armor.protection}]
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Crew assignment for save */}
+            {crewGroups.length > 0 && (
+              <div>
+                <label className="block text-xs text-[var(--text-dimmer)] uppercase tracking-wider mb-1">
+                  Assign to Crew (optional)
+                </label>
+                <select
+                  value={saveCrewId}
+                  onChange={e => setSaveCrewId(e.target.value)}
+                  className="terminal-input text-sm"
+                >
+                  <option value="none">No Crew</option>
+                  {crewGroups.map(g => (
+                    <option key={g.id} value={g.id}>{g.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             {/* Action Buttons */}
             <div className="flex gap-2 pt-2">

@@ -7,9 +7,9 @@
  * backward-compatible default.
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Eye } from 'lucide-react';
+import { Eye, AlertTriangle } from 'lucide-react';
 import { useCampaign } from '@/contexts/CampaignContext';
 
 interface CrewVisibilitySelectorProps {
@@ -28,10 +28,12 @@ export const CrewVisibilitySelector: React.FC<CrewVisibilitySelectorProps> = ({
   className = '',
 }) => {
   const { crewGroups } = useCampaign();
+  const [showRevertWarning, setShowRevertWarning] = useState(false);
   const selected = value || [];
   const allCrews = selected.length === 0;
 
   const toggleAllCrews = (checked: boolean) => {
+    setShowRevertWarning(false);
     onChange(checked ? null : crewGroups.map(g => g.id));
   };
 
@@ -39,11 +41,13 @@ export const CrewVisibilitySelector: React.FC<CrewVisibilitySelectorProps> = ({
     const next = selected.includes(crewId)
       ? selected.filter(id => id !== crewId)
       : [...selected, crewId];
-    // If the GM manually selects every crew we'd rather persist as "all"
-    // (null) so future new crews auto-inherit visibility.
+    // If all crews are deselected or all are manually selected, revert to "all"
+    // so new crews created later auto-inherit visibility.
     if (next.length === 0 || next.length === crewGroups.length) {
+      setShowRevertWarning(next.length === 0);
       onChange(null);
     } else {
+      setShowRevertWarning(false);
       onChange(next);
     }
   };
@@ -94,6 +98,12 @@ export const CrewVisibilitySelector: React.FC<CrewVisibilitySelectorProps> = ({
         ))}
       </div>
 
+      {showRevertWarning && (
+        <div className="flex items-start gap-1.5 mt-2 text-[11px] text-amber-400/80">
+          <AlertTriangle className="h-3 w-3 mt-0.5 flex-shrink-0" />
+          <span>All crews deselected — reverted to "All crews" to prevent invisible content.</span>
+        </div>
+      )}
       <p className="text-[11px] text-terminal-primary/60 mt-2">
         Leave as "All crews" for campaign-wide content. Pick specific crews to
         hide this from anyone whose active character belongs to a different
