@@ -77,9 +77,9 @@ export default function VTTTokenHUD({ token, mapId, screenX, screenY }: VTTToken
           >
             <Plus size={10} />
           </button>
-          <div className="w-px h-4 bg-[rgba(58, 226, 179,0.15)] mx-0.5" />
+          <div className="w-px h-4 bg-[rgba(58,226,179,0.15)] mx-0.5" />
           {/* Elevation */}
-          <span className="text-[9px] text-[rgba(58, 226, 179,0.4)] font-mono">ELV</span>
+          <span className="text-[9px] text-[rgba(58,226,179,0.4)] font-mono">ELV</span>
           <input
             type="number"
             value={token.elevation ?? 0}
@@ -92,7 +92,7 @@ export default function VTTTokenHUD({ token, mapId, screenX, screenY }: VTTToken
             className={`w-5 h-5 flex items-center justify-center rounded transition-colors ${
               (token.lightBrightRadius ?? 0) > 0
                 ? "bg-orange-500/30 text-orange-400"
-                : "bg-[var(--bg-dark)] text-[rgba(58, 226, 179,0.3)] hover:text-[rgba(58, 226, 179,0.5)]"
+                : "bg-[var(--bg-dark)] text-[rgba(58,226,179,0.3)] hover:text-[rgba(58,226,179,0.5)]"
             }`}
             title="Toggle torch (bright 4 / dim 8)"
           >
@@ -111,7 +111,7 @@ export default function VTTTokenHUD({ token, mapId, screenX, screenY }: VTTToken
                 className={`px-1.5 py-0 text-[9px] font-mono rounded border transition-colors ${
                   active
                     ? "border-current bg-current/10"
-                    : "border-[rgba(58, 226, 179,0.1)] text-[rgba(58, 226, 179,0.3)] hover:text-[rgba(58, 226, 179,0.5)]"
+                    : "border-[rgba(58,226,179,0.1)] text-[rgba(58,226,179,0.3)] hover:text-[rgba(58,226,179,0.5)]"
                 }`}
                 style={active ? { color: cond.color, borderColor: cond.color + "66" } : undefined}
               >
@@ -123,7 +123,7 @@ export default function VTTTokenHUD({ token, mapId, screenX, screenY }: VTTToken
       </div>
       {/* Arrow pointing down to token */}
       <div className="flex justify-center">
-        <div className="w-0 h-0 border-l-[6px] border-r-[6px] border-t-[6px] border-l-transparent border-r-transparent border-t-[rgba(58, 226, 179,0.35)]" />
+        <div className="w-0 h-0 border-l-[6px] border-r-[6px] border-t-[6px] border-l-transparent border-r-transparent border-t-[rgba(58,226,179,0.35)]" />
       </div>
     </div>
   );

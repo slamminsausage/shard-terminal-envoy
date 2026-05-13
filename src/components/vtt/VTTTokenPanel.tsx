@@ -31,7 +31,7 @@ export default function VTTTokenPanel() {
       maxHp: 0,
       conditions: [],
       auraRadius: 0,
-      auraColor: "rgba(58, 226, 179, 0.1)",
+      auraColor: "rgba(58,226,179,0.1)",
       showName: true,
       showHpBar: false,
       locked: false,
