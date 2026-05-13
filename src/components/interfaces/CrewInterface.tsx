@@ -278,6 +278,10 @@ function CrewInterface() {
     if (selectedCharIds.size === 0) return;
     const targetCrewId = bulkCrewId === 'none' ? null : bulkCrewId;
     for (const id of selectedCharIds) {
+      const char = characters.find(c => c.id === id);
+      if (!char) continue;
+      const canEdit = isGM || currentPlayer?.id === char.player_id;
+      if (!canEdit) continue;
       await assignCharacterToCrew(id, targetCrewId);
     }
     setSelectedCharIds(new Set());
