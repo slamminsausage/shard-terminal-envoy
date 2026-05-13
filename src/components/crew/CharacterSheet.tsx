@@ -2,10 +2,11 @@ import { useMemo, useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useCampaign } from "@/contexts/CampaignContext";
 import { performSkillCheck, rollDamageExpression, getCharacteristicDM, getSkillDM } from "@/lib/dice";
 import { dbHelpers } from "@/lib/supabase";
-import { Upload, X, Crop, Users, Ship } from "lucide-react";
+import { Upload, X, Crop, Users, Ship, Download, Search } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CREW_POSITION_PRESETS, type TermRecord, type Character } from "@/types/database";
@@ -226,7 +227,9 @@ const CharacterSheet = ({ characterId, readOnly }: CharacterSheetProps = {}) => 
     age: "",
     species: "",
     speciesTraits: "",
-    homeworld: ""
+    homeworld: "",
+    career: "",
+    rank: "",
   });
   const [characteristics, setCharacteristics] = useState(defaultCharacteristics);
   const [armourRows, setArmourRows] = useState(initialArmourRows);
@@ -261,6 +264,7 @@ const CharacterSheet = ({ characterId, readOnly }: CharacterSheetProps = {}) => 
   const [lastRollLog, setLastRollLog] = useState<string>("");
   const [lastWeaponRollLog, setLastWeaponRollLog] = useState<string>("");
   const [skills, setSkills] = useState<Record<string, SkillState>>(baseSkillState);
+  const [skillSearch, setSkillSearch] = useState("");
   const [thumbnailUrl, setThumbnailUrl] = useState<string>("");
   const [isUploadingThumbnail, setIsUploadingThumbnail] = useState(false);
   const [cropperOpen, setCropperOpen] = useState(false);
@@ -282,7 +286,9 @@ const CharacterSheet = ({ characterId, readOnly }: CharacterSheetProps = {}) => 
           age: (character.age ?? 0).toString(),
           species: character.species,
           speciesTraits: character.species_traits || "",
-          homeworld: character.homeworld
+          homeworld: character.homeworld,
+          career: character.career || "",
+          rank: character.rank || "",
         });
         const psionicsValue = character.psionics ?? 0;
 
@@ -502,6 +508,22 @@ const CharacterSheet = ({ characterId, readOnly }: CharacterSheetProps = {}) => 
 
   // handleAddItemToSheet removed - catalog picker handles adding items directly
 
+  const handleExportCharacter = () => {
+    const character = currentCharacterId ? characters.find(c => c.id === currentCharacterId) : null;
+    const exportData = character || {
+      name: header.name, species: header.species, age: header.age,
+      career: header.career, rank: header.rank, homeworld: header.homeworld,
+      skills, characteristics,
+    };
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${header.name || 'character'}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const handleSaveCharacter = async () => {
     try {
       let finalThumbnailUrl = thumbnailUrl;
@@ -529,8 +551,8 @@ const CharacterSheet = ({ characterId, readOnly }: CharacterSheetProps = {}) => 
         rads: header.rads,
         species_traits: header.speciesTraits,
         notes: notes,
-        career: "", // Add if needed
-        rank: "", // Add if needed
+        career: header.career,
+        rank: header.rank,
         strength: parseInt(characteristics.strength.total, 10) || 7,
         dexterity: parseInt(characteristics.dexterity.total, 10) || 7,
         endurance: parseInt(characteristics.endurance.total, 10) || 7,
@@ -794,10 +816,15 @@ const customGroups = skillDefinitions.filter(def => def.isCustomGroup);
   };
 
   const sortedBaseSkills = useMemo(() => {
+    const q = skillSearch.trim().toLowerCase();
+    const matchesDef = (def: SkillDefinition) =>
+      !q || def.label.toLowerCase().includes(q);
+
     const trained: SkillDefinition[] = [];
     const untrained: SkillDefinition[] = [];
 
     baseSkills.forEach(def => {
+      if (!matchesDef(def)) return;
       if (isSkillTrained(def)) {
         trained.push(def);
       } else {
@@ -809,7 +836,7 @@ const customGroups = skillDefinitions.filter(def => def.isCustomGroup);
     untrained.sort((a, b) => a.label.localeCompare(b.label));
 
     return { trained, untrained };
-  }, [baseSkills, skills]);
+  }, [baseSkills, skills, skillSearch]);
 
   const charShortLabels: Record<string, string> = {
     strength: "STR", dexterity: "DEX", endurance: "END",
@@ -819,8 +846,8 @@ const customGroups = skillDefinitions.filter(def => def.isCustomGroup);
   return (
     <div className="space-y-6 text-sm max-h-[80vh] overflow-y-auto font-mono">
       {readOnly && (
-        <div className="border border-yellow-500/50 bg-yellow-500/10 rounded px-4 py-2 text-center">
-          <span className="text-yellow-400 font-mono text-xs uppercase tracking-[0.2em]">View Only — This character belongs to another player</span>
+        <div className="border border-amber-500/40 bg-amber-500/5 rounded px-4 py-2 text-center">
+          <span className="text-amber-400/90 font-mono text-xs uppercase tracking-[0.2em]">[ VIEW ONLY — Character belongs to another player ]</span>
         </div>
       )}
       {/* ==============================
@@ -840,6 +867,7 @@ const customGroups = skillDefinitions.filter(def => def.isCustomGroup);
                 <div className="print-info-line"><span className="print-label">Species:</span> {header.species || "—"}</div>
                 <div className="print-info-line"><span className="print-label">Age:</span> {header.age || "—"}</div>
                 <div className="print-info-line"><span className="print-label">Homeworld:</span> {header.homeworld || "—"}</div>
+                {header.career && <div className="print-info-line"><span className="print-label">Career:</span> {header.career}{header.rank ? ` — ${header.rank}` : ""}</div>}
                 {header.speciesTraits && <div className="print-info-line"><span className="print-label">Traits:</span> {header.speciesTraits}</div>}
                 {header.rads && <div className="print-info-line"><span className="print-label">Rads:</span> {header.rads}</div>}
               </div>
@@ -1015,6 +1043,8 @@ const customGroups = skillDefinitions.filter(def => def.isCustomGroup);
           className="md:col-span-3"
           disabled={readOnly}
         />
+        <TextField label="Career" value={header.career} onChange={value => handleHeaderChange("career", value)} disabled={readOnly} />
+        <TextField label="Rank / Title" value={header.rank} onChange={value => handleHeaderChange("rank", value)} disabled={readOnly} />
         <div className="space-y-2 md:col-span-3">
           <label className="text-[10px] text-primary/60 uppercase tracking-wider font-bold">Character Type</label>
           <div className="flex flex-wrap gap-3">
@@ -1162,7 +1192,19 @@ const customGroups = skillDefinitions.filter(def => def.isCustomGroup);
         <div className="panel-header flex-col gap-3">
           <div className="flex items-center justify-between w-full">
             <span className="panel-title">SKILLS</span>
-            <span className="panel-status print:hidden">Trained skills bubble to the top</span>
+            <div className="flex items-center gap-2 print:hidden">
+              <div className="relative">
+                <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-primary/50" />
+                <Input
+                  type="text"
+                  placeholder="Filter skills..."
+                  value={skillSearch}
+                  onChange={e => setSkillSearch(e.target.value)}
+                  className="h-7 pl-6 pr-2 text-xs w-36 border-primary/30"
+                />
+              </div>
+              <span className="panel-status">Trained first</span>
+            </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs print:hidden">
             <label className="flex items-center gap-2">
@@ -1235,7 +1277,7 @@ const customGroups = skillDefinitions.filter(def => def.isCustomGroup);
                   .map(child => renderSkillEntry(child))}
               </div>
             ))}
-            {customGroups.map(def => renderCustomGroup(def))}
+            {customGroups.filter(def => !skillSearch.trim() || def.label.toLowerCase().includes(skillSearch.trim().toLowerCase())).map(def => renderCustomGroup(def))}
           </div>
         </div>
       </section>
@@ -1357,12 +1399,18 @@ const customGroups = skillDefinitions.filter(def => def.isCustomGroup);
         </TabsContent>
       </Tabs>
 
-      {!readOnly && (
-        <div className="flex justify-end gap-3">
-          <Button variant="outline" className="terminal-btn">Reset Sheet</Button>
-          <Button onClick={handleSaveCharacter} className="terminal-btn primary">Save Changes</Button>
-        </div>
-      )}
+      <div className="flex justify-end gap-3">
+        <Button variant="outline" className="terminal-btn" onClick={handleExportCharacter} title="Export to JSON">
+          <Download className="h-4 w-4 mr-1" />
+          Export
+        </Button>
+        {!readOnly && (
+          <>
+            <Button variant="outline" className="terminal-btn">Reset Sheet</Button>
+            <Button onClick={handleSaveCharacter} className="terminal-btn primary">Save Changes</Button>
+          </>
+        )}
+      </div>
     </div>
   );
 };
@@ -1516,14 +1564,27 @@ const LifepathPanel = ({ log, onChange, readOnly }: LifepathPanelProps) => {
                   Term {term.termNumber || idx + 1}
                 </div>
                 {!readOnly && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="terminal-btn h-7 px-2 text-[10px]"
-                    onClick={() => removeTerm(idx)}
-                  >
-                    Remove
-                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button size="sm" variant="outline" className="terminal-btn h-7 px-2 text-[10px] text-red-400 border-red-400/50 hover:bg-red-400/10">
+                        Remove
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Remove Term {term.termNumber || idx + 1}?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This will permanently delete this lifepath term. This cannot be undone.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => removeTerm(idx)} className="bg-red-600 hover:bg-red-700">
+                          Remove Term
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 )}
               </div>
               <div className="grid grid-cols-2 gap-2">

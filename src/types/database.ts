@@ -160,6 +160,15 @@ export const CREW_COLOR_PRESETS = [
   { name: 'Cyan', color: '#00ccff' },
 ] as const;
 
+export type NpcRole = 'crew' | 'enemy' | 'contact' | 'patron';
+
+export const NPC_ROLE_STYLES: Record<NpcRole, { label: string; color: string; hexColor: string; borderColor: string; bgColor: string }> = {
+  crew:    { label: 'NPC CREW',    color: 'text-cyan-400',   hexColor: '#00ccff', borderColor: 'rgba(0,204,255,0.5)',   bgColor: 'rgba(0,204,255,0.1)'   },
+  enemy:   { label: 'NPC ENEMY',   color: 'text-red-400',    hexColor: '#ff3344', borderColor: 'rgba(255,51,68,0.5)',   bgColor: 'rgba(255,51,68,0.1)'   },
+  contact: { label: 'NPC CONTACT', color: 'text-amber-400',  hexColor: '#ffaa00', borderColor: 'rgba(255,170,0,0.5)',   bgColor: 'rgba(255,170,0,0.1)'   },
+  patron:  { label: 'NPC PATRON',  color: 'text-purple-400', hexColor: '#bb77ff', borderColor: 'rgba(187,119,255,0.5)', bgColor: 'rgba(187,119,255,0.1)' },
+};
+
 export interface Vehicle {
   id: string;
   player_id: string;
