@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { Plus, Trash2, Heart, Swords, RefreshCw, ArrowUp, ArrowDown, User, Dices, GripVertical } from 'lucide-react';
+import { Plus, Trash2, Heart, Swords, RefreshCw, ArrowUp, ArrowDown, User, Dices, GripVertical, SortAsc, SortDesc, FileText, ChevronDown, ChevronUp } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -8,6 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useCampaign } from '@/contexts/CampaignContext';
 import type { Character, Combatant, CombatEncounter } from '@/types/database';
 import { cn } from '@/lib/utils';
@@ -67,10 +68,19 @@ function CombatInterface() {
   // Track the combatant who started the current round for round detection
   const [roundStartCombatantId, setRoundStartCombatantId] = useState<string | null>(null);
 
+  // Sort direction and UI state
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  const [pendingRemoveId, setPendingRemoveId] = useState<string | null>(null);
+  const [confirmReset, setConfirmReset] = useState(false);
+  const [damageInputs, setDamageInputs] = useState<Record<string, string>>({});
+  const [expandedNoteIds, setExpandedNoteIds] = useState<Set<string>>(new Set());
+
   // Sort combatants by turn order (memoized to prevent unnecessary re-sorts)
   const sortedCombatants = useMemo(() => {
-    return [...combatants].sort((a, b) => a.turnOrder - b.turnOrder);
-  }, [combatants]);
+    return [...combatants].sort((a, b) =>
+      sortDirection === 'desc' ? b.turnOrder - a.turnOrder : a.turnOrder - b.turnOrder
+    );
+  }, [combatants, sortDirection]);
 
   const activeCombatant = sortedCombatants[currentTurnIndex];
 
@@ -561,7 +571,36 @@ function CombatInterface() {
     setCurrentRound(1);
     setCurrentTurnIndex(0);
     setRoundStartCombatantId(null);
-    await deleteCombat(); // Remove from database
+    setDamageInputs({});
+    setExpandedNoteIds(new Set());
+    await deleteCombat();
+  };
+
+  const handleResortByInitiative = () => {
+    setCombatants(combatants.map(c => ({ ...c, turnOrder: c.initiative })));
+    setRoundStartCombatantId(null);
+  };
+
+  const toggleNotes = (id: string) => {
+    setExpandedNoteIds(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const handleApplyBulkDamage = (id: string, stat?: 'str' | 'dex' | 'end') => {
+    const amount = parseInt(damageInputs[id] || '0', 10);
+    if (!amount || amount <= 0) return;
+    handleApplyDamage(id, amount, stat);
+    setDamageInputs(prev => ({ ...prev, [id]: '' }));
+  };
+
+  const handleApplyBulkHeal = (id: string, stat?: 'str' | 'dex' | 'end') => {
+    const amount = parseInt(damageInputs[id] || '0', 10);
+    if (!amount || amount <= 0) return;
+    handleHeal(id, amount, stat);
+    setDamageInputs(prev => ({ ...prev, [id]: '' }));
   };
 
   return (
@@ -582,7 +621,7 @@ function CombatInterface() {
             Add Combatant
           </button>
           {combatants.length > 0 && (
-            <button className="terminal-btn danger" onClick={handleResetCombat}>
+            <button className="terminal-btn danger" onClick={() => setConfirmReset(true)}>
               <RefreshCw className="w-4 h-4 mr-2 inline" />
               Reset
             </button>
@@ -611,11 +650,27 @@ function CombatInterface() {
           <div className="panel">
             <div className="panel-header">
               <span className="panel-title">ROUND {currentRound}</span>
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
+                <button
+                  className="terminal-btn text-xs py-1 px-3"
+                  onClick={() => setSortDirection(d => d === 'desc' ? 'asc' : 'desc')}
+                  title={sortDirection === 'desc' ? 'Sorted high→low (click to reverse)' : 'Sorted low→high (click to reverse)'}
+                >
+                  {sortDirection === 'desc' ? <SortDesc className="w-3 h-3 mr-1 inline" /> : <SortAsc className="w-3 h-3 mr-1 inline" />}
+                  {sortDirection === 'desc' ? 'High→Low' : 'Low→High'}
+                </button>
+                <button
+                  className="terminal-btn text-xs py-1 px-3"
+                  onClick={handleResortByInitiative}
+                  title="Reset turn order to rolled initiative values"
+                >
+                  <RefreshCw className="w-3 h-3 mr-1 inline" />
+                  Re-sort
+                </button>
                 <button
                   className="terminal-btn text-xs py-1 px-3"
                   onClick={handlePreviousTurn}
-                  disabled={currentRound === 1 && currentTurnIndex === 0}
+                  disabled={!roundStartCombatantId && currentRound === 1}
                 >
                   <ArrowUp className="w-3 h-3 mr-1 inline" />
                   Previous
@@ -649,7 +704,7 @@ function CombatInterface() {
                   onDragEnd={handleDragEnd}
                   className={cn(
                     "terminal-card transition-all cursor-move",
-                    isCurrentTurn && "ring-2 ring-terminal-primary shadow-[0_0_20px_rgba(58, 226, 179,0.3)]",
+                    isCurrentTurn && "ring-2 ring-terminal-primary shadow-[0_0_20px_rgba(58,226,179,0.3)]",
                     combatant.isDowned && "opacity-60",
                     isDragging && "opacity-50",
                     isDragOver && "ring-2 ring-terminal-secondary scale-[1.02]"
@@ -684,7 +739,8 @@ function CombatInterface() {
 
                       <button
                         className="p-2 text-terminal-danger hover:bg-terminal-danger/20 rounded transition-colors"
-                        onClick={() => handleRemoveCombatant(combatant.id)}
+                        onClick={() => setPendingRemoveId(combatant.id)}
+                        title="Remove from combat"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -817,17 +873,87 @@ function CombatInterface() {
                     <div className="grid grid-cols-3 gap-2 text-center">
                       <div className="terminal-stat">
                         <div className="terminal-stat-label">Actions</div>
-                        <div className="terminal-stat-value text-base">{combatant.actionsRemaining}/2</div>
+                        <div className="flex items-center justify-center gap-1 mt-1">
+                          <button
+                            className="terminal-btn text-xs py-0.5 px-1.5"
+                            onClick={() => handleUpdateCombatant(combatant.id, { actionsRemaining: Math.max(0, combatant.actionsRemaining - 1) })}
+                            disabled={combatant.actionsRemaining === 0}
+                          >−</button>
+                          <span className="terminal-stat-value text-base w-8">{combatant.actionsRemaining}/2</span>
+                          <button
+                            className="terminal-btn text-xs py-0.5 px-1.5"
+                            onClick={() => handleUpdateCombatant(combatant.id, { actionsRemaining: Math.min(2, combatant.actionsRemaining + 1) })}
+                            disabled={combatant.actionsRemaining === 2}
+                          >+</button>
+                        </div>
                       </div>
                       <div className="terminal-stat">
                         <div className="terminal-stat-label">Reactions</div>
-                        <div className="terminal-stat-value text-base">{combatant.reactionsRemaining}/1</div>
+                        <div className="flex items-center justify-center gap-1 mt-1">
+                          <button
+                            className="terminal-btn text-xs py-0.5 px-1.5"
+                            onClick={() => handleUpdateCombatant(combatant.id, { reactionsRemaining: Math.max(0, combatant.reactionsRemaining - 1) })}
+                            disabled={combatant.reactionsRemaining === 0}
+                          >−</button>
+                          <span className="terminal-stat-value text-base w-8">{combatant.reactionsRemaining}/1</span>
+                          <button
+                            className="terminal-btn text-xs py-0.5 px-1.5"
+                            onClick={() => handleUpdateCombatant(combatant.id, { reactionsRemaining: Math.min(1, combatant.reactionsRemaining + 1) })}
+                            disabled={combatant.reactionsRemaining === 1}
+                          >+</button>
+                        </div>
                       </div>
                       <div className="terminal-stat">
                         <div className="terminal-stat-label">Movement</div>
-                        <div className="terminal-stat-value text-base">
-                          {combatant.hasMovedThisRound ? '✓' : '○'}
-                        </div>
+                        <button
+                          className={cn(
+                            "terminal-stat-value text-base mt-1 w-full rounded transition-colors",
+                            combatant.hasMovedThisRound
+                              ? "text-terminal-primary bg-terminal-primary/10"
+                              : "text-terminal-text-dimmer hover:bg-terminal-primary/10"
+                          )}
+                          onClick={() => handleUpdateCombatant(combatant.id, { hasMovedThisRound: !combatant.hasMovedThisRound })}
+                          title="Toggle movement used"
+                        >
+                          {combatant.hasMovedThisRound ? '✓ Used' : '○ Free'}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Bulk Damage / Heal */}
+                    <div className="space-y-1">
+                      <label className="text-xs text-terminal-text-dimmer uppercase tracking-wider">Damage / Heal</label>
+                      <div className="flex gap-2 items-center">
+                        <input
+                          type="number"
+                          min="1"
+                          placeholder="Amt"
+                          value={damageInputs[combatant.id] || ''}
+                          onChange={e => setDamageInputs(prev => ({ ...prev, [combatant.id]: e.target.value }))}
+                          className="terminal-input h-8 w-20 text-center text-sm"
+                        />
+                        {combatant.healthType === 'hits' ? (
+                          <>
+                            <button className="terminal-btn text-xs py-1 px-3 flex-1" onClick={() => handleApplyBulkDamage(combatant.id)}>
+                              Apply Dmg
+                            </button>
+                            <button className="terminal-btn text-xs py-1 px-3 flex-1" onClick={() => handleApplyBulkHeal(combatant.id)}>
+                              Heal
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button className="terminal-btn text-xs py-1 px-2 flex-1" onClick={() => handleApplyBulkDamage(combatant.id, 'end')}>
+                              −END
+                            </button>
+                            <button className="terminal-btn text-xs py-1 px-2 flex-1" onClick={() => handleApplyBulkDamage(combatant.id, 'str')}>
+                              −STR
+                            </button>
+                            <button className="terminal-btn text-xs py-1 px-2 flex-1" onClick={() => handleApplyBulkHeal(combatant.id, 'end')}>
+                              +END
+                            </button>
+                          </>
+                        )}
                       </div>
                     </div>
 
@@ -879,6 +1005,30 @@ function CombatInterface() {
                         />
                       </div>
                     </div>
+
+                    {/* Notes */}
+                    <div>
+                      <button
+                        className="flex items-center gap-1 text-xs text-terminal-text-dimmer uppercase tracking-wider hover:text-terminal-primary transition-colors"
+                        onClick={() => toggleNotes(combatant.id)}
+                      >
+                        <FileText className="w-3 h-3" />
+                        Notes
+                        {expandedNoteIds.has(combatant.id) ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                        {combatant.notes && !expandedNoteIds.has(combatant.id) && (
+                          <span className="ml-1 w-1.5 h-1.5 rounded-full bg-terminal-primary inline-block" />
+                        )}
+                      </button>
+                      {expandedNoteIds.has(combatant.id) && (
+                        <textarea
+                          value={combatant.notes || ''}
+                          onChange={e => handleUpdateCombatant(combatant.id, { notes: e.target.value })}
+                          placeholder="Conditions, status effects, reminders..."
+                          rows={2}
+                          className="terminal-input w-full mt-1 text-xs resize-none"
+                        />
+                      )}
+                    </div>
                   </div>
                 </div>
               );
@@ -923,15 +1073,22 @@ function CombatInterface() {
                   className="terminal-input"
                 >
                   <option value="">Choose a character...</option>
-                  {characters.map(char => (
-                    <option key={char.id} value={char.id}>
-                      {char.name}
-                    </option>
-                  ))}
+                  {characters
+                    .filter(char => !combatants.some(c => c.characterId === char.id))
+                    .map(char => (
+                      <option key={char.id} value={char.id}>
+                        {char.name}
+                      </option>
+                    ))}
                 </select>
                 {characters.length === 0 && (
                   <p className="text-sm text-terminal-text-dimmer">
                     No characters available. Create one in the Crew tab first.
+                  </p>
+                )}
+                {characters.length > 0 && characters.every(c => combatants.some(cb => cb.characterId === c.id)) && (
+                  <p className="text-sm text-terminal-text-dimmer">
+                    All characters are already in combat.
                   </p>
                 )}
               </div>
@@ -1049,6 +1206,42 @@ function CombatInterface() {
         </DialogContent>
       </Dialog>
 
+      {/* Reset Confirmation */}
+      <AlertDialog open={confirmReset} onOpenChange={setConfirmReset}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Reset Combat</AlertDialogTitle>
+            <AlertDialogDescription>
+              End the encounter and remove all combatants? This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { handleResetCombat(); setConfirmReset(false); }} className="bg-red-600 hover:bg-red-700">
+              Reset Encounter
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Remove Combatant Confirmation */}
+      <AlertDialog open={!!pendingRemoveId} onOpenChange={open => { if (!open) setPendingRemoveId(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove Combatant</AlertDialogTitle>
+            <AlertDialogDescription>
+              Remove {sortedCombatants.find(c => c.id === pendingRemoveId)?.name ?? 'this combatant'} from combat?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { if (pendingRemoveId) handleRemoveCombatant(pendingRemoveId); setPendingRemoveId(null); }} className="bg-red-600 hover:bg-red-700">
+              Remove
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Initiative Roll Dialog */}
       <Dialog open={isInitiativeDialogOpen} onOpenChange={setIsInitiativeDialogOpen}>
         <DialogContent className="max-w-md bg-terminal-bg-panel border-terminal-primary/50">
@@ -1164,7 +1357,7 @@ function CombatInterface() {
                   </div>
                   <div className="border-t border-terminal-primary/20 pt-2 flex items-center justify-between">
                     <span className="text-sm font-semibold text-terminal-primary-light">Total Initiative:</span>
-                    <span className="text-3xl font-bold font-['Orbitron'] text-terminal-primary drop-shadow-[0_0_10px_rgba(58, 226, 179,0.5)]">
+                    <span className="text-3xl font-bold font-['Orbitron'] text-terminal-primary drop-shadow-[0_0_10px_rgba(58,226,179,0.5)]">
                       {pendingCharacter && (
                         initiativeRoll +
                         getCharacteristicDM(
