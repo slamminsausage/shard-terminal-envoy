@@ -777,10 +777,10 @@ export default function VTTPresenterView() {
       ctx.restore();
     }
 
-    // Fog of war — fully opaque on presenter (players should not see through fog)
+    // Fog of war
     if (map.fog.enabled) {
       ctx.save();
-      ctx.globalAlpha = 1;
+      ctx.globalAlpha = map.fog.opacity ?? 1;
       if (fogImageRef.current) {
         ctx.drawImage(fogImageRef.current, 0, 0);
       } else {
@@ -971,7 +971,10 @@ function PresenterCampaignSidebar({
   onTabChange: (tab: SidebarTab) => void;
   onOpenHandout?: (imageUrl: string, title: string) => void;
 }) {
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [expandedNoteId, setExpandedNoteId] = useState<string | null>(null);
+  const [expandedSessionId, setExpandedSessionId] = useState<string | null>(null);
+  const [expandedHandoutId, setExpandedHandoutId] = useState<string | null>(null);
+  const [expandedQuestId, setExpandedQuestId] = useState<string | null>(null);
 
   return (
     <div className="absolute top-0 right-0 bottom-0 z-10 w-[320px] bg-[#0a0f0a]/95 border-l border-terminal-border/30 backdrop-blur-sm flex flex-col">
@@ -1011,7 +1014,7 @@ function PresenterCampaignSidebar({
                   other: { label: "Other", emoji: "📦" },
                 };
                 const folderInfo = FOLDER_MAP[note.folder || "general"] || FOLDER_MAP.general;
-                const isExpanded = expandedId === note.id;
+                const isExpanded = expandedNoteId === note.id;
                 return (
                   <div
                     key={note.id}
@@ -1019,7 +1022,7 @@ function PresenterCampaignSidebar({
                   >
                     {/* Header */}
                     <button
-                      onClick={() => setExpandedId(isExpanded ? null : note.id)}
+                      onClick={() => setExpandedNoteId(isExpanded ? null : note.id)}
                       className="w-full text-left px-3 py-2"
                     >
                       <div className="flex items-center gap-2">
@@ -1069,7 +1072,7 @@ function PresenterCampaignSidebar({
               data.sessions.map((session) => (
                 <button
                   key={session.id}
-                  onClick={() => setExpandedId(expandedId === session.id ? null : session.id)}
+                  onClick={() => setExpandedSessionId(expandedSessionId === session.id ? null : session.id)}
                   className="w-full text-left rounded border border-terminal-border/15 bg-terminal-primary/[0.02] hover:bg-terminal-primary/[0.05] transition-colors"
                 >
                   <div className="flex items-center gap-2 px-3 py-2">
@@ -1082,7 +1085,7 @@ function PresenterCampaignSidebar({
                       <span className="text-[8px] font-mono text-terminal-primary/30">{session.date}</span>
                     )}
                   </div>
-                  {expandedId === session.id && session.summary && (
+                  {expandedSessionId === session.id && session.summary && (
                     <div className="px-3 pb-2 text-[10px] font-mono text-terminal-primary/50 whitespace-pre-wrap border-t border-terminal-border/10 pt-2">
                       {session.summary}
                     </div>
@@ -1099,7 +1102,7 @@ function PresenterCampaignSidebar({
               <EmptyState label="No handouts available" />
             ) : (
               data.handouts.filter((h) => h.visible !== false).map((handout) => {
-                const isExpanded = expandedId === handout.id;
+                const isExpanded = expandedHandoutId === handout.id;
                 return (
                   <div
                     key={handout.id}
@@ -1119,7 +1122,7 @@ function PresenterCampaignSidebar({
                       </button>
                     )}
                     <button
-                      onClick={() => setExpandedId(isExpanded ? null : handout.id)}
+                      onClick={() => setExpandedHandoutId(isExpanded ? null : handout.id)}
                       className="w-full text-left px-3 py-2"
                     >
                       <div className="flex items-center gap-2">
@@ -1153,7 +1156,7 @@ function PresenterCampaignSidebar({
               data.quests.map((quest) => (
                 <button
                   key={quest.id}
-                  onClick={() => setExpandedId(expandedId === quest.id ? null : quest.id)}
+                  onClick={() => setExpandedQuestId(expandedQuestId === quest.id ? null : quest.id)}
                   className="w-full text-left rounded border border-terminal-border/15 bg-terminal-primary/[0.02] hover:bg-terminal-primary/[0.05] transition-colors"
                 >
                   <div className="flex items-center gap-2 px-3 py-2">
@@ -1169,7 +1172,7 @@ function PresenterCampaignSidebar({
                       </span>
                     )}
                   </div>
-                  {expandedId === quest.id && (
+                  {expandedQuestId === quest.id && (
                     <div className="px-3 pb-2 border-t border-terminal-border/10 pt-2 space-y-1">
                       {quest.description && (
                         <div className="text-[10px] font-mono text-terminal-primary/50">{quest.description}</div>

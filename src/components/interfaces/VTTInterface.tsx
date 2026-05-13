@@ -59,7 +59,7 @@ function VTTInterface() {
     handouts: (notesCtx?.handouts || []).map((h: any) => ({
       id: h.id, title: h.title, imageUrl: h.mediaUrl, content: h.content, visible: h.isVisible !== false,
     })),
-    quests: (questsCtx?.quests || []).map((q: any) => ({
+    quests: (questsCtx?.quests || []).filter((q: any) => !q.is_hidden).map((q: any) => ({
       id: q.id, title: q.title, description: q.description, status: q.status,
       objectives: (questsCtx.questObjectives[q.id] || []).map((obj: any) => ({
         id: obj.id, title: obj.title, description: obj.description,
