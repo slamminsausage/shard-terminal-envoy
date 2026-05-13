@@ -126,16 +126,21 @@ export function CommunicationsPanel({
               }`}
             >
               <div className="flex justify-between items-start mb-2">
-                <span
-                  className={`font-bold text-xs ${
-                    message.priority === "emergency"
-                      ? "text-terminal-danger-alt"
-                      : message.priority === "priority"
-                        ? "text-terminal-warning-alt"
-                        : "text-terminal-primary-light"
-                  }`}
-                >
-                  {message.sender}
+                <span className="flex items-center gap-1">
+                  {!message.isRead && message.priority === "normal" && (
+                    <span className="w-1.5 h-1.5 rounded-full bg-terminal-primary-light inline-block flex-shrink-0" />
+                  )}
+                  <span
+                    className={`text-xs ${!message.isRead ? 'font-bold' : 'font-semibold opacity-70'} ${
+                      message.priority === "emergency"
+                        ? "text-terminal-danger-alt"
+                        : message.priority === "priority"
+                          ? "text-terminal-warning-alt"
+                          : "text-terminal-primary-light"
+                    }`}
+                  >
+                    {message.sender}
+                  </span>
                 </span>
                 <span className="text-[0.65rem] text-terminal-text-dimmer">{timeAgo(message.sentAt)}</span>
               </div>

@@ -18,7 +18,7 @@ interface CombatSidebarProps {
 }
 
 export function CombatSidebar({ selectedContact, onSelectContact, onAddShipClick, onAttackFired }: CombatSidebarProps) {
-  const { contacts, combat } = useBridge();
+  const { contacts, combat, updateContactFields } = useBridge();
 
   const {
     isActive,
