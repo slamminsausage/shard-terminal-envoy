@@ -18,6 +18,8 @@ import { toast } from 'sonner';
 import { CrewVisibilitySelector } from '@/components/crew/CrewVisibilitySelector';
 import { CrewVisibilityBadge } from '@/components/crew/CrewVisibilityBadge';
 
+const PRESENTER_CHANNEL = "shard-vtt-presenter";
+
 const FOLDERS: { value: NoteFolder; label: string; emoji: string }[] = [
   { value: 'general', label: 'General', emoji: '📝' },
   { value: 'planets', label: 'Planets', emoji: '🌍' },
@@ -176,7 +178,7 @@ export const NotesInterface: React.FC<NotesInterfaceProps> = ({ defaultTab = 'no
         setShowNewNoteForm(false);
       } catch (error) {
         console.error('Failed to add player note:', error);
-        alert('Failed to save note. Please try again.');
+        toast.error('Failed to save note. Please try again.');
       }
     }
   };
@@ -443,7 +445,7 @@ export const NotesInterface: React.FC<NotesInterfaceProps> = ({ defaultTab = 'no
                         setEditingNote(null);
                       } catch (error) {
                         console.error('Failed to update note:', error);
-                        alert('Failed to update note. Please try again.');
+                        toast.error('Failed to update note. Please try again.');
                       }
                     }}
                     onCancel={() => setEditingNote(null)}
@@ -452,7 +454,7 @@ export const NotesInterface: React.FC<NotesInterfaceProps> = ({ defaultTab = 'no
                         await deletePlayerNote(note.id);
                       } catch (error) {
                         console.error('Failed to delete note:', error);
-                        alert('Failed to delete note. Please try again.');
+                        toast.error('Failed to delete note. Please try again.');
                       }
                     }}
                     showCreator={isGMMode}
@@ -710,7 +712,7 @@ const NoteCard: React.FC<NoteCardProps> = ({
       if (uploadedUrl) {
         setThumbnailUrl(uploadedUrl);
       } else {
-        alert('Failed to upload thumbnail. Please try again.');
+        toast.error('Failed to upload thumbnail. Please try again.');
       }
     } catch (error) {
       console.error('Error uploading thumbnail:', error);
@@ -954,8 +956,6 @@ interface HandoutCardProps {
   onDelete?: (id: string) => Promise<void>;
   onSendToPresenter?: (handout: Handout) => void;
 }
-
-const PRESENTER_CHANNEL = "shard-vtt-presenter";
 
 const HandoutCard: React.FC<HandoutCardProps> = ({ handout, isGM, onToggleVisibility, onDelete, onSendToPresenter }) => {
   const [showFullSize, setShowFullSize] = useState(false);

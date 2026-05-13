@@ -254,12 +254,9 @@ export const SessionDetail: React.FC<SessionDetailProps> = ({ sessionId, onClose
       )}
 
       <Tabs defaultValue="log" className="flex-1 flex flex-col">
-        <TabsList className="grid w-full grid-cols-3 bg-black border border-terminal-primary/30">
+        <TabsList className="grid w-full grid-cols-2 bg-black border border-terminal-primary/30">
           <TabsTrigger value="log" className="data-[state=active]:bg-terminal-primary/20">
             Session Log ({logs.length})
-          </TabsTrigger>
-          <TabsTrigger value="rewards" className="data-[state=active]:bg-terminal-primary/20">
-            Rewards
           </TabsTrigger>
           <TabsTrigger value="details" className="data-[state=active]:bg-terminal-primary/20">
             Details
@@ -468,14 +465,6 @@ export const SessionDetail: React.FC<SessionDetailProps> = ({ sessionId, onClose
               </div>
             )}
           </ScrollArea>
-        </TabsContent>
-
-        <TabsContent value="rewards" className="flex-1 mt-4">
-          <Card className="bg-black border-terminal-primary/30">
-            <CardContent className="p-8 text-center text-terminal-primary/70">
-              Rewards tracking coming soon...
-            </CardContent>
-          </Card>
         </TabsContent>
 
         <TabsContent value="details" className="flex-1 mt-4">

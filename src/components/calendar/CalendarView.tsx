@@ -57,8 +57,10 @@ export const CalendarView: React.FC = () => {
     }
   };
 
+  const imperialDateValid = /^\d{3}-\d{4}$/.test(eventDate.trim());
+
   const handleCreateEvent = async () => {
-    if (!eventTitle.trim() || !eventDate.trim()) {
+    if (!eventTitle.trim() || !eventDate.trim() || !imperialDateValid) {
       return;
     }
 
@@ -239,8 +241,11 @@ export const CalendarView: React.FC = () => {
                   placeholder="e.g., 135-1105"
                   value={eventDate}
                   onChange={(e) => setEventDate(e.target.value)}
-                  className="bg-black border-terminal-primary/50 text-terminal-primary"
+                  className={`bg-black text-terminal-primary ${eventDate && !imperialDateValid ? 'border-red-500/70' : 'border-terminal-primary/50'}`}
                 />
+                {eventDate && !imperialDateValid && (
+                  <p className="text-xs text-red-400 mt-1">Format must be DDD-YYYY (e.g., 135-1105)</p>
+                )}
               </div>
 
               <div className="sm:col-span-2">
@@ -299,7 +304,7 @@ export const CalendarView: React.FC = () => {
             <div className="flex gap-2">
               <Button
                 onClick={handleCreateEvent}
-                disabled={!eventTitle.trim() || !eventDate.trim()}
+                disabled={!eventTitle.trim() || !eventDate.trim() || !imperialDateValid}
                 size="sm"
                 className="bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
               >
