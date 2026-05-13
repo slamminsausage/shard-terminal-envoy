@@ -176,7 +176,6 @@ function ComparePanel({ a, b }: { a: Character; b: Character }) {
 function CrewInterface() {
   const [displayText, setDisplayText] = useState("");
   const [selectedCharIds, setSelectedCharIds] = useState<Set<string>>(new Set());
-  const [compareIds, setCompareIds] = useState<[string | null, string | null]>([null, null]);
   const [compareOpen, setCompareOpen] = useState(false);
   const [bulkCrewId, setBulkCrewId] = useState<string>('none');
   const [activeCrewMember, setActiveCrewMember] = useState<string | null>(null);
@@ -382,20 +381,6 @@ function CrewInterface() {
             variant="secondary" size="sm" className="text-xs">
             Pop Out
           </Button>
-          <Button
-            variant="outline" size="sm" className="text-xs border-purple-400/50 text-purple-400 hover:bg-purple-400/10"
-            onClick={() => {
-              setCompareIds(prev => {
-                if (prev[0] === null) return [character.id, prev[1]];
-                if (prev[1] === null) return [prev[0], character.id];
-                return [character.id, null];
-              });
-              setCompareOpen(true);
-            }}
-            title="Add to compare"
-          >
-            Compare
-          </Button>
           {canDelete && (
             <AlertDialog>
               <AlertDialogTrigger asChild>
@@ -424,8 +409,10 @@ function CrewInterface() {
     );
   };
 
-  const compareCharA = compareIds[0] ? characters.find(c => c.id === compareIds[0]) : null;
-  const compareCharB = compareIds[1] ? characters.find(c => c.id === compareIds[1]) : null;
+  // Derive compare pair from the current selection (only meaningful when exactly 2 are checked)
+  const selectedIdsArray = useMemo(() => [...selectedCharIds], [selectedCharIds]);
+  const compareCharA = selectedIdsArray[0] ? characters.find(c => c.id === selectedIdsArray[0]) : null;
+  const compareCharB = selectedIdsArray[1] ? characters.find(c => c.id === selectedIdsArray[1]) : null;
 
   if (showCharacterSheet) {
     return (
@@ -447,8 +434,8 @@ function CrewInterface() {
 
   return (
     <div className="interface-container">
-      {/* Character compare dialog */}
-      <Dialog open={compareOpen} onOpenChange={open => { setCompareOpen(open); if (!open) setCompareIds([null, null]); }}>
+      {/* Character compare dialog — only opens when exactly 2 are selected */}
+      <Dialog open={compareOpen} onOpenChange={setCompareOpen}>
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="font-mono text-sm">CHARACTER COMPARISON</DialogTitle>
@@ -457,8 +444,7 @@ function CrewInterface() {
             <ComparePanel a={compareCharA} b={compareCharB} />
           ) : (
             <p className="text-xs font-mono text-[var(--text-dimmer)]">
-              Select a second character using the Compare button to compare side-by-side.
-              {compareCharA && <span> Currently showing: <span className="text-[var(--primary)]">{compareCharA.name}</span></span>}
+              Check the boxes next to exactly two characters, then click Compare in the selection bar.
             </p>
           )}
         </DialogContent>
@@ -589,6 +575,18 @@ function CrewInterface() {
                   {selectedCharIds.size > 0 && (
                     <div className="flex items-center gap-2 p-2 mb-2 rounded border border-[var(--primary)]/40 bg-[var(--primary)]/5 font-mono text-xs flex-wrap">
                       <span className="text-[var(--primary)]">{selectedCharIds.size} selected</span>
+
+                      {/* Compare — only available with exactly 2 selected */}
+                      {selectedCharIds.size === 2 && (
+                        <button
+                          onClick={() => setCompareOpen(true)}
+                          className="px-3 py-1 rounded border border-purple-400/60 text-purple-400 hover:bg-purple-400/10 transition-colors"
+                        >
+                          Compare
+                        </button>
+                      )}
+
+                      {/* Crew assignment (any selection count) */}
                       <Select value={bulkCrewId} onValueChange={setBulkCrewId}>
                         <SelectTrigger className="h-7 text-xs font-mono w-auto min-w-[120px] px-2 border-[var(--primary)]/40">
                           <SelectValue placeholder="Assign to crew..." />
