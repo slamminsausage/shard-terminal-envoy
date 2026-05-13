@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -13,6 +13,10 @@ interface HullPointsModalProps {
 export function HullPointsModal({ shipName, hullCurrent: initialHull, hullMax, onClose, onSave }: HullPointsModalProps) {
   const [currentHull, setCurrentHull] = useState(Math.max(0, Math.min(hullMax, initialHull)));
   const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    setCurrentHull(Math.max(0, Math.min(hullMax, initialHull)));
+  }, [initialHull, hullMax]);
   const [confirmDestroy, setConfirmDestroy] = useState(false);
 
   const maxHull = hullMax;
