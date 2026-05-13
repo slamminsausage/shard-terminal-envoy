@@ -143,20 +143,24 @@ export default function VTTScenePresets() {
       </div>
 
       <div className="space-y-1.5">
-        {SCENE_PRESETS.map((preset) => (
-          <button
-            key={preset.id}
-            onClick={() => applyPreset(preset)}
-            className="vtt-list-item w-full text-left flex-col items-start group"
-          >
-            <div className="text-xs font-mono text-terminal-primary/70 group-hover:text-terminal-primary transition-colors">
-              {preset.name}
-            </div>
-            <div className="text-[10px] font-mono text-terminal-primary/30 mt-0.5">
-              {preset.description}
-            </div>
-          </button>
-        ))}
+        {SCENE_PRESETS.map((preset) => {
+          const isActive = state.particles.preset === preset.particles.preset;
+          return (
+            <button
+              key={preset.id}
+              onClick={() => applyPreset(preset)}
+              className={`vtt-list-item w-full text-left flex-col items-start group ${isActive ? "vtt-list-item--active" : ""}`}
+            >
+              <div className={`text-xs font-mono transition-colors ${isActive ? "text-terminal-primary" : "text-terminal-primary/70 group-hover:text-terminal-primary"}`}>
+                {preset.name}
+                {isActive && <span className="ml-1.5 text-[8px] text-terminal-primary/50">● ACTIVE</span>}
+              </div>
+              <div className="text-[10px] font-mono text-terminal-primary/30 mt-0.5">
+                {preset.description}
+              </div>
+            </button>
+          );
+        })}
       </div>
     </div>
   );

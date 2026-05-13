@@ -2206,7 +2206,7 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
     }
 
     animFrameRef.current = requestAnimationFrame(render);
-  }, [activeMap, state, isDrawing, measuring, drawingWall, placingAoE, isFogPainting, selectionBox, pings, dragPropId, getFogCanvas]);
+  }, [activeMap, state, isDrawing, measuring, drawingWall, placingAoE, isFogPainting, selectionBox, pings, dragToken, dragPropId, getFogCanvas]);
 
   useEffect(() => {
     animFrameRef.current = requestAnimationFrame(render);

@@ -30,6 +30,15 @@ export default function VTTClocksPanel() {
     });
   };
 
+  const handleRightClick = (e: React.MouseEvent, clock: Clock) => {
+    e.preventDefault();
+    const next = clock.filled <= 0 ? clock.segments : clock.filled - 1;
+    dispatch({
+      type: "UPDATE_CLOCK",
+      payload: { id: clock.id, updates: { filled: next } },
+    });
+  };
+
   return (
     <div className="flex flex-col h-full">
       <div className="vtt-panel-section space-y-2">
@@ -46,8 +55,11 @@ export default function VTTClocksPanel() {
             type="number"
             value={newSegments}
             onChange={(e) => setNewSegments(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleAdd()}
             min={2}
             max={12}
+            title="Segments"
+            placeholder="4"
             className="vtt-input w-10 text-center"
           />
           <button
@@ -87,7 +99,10 @@ export default function VTTClocksPanel() {
                   </button>
                 </div>
               </div>
-              <ClockSVG clock={clock} onClick={() => handleClick(clock)} />
+              <ClockSVG clock={clock} onClick={() => handleClick(clock)} onContextMenu={(e) => handleRightClick(e, clock)} />
+              <div className="text-[9px] text-terminal-primary/20 font-mono text-center mt-1">
+                Left-click +1 · Right-click -1
+              </div>
             </div>
           ))
         )}
@@ -96,7 +111,7 @@ export default function VTTClocksPanel() {
   );
 }
 
-function ClockSVG({ clock, onClick }: { clock: Clock; onClick: () => void }) {
+function ClockSVG({ clock, onClick, onContextMenu }: { clock: Clock; onClick: () => void; onContextMenu?: (e: React.MouseEvent) => void }) {
   const size = 80;
   const cx = size / 2;
   const cy = size / 2;
@@ -136,6 +151,7 @@ function ClockSVG({ clock, onClick }: { clock: Clock; onClick: () => void }) {
       viewBox={`0 0 ${size} ${size}`}
       className="mx-auto cursor-pointer hover:scale-105 transition-transform"
       onClick={onClick}
+      onContextMenu={onContextMenu}
     >
       <circle cx={cx} cy={cy} r={r} fill="transparent" stroke={clock.color} strokeWidth={2} opacity={0.3} />
       {segments}

@@ -36,21 +36,26 @@ export default function VTTAlignmentBar() {
 
   return (
     <div className="absolute top-10 left-1/2 -translate-x-1/2 z-10 flex gap-0.5 vtt-hud px-1.5 py-1">
-      {buttons.map(({ alignment, icon, label }) => (
-        <button
-          key={alignment}
-          onClick={() =>
-            dispatch({
-              type: "ALIGN_SELECTION",
-              payload: { mapId: activeMap.id, alignment },
-            })
-          }
-          className="vtt-btn-icon"
-          title={label}
-        >
-          {icon}
-        </button>
-      ))}
+      {buttons.map(({ alignment, icon, label }) => {
+        const isDistribute = alignment === "distribute-h" || alignment === "distribute-v";
+        const disabled = isDistribute && totalSelected < 3;
+        return (
+          <button
+            key={alignment}
+            onClick={() => {
+              if (disabled) return;
+              dispatch({
+                type: "ALIGN_SELECTION",
+                payload: { mapId: activeMap.id, alignment },
+              });
+            }}
+            className={`vtt-btn-icon ${disabled ? "opacity-30 cursor-not-allowed" : ""}`}
+            title={disabled ? `${label} (need 3+)` : label}
+          >
+            {icon}
+          </button>
+        );
+      })}
     </div>
   );
 }

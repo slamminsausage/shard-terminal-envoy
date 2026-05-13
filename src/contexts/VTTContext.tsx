@@ -437,15 +437,17 @@ function vttReducer(state: VTTState, action: VTTAction): VTTState {
     // Maps
     case "ADD_MAP":
       return { ...state, maps: [...state.maps, action.payload] };
-    case "REMOVE_MAP":
+    case "REMOVE_MAP": {
+      const remainingMaps = state.maps.filter((m) => m.id !== action.payload);
       return {
         ...state,
-        maps: state.maps.filter((m) => m.id !== action.payload),
+        maps: remainingMaps,
         activeMapId:
           state.activeMapId === action.payload
-            ? state.maps[0]?.id ?? null
+            ? remainingMaps[0]?.id ?? null
             : state.activeMapId,
       };
+    }
     case "SET_ACTIVE_MAP":
       return { ...state, activeMapId: action.payload };
     case "UPDATE_MAP":

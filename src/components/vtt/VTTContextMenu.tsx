@@ -1,6 +1,7 @@
 import type { Point } from "@/types/vtt";
 import { useVTT } from "@/contexts/VTTContext";
 import type { Token, MapNote } from "@/types/vtt";
+import { useEffect } from "react";
 import {
   Pencil,
   Trash2,
@@ -44,6 +45,12 @@ export default function VTTContextMenu({
   onEditNote,
 }: VTTContextMenuProps) {
   const { dispatch, state, activeMap } = useVTT();
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
 
   const hasSelection =
     (state.selectedTokenIds?.length || 0) > 0 ||
@@ -306,6 +313,15 @@ export default function VTTContextMenu({
                 }
                 for (const noteId of state.selectedNoteIds || []) {
                   dispatch({ type: "REMOVE_NOTE", payload: { mapId, noteId } });
+                }
+                for (const aoeId of state.selectedAoEIds || []) {
+                  dispatch({ type: "REMOVE_AOE", payload: aoeId });
+                }
+                for (const lightId of state.selectedLightIds || []) {
+                  dispatch({ type: "REMOVE_LIGHT", payload: { mapId, lightId } });
+                }
+                for (const propId of state.selectedPropIds || []) {
+                  dispatch({ type: "REMOVE_PROP", payload: { mapId, propId } });
                 }
                 dispatch({ type: "CLEAR_SELECTION" });
               }}

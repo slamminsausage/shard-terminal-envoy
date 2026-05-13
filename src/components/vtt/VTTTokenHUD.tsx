@@ -29,7 +29,7 @@ export default function VTTTokenHUD({ token, mapId, screenX, screenY }: VTTToken
   };
 
   const adjustHp = (delta: number) => {
-    update({ hp: Math.max(0, Math.min(token.maxHp || 999, token.hp + delta)) });
+    update({ hp: Math.max(0, token.maxHp > 0 ? Math.min(token.maxHp, token.hp + delta) : token.hp + delta) });
   };
 
   const toggleCondition = (condName: string, condColor: string) => {

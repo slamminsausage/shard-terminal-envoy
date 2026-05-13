@@ -31,30 +31,24 @@ export default function VTTTokenEditModal({
   const [lightDimRadius, setLightDimRadius] = useState(token.lightDimRadius ?? 0);
   const [lightColor, setLightColor] = useState(token.lightColor || "#ffaa44");
   const [conditionInput, setConditionInput] = useState("");
-
-  const update = (updates: Partial<Token>) => {
-    dispatch({
-      type: "UPDATE_TOKEN",
-      payload: { mapId, tokenId: token.id, updates },
-    });
-  };
+  const [conditions, setConditions] = useState(token.conditions);
+  const [visible, setVisible] = useState(token.visible);
+  const [locked, setLocked] = useState(token.locked);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   const handleSave = () => {
-    update({
-      name,
-      hp,
-      maxHp,
-      size,
-      rotation,
-      auraRadius,
-      auraColor,
-      showName,
-      showHpBar,
-      moveSpeed,
-      elevation,
-      lightBrightRadius,
-      lightDimRadius,
-      lightColor,
+    dispatch({
+      type: "UPDATE_TOKEN",
+      payload: {
+        mapId,
+        tokenId: token.id,
+        updates: {
+          name, hp, maxHp, size, rotation, auraRadius, auraColor,
+          showName, showHpBar, moveSpeed, elevation,
+          lightBrightRadius, lightDimRadius, lightColor,
+          conditions, visible, locked,
+        },
+      },
     });
     onClose();
   };
@@ -88,20 +82,20 @@ export default function VTTTokenEditModal({
     const trimmed = conditionInput.trim();
     if (!trimmed) return;
     const colors = ["#ff3344", "#ff6600", "#ffcc00", "#00ccff", "#aa44ff", "#3ae2b3"];
-    const color = colors[token.conditions.length % colors.length];
-    update({
-      conditions: [...token.conditions, { name: trimmed, color }],
-    });
+    const color = colors[conditions.length % colors.length];
+    setConditions((prev) => [...prev, { name: trimmed, color }]);
     setConditionInput("");
   };
 
   const removeCondition = (index: number) => {
-    update({
-      conditions: token.conditions.filter((_, i) => i !== index),
-    });
+    setConditions((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleDelete = () => {
+    if (!confirmDelete) {
+      setConfirmDelete(true);
+      return;
+    }
     dispatch({ type: "REMOVE_TOKEN", payload: { mapId, tokenId: token.id } });
     onClose();
   };
@@ -299,18 +293,18 @@ export default function VTTTokenEditModal({
           {/* Quick actions */}
           <div className="flex gap-1">
             <button
-              onClick={() => update({ visible: !token.visible })}
-              className={`vtt-btn ${!token.visible ? "danger" : ""}`}
+              onClick={() => setVisible((v) => !v)}
+              className={`vtt-btn ${!visible ? "danger" : ""}`}
             >
-              {token.visible ? <Eye size={12} /> : <EyeOff size={12} />}
-              {token.visible ? "Visible" : "Hidden"}
+              {visible ? <Eye size={12} /> : <EyeOff size={12} />}
+              {visible ? "Visible" : "Hidden"}
             </button>
             <button
-              onClick={() => update({ locked: !token.locked })}
-              className={`vtt-btn ${token.locked ? "warning" : ""}`}
+              onClick={() => setLocked((l) => !l)}
+              className={`vtt-btn ${locked ? "warning" : ""}`}
             >
-              {token.locked ? <Lock size={12} /> : <Unlock size={12} />}
-              {token.locked ? "Locked" : "Unlocked"}
+              {locked ? <Lock size={12} /> : <Unlock size={12} />}
+              {locked ? "Locked" : "Unlocked"}
             </button>
           </div>
 
@@ -329,7 +323,7 @@ export default function VTTTokenEditModal({
               <button onClick={addCondition} className="vtt-btn">+</button>
             </div>
             <div className="flex flex-wrap gap-1">
-              {token.conditions.map((c, i) => (
+              {conditions.map((c, i) => (
                 <span
                   key={i}
                   className="vtt-badge"
@@ -350,8 +344,12 @@ export default function VTTTokenEditModal({
 
         {/* Footer */}
         <div className="flex gap-2 px-4 py-3 border-t border-[rgba(58,226,179,0.15)]">
-          <button onClick={handleDelete} className="vtt-btn danger">
-            <Trash2 size={12} /> Delete
+          <button
+            onClick={handleDelete}
+            onBlur={() => setConfirmDelete(false)}
+            className={`vtt-btn danger ${confirmDelete ? "ring-1 ring-red-400" : ""}`}
+          >
+            <Trash2 size={12} /> {confirmDelete ? "Confirm?" : "Delete"}
           </button>
           <div className="flex-1" />
           <button onClick={onClose} className="vtt-btn" style={{ background: 'transparent', boxShadow: 'none' }}>

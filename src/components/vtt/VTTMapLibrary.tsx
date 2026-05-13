@@ -82,6 +82,10 @@ export default function VTTMapLibrary() {
       URL.revokeObjectURL(map.imageDataUrl);
     }
     dispatch({ type: "REMOVE_MAP", payload: mapId });
+    if (state.activeMapId === mapId) {
+      const next = state.maps.find((m) => m.id !== mapId);
+      if (next) dispatch({ type: "SET_ACTIVE_MAP", payload: next.id });
+    }
     toast.success(`Map "${map?.name}" deleted`);
   };
 
@@ -262,6 +266,9 @@ export default function VTTMapLibrary() {
                   <video
                     src={map.imageDataUrl}
                     muted
+                    autoPlay
+                    loop
+                    playsInline
                     className="w-full h-full object-cover opacity-70"
                   />
                 ) : map.imageDataUrl ? (

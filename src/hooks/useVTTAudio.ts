@@ -452,7 +452,7 @@ export function useVTTAudio() {
       }
 
       if (el) {
-        el.volume = (slot.volume ?? 0.7) * state.audio.masterVolume;
+        el.volume = state.audio.muted ? 0 : (slot.volume ?? 0.7) * state.audio.masterVolume;
         el.loop = slot.loop;
         el.currentTime = 0;
         tryPlay(el);

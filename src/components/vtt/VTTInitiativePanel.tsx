@@ -92,8 +92,12 @@ export default function VTTInitiativePanel() {
   const handleNextTurn = () => {
     if (state.initiative.length < 2) return;
     const [first, ...rest] = state.initiative;
+    const next = rest[0];
     dispatch({ type: "SET_INITIATIVE", payload: [...rest, first] });
     setTurnCount((c) => c + 1);
+    if (state.followActiveTurn && next?.tokenId) {
+      handlePanToToken(next.tokenId);
+    }
   };
 
   const handlePanToToken = (tokenId?: string) => {
@@ -103,12 +107,14 @@ export default function VTTInitiativePanel() {
     const token = activeMap.tokens.find((t) => t.id === tokenId);
     if (!token) return;
     // Pan the viewport to center on the token
+    const halfW = (window.innerWidth * 0.6) / 2 / activeMap.zoom;
+    const halfH = window.innerHeight / 2 / activeMap.zoom;
     dispatch({
       type: "SET_VIEWPORT",
       payload: {
         mapId: activeMap.id,
-        scrollX: token.x - 400 / activeMap.zoom,
-        scrollY: token.y - 300 / activeMap.zoom,
+        scrollX: token.x - halfW,
+        scrollY: token.y - halfH,
         zoom: activeMap.zoom,
       },
     });

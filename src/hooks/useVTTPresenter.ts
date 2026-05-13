@@ -179,15 +179,18 @@ export function usePresenterController(
     } satisfies PresenterMessage);
   }, [state.audio.masterVolume, state.audio.muted, state.audio.ambientA, state.audio.ambientB, state.audio.ambientC, state.audio.ambientD, state.audio.sfxSlots]);
 
-  // Send campaign data updates
+  // Send campaign data updates — use a ref to avoid re-firing when options object reference changes
+  const campaignDataRef = useRef(options?.campaignData);
   useEffect(() => {
-    if (options?.campaignData) {
+    const data = options?.campaignData;
+    if (data && data !== campaignDataRef.current) {
+      campaignDataRef.current = data;
       channelRef.current?.postMessage({
         type: "sync-campaign",
-        campaign: options.campaignData,
+        campaign: data,
       } satisfies PresenterMessage);
     }
-  }, [options?.campaignData]);
+  });
 
   const showHandout = useCallback((imageDataUrl: string, name: string) => {
     channelRef.current?.postMessage({

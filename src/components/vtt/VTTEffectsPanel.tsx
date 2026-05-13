@@ -8,7 +8,7 @@ const PRESETS: { id: WeatherPreset; label: string }[] = [
   { id: "snow", label: "Snow" },
   { id: "dust", label: "Dust" },
   { id: "embers", label: "Embers" },
-  { id: "fog", label: "Fog" },
+  { id: "fog", label: "Mist" },
   { id: "ash", label: "Ash" },
   { id: "custom", label: "Custom" },
 ];
