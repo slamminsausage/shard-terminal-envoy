@@ -10,9 +10,11 @@ function rollDice(count: number, sides: number): number[] {
 interface RollResult {
   label: string;
   dice: number[];
+  droppedIndices?: number[];
   modifier: number;
   total: number;
   timestamp: number;
+  isCustom?: boolean;
 }
 
 const CHANNEL_NAME = "shard-vtt-presenter";
@@ -33,10 +35,14 @@ export default function VTTDiceRoller() {
 
   const broadcastRoll = (result: RollResult) => {
     if (!broadcastEnabled) return;
+    // Only send the kept dice to the presenter
+    const keptDice = result.droppedIndices
+      ? result.dice.filter((_, i) => !result.droppedIndices!.includes(i))
+      : result.dice;
     channelRef.current?.postMessage({
       type: "dice-roll",
       label: result.label,
-      dice: result.dice,
+      dice: keptDice,
       total: result.total,
       modifier: result.modifier,
     } satisfies PresenterMessage);
@@ -51,6 +57,7 @@ export default function VTTDiceRoller() {
       modifier,
       total: sum + modifier,
       timestamp: Date.now(),
+      isCustom: true,
     };
     setResults((prev) => [result, ...prev].slice(0, 20));
     broadcastRoll(result);
@@ -72,14 +79,15 @@ export default function VTTDiceRoller() {
 
   const doBoon = () => {
     const dice = rollDice(3, 6);
-    dice.sort((a, b) => b - a);
-    const kept = [dice[0], dice[1]];
-    const sum = kept[0] + kept[1];
+    const sorted = [...dice].map((v, i) => ({ v, i })).sort((a, b) => b.v - a.v);
+    const droppedIndices = [sorted[2].i];
+    const keptSum = sorted[0].v + sorted[1].v;
     const result: RollResult = {
       label: `Boon (3d6 keep 2 best)${modifier !== 0 ? (modifier > 0 ? `+${modifier}` : modifier) : ""}`,
       dice,
+      droppedIndices,
       modifier,
-      total: sum + modifier,
+      total: keptSum + modifier,
       timestamp: Date.now(),
     };
     setResults((prev) => [result, ...prev].slice(0, 20));
@@ -88,14 +96,15 @@ export default function VTTDiceRoller() {
 
   const doBane = () => {
     const dice = rollDice(3, 6);
-    dice.sort((a, b) => a - b);
-    const kept = [dice[0], dice[1]];
-    const sum = kept[0] + kept[1];
+    const sorted = [...dice].map((v, i) => ({ v, i })).sort((a, b) => a.v - b.v);
+    const droppedIndices = [sorted[2].i];
+    const keptSum = sorted[0].v + sorted[1].v;
     const result: RollResult = {
       label: `Bane (3d6 keep 2 worst)${modifier !== 0 ? (modifier > 0 ? `+${modifier}` : modifier) : ""}`,
       dice,
+      droppedIndices,
       modifier,
-      total: sum + modifier,
+      total: keptSum + modifier,
       timestamp: Date.now(),
     };
     setResults((prev) => [result, ...prev].slice(0, 20));
@@ -161,7 +170,7 @@ export default function VTTDiceRoller() {
           <label className="vtt-section-label block mb-1">
             Custom Roll
           </label>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 mb-1">
             <input
               type="number"
               min={1}
@@ -186,6 +195,13 @@ export default function VTTDiceRoller() {
               <Dice5 size={12} /> Roll
             </button>
           </div>
+          <input
+            type="text"
+            value={customLabel}
+            onChange={(e) => setCustomLabel(e.target.value)}
+            placeholder="Label (optional)..."
+            className="vtt-input w-full"
+          />
         </div>
       </div>
 
@@ -211,7 +227,9 @@ export default function VTTDiceRoller() {
                 </span>
                 <span
                   className={`text-sm font-mono font-bold ${
-                    r.total >= 8
+                    r.isCustom
+                      ? "text-terminal-primary"
+                      : r.total >= 8
                       ? "text-green-400"
                       : r.total >= 6
                       ? "text-yellow-400"
@@ -221,18 +239,33 @@ export default function VTTDiceRoller() {
                   {r.total}
                 </span>
               </div>
-              <div className="text-[10px] text-terminal-primary/40 font-mono mt-0.5">
-                [{r.dice.join(", ")}]
+              <div className="flex items-center gap-1 flex-wrap mt-0.5">
+                {r.dice.map((d, di) => {
+                  const dropped = r.droppedIndices?.includes(di);
+                  return (
+                    <span
+                      key={di}
+                      className={`text-[10px] font-mono px-1 rounded ${
+                        dropped
+                          ? "text-terminal-primary/20 line-through"
+                          : "text-terminal-primary/60"
+                      }`}
+                    >
+                      {d}
+                    </span>
+                  );
+                })}
                 {r.modifier !== 0 && (
-                  <span>
-                    {" "}
+                  <span className="text-[10px] text-terminal-primary/40 font-mono">
                     {r.modifier > 0 ? "+" : ""}
                     {r.modifier}
                   </span>
                 )}
-                <span className="ml-2 text-terminal-primary/20">
-                  {r.total >= 8 ? "Success" : "Fail"} (8+)
-                </span>
+                {!r.isCustom && (
+                  <span className="ml-auto text-terminal-primary/20 text-[10px] font-mono">
+                    {r.total >= 8 ? "✓ 8+" : "✗ 8+"}
+                  </span>
+                )}
               </div>
             </div>
           ))

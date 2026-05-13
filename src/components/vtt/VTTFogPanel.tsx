@@ -47,7 +47,6 @@ export default function VTTFogPanel() {
           {[
             { tool: "fog-circle", label: "Circle" },
             { tool: "fog-rect", label: "Rect" },
-            { tool: "fog-polygon", label: "Polygon" },
           ].map(({ tool, label }) => (
             <button
               key={tool}

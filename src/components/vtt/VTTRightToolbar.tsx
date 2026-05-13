@@ -17,6 +17,7 @@ import {
   Dice5,
   Settings,
   Images,
+  ScrollText,
 } from "lucide-react";
 import { useVTT } from "@/contexts/VTTContext";
 import type { VTTSidebarPanel } from "@/types/vtt";
@@ -37,6 +38,7 @@ const topPanels: PanelDef[] = [
   { panel: "lighting", icon: <Lightbulb size={15} />, label: "LIGHT" },
   { panel: "aoe", icon: <Target size={15} />, label: "AOE" },
   { panel: "assets", icon: <Images size={15} />, label: "ASSETS" },
+  { panel: "handouts", icon: <ScrollText size={15} />, label: "HANDOUTS" },
 ];
 
 const bottomPanels: PanelDef[] = [

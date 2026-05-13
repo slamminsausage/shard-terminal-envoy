@@ -304,7 +304,7 @@ export default function VTTHandoutsPanel() {
           handouts.map((h) => (
             <div
               key={h.id}
-              className={`vtt-list-item flex-col !p-0 overflow-hidden ${
+              className={`group vtt-list-item flex-col !p-0 overflow-hidden ${
                 sentToPresenter === h.id
                   ? "vtt-list-item--active border-cyan-500/40 bg-cyan-500/5"
                   : ""

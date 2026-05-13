@@ -436,7 +436,7 @@ export default function VTTToolbar() {
             }
             togglePopout("fog");
           }}
-          className={`${btnClass(isFogTool(state.activeTool) || state.showFog)} relative`}
+          className={`${btnClass(isFogTool(state.activeTool))} relative`}
           title="Fog of War"
         >
           {state.showFog ? <Eye size={14} /> : <EyeOff size={14} />}
@@ -451,7 +451,6 @@ export default function VTTToolbar() {
         <PopoutLabel>Brush Shape</PopoutLabel>
         <PopoutItem label="Circle" shortcut="F" active={state.activeTool === "fog-circle"} onClick={() => dispatch({ type: "SET_TOOL", payload: "fog-circle" })} />
         <PopoutItem label="Rectangle" active={state.activeTool === "fog-rect"} onClick={() => dispatch({ type: "SET_TOOL", payload: "fog-rect" })} />
-        <PopoutItem label="Polygon" active={state.activeTool === "fog-polygon"} onClick={() => dispatch({ type: "SET_TOOL", payload: "fog-polygon" })} />
         <PopoutDivider />
         <PopoutLabel>Mode</PopoutLabel>
         <div className="px-3 py-1 flex gap-1">

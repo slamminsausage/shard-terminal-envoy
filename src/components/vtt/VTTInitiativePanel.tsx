@@ -34,6 +34,11 @@ export default function VTTInitiativePanel() {
   autoSyncRef.current = autoSync;
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dropIndex, setDropIndex] = useState<number | null>(null);
+  const [turnCount, setTurnCount] = useState(0);
+
+  const round = state.initiative.length > 0
+    ? Math.floor(turnCount / state.initiative.length) + 1
+    : 1;
 
   const handleAdd = () => {
     if (!newName.trim()) return;
@@ -56,6 +61,7 @@ export default function VTTInitiativePanel() {
       (a, b) => b.initiative - a.initiative
     );
     dispatch({ type: "SET_INITIATIVE", payload: sorted });
+    setTurnCount(0);
   };
 
   const handleRoll2d6 = () => {
@@ -80,13 +86,14 @@ export default function VTTInitiativePanel() {
 
   const handleClearAll = () => {
     dispatch({ type: "SET_INITIATIVE", payload: [] });
+    setTurnCount(0);
   };
 
   const handleNextTurn = () => {
     if (state.initiative.length < 2) return;
     const [first, ...rest] = state.initiative;
-    const newList = [...rest, first];
-    dispatch({ type: "SET_INITIATIVE", payload: newList });
+    dispatch({ type: "SET_INITIATIVE", payload: [...rest, first] });
+    setTurnCount((c) => c + 1);
   };
 
   const handlePanToToken = (tokenId?: string) => {
@@ -400,15 +407,17 @@ export default function VTTInitiativePanel() {
                 <SkipForward size={10} /> Next
               </button>
             </div>
-            <span className="text-[10px] font-mono text-terminal-primary/30">
-              {state.initiative.length} entries
-            </span>
-            <button
-              onClick={handleClearAll}
-              className="text-[10px] font-mono text-red-400/50 hover:text-red-400 transition-colors"
-            >
-              Clear
-            </button>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] font-mono text-terminal-primary/50 bg-terminal-primary/10 px-1.5 py-0.5 rounded">
+                Round {round}
+              </span>
+              <button
+                onClick={handleClearAll}
+                className="text-[10px] font-mono text-red-400/50 hover:text-red-400 transition-colors"
+              >
+                Clear
+              </button>
+            </div>
           </div>
           <label className="vtt-checkbox">
             <input
@@ -450,7 +459,7 @@ export default function VTTInitiativePanel() {
                 setDragIndex(null);
                 setDropIndex(null);
               }}
-              className={`vtt-list-item cursor-grab active:cursor-grabbing ${
+              className={`group vtt-list-item cursor-grab active:cursor-grabbing ${
                 index === 0 ? "vtt-list-item--active" : ""
               } ${entry.isNPC ? "border-l-2 border-l-red-500/50" : ""} ${
                 dropIndex === index && dragIndex !== null ? "border-t-2 border-t-green-400" : ""
