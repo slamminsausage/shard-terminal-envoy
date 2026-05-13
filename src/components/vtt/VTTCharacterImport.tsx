@@ -40,7 +40,7 @@ export default function VTTCharacterImport() {
       maxHp,
       conditions: [],
       auraRadius: 0,
-      auraColor: "rgba(58, 226, 179, 0.1)",
+      auraColor: "rgba(58,226,179,0.1)",
       showName: true,
       showHpBar: true,
       locked: false,

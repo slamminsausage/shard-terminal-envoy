@@ -226,8 +226,8 @@ export default function VTTPlayerToolbar({
   const toolBtnClass = (active: boolean) =>
     `flex items-center justify-center w-9 h-9 rounded transition-all ${
       active
-        ? "text-[var(--primary)] bg-[rgba(58, 226, 179,0.12)]"
-        : "text-[rgba(58, 226, 179,0.4)] hover:text-[var(--primary)] hover:bg-[rgba(58, 226, 179,0.05)]"
+        ? "text-[var(--primary)] bg-[rgba(58,226,179,0.12)]"
+        : "text-[rgba(58,226,179,0.4)] hover:text-[var(--primary)] hover:bg-[rgba(58,226,179,0.05)]"
     }`;
 
   const hasClocks = clocks && clocks.length > 0;
@@ -245,7 +245,7 @@ export default function VTTPlayerToolbar({
               setSidebarOpen(!sidebarOpen);
               if (sidebarOpen) setActivePanel(null);
             }}
-            className="text-[rgba(58, 226, 179,0.3)] hover:text-[var(--primary)] p-1 transition-colors mb-1"
+            className="text-[rgba(58,226,179,0.3)] hover:text-[var(--primary)] p-1 transition-colors mb-1"
             title="Toggle Tools"
           >
             {sidebarOpen ? <ChevronLeft size={14} /> : <ChevronRight size={14} />}
@@ -305,7 +305,7 @@ export default function VTTPlayerToolbar({
             </div>
           )}
           {hasClocks && activePanel !== "clocks" && (
-            <div className="w-6 h-6 flex items-center justify-center rounded bg-[rgba(58, 226, 179,0.06)]" title={`${clocks!.length} clock(s)`}>
+            <div className="w-6 h-6 flex items-center justify-center rounded bg-[rgba(58,226,179,0.06)]" title={`${clocks!.length} clock(s)`}>
               <ClockIcon size={10} className="text-terminal-primary/40" />
             </div>
           )}
@@ -351,11 +351,11 @@ export default function VTTPlayerToolbar({
                     <div
                       key={entry.id}
                       className={`flex items-center gap-2 px-2 py-1.5 rounded ${
-                        index === 0 ? "bg-[rgba(58, 226, 179,0.08)] border border-[rgba(58, 226, 179,0.2)]" : "border border-transparent"
+                        index === 0 ? "bg-[rgba(58,226,179,0.08)] border border-[rgba(58,226,179,0.2)]" : "border border-transparent"
                       }`}
                     >
                       <span className="w-6 text-center text-[var(--primary)] font-mono text-sm font-bold">{entry.initiative}</span>
-                      <span className={`text-xs font-mono flex-1 truncate ${index === 0 ? "text-[var(--primary)]" : "text-[rgba(58, 226, 179,0.6)]"}`}>
+                      <span className={`text-xs font-mono flex-1 truncate ${index === 0 ? "text-[var(--primary)]" : "text-[rgba(58,226,179,0.6)]"}`}>
                         {entry.name}
                       </span>
                       {entry.isNPC && <span className="vtt-badge danger">NPC</span>}
@@ -376,8 +376,8 @@ export default function VTTPlayerToolbar({
                     <div key={clock.id} className="flex items-center gap-3 px-2 py-2 rounded border border-terminal-border/15 bg-terminal-primary/[0.02]">
                       <ToolbarClockSVG clock={clock} />
                       <div>
-                        <div className="text-[rgba(58, 226, 179,0.8)] text-xs font-mono">{clock.name}</div>
-                        <div className="text-[rgba(58, 226, 179,0.4)] text-[10px] font-mono">{clock.filled}/{clock.segments}</div>
+                        <div className="text-[rgba(58,226,179,0.8)] text-xs font-mono">{clock.name}</div>
+                        <div className="text-[rgba(58,226,179,0.4)] text-[10px] font-mono">{clock.filled}/{clock.segments}</div>
                       </div>
                     </div>
                   ))
@@ -496,7 +496,7 @@ export default function VTTPlayerToolbar({
                       <button
                         key={w}
                         onClick={() => setDrawWidth(w)}
-                        className={`w-5 h-5 flex items-center justify-center rounded ${drawWidth === w ? "bg-[rgba(58, 226, 179,0.15)] border border-[var(--primary)]" : ""}`}
+                        className={`w-5 h-5 flex items-center justify-center rounded ${drawWidth === w ? "bg-[rgba(58,226,179,0.15)] border border-[var(--primary)]" : ""}`}
                       >
                         <div className="rounded-full bg-terminal-primary" style={{ width: Math.min(w * 1.5, 10), height: Math.min(w * 1.5, 10) }} />
                       </button>

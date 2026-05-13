@@ -115,7 +115,7 @@ export default function VTTNoteModal({
                   className={`w-6 h-6 rounded border-2 transition-all ${
                     color === c
                       ? "border-[var(--primary)] scale-110"
-                      : "border-transparent hover:border-[rgba(58, 226, 179,0.3)]"
+                      : "border-transparent hover:border-[rgba(58,226,179,0.3)]"
                   }`}
                   style={{ backgroundColor: c }}
                 />
@@ -133,7 +133,7 @@ export default function VTTNoteModal({
           </label>
         </div>
 
-        <div className="flex gap-2 px-4 py-3 border-t border-[rgba(58, 226, 179,0.15)]">
+        <div className="flex gap-2 px-4 py-3 border-t border-[rgba(58,226,179,0.15)]">
           {note && (
             <button onClick={handleDelete} className="vtt-btn danger">
               <Trash2 size={12} /> Delete
