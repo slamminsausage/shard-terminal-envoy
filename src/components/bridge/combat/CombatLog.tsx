@@ -8,14 +8,15 @@ interface CombatLogProps {
 
 export function CombatLog({ log, maxEntries = 50 }: CombatLogProps) {
   const entries = log.slice(0, maxEntries);
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const topRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    topRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [log.length]);
 
   return (
     <div className="space-y-0.5 max-h-32 overflow-y-auto font-['Share_Tech_Mono'] text-[0.6rem]" role="log" aria-live="polite" aria-label="Combat log">
+      <div ref={topRef} />
       {entries.length === 0 && (
         <p className="text-terminal-text-dimmer text-center py-2">No combat log entries yet.</p>
       )}
@@ -25,7 +26,6 @@ export function CombatLog({ log, maxEntries = 50 }: CombatLogProps) {
           <span className="text-terminal-primary/80">{entry.message}</span>
         </div>
       ))}
-      <div ref={bottomRef} />
     </div>
   );
 }
