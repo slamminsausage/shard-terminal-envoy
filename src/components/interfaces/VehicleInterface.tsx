@@ -247,7 +247,7 @@ function VehicleInterface() {
                     
                     <div className="flex gap-2">
                       <button className="terminal-btn flex-1" onClick={() => setShowShipCatalog(true)}>
-                        Deploy from Catalog
+                        Add from Catalog
                       </button>
                       <button className="terminal-btn secondary flex-1" onClick={() => setShowShipCreator(true)}>
                         Design Ship
@@ -347,7 +347,7 @@ function VehicleInterface() {
                     
                     <div className="flex gap-2">
                       <button className="terminal-btn flex-1" onClick={() => setShowVehicleCatalog(true)}>
-                        Deploy from Catalog
+                        Add from Catalog
                       </button>
                       <button className="terminal-btn flex-1" onClick={() => handleRegisterNewVehicle("Ground Vehicle")}>
                         Custom Vehicle

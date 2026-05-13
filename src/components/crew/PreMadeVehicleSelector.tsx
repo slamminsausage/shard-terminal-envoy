@@ -65,7 +65,10 @@ export default function PreMadeVehicleSelector({
   };
 
   const formatCost = (cr: number) => {
-    if (cr >= 1_000_000) return `MCr${(cr / 1_000_000).toLocaleString()}`;
+    if (cr >= 1_000_000) {
+      const mcr = cr / 1_000_000;
+      return `MCr${Number.isInteger(mcr) ? mcr.toLocaleString() : mcr.toFixed(2)}`;
+    }
     return `Cr${cr.toLocaleString()}`;
   };
 
@@ -197,24 +200,26 @@ export default function PreMadeVehicleSelector({
                   </div>
                 </div>
 
-                {/* Armour */}
-                <div>
-                  <div className="text-xs font-semibold opacity-80 mb-1">ARMOUR</div>
-                  <div className="grid grid-cols-3 gap-x-4 text-xs">
-                    <div className="flex justify-between">
-                      <span className="opacity-60">Front:</span>
-                      <span>{selectedVehicle.armour.front}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="opacity-60">Rear:</span>
-                      <span>{selectedVehicle.armour.rear}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="opacity-60">Sides:</span>
-                      <span>{selectedVehicle.armour.sides}</span>
+                {/* Armour — only shown if any value is non-zero */}
+                {(selectedVehicle.armour.front > 0 || selectedVehicle.armour.rear > 0 || selectedVehicle.armour.sides > 0) && (
+                  <div>
+                    <div className="text-xs font-semibold opacity-80 mb-1">ARMOUR</div>
+                    <div className="grid grid-cols-3 gap-x-4 text-xs">
+                      <div className="flex justify-between">
+                        <span className="opacity-60">Front:</span>
+                        <span>{selectedVehicle.armour.front}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="opacity-60">Rear:</span>
+                        <span>{selectedVehicle.armour.rear}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="opacity-60">Sides:</span>
+                        <span>{selectedVehicle.armour.sides}</span>
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
 
                 {/* Equipment */}
                 {selectedVehicle.equipment.length > 0 && (
@@ -249,7 +254,7 @@ export default function PreMadeVehicleSelector({
                 )}
 
                 <Button className="w-full mt-2" onClick={handleConfirm}>
-                  Deploy {selectedVehicle.name}
+                  Add {selectedVehicle.name} to Fleet
                 </Button>
               </div>
             ) : (

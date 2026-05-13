@@ -1,7 +1,17 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   Select,
   SelectContent,
@@ -25,7 +35,8 @@ import {
 import { ALL_SOFTWARE, STANDARD_SOFTWARE, JUMP_CONTROL_SOFTWARE, COMBAT_SOFTWARE, UTILITY_SOFTWARE } from "@/data/shipConstruction/software";
 import { SENSOR_SUITES } from "@/data/shipConstruction/bridges";
 import { SPACECRAFT_EQUIPMENT } from "@/data/shipConstruction/equipment";
-import { X, Plus, Users } from "lucide-react";
+import { toast } from "sonner";
+import { X, Plus, Users, AlertTriangle } from "lucide-react";
 
 interface PowerRequirementEntry {
   label: string;
@@ -118,17 +129,24 @@ const VehicleSheet = ({ vehicleId }: VehicleSheetProps) => {
   const [shipInfo, setShipInfo] = useState({
     name: "",
     className: "",
+    tonnage: "",
+    techLevel: "",
     hullPoints: "",
     currentHullPoints: "",
     armour: "",
     powerPoints: "",
     softwareBandwidth: "",
+    fuelCapacity: "",
+    cargoCapacity: "",
+    passengerCapacity: "",
     fuelCost: "",
     mortgage: "",
     lifeSupport: "",
     salaries: "",
     maintenanceCost: ""
   });
+  const [isDirty, setIsDirty] = useState(false);
+  const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
 
   const [softwarePackages, setSoftwarePackages] = useState<string[]>(Array.from({ length: 7 }, () => ""));
   const [systems, setSystems] = useState<string[]>(Array.from({ length: 8 }, () => ""));
@@ -141,7 +159,7 @@ const VehicleSheet = ({ vehicleId }: VehicleSheetProps) => {
   const [powerRequirements, setPowerRequirements] = useState(POWER_REQUIREMENT_FIELDS);
   const [weapons, setWeapons] = useState(DEFAULT_WEAPONS);
   const [cargo, setCargo] = useState(DEFAULT_CARGO);
-  const [lastWeaponRollLog, setLastWeaponRollLog] = useState<string>("");
+  const [weaponRollLogs, setWeaponRollLogs] = useState<string[]>([]);
   const [criticalHits, setCriticalHits] = useState(() =>
     CRITICAL_TRACKS.map(track => ({
       label: track.label,
@@ -164,17 +182,23 @@ const VehicleSheet = ({ vehicleId }: VehicleSheetProps) => {
         setShipInfo({
           name: vehicle.name || "",
           className: vehicle.class_type || "",
+          tonnage: vehicle.tonnage?.toString() || "",
+          techLevel: vehicle.tech_level?.toString() || "",
           hullPoints: vehicle.hull?.toString() || "",
           currentHullPoints: hullCurrentValue?.toString() || vehicle.hull?.toString() || "",
           armour: vehicle.armor?.toString() || "",
           powerPoints: vehicle.power_plant?.toString() || "",
           softwareBandwidth: vehicle.computer_rating?.toString() || "",
+          fuelCapacity: vehicle.fuel_capacity?.toString() || "",
+          cargoCapacity: vehicle.cargo_capacity?.toString() || "",
+          passengerCapacity: vehicle.passenger_capacity?.toString() || "",
           fuelCost: vehicle.cost?.toString() || "",
           mortgage: vehicle.maintenance_cost?.toString() || "",
           lifeSupport: vehicle.life_support?.toString() || "",
           salaries: vehicle.salaries?.toString() || "",
           maintenanceCost: vehicle.maintenance_cost?.toString() || ""
         });
+        setIsDirty(false);
 
         if (specs.software) setSoftwarePackages(specs.software);
         if (specs.systems) setSystems(specs.systems);
@@ -205,6 +229,7 @@ const VehicleSheet = ({ vehicleId }: VehicleSheetProps) => {
 
   const updateShipInfo = (field: keyof typeof shipInfo, value: string) => {
     setShipInfo(prev => ({ ...prev, [field]: value }));
+    setIsDirty(true);
   };
 
   const updateSoftware = (index: number, value: string) => {
@@ -319,13 +344,18 @@ const VehicleSheet = ({ vehicleId }: VehicleSheetProps) => {
     try {
       const hullMax = parseInt(shipInfo.hullPoints, 10) || 1;
       const hullCurrent = parseInt(shipInfo.currentHullPoints, 10) || hullMax;
+      // Extract screen entries from weapons list
+      const screensFromWeapons = weapons
+        .filter(w => w.range === 'Screen')
+        .reduce((acc, w, i) => { acc[`screen_${i}`] = w.weapon; return acc; }, {} as Record<string, string>);
+
       const vehicleData = {
         ...(currentVehicleId && { id: currentVehicleId }),
         name: shipInfo.name,
         vehicle_type: 'Ship',
         class_type: shipInfo.className,
-        tech_level: 10,
-        tonnage: 100,
+        tech_level: parseInt(shipInfo.techLevel, 10) || 0,
+        tonnage: parseInt(shipInfo.tonnage, 10) || 0,
         cost: parseInt(shipInfo.fuelCost, 10) || 0,
         hull: hullMax,
         hull_current: hullCurrent,
@@ -337,11 +367,11 @@ const VehicleSheet = ({ vehicleId }: VehicleSheetProps) => {
         acceleration: parseInt(drives.reactionThrust, 10) || 1,
         top_speed: 0,
         jump_rating: parseInt(drives.jumpDriveJump, 10) || 1,
-        fuel_capacity: 10,
-        cargo_capacity: 10,
-        passenger_capacity: 0,
+        fuel_capacity: parseInt(shipInfo.fuelCapacity, 10) || 0,
+        cargo_capacity: parseInt(shipInfo.cargoCapacity, 10) || 0,
+        passenger_capacity: parseInt(shipInfo.passengerCapacity, 10) || 0,
         weapons: weapons,
-        screens: {},
+        screens: screensFromWeapons,
         computer_rating: parseInt(shipInfo.softwareBandwidth, 10) || 5,
         sensors: 1,
         communications: 1,
@@ -363,9 +393,34 @@ const VehicleSheet = ({ vehicleId }: VehicleSheetProps) => {
       if (savedVehicle && !currentVehicleId) {
         setCurrentVehicleId(savedVehicle.id);
       }
+      setIsDirty(false);
+      toast.success(`${shipInfo.name || 'Vehicle'} saved successfully.`);
     } catch (error) {
       console.error('Failed to save vehicle:', error);
+      toast.error('Failed to save vehicle. Please try again.');
     }
+  };
+
+  const handleResetSheet = () => {
+    setShipInfo({
+      name: "", className: "", tonnage: "", techLevel: "",
+      hullPoints: "", currentHullPoints: "", armour: "",
+      powerPoints: "", softwareBandwidth: "",
+      fuelCapacity: "", cargoCapacity: "", passengerCapacity: "",
+      fuelCost: "", mortgage: "", lifeSupport: "", salaries: "", maintenanceCost: ""
+    });
+    setDrives({ manoeuvreThrust: "", reactionThrust: "", jumpDriveJump: "" });
+    setSoftwarePackages(Array.from({ length: 7 }, () => ""));
+    setSystems(Array.from({ length: 8 }, () => ""));
+    setSensors([{ type: "", dm: "" }]);
+    setPowerRequirements(POWER_REQUIREMENT_FIELDS);
+    setWeapons(DEFAULT_WEAPONS);
+    setCargo(DEFAULT_CARGO);
+    setCriticalHits(CRITICAL_TRACKS.map(track => ({ label: track.label, boxes: Array(track.boxes).fill(false) })));
+    setWeaponRollLogs([]);
+    setCurrentVehicleId(undefined);
+    setIsDirty(false);
+    setResetConfirmOpen(false);
   };
 
   const toggleCriticalHit = (trackIndex: number, boxIndex: number) => {
@@ -383,11 +438,8 @@ const VehicleSheet = ({ vehicleId }: VehicleSheetProps) => {
     const weapon = weapons[index];
     if (!weapon || !weapon.damage) return;
     const result = rollDamageExpression(weapon.damage, 0);
-    setLastWeaponRollLog(
-      `Damage Roll: ${weapon.weapon || "Weapon"} ${weapon.damage} -> ${result.total} (dice ${
-        result.diceResults.join("+") || "0"
-      }${result.modifier ? ` ${result.modifier >= 0 ? "+" : ""}${result.modifier}` : ""})`
-    );
+    const logEntry = `${weapon.weapon || "Weapon"} [${weapon.damage}] → ${result.total} (${result.diceResults.join("+")}${result.modifier ? ` ${result.modifier >= 0 ? "+" : ""}${result.modifier}` : ""})`;
+    setWeaponRollLogs(prev => [logEntry, ...prev].slice(0, 5));
   };
 
   const addCargoSlot = () => {
@@ -432,6 +484,13 @@ const VehicleSheet = ({ vehicleId }: VehicleSheetProps) => {
     return equip?.id || "";
   };
 
+  const powerUsed = useMemo(() =>
+    powerRequirements.reduce((sum, e) => sum + (parseInt(e.value, 10) || 0), 0),
+    [powerRequirements]
+  );
+  const powerAvailable = parseInt(shipInfo.powerPoints, 10) || 0;
+  const powerOverloaded = powerAvailable > 0 && powerUsed > powerAvailable;
+
   return (
     <div className="space-y-6 text-sm max-h-[80vh] overflow-y-auto pb-20 font-mono">
       <section className="panel">
@@ -441,15 +500,35 @@ const VehicleSheet = ({ vehicleId }: VehicleSheetProps) => {
         <div className="panel-content grid grid-cols-1 lg:grid-cols-3 gap-4">
           <TextField label="Ship's Name" value={shipInfo.name} onChange={value => updateShipInfo("name", value)} />
           <TextField label="Class" value={shipInfo.className} onChange={value => updateShipInfo("className", value)} />
+          <div className="grid grid-cols-2 gap-3">
+            <TextField label="Tonnage (dt)" value={shipInfo.tonnage} onChange={value => updateShipInfo("tonnage", value)} />
+            <TextField label="Tech Level" value={shipInfo.techLevel} onChange={value => updateShipInfo("techLevel", value)} />
+          </div>
           <div className="grid grid-cols-3 gap-3">
             <TextField label="Hull Points (Max)" value={shipInfo.hullPoints} onChange={value => updateShipInfo("hullPoints", value)} />
             <TextField label="Current Hull" value={shipInfo.currentHullPoints} onChange={value => updateShipInfo("currentHullPoints", value)} />
             <TextField label="Armour" value={shipInfo.armour} onChange={value => updateShipInfo("armour", value)} />
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <TextField label="Power Points" value={shipInfo.powerPoints} onChange={value => updateShipInfo("powerPoints", value)} />
+            <TextField
+              label={powerOverloaded ? "⚡ Power Points (OVERLOADED)" : "Power Points"}
+              value={shipInfo.powerPoints}
+              onChange={value => updateShipInfo("powerPoints", value)}
+              className={powerOverloaded ? "text-red-400" : ""}
+            />
             <TextField label="Software Bandwidth" value={shipInfo.softwareBandwidth} onChange={value => updateShipInfo("softwareBandwidth", value)} />
           </div>
+          <div className="grid grid-cols-3 gap-3">
+            <TextField label="Fuel Capacity (dt)" value={shipInfo.fuelCapacity} onChange={value => updateShipInfo("fuelCapacity", value)} />
+            <TextField label="Cargo Capacity (dt)" value={shipInfo.cargoCapacity} onChange={value => updateShipInfo("cargoCapacity", value)} />
+            <TextField label="Passengers (max)" value={shipInfo.passengerCapacity} onChange={value => updateShipInfo("passengerCapacity", value)} />
+          </div>
+          {powerOverloaded && (
+            <div className="lg:col-span-3 flex items-center gap-2 text-xs font-mono text-red-400 bg-red-400/10 border border-red-400/30 rounded px-3 py-2">
+              <AlertTriangle className="h-3 w-3 flex-shrink-0" />
+              Power overload: {powerUsed} used / {powerAvailable} available — reduce systems or upgrade power plant.
+            </div>
+          )}
         </div>
       </section>
 
@@ -688,12 +767,16 @@ const VehicleSheet = ({ vehicleId }: VehicleSheetProps) => {
       <section className="panel">
         <div className="panel-header">
           <span className="panel-title">WEAPONS</span>
-          {lastWeaponRollLog && (
-            <div className="text-[11px] font-mono text-primary/80 mt-2">
-              {lastWeaponRollLog}
-            </div>
-          )}
         </div>
+        {weaponRollLogs.length > 0 && (
+          <div className="px-3 py-2 border-b border-primary/10 space-y-0.5">
+            {weaponRollLogs.map((log, i) => (
+              <div key={i} className={`text-[11px] font-mono ${i === 0 ? 'text-primary' : 'text-[var(--text-dimmer)]'}`}>
+                {log}
+              </div>
+            ))}
+          </div>
+        )}
         <div className="panel-content space-y-3">
           {weapons.map((entry, index) => (
             <div key={index} className="border border-primary/20 rounded p-2 space-y-2">
@@ -865,15 +948,10 @@ const VehicleSheet = ({ vehicleId }: VehicleSheetProps) => {
 
       {/* Crew Manifest */}
       {currentVehicleId && (() => {
-        // Find crew groups linked to this ship
         const linkedCrews = crewGroups.filter(g => g.ship_id === currentVehicleId);
-        // Find characters assigned to those crews
         const crewMembers = characters.filter(c =>
           linkedCrews.some(g => g.id === c.crew_id)
         );
-
-        if (linkedCrews.length === 0 && crewMembers.length === 0) return null;
-
         return (
           <section className="panel">
             <div className="panel-header">
@@ -884,55 +962,92 @@ const VehicleSheet = ({ vehicleId }: VehicleSheetProps) => {
               <span className="panel-status">{crewMembers.length} ABOARD</span>
             </div>
             <div className="panel-content">
-              {linkedCrews.map(crew => {
-                const members = characters.filter(c => c.crew_id === crew.id);
-                return (
-                  <div key={crew.id} className="mb-3 last:mb-0">
-                    <div
-                      className="flex items-center gap-2 px-2 py-1 rounded text-xs font-mono font-bold border mb-1"
-                      style={{
-                        borderColor: crew.color + '60',
-                        backgroundColor: crew.color + '10',
-                        color: crew.color,
-                      }}
-                    >
-                      <span className="w-2 h-2 rounded-full" style={{ backgroundColor: crew.color, boxShadow: `0 0 4px ${crew.color}` }} />
-                      {crew.name}
-                      <span className="ml-auto font-normal text-[var(--text-dimmer)]">{members.length} members</span>
-                    </div>
-                    {members.length > 0 ? (
-                      <div className="space-y-1">
-                        {members.map(m => {
-                          const typeColor = (m.character_type || 'pc') === 'pc' ? '#3ae2b3' : '#00ccff';
-                          return (
-                            <div key={m.id} className="flex items-center gap-2 px-3 py-1 text-xs font-mono border border-primary/10 rounded bg-background/30">
-                              <span className="text-[0.55rem] font-bold px-1 py-0.5 rounded border uppercase"
-                                style={{ color: typeColor, borderColor: typeColor + '60' }}>
-                                {(m.character_type || 'pc').toUpperCase()}
-                              </span>
-                              <span className="text-primary">{m.name}</span>
-                              {m.crew_position && (
-                                <span className="text-[var(--text-dimmer)] ml-auto">{m.crew_position}</span>
-                              )}
-                            </div>
-                          );
-                        })}
+              {linkedCrews.length === 0 ? (
+                <div className="text-xs font-mono text-[var(--text-dimmer)] text-center py-3 opacity-60">
+                  No crew group linked to this ship. Assign one via the Crew tab.
+                </div>
+              ) : (
+                linkedCrews.map(crew => {
+                  const members = characters.filter(c => c.crew_id === crew.id);
+                  return (
+                    <div key={crew.id} className="mb-3 last:mb-0">
+                      <div
+                        className="flex items-center gap-2 px-2 py-1 rounded text-xs font-mono font-bold border mb-1"
+                        style={{
+                          borderColor: crew.color + '60',
+                          backgroundColor: crew.color + '10',
+                          color: crew.color,
+                        }}
+                      >
+                        <span className="w-2 h-2 rounded-full" style={{ backgroundColor: crew.color, boxShadow: `0 0 4px ${crew.color}` }} />
+                        {crew.name}
+                        <span className="ml-auto font-normal text-[var(--text-dimmer)]">{members.length} members</span>
                       </div>
-                    ) : (
-                      <div className="text-xs font-mono text-[var(--text-dimmer)] text-center py-1">No members assigned</div>
-                    )}
-                  </div>
-                );
-              })}
+                      {members.length > 0 ? (
+                        <div className="space-y-1">
+                          {members.map(m => {
+                            const typeColor = (m.character_type || 'pc') === 'pc' ? '#3ae2b3' : '#00ccff';
+                            return (
+                              <div key={m.id} className="flex items-center gap-2 px-3 py-1 text-xs font-mono border border-primary/10 rounded bg-background/30">
+                                <span className="text-[0.55rem] font-bold px-1 py-0.5 rounded border uppercase"
+                                  style={{ color: typeColor, borderColor: typeColor + '60' }}>
+                                  {(m.character_type || 'pc').toUpperCase()}
+                                </span>
+                                <span className="text-primary">{m.name}</span>
+                                {m.crew_position && (
+                                  <span className="text-[var(--text-dimmer)] ml-auto">{m.crew_position}</span>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div className="text-xs font-mono text-[var(--text-dimmer)] text-center py-1">No members assigned</div>
+                      )}
+                    </div>
+                  );
+                })
+              )}
             </div>
           </section>
         );
       })()}
 
-      <div className="flex justify-end gap-3">
-        <Button variant="outline" className="terminal-btn">Reset Sheet</Button>
-        <Button onClick={handleSaveVehicle} className="terminal-btn primary">Save Changes</Button>
+      <div className="flex items-center justify-between gap-3 pt-2">
+        <div className="flex items-center gap-2">
+          {isDirty && (
+            <span className="flex items-center gap-1 text-xs font-mono text-amber-400">
+              <AlertTriangle className="h-3 w-3" />
+              Unsaved changes
+            </span>
+          )}
+        </div>
+        <div className="flex gap-3">
+          <Button variant="outline" className="terminal-btn" onClick={() => setResetConfirmOpen(true)}>
+            Reset Sheet
+          </Button>
+          <Button onClick={handleSaveVehicle} className="terminal-btn primary">
+            Save Changes
+          </Button>
+        </div>
       </div>
+
+      <AlertDialog open={resetConfirmOpen} onOpenChange={setResetConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Reset Vehicle Sheet?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will clear all fields and start a blank sheet. Any unsaved changes will be lost. The saved record (if any) will remain in the database.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleResetSheet} className="bg-red-600 hover:bg-red-700">
+              Reset Sheet
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

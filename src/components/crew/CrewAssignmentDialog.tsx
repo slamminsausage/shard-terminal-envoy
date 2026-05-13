@@ -80,6 +80,11 @@ export default function CrewAssignmentDialog({
     return state.position;
   };
 
+  // Validate: no selected character has position='custom' with empty customPosition
+  const hasInvalidCustomPosition = Object.entries(memberStates).some(
+    ([, state]) => state.selected && state.position === 'custom' && !state.customPosition.trim()
+  );
+
   const handleSaveAssignment = async () => {
     try {
       const selectedIds: string[] = [];
@@ -226,8 +231,11 @@ export default function CrewAssignmentDialog({
         </div>
 
         <DialogFooter>
+          {hasInvalidCustomPosition && (
+            <p className="text-xs font-mono text-red-400 flex-1 mr-2">Enter a custom position name for all selected crew.</p>
+          )}
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={handleSaveAssignment}>Save Assignment</Button>
+          <Button onClick={handleSaveAssignment} disabled={hasInvalidCustomPosition}>Save Assignment</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

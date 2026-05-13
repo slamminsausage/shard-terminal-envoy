@@ -216,12 +216,32 @@ export default function PreMadeShipSelector({
                   </div>
                 </div>
 
+                {/* Weapons summary */}
+                {selectedShip.components.some(c => c.category === "Weapons") && (
+                  <div>
+                    <div className="text-xs font-semibold opacity-80 mb-1">WEAPONS</div>
+                    <div className="space-y-0.5">
+                      {selectedShip.components
+                        .filter(c => c.category === "Weapons")
+                        .map((comp, idx) => (
+                          <div key={idx} className="flex justify-between text-xs">
+                            <span className="opacity-70 truncate mr-2">{comp.name}</span>
+                            <span className="shrink-0 opacity-50">
+                              {comp.tons != null ? `${comp.tons}t` : ""}
+                              {comp.costMCr != null ? ` MCr${comp.costMCr}` : ""}
+                            </span>
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                )}
+
                 {/* Components summary */}
                 <div>
                   <div className="text-xs font-semibold opacity-80 mb-1">COMPONENTS</div>
                   <div className="space-y-0.5">
                     {selectedShip.components
-                      .filter((c) => c.category !== "Software" && c.category !== "Cargo")
+                      .filter((c) => c.category !== "Software" && c.category !== "Cargo" && c.category !== "Weapons")
                       .map((comp, idx) => (
                         <div key={idx} className="flex justify-between text-xs">
                           <span className="opacity-70 truncate mr-2">{comp.name}</span>
@@ -268,7 +288,7 @@ export default function PreMadeShipSelector({
                 </div>
 
                 <Button className="w-full mt-2" onClick={handleConfirm}>
-                  Deploy {selectedShip.name}
+                  Add {selectedShip.name} to Fleet
                 </Button>
               </div>
             ) : (
