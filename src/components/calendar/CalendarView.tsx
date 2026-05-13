@@ -57,8 +57,10 @@ export const CalendarView: React.FC = () => {
     }
   };
 
+  const imperialDateValid = /^\d{3}-\d{4}$/.test(eventDate.trim());
+
   const handleCreateEvent = async () => {
-    if (!eventTitle.trim() || !eventDate.trim()) {
+    if (!eventTitle.trim() || !eventDate.trim() || !imperialDateValid) {
       return;
     }
 
@@ -66,10 +68,10 @@ export const CalendarView: React.FC = () => {
       title: eventTitle,
       description: eventDescription || undefined,
       event_type: eventType,
-      event_date: eventDate,
+      imperial_date: eventDate,
       location: eventLocation || undefined,
       is_recurring: eventIsRecurring,
-      recurrence_days: eventIsRecurring ? parseInt(eventRecurrenceDays, 10) || 7 : undefined,
+      recurrence_interval: eventIsRecurring ? parseInt(eventRecurrenceDays, 10) || 7 : undefined,
       is_completed: false,
       ...(isGM ? { visible_crew_ids: eventVisibleCrewIds } : {}),
     });
@@ -239,8 +241,11 @@ export const CalendarView: React.FC = () => {
                   placeholder="e.g., 135-1105"
                   value={eventDate}
                   onChange={(e) => setEventDate(e.target.value)}
-                  className="bg-black border-terminal-primary/50 text-terminal-primary"
+                  className={`bg-black text-terminal-primary ${eventDate && !imperialDateValid ? 'border-red-500/70' : 'border-terminal-primary/50'}`}
                 />
+                {eventDate && !imperialDateValid && (
+                  <p className="text-xs text-red-400 mt-1">Format must be DDD-YYYY (e.g., 135-1105)</p>
+                )}
               </div>
 
               <div className="sm:col-span-2">
@@ -299,7 +304,7 @@ export const CalendarView: React.FC = () => {
             <div className="flex gap-2">
               <Button
                 onClick={handleCreateEvent}
-                disabled={!eventTitle.trim() || !eventDate.trim()}
+                disabled={!eventTitle.trim() || !eventDate.trim() || !imperialDateValid}
                 size="sm"
                 className="bg-terminal-primary/20 text-terminal-primary hover:bg-terminal-primary/30"
               >
@@ -397,7 +402,7 @@ export const CalendarView: React.FC = () => {
                   <div className="flex items-center gap-4 text-sm text-terminal-primary/70">
                     <div className="flex items-center gap-1">
                       <Calendar className="h-4 w-4" />
-                      {event.event_date}
+                      {event.imperial_date}
                     </div>
                     {event.location && (
                       <div className="flex items-center gap-1">
@@ -405,10 +410,10 @@ export const CalendarView: React.FC = () => {
                         {event.location}
                       </div>
                     )}
-                    {event.is_recurring && event.recurrence_days && (
+                    {event.is_recurring && event.recurrence_interval && (
                       <div className="flex items-center gap-1">
                         <Clock className="h-4 w-4" />
-                        Every {event.recurrence_days} days
+                        Every {event.recurrence_interval} days
                       </div>
                     )}
                   </div>

@@ -92,7 +92,7 @@ export const QuestBoard: React.FC = () => {
             ? 'bg-terminal-primary/20 text-terminal-primary'
             : 'border-terminal-primary/30 text-terminal-primary/70'}
         >
-          All ({quests.length})
+          All ({visibleQuests.length})
         </Button>
         <Button
           onClick={() => setFilterStatus('active')}

@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ArrowLeft, Plus, Clock, User, MapPin, Trash2, ExternalLink, Pencil, X, Check } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { format } from 'date-fns';
 import { SessionStatus, LogEntryType } from '@/types/session';
 import { useCampaign } from '@/contexts/CampaignContext';
@@ -36,6 +37,8 @@ export const SessionDetail: React.FC<SessionDetailProps> = ({ sessionId, onClose
   const [logType, setLogType] = useState<LogEntryType>('note');
 
   // Edit state for existing log entries
+  const [confirmDeleteSession, setConfirmDeleteSession] = useState(false);
+  const [confirmDeleteLogId, setConfirmDeleteLogId] = useState<string | null>(null);
   const [editingLogId, setEditingLogId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState('');
   const [editContent, setEditContent] = useState('');
@@ -98,7 +101,6 @@ export const SessionDetail: React.FC<SessionDetailProps> = ({ sessionId, onClose
   };
 
   const handleDeleteLogEntry = async (entryId: string) => {
-    if (!confirm('Delete this log entry? This cannot be undone.')) return;
     const success = await deleteLogEntry(entryId);
     if (success) {
       setLogs(prev => prev.filter(l => l.id !== entryId));
@@ -107,7 +109,6 @@ export const SessionDetail: React.FC<SessionDetailProps> = ({ sessionId, onClose
 
   const handleDeleteSession = async () => {
     if (!session) return;
-    if (!confirm(`Delete session "${session.title}"? This cannot be undone.`)) return;
     const success = await deleteSession(sessionId);
     if (success) onClose();
   };
@@ -225,7 +226,7 @@ export const SessionDetail: React.FC<SessionDetailProps> = ({ sessionId, onClose
               variant="ghost"
               size="sm"
               className="text-red-400 hover:bg-red-500/20 ml-auto"
-              onClick={handleDeleteSession}
+              onClick={() => setConfirmDeleteSession(true)}
             >
               <Trash2 className="h-4 w-4" />
             </Button>
@@ -254,12 +255,9 @@ export const SessionDetail: React.FC<SessionDetailProps> = ({ sessionId, onClose
       )}
 
       <Tabs defaultValue="log" className="flex-1 flex flex-col">
-        <TabsList className="grid w-full grid-cols-3 bg-black border border-terminal-primary/30">
+        <TabsList className="grid w-full grid-cols-2 bg-black border border-terminal-primary/30">
           <TabsTrigger value="log" className="data-[state=active]:bg-terminal-primary/20">
             Session Log ({logs.length})
-          </TabsTrigger>
-          <TabsTrigger value="rewards" className="data-[state=active]:bg-terminal-primary/20">
-            Rewards
           </TabsTrigger>
           <TabsTrigger value="details" className="data-[state=active]:bg-terminal-primary/20">
             Details
@@ -410,7 +408,7 @@ export const SessionDetail: React.FC<SessionDetailProps> = ({ sessionId, onClose
                                 variant="ghost"
                                 size="sm"
                                 className="h-6 w-6 p-0 text-red-400 hover:bg-red-500/20"
-                                onClick={() => handleDeleteLogEntry(log.id)}
+                                onClick={() => setConfirmDeleteLogId(log.id)}
                                 title="Delete"
                               >
                                 <Trash2 className="h-3 w-3" />
@@ -470,14 +468,6 @@ export const SessionDetail: React.FC<SessionDetailProps> = ({ sessionId, onClose
           </ScrollArea>
         </TabsContent>
 
-        <TabsContent value="rewards" className="flex-1 mt-4">
-          <Card className="bg-black border-terminal-primary/30">
-            <CardContent className="p-8 text-center text-terminal-primary/70">
-              Rewards tracking coming soon...
-            </CardContent>
-          </Card>
-        </TabsContent>
-
         <TabsContent value="details" className="flex-1 mt-4">
           <Card className="bg-black border-terminal-primary/30">
             <CardContent className="pt-4 space-y-4">
@@ -516,6 +506,45 @@ export const SessionDetail: React.FC<SessionDetailProps> = ({ sessionId, onClose
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Delete session confirmation */}
+      <AlertDialog open={confirmDeleteSession} onOpenChange={setConfirmDeleteSession}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Session</AlertDialogTitle>
+            <AlertDialogDescription>
+              Permanently delete "{session?.title}"? All log entries will also be removed. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteSession} className="bg-red-600 hover:bg-red-700">
+              Delete Permanently
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete log entry confirmation */}
+      <AlertDialog open={!!confirmDeleteLogId} onOpenChange={(open) => { if (!open) setConfirmDeleteLogId(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Log Entry</AlertDialogTitle>
+            <AlertDialogDescription>
+              Permanently delete this log entry? This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => { if (confirmDeleteLogId) handleDeleteLogEntry(confirmDeleteLogId); setConfirmDeleteLogId(null); }}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
