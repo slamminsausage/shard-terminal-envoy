@@ -97,6 +97,28 @@ export default function VTTLightingPanel() {
             </button>
           )}
         </div>
+        <div className="space-y-1">
+          {activeMap.walls
+            .filter((w) => w.type === "wall")
+            .map((wall, idx) => (
+              <div key={wall.id} className="vtt-list-item justify-between">
+                <span className="text-[10px] font-mono text-terminal-primary/50">
+                  Wall {idx + 1}
+                </span>
+                <button
+                  onClick={() =>
+                    dispatch({
+                      type: "REMOVE_WALL",
+                      payload: { mapId: activeMap.id, wallId: wall.id },
+                    })
+                  }
+                  className="p-0.5 text-terminal-primary/30 hover:text-red-400 transition-colors"
+                >
+                  ✕
+                </button>
+              </div>
+            ))}
+        </div>
       </div>
 
       {/* Doors list */}

@@ -50,9 +50,12 @@ export default function VTTFogPanel() {
           ].map(({ tool, label }) => (
             <button
               key={tool}
-              onClick={() =>
-                dispatch({ type: "SET_TOOL", payload: tool as any })
-              }
+              onClick={() => {
+                dispatch({ type: "SET_TOOL", payload: tool as any });
+                if (!activeMap?.fog.enabled) {
+                  dispatch({ type: "UPDATE_FOG", payload: { fog: { enabled: true } } });
+                }
+              }}
               className={`vtt-option flex-1 ${state.activeTool === tool ? "vtt-option--active" : ""}`}
             >
               {label}

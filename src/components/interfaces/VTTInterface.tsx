@@ -59,7 +59,7 @@ function VTTInterface() {
     handouts: (notesCtx?.handouts || []).map((h: any) => ({
       id: h.id, title: h.title, imageUrl: h.mediaUrl, content: h.content, visible: h.isVisible !== false,
     })),
-    quests: (questsCtx?.quests || []).map((q: any) => ({
+    quests: (questsCtx?.quests || []).filter((q: any) => !q.is_hidden).map((q: any) => ({
       id: q.id, title: q.title, description: q.description, status: q.status,
       objectives: (questsCtx.questObjectives[q.id] || []).map((obj: any) => ({
         id: obj.id, title: obj.title, description: obj.description,
@@ -142,7 +142,7 @@ function VTTInterface() {
         <VTTToolbar />
 
         {/* Main canvas area */}
-        <div ref={containerRef} className="flex-1 relative min-w-0">
+        <div ref={containerRef} className="flex-1 relative min-w-0 h-full min-h-0 overflow-hidden">
           <VTTCanvas broadcastPing={broadcastPing} />
           <VTTAlignmentBar />
 

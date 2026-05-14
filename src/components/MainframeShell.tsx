@@ -63,7 +63,7 @@ export default function MainframeShell() {
   }, [showShortcuts]);
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="h-screen bg-background flex flex-col overflow-hidden">
       <AppHeader
         title="Traveller Terminal"
         subtitle="Eclipse Shard Saga Interface"
@@ -74,17 +74,17 @@ export default function MainframeShell() {
 
       {/* Content */}
       <main
-        className={`flex-1 min-h-0 ${
+        className={`flex-1 min-h-0 overflow-hidden ${
           activeTab === "vtt"
             ? "w-full max-w-none px-0"
-            : "w-full max-w-[2400px] mx-auto px-2 sm:px-3 lg:px-4 2xl:px-6"
+            : "w-full max-w-[2400px] mx-auto px-2 sm:px-3 lg:px-4 2xl:px-6 overflow-y-auto"
         }`}
       >
         <Suspense fallback={<TerminalLoadingSkeleton />}>
           <AnimatePresence mode="wait">
             <motion.div
               key={activeTab}
-              className={activeTab === "vtt" ? "h-full" : ""}
+              className={activeTab === "vtt" ? "h-full overflow-hidden" : ""}
               initial={{ opacity: 0, y: -6 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 6 }}

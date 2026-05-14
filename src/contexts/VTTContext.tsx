@@ -412,17 +412,8 @@ function vttReducer(state: VTTState, action: VTTAction): VTTState {
       return { ...state, drawWidth: action.payload };
     case "SET_SIDEBAR":
       return { ...state, sidebarPanel: action.payload };
-    case "TOGGLE_GRID": {
-      const newShowGrid = !state.showGrid;
-      const gridToggledState = { ...state, showGrid: newShowGrid };
-      if (state.activeMapId) {
-        return updateMapInState(gridToggledState, state.activeMapId, (m) => ({
-          ...m,
-          grid: { ...m.grid, enabled: newShowGrid },
-        }));
-      }
-      return gridToggledState;
-    }
+    case "TOGGLE_GRID":
+      return { ...state, showGrid: !state.showGrid };
     case "TOGGLE_TOKEN_NAMES":
       return { ...state, showTokenNames: !state.showTokenNames };
     case "TOGGLE_WALLS":
@@ -437,15 +428,17 @@ function vttReducer(state: VTTState, action: VTTAction): VTTState {
     // Maps
     case "ADD_MAP":
       return { ...state, maps: [...state.maps, action.payload] };
-    case "REMOVE_MAP":
+    case "REMOVE_MAP": {
+      const remainingMaps = state.maps.filter((m) => m.id !== action.payload);
       return {
         ...state,
-        maps: state.maps.filter((m) => m.id !== action.payload),
+        maps: remainingMaps,
         activeMapId:
           state.activeMapId === action.payload
-            ? state.maps[0]?.id ?? null
+            ? remainingMaps[0]?.id ?? null
             : state.activeMapId,
       };
+    }
     case "SET_ACTIVE_MAP":
       return { ...state, activeMapId: action.payload };
     case "UPDATE_MAP":

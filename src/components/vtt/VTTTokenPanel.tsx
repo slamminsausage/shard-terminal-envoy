@@ -22,8 +22,8 @@ export default function VTTTokenPanel() {
       id: crypto.randomUUID(),
       name,
       imageDataUrl: null,
-      x: activeMap.scrollX + 200,
-      y: activeMap.scrollY + 200,
+      x: activeMap.scrollX + 200 / activeMap.zoom,
+      y: activeMap.scrollY + 200 / activeMap.zoom,
       size: 1,
       layer: LAYER_TOKEN,
       rotation: 0,
@@ -135,8 +135,12 @@ export default function VTTTokenPanel() {
 
               {/* Name & HP */}
               <div className="flex-1 min-w-0">
-                <div className="text-terminal-primary text-xs font-mono truncate">
-                  {token.name}
+                <div className="flex items-center gap-1">
+                  <span className={`text-xs font-mono truncate ${token.visible === false ? "text-terminal-primary/40" : "text-terminal-primary"}`}>
+                    {token.name}
+                  </span>
+                  {token.locked && <Lock size={9} className="text-yellow-400/70 flex-shrink-0" />}
+                  {token.visible === false && <EyeOff size={9} className="text-terminal-primary/30 flex-shrink-0" />}
                 </div>
                 {token.maxHp > 0 && (
                   <div className="text-[10px] text-terminal-primary/40 font-mono">
@@ -158,7 +162,7 @@ export default function VTTTokenPanel() {
                       },
                     })
                   }
-                  className="p-1 text-terminal-primary/40 hover:text-terminal-primary transition-colors"
+                  className={`p-1 transition-colors ${token.visible === false ? "text-terminal-primary/30 hover:text-terminal-primary" : "text-terminal-primary/40 hover:text-terminal-primary"}`}
                   title={token.visible ? "Hide" : "Show"}
                 >
                   {token.visible ? <Eye size={12} /> : <EyeOff size={12} />}
@@ -174,7 +178,7 @@ export default function VTTTokenPanel() {
                       },
                     })
                   }
-                  className="p-1 text-terminal-primary/40 hover:text-terminal-primary transition-colors"
+                  className={`p-1 transition-colors ${token.locked ? "text-yellow-400/70 hover:text-yellow-400" : "text-terminal-primary/40 hover:text-terminal-primary"}`}
                   title={token.locked ? "Unlock" : "Lock"}
                 >
                   {token.locked ? <Lock size={12} /> : <Unlock size={12} />}

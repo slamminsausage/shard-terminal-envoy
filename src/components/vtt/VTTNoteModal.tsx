@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { toast } from "sonner";
 import { useVTT } from "@/contexts/VTTContext";
 import type { MapNote } from "@/types/vtt";
 import { X, Trash2 } from "lucide-react";
@@ -28,7 +29,7 @@ export default function VTTNoteModal({
 
   const handleSave = () => {
     if (!title.trim() && !content.trim()) {
-      onClose();
+      toast.error("Note must have a title or content");
       return;
     }
 

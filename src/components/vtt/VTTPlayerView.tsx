@@ -676,6 +676,14 @@ export default function VTTPlayerView() {
     return () => cancelAnimationFrame(animRef.current);
   }, [render]);
 
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setHandout(null);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
   return (
     <div
       ref={containerRef}
@@ -770,11 +778,21 @@ export default function VTTPlayerView() {
 
       {/* Handout overlay */}
       {handout && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/90 z-20">
+        <div
+          className="absolute inset-0 flex items-center justify-center bg-black/90 z-20 cursor-pointer"
+          onClick={() => setHandout(null)}
+        >
+          <button
+            className="absolute top-4 right-4 text-[rgba(58,226,179,0.5)] hover:text-[rgba(58,226,179,0.9)] text-lg font-mono leading-none"
+            onClick={(e) => { e.stopPropagation(); setHandout(null); }}
+          >
+            ✕
+          </button>
           <img
             src={handout.imageDataUrl}
             alt={handout.name}
             className="max-w-[90%] max-h-[90%] object-contain"
+            onClick={(e) => e.stopPropagation()}
           />
           <div className="absolute bottom-4 text-center text-[rgba(58,226,179,0.6)] text-xs font-mono">
             {handout.name}

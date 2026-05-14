@@ -128,7 +128,8 @@ export function useVTTKeyboard(onToggleShortcuts?: () => void) {
         const noteIds = state.selectedNoteIds || [];
         const aoeIds = state.selectedAoEIds || [];
         const lightIds = state.selectedLightIds || [];
-        if ((tokenIds.length + strokeIds.length + textIds.length + noteIds.length + aoeIds.length + lightIds.length) > 0 && activeMap) {
+        const propIds = state.selectedPropIds || [];
+        if ((tokenIds.length + strokeIds.length + textIds.length + noteIds.length + aoeIds.length + lightIds.length + propIds.length) > 0 && activeMap) {
           for (const tokenId of tokenIds) {
             const token = activeMap.tokens.find((t) => t.id === tokenId);
             if (token) {
@@ -201,6 +202,22 @@ export function useVTTKeyboard(onToggleShortcuts?: () => void) {
               payload: { mapId: activeMap.id, lightId },
             });
           }
+          for (const propId of propIds) {
+            const prop = (activeMap.props || []).find((p) => p.id === propId);
+            if (prop) {
+              dispatch({
+                type: "PUSH_HISTORY",
+                payload: {
+                  type: "prop-remove",
+                  mapId: activeMap.id,
+                  before: prop,
+                  after: null,
+                  timestamp: Date.now(),
+                },
+              });
+            }
+            dispatch({ type: "REMOVE_PROP", payload: { mapId: activeMap.id, propId } });
+          }
           dispatch({ type: "CLEAR_SELECTION" });
         }
         return;
@@ -269,13 +286,32 @@ export function useVTTKeyboard(onToggleShortcuts?: () => void) {
         if (activeMap) {
           dispatch({
             type: "SET_VIEWPORT",
-            payload: {
-              mapId: activeMap.id,
-              scrollX: 0,
-              scrollY: 0,
-              zoom: 1,
-            },
+            payload: { mapId: activeMap.id, scrollX: 0, scrollY: 0, zoom: 1 },
           });
+        }
+        return;
+      }
+      // Home key — fit map to screen
+      if (key === "home") {
+        if (activeMap) {
+          const canvas = document.querySelector<HTMLCanvasElement>(".vtt-main-canvas");
+          if (canvas) {
+            const rect = canvas.getBoundingClientRect();
+            const fitZoom = Math.min(
+              Math.max(rect.width / activeMap.width, 0.1),
+              Math.max(rect.height / activeMap.height, 0.1),
+              5
+            );
+            dispatch({
+              type: "SET_VIEWPORT",
+              payload: {
+                mapId: activeMap.id,
+                scrollX: activeMap.width / 2 - rect.width / 2 / fitZoom,
+                scrollY: activeMap.height / 2 - rect.height / 2 / fitZoom,
+                zoom: fitZoom,
+              },
+            });
+          }
         }
         return;
       }

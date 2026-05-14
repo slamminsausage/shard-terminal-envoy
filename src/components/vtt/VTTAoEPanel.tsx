@@ -72,7 +72,9 @@ export default function VTTAoEPanel() {
                   {aoe.shape}
                 </div>
                 <div className="text-[10px] text-terminal-primary/30 font-mono">
-                  r={Math.round(aoe.radius)}px
+                  {activeMap?.grid?.size
+                    ? `${Math.round(aoe.radius / activeMap.grid.size)} sq`
+                    : `r=${Math.round(aoe.radius)}px`}
                 </div>
               </div>
               <button

@@ -55,7 +55,6 @@ export default function VTTAssetsPanel() {
       setUploading(true);
       let uploaded = 0;
       for (const file of files) {
-        const ext = file.name.split(".").pop() || "png";
         const safeName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
         const { error } = await supabase.storage
           .from(BUCKET)

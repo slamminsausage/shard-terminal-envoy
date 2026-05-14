@@ -89,7 +89,7 @@ function findLightAt(lights: LightSource[], pos: Point, zoom: number): LightSour
 
 interface VTTCanvasProps {
   className?: string;
-  broadcastPing?: (x: number, y: number) => void;
+  broadcastPing?: (x: number, y: number, label?: string, color?: string) => void;
 }
 
 export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) {
@@ -1402,25 +1402,6 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
     return () => canvas.removeEventListener("wheel", handleWheel);
   }, [dispatch]);
 
-  // ─── Keyboard: Delete selected props ────────────────────────────────
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key !== "Delete" && e.key !== "Backspace") return;
-      if (!activeMap) return;
-      // Only handle if a text input is not focused
-      if (document.activeElement && (document.activeElement.tagName === "INPUT" || document.activeElement.tagName === "TEXTAREA")) return;
-      const selPropIds = state.selectedPropIds || [];
-      if (selPropIds.length > 0) {
-        for (const propId of selPropIds) {
-          dispatch({ type: "REMOVE_PROP", payload: { mapId: activeMap.id, propId } });
-        }
-        dispatch({ type: "SET_PROP_SELECTION", payload: [] });
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [activeMap, state.selectedPropIds, dispatch]);
-
   // ─── Render loop ────────────────────────────────────────────────────
 
   const render = useCallback(() => {
@@ -1483,7 +1464,7 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
     }
 
     // Grid
-    if (state.showGrid && activeMap.grid.enabled) {
+    if (state.showGrid && activeMap.grid.enabled !== false) {
       drawGrid(ctx, activeMap);
     }
 
@@ -2179,7 +2160,7 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
     }
 
     animFrameRef.current = requestAnimationFrame(render);
-  }, [activeMap, state, isDrawing, measuring, drawingWall, placingAoE, isFogPainting, selectionBox, pings, dragPropId, getFogCanvas]);
+  }, [activeMap, state, isDrawing, measuring, drawingWall, placingAoE, isFogPainting, selectionBox, pings, dragToken, dragPropId, getFogCanvas]);
 
   useEffect(() => {
     animFrameRef.current = requestAnimationFrame(render);

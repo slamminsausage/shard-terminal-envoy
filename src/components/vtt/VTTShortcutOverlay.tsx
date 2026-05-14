@@ -29,7 +29,8 @@ const shortcuts = [
     items: [
       { key: "G", desc: "Toggle Grid Snap" },
       { key: "+/-", desc: "Zoom In/Out" },
-      { key: "0", desc: "Reset Zoom" },
+      { key: "0", desc: "Reset Zoom (100%)" },
+      { key: "Home", desc: "Fit Map to Screen" },
       { key: "Ctrl+G", desc: "Toggle Grid Display" },
       { key: "Esc", desc: "Deselect / Close Panel" },
     ],
