@@ -142,7 +142,7 @@ function VTTInterface() {
         <VTTToolbar />
 
         {/* Main canvas area */}
-        <div ref={containerRef} className="flex-1 relative min-w-0">
+        <div ref={containerRef} className="flex-1 relative min-w-0 h-full min-h-0 overflow-hidden">
           <VTTCanvas broadcastPing={broadcastPing} />
           <VTTAlignmentBar />
 

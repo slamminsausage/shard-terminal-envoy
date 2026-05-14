@@ -1,4 +1,4 @@
-import { Plus, Minus } from "lucide-react";
+import { Plus, Minus, Maximize2 } from "lucide-react";
 import { useVTT } from "@/contexts/VTTContext";
 import { clamp } from "@/lib/vtt/geometry";
 
@@ -60,6 +60,23 @@ export default function VTTZoomControl() {
     setZoomCentered(newZoom);
   };
 
+  const fitToScreen = () => {
+    const canvas = document.querySelector<HTMLCanvasElement>(".vtt-main-canvas");
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = rect.width / activeMap.width;
+    const scaleY = rect.height / activeMap.height;
+    const fitZoom = clamp(Math.min(scaleX, scaleY), MIN_ZOOM, MAX_ZOOM);
+    const scrollX = (activeMap.width / 2) - (rect.width / 2 / fitZoom);
+    const scrollY = (activeMap.height / 2) - (rect.height / 2 / fitZoom);
+    dispatch({
+      type: "SET_VIEWPORT",
+      payload: { mapId: activeMap.id, scrollX, scrollY, zoom: fitZoom },
+    });
+  };
+
+  const resetZoom = () => setZoomCentered(1);
+
   return (
     <div className="absolute right-3 top-1/2 -translate-y-1/2 z-20 flex flex-col items-center gap-1">
       {/* Zoom In button */}
@@ -103,10 +120,23 @@ export default function VTTZoomControl() {
         <Minus size={14} />
       </button>
 
-      {/* Percentage display */}
-      <div className="text-[10px] text-[rgba(58,226,179,0.5)] font-mono mt-0.5">
+      {/* Fit to screen */}
+      <button
+        onClick={fitToScreen}
+        className="vtt-btn-icon border border-[rgba(58,226,179,0.2)] bg-black/70"
+        title="Fit map to screen"
+      >
+        <Maximize2 size={12} />
+      </button>
+
+      {/* Percentage display — click to reset to 100% */}
+      <button
+        onClick={resetZoom}
+        className="text-[10px] text-[rgba(58,226,179,0.5)] hover:text-[rgba(58,226,179,0.9)] font-mono mt-0.5 transition-colors"
+        title="Reset to 100%"
+      >
         {pct}%
-      </div>
+      </button>
     </div>
   );
 }

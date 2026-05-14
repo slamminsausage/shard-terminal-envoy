@@ -286,13 +286,32 @@ export function useVTTKeyboard(onToggleShortcuts?: () => void) {
         if (activeMap) {
           dispatch({
             type: "SET_VIEWPORT",
-            payload: {
-              mapId: activeMap.id,
-              scrollX: 0,
-              scrollY: 0,
-              zoom: 1,
-            },
+            payload: { mapId: activeMap.id, scrollX: 0, scrollY: 0, zoom: 1 },
           });
+        }
+        return;
+      }
+      // Home key — fit map to screen
+      if (key === "home") {
+        if (activeMap) {
+          const canvas = document.querySelector<HTMLCanvasElement>(".vtt-main-canvas");
+          if (canvas) {
+            const rect = canvas.getBoundingClientRect();
+            const fitZoom = Math.min(
+              Math.max(rect.width / activeMap.width, 0.1),
+              Math.max(rect.height / activeMap.height, 0.1),
+              5
+            );
+            dispatch({
+              type: "SET_VIEWPORT",
+              payload: {
+                mapId: activeMap.id,
+                scrollX: activeMap.width / 2 - rect.width / 2 / fitZoom,
+                scrollY: activeMap.height / 2 - rect.height / 2 / fitZoom,
+                zoom: fitZoom,
+              },
+            });
+          }
         }
         return;
       }

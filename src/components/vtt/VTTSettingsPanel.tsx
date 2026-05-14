@@ -76,23 +76,17 @@ export default function VTTSettingsPanel() {
             </h4>
 
             <ToggleRow
-              label="Grid Enabled"
+              label="Grid for this map"
               checked={grid.enabled}
-              onChange={() => {
+              onChange={() =>
                 dispatch({
                   type: "UPDATE_MAP",
                   payload: {
                     id: activeMap.id,
-                    updates: {
-                      grid: { ...grid, enabled: !grid.enabled },
-                    },
+                    updates: { grid: { ...grid, enabled: !grid.enabled } },
                   },
-                });
-                // Keep showGrid in sync with grid.enabled
-                if (state.showGrid === grid.enabled) {
-                  dispatch({ type: "TOGGLE_GRID" });
-                }
-              }}
+                })
+              }
             />
 
             <div className="mt-2">

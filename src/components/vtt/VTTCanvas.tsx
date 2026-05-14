@@ -1464,7 +1464,7 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
     }
 
     // Grid
-    if (state.showGrid && activeMap.grid.enabled) {
+    if (state.showGrid && activeMap.grid.enabled !== false) {
       drawGrid(ctx, activeMap);
     }
 

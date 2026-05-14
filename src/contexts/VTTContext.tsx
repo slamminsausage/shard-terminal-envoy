@@ -412,17 +412,8 @@ function vttReducer(state: VTTState, action: VTTAction): VTTState {
       return { ...state, drawWidth: action.payload };
     case "SET_SIDEBAR":
       return { ...state, sidebarPanel: action.payload };
-    case "TOGGLE_GRID": {
-      const newShowGrid = !state.showGrid;
-      const gridToggledState = { ...state, showGrid: newShowGrid };
-      if (state.activeMapId) {
-        return updateMapInState(gridToggledState, state.activeMapId, (m) => ({
-          ...m,
-          grid: { ...m.grid, enabled: newShowGrid },
-        }));
-      }
-      return gridToggledState;
-    }
+    case "TOGGLE_GRID":
+      return { ...state, showGrid: !state.showGrid };
     case "TOGGLE_TOKEN_NAMES":
       return { ...state, showTokenNames: !state.showTokenNames };
     case "TOGGLE_WALLS":
