@@ -1402,52 +1402,6 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
     return () => canvas.removeEventListener("wheel", handleWheel);
   }, [dispatch]);
 
-  // ─── Keyboard: Delete selected objects ──────────────────────────────
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key !== "Delete" && e.key !== "Backspace") return;
-      if (!activeMap) return;
-      if (document.activeElement && (document.activeElement.tagName === "INPUT" || document.activeElement.tagName === "TEXTAREA")) return;
-      const selPropIds = state.selectedPropIds || [];
-      if (selPropIds.length > 0) {
-        for (const propId of selPropIds) {
-          dispatch({ type: "REMOVE_PROP", payload: { mapId: activeMap.id, propId } });
-        }
-        dispatch({ type: "SET_PROP_SELECTION", payload: [] });
-      }
-      const selTokenIds = state.selectedTokenIds || [];
-      if (selTokenIds.length > 0) {
-        for (const tokenId of selTokenIds) {
-          dispatch({ type: "REMOVE_TOKEN", payload: { mapId: activeMap.id, tokenId } });
-        }
-        dispatch({ type: "SET_SELECTION", payload: [] });
-      }
-      const selStrokeIds = state.selectedStrokeIds || [];
-      if (selStrokeIds.length > 0) {
-        for (const strokeId of selStrokeIds) {
-          dispatch({ type: "REMOVE_STROKE", payload: { mapId: activeMap.id, strokeId } });
-        }
-        dispatch({ type: "SET_STROKE_SELECTION", payload: [] });
-      }
-      const selTextIds = state.selectedTextIds || [];
-      if (selTextIds.length > 0) {
-        for (const textId of selTextIds) {
-          dispatch({ type: "REMOVE_TEXT", payload: { mapId: activeMap.id, textId } });
-        }
-        dispatch({ type: "SET_TEXT_SELECTION", payload: [] });
-      }
-      const selNoteIds = state.selectedNoteIds || [];
-      if (selNoteIds.length > 0) {
-        for (const noteId of selNoteIds) {
-          dispatch({ type: "REMOVE_NOTE", payload: { mapId: activeMap.id, noteId } });
-        }
-        dispatch({ type: "SET_NOTE_SELECTION", payload: [] });
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [activeMap, state.selectedPropIds, state.selectedTokenIds, state.selectedStrokeIds, state.selectedTextIds, state.selectedNoteIds, dispatch]);
-
   // ─── Render loop ────────────────────────────────────────────────────
 
   const render = useCallback(() => {

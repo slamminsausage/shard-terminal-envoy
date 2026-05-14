@@ -128,7 +128,8 @@ export function useVTTKeyboard(onToggleShortcuts?: () => void) {
         const noteIds = state.selectedNoteIds || [];
         const aoeIds = state.selectedAoEIds || [];
         const lightIds = state.selectedLightIds || [];
-        if ((tokenIds.length + strokeIds.length + textIds.length + noteIds.length + aoeIds.length + lightIds.length) > 0 && activeMap) {
+        const propIds = state.selectedPropIds || [];
+        if ((tokenIds.length + strokeIds.length + textIds.length + noteIds.length + aoeIds.length + lightIds.length + propIds.length) > 0 && activeMap) {
           for (const tokenId of tokenIds) {
             const token = activeMap.tokens.find((t) => t.id === tokenId);
             if (token) {
@@ -200,6 +201,22 @@ export function useVTTKeyboard(onToggleShortcuts?: () => void) {
               type: "REMOVE_LIGHT",
               payload: { mapId: activeMap.id, lightId },
             });
+          }
+          for (const propId of propIds) {
+            const prop = (activeMap.props || []).find((p) => p.id === propId);
+            if (prop) {
+              dispatch({
+                type: "PUSH_HISTORY",
+                payload: {
+                  type: "prop-remove",
+                  mapId: activeMap.id,
+                  before: prop,
+                  after: null,
+                  timestamp: Date.now(),
+                },
+              });
+            }
+            dispatch({ type: "REMOVE_PROP", payload: { mapId: activeMap.id, propId } });
           }
           dispatch({ type: "CLEAR_SELECTION" });
         }
