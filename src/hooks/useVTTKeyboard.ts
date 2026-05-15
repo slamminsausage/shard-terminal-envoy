@@ -150,18 +150,30 @@ export function useVTTKeyboard(onToggleShortcuts?: () => void) {
             });
           }
           for (const strokeId of strokeIds) {
+            const stroke = activeMap.strokes.find((s) => s.id === strokeId);
+            if (stroke) {
+              dispatch({ type: "PUSH_HISTORY", payload: { type: "stroke-remove", mapId: activeMap.id, before: stroke, after: null, timestamp: Date.now() } });
+            }
             dispatch({
               type: "REMOVE_STROKE",
               payload: { mapId: activeMap.id, strokeId },
             });
           }
           for (const textId of textIds) {
+            const text = activeMap.texts.find((t) => t.id === textId);
+            if (text) {
+              dispatch({ type: "PUSH_HISTORY", payload: { type: "text-remove", mapId: activeMap.id, before: text, after: null, timestamp: Date.now() } });
+            }
             dispatch({
               type: "REMOVE_TEXT",
               payload: { mapId: activeMap.id, textId },
             });
           }
           for (const noteId of noteIds) {
+            const note = activeMap.notes.find((n) => n.id === noteId);
+            if (note) {
+              dispatch({ type: "PUSH_HISTORY", payload: { type: "note-remove", mapId: activeMap.id, before: note, after: null, timestamp: Date.now() } });
+            }
             dispatch({
               type: "REMOVE_NOTE",
               payload: { mapId: activeMap.id, noteId },

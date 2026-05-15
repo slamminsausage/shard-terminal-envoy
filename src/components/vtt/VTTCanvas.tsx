@@ -1347,7 +1347,11 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
       if (e.shiftKey) {
         const worldX = map.scrollX + cursorScreenX / map.zoom;
         const worldY = map.scrollY + cursorScreenY / map.zoom;
-        const tokenUnderCursor = findTokenAt({ x: worldX, y: worldY });
+        const gs = map.grid.size || 50;
+        const tokenUnderCursor = [...map.tokens].reverse().find((t) => {
+          const half = (t.size * gs) / 2;
+          return worldX >= t.x - half && worldX <= t.x + half && worldY >= t.y - half && worldY <= t.y + half;
+        }) ?? null;
         if (tokenUnderCursor) {
           const hpDelta = e.deltaY < 0 ? 1 : -1;
           const newHp = Math.max(0, Math.min(tokenUnderCursor.maxHp, tokenUnderCursor.hp + hpDelta));
@@ -1598,7 +1602,7 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
     }
 
     // Fog brush cursor preview
-    if (state.activeTool.startsWith("fog-") && !isFogPainting) {
+    if (state.activeTool.startsWith("fog-")) {
       const cx = cursorWorldRef.current.x;
       const cy = cursorWorldRef.current.y;
       const r = state.fogBrushSize;
@@ -2225,22 +2229,18 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
             if (e.key === "Enter") {
               const value = (e.target as HTMLInputElement).value.trim();
               if (value && activeMap) {
-                dispatch({
-                  type: "ADD_TEXT",
-                  payload: {
-                    mapId: activeMap.id,
-                    text: {
-                      id: crypto.randomUUID(),
-                      text: value,
-                      x: textInput.x,
-                      y: textInput.y,
-                      fontSize: state.drawWidth * 6 + 10,
-                      color: state.drawColor,
-                      layer: state.activeLayer,
-                      gmOnly: state.activeLayer === 2,
-                    },
-                  },
-                });
+                const textObj = {
+                  id: crypto.randomUUID(),
+                  text: value,
+                  x: textInput.x,
+                  y: textInput.y,
+                  fontSize: state.drawWidth * 6 + 10,
+                  color: state.drawColor,
+                  layer: state.activeLayer,
+                  gmOnly: state.activeLayer === 2,
+                };
+                dispatch({ type: "ADD_TEXT", payload: { mapId: activeMap.id, text: textObj } });
+                dispatch({ type: "PUSH_HISTORY", payload: { type: "text-add", mapId: activeMap.id, before: null, after: textObj, timestamp: Date.now() } });
               }
               setTextInput(null);
             }
@@ -2248,7 +2248,24 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
               setTextInput(null);
             }
           }}
-          onBlur={() => setTextInput(null)}
+          onBlur={(e) => {
+            const value = e.target.value.trim();
+            if (value && activeMap) {
+              const textObj = {
+                id: crypto.randomUUID(),
+                text: value,
+                x: textInput.x,
+                y: textInput.y,
+                fontSize: state.drawWidth * 6 + 10,
+                color: state.drawColor,
+                layer: state.activeLayer,
+                gmOnly: state.activeLayer === 2,
+              };
+              dispatch({ type: "ADD_TEXT", payload: { mapId: activeMap.id, text: textObj } });
+              dispatch({ type: "PUSH_HISTORY", payload: { type: "text-add", mapId: activeMap.id, before: null, after: textObj, timestamp: Date.now() } });
+            }
+            setTextInput(null);
+          }}
         />
       )}
 
@@ -2363,7 +2380,7 @@ export default function VTTCanvas({ className, broadcastPing }: VTTCanvasProps) 
 
 function getCursor(tool: string, isPanning: boolean, isDragging: boolean, isDraggingImage: boolean, activeLayer: number, activeHandle?: string | null, pendingProp?: boolean): string {
   if (pendingProp) return "crosshair";
-  if (activeHandle === "rotate") return "crosshair";
+  if (activeHandle?.startsWith("rotate-")) return "crosshair";
   if (activeHandle?.startsWith("resize-")) {
     if (activeHandle === "resize-tl" || activeHandle === "resize-br") return "nwse-resize";
     return "nesw-resize";

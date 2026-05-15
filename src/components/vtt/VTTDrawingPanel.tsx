@@ -1,7 +1,8 @@
+import React from "react";
 import { useVTT } from "@/contexts/VTTContext";
 import { LAYER_MAP, LAYER_TOKEN, LAYER_GM } from "@/types/vtt";
-import type { LayerIndex } from "@/types/vtt";
-import { Trash2, Undo2, Redo2 } from "lucide-react";
+import type { LayerIndex, VTTTool } from "@/types/vtt";
+import { Trash2, Undo2, Redo2, Pencil, Minus, Square, Circle, Type } from "lucide-react";
 
 const PRESET_COLORS = [
   "#3ae2b3", "#00ccff", "#ff6600", "#ff3344", "#ffcc00",
@@ -9,6 +10,14 @@ const PRESET_COLORS = [
 ];
 
 const PRESET_WIDTHS = [1, 2, 3, 5, 8, 12];
+
+const DRAW_TOOLS: { tool: VTTTool; label: string; icon: React.ReactNode }[] = [
+  { tool: "draw-freehand", label: "Free", icon: <Pencil size={12} /> },
+  { tool: "draw-line",     label: "Line", icon: <Minus size={12} /> },
+  { tool: "draw-rect",     label: "Rect", icon: <Square size={12} /> },
+  { tool: "draw-circle",   label: "Circle", icon: <Circle size={12} /> },
+  { tool: "draw-text",     label: "Text", icon: <Type size={12} /> },
+];
 
 const LAYER_LABELS: { layer: LayerIndex; label: string }[] = [
   { layer: LAYER_MAP, label: "Map" },
@@ -21,6 +30,26 @@ export default function VTTDrawingPanel() {
 
   return (
     <div className="flex flex-col h-full p-3 space-y-4">
+      {/* Draw Tool Selector */}
+      <div>
+        <label className="vtt-section-label block mb-1">Draw Tool</label>
+        <div className="flex gap-1">
+          {DRAW_TOOLS.map(({ tool, label, icon }) => (
+            <button
+              key={tool}
+              onClick={() => dispatch({ type: "SET_TOOL", payload: tool })}
+              className={`vtt-option flex-1 flex flex-col items-center gap-0.5 py-1.5 text-[9px] ${
+                state.activeTool === tool ? "vtt-option--active" : ""
+              }`}
+              title={label}
+            >
+              {icon}
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Layer Selection */}
       <div>
         <label className="vtt-section-label block mb-1">
@@ -78,10 +107,12 @@ export default function VTTDrawingPanel() {
         </div>
       </div>
 
-      {/* Stroke Width */}
+      {/* Stroke Width / Font Size */}
       <div>
         <label className="vtt-section-label block mb-1">
-          Width: {state.drawWidth}px
+          {state.activeTool === "draw-text"
+            ? `Font Size: ~${state.drawWidth * 6 + 10}px`
+            : `Width: ${state.drawWidth}px`}
         </label>
         <div className="flex gap-1.5">
           {PRESET_WIDTHS.map((w) => (
