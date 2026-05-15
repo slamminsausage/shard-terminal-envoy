@@ -17,6 +17,7 @@ export default function VTTTokenEditModal({
 }: VTTTokenEditModalProps) {
   const { dispatch } = useVTT();
   const [name, setName] = useState(token.name);
+  const [imageDataUrl, setImageDataUrl] = useState(token.imageDataUrl);
   const [hp, setHp] = useState(token.hp);
   const [maxHp, setMaxHp] = useState(token.maxHp);
   const [size, setSize] = useState(token.size);
@@ -36,6 +37,10 @@ export default function VTTTokenEditModal({
   const [locked, setLocked] = useState(token.locked);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
+  const update = (updates: Partial<Token>) => {
+    dispatch({ type: "UPDATE_TOKEN", payload: { mapId, tokenId: token.id, updates } });
+  };
+
   const handleSave = () => {
     dispatch({
       type: "UPDATE_TOKEN",
@@ -46,7 +51,7 @@ export default function VTTTokenEditModal({
           name, hp, maxHp, size, rotation, auraRadius, auraColor,
           showName, showHpBar, moveSpeed, elevation,
           lightBrightRadius, lightDimRadius, lightColor,
-          conditions, visible, locked,
+          conditions, visible, locked, imageDataUrl,
         },
       },
     });
@@ -65,13 +70,16 @@ export default function VTTTokenEditModal({
       const publicUrl = await dbHelpers.uploadVTTTokenImage(file, token.id);
       if (publicUrl) {
         update({ imageDataUrl: publicUrl });
+        setImageDataUrl(publicUrl);
         return;
       }
 
       // Fallback: store as data URL
       const reader = new FileReader();
       reader.onload = (ev) => {
-        update({ imageDataUrl: ev.target?.result as string });
+        const url = ev.target?.result as string;
+        update({ imageDataUrl: url });
+        setImageDataUrl(url);
       };
       reader.readAsDataURL(file);
     };
@@ -119,8 +127,8 @@ export default function VTTTokenEditModal({
               onClick={handleImageUpload}
               title="Click to upload image"
             >
-              {token.imageDataUrl ? (
-                <img src={token.imageDataUrl} alt={name} className="w-full h-full object-cover" />
+              {imageDataUrl ? (
+                <img src={imageDataUrl} alt={name} className="w-full h-full object-cover" />
               ) : (
                 <span className="text-[rgba(58,226,179,0.3)] text-lg font-mono">
                   {name.charAt(0).toUpperCase()}

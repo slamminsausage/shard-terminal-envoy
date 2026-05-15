@@ -815,7 +815,7 @@ function vttReducer(state: VTTState, action: VTTAction): VTTState {
         selectedLightIds: action.payload.lightIds || [],
       };
     case "CLEAR_SELECTION":
-      return { ...state, selectedTokenIds: [], selectedStrokeIds: [], selectedTextIds: [], selectedNoteIds: [], selectedAoEIds: [], selectedLightIds: [] };
+      return { ...state, selectedTokenIds: [], selectedStrokeIds: [], selectedTextIds: [], selectedNoteIds: [], selectedAoEIds: [], selectedLightIds: [], selectedPropIds: [] };
 
     // Clipboard
     case "COPY_SELECTION": {
