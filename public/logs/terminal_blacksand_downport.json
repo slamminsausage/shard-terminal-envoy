@@ -1,10 +1,10 @@
 [
   {
-    "title": "Visitor Orientation \u2014 Blacksand City Network",
-    "location": "General Access Terminal \u2014 Blacksand Downport",
+    "title": "Visitor Orientation — Blacksand City Network",
+    "location": "General Access Terminal — Blacksand Downport",
     "date": "CURRENT CYCLE (STANDING NOTICE)",
-    "author": "Widow Administrative Office \u2014 Blacksand City",
-    "content": "WELCOME TO THEEV.\n\nYou have been cleared through the Skull. This means someone vouched for you, or you bought your way in, or both. Either way, you are here now.\n\nThe Law of the Lords applies in this starport, in the Upper City, and in any building or zone marked with red flags. Under the Law of the Lords: no murder, no weapons fire, no conduct that disturbs the calm and tranquility of the city.\n\nEverywhere else \u2014 the canyons, the lower streets, any unflagged zone \u2014 the Law of the Street applies. The only restriction in street zones is a prohibition on any weapon capable of breaching environmental containment.\n\nThe punishment for violating either law is the same.\n\nDeath.\n\nThe red flag zones move. A building that is protected today may not be protected tomorrow. Plan accordingly.\n\nThe Widows are always watching. You will not see them until it is relevant.\n\nWelcome to Blacksand City.",
+    "author": "Widow Administrative Office — Blacksand City",
+    "content": "WELCOME TO THEEV.\n\nYou have been cleared through the Skull. This means someone vouched for you, or you bought your way in, or both. Either way, you are here now.\n\nThe Law of the Lords applies in this starport, in the Upper City, and in any building or zone marked with red flags. Under the Law of the Lords: no murder, no weapons fire, no conduct that disturbs the calm and tranquility of the city.\n\nEverywhere else — the canyons, the lower streets, any unflagged zone — the Law of the Street applies. The only restriction in street zones is a prohibition on any weapon capable of breaching environmental containment.\n\nThe punishment for violating either law is the same.\n\nDeath.\n\nThe red flag zones move. A building that is protected today may not be protected tomorrow. Plan accordingly.\n\nThe Widows are always watching. You will not see them until it is relevant.\n\nWelcome to Blacksand City.",
     "security_level": "unlocked",
     "requires_roll": false
   },
@@ -13,7 +13,7 @@
     "location": "General Access Terminal — Blacksand Downport",
     "date": "DAY 212 · 1105 — LIVE LISTING",
     "author": "Downport Bay Control — Automated",
-    "content": "BAY ASSIGNMENTS — ACTIVE VESSELS\n\nBay 4:  Registered. Transponder masked. Flag: Independent.\nBay 6:  Registered. Transponder: [REDACTED — COMMERCIAL MANIFEST]. Hull class: 600-ton laboratory vessel. Flag: Independent. Research charter on file. Cargo declaration: medical supplies, anagathic precursors.\nBay 7:  Registered. Transponder: MERCIFUGE. Hull class: 400-ton armed salvager. Flag: Independent. Owner record: SEALED. Arrival crew detail logged separately — [[connect: scrapheap]]\nBay 9:  Registered. Transponder masked. Flag: Vallis. Restricted access.\nBay 11: Registered. Transponder: IRON COVENANT. Hull class: 600-ton corsair. Flag: Irontooth.\nBay 14: Registered. Transponder masked. Flag: Darokyn. Restricted access.\nBay 17: Registered. New arrival. Transponder: [REDACTED — KRRSH CLEARANCE]. Flag: Independent. — Krrsh clearance context: [[connect: ferrik_intel]]\n\nKALLOS YARD (SATELLITE BAYS — not Downport jurisdiction):\nBay 7-C (Kallos):  Held. Far Trader, 200-ton. Clean Imperial registry. Owner's representative handles all queries. Do not walk the yard without a representative's mark.\n\n—\n\nNOTE: Bay doors close and seal on docking. Environmental breach protocols active at all times. Any discharge of weapons within bay superstructure triggers automatic Widow response.\n\nAll vessels remain impounded until Skull release code is issued or departure fee is paid.\n\nDeparture fees are non-negotiable. Fees escalate with duration. Fees escalate faster if you ask about the scale.",
+    "content": "BAY ASSIGNMENTS — ACTIVE VESSELS\n\nBay 4:  Registered. Transponder masked. Flag: Independent.\nBay 6:  Registered. Transponder masked. Hull class: 20-ton heavy fighter. Flag: Blackreach Holdings. No charter on file. No cargo declaration.\nBay 7:  Registered. Transponder: MERCIFUGE. Hull class: 400-ton armed salvager. Flag: Independent. Owner record: SEALED. Arrival crew detail logged separately — [[connect: scrapheap]]\nBay 9:  Registered. Transponder masked. Flag: Vallis. Restricted access.\nBay 11: Registered. Transponder: IRON COVENANT. Hull class: 600-ton corsair. Flag: Irontooth.\nBay 14: Registered. Transponder masked. Flag: Darokyn. Restricted access.\nBay 17: Registered. New arrival. Transponder: [REDACTED — KRRSH CLEARANCE]. Flag: Independent.\n\nKALLOS YARD (SATELLITE BAYS — not Downport jurisdiction):\nBay 7-C (Kallos):  Held. Far Trader, 200-ton. Clean Imperial registry. Owner's representative handles all queries. Do not walk the yard without a representative's mark.\n\n—\n\nNOTE: Bay doors close and seal on docking. Environmental breach protocols active at all times. Any discharge of weapons within bay superstructure triggers automatic Widow response.\n\nAll vessels remain impounded until Skull release code is issued or departure fee is paid.\n\nDeparture fees are non-negotiable. Fees escalate with duration. Fees escalate faster if you ask about the scale.",
     "security_level": "unlocked",
     "requires_roll": false
   },
@@ -22,7 +22,7 @@
     "location": "General Access Terminal — Blacksand Downport",
     "date": "STANDING NOTICE — REVISED DAY 204 · 1105",
     "author": "Kallos Shipyards — Front Office",
-    "content": "KALLOS SHIPYARDS\nACQUISITION · REFIT · RECYCLING\n\nWe buy hulls. We sell hulls. Our yard is open to anyone the Skull clears.\n\nClient expectations:\n— Bring the ship or don't. Don't bring a dispute about the ship.\n— Tracking beacons are the client's problem, not ours. We will not disable one. Our assessors will walk off any hull that is still calling home.\n— Outstanding Imperial warrants are not our business until they walk through our gate.\n— Any item secured aboard a hull at sale is the client's to remove. Anything left after the forty-eighth hour is ours. Do not argue this clause. We have argued it before.\n\nRecycling schedule:\n— Hulls under 400 tons: approximately eight days.\n— 400 to 800 tons: two weeks.\n— Over 800 tons: by appointment only.\n— We do not scrap Drinax-era hulls. We do not explain why.\n\nCurrent floor (rotating):\n— Two stripped scout hulls, frame-only. Buyer fits the rest.\n— An armed merchant, prior registry scrubbed, fresh paint, sold as-is.\n— Bay 7-C: Far Trader, clean registry on file, currently held under a private owner's arrangement. Not listed for open sale. Do not make an offer at the front office. Do not approach the bay. Inquiries handled through the owner's representative only.\n\nKallos does not guarantee discretion. Kallos guarantees that we have been doing this longer than the firms that used to guarantee it, and those firms are no longer on Theev.",
+    "content": "KALLOS SHIPYARDS\nACQUISITION · REFIT · RECYCLING\n\nWe buy hulls. We sell hulls. Our yard is open to anyone the Skull clears.\n\nClient expectations:\n— Bring the ship or don't. Don't bring a dispute about the ship.\n— Any item secured aboard a hull at sale is the client's to remove. Anything left after the forty-eighth hour is ours.\n— Outstanding Imperial warrants are not our business until they walk through our gate.\n\nCurrent floor (rotating):\n— Two stripped scout hulls, frame-only. Buyer fits the rest.\n— An armed merchant, prior registry scrubbed, fresh paint, sold as-is.\n— Bay 7-C: Far Trader, clean registry on file, currently held under a private owner's arrangement. Not listed for open sale. Inquiries handled through the owner's representative only.\n\nKallos does not guarantee discretion. Kallos guarantees that we have been doing this longer than the firms that used to guarantee it, and those firms are no longer on Theev.",
     "security_level": "unlocked",
     "requires_roll": false
   },
@@ -31,7 +31,7 @@
     "location": "General Access Terminal — Blacksand Downport",
     "date": "DAY 212 · 1105",
     "author": "Widow Administrative Office — Internal",
-    "content": "ARRIVALS — SECURITY NOTATION — DAY 212\n\nBAY 6 — Laboratory vessel. Research charter, anagathics work on file. Manifest filed. Company insurance on record routes through a GeDeCo subsidiary we have flagged in the past. A security detachment disembarked with the science crew — four personnel, plain clothing, standard sidearms, the stance of people who do this for a living. We note this without prejudice. They have orientation. They have not signed for lower-city escort.\n\nBAY 17 — Vessel via Krrsh clearance codes. Hull unregistered. Crew: multiple. Manifests not filed. No affiliation declared. Krrsh clearance codes are considered valid. Krrsh himself is not currently on Theev. His codes being used without him present is unusual. A spy named Gesh has already filed an inquiry regarding this vessel's association with Drinax. Gesh's inquiry has been logged. We do not act on third-party inquiries without cause. Gesh is currently lodged in the upper city — [[connect: grand_hotel]]\n\nBOTH CREWS — orientation provided. Standard watch assigned. Elevated if either party enters the lower city without escort. Elevated further if the two crews are observed in the same room without either having arranged the meeting.\n\n— Recommend observation. Do not intervene unless Lord's Law is broken.",
+    "content": "ARRIVALS — SECURITY NOTATION — DAY 212\n\nBAY 6 — Heavy fighter, Blackreach Holdings registry. Crew of two. No manifest filed. Weapons loadout visible on approach — consistent with declared hull class. Standard watch assigned.\n\nBAY 17 — Vessel via Krrsh clearance codes. Hull unregistered. Crew: multiple. Manifests not filed. No affiliation declared. Krrsh clearance codes are considered valid. Krrsh himself is not currently on Theev. His codes being used without him present is unusual. A party named Gesh has already filed an inquiry regarding this vessel's association with Drinax. Gesh's inquiry has been logged. We do not act on third-party inquiries without cause. Gesh is currently lodged in the upper city — [[connect: grand_hotel]]\n\nBOTH CREWS — orientation provided. Standard watch assigned. Elevated if either party enters the lower city without escort. Elevated further if the two crews are observed in the same room without either having arranged the meeting.\n\n— Recommend observation. Do not intervene unless Lord's Law is broken.",
     "security_level": "restricted",
     "requires_roll": true,
     "roll_check": {
@@ -42,125 +42,13 @@
     }
   },
   {
-    "title": "Skull Orbital — Bay 17 Restricted Registry Pull",
-    "location": "General Access Terminal — Blacksand Downport",
-    "date": "DAY 212 · 1105",
-    "author": "Skull Orbital Docking Control — Restricted Partition",
-    "security_level": "restricted",
-    "content": "Bay 17 is listed in the public registry as: Transponder REDACTED \u2014 KRRSH CLEARANCE. Flag: Independent.\n\nThe Krrsh clearance codes suppress the standard registry entry. A deeper pull against the Skull Orbital control partition should recover the underlying record.\n\n[INTERACTIVE TERMINAL \u2014 AWAITING INPUT]",
-    "type": "action_sequence",
-    "action_sequence": {
-      "id": "blacksand-bay17-registry",
-      "category": "data_extraction",
-      "steps": [
-        {
-          "type": "auto",
-          "lines": [
-            ">> SKULL ORBITAL \u2014 DOCKING REGISTRY INTERFACE v1.9",
-            ">> PARTITION: RESTRICTED \u2014 KRRSH SUPPRESSION LAYER DETECTED",
-            ">> SUPPRESSION CODES ACTIVE ON: BAY 17",
-            "",
-            ">> INITIATING BYPASS AGAINST SUPPRESSION LAYER..."
-          ],
-          "delay": 35,
-          "pause_after": 700
-        },
-        {
-          "type": "prompt",
-          "prompt_text": "SPECIFY REGISTRY TARGET:",
-          "accept": [
-            "BAY 17",
-            "17",
-            "REGISTRY",
-            "PULL",
-            "QUERY BAY 17"
-          ],
-          "reject_message": "TARGET NOT FOUND. SPECIFY A VALID BAY NUMBER.",
-          "max_attempts": 3,
-          "sound_on_accept": "access_granted",
-          "sound_on_reject": "access_denied"
-        },
-        {
-          "type": "auto",
-          "lines": [
-            ">> QUERYING SKULL ORBITAL DEEP REGISTRY...",
-            ">> STRIPPING KRRSH SUPPRESSION LAYER...",
-            ">> CROSS-REFERENCING WIDOW FLAGGING DATABASE..."
-          ],
-          "delay": 40,
-          "pause_after": 400
-        },
-        {
-          "type": "progress",
-          "label": "PULLING UNREDACTED REGISTRY ENTRY...",
-          "duration": 3000,
-          "segments": 20,
-          "sound_on_complete": "data_download",
-          "complete_message": "REGISTRY ENTRY RECOVERED"
-        },
-        {
-          "type": "auto",
-          "lines": [
-            ">> BAY 17 \u2014 UNREDACTED RECORD:",
-            ">> VESSEL: UNNAMED (HULL UNREGISTERED)",
-            ">> TRANSPONDER: SUPPRESSED \u2014 KRRSH PROXY CODES",
-            ">> FLAG: INDEPENDENT (DRINAX EMBASSY CONTACT \u2014 UNVERIFIED)",
-            ">> CREW: MULTIPLE \u2014 COUNT INDETERMINATE",
-            ">> WIDOW FLAG: LEVEL 2 OBSERVATION",
-            ">> FLAG NOTE: 'DO NOT APPROACH WITHOUT WIDOW CLEARANCE.'",
-            ">> FLAG NOTE: 'CORRELATED WITH ANOMALOUS SIGNAL INTENSIFICATION.'",
-            "",
-            ">> THEY KNOW EXACTLY WHO YOU ARE."
-          ],
-          "delay": 40,
-          "sound": "warning",
-          "sound_at_line": 8,
-          "pause_after": 600
-        }
-      ],
-      "on_complete": {
-        "message": "The unredacted record sits on the screen. The Widows filed a Level 2 observation flag the moment your ship docked \u2014 before you'd spoken to anyone. They know the Krrsh codes are proxied. They know the Drinax connection. The public registry shows nothing. Their internal record shows everything. You have been watched from the moment you arrived.",
-        "sound": "access_granted",
-        "persist_key": "blacksand-bay17-registry"
-      },
-      "on_failure": {
-        "message": "BYPASS FAILED. Skull Orbital partition locked. Your access attempt has been logged by Widow Administrative Office. Elevated observation status is now active.",
-        "sound": "access_denied"
-      }
-    }
-  },
-  {
-    "title": "Transit Exception Queue \u2014 Manual Clearance Notes",
+    "title": "Transit Exception Queue — Manual Clearance Notes",
     "location": "Blacksand Downport Public Grid, Customs Spillover",
     "date": "CURRENT CYCLE",
     "author": "Acting Clerk // Rotation B",
     "content": "Manual exceptions filed after midnight are usually paperwork problems, unpaid fuel notes, or people lying about crew count.\n\nPattern worth noting: two separate crews in the last six cycles requested departure windows within twelve minutes of each other, both listing \"medical perishables\" and both declining bonded escort. That's normally a smuggler tell, except one of the crews paid full legal tariff.\n\n[[redacted diff=8 skill=\"Admin\" attempts=3]]\nException stamp accepted if form cites ROUTE CODE: CINDER-GLASS and includes crate tag \"AGRICULTURAL YEASTERS\". Dock bots won't open those without a live magistrate key, which nobody has at 03:00.[[/redacted]]\n\nIf your people are trying to leave quiet without looking like they're leaving quiet, this queue is where they fail first.",
     "security_level": "low",
     "requires_roll": false
-  },
-  {
-    "title": "Krrsh — Personal Log (Transmitted)",
-    "location": "General Access Terminal — Blacksand Downport",
-    "date": "DAY 211 · 1105 — TRANSMITTED PRIOR TO ARRIVAL",
-    "author": "Krrsh, former captain — Misery's Company",
-    "security_level": "unlocked",
-    "requires_roll": false,
-    "content": "Filed against my own clearance codes. Anyone who gets through the Skull with these should know the full picture.\n\nI ran with Ferrik Redthane for two years. He was good at what he did. Clean operations, minimal casualties, predictable.\n\nThen about eight months ago he boarded a derelict in Borite's outer belt. I wasn't on that boarding. Three of my crew were. When they came back, none of them would tell me what they found. Ferrik said it was a navigation cache. He said the Torpol and Clarke jobs were about leverage — getting resources for something bigger.\n\nI pressed him after Clarke. After the civilians.\n\nHe said the operations were 'preparation.' He said there was somewhere he needed to get to and he needed the funds and the protection to do it safely. He said once I understood what he'd found, I'd agree it was worth it.\n\nI didn't wait to understand.\n\nI filed the mutiny, put him in a standoff, and left him with the station and whatever was in it as leverage to ensure my crew's departure. I don't know if that was mercy or stupidity.\n\nMiria followed his orders over mine. She stayed with him. I don't blame her.\n\nThe codes are yours. Find Miria. Find Ferrik. Ask him what he found in that belt.\n\nI'm curious myself. From a safe distance.\n\nFor what you're walking into: [[connect: ferrik_intel]]"
-  },
-  {
-    "title": "Skull Orbital — Weapons Manifest Discrepancy",
-    "location": "General Access Terminal — Blacksand Downport (Skull Orbital Internal)",
-    "date": "DAY 210 · 1105",
-    "author": "Skull Orbital — Customs Inspection Division (Internal)",
-    "security_level": "restricted",
-    "requires_roll": true,
-    "roll_check": {
-      "difficulty": 10,
-      "skill": "Electronics (computers)",
-      "on_success": "Internal customs flag accessed. Bay 6 is not what it claims.",
-      "on_failure": "Customs partition locked. Elevated access required."
-    },
-    "content": "INTERNAL FLAG — BAY 6 — MANIFEST DISCREPANCY\n\nVessel: Transponder REDACTED — COMMERCIAL MANIFEST. Listed as: 600-ton laboratory vessel, research charter, medical and anagathic cargo.\n\nDiscrepancy: Power draw on docking exceeds declared payload by a factor of approximately 2.4. The listed cargo does not account for this draw.\n\nSecondary flag: The vessel's insurance routing traces through a GeDeCo subsidiary flagged in our database for anomalous cargo patterns. Three prior incidents in this subsidiary's client history involved items later classified as recovered alien artifacts.\n\nTertiary flag: The security detachment that disembarked with the science crew is equipped above standard for anagathic research protection. Two personnel are carrying suppression-rated loadouts. The equipment category matches what we log as 'psionic event response.'\n\nRecommendation: Do not board or inspect. Maintain standard observation. GeDeCo has formal arrangements with three Widow-adjacent entities. An inspection without cause will produce diplomatic consequences we are not prepared to absorb.\n\nFlag for continued monitoring. Notify if the security detachment attempts to access the lower city without declared purpose."
   },
   {
     "title": "Departure Window Queue — Contested Filings",
@@ -208,10 +96,10 @@
         {
           "type": "auto",
           "lines": [
-            ">> FILING A — VESSEL: BAY 6 LABORATORY VESSEL",
-            ">> DECLARED DESTINATION: TOBIA (MEDICAL RESUPPLY)",
+            ">> FILING A — VESSEL: BAY 6 HEAVY FIGHTER",
+            ">> DECLARED DESTINATION: [SUPPRESSED — BLACKREACH ROUTING]",
             ">> FILED AT: 2317 LAST CYCLE",
-            ">> FLAG: SECURITY DETACHMENT REJOINING BEFORE DEPARTURE",
+            ">> FLAG: DEPARTURE WITHOUT DECLARED MANIFEST",
             "",
             ">> FILING B — VESSEL: BAY 9 (VALLIS FLAG)",
             ">> DECLARED DESTINATION: [SUPPRESSED — VALLIS ROUTING]",
@@ -229,7 +117,7 @@
         }
       ],
       "on_complete": {
-        "message": "Two vessels leaving in the same window, both connected to a GeDeCo subsidiary address in the Cliff District. The Vallis vessel is waiting on a cargo addition — something being loaded between now and the 0400 window. The lab ship's security team went into the lower city and hasn't returned. Both ships are going somewhere. One of them is taking something with them.",
+        "message": "Two vessels leaving in the same window, both connected to a GeDeCo subsidiary address in the Cliff District. The Vallis vessel is waiting on a cargo addition — something being loaded between now and the 0400 window. The heavy fighter from Bay 6 filed with no manifest and no stated destination. Both ships are going somewhere. One of them is taking something with them.",
         "sound": "access_granted",
         "persist_key": "downport-departure-queue"
       },
