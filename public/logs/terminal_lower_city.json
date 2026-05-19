@@ -1,10 +1,10 @@
 [
   {
-    "title": "Lower City Orientation \u2014 Survival Notice",
-    "location": "General Access Terminal \u2014 Lower City Public Kiosk, Canyon Level",
-    "date": "UNKNOWN \u2014 POSTING DATE NOT RECORDED",
-    "author": "Unknown \u2014 Hand-amended multiple times",
-    "content": "YOU ARE IN THE LOWER CITY.\n\nThe red flags up top don't reach down here most of the time. Check before you assume. A building that was flagged yesterday might not be today.\n\nThe rules are simple: there are no rules. Except about the environmental systems. Touch those and the Widows will come down personally, and they will not be in a mood to talk about it.\n\nSurvival advice from whoever last used this terminal:\n\n\u2014 Don't walk alone after the lights drop to half-cycle.\n\u2014 Don't flash currency. Don't flash gear. Don't flash anything.\n\u2014 If someone offers to show you somewhere 'quieter,' they are going to rob you. Or worse.\n\u2014 The Blood Gangs cut organs out of tourists. This is not a metaphor.\n\u2014 Tuk's bar is actually safe. The K'Kree owner will throw you out before she lets anything happen inside. Outside is your problem.\n\u2014 Brain Dimming will sell you anything. Some of it will kill you. That is not their concern.\n\u2014 The Church of the Traveller is not dangerous unless you stay long enough to hear the sermon.\n\n[Handwritten below, in a different script:]\n\nDon't go near the Scrapheap at night. Someone's been paying the boys to run messages. Stay out of it unless you're the one doing the paying.",
+    "title": "Lower City Orientation — Survival Notice",
+    "location": "General Access Terminal — Lower City Public Kiosk, Canyon Level",
+    "date": "UNKNOWN — POSTING DATE NOT RECORDED",
+    "author": "Unknown — Hand-amended multiple times",
+    "content": "YOU ARE IN THE LOWER CITY.\n\nThe red flags up top don't reach down here most of the time. Check before you assume. A building that was flagged yesterday might not be today.\n\nThe rules are simple: there are no rules. Except about the environmental systems. Touch those and the Widows will come down personally, and they will not be in a mood to talk about it.\n\nSurvival advice from whoever last used this terminal:\n\n— Don't walk alone after the lights drop to half-cycle.\n— Don't flash currency. Don't flash gear. Don't flash anything.\n— If someone offers to show you somewhere 'quieter,' they are going to rob you. Or worse.\n— The Blood Gangs cut organs out of tourists. This is not a metaphor.\n— Tuk's bar is actually safe. The K'Kree owner will throw you out before she lets anything happen inside. Outside is your problem.\n— Brain Dimming will sell you anything. Some of it will kill you. That is not their concern.\n— The Church of the Traveller is not dangerous unless you stay long enough to hear the sermon.",
     "security_level": "unlocked",
     "requires_roll": false
   },
@@ -13,7 +13,7 @@
     "location": "General Access Terminal — Tuk's Bar, Lower City",
     "date": "STANDING NOTICE — LAST REVISED DAY 196 · 1105",
     "author": "'Tuk — Proprietor",
-    "content": "HOUSE RULES. READ THEM.\n\n1. You pay before you drink. Not after. Before.\n2. You do not start fights in here.\n3. If someone else starts a fight in here, you do not finish it in here. You take it outside. I will help you take it outside.\n4. You do not ask me what something is before you order it. You ask what it costs.\n5. The menu is vegetarian. It has always been vegetarian. If you don't like it, there are twelve other establishments within three hundred meters where you can get whatever died recently. Go there.\n6. I am the only bouncer. I am sufficient.\n7. If you are being followed, come in. I will handle the door. You do not owe me anything for this. Consider it a professional courtesy from one being who has been around too long to let things happen in their own establishment.\n\n—\n\nNote on current clientele: I don't share that. I don't know you well enough yet.\n\nNote on current local gossip: Someone is moving money through the Scrapheap. A name has been mentioned more than once. I said I don't share things, but I also said you should read the rules. I don't share things about my paying customers. You are not a paying customer yet. [[connect: scrapheap]]\n\nNote regarding the booth at the back: There is a young woman in it. She has been here since the lights dropped to half-cycle last night. She is not drinking. She paid for one meal twelve hours ago. She is not here by herself in the sense that someone is watching the door, and she knows they are watching the door. If you are not one of them, she would appreciate the courtesy of you not staring at her.\n\nOrder something.",
+    "content": "HOUSE RULES. READ THEM.\n\n1. You pay before you drink. Not after. Before.\n2. You do not start fights in here.\n3. If someone else starts a fight in here, you do not finish it in here. You take it outside. I will help you take it outside.\n4. You do not ask me what something is before you order it. You ask what it costs.\n5. The menu is vegetarian. It has always been vegetarian. If you don't like it, there are twelve other establishments within three hundred meters where you can get whatever died recently. Go there.\n6. I am the only bouncer. I am sufficient.\n7. If you are being followed, come in. I will handle the door. You do not owe me anything for this. Consider it a professional courtesy from one being who has been around too long to let things happen in their own establishment.\n\n—\n\nNote on current clientele: I don't share that. I don't know you well enough yet.\n\nNote on current local gossip: Someone is moving money through the Scrapheap. A name has been mentioned more than once. I said I don't share things, but I also said you should read the rules. I don't share things about my paying customers. You are not a paying customer yet. [[connect: scrapheap]]\n\nOrder something.",
     "security_level": "unlocked",
     "requires_roll": false
   },
@@ -22,16 +22,16 @@
     "location": "General Access Terminal — Church of the Traveller, Lower City",
     "date": "DAY 212 · 1105",
     "author": "Church of the Traveller — Doctrinal Office",
-    "content": "THE CHURCH OF THE TRAVELLER — A NOTICE TO THE CURIOUS\n\nWe believe that God is travelling.\n\nNot metaphorically. Literally. God moves through the universe in the form of a mortal being, observing Humaniti — and perhaps other species — in order to judge us. God walks among us. God has a face. God is hungry, tired, cold, and watching.\n\nWe do not know which face is God's.\n\nThis uncertainty is the point.\n\nSome among us practice charity and kindness for this reason. If the stranger at your door might be God, you feed them. You shelter them. You treat them as you would wish to be treated by something infinite.\n\nSome among us practice something else. If God is watching, then every act is witnessed. Every sin is seen. Some take comfort in this. Some find it clarifying in other ways.\n\nWe do not litigate the theology here. We welcome all interpretations.\n\nWe are particularly active on Theev because we find that people in lawless places are more open to questions about judgment than people elsewhere.\n\n[Handwritten addendum, partially scratched out:]\n\nThe midnight sermon mentions a star map. Something about a place between the stars where things are 'waiting to be remembered.' Brother Aeshan says he dreamed it. He won't say what he dreamed exactly. He has started to say that the stars are wrong and that something older than God is also watching.",
+    "content": "THE CHURCH OF THE TRAVELLER — A NOTICE TO THE CURIOUS\n\nWe believe that God is travelling.\n\nNot metaphorically. Literally. God moves through the universe in the form of a mortal being, observing Humaniti — and perhaps other species — in order to judge us. God walks among us. God has a face. God is hungry, tired, cold, and watching.\n\nWe do not know which face is God's.\n\nThis uncertainty is the point.\n\nSome among us practice charity and kindness for this reason. If the stranger at your door might be God, you feed them. You shelter them. You treat them as you would wish to be treated by something infinite.\n\nSome among us practice something else. If God is watching, then every act is witnessed. Every sin is seen. Some take comfort in this. Some find it clarifying in other ways.\n\nWe do not litigate the theology here. We welcome all interpretations.\n\nWe are particularly active on Theev because we find that people in lawless places are more open to questions about judgment than people elsewhere.\n\nSpecial Notice:\n\nThe midnight sermon mentions a star map. Something about a place between the stars where things are 'waiting to be remembered.' Brother Aeshan says he dreamed it. He won't say what he dreamed exactly. He has started to say that the stars are wrong and that something older than God is also watching.",
     "security_level": "unlocked",
     "requires_roll": false
   },
   {
-    "title": "Brain Dimming \u2014 Product Notice (Partial)",
-    "location": "General Access Terminal \u2014 Brain Dimming, Lower City",
+    "title": "Brain Dimming — Product Notice (Partial)",
+    "location": "General Access Terminal — Brain Dimming, Lower City",
     "date": "CURRENT CYCLE (ROTATING STOCK)",
-    "author": "Brain Dimming \u2014 Management",
-    "content": "BRAIN DIMMING \u2014 WE HAVE WHAT YOU NEED.\n\nAnd things you didn't know you needed.\n\nSpecies we currently cater to: Human, Vargr, Aslan, K'Kree (limited stock), Droyne (very limited stock \u2014 ask at the desk, do not ask why we have it), and several we have not successfully identified.\n\nCurrent notable stock:\n\n\u2014 Psionic-adjacent compounds: Three varieties. Effects inconsistent across users. One variety has produced vivid shared visual hallucinations in group settings \u2014 the imagery reportedly includes 'black towers,' 'blue light in deep stone,' and 'something with too many angles.' We do not know what this means. It keeps selling.\n\n\u2014 Memory suppression: Popular with people who have done things they would prefer not to remember. Not a cure. The memories are still there afterward.\n\n\u2014 One compound acquired from an off-world trader two cycles ago. Trader described it as 'distilled from something we found in a derelict.' We have not catalogued it. We have not sold it. The bottle hums faintly at irregular intervals. We have put it in the back room.\n\nWe do not guarantee outcomes. We do not guarantee survival. We have never had a refund claim because the people who regret their purchases are generally not in a position to file one.",
+    "author": "Brain Dimming — Management",
+    "content": "BRAIN DIMMING — WE HAVE WHAT YOU NEED.\n\nAnd things you didn't know you needed.\n\nSpecies we currently cater to: Human, Vargr, Aslan, K'Kree (limited stock), Droyne (very limited stock — ask at the desk, do not ask why we have it), and several we have not successfully identified.\n\nCurrent notable stock:\n\n— Psionic-adjacent compounds: Three varieties. Effects inconsistent across users. One variety has produced vivid shared visual hallucinations in group settings — the imagery reportedly includes 'black towers,' 'blue light in deep stone,' and 'something with too many angles.' We do not know what this means. It keeps selling.\n\n— Memory suppression: Popular with people who have done things they would prefer not to remember. Not a cure. The memories are still there afterward.\n\n— One compound acquired from an off-world trader two cycles ago. Trader described it as 'distilled from something we found in a derelict.' We have not catalogued it. We have not sold it. The bottle hums faintly at irregular intervals. We have put it in the back room.\n\nWe do not guarantee outcomes. We do not guarantee survival. We have never had a refund claim because the people who regret their purchases are generally not in a position to file one.",
     "security_level": "unlocked",
     "requires_roll": false
   },
@@ -56,7 +56,7 @@
     "date": "DAY 212 · 1105",
     "author": "Church of the Traveller — Doctrinal Archive (Private Partition)",
     "security_level": "high",
-    "content": "The Church of the Traveller maintains a private doctrinal archive alongside its public records. Brother Aeshan has been filing personal entries for several months. The public sermon mentions 'a place between the stars where things are waiting to be remembered.'\n\nAeshan has been recording coordinates. He says he dreams them. He will not discuss them in public.\n\n[INTERACTIVE TERMINAL \u2014 AWAITING INPUT]",
+    "content": "The Church of the Traveller maintains a private doctrinal archive alongside its public records. Brother Aeshan has been filing personal entries for several months. The public sermon mentions 'a place between the stars where things are waiting to be remembered.'\n\nAeshan has been recording coordinates. He says he dreams them. He will not discuss them in public.\n\n[INTERACTIVE TERMINAL — AWAITING INPUT]",
     "type": "action_sequence",
     "action_sequence": {
       "id": "church-aeshan-starmap",
@@ -65,13 +65,13 @@
         {
           "type": "auto",
           "lines": [
-            ">> CHURCH OF THE TRAVELLER \u2014 DOCTRINAL ARCHIVE v1.0",
+            ">> CHURCH OF THE TRAVELLER — DOCTRINAL ARCHIVE v1.0",
             ">> PUBLIC RECORDS: ACCESSIBLE",
             ">> PRIVATE DOCTRINAL FILES: ENCRYPTED",
-            ">> AESHAN, BROTHER \u2014 PERSONAL ENTRIES: 14 FILES",
+            ">> AESHAN, BROTHER — PERSONAL ENTRIES: 14 FILES",
             ">> MOST RECENT ENTRY: 9 DAYS AGO",
             "",
-            ">> ENCRYPTION: STANDARD ECCLESIASTICAL \u2014 LOW GRADE",
+            ">> ENCRYPTION: STANDARD ECCLESIASTICAL — LOW GRADE",
             ">> INITIATING DECRYPT..."
           ],
           "delay": 30,
@@ -99,12 +99,12 @@
           "duration": 2500,
           "segments": 18,
           "sound_on_complete": "data_download",
-          "complete_message": "ENTRIES DECRYPTED \u2014 14 FILES RECOVERED"
+          "complete_message": "ENTRIES DECRYPTED — 14 FILES RECOVERED"
         },
         {
           "type": "auto",
           "lines": [
-            ">> RECOVERED \u2014 AESHAN PRIVATE ENTRY, MOST RECENT:",
+            ">> RECOVERED — AESHAN PRIVATE ENTRY, MOST RECENT:",
             ">> 'I HAVE NOW DREAMED IT SEVENTEEN TIMES.'",
             ">> 'THE COORDINATES DO NOT MATCH ANY IMPERIAL CHART.'",
             ">> 'NOT A WORLD. A SCAR. SOMETHING HIT IT.'",
@@ -122,21 +122,21 @@
         }
       ],
       "on_complete": {
-        "message": "Brother Aeshan's private entries are methodical \u2014 a churchman recording something he cannot explain in the only framework he has. Seventeen dreams. The same place each time. A gravitational anomaly that doesn't appear in Imperial charts or any standard navigation database. He has been sending the coordinates to no one. He does not know who to tell. Three people, he writes, have already gone there \u2014 pilgrims who took his words literally. None returned. He is not sure if he considers that a tragedy or confirmation.",
+        "message": "Brother Aeshan's private entries are methodical — a churchman recording something he cannot explain in the only framework he has. Seventeen dreams. The same place each time. A gravitational anomaly that doesn't appear in Imperial charts or any standard navigation database. He has been sending the coordinates to no one. He does not know who to tell. Three people, he writes, have already gone there — pilgrims who took his words literally. None returned. He is not sure if he considers that a tragedy or confirmation.",
         "persist_key": "church-aeshan-starmap"
       },
       "on_failure": {
-        "message": "DECRYPT FAILED. Ecclesiastical archive lock held \u2014 the Church uses a rotating key that expired after Brother Aeshan's last entry. The files cannot be accessed without a current key, which only Aeshan has.",
+        "message": "DECRYPT FAILED. Ecclesiastical archive lock held — the Church uses a rotating key that expired after Brother Aeshan's last entry. The files cannot be accessed without a current key, which only Aeshan has.",
         "sound": "access_denied"
       }
     }
   },
   {
-    "title": "Courier Board \u2014 Open Jobs (Night Cycle)",
+    "title": "Courier Board — Open Jobs (Night Cycle)",
     "location": "Lower City Public Kiosk, Job Feed Mirror",
     "date": "CURRENT CYCLE",
     "author": "Automated Market Relay",
-    "content": "Open work posts refresh every nine minutes. Payment disputes are common. Fatal disputes are more common after second bell.\n\nCurrent listings worth attention:\n\u2014 Escort package from House district to Kallos perimeter (hazard bonus included).\n\u2014 Acquire four legal worker badges before dawn (no blood).\n\u2014 Move one unregistered hand terminal from Tuk's alley to Cliff District vault desk.\n\n[[redacted diff=8 skill=\"Streetwise\" attempts=3]]\nPrivate listing visible only on cracked clients: looking for \"second crew willing to trail first crew, no contact unless chips change hands.\" Advance payment 2,000 cr each.[[/redacted]]\n\nRemember: jobs that sound easy are priced low for a reason.",
+    "content": "Open work posts refresh every nine minutes. Payment disputes are common. Fatal disputes are more common after second bell.\n\nCurrent listings worth attention:\n— Escort package from House district to Kallos perimeter (hazard bonus included).\n— Acquire four legal worker badges before dawn (no blood).\n— Move one unregistered hand terminal from Tuk's alley to Cliff District vault desk.\n\n[[redacted diff=8 skill=\"Streetwise\" attempts=3]]\nPrivate listing visible only on cracked clients: looking for \"second crew willing to trail first crew, no contact unless chips change hands.\" Advance payment 2,000 cr each.[[/redacted]]\n\nRemember: jobs that sound easy are priced low for a reason.",
     "security_level": "low",
     "requires_roll": false
   },

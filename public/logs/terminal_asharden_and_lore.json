@@ -13,7 +13,7 @@
     "location": "General Access Terminal — Asharden Camp, Upper City Edge",
     "date": "MULTIPLE DATES — LAST SIX MONTHS",
     "author": "Camp Volunteer — Collected oral histories",
-    "content": "We ask residents to share their story if they want to. Some do. This is a selection.\n\n—\n\n'I came on a salvage contract. The company that hired us doesn't exist anymore. I don't know what happened to it. I know that we recovered something from a derelict in the Reach that our employer was very excited about and that three days later the employer stopped answering communications. Whatever it was they found, I don't have it anymore. Someone took it from the cargo lock while we were docked. I didn't see who.' — Similar recovered material documented: [[connect: scrapheap]]\n\n—\n\n'I used to work for a research outfit. I signed too many agreements to say who. We were working on recovered materials. Old stuff. Alien, maybe, or just very old human — nobody could agree. There was a fragment. Looked like black glass but heavier and it ran warm and it made the electronics in the lab do strange things. They shut the project down and fired everyone and I ended up here. I think about that fragment a lot. I think someone else has it now. I hope they know to be careful with it.'\n\n—\n\n'I came here on a contract with the Tobia Commerce Guild. There were four of us. I'm the only one who walked out of that hotel room. I never saw who came in the door. I was in the other room when it happened. By the time I came out, nothing was moving.\n\nI filed the paperwork. The company said they'd get back to me. They haven't. The embassy said they'd look into it. They haven't either. My name is Vii Lon. If someone with a ship is reading this and you have a few hundred credits of goodwill to spare, I'm trying to get off this world. I can pay a little. I can work. I would rather not be here when whoever that was decides they missed one.' — Widow field report on the assault attempt: [[connect: lower_city]]\n\n—\n\n[Final entry, no name, handwritten after the typed record:]\n\n'I am not here by accident. I will not say more than that in a public terminal.'",
+    "content": "We ask residents to share their story if they want to. Some do. This is a selection.\n\n—\n\n'I came on a salvage contract. The company that hired us doesn't exist anymore. I don't know what happened to it. I know that we recovered something from a derelict in the Reach that our employer was very excited about and that three days later the employer stopped answering communications. Whatever it was they found, I don't have it anymore. Someone took it from the cargo lock while we were docked. I didn't see who.' — Similar recovered material documented: [[connect: scrapheap]]\n\n—\n\n'I used to work for a research outfit. I signed too many agreements to say who. We were working on recovered materials. Old stuff. Alien, maybe, or just very old human — nobody could agree. There was a fragment. Looked like black glass but heavier and it ran warm and it made the electronics in the lab do strange things. They shut the project down and fired everyone and I ended up here. I think about that fragment a lot. I think someone else has it now. I hope they know to be careful with it.'\n\n—\n\n'I came here on a contract with the Tobia Commerce Guild. There were four of us. I'm the only one who walked out of that hotel room. I never saw who came in the door. I was in the other room when it happened. By the time I came out, nothing was moving.\n\nI filed the paperwork. The company said they'd get back to me. They haven't. The embassy said they'd look into it. They haven't either. My name is Vii Lon. If someone with a ship is reading this and you have a few hundred credits of goodwill to spare, I'm trying to get off this world. I can pay a little. I can work. I would rather not be here when whoever that was decides they missed one.'\n\n—\n\n[Final entry, no name, handwritten after the typed record:]\n\n'I am not here by accident. I will not say more than that in a public terminal.'",
     "security_level": "unlocked",
     "requires_roll": false
   },
@@ -27,11 +27,11 @@
     "requires_roll": false
   },
   {
-    "title": "Old Trade Records \u2014 Sindalian Empire Era (Fragment)",
-    "location": "General Access Terminal \u2014 Cliff District, Upper City",
-    "date": "ORIGINAL: PRE-COLLAPSE \u2014 RECOVERED AND FILED APPROX. 30 YEARS PRIOR",
-    "author": "Sindalian Imperial Trade Office \u2014 Trojan Reach Division (Archived Fragment)",
-    "content": "TRADE MANIFEST \u2014 PARTIAL RECOVERY\n\nNote from archivist: This fragment was recovered from a cache in the Cliff District. Origin unknown. The original document dates to the Sindalian period. We are filing it as a curiosity. Some of it is intact.\n\n\u2014\n\n[LEGIBLE SECTION:]\n\nLot 7: Three units of mineral origin, unclassified. Recovered from a site in the outer Reach. Described by recovery team as 'dark, semi-reflective, of uniform internal composition.' Biological activity: none detected. Weight: inconsistent with apparent volume. The scales read a different number each time.\n\nDelivered to: [NAME REDACTED \u2014 original document damage]\n\nNote from recovery team: The units were found alongside what appeared to be structural remnants of a much larger object. The site itself showed no geological explanation for the composition of the surrounding material. The recovery team's engineer described the site as 'a scar, like something hit this place from a very great height, a very long time ago.' We are filing this for the record.\n\n[ILLEGIBLE SECTION \u2014 document damage]\n\n[FINAL LEGIBLE LINE:]\n\n'The devices in the hold kept losing calibration. We reset them four times in one day. The engineer says this is not possible. The engineer is usually right about things.'\n\n\u2014\n\n[Filed note, modern hand:]\n\nWhoever these materials ended up with, it wasn't the Empire for long. The collapse took everything. But things like this have a way of turning up again eventually.\n\n— A recovered hull with matching anomalous properties: [[connect: scrapheap]]",
+    "title": "Old Trade Records — Sindalian Empire Era (Fragment)",
+    "location": "General Access Terminal — Cliff District, Upper City",
+    "date": "ORIGINAL: PRE-COLLAPSE — RECOVERED AND FILED APPROX. 30 YEARS PRIOR",
+    "author": "Sindalian Imperial Trade Office — Trojan Reach Division (Archived Fragment)",
+    "content": "TRADE MANIFEST — PARTIAL RECOVERY\n\nNote from archivist: This fragment was recovered from a cache in the Cliff District. Origin unknown. The original document dates to the Sindalian period. We are filing it as a curiosity. Some of it is intact.\n\n—\n\n[LEGIBLE SECTION:]\n\nLot 7: Three units of mineral origin, unclassified. Recovered from a site in the outer Reach. Described by recovery team as 'dark, semi-reflective, of uniform internal composition.' Biological activity: none detected. Weight: inconsistent with apparent volume. The scales read a different number each time.\n\nDelivered to: [NAME REDACTED — original document damage]\n\nNote from recovery team: The units were found alongside what appeared to be structural remnants of a much larger object. The site itself showed no geological explanation for the composition of the surrounding material. The recovery team's engineer described the site as 'a scar, like something hit this place from a very great height, a very long time ago.' We are filing this for the record.\n\n[ILLEGIBLE SECTION — document damage]\n\n[FINAL LEGIBLE LINE:]\n\n'The devices in the hold kept losing calibration. We reset them four times in one day. The engineer says this is not possible. The engineer is usually right about things.'\n\n—\n\n[Filed note, modern hand:]\n\nWhoever these materials ended up with, it wasn't the Empire for long. The collapse took everything. But things like this have a way of turning up again eventually.\n\n— A recovered hull with matching anomalous properties: [[connect: scrapheap]]",
     "security_level": "restricted",
     "requires_roll": true,
     "roll_check": {
@@ -42,11 +42,11 @@
     }
   },
   {
-    "title": "Widow Network Internal \u2014 Anomalous Signal Report",
-    "location": "General Access Terminal \u2014 Blacksand Downport (Deep Partition)",
+    "title": "Widow Network Internal — Anomalous Signal Report",
+    "location": "General Access Terminal — Blacksand Downport (Deep Partition)",
     "date": "APPROX. 3 MONTHS PRIOR",
-    "author": "Widow Administrative Office \u2014 Signals Division",
-    "content": "ANOMALOUS SIGNAL REPORT \u2014 INTERNAL USE ONLY\n\nThis file should not be accessible from any external terminal. If you are reading it, we have a problem.\n\n\u2014\n\nA repeating signal was detected approximately three months ago originating from inside Blacksand City.\n\nThe signal does not match any known communication protocol.\n\nIt is not in any language we have on file.\n\nIt repeats at irregular intervals \u2014 between nine and forty-three minutes. The intervals do not follow a mathematical pattern we can identify.\n\nThe signal source has been triangulated to the lower city, broadly. We have not been able to narrow it further. It appears to move.\n\n\u2014\n\nOf note: Two of our officers who were assigned to trace the signal reported disturbing dreams on the same night. Both described the same imagery independently: a city made of black glass under a sky with the wrong number of stars. Towers. Something moving in the towers.\n\nBoth officers were reassigned. Neither has spoken about it since.\n\n\u2014\n\nOf additional note: The signal briefly intensified four days ago. The intensification coincided with the arrival of a vessel using Krrsh clearance codes. — Arrival record: [[connect: blacksand_downport]]\n\nWe are noting this correlation without drawing a conclusion.\n\nWe are watching.",
+    "author": "Widow Administrative Office — Signals Division",
+    "content": "ANOMALOUS SIGNAL REPORT — INTERNAL USE ONLY\n\nThis file should not be accessible from any external terminal. If you are reading it, we have a problem.\n\n—\n\nA repeating signal was detected approximately three months ago originating from inside Blacksand City.\n\nThe signal does not match any known communication protocol.\n\nIt is not in any language we have on file.\n\nIt repeats at irregular intervals — between nine and forty-three minutes. The intervals do not follow a mathematical pattern we can identify.\n\nThe signal source has been triangulated to the lower city, broadly. We have not been able to narrow it further. It appears to move.\n\n—\n\nOf note: Two of our officers who were assigned to trace the signal reported disturbing dreams on the same night. Both described the same imagery independently: a city made of black glass under a sky with the wrong number of stars. Towers. Something moving in the towers.\n\nBoth officers were reassigned. Neither has spoken about it since.\n\n—\n\nOf additional note: The signal briefly intensified four days ago. The intensification coincided with the arrival of a vessel using Krrsh clearance codes. — Arrival record: [[connect: blacksand_downport]]\n\nWe are noting this correlation without drawing a conclusion.\n\nWe are watching.",
     "security_level": "restricted",
     "requires_roll": true,
     "roll_check": {
@@ -62,7 +62,7 @@
     "date": "DAY 212 · 1105",
     "author": "Widow Administrative Office — Signals Division (Restricted)",
     "security_level": "restricted",
-    "content": "The Widow Signals Division has been tracking an unidentified repeating signal for approximately three months. The signal does not match any known protocol. It repeats at irregular intervals between nine and forty-three minutes.\n\nThe division has triangulation data from three prior attempts, each inconclusive. A fourth attempt using a selected sensor array may produce a more precise fix. Prior attempts have placed the source in the eastern lower city \u2014 [[connect: scrapheap]] district.\n\n[INTERACTIVE TERMINAL \u2014 AWAITING INPUT]",
+    "content": "The Widow Signals Division has been tracking an unidentified repeating signal for approximately three months. The signal does not match any known protocol. It repeats at irregular intervals between nine and forty-three minutes.\n\nThe division has triangulation data from three prior attempts, each inconclusive. A fourth attempt using a selected sensor array may produce a more precise fix. Prior attempts have placed the source in the eastern lower city — [[connect: scrapheap]] district.\n\n[INTERACTIVE TERMINAL — AWAITING INPUT]",
     "type": "action_sequence",
     "action_sequence": {
       "id": "widow-signal-triangulation",
@@ -71,16 +71,16 @@
         {
           "type": "auto",
           "lines": [
-            ">> WIDOW SIGNALS DIVISION \u2014 TRIANGULATION INTERFACE v4.1",
-            ">> SIGNAL PROFILE: UNKNOWN \u2014 NOT IN ANY DATABASE",
-            ">> REPEAT INTERVAL: 9\u201343 MINUTES (IRREGULAR)",
-            ">> PATTERN: NOT MATHEMATICAL \u2014 NOT RANDOM",
+            ">> WIDOW SIGNALS DIVISION — TRIANGULATION INTERFACE v4.1",
+            ">> SIGNAL PROFILE: UNKNOWN — NOT IN ANY DATABASE",
+            ">> REPEAT INTERVAL: 9–43 MINUTES (IRREGULAR)",
+            ">> PATTERN: NOT MATHEMATICAL — NOT RANDOM",
             ">> PRIOR TRIANGULATION ATTEMPTS: 3 (ALL INCONCLUSIVE)",
             "",
             ">> AVAILABLE SENSOR ARRAYS:",
             ">> [1] NORTH SPIRE RELAY",
             ">> [2] SOUTH CANYON GRID",
-            ">> [3] LOWER CITY MESH (DEGRADED \u2014 60% COVERAGE)",
+            ">> [3] LOWER CITY MESH (DEGRADED — 60% COVERAGE)",
             ">> [4] SKULL ORBITAL UPLINK (HIGHEST RESOLUTION)",
             "",
             ">> SELECT ARRAY TO ACTIVATE:"
@@ -92,10 +92,10 @@
           "type": "choice",
           "prompt_text": "ACTIVATE SENSOR ARRAY:",
           "options": [
-            "NORTH SPIRE RELAY \u2014 City upper tier coverage",
-            "SOUTH CANYON GRID \u2014 Lower city canyon coverage",
-            "LOWER CITY MESH \u2014 Degraded, 60% coverage",
-            "SKULL ORBITAL UPLINK \u2014 Highest resolution, longest delay"
+            "NORTH SPIRE RELAY — City upper tier coverage",
+            "SOUTH CANYON GRID — Lower city canyon coverage",
+            "LOWER CITY MESH — Degraded, 60% coverage",
+            "SKULL ORBITAL UPLINK — Highest resolution, longest delay"
           ],
           "sound_on_accept": "access_granted"
         },
@@ -111,24 +111,24 @@
         },
         {
           "type": "progress",
-          "label": "RUNNING TRIANGULATION \u2014 PLEASE WAIT FOR SIGNAL PULSE...",
+          "label": "RUNNING TRIANGULATION — PLEASE WAIT FOR SIGNAL PULSE...",
           "duration": 4000,
           "segments": 22,
           "sound_on_complete": "data_download",
-          "complete_message": "TRIANGULATION COMPLETE \u2014 PARTIAL FIX ACHIEVED"
+          "complete_message": "TRIANGULATION COMPLETE — PARTIAL FIX ACHIEVED"
         },
         {
           "type": "auto",
           "lines": [
             ">> TRIANGULATION RESULT:",
-            ">> ACCURACY: 34% \u2014 SIGNAL IS MOBILE",
-            ">> SOURCE REGION: APPROX. 200M RADIUS \u2014 EASTERN SCRAPHEAP",
-            ">> CURRENT BEARING: MOVING \u2014 TOWARD LOWER CANYON",
+            ">> ACCURACY: 34% — SIGNAL IS MOBILE",
+            ">> SOURCE REGION: APPROX. 200M RADIUS — EASTERN SCRAPHEAP",
+            ">> CURRENT BEARING: MOVING — TOWARD LOWER CANYON",
             "",
             ">> NOTE: SIGNAL BRIEFLY INTENSIFIED DURING TRIANGULATION.",
             ">> NOTE: INTENSITY SPIKE CORRELATED WITH YOUR ACCESS OF THIS TERMINAL.",
             "",
-            ">> INTERNAL COMMS \u2014 SIGNALS DIVISION:",
+            ">> INTERNAL COMMS — SIGNALS DIVISION:",
             ">> 'ONE OF OUR OFFICERS JUST REPORTED SEEING SOMETHING.'",
             ">> 'HE HAS BEEN INSTRUCTED TO STAY WHERE HE IS.'",
             ">> 'HE IS NOT STAYING WHERE HE IS.'",
@@ -142,18 +142,18 @@
         }
       ],
       "on_complete": {
-        "message": "The triangulation result sits on the screen: eastern Scrapheap, 200-metre radius, moving. The signal intensified the moment you accessed this terminal \u2014 it noticed the query. The Widow officer who went to investigate has stopped responding. The Scrapheap. The pre-Collapse hull. The warm surface. The coordinates from the hull's own terminal. And now a signal that moves, that responds to attention, that has been active in this city for three months \u2014 since before you arrived, but not by much.",
+        "message": "The triangulation result sits on the screen: eastern Scrapheap, 200-metre radius, moving. The signal intensified the moment you accessed this terminal — it noticed the query. The Widow officer who went to investigate has stopped responding. The Scrapheap. The pre-Collapse hull. The warm surface. The coordinates from the hull's own terminal. And now a signal that moves, that responds to attention, that has been active in this city for three months — since before you arrived, but not by much.",
         "sound": "warning",
         "persist_key": "widow-signal-triangulation"
       },
       "on_failure": {
-        "message": "TRIANGULATION ABORTED. Signal went silent during the attempt \u2014 for the first time since it was first detected three months ago. The silence lasted exactly 4.3 seconds. Then it resumed. As if it had been listening.",
+        "message": "TRIANGULATION ABORTED. Signal went silent during the attempt — for the first time since it was first detected three months ago. The silence lasted exactly 4.3 seconds. Then it resumed. As if it had been listening.",
         "sound": "access_denied"
       }
     }
   },
   {
-    "title": "Asharden Canteen Ledger \u2014 Locker Traffic Irregularities",
+    "title": "Asharden Canteen Ledger — Locker Traffic Irregularities",
     "location": "Asharden Camp, Canteen Side Terminal",
     "date": "CURRENT CYCLE",
     "author": "Quartermaster Sel",
@@ -166,15 +166,6 @@
       "on_success": "Quartermaster's hidden annotation displayed.",
       "on_failure": "You only see public inventory totals."
     }
-  },
-  {
-    "title": "Vii Lon — Departure Note",
-    "location": "General Access Terminal — Asharden Camp, Upper City Edge",
-    "date": "DAY 212 · 1105 — FILED BEFORE SECOND BELL",
-    "author": "Vii Lon",
-    "security_level": "unlocked",
-    "requires_roll": false,
-    "content": "I am leaving the camp. I am filing this so that if the camp admin looks for me, they know I left voluntarily.\n\nI received an offer of passage offworld from a party who has not given me their name. They left a note under my bunk. The note said to come to Tuk's bar at second bell and ask for the booth at the back. They said I should tell no one where I was going.\n\nI am telling this terminal because I do not trust offers from nameless parties, and I believe that creating a record is the safest thing I can do.\n\nWhat happened in that hotel room on Theev, before I came to the camp:\n\nI was a commercial attaché for the Tobia Commerce Guild. We were in Room 15 of the Grand Hotel. There were four of us. I was in the bathroom when whoever it was came through the door. By the time I came out, the other three were dead. I did not see who did it.\n\nI know what they were carrying. A sealed data chip. Contract documentation for a recovery job in deep Reach space — materials of unknown origin, acquired from a derelict. The chip detailed the recovery site coordinates.\n\nI don't have the chip. It was in Revan's bag. Revan is dead. The chip may have gone with whoever came through the door.\n\nI don't know who wanted it. I don't know if the passage offer tonight is from someone who wants to help me or from someone who wants to make sure I can't tell anyone else what I just wrote.\n\nIf you're reading this and I don't come back:\nTuk's bar. Second bell. Booth at the back.\n\nFor the blood gang incident: [[connect: lower_city]]"
   },
   {
     "title": "Offworld Contract — Applicant Screening Notes",
@@ -262,7 +253,7 @@
         }
       ],
       "on_complete": {
-        "message": "The vocabulary is GeDeCo. The lab vessel in Bay 6 arrived three days ago. The queries started three months ago — someone at GeDeCo has been quietly asking around this camp's community board about black glass artifacts for months before they sent a ship. They know something is here, or was here, or passed through here. The proxy routing through the Cliff District relay means someone on-planet placed the queries — someone who was already here long before the ship arrived.",
+        "message": "The vocabulary is GeDeCo. The vessel in Bay 6 arrived three days ago. The queries started three months ago — someone at GeDeCo has been quietly asking around this camp's community board about black glass artifacts for months before they sent a ship. They know something is here, or was here, or passed through here. The proxy routing through the Cliff District relay means someone on-planet placed the queries — someone who was already here long before the ship arrived.",
         "sound": "warning",
         "persist_key": "asharden-black-glass-research"
       },
