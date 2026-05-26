@@ -37,6 +37,7 @@ interface LogEntry {
   logs?: any[];
   type?: string;
   action_sequence?: { id: string; category: string; on_complete?: { persist_key?: string; message?: string } };
+  signal_interruption?: boolean;
 }
 
 interface LogDetailViewProps {
@@ -50,6 +51,8 @@ interface LogDetailViewProps {
   onNavigateLog?: (title: string) => void;
   /** Clicking a [[connect: code]] link connects to another terminal */
   onConnectTerminal?: (code: string) => void;
+  /** Whether signal dropout is currently active (typewriter paused mid-read) */
+  signalDropout?: boolean;
 }
 
 const SECURITY_COLORS: Record<string, string> = {
@@ -97,6 +100,7 @@ export default function LogDetailView({
   terminalCode = '',
   onNavigateLog,
   onConnectTerminal,
+  signalDropout = false,
 }: LogDetailViewProps) {
   const profile = useMemo(() => getTerminalBootProfile(terminalCode), [terminalCode]);
   const category = useMemo(() => getTerminalCategory(terminalCode), [terminalCode]);
@@ -154,6 +158,55 @@ export default function LogDetailView({
 
   return (
     <div className="flex flex-col h-full relative overflow-hidden">
+      {/* ═══ Signal dropout overlay — shown mid-read when typewriter is paused ═══ */}
+      {signalDropout && (
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            zIndex: 20,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: 'rgba(0,0,0,0.82)',
+            backdropFilter: 'blur(1px)',
+          }}
+        >
+          <div
+            style={{
+              fontFamily: 'Orbitron, sans-serif',
+              fontSize: '0.7rem',
+              letterSpacing: '0.35em',
+              color: accentColor,
+              textShadow: `0 0 12px ${accentColor}66`,
+              animation: 'signal-dropout-blink 0.8s step-end infinite',
+              textAlign: 'center',
+            }}
+          >
+            ▌ SIGNAL LOST — RECONNECTING...
+          </div>
+          <div
+            style={{
+              marginTop: '0.8rem',
+              fontFamily: '"Share Tech Mono", monospace',
+              fontSize: '0.6rem',
+              letterSpacing: '0.2em',
+              color: `${accentColor}55`,
+              textAlign: 'center',
+            }}
+          >
+            RELAY PATH INTERRUPTED
+          </div>
+          <style>{`
+            @keyframes signal-dropout-blink {
+              0%, 100% { opacity: 1; }
+              50% { opacity: 0.15; }
+            }
+          `}</style>
+        </div>
+      )}
+
       {/* ═══ Scan sweep — one-shot raster line on open ═══ */}
       {showSweep && (
         <div

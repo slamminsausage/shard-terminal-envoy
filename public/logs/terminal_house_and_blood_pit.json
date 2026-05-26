@@ -1,5 +1,14 @@
 [
   {
+    "title": "SESSION LOG — THE HOUSE NETWORK",
+    "location": "Private Terminal — The House Without Questions",
+    "date": "CYCLE UNKNOWN",
+    "author": "Automated System",
+    "security_level": "unlocked",
+    "requires_roll": false,
+    "content": "THE HOUSE WITHOUT QUESTIONS — INTERNAL RELAY\nAnonymous routing — identity stripped at ingress\n\nSession origin:    masked\nYour identity:     unknown to this system\nLast session:      not recorded\nThis session:      not recorded\n\nWe do not log guests. We do not verify names. We do not ask\nwhat you are carrying or where you came from.\n\nThe Blood Pit schedule is on the board by the bar. Payment\nfor ring time is made to the Pit Manager directly. The House\ntakes its cut; what happens inside the ring is your business.\n\nIf you are here for something other than a fight, ask at\nthe bar. Ask quietly.\n\n>> YOU ARE NOT HERE. PROCEED."
+  },
+  {
     "title": "The House Without Questions — Public Notice",
     "location": "General Access Terminal — The House Without Questions, Lower City",
     "date": "UNKNOWN — NOTICE UNDATED BY POLICY",
@@ -174,7 +183,14 @@
         {
           "type": "prompt",
           "prompt_text": "CONFIRM EXTRACTION — ENTER BYPASS:",
-          "accept": ["EXTRACT", "DECRYPT", "RETRIEVE", "BYPASS", "OPEN", "READ"],
+          "accept": [
+            "EXTRACT",
+            "DECRYPT",
+            "RETRIEVE",
+            "BYPASS",
+            "OPEN",
+            "READ"
+          ],
           "reject_message": "CONFIRM THE EXTRACTION TO PROCEED.",
           "max_attempts": 3,
           "sound_on_accept": "access_granted",

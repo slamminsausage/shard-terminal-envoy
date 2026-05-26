@@ -1,5 +1,14 @@
 [
   {
+    "title": "SESSION LOG — JASHU PORT NODE",
+    "location": "Public Terminal — Jashu Port Complex, Tobia",
+    "date": "DAY 146 · 1105",
+    "author": "Automated System",
+    "security_level": "unlocked",
+    "requires_roll": false,
+    "content": "JASHU PORT COMPLEX — PUBLIC INFORMATION NETWORK\nTobia / The Trojan Reach / Dpres Subsector\n\nLast session:      DAY 146 · 1105  //  session 847 this cycle\nNode status:       NOMINAL\nConnectivity:      FULL BANDWIDTH — Tobia highport relay\nLocal time:        synchronized to Imperial Standard\n\nPort status (current cycle):\n  Berths available:  14 of 40\n  Customs queue:    MODERATE — estimated 2-hour processing\n  Fuel availability: REFINED  //  UNREFINED — see docking registry\n  Starport rating:  Class A — full service\n\nJashu Port Authority welcomes visitors to Tobia.\nAll persons entering the port precinct are subject to\nImperial customs inspection. Declaration forms available\nat the customs desk or via this terminal.\n\n>> WELCOME TO TOBIA. SYSTEM READY."
+  },
+  {
     "title": "Welcome to Tobia — Jashu Port Complex",
     "location": "Jashu Downport – Arrival Concourse",
     "date": "101-1105",

@@ -1,5 +1,14 @@
 [
   {
+    "title": "SESSION LOG — BLACKSAND CITY NODE 07",
+    "location": "General Access Terminal — Blacksand Downport, Public Concourse",
+    "date": "DAY 212 · 1105",
+    "author": "Automated System",
+    "security_level": "unlocked",
+    "requires_roll": false,
+    "content": "BLACKSAND CITY PUBLIC NETWORK — NODE 07\nPort Authority of Theev / Blacksand Downport Division\n\nLast session:      DAY 211 · 1105  //  02:14 STATION TIME\nSessions logged today:   47\nFailed auth attempts (24h):  3\n\nActive network partitions: 4\n  [PUBLIC]   General access — unrestricted\n  [DOCKING]  Bay assignment and cargo registry\n  [ADMIN]    Port Authority use only — restricted\n  [WIDOW]    Intelligence buffer — access undefined\n\nNote: This terminal is monitored. Report suspicious activity\nto Port Authority or the nearest Widow contact.\n\n>> SYSTEM READY."
+  },
+  {
     "title": "Visitor Orientation — Blacksand City Network",
     "location": "General Access Terminal — Blacksand Downport",
     "date": "CURRENT CYCLE (STANDING NOTICE)",
@@ -79,7 +88,14 @@
         {
           "type": "prompt",
           "prompt_text": "SPECIFY TARGET FILING:",
-          "accept": ["CONTESTED", "CONFLICT", "BOTH", "DISPUTED", "WINDOW", "PULL"],
+          "accept": [
+            "CONTESTED",
+            "CONFLICT",
+            "BOTH",
+            "DISPUTED",
+            "WINDOW",
+            "PULL"
+          ],
           "reject_message": "SPECIFY A VALID FILING REFERENCE.",
           "max_attempts": 3,
           "sound_on_accept": "access_granted",

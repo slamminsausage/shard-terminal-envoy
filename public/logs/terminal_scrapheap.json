@@ -1,5 +1,14 @@
 [
   {
+    "title": "SESSION LOG — SCRAPHEAP RELAY",
+    "location": "General Access Terminal — The Scrapheap, Lower City Outskirts",
+    "date": "CYCLE UNKNOWN",
+    "author": "Automated System",
+    "security_level": "unlocked",
+    "requires_roll": false,
+    "content": "SCRAPHEAP INFORMAL RELAY\nPowered by salvaged fuel cell — replacement recommended 4 years ago\n\nUptime:            2,847 hours\nLast reboot:       cause unknown — system recovered without intervention\nLast access:       unlogged — this node does not record sessions\nStorage:           91% capacity  //  purge never performed\n\nNetwork status:    signal degraded\nRelay path:        non-standard — bounces through 2 unregistered nodes\nOrigin mask:       partial\n\nNote: This terminal is not monitored. No one is watching.\nNo one has ever watched. The logs here accumulate because\nno one has gotten around to deleting them.\n\nIf you are using this terminal, you already know that.\n\n>> SYSTEM READY."
+  },
+  {
     "title": "Scrapheap Survey — Informal Listing",
     "location": "General Access Terminal — The Scrapheap, Lower City Outskirts",
     "date": "APPROX. 6 YEARS PRIOR",
@@ -30,7 +39,8 @@
     "author": "Unknown — Multiple authors, Scrapheap residents",
     "content": "This terminal has been running off a salvaged power cell for as long as anyone can remember. We use it when we have something to say.\n\n—\n\n'The upper deck is habitable. The lower deck is not. Don't open the cargo iris. We sealed it for a reason.'\n\n—\n\n'Someone has moved into the bridge. Don't know who. She has a metal arm and a very large weapon resting on the captain's chair. She has not bothered anyone. She pays the boys to run messages. I suggest we extend her the same courtesy she has extended us.' — Intelligence file on her: [[connect: ferrik_intel]]\n\n—\n\n'The woman in the bridge is negotiating with the gangs. I have heard her mention two of the Pirate Lords by name. She is making a case for someone who is not here. I don't know what she is offering but the boys say she pays well and doesn't ask them to go anywhere dangerous.'\n\n—\n\n[Most recent entry — Day 212]\n\n'New people in the Scrapheap tonight. Not residents. Moving carefully, which means they know something. The woman in the bridge knows they are coming. I saw her adjust the machinegun when the sensors pinged.\n\nTwo separate crews came through the access tunnel tonight. Not together. Not even aware of each other. One pair came down from the upper lift and went straight toward the Fat Trader. The other pair came in from the canyon side and split, one toward the south end and the pre-Collapse hull, the other back out to the lower city.\n\nI am going to be somewhere else for a while.'",
     "security_level": "unlocked",
-    "requires_roll": false
+    "requires_roll": false,
+    "signal_interruption": true
   },
   {
     "title": "Unknown Hull — Deep Scrapheap Survey Note",
