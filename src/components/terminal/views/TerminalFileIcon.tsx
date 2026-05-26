@@ -11,6 +11,7 @@ import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useGlitchText } from '@/hooks/useGlitchText';
 import { getGlitchIntensity } from '@/lib/glitchText';
 import { FileIconGauge } from '../TerminalGauges';
+import { getLogReadCount } from '@/lib/logReadCounts';
 
 interface LogEntry {
   title: string;
@@ -89,6 +90,11 @@ export default function TerminalFileIcon({
   const [hovered, setHovered] = useState(false);
   const [glitchBurst, setGlitchBurst] = useState(false);
   const glitchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const readCount = useMemo(
+    () => getLogReadCount(terminalCode, log.title),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [terminalCode, log.title]
+  );
 
   const sec = SECURITY_CONFIG[log.security_level || ''] || DEFAULT_SECURITY;
 
@@ -247,6 +253,22 @@ export default function TerminalFileIcon({
           style={{ color: `${dimColor}bb`, fontSize: '8px', lineHeight: '1.2' }}
         >
           {log.date}
+        </div>
+      )}
+
+      {/* Read-count badge — shown after the first access */}
+      {readCount > 0 && (
+        <div
+          className="font-mono mt-0.5"
+          style={{
+            fontSize: '8px',
+            color: readCount >= 3 ? '#ffaa00' : dimColor,
+            opacity: 0.75,
+            letterSpacing: '0.05em',
+          }}
+          title={`Accessed ${readCount} time${readCount !== 1 ? 's' : ''}`}
+        >
+          {readCount >= 10 ? '10+×' : `${readCount}×`} ACCESSED
         </div>
       )}
 

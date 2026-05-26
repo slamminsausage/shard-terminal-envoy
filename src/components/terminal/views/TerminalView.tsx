@@ -120,6 +120,18 @@ export default function TerminalView({
     return () => clearInterval(id);
   }, []);
 
+  // Live uptime counter — seconds since this terminal view mounted
+  const connectedAtRef = useRef(Date.now());
+  const [sessionUptime, setSessionUptime] = useState(0);
+  useEffect(() => {
+    connectedAtRef.current = Date.now();
+    setSessionUptime(0);
+    const id = setInterval(() => {
+      setSessionUptime(Math.floor((Date.now() - connectedAtRef.current) / 1000));
+    }, 1000);
+    return () => clearInterval(id);
+  }, [terminal.code]);
+
   // Count security levels for the status line
   const securedCount = logs.filter(
     (l) => l.requires_roll || l.requires_password || l.security_level === 'high' || l.security_level === 'restricted' || l.security_level === 'critical'
@@ -316,7 +328,7 @@ export default function TerminalView({
 
         <div className="flex items-center gap-3">
           <span style={{ color: `${dimColor}66`, fontSize: '8px' }}>
-            UPTIME {fakeUptime(terminal.code)}
+            CONN {String(Math.floor(sessionUptime / 60)).padStart(2, '0')}:{String(sessionUptime % 60).padStart(2, '0')}
           </span>
           <span
             className="imperial-clock"

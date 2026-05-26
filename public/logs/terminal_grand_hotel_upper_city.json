@@ -1,5 +1,14 @@
 [
   {
+    "title": "SESSION LOG — GRAND HOTEL GUEST NETWORK",
+    "location": "Guest Services Terminal — The Grand Hotel, Upper City",
+    "date": "DAY 212 · 1105",
+    "author": "Automated System",
+    "security_level": "unlocked",
+    "requires_roll": false,
+    "content": "THE GRAND HOTEL BLACKSAND CITY\nGuest Network v3.1 — Hospitality Systems Division\n\nLast session:      DAY 212 · 1105  //  08:22 STATION TIME\nActive sessions:   1 of 12 terminals\nCurrent occupancy: 68%  //  14 of 21 suites occupied\nConnectivity:      FULL — Skull Orbital relay active\n\nAmenities online:  DINING  //  CONCIERGE  //  SECURE COMM\nAmenity offline:   ROSE PAVILION (maintenance — estimated 2 days)\n\nNote: All guest network activity is logged per Corporate Policy\nDirective 14-A. Your privacy is our second priority.\n\n>> SESSION ACTIVE. WELCOME."
+  },
+  {
     "title": "Guest Services Directory — The Grand Hotel",
     "location": "General Access Terminal — The Grand Hotel, Upper City",
     "date": "STANDING NOTICE — REVISED DAY 190 · 1105",
@@ -179,7 +188,14 @@
         {
           "type": "prompt",
           "prompt_text": "CONFIRM ACCESS — ENTER OVERRIDE CODE:",
-          "accept": ["DAROKYN", "ROOM 7", "SHADOW", "INTERCEPT", "DECRYPT", "OVERRIDE"],
+          "accept": [
+            "DAROKYN",
+            "ROOM 7",
+            "SHADOW",
+            "INTERCEPT",
+            "DECRYPT",
+            "OVERRIDE"
+          ],
           "reject_message": "OVERRIDE CODE NOT RECOGNISED.",
           "max_attempts": 3,
           "sound_on_accept": "access_granted",

@@ -1,5 +1,14 @@
 [
   {
+    "title": "SESSION LOG — BRIDGE TERMINAL",
+    "location": "Bridge Console — ISV Vanagandr",
+    "date": "DAY 210 · 1105",
+    "author": "Automated System",
+    "security_level": "unlocked",
+    "requires_roll": false,
+    "content": "VANAGANDR SHIPNET v2.3 — BRIDGE TERMINAL\nISV Vanagandr / 200-ton Far Trader\n\nLast session:      DAY 210 · 1105  //  CREW ACCESS  //  ID: MORAH, E.\nSessions since last jump:  12\nFault log entries (unreviewed): 7\n  [Standing Order 4 — all crew review fault log weekly]\n\nSystem status summary:\n  LIFE SUPPORT ...... OK\n  DRIVE (M) ......... OK\n  DRIVE (J) ......... NOMINAL  //  see fault log entry 4\n  SENSORS ........... ACTIVE\n  COMMS ............. ONLINE\n  FUEL .............. 94%\n  CREW ROSTER ....... ANOMALY — see fault log entry 7\n\nNote: Entry 7 was flagged by the system, not by crew.\nNo crew member has claimed authorship of entry 7.\n\n>> BRIDGE LINK ESTABLISHED."
+  },
+  {
     "title": "System Diagnostics - Routine Report",
     "location": "Diagnostics Terminal",
     "date": "1105-03-27",
@@ -21,7 +30,8 @@
       "skill": "Electronics (Computers)",
       "on_success": "Access granted. Data partially recovered.",
       "on_failure": "No further information available."
-    }
+    },
+    "signal_interruption": true
   },
   {
     "title": "Power Allocation Report",
@@ -113,6 +123,7 @@
         "content": "A haunting final message, delivered in a near-whisper, pleading for help.",
         "audio_file": "/audio/WolfAudioFile6.mp3"
       }
-    ]
+    ],
+    "signal_interruption": true
   }
 ]

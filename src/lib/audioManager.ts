@@ -1,7 +1,23 @@
+/** Maps terminal categories to the ambient audio track to loop while connected. */
+export const CATEGORY_AMBIENT: Record<string, string> = {
+  'corrupted':     'static',
+  'corporate':     'server-room',
+  'high-security': 'server-room',
+  'personal':      'terminal',
+  'ship-systems':  'terminal',
+  'public-kiosk':  'terminal',
+  'research':      'server-room',
+  'criminal':      'static',
+  'maintenance':   'static',
+  'government':    'terminal',
+  'default':       'terminal',
+};
+
 class AudioManager {
   private sounds: { [key: string]: HTMLAudioElement } = {};
   private muted = false;
   private volume = 0.3;
+  private currentAmbientKey: string | null = null;
 
   preloadSounds() {
     const soundFiles = {
@@ -15,6 +31,7 @@ class AudioManager {
       'interference': '/audio/signal-interference.mp3',
       'static': '/audio/static-hum.mp3',
       'terminal': '/audio/terminal-hum.mp3',
+      'server-room': '/audio/server-room.mp3',
       'door_unlock': '/audio/door-unlock.wav',
       'alarm': '/audio/warning-beep.mp3',
       'alarm_disable': '/audio/alarm-disable.wav',
@@ -67,11 +84,17 @@ class AudioManager {
 
   playAmbient(track: string = 'terminal') {
     if (this.muted || !this.sounds[track]) return;
-    
+    if (this.currentAmbientKey === track) return; // already playing this track
+
+    // Stop any current ambient first
+    this.stopAmbient();
+    this.currentAmbientKey = track;
+
     try {
       const ambient = this.sounds[track];
       ambient.loop = true;
-      ambient.volume = this.volume * 0.5;
+      ambient.volume = this.volume * 0.35;
+      ambient.currentTime = 0;
       ambient.play().catch(e => {
         if (e.name !== 'NotAllowedError') {
           console.warn('Ambient play failed:', e);
@@ -83,10 +106,12 @@ class AudioManager {
   }
 
   stopAmbient() {
+    this.currentAmbientKey = null;
     Object.values(this.sounds).forEach(sound => {
       if (sound.loop) {
         sound.pause();
         sound.currentTime = 0;
+        sound.loop = false;
       }
     });
   }

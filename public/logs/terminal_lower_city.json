@@ -1,5 +1,14 @@
 [
   {
+    "title": "SESSION LOG — LOWER CITY NODE",
+    "location": "General Access Terminal — Lower City, Canyon Level",
+    "date": "DAY 212 · 1105",
+    "author": "Automated System",
+    "security_level": "unlocked",
+    "requires_roll": false,
+    "content": "LOWER CITY PUBLIC ACCESS — CANYON LEVEL\nNot affiliated with Port Authority or city government\n\nLast session:      DAY 212 · 1105  //  time unverified\nActive users nearby: unverifiable\nSignal quality:    DEGRADED  //  canyon interference, night cycle\nNetwork uplink:    intermittent  //  relaying through Scrapheap node\n\nWarning: This terminal is not maintained by any official body.\nRepair requests have been submitted. Responses: zero.\nThe terminal is still running because someone replaced the power\ncell approximately 18 months ago. No one has claimed credit.\n\nFiles on this system are community-contributed. Some are current.\nSome are old. Some are wrong. Judge accordingly.\n\n>> SYSTEM DEGRADED — BUT READY."
+  },
+  {
     "title": "Lower City Orientation — Survival Notice",
     "location": "General Access Terminal — Lower City Public Kiosk, Canyon Level",
     "date": "UNKNOWN — POSTING DATE NOT RECORDED",

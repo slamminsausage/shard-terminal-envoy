@@ -1,5 +1,14 @@
 [
   {
+    "title": "SESSION LOG — ASHARDEN FIELD RELAY",
+    "location": "Research Terminal — Asharden Camp, Outskirts",
+    "date": "DAY 212 · 1105",
+    "author": "Automated System",
+    "security_level": "unlocked",
+    "requires_roll": false,
+    "content": "ASHARDEN CAMP — FIELD RESEARCH RELAY\nTemporary installation — archive sync: PRIMARY\n\nUptime:            312 hours\nLast sync to main archive: FAILED — 72 hours ago\n  [Reason: relay path disrupted — rerouting attempted]\n  [Reroute status: partial — some packets dropping]\n\nSignal origin note: THIS NODE IS RECEIVING DATA FROM AN\nUNREGISTERED SOURCE. The source has been transmitting for\napproximately 9 hours. The data is structured. It is not\nnoise. The content has not been reviewed.\n\nThe team is aware. We do not yet have an explanation.\n\nArchive access is available. Research logs are current\nthrough DAY 209 · 1105. Later entries may be incomplete.\n\n>> CONNECTION ESTABLISHED. ANOMALY ACTIVE."
+  },
+  {
     "title": "Asharden Camp — Intake Notice",
     "location": "General Access Terminal — Asharden Camp, Upper City Edge",
     "date": "STANDING NOTICE — LAST REVISED DAY 198 · 1105",
@@ -54,7 +63,8 @@
       "skill": "Electronics (computers)",
       "on_success": "Deep Widow partition accessed. There is a signal. It noticed you arriving.",
       "on_failure": "Partition locked. This file does not exist at your clearance level."
-    }
+    },
+    "signal_interruption": true
   },
   {
     "title": "Widow Signals Division — Anomalous Source Triangulation",
@@ -150,7 +160,8 @@
         "message": "TRIANGULATION ABORTED. Signal went silent during the attempt — for the first time since it was first detected three months ago. The silence lasted exactly 4.3 seconds. Then it resumed. As if it had been listening.",
         "sound": "access_denied"
       }
-    }
+    },
+    "signal_interruption": true
   },
   {
     "title": "Asharden Canteen Ledger — Locker Traffic Irregularities",
@@ -210,7 +221,14 @@
         {
           "type": "prompt",
           "prompt_text": "SPECIFY SEARCH FOCUS:",
-          "accept": ["ORIGIN", "TRACE", "SOURCE", "PROXY", "QUERIES", "INSTITUTION"],
+          "accept": [
+            "ORIGIN",
+            "TRACE",
+            "SOURCE",
+            "PROXY",
+            "QUERIES",
+            "INSTITUTION"
+          ],
           "reject_message": "SPECIFY A VALID SEARCH FOCUS.",
           "max_attempts": 3,
           "sound_on_accept": "access_granted",

@@ -1,5 +1,14 @@
 [
   {
+    "title": "SESSION LOG — WIDOW INTELLIGENCE BUFFER",
+    "location": "General Access Terminal — Blacksand Downport (Deep Partition)",
+    "date": "DAY 212 · 1105",
+    "author": "Automated System",
+    "security_level": "unlocked",
+    "requires_roll": false,
+    "content": "BLACKSAND DOWNPORT — WIDOW INTELLIGENCE BUFFER\nWidow Administrative Network / Passive Collection Node\n\nLast active write:  DAY 212 · 1105  //  automated intercept\nFailed access attempts (48h):  0\nNode status:        ACTIVE — not advertised on local network\n\nNote: This node does not appear in the port network index.\nIf you found it, you were looking. The Widow network assumes\nyou know what that means.\n\nActive collection feeds:\n  PASSIVE INTERCEPT — Lower City corridor nodes\n  REGISTRY MONITOR — Skull Orbital, Bay 7-C (flagged)\n  RELAY BUFFER — Downport incoming, encrypted traffic\n\nFiles in this partition are intelligence summaries. Some\nare from direct sources. Some are inference. All are marked.\n\n>> BUFFER ACTIVE. PROCEED."
+  },
+  {
     "title": "Bounty Notice — Ferrik Redthane",
     "location": "General Access Terminal — Blacksand Downport / Lower City Public Kiosk",
     "date": "DAY 212 · 1105 — FILED BY PIRATE LORD DAROKYN",
@@ -83,7 +92,14 @@
         {
           "type": "prompt",
           "prompt_text": "CONFIRM DECRYPT — ENTER AUTHORISATION:",
-          "accept": ["DECRYPT", "OPEN", "FERRIK", "MIRIA", "CIPHER", "DECODE"],
+          "accept": [
+            "DECRYPT",
+            "OPEN",
+            "FERRIK",
+            "MIRIA",
+            "CIPHER",
+            "DECODE"
+          ],
           "reject_message": "AUTHORISATION NOT RECOGNISED.",
           "max_attempts": 3,
           "sound_on_accept": "access_granted",
@@ -130,7 +146,8 @@
         "message": "DECRYPT FAILED. The cipher key in the archive doesn't match. Either Miria uses a different key for personal correspondence, or Ferrik changed the cipher after the retinue expulsion. The message content remains locked.",
         "sound": "access_denied"
       }
-    }
+    },
+    "signal_interruption": true
   },
   {
     "title": "Torpol Planetary Authority — Evidence Filing",
@@ -170,7 +187,14 @@
         {
           "type": "prompt",
           "prompt_text": "ENTER ARCHIVE ACCESS CODE:",
-          "accept": ["REDTHANE", "FERRIK", "CROSS-REFERENCE", "WIDOW", "ARCHIVE", "INTEL"],
+          "accept": [
+            "REDTHANE",
+            "FERRIK",
+            "CROSS-REFERENCE",
+            "WIDOW",
+            "ARCHIVE",
+            "INTEL"
+          ],
           "reject_message": "ACCESS CODE NOT RECOGNISED. PARTITION REMAINS LOCKED.",
           "max_attempts": 3,
           "sound_on_accept": "access_granted",

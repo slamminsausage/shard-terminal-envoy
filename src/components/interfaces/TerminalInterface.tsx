@@ -48,7 +48,11 @@ import { useTypewriterSpeed } from '@/hooks/useTypewriterSpeed';
 import { useLockedTerminals } from '@/hooks/useLockedTerminals';
 import { useCustomTerminals } from '@/hooks/useCustomTerminals';
 import { isTerminalLockedOut, recordFailure, unlockTerminal as securityUnlockTerminal } from '@/lib/terminalSecurity';
+import { incrementLogRead } from '@/lib/logReadCounts';
+import { CATEGORY_AMBIENT } from '@/lib/audioManager';
+import { getTerminalCategory } from '@/lib/terminalBootProfiles';
 import TerminalLockoutScreen from '../terminal/TerminalLockoutScreen';
+import AccessDeniedFlash from '../terminal/AccessDeniedFlash';
 import type { DiceRoll } from '@/lib/dice';
 
 // Terminal visual effects helper
@@ -98,6 +102,11 @@ function TerminalInterface() {
   // Security lockout — true when terminal has exceeded failure threshold
   const [securityLockout, setSecurityLockout] = useState(false);
 
+  // Momentary red-flash overlay shown on roll or password failure
+  const [accessDeniedFlash, setAccessDeniedFlash] = useState(false);
+  // Action to run when the flash animation finishes
+  const postFlashRef = useRef<(() => void) | null>(null);
+
   // Pending cross-terminal link navigation — stores the target code when
   // a [[connect:]] link requires a roll before connecting
   const [linkNavCode, setLinkNavCode] = useState<string | null>(null);
@@ -133,6 +142,9 @@ function TerminalInterface() {
   const [localInitText, setLocalInitText] = useState('');
   const [localDisplayedText, setLocalDisplayedText] = useState('');
   const [localTypingComplete, setLocalTypingComplete] = useState(false);
+
+  // Signal dropout state — true while typewriter is paused mid-read
+  const [signalDropout, setSignalDropout] = useState(false);
 
   // Password authentication for log access
   const logPasswordAuth = usePasswordAuth({
@@ -205,6 +217,19 @@ function TerminalInterface() {
     }
   }, [session.activeTerminal?.code]);
 
+  // Ambient audio — play category-matched loop while on terminal/log view, stop on disconnect
+  useEffect(() => {
+    const isOnTerminal = session.currentView === 'terminal' || session.currentView === 'log';
+    if (isOnTerminal && session.activeTerminal) {
+      const category = getTerminalCategory(session.activeTerminal.code);
+      const track = CATEGORY_AMBIENT[category] ?? 'terminal';
+      audioManager.playAmbient(track);
+    } else {
+      audioManager.stopAmbient();
+    }
+    return () => { audioManager.stopAmbient(); };
+  }, [session.currentView, session.activeTerminal?.code]);
+
   // Initialize on mount
   useEffect(() => {
     if (hasInitialized.current) return;
@@ -265,6 +290,7 @@ function TerminalInterface() {
           }
           setLocalDisplayedText('');
           setLocalTypingComplete(false);
+          setSignalDropout(false);
           session.goToTerminal();
         } else if (session.currentView === 'terminal') {
           session.goToInit();
@@ -474,13 +500,57 @@ function TerminalInterface() {
     if (log.content) {
       setLocalDisplayedText('');
       setLocalTypingComplete(false);
-      const cancel = typeTextWithSound(
-        log.content,
-        setLocalDisplayedText,
-        () => setLocalTypingComplete(true),
-        { delay: typewriterDelay }
-      );
-      typingCancelRef.current = cancel;
+      setSignalDropout(false);
+
+      if (log.signal_interruption) {
+        // Pause at a random sentence break (between 25%–60% of content length)
+        const pauseAt = Math.floor(
+          log.content.length * (0.25 + Math.random() * 0.35)
+        );
+        // Find the next sentence or newline boundary near pauseAt
+        const boundary = (() => {
+          for (let i = pauseAt; i < Math.min(pauseAt + 120, log.content.length); i++) {
+            if (log.content[i] === '\n' || log.content[i] === '.') return i + 1;
+          }
+          return pauseAt;
+        })();
+
+        const firstPart = log.content.slice(0, boundary);
+        const secondPart = log.content.slice(boundary);
+
+        // Phase 1: type first part
+        const cancel1 = typeTextWithSound(
+          firstPart,
+          setLocalDisplayedText,
+          () => {
+            // Phase 2: show dropout screen and play interference audio
+            setSignalDropout(true);
+            audioManager.playEffect('interference');
+            const pauseDuration = 2200 + Math.random() * 1500;
+            setTimeout(() => {
+              setSignalDropout(false);
+              // Phase 3: resume typing
+              const cancel2 = typeTextWithSound(
+                secondPart,
+                setLocalDisplayedText,
+                () => setLocalTypingComplete(true),
+                { delay: typewriterDelay }
+              );
+              typingCancelRef.current = cancel2;
+            }, pauseDuration);
+          },
+          { delay: typewriterDelay }
+        );
+        typingCancelRef.current = cancel1;
+      } else {
+        const cancel = typeTextWithSound(
+          log.content,
+          setLocalDisplayedText,
+          () => setLocalTypingComplete(true),
+          { delay: typewriterDelay }
+        );
+        typingCancelRef.current = cancel;
+      }
     }
   };
 
@@ -491,9 +561,10 @@ function TerminalInterface() {
     setLocalTypingComplete(false);
     session.setView('log');
 
-    // Record log as viewed in history
+    // Record log as viewed in history and increment read counter
     if (session.activeTerminal && log.title) {
       terminalHistory.recordLogViewed(session.activeTerminal.code, log.title);
+      incrementLogRead(session.activeTerminal.code, log.title);
     }
 
     // Check for special audio logs (title contains 'AUDIO LOG')
@@ -586,8 +657,8 @@ function TerminalInterface() {
         const nowLocked = recordFailure(session.activeTerminal.code, 5);
         if (nowLocked) setSecurityLockout(true);
       }
-      // Roll check is the final fallback after password failure, so go back to terminal
-      session.goToTerminal();
+      postFlashRef.current = () => session.goToTerminal();
+      setAccessDeniedFlash(true);
     }
   };
 
@@ -603,13 +674,14 @@ function TerminalInterface() {
       }
     } else {
       audioManager.playEffect('access_denied');
-
-      // On failure: check if password is available as fallback
-      if (session.selectedLog?.requires_password && session.selectedLog?.password) {
-        session.setRequiresPassword(true);
-      } else {
-        session.goToTerminal();
-      }
+      postFlashRef.current = () => {
+        if (session.selectedLog?.requires_password && session.selectedLog?.password) {
+          session.setRequiresPassword(true);
+        } else {
+          session.goToTerminal();
+        }
+      };
+      setAccessDeniedFlash(true);
     }
   };
 
@@ -660,6 +732,16 @@ function TerminalInterface() {
 
   return (
     <div className="h-screen bg-background crt-container overflow-hidden">
+      {accessDeniedFlash && (
+        <AccessDeniedFlash
+          onDone={() => {
+            setAccessDeniedFlash(false);
+            const action = postFlashRef.current;
+            postFlashRef.current = null;
+            if (action) action();
+          }}
+        />
+      )}
       <SignalInterference
         level={session.signalInterferenceLevel}
         terminalType={session.activeTerminal ? 'corrupted' : 'normal'}
@@ -908,6 +990,7 @@ function TerminalInterface() {
                 log={session.selectedLog}
                 displayedText={localDisplayedText}
                 typingComplete={localTypingComplete}
+                signalDropout={signalDropout}
                 onBack={session.goToTerminal}
                 onInitiateSequence={
                   session.selectedLog?.type === 'action_sequence' && session.selectedLog?.action_sequence
