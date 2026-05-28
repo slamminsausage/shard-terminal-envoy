@@ -1,6 +1,6 @@
 import React, { Suspense, useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Terminal, Users, Radar, Navigation, BookOpen, Swords, Skull, Layout } from "lucide-react";
+import { Terminal, Users, Radar, Navigation, BookOpen, Swords, Skull, Layout, LayoutDashboard } from "lucide-react";
 import AppHeader from "./layout/AppHeader";
 import AppFooter from "./layout/AppFooter";
 import TerminalLoadingSkeleton from "./TerminalLoadingSkeleton";
@@ -9,6 +9,7 @@ import { lazyWithRetry, lazyNamedWithRetry } from "@/lib/lazyWithRetry";
 import ErrorBoundary from "./ErrorBoundary";
 
 // Lazy-loaded tab interfaces with automatic retry on stale chunk errors
+const DashboardInterface = lazyWithRetry(() => import("./interfaces/DashboardInterface"));
 const TerminalInterface = lazyWithRetry(() => import("./interfaces/TerminalInterface"));
 const CrewInterface = lazyWithRetry(() => import("./interfaces/CrewInterface"));
 const VehicleInterface = lazyWithRetry(() => import("./interfaces/VehicleInterface"));
@@ -21,8 +22,8 @@ const VTTInterface = lazyWithRetry(() => import("./interfaces/VTTInterface"));
 
 export default function MainframeShell() {
   const [activeTab, setActiveTab] = useState(() => {
-    if (typeof window === "undefined") return "terminal";
-    return localStorage.getItem("mainframe_active_tab") || "terminal";
+    if (typeof window === "undefined") return "dashboard";
+    return localStorage.getItem("mainframe_active_tab") || "dashboard";
   });
 
   const [showShortcuts, setShowShortcuts] = useState(false);
@@ -34,6 +35,7 @@ export default function MainframeShell() {
   }, [activeTab]);
 
   const tabs = useMemo(() => [
+    { id: "dashboard", label: "Control", icon: LayoutDashboard },
     { id: "terminal", label: "Terminal", icon: Terminal },
     { id: "crew", label: "Crew", icon: Users },
     { id: "vehicles", label: "Hangar", emoji: "🛦" },
@@ -90,6 +92,7 @@ export default function MainframeShell() {
               exit={{ opacity: 0, y: 6 }}
               transition={{ duration: 0.15, ease: "easeOut" }}
             >
+              {activeTab === "dashboard" && <ErrorBoundary inline fallbackMessage="Mission Control failure"><DashboardInterface activeTab={activeTab} onTabChange={setActiveTab} /></ErrorBoundary>}
               {activeTab === "terminal" && <ErrorBoundary inline fallbackMessage="Terminal system failure"><TerminalInterface /></ErrorBoundary>}
               {activeTab === "crew" && <ErrorBoundary inline fallbackMessage="Crew interface failure"><CrewInterface /></ErrorBoundary>}
               {activeTab === "vehicles" && <ErrorBoundary inline fallbackMessage="Hangar interface failure"><VehicleInterface /></ErrorBoundary>}
