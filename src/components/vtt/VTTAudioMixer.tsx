@@ -77,7 +77,8 @@ export default function VTTAudioMixer() {
   const audio = useVTTAudioApi();
   const visualizerRef = useRef<HTMLCanvasElement>(null);
   const animRef = useRef<number>(0);
-  const [visualizerActive, setVisualizerActive] = useState(false);
+  const [visualizerActive, setVisualizerActive] = useState(true);
+  const [playingSlots, setPlayingSlots] = useState<Set<AmbientSlot>>(new Set());
   const [expandedSections, setExpandedSections] = useState<Record<MixerSection, boolean>>({
     channels: true,
     crossfade: true,
@@ -136,6 +137,24 @@ export default function VTTAudioMixer() {
     }
     return () => cancelAnimationFrame(animRef.current);
   }, [visualizerActive, renderVisualizer]);
+
+  // Poll which ambient channels are actively playing every 250 ms.
+  // This survives tab switches because the audio hook never unmounts.
+  useEffect(() => {
+    const update = () => {
+      setPlayingSlots(prev => {
+        const next = new Set<AmbientSlot>(
+          AMBIENT_SLOTS.filter(s => audio.isAmbientPlaying(s))
+        );
+        const unchanged =
+          next.size === prev.size && [...next].every(s => prev.has(s));
+        return unchanged ? prev : next;
+      });
+    };
+    update();
+    const id = setInterval(update, 250);
+    return () => clearInterval(id);
+  }, [audio]);
 
   const handleLoadAmbient = (slot: AmbientSlot) => {
     const input = document.createElement("input");
@@ -353,8 +372,21 @@ export default function VTTAudioMixer() {
         />
       </div>
 
+      {/* Now Playing summary */}
+      <div className="px-3 pt-2 pb-0.5 text-[9px] font-mono text-terminal-primary/50 truncate min-h-[14px]">
+        {(() => {
+          const active = AMBIENT_SLOTS.filter(s => playingSlots.has(s) && getTrack(s));
+          if (active.length > 0) {
+            return active.map(s => `${s}: ${getTrack(s)!.name}`).join(' · ');
+          }
+          const loaded = AMBIENT_SLOTS.filter(s => getTrack(s));
+          if (loaded.length > 0) return '— paused —';
+          return null;
+        })()}
+      </div>
+
       {/* Visualizer */}
-      <div className="px-3 pt-2">
+      <div className="px-3 pb-2">
         <canvas
           ref={visualizerRef}
           width={220}
@@ -382,9 +414,12 @@ export default function VTTAudioMixer() {
               >
                 <div className="flex items-center justify-between mb-1">
                   <label
-                    className={`vtt-section-label ${SLOT_LABEL_COLORS[slot]}`}
+                    className={`vtt-section-label flex items-center gap-1 ${SLOT_LABEL_COLORS[slot]}`}
                   >
                     Channel {slot}
+                    {playingSlots.has(slot) && (
+                      <span className="inline-block w-1.5 h-1.5 rounded-full bg-current animate-pulse" />
+                    )}
                   </label>
                   <div className="flex gap-0.5">
                     <button
