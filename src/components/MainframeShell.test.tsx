@@ -4,6 +4,17 @@ import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import MainframeShell from "./MainframeShell";
 
+type MockHeaderTab = {
+  id: string;
+  label: string;
+};
+
+type MockHeaderProps = {
+  tabs: MockHeaderTab[];
+  activeTab: string;
+  onTabChange: (tabId: string) => void;
+};
+
 vi.mock("./interfaces/MissionControlInterface", () => ({
   MissionControlInterface: () => <div>MissionMock</div>
 }));
@@ -25,9 +36,9 @@ vi.mock("./interfaces/VehicleInterface", () => ({
 
 vi.mock("./layout/AppHeader", () => ({
   __esModule: true,
-  default: ({ tabs, activeTab, onTabChange }: any) => (
+  default: ({ tabs, activeTab, onTabChange }: MockHeaderProps) => (
     <nav role="tablist">
-      {tabs.map((tab: any) => (
+      {tabs.map((tab) => (
         <button
           key={tab.id}
           role="tab"

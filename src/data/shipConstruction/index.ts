@@ -77,6 +77,8 @@ export type {
   ShipComponentLine,
   PowerRequirementLine,
   PreMadeShip,
+  PreMadeShipDesign,
+  NormalizedPreMadeShip,
 } from './types';
 
 // ── Hull Data (Step 1) ──────────────────────────────────────────────

@@ -731,7 +731,7 @@ function TerminalInterface() {
     : null;
 
   return (
-    <div className="h-screen bg-background crt-container overflow-hidden">
+    <div className="min-h-[calc(100dvh-4.5rem)] bg-background crt-container overflow-hidden">
       {accessDeniedFlash && (
         <AccessDeniedFlash
           onDone={() => {

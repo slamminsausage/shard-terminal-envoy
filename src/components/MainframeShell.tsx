@@ -102,7 +102,7 @@ export default function MainframeShell() {
         className={`flex-1 min-h-0 ${
           activeTab === "vtt"
             ? "w-full max-w-none px-0"
-            : "w-full max-w-[2400px] mx-auto px-2 sm:px-3 lg:px-4 2xl:px-6"
+            : "w-full max-w-[2400px] mx-auto px-1 sm:px-3 lg:px-4 2xl:px-6"
         }`}
       >
         <Suspense fallback={<TerminalLoadingSkeleton />}>

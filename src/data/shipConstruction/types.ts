@@ -684,6 +684,14 @@ export interface PowerRequirementLine {
   power: number;
 }
 
+export type PreMadeShipDesign = Omit<
+  ShipDesign,
+  'specialisedHull' | 'hullOptions' | 'barbettes' | 'bays' | 'pointDefence' | 'screens'
+> & Partial<Pick<
+  ShipDesign,
+  'specialisedHull' | 'hullOptions' | 'barbettes' | 'bays' | 'pointDefence' | 'screens'
+>>;
+
 /** A complete pre-made ship from the rulebook */
 export interface PreMadeShip {
   id: string;
@@ -714,6 +722,10 @@ export interface PreMadeShip {
   softwareIds: string[];
 
   // ── The ShipDesign for the calculator ──
+  design: PreMadeShipDesign;
+}
+
+export interface NormalizedPreMadeShip extends Omit<PreMadeShip, 'design'> {
   design: ShipDesign;
 }
 

@@ -12,10 +12,10 @@
  * Full cost = purchaseCostMCr / 0.9
  */
 
-import type { PreMadeShip, ShipDesign } from './types';
+import type { NormalizedPreMadeShip, PreMadeShip, PreMadeShipDesign, ShipDesign } from './types';
 
 
-const normalizeShipDesign = (design: ShipDesign): ShipDesign => ({
+const normalizeShipDesign = (design: PreMadeShipDesign): ShipDesign => ({
   specialisedHull: 'none',
   hullOptions: [],
   barbettes: [],
@@ -25,7 +25,7 @@ const normalizeShipDesign = (design: ShipDesign): ShipDesign => ({
   ...design,
 });
 
-const normalizePreMadeShip = (ship: PreMadeShip): PreMadeShip => ({
+const normalizePreMadeShip = (ship: PreMadeShip): NormalizedPreMadeShip => ({
   ...ship,
   design: normalizeShipDesign(ship.design),
 });
@@ -3016,14 +3016,14 @@ const RAW_PRE_MADE_SHIPS: PreMadeShip[] = [
   HARRIER_COMMERCE_RAIDER,
 ];
 
-export const PRE_MADE_SHIPS: PreMadeShip[] = RAW_PRE_MADE_SHIPS.map(normalizePreMadeShip);
+export const PRE_MADE_SHIPS: NormalizedPreMadeShip[] = RAW_PRE_MADE_SHIPS.map(normalizePreMadeShip);
 
 // ═══════════════════════════════════════════════════════════════════════
 //  HELPER FUNCTIONS
 // ═══════════════════════════════════════════════════════════════════════
 
 /** Get a pre-made ship by ID */
-export function getPreMadeShip(id: string): PreMadeShip | undefined {
+export function getPreMadeShip(id: string): NormalizedPreMadeShip | undefined {
   return PRE_MADE_SHIPS.find((s) => s.id === id);
 }
 
@@ -3039,7 +3039,7 @@ export function getShipSource(ship: PreMadeShip): NonNullable<PreMadeShip['sourc
 }
 
 /** Get all pre-made ships in a category */
-export function getShipsByCategory(category: PreMadeShip['category']): PreMadeShip[] {
+export function getShipsByCategory(category: PreMadeShip['category']): NormalizedPreMadeShip[] {
   return PRE_MADE_SHIPS.filter((s) => s.category === category);
 }
 
