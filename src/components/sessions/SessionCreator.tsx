@@ -16,7 +16,7 @@ interface SessionCreatorProps {
 }
 
 export const SessionCreator: React.FC<SessionCreatorProps> = ({ onClose }) => {
-  const { createSession } = useSession();
+  const { createSession, sessions } = useSession();
   const { isGM } = useCampaign();
   const { currentDate } = useCalendar();
   const [title, setTitle] = useState('');
@@ -27,11 +27,16 @@ export const SessionCreator: React.FC<SessionCreatorProps> = ({ onClose }) => {
   const [inGameDate, setInGameDate] = useState(currentDate?.formatted || '');
   const [visibleCrewIds, setVisibleCrewIds] = useState<string[] | null>(null);
 
-  const handleCreate = async () => {
-    if (!title.trim()) {
-      return;
-    }
+  // Default to max existing + 1 so the field shows a sensible starting point
+  const computedNext = (sessions ?? []).reduce(
+    (m, s) => (typeof s.session_number === 'number' && s.session_number > m ? s.session_number : m),
+    0
+  ) + 1;
+  const [sessionNumber, setSessionNumber] = useState<string>(String(computedNext));
 
+  const handleCreate = async () => {
+    if (!title.trim()) return;
+    const numVal = parseInt(sessionNumber, 10);
     await createSession({
       title,
       session_date: new Date(sessionDate).toISOString(),
@@ -39,9 +44,10 @@ export const SessionCreator: React.FC<SessionCreatorProps> = ({ onClose }) => {
       summary: summary || undefined,
       notes: isGM ? notes || undefined : undefined,
       in_game_date: inGameDate || undefined,
+      // Explicitly pass session_number so it overrides the auto-computed default
+      session_number: Number.isFinite(numVal) && numVal > 0 ? numVal : undefined,
       ...(isGM ? { visible_crew_ids: visibleCrewIds } : {}),
     });
-
     onClose();
   };
 
@@ -62,7 +68,7 @@ export const SessionCreator: React.FC<SessionCreatorProps> = ({ onClose }) => {
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
+          <div className="sm:col-span-2">
             <label className="text-xs text-terminal-primary/70 uppercase mb-1 block">
               Session Title *
             </label>
@@ -70,6 +76,19 @@ export const SessionCreator: React.FC<SessionCreatorProps> = ({ onClose }) => {
               placeholder="Session Title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
+              className="bg-black border-terminal-primary/50 text-terminal-primary"
+            />
+          </div>
+
+          <div>
+            <label className="text-xs text-terminal-primary/70 uppercase mb-1 block">
+              Session Number
+            </label>
+            <Input
+              type="number"
+              min={1}
+              value={sessionNumber}
+              onChange={(e) => setSessionNumber(e.target.value)}
               className="bg-black border-terminal-primary/50 text-terminal-primary"
             />
           </div>
