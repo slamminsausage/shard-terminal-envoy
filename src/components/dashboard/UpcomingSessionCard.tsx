@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Session } from "@/types/session";
+import { SessionCreator } from "@/components/sessions/SessionCreator";
+import { useCampaign } from "@/contexts/CampaignContext";
 
 interface UpcomingSessionCardProps {
   sessions: Session[];
@@ -35,6 +37,9 @@ function useCountdown(targetDate: string | undefined) {
 }
 
 export default function UpcomingSessionCard({ sessions }: UpcomingSessionCardProps) {
+  const { isGM } = useCampaign();
+  const [showCreator, setShowCreator] = useState(false);
+
   const nextSession = sessions
     .filter(s => s.status === "planned")
     .sort((a, b) => new Date(a.session_date).getTime() - new Date(b.session_date).getTime())[0] ?? null;
@@ -44,6 +49,14 @@ export default function UpcomingSessionCard({ sessions }: UpcomingSessionCardPro
   const totalCount = sessions.length;
   const progressPct = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
+  if (showCreator) {
+    return (
+      <div className="dash-card md:col-span-2 xl:col-span-1">
+        <SessionCreator onClose={() => setShowCreator(false)} />
+      </div>
+    );
+  }
+
   return (
     <div className="dash-card" style={{ background: "linear-gradient(135deg, var(--bg-panel) 70%, color-mix(in srgb, var(--primary) 4%, transparent) 100%)" }}>
       <div className="flex items-center justify-between mb-2">
@@ -51,15 +64,36 @@ export default function UpcomingSessionCard({ sessions }: UpcomingSessionCardPro
           <span className="text-terminal-primary/40 text-base">◷</span>
           <span className="text-[9px] font-mono tracking-[0.2em] text-terminal-primary/40 uppercase">Upcoming Session</span>
         </div>
-        {nextSession ? (
-          <span className="text-[8px] font-mono border px-1.5 py-0.5 rounded-sm text-terminal-primary border-terminal-primary/30 bg-terminal-primary/10">SCHEDULED</span>
-        ) : (
-          <span className="text-[8px] font-mono border px-1.5 py-0.5 rounded-sm text-terminal-primary/30 border-terminal-primary/10">NO SESSION</span>
-        )}
+        <div className="flex items-center gap-1.5">
+          {nextSession ? (
+            <span className="text-[8px] font-mono border px-1.5 py-0.5 rounded-sm text-terminal-primary border-terminal-primary/30 bg-terminal-primary/10">SCHEDULED</span>
+          ) : (
+            <span className="text-[8px] font-mono border px-1.5 py-0.5 rounded-sm text-terminal-primary/30 border-terminal-primary/10">NO SESSION</span>
+          )}
+          {isGM && (
+            <button
+              className="text-[8px] font-mono border px-1.5 py-0.5 rounded-sm text-terminal-primary/50 border-terminal-primary/20 hover:text-terminal-primary hover:border-terminal-primary/40 transition-colors"
+              onClick={() => setShowCreator(true)}
+              title="Schedule a new session"
+            >
+              + SCHEDULE
+            </button>
+          )}
+        </div>
       </div>
 
       {!nextSession ? (
-        <p className="text-[9px] font-mono text-terminal-primary/30 italic py-4">No sessions scheduled</p>
+        <div className="py-4 text-center">
+          <p className="text-[9px] font-mono text-terminal-primary/30 italic mb-2">No sessions scheduled</p>
+          {isGM && (
+            <button
+              className="text-[9px] font-mono border px-3 py-1.5 rounded-sm text-terminal-primary/60 border-terminal-primary/30 hover:text-terminal-primary hover:border-terminal-primary/50 transition-colors"
+              onClick={() => setShowCreator(true)}
+            >
+              + Schedule First Session
+            </button>
+          )}
+        </div>
       ) : (
         <>
           {/* Countdown */}
@@ -82,7 +116,7 @@ export default function UpcomingSessionCard({ sessions }: UpcomingSessionCardPro
           <div className="space-y-0.5 mb-2 text-[9px] font-mono">
             <div className="flex justify-between">
               <span className="text-terminal-primary/40">Session</span>
-              <span className="text-terminal-primary/80">#{nextSession.session_number} — {nextSession.title}</span>
+              <span className="text-terminal-primary/80 truncate max-w-[60%] text-right">#{nextSession.session_number} — {nextSession.title}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-terminal-primary/40">Date</span>
