@@ -372,8 +372,18 @@ export default function VTTAudioMixer() {
         />
       </div>
 
+      {/* Visualizer */}
+      <div className="px-3 pt-2">
+        <canvas
+          ref={visualizerRef}
+          width={220}
+          height={32}
+          className="w-full h-8 rounded bg-terminal-bg-dark border border-terminal-border/20"
+        />
+      </div>
+
       {/* Now Playing summary */}
-      <div className="px-3 pt-2 pb-0.5 text-[9px] font-mono text-terminal-primary/50 truncate min-h-[14px]">
+      <div className="px-3 pt-1 pb-2 text-[9px] font-mono text-terminal-primary/50 truncate min-h-[14px]">
         {(() => {
           const active = AMBIENT_SLOTS.filter(s => playingSlots.has(s) && getTrack(s));
           if (active.length > 0) {
@@ -383,16 +393,6 @@ export default function VTTAudioMixer() {
           if (loaded.length > 0) return '— paused —';
           return null;
         })()}
-      </div>
-
-      {/* Visualizer */}
-      <div className="px-3 pb-2">
-        <canvas
-          ref={visualizerRef}
-          width={220}
-          height={32}
-          className="w-full h-8 rounded bg-terminal-bg-dark border border-terminal-border/20"
-        />
       </div>
 
       {/* ═══════════════ AMBIENT CHANNELS ═══════════════ */}
