@@ -597,6 +597,11 @@ export function useVTTAudio() {
     return data;
   }, []);
 
+  const isAmbientPlaying = useCallback((slot: AmbientSlot): boolean => {
+    const el = ambientElRefs.current[slot];
+    return el ? !el.paused : false;
+  }, []);
+
   // ─── Reconnect persisted library tracks on mount ─────────────────
   // After a page refresh, the track metadata (name, url, isLibrary) persists
   // in state but the HTMLAudioElement refs are null. Recreate them so tracks
@@ -663,6 +668,7 @@ export function useVTTAudio() {
     stopSFX,
     stopAllSFX,
     getFrequencyData,
+    isAmbientPlaying,
     ensureContext,
     duckAudio,
     unduckAudio,
