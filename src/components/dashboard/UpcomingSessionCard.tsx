@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Session } from "@/types/session";
 import { SessionCreator } from "@/components/sessions/SessionCreator";
 import { useCampaign } from "@/contexts/CampaignContext";
+import { useSession } from "@/contexts/SessionContext";
 
 interface UpcomingSessionCardProps {
   sessions: Session[];
@@ -38,16 +39,28 @@ function useCountdown(targetDate: string | undefined) {
 
 export default function UpcomingSessionCard({ sessions }: UpcomingSessionCardProps) {
   const { isGM } = useCampaign();
+  const { deleteSession } = useSession();
   const [showCreator, setShowCreator] = useState(false);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
-  const nextSession = sessions
+  const plannedSessions = sessions
     .filter(s => s.status === "planned")
-    .sort((a, b) => new Date(a.session_date).getTime() - new Date(b.session_date).getTime())[0] ?? null;
+    .sort((a, b) => new Date(a.session_date).getTime() - new Date(b.session_date).getTime());
+
+  const nextSession = plannedSessions[0] ?? null;
 
   const { d, h, m, s } = useCountdown(nextSession?.session_date);
   const completedCount = sessions.filter(s => s.status === "completed").length;
   const totalCount = sessions.length;
   const progressPct = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+
+  const handleDelete = async (id: string) => {
+    setDeleting(true);
+    await deleteSession(id);
+    setConfirmDeleteId(null);
+    setDeleting(false);
+  };
 
   if (showCreator) {
     return (
@@ -96,7 +109,7 @@ export default function UpcomingSessionCard({ sessions }: UpcomingSessionCardPro
         </div>
       ) : (
         <>
-          {/* Countdown */}
+          {/* Countdown to next session */}
           <div className="flex items-end gap-3 mb-2">
             {[{ v: d, l: "Days" }, { v: h, l: "Hrs" }, { v: m, l: "Min" }, { v: s, l: "Sec" }].map(({ v, l }) => (
               <div key={l} className="text-center">
@@ -113,31 +126,54 @@ export default function UpcomingSessionCard({ sessions }: UpcomingSessionCardPro
 
           <div className="dash-card-divider" />
 
-          <div className="space-y-0.5 mb-2 text-[9px] font-mono">
-            <div className="flex justify-between">
-              <span className="text-terminal-primary/40">Session</span>
-              <span className="text-terminal-primary/80 truncate max-w-[60%] text-right">#{nextSession.session_number} — {nextSession.title}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-terminal-primary/40">Date</span>
-              <span className="text-terminal-primary/60">{new Date(nextSession.session_date).toLocaleDateString()}</span>
-            </div>
-            {nextSession.in_game_date && (
-              <div className="flex justify-between">
-                <span className="text-terminal-primary/40">Imperial</span>
-                <span className="text-terminal-primary/60">{nextSession.in_game_date}</span>
+          {/* All planned sessions list */}
+          <div className="space-y-1 mb-2">
+            {plannedSessions.map((session, i) => (
+              <div key={session.id} className={`flex items-start gap-1.5 text-[9px] font-mono ${i === 0 ? "" : "opacity-60"}`}>
+                <span className="text-terminal-primary/40 flex-shrink-0 tabular-nums w-4">#{session.session_number}</span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-baseline justify-between gap-1">
+                    <span className="text-terminal-primary/80 truncate">{session.title}</span>
+                    <span className="text-terminal-primary/30 flex-shrink-0 text-[8px]">
+                      {new Date(session.session_date).toLocaleDateString()}
+                    </span>
+                  </div>
+                  {i === 0 && session.summary && (
+                    <p className="text-terminal-primary/40 text-[8px] leading-relaxed line-clamp-2 mt-0.5">{session.summary}</p>
+                  )}
+                </div>
+                {isGM && (
+                  confirmDeleteId === session.id ? (
+                    <div className="flex gap-1 flex-shrink-0">
+                      <button
+                        disabled={deleting}
+                        className="text-[8px] font-mono border px-1 py-0.5 rounded-sm text-terminal-danger border-terminal-danger/40 hover:bg-terminal-danger/10 transition-colors disabled:opacity-50"
+                        onClick={() => handleDelete(session.id)}
+                      >
+                        {deleting ? "..." : "CONFIRM"}
+                      </button>
+                      <button
+                        className="text-[8px] font-mono border px-1 py-0.5 rounded-sm text-terminal-primary/40 border-terminal-primary/20 hover:text-terminal-primary/70 transition-colors"
+                        onClick={() => setConfirmDeleteId(null)}
+                      >
+                        CANCEL
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      className="text-[8px] font-mono text-terminal-primary/20 hover:text-terminal-danger transition-colors flex-shrink-0 px-0.5"
+                      onClick={() => setConfirmDeleteId(session.id)}
+                      title="Delete session"
+                    >
+                      ✕
+                    </button>
+                  )
+                )}
               </div>
-            )}
+            ))}
           </div>
 
-          {nextSession.summary && (
-            <>
-              <div className="dash-card-divider" />
-              <p className="text-[9px] font-mono text-terminal-primary/50 leading-relaxed line-clamp-3">
-                {nextSession.summary}
-              </p>
-            </>
-          )}
+          <div className="dash-card-divider" />
 
           {/* Campaign progress */}
           <div>
