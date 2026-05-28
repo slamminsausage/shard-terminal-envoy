@@ -327,13 +327,16 @@ function CombatInterface() {
     // This happens when we're back to the combatant who started the round
     const isCompletingRound = !isFirstTurn && currentCombatant.id === roundStartCombatantId;
 
-    // Move current combatant to the end by setting their turnOrder higher than everyone else's
+    // Move current combatant to the end.
+    // In 'desc' sort the front has the MAX turnOrder, so "end" means MIN - 1.
+    // In 'asc' sort the front has the MIN turnOrder, so "end" means MAX + 1.
     const maxTurnOrder = Math.max(...sortedCombatants.map(c => c.turnOrder));
+    const minTurnOrder = Math.min(...sortedCombatants.map(c => c.turnOrder));
+    const newTurnOrder = sortDirection === 'desc' ? minTurnOrder - 1 : maxTurnOrder + 1;
 
     const newCombatants = combatants.map(c => {
       if (c.id === currentCombatant.id) {
-        // Move current to end
-        return { ...c, turnOrder: maxTurnOrder + 1 };
+        return { ...c, turnOrder: newTurnOrder };
       }
       return c;
     });
@@ -348,7 +351,9 @@ function CombatInterface() {
         hasMovedThisRound: false
       })));
       // Set the new combatant at index 0 as the round start
-      const newSorted = [...newCombatants].sort((a, b) => a.turnOrder - b.turnOrder);
+      const newSorted = [...newCombatants].sort((a, b) =>
+        sortDirection === 'desc' ? b.turnOrder - a.turnOrder : a.turnOrder - b.turnOrder
+      );
       setRoundStartCombatantId(newSorted[0]?.id || null);
     } else {
       // Just move to next turn
@@ -368,14 +373,17 @@ function CombatInterface() {
   const handlePreviousTurn = () => {
     if (sortedCombatants.length === 0) return;
 
-    // Move the last combatant to the front by setting their turnOrder lower
+    // Move the last combatant to the front.
+    // In 'desc' sort the end has the MIN turnOrder, so "front" means MAX + 1.
+    // In 'asc' sort the end has the MAX turnOrder, so "front" means MIN - 1.
     const lastCombatant = sortedCombatants[sortedCombatants.length - 1];
+    const maxTurnOrder = Math.max(...sortedCombatants.map(c => c.turnOrder));
     const minTurnOrder = Math.min(...sortedCombatants.map(c => c.turnOrder));
+    const newTurnOrder = sortDirection === 'desc' ? maxTurnOrder + 1 : minTurnOrder - 1;
 
     const newCombatants = combatants.map(c => {
       if (c.id === lastCombatant.id) {
-        // Move last combatant to front (lower turnOrder value)
-        return { ...c, turnOrder: minTurnOrder - 1 };
+        return { ...c, turnOrder: newTurnOrder };
       }
       return c;
     });
