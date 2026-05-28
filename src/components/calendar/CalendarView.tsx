@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useCalendar } from '@/contexts/CalendarContext';
-import { CalendarEvent } from '@/types/calendar';
+import { EventType } from '@/types/calendar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -13,7 +13,6 @@ import {
   Plus,
   ChevronRight,
   Clock,
-  MapPin,
   Save,
   X,
   CheckCircle,
@@ -43,9 +42,8 @@ export const CalendarView: React.FC = () => {
   // Event form state
   const [eventTitle, setEventTitle] = useState('');
   const [eventDescription, setEventDescription] = useState('');
-  const [eventType, setEventType] = useState<'event' | 'deadline' | 'reminder' | 'travel'>('event');
+  const [eventType, setEventType] = useState<EventType>('reminder');
   const [eventDate, setEventDate] = useState('');
-  const [eventLocation, setEventLocation] = useState('');
   const [eventIsRecurring, setEventIsRecurring] = useState(false);
   const [eventRecurrenceDays, setEventRecurrenceDays] = useState('7');
   const [eventVisibleCrewIds, setEventVisibleCrewIds] = useState<string[] | null>(null);
@@ -69,19 +67,17 @@ export const CalendarView: React.FC = () => {
       description: eventDescription || undefined,
       event_type: eventType,
       imperial_date: eventDate,
-      location: eventLocation || undefined,
       is_recurring: eventIsRecurring,
       recurrence_interval: eventIsRecurring ? parseInt(eventRecurrenceDays, 10) || 7 : undefined,
-      is_completed: false,
+      completed: false,
       ...(isGM ? { visible_crew_ids: eventVisibleCrewIds } : {}),
     });
 
     // Reset form
     setEventTitle('');
     setEventDescription('');
-    setEventType('event');
+    setEventType('reminder');
     setEventDate('');
-    setEventLocation('');
     setEventIsRecurring(false);
     setEventRecurrenceDays('7');
     setEventVisibleCrewIds(null);
@@ -97,17 +93,19 @@ export const CalendarView: React.FC = () => {
   };
 
   const eventTypeColors = {
-    event: 'bg-blue-500/20 text-blue-400 border-blue-500/50',
-    deadline: 'bg-red-500/20 text-red-400 border-red-500/50',
     reminder: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/50',
-    travel: 'bg-purple-500/20 text-purple-400 border-purple-500/50',
+    session: 'bg-blue-500/20 text-blue-400 border-blue-500/50',
+    payment: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/50',
+    arrival: 'bg-purple-500/20 text-purple-400 border-purple-500/50',
+    departure: 'bg-orange-500/20 text-orange-400 border-orange-500/50',
   };
 
   const eventTypeIcons = {
-    event: '📅',
-    deadline: '⏰',
     reminder: '🔔',
-    travel: '🚀',
+    session: '📅',
+    payment: '💳',
+    arrival: '🛬',
+    departure: '🚀',
   };
 
   return (
@@ -220,15 +218,16 @@ export const CalendarView: React.FC = () => {
                 <label className="text-xs text-terminal-primary/70 mb-1 block">
                   Event Type
                 </label>
-                <Select value={eventType} onValueChange={(v: any) => setEventType(v)}>
+                <Select value={eventType} onValueChange={(v) => setEventType(v as EventType)}>
                   <SelectTrigger className="bg-black border-terminal-primary/50 text-terminal-primary">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="bg-black border-terminal-primary/50">
-                    <SelectItem value="event" className="text-terminal-primary">Event</SelectItem>
-                    <SelectItem value="deadline" className="text-terminal-primary">Deadline</SelectItem>
                     <SelectItem value="reminder" className="text-terminal-primary">Reminder</SelectItem>
-                    <SelectItem value="travel" className="text-terminal-primary">Travel</SelectItem>
+                    <SelectItem value="session" className="text-terminal-primary">Session</SelectItem>
+                    <SelectItem value="payment" className="text-terminal-primary">Payment</SelectItem>
+                    <SelectItem value="arrival" className="text-terminal-primary">Arrival</SelectItem>
+                    <SelectItem value="departure" className="text-terminal-primary">Departure</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -246,18 +245,6 @@ export const CalendarView: React.FC = () => {
                 {eventDate && !imperialDateValid && (
                   <p className="text-xs text-red-400 mt-1">Format must be DDD-YYYY (e.g., 135-1105)</p>
                 )}
-              </div>
-
-              <div className="sm:col-span-2">
-                <label className="text-xs text-terminal-primary/70 mb-1 block">
-                  Location
-                </label>
-                <Input
-                  placeholder="Planet, System, Station, etc."
-                  value={eventLocation}
-                  onChange={(e) => setEventLocation(e.target.value)}
-                  className="bg-black border-terminal-primary/50 text-terminal-primary"
-                />
               </div>
 
               <div className="flex items-center gap-2">
@@ -342,7 +329,7 @@ export const CalendarView: React.FC = () => {
               <Card
                 key={event.id}
                 className={`bg-black border-terminal-primary/30 ${
-                  event.is_completed ? 'opacity-50' : ''
+                  event.completed ? 'opacity-50' : ''
                 }`}
               >
                 <CardHeader className="pb-3">
@@ -358,7 +345,7 @@ export const CalendarView: React.FC = () => {
                             Recurring
                           </Badge>
                         )}
-                        {event.is_completed && (
+                        {event.completed && (
                           <Badge className="bg-green-500/20 text-green-400 border-green-500/50">
                             <CheckCircle className="h-3 w-3 mr-1" />
                             Completed
@@ -366,13 +353,13 @@ export const CalendarView: React.FC = () => {
                         )}
                         {isGM && <CrewVisibilityBadge ids={event.visible_crew_ids} />}
                       </div>
-                      <CardTitle className={`text-terminal-primary ${event.is_completed ? 'line-through' : ''}`}>
+                      <CardTitle className={`text-terminal-primary ${event.completed ? 'line-through' : ''}`}>
                         {event.title}
                       </CardTitle>
                     </div>
 
                     <div className="flex gap-1">
-                      {!event.is_completed && (
+                      {!event.completed && (
                         <Button
                           onClick={() => handleCompleteEvent(event.id)}
                           variant="ghost"
@@ -404,12 +391,6 @@ export const CalendarView: React.FC = () => {
                       <Calendar className="h-4 w-4" />
                       {event.imperial_date}
                     </div>
-                    {event.location && (
-                      <div className="flex items-center gap-1">
-                        <MapPin className="h-4 w-4" />
-                        {event.location}
-                      </div>
-                    )}
                     {event.is_recurring && event.recurrence_interval && (
                       <div className="flex items-center gap-1">
                         <Clock className="h-4 w-4" />

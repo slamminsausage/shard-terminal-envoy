@@ -1,8 +1,12 @@
 import React from "react";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import MainframeShell from "./MainframeShell";
+
+vi.mock("./interfaces/MissionControlInterface", () => ({
+  MissionControlInterface: () => <div>MissionMock</div>
+}));
 
 vi.mock("./interfaces/TerminalInterface", () => ({
   __esModule: true,
@@ -63,8 +67,10 @@ describe("MainframeShell tabs", () => {
   it("persists last active tab to localStorage", async () => {
     const user = userEvent.setup();
     render(
-      <MemoryRouter>
-        <MainframeShell />
+      <MemoryRouter initialEntries={["/app/mission"]}>
+        <Routes>
+          <Route path="/app/:tabId" element={<MainframeShell />} />
+        </Routes>
       </MemoryRouter>
     );
 
@@ -74,12 +80,14 @@ describe("MainframeShell tabs", () => {
     expect(localStorage.getItem("mainframe_active_tab")).toBe("crew");
   });
 
-  it("restores stored tab on load", () => {
+  it("selects the tab from the nested route", () => {
     localStorage.setItem("mainframe_active_tab", "vehicles");
 
     render(
-      <MemoryRouter>
-        <MainframeShell />
+      <MemoryRouter initialEntries={["/app/vehicles"]}>
+        <Routes>
+          <Route path="/app/:tabId" element={<MainframeShell />} />
+        </Routes>
       </MemoryRouter>
     );
 

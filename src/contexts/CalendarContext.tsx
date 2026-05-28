@@ -214,6 +214,9 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({ children }) 
       const savedEvent = saved as CalendarEvent;
 
       setAllEvents(prev => [...prev, savedEvent]);
+      if (!savedEvent.completed && currentDate && savedEvent.imperial_date >= currentDate.formatted) {
+        setAllUpcomingEvents(prev => [...prev, savedEvent].sort((a, b) => a.imperial_date.localeCompare(b.imperial_date)).slice(0, 10));
+      }
 
       toast({
         title: "Event Created",
@@ -245,6 +248,18 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({ children }) 
       setAllEvents(prev =>
         prev.map(e => e.id === eventId ? updatedEvent : e)
       );
+      setAllUpcomingEvents(prev => {
+        if (updatedEvent.completed) {
+          return prev.filter(e => e.id !== eventId);
+        }
+
+        const exists = prev.some(e => e.id === eventId);
+        const next = exists
+          ? prev.map(e => e.id === eventId ? updatedEvent : e)
+          : [...prev, updatedEvent];
+
+        return next.sort((a, b) => a.imperial_date.localeCompare(b.imperial_date)).slice(0, 10);
+      });
 
       toast({
         title: "Event Updated",

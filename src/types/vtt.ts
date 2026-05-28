@@ -654,6 +654,7 @@ export function createDefaultVTTState(): VTTState {
     showFog: true,
     presenterMode: false,
     showInitiativeOnPresenter: false,
+    followActiveTurn: false,
     selectedTokenIds: [],
     selectedStrokeIds: [],
     selectedTextIds: [],

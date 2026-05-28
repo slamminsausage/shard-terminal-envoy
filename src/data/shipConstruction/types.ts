@@ -593,8 +593,8 @@ export interface ShipDesign {
   // ── Step 1: Hull ──
   tonnage: number;
   hullConfiguration: HullConfigType;
-  specialisedHull: SpecialisedHullType;
-  hullOptions: HullOptionId[];
+  specialisedHull?: SpecialisedHullType;
+  hullOptions?: HullOptionId[];
   armorMaterial?: ArmorMaterialId;
   armorProtection: number;
 
@@ -626,11 +626,11 @@ export interface ShipDesign {
 
   // ── Step 8: Weapons & Screens ──
   weapons: ShipWeaponInstallation[];
-  barbettes: BarbetteInstallation[];
-  bays: BayWeaponInstallation[];
+  barbettes?: BarbetteInstallation[];
+  bays?: BayWeaponInstallation[];
   spinalMount?: SpinalWeaponInstallation;
-  pointDefence: PointDefenceInstallation[];
-  screens: ScreenInstallation[];
+  pointDefence?: PointDefenceInstallation[];
+  screens?: ScreenInstallation[];
 
   // ── Step 9: Equipment ──
   equipment: ShipEquipmentInstallation[];

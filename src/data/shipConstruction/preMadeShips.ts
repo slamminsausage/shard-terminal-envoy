@@ -12,7 +12,23 @@
  * Full cost = purchaseCostMCr / 0.9
  */
 
-import type { PreMadeShip } from './types';
+import type { PreMadeShip, ShipDesign } from './types';
+
+
+const normalizeShipDesign = (design: ShipDesign): ShipDesign => ({
+  specialisedHull: 'none',
+  hullOptions: [],
+  barbettes: [],
+  bays: [],
+  pointDefence: [],
+  screens: [],
+  ...design,
+});
+
+const normalizePreMadeShip = (ship: PreMadeShip): PreMadeShip => ({
+  ...ship,
+  design: normalizeShipDesign(ship.design),
+});
 
 // ═══════════════════════════════════════════════════════════════════════
 //  SCOUT / COURIER — TYPE S (100 tons)
@@ -2934,7 +2950,7 @@ export const HARRIER_COMMERCE_RAIDER: PreMadeShip = {
 //  ALL PRE-MADE SHIPS
 // ═══════════════════════════════════════════════════════════════════════
 
-export const PRE_MADE_SHIPS: PreMadeShip[] = [
+const RAW_PRE_MADE_SHIPS: PreMadeShip[] = [
   // Core Rulebook Ships
   SCOUT_COURIER,
   SEEKER_MINING_SHIP,
@@ -2999,6 +3015,8 @@ export const PRE_MADE_SHIPS: PreMadeShip[] = [
   // Campaign Ships
   HARRIER_COMMERCE_RAIDER,
 ];
+
+export const PRE_MADE_SHIPS: PreMadeShip[] = RAW_PRE_MADE_SHIPS.map(normalizePreMadeShip);
 
 // ═══════════════════════════════════════════════════════════════════════
 //  HELPER FUNCTIONS
