@@ -341,7 +341,7 @@ export default function LogDetailView({
 
           {/* Action buttons */}
           {typingComplete && (
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
               {/* Initiate Sequence button for action sequence logs */}
               {log.type === 'action_sequence' && log.action_sequence && onInitiateSequence && (
                 <Button

@@ -58,15 +58,15 @@ export const ActiveCharacterSwitcher: React.FC = () => {
       >
         <Users size={10} />
         <span className="hidden sm:inline text-terminal-primary/50">As:</span>
-        <span>{displayName}</span>
+        <span className="hidden sm:inline">{displayName}</span>
         {activeCrew && (
-          <>
+          <span className="hidden sm:inline-flex items-center gap-1">
             <span
               className="inline-block h-1.5 w-1.5 rounded-full border border-black/40"
               style={{ backgroundColor: activeCrew.color }}
             />
             <span className="text-terminal-primary/60">{activeCrew.name}</span>
-          </>
+          </span>
         )}
         {hasMultiple && (
           <ChevronDown

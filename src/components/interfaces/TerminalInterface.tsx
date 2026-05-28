@@ -763,7 +763,7 @@ function TerminalInterface() {
 
       {/* GM floating buttons — only visible to GMs */}
       {isGM && !showGMPanel && !showGMBuilder && (
-        <div className="fixed top-4 right-4 z-[9600] flex items-center gap-2">
+        <div className="fixed top-14 right-4 z-[9600] flex items-center gap-2">
           <button
             onClick={() => setShowGMBuilder(true)}
             title="Terminal Builder (GM)"

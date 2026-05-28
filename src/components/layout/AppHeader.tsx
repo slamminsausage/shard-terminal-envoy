@@ -126,8 +126,8 @@ export default function AppHeader({
             </button>
             {dropdownOpen && (
               <>
-                <div className="fixed inset-0 z-40" onClick={() => setDropdownOpen(false)} />
-                <div className="absolute top-full left-0 right-0 mt-1 z-50 border border-terminal-primary/30 rounded bg-terminal-bg-dark/95 backdrop-blur-sm shadow-lg shadow-black/50 max-h-[70vh] overflow-y-auto">
+                <div className="fixed inset-0 z-[55]" onClick={() => setDropdownOpen(false)} />
+                <div className="absolute top-full left-0 right-0 mt-1 z-[60] border border-terminal-primary/30 rounded bg-terminal-bg-dark/95 backdrop-blur-sm shadow-lg shadow-black/50 max-h-[70vh] overflow-y-auto">
                   {tabs.map((tab) => {
                     const Icon = tab.icon;
                     const isActive = activeTab === tab.id;
@@ -220,7 +220,7 @@ export default function AppHeader({
         {currentPlayer && (
           <div className="flex items-center gap-1.5 flex-shrink-0">
             <ActiveCharacterSwitcher />
-            <div className="flex items-center gap-1 text-[11px] font-mono text-terminal-primary/80 border border-terminal-primary/25 px-2 py-0.5 rounded whitespace-nowrap">
+            <div className="hidden sm:flex items-center gap-1 text-[11px] font-mono text-terminal-primary/80 border border-terminal-primary/25 px-2 py-0.5 rounded whitespace-nowrap">
               {isGM ? <Shield size={10} className="text-yellow-400" /> : <User size={10} />}
               <span className={isGM ? "text-yellow-400" : ""}>{currentPlayer.name}</span>
               {isGM && <span className="text-yellow-400/60 text-[9px]">GM</span>}
