@@ -1,4 +1,5 @@
 import React, { Suspense, useEffect, useMemo, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Terminal, Users, Radar, Navigation, BookOpen, Swords, Skull, Layout, LayoutDashboard } from "lucide-react";
 import AppHeader from "./layout/AppHeader";
@@ -6,6 +7,7 @@ import AppFooter from "./layout/AppFooter";
 import TerminalLoadingSkeleton from "./TerminalLoadingSkeleton";
 import { KeyboardShortcutOverlay } from "./KeyboardShortcutOverlay";
 import { lazyWithRetry, lazyNamedWithRetry } from "@/lib/lazyWithRetry";
+import ErrorBoundary from "./ErrorBoundary";
 
 // Lazy-loaded tab interfaces with automatic retry on stale chunk errors
 const DashboardInterface = lazyWithRetry(() => import("./interfaces/DashboardInterface"));
@@ -19,23 +21,32 @@ const BridgeConsole = lazyNamedWithRetry(() => import("./bridge/BridgeConsole"),
 const JumpPlannerInterface = lazyNamedWithRetry(() => import("./navigation/JumpPlannerInterface"), "JumpPlannerInterface");
 const VTTInterface = lazyWithRetry(() => import("./interfaces/VTTInterface"));
 
-const TAB_IDS = ["mission", "terminal", "crew", "vehicles", "bridge", "navigation", "campaign", "piracy", "combat", "vtt"] as const;
+const TAB_IDS = ["dashboard", "terminal", "crew", "vehicles", "bridge", "navigation", "campaign", "piracy", "combat", "vtt"] as const;
 type MainframeTabId = typeof TAB_IDS[number];
 
 const normalizeTabId = (tabId?: string | null): MainframeTabId => {
   if (tabId === "hangar") return "vehicles";
   if (tabId === "starmap" || tabId === "star-map") return "navigation";
-  return TAB_IDS.includes(tabId as MainframeTabId) ? (tabId as MainframeTabId) : "mission";
+  if (tabId === "mission" || tabId === "control") return "dashboard";
+  return TAB_IDS.includes(tabId as MainframeTabId) ? (tabId as MainframeTabId) : "dashboard";
 };
 
 export default function MainframeShell() {
-  const [activeTab, setActiveTab] = useState(() => {
+  const { tabId: routeTabId } = useParams<{ tabId: string }>();
+  const navigate = useNavigate();
+
+  const routeTab = normalizeTabId(routeTabId);
+
+  const [activeTab, setActiveTab] = useState<MainframeTabId>(() => {
     if (typeof window === "undefined") return "dashboard";
-    return localStorage.getItem("mainframe_active_tab") || "dashboard";
+    // If a URL param was provided, that wins over localStorage
+    if (routeTabId) return normalizeTabId(routeTabId);
+    return normalizeTabId(localStorage.getItem("mainframe_active_tab")) ?? "dashboard";
   });
 
   const [showShortcuts, setShowShortcuts] = useState(false);
 
+  // Sync active tab when the URL changes (back/forward nav)
   useEffect(() => {
     setActiveTab(routeTab);
   }, [routeTab]);
@@ -110,7 +121,7 @@ export default function MainframeShell() {
               exit={{ opacity: 0, y: 6 }}
               transition={{ duration: 0.15, ease: "easeOut" }}
             >
-              {activeTab === "dashboard" && <ErrorBoundary inline fallbackMessage="Mission Control failure"><DashboardInterface activeTab={activeTab} onTabChange={setActiveTab} /></ErrorBoundary>}
+              {activeTab === "dashboard" && <ErrorBoundary inline fallbackMessage="Mission Control failure"><DashboardInterface activeTab={activeTab} onTabChange={handleTabChange} /></ErrorBoundary>}
               {activeTab === "terminal" && <ErrorBoundary inline fallbackMessage="Terminal system failure"><TerminalInterface /></ErrorBoundary>}
               {activeTab === "crew" && <ErrorBoundary inline fallbackMessage="Crew interface failure"><CrewInterface /></ErrorBoundary>}
               {activeTab === "vehicles" && <ErrorBoundary inline fallbackMessage="Hangar interface failure"><VehicleInterface /></ErrorBoundary>}
