@@ -130,6 +130,15 @@ export default function UpcomingSessionCard({ sessions }: UpcomingSessionCardPro
             )}
           </div>
 
+          {nextSession.summary && (
+            <>
+              <div className="dash-card-divider" />
+              <p className="text-[9px] font-mono text-terminal-primary/50 leading-relaxed line-clamp-3">
+                {nextSession.summary}
+              </p>
+            </>
+          )}
+
           {/* Campaign progress */}
           <div>
             <div className="flex justify-between text-[8px] font-mono text-terminal-primary/30 mb-0.5">
