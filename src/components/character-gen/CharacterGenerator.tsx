@@ -140,6 +140,13 @@ interface CharacterData {
   eventQualificationDM?: number;  // DM bonus to next qualification roll from events
   allowedCareers?: string[];      // Careers unlocked by events (bypass qualification)
 
+  // Medical debt and anagathics tracking
+  medicalDebt?: number;
+  agingCrisisFailQualification?: boolean;
+  isUsingAnagathics?: boolean;
+  anagathicsStartTerm?: number;
+  anagathicsTotalCost?: number;
+
   // Anagathics tracking: once taken, every subsequent term requires two Survival rolls.
   hasAnagathics?: boolean;
 }

@@ -22,7 +22,7 @@ export interface CalendarEvent {
 
   title: string;
   description?: string;
-  event_type: 'reminder' | 'session' | 'payment' | 'arrival' | 'departure';
+  event_type: EventType;
 
   imperial_date: string;
 

@@ -6,7 +6,6 @@ import AppFooter from "./layout/AppFooter";
 import TerminalLoadingSkeleton from "./TerminalLoadingSkeleton";
 import { KeyboardShortcutOverlay } from "./KeyboardShortcutOverlay";
 import { lazyWithRetry, lazyNamedWithRetry } from "@/lib/lazyWithRetry";
-import ErrorBoundary from "./ErrorBoundary";
 
 // Lazy-loaded tab interfaces with automatic retry on stale chunk errors
 const DashboardInterface = lazyWithRetry(() => import("./interfaces/DashboardInterface"));
@@ -20,6 +19,15 @@ const BridgeConsole = lazyNamedWithRetry(() => import("./bridge/BridgeConsole"),
 const JumpPlannerInterface = lazyNamedWithRetry(() => import("./navigation/JumpPlannerInterface"), "JumpPlannerInterface");
 const VTTInterface = lazyWithRetry(() => import("./interfaces/VTTInterface"));
 
+const TAB_IDS = ["mission", "terminal", "crew", "vehicles", "bridge", "navigation", "campaign", "piracy", "combat", "vtt"] as const;
+type MainframeTabId = typeof TAB_IDS[number];
+
+const normalizeTabId = (tabId?: string | null): MainframeTabId => {
+  if (tabId === "hangar") return "vehicles";
+  if (tabId === "starmap" || tabId === "star-map") return "navigation";
+  return TAB_IDS.includes(tabId as MainframeTabId) ? (tabId as MainframeTabId) : "mission";
+};
+
 export default function MainframeShell() {
   const [activeTab, setActiveTab] = useState(() => {
     if (typeof window === "undefined") return "dashboard";
@@ -29,10 +37,20 @@ export default function MainframeShell() {
   const [showShortcuts, setShowShortcuts] = useState(false);
 
   useEffect(() => {
+    setActiveTab(routeTab);
+  }, [routeTab]);
+
+  useEffect(() => {
     if (typeof window !== "undefined") {
       localStorage.setItem("mainframe_active_tab", activeTab);
     }
   }, [activeTab]);
+
+  const handleTabChange = (nextTab: string) => {
+    const normalized = normalizeTabId(nextTab);
+    setActiveTab(normalized);
+    navigate(`/app/${normalized}`);
+  };
 
   const tabs = useMemo(() => [
     { id: "dashboard", label: "Control", icon: LayoutDashboard },
@@ -65,28 +83,28 @@ export default function MainframeShell() {
   }, [showShortcuts]);
 
   return (
-    <div className="h-screen bg-background flex flex-col overflow-hidden">
+    <div className="min-h-screen bg-background flex flex-col">
       <AppHeader
         title="Traveller Terminal"
         subtitle="Eclipse Shard Saga Interface"
         tabs={tabs}
         activeTab={activeTab}
-        onTabChange={setActiveTab}
+        onTabChange={handleTabChange}
       />
 
       {/* Content */}
       <main
-        className={`flex-1 min-h-0 overflow-hidden ${
+        className={`flex-1 min-h-0 ${
           activeTab === "vtt"
             ? "w-full max-w-none px-0"
-            : "w-full max-w-[2400px] mx-auto px-2 sm:px-3 lg:px-4 2xl:px-6 overflow-y-auto"
+            : "w-full max-w-[2400px] mx-auto px-1 sm:px-3 lg:px-4 2xl:px-6"
         }`}
       >
         <Suspense fallback={<TerminalLoadingSkeleton />}>
           <AnimatePresence mode="wait">
             <motion.div
               key={activeTab}
-              className={activeTab === "vtt" ? "h-full overflow-hidden" : ""}
+              className={activeTab === "vtt" ? "h-full" : ""}
               initial={{ opacity: 0, y: -6 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 6 }}

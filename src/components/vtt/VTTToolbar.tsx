@@ -66,7 +66,7 @@ function ToolPopout({
   return (
     <div
       ref={ref}
-      className="fixed z-50 ml-1"
+      className="vtt-tool-popout fixed z-50 ml-1"
       style={{
         left: 38,
         top: Math.max(4, anchorY),

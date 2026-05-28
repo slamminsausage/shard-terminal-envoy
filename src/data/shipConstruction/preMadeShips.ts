@@ -12,7 +12,23 @@
  * Full cost = purchaseCostMCr / 0.9
  */
 
-import type { PreMadeShip } from './types';
+import type { NormalizedPreMadeShip, PreMadeShip, PreMadeShipDesign, ShipDesign } from './types';
+
+
+const normalizeShipDesign = (design: PreMadeShipDesign): ShipDesign => ({
+  specialisedHull: 'none',
+  hullOptions: [],
+  barbettes: [],
+  bays: [],
+  pointDefence: [],
+  screens: [],
+  ...design,
+});
+
+const normalizePreMadeShip = (ship: PreMadeShip): NormalizedPreMadeShip => ({
+  ...ship,
+  design: normalizeShipDesign(ship.design),
+});
 
 // ═══════════════════════════════════════════════════════════════════════
 //  SCOUT / COURIER — TYPE S (100 tons)
@@ -2934,7 +2950,7 @@ export const HARRIER_COMMERCE_RAIDER: PreMadeShip = {
 //  ALL PRE-MADE SHIPS
 // ═══════════════════════════════════════════════════════════════════════
 
-export const PRE_MADE_SHIPS: PreMadeShip[] = [
+const RAW_PRE_MADE_SHIPS: PreMadeShip[] = [
   // Core Rulebook Ships
   SCOUT_COURIER,
   SEEKER_MINING_SHIP,
@@ -3000,12 +3016,14 @@ export const PRE_MADE_SHIPS: PreMadeShip[] = [
   HARRIER_COMMERCE_RAIDER,
 ];
 
+export const PRE_MADE_SHIPS: NormalizedPreMadeShip[] = RAW_PRE_MADE_SHIPS.map(normalizePreMadeShip);
+
 // ═══════════════════════════════════════════════════════════════════════
 //  HELPER FUNCTIONS
 // ═══════════════════════════════════════════════════════════════════════
 
 /** Get a pre-made ship by ID */
-export function getPreMadeShip(id: string): PreMadeShip | undefined {
+export function getPreMadeShip(id: string): NormalizedPreMadeShip | undefined {
   return PRE_MADE_SHIPS.find((s) => s.id === id);
 }
 
@@ -3021,7 +3039,7 @@ export function getShipSource(ship: PreMadeShip): NonNullable<PreMadeShip['sourc
 }
 
 /** Get all pre-made ships in a category */
-export function getShipsByCategory(category: PreMadeShip['category']): PreMadeShip[] {
+export function getShipsByCategory(category: PreMadeShip['category']): NormalizedPreMadeShip[] {
   return PRE_MADE_SHIPS.filter((s) => s.category === category);
 }
 
