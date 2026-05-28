@@ -17,7 +17,9 @@ export default function FinancesCard({ partyFunds, recurringExpenses, transactio
   const balance = partyFunds?.balance ?? null;
 
   const monthlyOverhead = useMemo(() =>
-    recurringExpenses.reduce((s, e) => s + (e.amount ?? 0), 0),
+    recurringExpenses
+      .filter(e => e.is_active)
+      .reduce((s, e) => s + (e.frequency === "yearly" ? (e.amount ?? 0) / 12 : (e.amount ?? 0)), 0),
   [recurringExpenses]);
 
   // Recent income (last 30 days)
