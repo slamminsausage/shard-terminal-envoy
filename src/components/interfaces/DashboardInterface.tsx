@@ -1,9 +1,10 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { useCampaign } from "@/contexts/CampaignContext";
 import { useQuest } from "@/contexts/QuestContext";
 import { useFinance } from "@/contexts/FinanceContext";
 import { useSession } from "@/contexts/SessionContext";
 import { useCalendar } from "@/contexts/CalendarContext";
+import { useBridge } from "@/contexts/BridgeContext";
 import AlertTicker, { AlertEntry } from "@/components/dashboard/AlertTicker";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import SectionSeparator from "@/components/dashboard/SectionSeparator";
@@ -59,16 +60,66 @@ function buildAlerts(characters: Character[], vehicle: any, quests: any[]): Aler
 }
 
 export default function DashboardInterface({ activeTab, onTabChange }: DashboardInterfaceProps) {
-  const { characters, vehicles } = useCampaign();
+  const { characters, vehicles, crewGroups } = useCampaign();
   const { quests } = useQuest();
   const { partyFunds, recurringExpenses, transactions } = useFinance();
   const { sessions } = useSession();
   const { currentDate } = useCalendar();
+  const { bridgeState } = useBridge();
 
-  const ship = useMemo(
-    () => (vehicles ?? []).find(v => v.vehicle_type?.toLowerCase() === "ship") ?? null,
-    [vehicles]
+  const [selectedCrewId, setSelectedCrewId] = useState<string | null>(null);
+
+  // Active ship: prefer bridge's designated player ship, then crew's ship, then first "Ship" vehicle
+  const activeShip = useMemo(() => {
+    const allVehicles = vehicles ?? [];
+    if (bridgeState.playerShipId) {
+      const found = allVehicles.find(v => v.id === bridgeState.playerShipId);
+      if (found) return found;
+    }
+    if (selectedCrewId) {
+      const crew = (crewGroups ?? []).find(g => g.id === selectedCrewId);
+      if (crew?.ship_id) {
+        const found = allVehicles.find(v => v.id === crew.ship_id);
+        if (found) return found;
+      }
+    }
+    return allVehicles.find(v => v.vehicle_type?.toLowerCase() === "ship") ?? null;
+  }, [vehicles, bridgeState.playerShipId, selectedCrewId, crewGroups]);
+
+  // Characters filtered by selected crew (null = all)
+  const filteredCharacters = useMemo(() => {
+    const all = characters ?? [];
+    if (!selectedCrewId) return all;
+    return all.filter(c => c.crew_id === selectedCrewId);
+  }, [characters, selectedCrewId]);
+
+  // IDs of characters in the selected crew (for finance filtering)
+  const crewCharacterIds = useMemo(
+    () => new Set(filteredCharacters.map(c => c.id)),
+    [filteredCharacters]
   );
+
+  // Filter transactions and recurring expenses to the selected crew's members + ship
+  const filteredTransactions = useMemo(() => {
+    const all = transactions ?? [];
+    if (!selectedCrewId) return all;
+    const shipId = activeShip?.id;
+    return all.filter(t =>
+      !t.character_id ||
+      crewCharacterIds.has(t.character_id) ||
+      (shipId && t.vehicle_id === shipId)
+    );
+  }, [transactions, selectedCrewId, crewCharacterIds, activeShip]);
+
+  const filteredExpenses = useMemo(() => {
+    const all = recurringExpenses ?? [];
+    if (!selectedCrewId) return all;
+    const shipId = activeShip?.id;
+    return all.filter(e =>
+      !e.vehicle_id ||
+      (shipId && e.vehicle_id === shipId)
+    );
+  }, [recurringExpenses, selectedCrewId, activeShip]);
 
   const activeQuests = useMemo(
     () => (quests ?? []).filter(q => q.status === "active" && !q.is_hidden),
@@ -76,26 +127,62 @@ export default function DashboardInterface({ activeTab, onTabChange }: Dashboard
   );
 
   const alerts = useMemo(
-    () => buildAlerts(characters ?? [], ship, activeQuests),
-    [characters, ship, activeQuests]
+    () => buildAlerts(filteredCharacters, activeShip, activeQuests),
+    [filteredCharacters, activeShip, activeQuests]
   );
 
   return (
     <div className="interface-container">
       <AlertTicker alerts={alerts} />
 
-      <DashboardHeader imperialDate={currentDate?.formatted ?? currentDate?.day ? `${currentDate.day}-${currentDate.year}` : undefined} />
+      <DashboardHeader imperialDate={currentDate?.formatted} />
+
+      {/* Crew selector strip */}
+      {(crewGroups ?? []).length > 0 && (
+        <div className="flex flex-wrap items-center gap-1.5 px-4 py-1.5 border-b border-terminal-border/10">
+          <span className="text-[8px] font-mono text-terminal-primary/30 uppercase tracking-widest mr-1">Crew:</span>
+          <button
+            className={`text-[9px] font-mono px-2 py-0.5 rounded-sm border transition-colors ${
+              selectedCrewId === null
+                ? "border-terminal-primary/50 text-terminal-primary bg-terminal-primary/10"
+                : "border-terminal-primary/15 text-terminal-primary/40 hover:text-terminal-primary/70 hover:border-terminal-primary/30"
+            }`}
+            onClick={() => setSelectedCrewId(null)}
+          >
+            All Crews
+          </button>
+          {(crewGroups ?? []).map(g => (
+            <button
+              key={g.id}
+              className={`text-[9px] font-mono px-2 py-0.5 rounded-sm border transition-colors flex items-center gap-1 ${
+                selectedCrewId === g.id
+                  ? "border-terminal-primary/50 text-terminal-primary bg-terminal-primary/10"
+                  : "border-terminal-primary/15 text-terminal-primary/40 hover:text-terminal-primary/70 hover:border-terminal-primary/30"
+              }`}
+              onClick={() => setSelectedCrewId(g.id)}
+            >
+              {g.color && (
+                <span
+                  className="inline-block w-1.5 h-1.5 rounded-full flex-shrink-0"
+                  style={{ backgroundColor: g.color }}
+                />
+              )}
+              {g.name}
+            </button>
+          ))}
+        </div>
+      )}
 
       <SectionSeparator label="OPERATIONS STATUS" />
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 px-4 pb-2">
-        <CrewReadinessCard characters={characters ?? []} />
-        <ShipStatusCard vehicle={ship} />
+        <CrewReadinessCard characters={filteredCharacters} />
+        <ShipStatusCard vehicle={activeShip} />
         <ActiveQuestsCard quests={activeQuests} />
         <FinancesCard
           partyFunds={partyFunds}
-          recurringExpenses={recurringExpenses ?? []}
-          transactions={transactions ?? []}
+          recurringExpenses={filteredExpenses}
+          transactions={filteredTransactions}
         />
         <RecentTerminalsCard />
         <UpcomingSessionCard sessions={sessions ?? []} />
@@ -106,8 +193,8 @@ export default function DashboardInterface({ activeTab, onTabChange }: Dashboard
       <QuickLaunch activeTab={activeTab} onTabChange={onTabChange} />
 
       <SystemStatusFooter
-        characters={characters ?? []}
-        vehicle={ship}
+        characters={filteredCharacters}
+        vehicle={activeShip}
         activeQuestCount={activeQuests.length}
         balance={partyFunds?.balance ?? null}
       />
