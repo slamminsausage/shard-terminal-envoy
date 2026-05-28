@@ -1,7 +1,6 @@
 import React, { Suspense, useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Terminal, Users, Radar, Navigation, BookOpen, Swords, Skull, Layout, LayoutDashboard } from "lucide-react";
-import { useNavigate, useParams } from "react-router-dom";
 import AppHeader from "./layout/AppHeader";
 import AppFooter from "./layout/AppFooter";
 import TerminalLoadingSkeleton from "./TerminalLoadingSkeleton";
@@ -9,7 +8,7 @@ import { KeyboardShortcutOverlay } from "./KeyboardShortcutOverlay";
 import { lazyWithRetry, lazyNamedWithRetry } from "@/lib/lazyWithRetry";
 
 // Lazy-loaded tab interfaces with automatic retry on stale chunk errors
-const MissionControlInterface = lazyNamedWithRetry(() => import("./interfaces/MissionControlInterface"), "MissionControlInterface");
+const DashboardInterface = lazyWithRetry(() => import("./interfaces/DashboardInterface"));
 const TerminalInterface = lazyWithRetry(() => import("./interfaces/TerminalInterface"));
 const CrewInterface = lazyWithRetry(() => import("./interfaces/CrewInterface"));
 const VehicleInterface = lazyWithRetry(() => import("./interfaces/VehicleInterface"));
@@ -30,13 +29,9 @@ const normalizeTabId = (tabId?: string | null): MainframeTabId => {
 };
 
 export default function MainframeShell() {
-  const navigate = useNavigate();
-  const { tabId } = useParams<{ tabId?: string }>();
-  const routeTab = normalizeTabId(tabId);
-
-  const [activeTab, setActiveTab] = useState<MainframeTabId>(() => {
-    if (typeof window === "undefined") return routeTab;
-    return normalizeTabId(tabId || localStorage.getItem("mainframe_active_tab") || "mission");
+  const [activeTab, setActiveTab] = useState(() => {
+    if (typeof window === "undefined") return "dashboard";
+    return localStorage.getItem("mainframe_active_tab") || "dashboard";
   });
 
   const [showShortcuts, setShowShortcuts] = useState(false);
@@ -58,7 +53,7 @@ export default function MainframeShell() {
   };
 
   const tabs = useMemo(() => [
-    { id: "mission", label: "Mission", icon: LayoutDashboard },
+    { id: "dashboard", label: "Control", icon: LayoutDashboard },
     { id: "terminal", label: "Terminal", icon: Terminal },
     { id: "crew", label: "Crew", icon: Users },
     { id: "vehicles", label: "Hangar", emoji: "🛦" },
@@ -115,16 +110,16 @@ export default function MainframeShell() {
               exit={{ opacity: 0, y: 6 }}
               transition={{ duration: 0.15, ease: "easeOut" }}
             >
-              {activeTab === "mission" && <MissionControlInterface />}
-              {activeTab === "terminal" && <TerminalInterface />}
-              {activeTab === "crew" && <CrewInterface />}
-              {activeTab === "vehicles" && <VehicleInterface />}
-              {activeTab === "bridge" && <BridgeConsole />}
-              {activeTab === "navigation" && <JumpPlannerInterface />}
-              {activeTab === "campaign" && <CampaignInterface />}
-              {activeTab === "piracy" && <PiracyInterface />}
-              {activeTab === "combat" && <CombatInterface />}
-              {activeTab === "vtt" && <VTTInterface />}
+              {activeTab === "dashboard" && <ErrorBoundary inline fallbackMessage="Mission Control failure"><DashboardInterface activeTab={activeTab} onTabChange={setActiveTab} /></ErrorBoundary>}
+              {activeTab === "terminal" && <ErrorBoundary inline fallbackMessage="Terminal system failure"><TerminalInterface /></ErrorBoundary>}
+              {activeTab === "crew" && <ErrorBoundary inline fallbackMessage="Crew interface failure"><CrewInterface /></ErrorBoundary>}
+              {activeTab === "vehicles" && <ErrorBoundary inline fallbackMessage="Hangar interface failure"><VehicleInterface /></ErrorBoundary>}
+              {activeTab === "bridge" && <ErrorBoundary inline fallbackMessage="Bridge console failure"><BridgeConsole /></ErrorBoundary>}
+              {activeTab === "navigation" && <ErrorBoundary inline fallbackMessage="Navigation failure"><JumpPlannerInterface /></ErrorBoundary>}
+              {activeTab === "campaign" && <ErrorBoundary inline fallbackMessage="Campaign interface failure"><CampaignInterface /></ErrorBoundary>}
+              {activeTab === "piracy" && <ErrorBoundary inline fallbackMessage="Piracy interface failure"><PiracyInterface /></ErrorBoundary>}
+              {activeTab === "combat" && <ErrorBoundary inline fallbackMessage="Combat interface failure"><CombatInterface /></ErrorBoundary>}
+              {activeTab === "vtt" && <ErrorBoundary inline fallbackMessage="VTT failure"><VTTInterface /></ErrorBoundary>}
             </motion.div>
           </AnimatePresence>
         </Suspense>
