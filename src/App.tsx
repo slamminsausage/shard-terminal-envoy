@@ -19,6 +19,7 @@ import { VTTProvider } from "@/contexts/VTTContext";
 import { VTTAudioProvider } from "@/contexts/VTTAudioContext";
 import { useVTTAudio } from "@/hooks/useVTTAudio";
 import { DiceRoller } from "@/components/DiceRoller";
+import { GMAlertCenter } from "@/components/GMAlertCenter";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import CRTOverlay from "@/components/ui/CRTOverlay";
 import NotFound from "./pages/NotFound";
@@ -78,8 +79,11 @@ const App = () => (
                                     <GlobalSearch />
                                     <KeyboardShortcutsHelp />
                                     <DiceRoller />
+                                    <GMAlertCenter />
                                     <Routes>
                                       <Route path="/" element={<Index />} />
+                                      <Route path="/app" element={<Index />} />
+                                      <Route path="/app/:tabId" element={<Index />} />
                                       <Route path="/character-view/:id" element={<CharacterViewRoute />} />
                                       <Route path="/vehicle-view/:id" element={<VehicleViewRoute />} />
                                       <Route path="/admin/notes" element={<AdminNotes />} />
