@@ -137,12 +137,12 @@ function VTTInterface() {
   }
 
   return (
-      <div className="flex h-full min-h-0 w-full overflow-hidden" style={{ background: 'linear-gradient(180deg, rgba(58, 226, 179,0.02) 0%, var(--bg-panel) 40%, var(--bg-dark) 100%)' }}>
+      <div className="vtt-shell flex h-full min-h-0 w-full overflow-hidden" style={{ background: 'linear-gradient(180deg, rgba(58, 226, 179,0.02) 0%, var(--bg-panel) 40%, var(--bg-dark) 100%)' }}>
         {/* Left toolbar — tools only */}
         <VTTToolbar />
 
         {/* Main canvas area */}
-        <div ref={containerRef} className="flex-1 relative min-w-0 h-full min-h-0 overflow-hidden">
+        <div ref={containerRef} className="vtt-canvas-region flex-1 relative min-w-0 h-full min-h-0 overflow-hidden">
           <VTTCanvas broadcastPing={broadcastPing} />
           <VTTAlignmentBar />
 

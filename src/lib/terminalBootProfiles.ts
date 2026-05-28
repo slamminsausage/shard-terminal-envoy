@@ -101,7 +101,7 @@ export const getTerminalCategory = (code: string): TerminalCategory =>
 
 // ── Boot profiles per category ────────────────────────────────────────────────
 
-const BOOT_PROFILES: Record<TerminalCategory, TerminalBootProfile> = {
+const BOOT_PROFILES: Record<TerminalCategory, Omit<TerminalBootProfile, 'bootSound'>> = {
   corrupted: {
     category: 'corrupted',
     headerLabel: 'SYSTEM RECOVERY ATTEMPT',

@@ -7,14 +7,28 @@ import { QuestBoard } from '../quests/QuestBoard';
 import { CalendarView } from '../calendar/CalendarView';
 import PlayerManagement from '../auth/PlayerManagement';
 import { useCampaign } from '@/contexts/CampaignContext';
+import { useSearchParams } from 'react-router-dom';
 
 export const CampaignInterface: React.FC = React.memo(() => {
   const { isGM } = useCampaign();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const routeSubTab = searchParams.get('subtab');
 
   const [activeSubTab, setActiveSubTab] = useState(() => {
     if (typeof window === "undefined") return "sessions";
-    return localStorage.getItem("campaign_active_subtab") || "sessions";
+    return routeSubTab || localStorage.getItem("campaign_active_subtab") || "sessions";
   });
+
+  React.useEffect(() => {
+    if (routeSubTab && routeSubTab !== activeSubTab) {
+      setActiveSubTab(routeSubTab);
+    }
+  }, [routeSubTab, activeSubTab]);
+
+  const handleSubTabChange = (nextTab: string) => {
+    setActiveSubTab(nextTab);
+    setSearchParams(nextTab === 'sessions' ? {} : { subtab: nextTab });
+  };
 
   React.useEffect(() => {
     if (typeof window !== "undefined") {
@@ -34,7 +48,7 @@ export const CampaignInterface: React.FC = React.memo(() => {
       </header>
 
       <div className="interface-content">
-        <Tabs value={activeSubTab} onValueChange={setActiveSubTab} className="w-full">
+        <Tabs value={activeSubTab} onValueChange={handleSubTabChange} className="w-full">
           <TabsList className={`terminal-tabs-list ${isGM ? 'grid-cols-6' : 'grid-cols-5'} mb-4`}>
             <TabsTrigger value="sessions" className="terminal-tab-trigger">
               <ScrollText className="h-4 w-4" />
