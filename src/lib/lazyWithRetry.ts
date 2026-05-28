@@ -20,7 +20,11 @@ export function lazyWithRetry(
         error.message.includes("Failed to fetch dynamically imported module") ||
         error.message.includes("Loading chunk") ||
         error.message.includes("Loading CSS chunk") ||
-        error.message.includes("MIME type");
+        error.message.includes("MIME type") ||
+        // Stale cached main bundle references minified variable names that no
+        // longer exist in newly-deployed lazy chunks (ReferenceError).
+        error instanceof ReferenceError ||
+        error instanceof SyntaxError;
 
       if (!isChunkError) {
         throw error;

@@ -66,7 +66,7 @@ export default function DashboardInterface({ activeTab, onTabChange }: Dashboard
   const { currentDate } = useCalendar();
 
   const ship = useMemo(
-    () => (vehicles ?? []).find(v => v.vehicle_type === "ship") ?? (vehicles ?? [])[0] ?? null,
+    () => (vehicles ?? []).find(v => v.vehicle_type?.toLowerCase() === "ship") ?? null,
     [vehicles]
   );
 
