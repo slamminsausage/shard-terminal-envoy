@@ -86,11 +86,21 @@ export default function DashboardInterface({ activeTab, onTabChange }: Dashboard
     return allVehicles.find(v => v.vehicle_type?.toLowerCase() === "ship") ?? null;
   }, [vehicles, bridgeState.playerShipId, selectedCrewId, crewGroups]);
 
-  // Characters filtered by selected crew (null = all)
+  // Characters filtered by selected crew (null = all), excluding non-crew NPCs,
+  // with PCs sorted before crew NPCs
   const filteredCharacters = useMemo(() => {
     const all = characters ?? [];
-    if (!selectedCrewId) return all;
-    return all.filter(c => c.crew_id === selectedCrewId);
+    const crewOnly = all.filter(c =>
+      c.character_type !== 'npc' || c.npc_role === 'crew'
+    );
+    const byCrewId = selectedCrewId
+      ? crewOnly.filter(c => c.crew_id === selectedCrewId)
+      : crewOnly;
+    return [...byCrewId].sort((a, b) => {
+      const aIsNpc = a.character_type === 'npc' ? 1 : 0;
+      const bIsNpc = b.character_type === 'npc' ? 1 : 0;
+      return aIsNpc - bIsNpc;
+    });
   }, [characters, selectedCrewId]);
 
   // IDs of characters in the selected crew (for finance filtering)
