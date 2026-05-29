@@ -3,6 +3,7 @@ import { Quest } from "@/types/quest";
 
 interface ActiveQuestsCardProps {
   quests: Quest[];
+  onNavigate?: () => void;
 }
 
 function dotClass(q: Quest) {
@@ -12,7 +13,7 @@ function dotClass(q: Quest) {
   return "bg-terminal-primary animate-pulse border-terminal-primary";
 }
 
-export default function ActiveQuestsCard({ quests }: ActiveQuestsCardProps) {
+export default function ActiveQuestsCard({ quests, onNavigate }: ActiveQuestsCardProps) {
   const shown = quests.slice(0, 5);
   const overflow = quests.length - shown.length;
 
@@ -23,9 +24,14 @@ export default function ActiveQuestsCard({ quests }: ActiveQuestsCardProps) {
           <span className="text-terminal-primary/40 text-base">◈</span>
           <span className="text-[9px] font-mono tracking-[0.2em] text-terminal-primary/40 uppercase">Active Quests</span>
         </div>
-        <span className="text-[8px] font-mono border px-1.5 py-0.5 rounded-sm text-terminal-secondary border-terminal-secondary/30 bg-terminal-secondary/10">
-          {quests.length} OPEN
-        </span>
+        <div className="flex items-center gap-1.5">
+          <span className="text-[8px] font-mono border px-1.5 py-0.5 rounded-sm text-terminal-secondary border-terminal-secondary/30 bg-terminal-secondary/10">
+            {quests.length} OPEN
+          </span>
+          {onNavigate && (
+            <button onClick={onNavigate} className="text-[8px] font-mono text-terminal-primary/30 hover:text-terminal-primary transition-colors">→ VIEW</button>
+          )}
+        </div>
       </div>
 
       <div className="mb-1">

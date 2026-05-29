@@ -3,11 +3,12 @@ import { Vehicle } from "@/types/database";
 
 interface ShipStatusCardProps {
   vehicle: Vehicle | null;
+  onNavigate?: () => void;
 }
 
 const GRID_CELLS = 40;
 
-export default function ShipStatusCard({ vehicle }: ShipStatusCardProps) {
+export default function ShipStatusCard({ vehicle, onNavigate }: ShipStatusCardProps) {
   const hullPct = vehicle
     ? Math.round(((vehicle.hull_current ?? vehicle.hull) / Math.max(vehicle.hull, 1)) * 100)
     : 0;
@@ -45,7 +46,12 @@ export default function ShipStatusCard({ vehicle }: ShipStatusCardProps) {
           <span className="text-terminal-primary/40 text-base">△</span>
           <span className="text-[9px] font-mono tracking-[0.2em] text-terminal-primary/40 uppercase">Ship Status</span>
         </div>
-        <span className={`text-[8px] font-mono border px-1.5 py-0.5 rounded-sm ${badge.cls}`}>{badge.text}</span>
+        <div className="flex items-center gap-1.5">
+          <span className={`text-[8px] font-mono border px-1.5 py-0.5 rounded-sm ${badge.cls}`}>{badge.text}</span>
+          {onNavigate && (
+            <button onClick={onNavigate} className="text-[8px] font-mono text-terminal-primary/30 hover:text-terminal-primary transition-colors">→ VIEW</button>
+          )}
+        </div>
       </div>
 
       {!vehicle ? (

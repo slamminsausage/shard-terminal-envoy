@@ -14,6 +14,8 @@ import ActiveQuestsCard from "@/components/dashboard/ActiveQuestsCard";
 import FinancesCard from "@/components/dashboard/FinancesCard";
 import RecentTerminalsCard from "@/components/dashboard/RecentTerminalsCard";
 import UpcomingSessionCard from "@/components/dashboard/UpcomingSessionCard";
+import WorldStatusCard from "@/components/dashboard/WorldStatusCard";
+import CargoManifestCard from "@/components/dashboard/CargoManifestCard";
 import QuickLaunch from "@/components/dashboard/QuickLaunch";
 import SystemStatusFooter from "@/components/dashboard/SystemStatusFooter";
 import { Character } from "@/types/database";
@@ -186,14 +188,25 @@ export default function DashboardInterface({ activeTab, onTabChange }: Dashboard
       <SectionSeparator label="OPERATIONS STATUS" />
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 px-4 pb-2">
-        <CrewReadinessCard characters={filteredCharacters} />
-        <ShipStatusCard vehicle={activeShip} />
-        <ActiveQuestsCard quests={activeQuests} />
+        <CrewReadinessCard
+          characters={filteredCharacters}
+          onNavigate={() => onTabChange("crew")}
+        />
+        <ShipStatusCard
+          vehicle={activeShip}
+          onNavigate={() => onTabChange("vehicles")}
+        />
+        <ActiveQuestsCard
+          quests={activeQuests}
+          onNavigate={() => onTabChange("campaign")}
+        />
         <FinancesCard
           partyFunds={partyFunds}
           recurringExpenses={filteredExpenses}
           transactions={filteredTransactions}
         />
+        <WorldStatusCard onNavigate={() => onTabChange("navigation")} />
+        <CargoManifestCard activeShip={activeShip} />
         <RecentTerminalsCard />
         <UpcomingSessionCard sessions={sessions ?? []} />
       </div>
