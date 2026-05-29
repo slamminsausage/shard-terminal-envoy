@@ -3,6 +3,7 @@ import { Character } from "@/types/database";
 
 interface CrewReadinessCardProps {
   characters: Character[];
+  onNavigate?: () => void;
 }
 
 function readinessPct(c: Character): number {
@@ -61,7 +62,7 @@ function badgeLabel(characters: Character[]) {
   return { text: "COMBAT READY", cls: "text-terminal-primary border-terminal-primary/30 bg-terminal-primary/10" };
 }
 
-export default function CrewReadinessCard({ characters }: CrewReadinessCardProps) {
+export default function CrewReadinessCard({ characters, onNavigate }: CrewReadinessCardProps) {
   const ready = characters.filter(c => readinessPct(c) >= 75).length;
   const badge = badgeLabel(characters);
   const shown = characters.slice(0, 6);
@@ -73,7 +74,12 @@ export default function CrewReadinessCard({ characters }: CrewReadinessCardProps
           <span className="text-terminal-primary/40 text-base">◉</span>
           <span className="text-[9px] font-mono tracking-[0.2em] text-terminal-primary/40 uppercase">Crew Readiness</span>
         </div>
-        <span className={`text-[8px] font-mono border px-1.5 py-0.5 rounded-sm ${badge.cls}`}>{badge.text}</span>
+        <div className="flex items-center gap-1.5">
+          <span className={`text-[8px] font-mono border px-1.5 py-0.5 rounded-sm ${badge.cls}`}>{badge.text}</span>
+          {onNavigate && (
+            <button onClick={onNavigate} className="text-[8px] font-mono text-terminal-primary/30 hover:text-terminal-primary transition-colors">→ VIEW</button>
+          )}
+        </div>
       </div>
 
       <div className="mb-1">
